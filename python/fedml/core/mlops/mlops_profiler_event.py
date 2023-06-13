@@ -123,9 +123,11 @@ class MLOpsProfilerEvent:
         event_topic = "mlops/events"
         event_msg = {}
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
-            current_time = MLOpsProfilerEvent.get_ntp_time()
-            if current_time is None:
-                current_time = int(time.time() * 1000)
+            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            if current_time_ms is None:
+                current_time = int(time.time())
+            else:
+                current_time = int(current_time_ms / 1000)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
@@ -134,9 +136,11 @@ class MLOpsProfilerEvent:
                 "started_time": int(current_time),
             }
         elif event_type == MLOpsProfilerEvent.EVENT_TYPE_ENDED:
-            current_time = MLOpsProfilerEvent.get_ntp_time()
-            if current_time is None:
-                current_time = int(time.time() * 1000)
+            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            if current_time_ms is None:
+                current_time = int(time.time())
+            else:
+                current_time = int(current_time_ms / 1000)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
