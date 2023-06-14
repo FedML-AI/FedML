@@ -677,6 +677,11 @@ class FedMLServerRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic=None, payload=None):
+        try:
+            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+        except Exception as e:
+            pass
+
         logging.info("callback_start_train payload: {}".format(payload))
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"

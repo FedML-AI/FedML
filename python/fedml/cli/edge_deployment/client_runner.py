@@ -695,6 +695,11 @@ class FedMLClientRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic, payload):
+        try:
+            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+        except Exception as e:
+            pass
+
         if not FedMLClientDataInterface.get_instance().get_agent_status():
             request_json = json.loads(payload)
             run_id = request_json["runId"]
