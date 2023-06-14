@@ -45,7 +45,7 @@ Note: #C stands for client_num_in_total; #C_p stands for client_num_per_round; b
     - accuracy: ‘Federated optimization in heterogeneous networks’, page 19, Appendix C.3.2 Figure 6
     
 ### Lightweight and shallow neural network models
-|     Task     |     Data Set     |              Model              | Alogrithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | accuracy |
+|     Task     |     Data Set     |              Model              | Algorithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | accuracy |
 |:----------------:|:----------------:|:-------------------------------:|:---------:|:-------------------:|:---------------:|:-------------------:|:--------------------:|:----------:|:----------------:|:------------:|:--------------:|:------:|:----------:|:--------:|
 |       CV         | Federated EMNIST |       CNN (2 Conv + 2 FC)       |   FedAvg  |    Power Law        |        　       |         3400        |          10          |     20     |        SGD       |      0.1     |  -              |   1   |    >1500   |   84.9   |
 |       CV         |     CIFAR-100    | ResNet-18+group   normalization |   FedAvg  | Pachinko Allocation | 100/500(ex/cli) |         500         |          10          |     20     |        SGD       |      0.1     |        -       |    1   |    >4000   |   44.7   |
