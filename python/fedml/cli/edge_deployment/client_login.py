@@ -6,16 +6,13 @@ import os
 import platform
 import subprocess
 import time
-from os.path import expanduser
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.cli.edge_deployment.client_data_interface import FedMLClientDataInterface
-from fedml.core.mlops import MLOpsProfilerEvent
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from fedml.core.mlops.mlops_utils import MLOpsUtils
+
 
 def init_logs(args, edge_id):
     # Init runtime logs
@@ -83,17 +80,6 @@ def __login_as_client(args, userid, version):
         click.echo("[1] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
-    # setup ntp time from the configs
-    deviceRecvTime = int(time.time() * 1000)
-    deviceSendTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["deviceSendTime"]
-    serverRecvTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["serverRecvTime"]
-    serverSendTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["serverSendTime"]
-
-    # calculate the time offset(int)
-    ntp_time = (serverRecvTime + serverSendTime + deviceRecvTime - deviceSendTime)//2
-    ntp_offset = ntp_time - deviceRecvTime
-    # set the time offset
-    MLOpsProfilerEvent.set_ntp_offset(ntp_offset)
 
     # Judge whether running from fedml docker hub
     is_from_fedml_docker_hub = False

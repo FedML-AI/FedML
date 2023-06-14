@@ -1,23 +1,16 @@
 import os
-import shutil
 import subprocess
-from os.path import expanduser
 
 import click
-
-import fedml
 
 from ...cli.model_deployment.device_client_constants import ClientConstants
 from ...cli.model_deployment.device_server_constants import ServerConstants
 from ...cli.model_deployment.device_client_login import logout as client_logout
-from ...cli.env.collect_env import collect_env
 from ...cli.model_deployment.device_server_login import logout as server_logout
 from ...cli.model_deployment.docker_client_login import login_with_docker_mode
 from ...cli.model_deployment.docker_client_login import logout_with_docker_mode
-from ...cli.model_deployment.docker_client_login import logs_with_docker_mode
 from ...cli.model_deployment.docker_server_login import login_with_server_docker_mode
 from ...cli.model_deployment.docker_server_login import logout_with_server_docker_mode
-from ...cli.model_deployment.docker_server_login import logs_with_server_docker_mode
 from ...cli.comm_utils import sys_utils
 
 

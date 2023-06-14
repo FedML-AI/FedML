@@ -17,7 +17,6 @@ import uuid
 import zipfile
 from urllib.parse import urlparse
 
-import click
 import requests
 from fedml import mlops
 from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
@@ -39,6 +38,7 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
 from ...serving.fedml_client import FedMLModelServingClient
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 
 class RunnerError(Exception):
@@ -87,6 +87,7 @@ class FedMLClientRunner:
         self.model_is_from_open = False
 
         self.model_runner_mapping = dict()
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def unzip_file(self, zip_file, unzip_file_path):
         result = False
@@ -202,18 +203,28 @@ class FedMLClientRunner:
 
         self.run_process_event = process_event
         try:
+            MLOpsUtils.set_ntp_offset(self.ntp_offset)
             self.setup_client_mqtt_mgr()
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except Exception as e:
-            logging.info("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             sys_utils.cleanup_all_fedml_client_login_processes(ClientConstants.CLIENT_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             self.release_client_mqtt_mgr()
 
     def check_runner_stop_event(self):
@@ -343,7 +354,7 @@ class FedMLClientRunner:
                 model_from_open,
                 token)
         if inference_output_url == "":
-            logging.info("failed to deploy the model...")
+            logging.error("failed to deploy the model...")
             self.send_deployment_status(end_point_name, self.edge_id,
                                         model_id, model_name, model_version,
                                         inference_output_url,
@@ -422,7 +433,7 @@ class FedMLClientRunner:
         time.sleep(2)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -436,7 +447,7 @@ class FedMLClientRunner:
         time.sleep(2)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -972,7 +983,7 @@ class FedMLClientRunner:
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
                                                          is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
-        self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=True)
+        self.mlops_metrics.stop_sys_perf()
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
         self.mlops_metrics.report_sys_perf(self.args)
 

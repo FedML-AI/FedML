@@ -25,14 +25,16 @@ class SysStats:
     def produce_info(self):
         stats = self.sys_stats_impl.stats()
 
-        self.cpu_utilization = stats["cpu"]
-        self.system_memory_utilization = stats["memory"]
-        self.process_memory_in_use_size = stats["proc.memory.percent"]
-        self.process_memory_in_use = stats["proc.memory.rssMB"]
-        self.process_memory_available = stats["proc.memory.availableMB"]
-        self.process_cpu_threads_in_use = stats["proc.cpu.threads"]
-        self.disk_utilization = stats["disk"]
-        self.network_traffic = stats["network"]["sent"] + stats["network"]["recv"]
+        self.cpu_utilization = stats.get("cpu", 0.0)
+        self.system_memory_utilization = stats.get("memory", 0.0)
+        self.process_memory_in_use_size = stats.get("proc.memory.percent", 0.0)
+        self.process_memory_in_use = stats.get("proc.memory.rssMB", 0.0)
+        self.process_memory_available = stats.get("proc.memory.availableMB", 0.0)
+        self.process_cpu_threads_in_use = stats.get("proc.cpu.threads", 0.0)
+        self.disk_utilization = stats.get("disk", 0.0)
+        network = stats.get("network", None)
+        if network is not None:
+            self.network_traffic = network.get("sent", 0.0) + network.get("recv", 0.0)
 
         for stat_key, stat_value in stats.items():
             if str(stat_key).find("gpu.0.gpu") != -1:
@@ -44,13 +46,15 @@ class SysStats:
         gpu_mem_allocated = 0.0
         gpu_temperature_total = 0.0
         gpu_power_usage_total = 0.0
-        for i in range(self.sys_stats_impl.gpu_count):
-            gpu_mem_used += stats["gpu.{}.{}".format(i, "memory")]
-            gpu_usage_total += stats["gpu.{}.{}".format(i, "gpu")]
-            gpu_mem_allocated += stats["gpu.{}.{}".format(i, "memoryAllocated")]
-            gpu_temperature_total += stats["gpu.{}.{}".format(i, "temp")]
-            gpu_power_usage_total += stats["gpu.{}.{}".format(i, "powerPercent")]
+
         if self.sys_stats_impl.gpu_count >= 1:
+            for i in range(self.sys_stats_impl.gpu_count):
+                gpu_mem_used += stats.get("gpu.{}.{}".format(i, "memory"), 0.0)
+                gpu_usage_total += stats.get("gpu.{}.{}".format(i, "gpu"), 0.0)
+                gpu_mem_allocated += stats.get("gpu.{}.{}".format(i, "memoryAllocated"), 0.0)
+                gpu_temperature_total += stats.get("gpu.{}.{}".format(i, "temp"), 0.0)
+                gpu_power_usage_total += stats.get("gpu.{}.{}".format(i, "powerPercent"), 0.0)
+
             self.gpu_utilization = round(
                 gpu_usage_total / self.sys_stats_impl.gpu_count, 2
             )

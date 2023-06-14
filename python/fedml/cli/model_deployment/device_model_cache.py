@@ -1,8 +1,6 @@
 import json
 import redis
-from random import shuffle
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
-from fedml.cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
 from .device_model_db import FedMLModelDatabase
 
 

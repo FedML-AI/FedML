@@ -108,6 +108,7 @@ class ClientMasterManager(FedMLCommManager):
             self.__train()
             self.round_idx += 1
         else:
+            mlops.stop_sys_perf()
             self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
             if self.is_main_process():
                 mlops.log_training_finished_status()

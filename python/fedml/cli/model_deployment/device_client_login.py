@@ -1,18 +1,14 @@
 
 import argparse
 import json
-import logging
 import os
 import platform
-import subprocess
 import time
-from os.path import expanduser
 
 import click
-from fedml.cli.comm_utils import sys_utils
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.model_deployment.device_client_runner import FedMLClientRunner
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def init_logs(args, edge_id):

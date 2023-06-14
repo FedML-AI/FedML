@@ -29,6 +29,8 @@ from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+from .mlops_utils import MLOpsUtils
+
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -265,6 +267,7 @@ def log_training_finished_status(run_id=None):
                                                      MLOpsStore.mlops_edge_id,
                                                      ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
+
 def send_exit_train_msg(run_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
@@ -475,6 +478,11 @@ def log_sys_perf(sys_args=None):
         MLOpsStore.mlops_args = sys_args
 
     MLOpsMetrics.report_sys_perf(MLOpsStore.mlops_args)
+
+
+def stop_sys_perf():
+    metrics = MLOpsMetrics()
+    metrics.stop_sys_perf()
 
 
 def log_server_payload(run_id, edge_id, payload):

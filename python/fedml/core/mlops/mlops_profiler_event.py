@@ -5,7 +5,6 @@ import time
 
 import wandb
 from .mlops_utils import MLOpsUtils
-import datetime
 
 
 class MLOpsProfilerEvent:
@@ -15,7 +14,6 @@ class MLOpsProfilerEvent:
     _instance_lock = threading.Lock()
     _sys_perf_profiling = False
     _enable_wandb = False
-    _ntp_offset = None
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsProfilerEvent, "_instance"):
@@ -108,22 +106,13 @@ class MLOpsProfilerEvent:
         logging.info("Event ended, {}".format(event_msg_str))
         self.com_manager.send_message_json(event_topic, event_msg_str)
         self.com_manager.send_message_json(event_topic, event_msg_str)
-    @staticmethod
-    def set_ntp_offset(ntp_offset):
-        MLOpsProfilerEvent._ntp_offset = ntp_offset
-
-    @staticmethod
-    def get_ntp_time():
-        if MLOpsProfilerEvent._ntp_offset is not None:
-            return int(time.time() * 1000) + MLOpsProfilerEvent._ntp_offset
-        return int(time.time() * 1000)
 
     @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
         event_topic = "mlops/events"
         event_msg = {}
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
-            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            current_time_ms = MLOpsUtils.get_ntp_time()
             if current_time_ms is None:
                 current_time = int(time.time())
             else:
@@ -136,7 +125,7 @@ class MLOpsProfilerEvent:
                 "started_time": int(current_time),
             }
         elif event_type == MLOpsProfilerEvent.EVENT_TYPE_ENDED:
-            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            current_time_ms = MLOpsUtils.get_ntp_time()
             if current_time_ms is None:
                 current_time = int(time.time())
             else:

@@ -6,10 +6,10 @@ import time
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
 from fedml.cli.server_deployment.server_constants import ServerConstants
-from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from fedml.core.mlops.mlops_utils import MLOpsUtils
+
 
 def __login_as_edge_server_and_agent(args, userid, version):
     setattr(args, "account_id", userid)
@@ -64,18 +64,6 @@ def __login_as_edge_server_and_agent(args, userid, version):
         click.echo("[5] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
-
-    # setup ntp time from the configs
-    deviceRecvTime = int(time.time() * 1000)
-    deviceSendTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["deviceSendTime"]
-    serverRecvTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["serverRecvTime"]
-    serverSendTime = service_config["ml_ops_config"]["NTP_RESPONSE"]["serverSendTime"]
-
-    # calculate the time offset(int)
-    ntp_time = (serverRecvTime + serverSendTime + deviceRecvTime - deviceSendTime) // 2
-    ntp_offset = ntp_time - deviceRecvTime
-    # set the time offset
-    MLOpsProfilerEvent.set_ntp_offset(ntp_offset)
 
     # Judge whether running from fedml docker hub
     is_from_fedml_docker_hub = False
@@ -317,7 +305,7 @@ def __login_as_cloud_server(args, userid, version):
     print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
     print(
         "Your unique device ID is "
-        + str(env_current_device_id)
+        + str(unique_device_id)
         + "\n"
     )
     # Start the FedML server

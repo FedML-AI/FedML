@@ -2,14 +2,11 @@ import logging
 import os
 import platform
 import signal
-import traceback
 import uuid
 from os.path import expanduser
 
-import click
 import psutil
 import yaml
-from psutil import NoSuchProcess, STATUS_ZOMBIE
 
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 import json
@@ -20,7 +17,6 @@ from packaging import version
 import sys
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
-import importlib
 
 
 FETAL_ERROR_START_CODE = 128

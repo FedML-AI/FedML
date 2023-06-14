@@ -5,9 +5,9 @@ import platform
 import time
 
 import click
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.model_deployment.device_server_runner import FedMLServerRunner
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
@@ -311,6 +311,7 @@ def __login_as_cloud_server(args, userid, version):
         click.echo("Oops, you failed to login the FedML ModelOps platform.")
         click.echo("Please check whether your network is normal!")
         return
+
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id

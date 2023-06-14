@@ -5,15 +5,11 @@ import os
 import sys
 import threading
 import time
-import traceback
-
-import ntplib
 import datetime
-from datetime import timezone
 from logging import handlers
 
 from fedml import mlops
-from .mlops_profiler_event import MLOpsProfilerEvent
+from .mlops_utils import MLOpsUtils
 
 
 class MLOpsRuntimeLog:
@@ -105,16 +101,37 @@ class MLOpsRuntimeLog:
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
-        format_str = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                                                  "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                                                  "message)s",
-                                       datefmt="%a, %d %b %Y %H:%M:%S")
-        def log_ntp_time(sec, what):
-            ntp_time_milli_seconds = MLOpsProfilerEvent.get_ntp_time()     # int type
-            ntp_time_seconds = ntp_time_milli_seconds / 1000.0
-            ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
-            return ntp_time.timetuple()
-        logging.Formatter.converter = log_ntp_time
+
+        class MLOpsFormatter(logging.Formatter):
+            converter = datetime.datetime.utcfromtimestamp
+
+            def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
+                super().__init__(fmt, datefmt, style, validate)
+                self.ntp_offset = 0.0
+
+            # Here the `record` is a LogRecord object
+            def formatTime(self, record, datefmt=None):
+                log_time = record.created
+                if record.created is None:
+                    log_time = time.time()
+
+                if self.ntp_offset is None:
+                    self.ntp_offset = 0.0
+
+                log_ntp_time = int((log_time * 1000 + self.ntp_offset) / 1000.0)
+                ct = self.converter(log_ntp_time)
+                if datefmt:
+                    s = ct.strftime(datefmt)
+                else:
+                    s = ct.strftime("%a, %d %b %Y %H:%M:%S")
+                return s
+
+        format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                               "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                               "message)s",
+                                    datefmt="%a, %d %b %Y %H:%M:%S")
+        format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
+
         stdout_handle = logging.StreamHandler()
         stdout_handle.setFormatter(format_str)
         if show_stdout_log:
