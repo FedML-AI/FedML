@@ -580,6 +580,11 @@ class FedMLClientRunner:
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
+        try:
+            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+        except Exception as e:
+            pass
+
         # Terminate previous process about starting or stopping run command
         ClientConstants.cleanup_run_process(run_id)
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
