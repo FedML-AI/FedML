@@ -20,7 +20,6 @@ import uuid
 import zipfile
 from os import listdir
 
-import click
 import requests
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -37,8 +36,7 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from ..comm_utils import sys_utils
 from .server_data_interface import FedMLServerDataInterface
-
-import tqdm
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 
 class RunnerError(BaseException):
@@ -108,6 +106,7 @@ class FedMLServerRunner:
         self.client_agent_active_list = dict()
         self.server_active_list = dict()
         self.run_status = None
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config["data_config"]
@@ -354,6 +353,8 @@ class FedMLServerRunner:
 
         self.run_process_event = process_event
         try:
+            MLOpsUtils.set_ntp_offset(self.ntp_offset)
+
             self.setup_client_mqtt_mgr()
 
             if self.run_as_cloud_server:
@@ -371,9 +372,13 @@ class FedMLServerRunner:
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
             self.mlops_metrics.report_server_training_status(self.run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             ServerConstants.cleanup_run_process(self.run_id)
             ServerConstants.cleanup_learning_process(self.run_id)
             ServerConstants.cleanup_bootstrap_process(self.run_id)
@@ -574,7 +579,7 @@ class FedMLServerRunner:
         )
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -600,7 +605,7 @@ class FedMLServerRunner:
         self.mlops_metrics.broadcast_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 

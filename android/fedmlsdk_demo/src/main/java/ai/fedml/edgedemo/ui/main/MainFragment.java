@@ -116,7 +116,7 @@ public class MainFragment extends Fragment {
                             status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
                             status == MessageDefine.KEY_CLIENT_STATUS_IDLE ||
                             status == MessageDefine.KEY_CLIENT_STATUS_FAILED) {
-                        LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
+                        LogHelper.i("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
                         mProgressView.setProgress(0);
                         mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));

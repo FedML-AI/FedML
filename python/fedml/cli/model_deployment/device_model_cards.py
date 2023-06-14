@@ -15,7 +15,7 @@ from ...core.common.singleton import Singleton
 from .modelops_configs import ModelOpsConfigs
 from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
-from .device_model_object import FedMLModelList, FedMLModelObject
+from .device_model_object import FedMLModelList
 
 
 class FedMLModelCards(Singleton):

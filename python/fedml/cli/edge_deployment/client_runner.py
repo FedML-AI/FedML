@@ -18,7 +18,6 @@ import urllib
 import uuid
 import zipfile
 
-import click
 import requests
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -47,6 +46,7 @@ class FedMLClientRunner:
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
         self.run_process_event = None
         self.run_process = None
+        self.local_api_process = None
         self.start_request_json = None
         self.device_status = None
         self.current_training_status = None
@@ -89,6 +89,7 @@ class FedMLClientRunner:
 
         self.mlops_metrics = None
         self.client_active_list = dict()
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -334,6 +335,7 @@ class FedMLClientRunner:
 
         self.run_process_event = process_event
         try:
+            MLOpsUtils.set_ntp_offset(self.ntp_offset)
             self.setup_client_mqtt_mgr()
             self.run_impl()
         except RunnerError:
@@ -344,6 +346,10 @@ class FedMLClientRunner:
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             ClientConstants.cleanup_learning_process(self.run_id)
             ClientConstants.cleanup_run_process(self.run_id)
             self.release_client_mqtt_mgr()
@@ -433,7 +439,7 @@ class FedMLClientRunner:
                 "--rank",
                 str(dynamic_args_config["rank"]),
                 "--role",
-                "client",
+                "client"
             ],
             should_capture_stdout=False,
             should_capture_stderr=True
@@ -546,7 +552,7 @@ class FedMLClientRunner:
         time.sleep(2)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -566,7 +572,7 @@ class FedMLClientRunner:
         time.sleep(2)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -1106,7 +1112,7 @@ class FedMLClientRunner:
 
         # Start local API services
         python_program = get_python_program()
-        local_api_process = ClientConstants.exec_console_with_script(
+        self.local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
             "--log-level critical".format(python_program,
                                           ClientConstants.LOCAL_CLIENT_API_PORT),

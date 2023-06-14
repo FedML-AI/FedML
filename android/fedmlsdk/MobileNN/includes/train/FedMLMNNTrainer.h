@@ -4,6 +4,7 @@
 #include "FedMLBaseTrainer.h"
 #include "mnist.h"
 #include "cifar10.h"
+#include "tabular.h"
 #include <MNN/expr/Executor.hpp>
 #include "DataLoader.hpp"
 #include "SGD.hpp"

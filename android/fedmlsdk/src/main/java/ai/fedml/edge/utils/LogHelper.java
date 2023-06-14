@@ -17,7 +17,7 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 public class LogHelper {
     private static final String TAG = "FedML-Mobile-Client";
     private static final String DATE_FORMAT_PATTER = "EEE, dd MMM yyyy HH:mm:ss";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private static final Map<Integer, String> LEVEL_MAP;
     private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();

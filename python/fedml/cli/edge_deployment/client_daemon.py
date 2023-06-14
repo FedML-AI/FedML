@@ -2,7 +2,6 @@
 import argparse
 import os
 import time
-import sys
 
 from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_client_api_processes, \
     cleanup_all_fedml_client_learning_processes, cleanup_all_fedml_client_login_processes, get_python_program, \

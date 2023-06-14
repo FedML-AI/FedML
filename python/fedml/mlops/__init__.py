@@ -79,7 +79,14 @@ def log_sys_perf(sys_args=None):
     try:
         mlops.log_sys_perf(sys_args)
     except Exception as e:
-        logging.info("excpetions when logging sys perf: {}".format(traceback.format_exc()))
+        logging.debug("excpetions when logging sys perf: {}".format(traceback.format_exc()))
+
+
+def stop_sys_perf():
+    try:
+        mlops.stop_sys_perf()
+    except Exception as e:
+        logging.debug("excpetions when stopping sys perf: {}".format(traceback.format_exc()))
 
 
 def log_server_payload(run_id, edge_id, payload):

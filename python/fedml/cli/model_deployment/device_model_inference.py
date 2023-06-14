@@ -71,9 +71,13 @@ async def predict(request: Request):
             inference_response = send_inference_request(inference_output_url, input_list, output_list)
 
         # Calculate model metrics
-        model_metrics.calc_metrics(end_point_id, in_end_point_name,
-                                   model_id, model_name, model_version,
-                                   inference_output_url)
+        try:
+            model_metrics.calc_metrics(end_point_id, in_end_point_name,
+                                        model_id, model_name, model_version,
+                                        inference_output_url, idle_device)
+        except Exception as e:
+            print("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
+            pass
 
         logging_inference_request(input_json, inference_response)
 

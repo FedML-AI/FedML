@@ -34,6 +34,11 @@ class ClientMasterManager(FedMLCommManager):
         self.has_sent_online_msg = False
         self.is_inited = False
 
+    def is_main_process(self):
+        return getattr(self.trainer_dist_adapter, "trainer", None) is None or \
+            getattr(self.trainer_dist_adapter.trainer, "trainer", None) is None or \
+            self.trainer_dist_adapter.trainer.trainer.is_main_process()
+
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
@@ -103,8 +108,10 @@ class ClientMasterManager(FedMLCommManager):
             self.__train()
             self.round_idx += 1
         else:
+            mlops.stop_sys_perf()
             self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
-            mlops.log_training_finished_status()
+            if self.is_main_process():
+                mlops.log_training_finished_status()
             self.finish()
 
     def handle_message_finish(self, msg_params):
@@ -113,40 +120,42 @@ class ClientMasterManager(FedMLCommManager):
 
     def cleanup(self):
         self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
-        mlops.log_training_finished_status()
+        if self.is_main_process():
+            mlops.log_training_finished_status()
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        tick = time.time()
-        mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
-        message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id,)
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
-        message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        self.send_message(message)
+        if self.is_main_process():
+            tick = time.time()
+            mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
+            message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id)
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
+            message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
+            self.send_message(message)
 
-        MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
-        mlops.log_client_model_info(
-            self.round_idx+1, self.num_rounds, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
-        )
+            MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
+            mlops.log_client_model_info(
+                self.round_idx + 1, self.num_rounds, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            )
 
     def send_client_status(self, receive_id, status=ONLINE_STATUS_FLAG):
-        logging.info("send_client_status")
-        logging.info("self.client_real_id = {}".format(self.client_real_id))
-        message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
-        sys_name = platform.system()
-        if sys_name == "Darwin":
-            sys_name = "Mac"
-        # Debug for simulation mobile system
-        # sys_name = MyMessage.MSG_CLIENT_OS_ANDROID
+        if self.is_main_process():
+            logging.info("send_client_status")
+            logging.info("self.client_real_id = {}".format(self.client_real_id))
+            message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
+            sys_name = platform.system()
+            if sys_name == "Darwin":
+                sys_name = "Mac"
+            # Debug for simulation mobile system
+            # sys_name = MyMessage.MSG_CLIENT_OS_ANDROID
 
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
 
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops and \
-                status == ClientMasterManager.RUN_FINISHED_STATUS_FLAG:
-            mlops.log_server_payload(self.args.run_id, self.client_real_id, json.dumps(message.get_params()))
-        else:
-            self.send_message(message)
+            if getattr(self.args, "using_mlops", False) and status == ClientMasterManager.RUN_FINISHED_STATUS_FLAG:
+                mlops.log_server_payload(self.args.run_id, self.client_real_id, json.dumps(message.get_params()))
+            else:
+                self.send_message(message)
 
     def report_training_status(self, status):
         mlops.log_training_status(status)

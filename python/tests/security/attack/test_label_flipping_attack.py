@@ -1,7 +1,7 @@
 import argparse
 import os
 from os.path import expanduser
-
+import fedml
 from fedml.core.security.attack.label_flipping_attack import LabelFlippingAttack
 from fedml.core.security.common.attack_defense_data_loader import AttackDefenseDataLoader
 from fedml.data.MNIST.data_loader import load_partition_data_mnist, download_mnist
@@ -24,10 +24,12 @@ def add_args():
     parser.add_argument("--comm_round", type=int, default=10)
     parser.add_argument("--data_cache_dir", type=str, default=os.path.join(expanduser("~"), "fedml_data"))
     parser.add_argument("--model", type=str, default='lr')
+    parser.add_argument("--training_type", type=str, default='cross_silo')
+    parser.add_argument("--dataset", type=str, default='mnist')
+    parser.add_argument("--client_num_in_total", type=int, default=1)
 
     args, unknown = parser.parse_known_args()
     return args
-
 
 def test_attack_cifar10():
     args = add_args()
@@ -47,31 +49,15 @@ def test_attack_cifar100():
 
 def test_attack_mnist():
     args = add_args()
-    download_mnist(args.data_cache_dir)
-    (
-        client_num,
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ) = load_partition_data_mnist(
-        args,
-        args.batch_size,
-        train_path=os.path.join(args.data_cache_dir, "MNIST", "train"),
-        test_path=os.path.join(args.data_cache_dir, "MNIST", "test"),
-    )
+    dataset, output_dim = fedml.data.load(args)
 
-    print(f"number of local datasets = {len(train_data_local_dict)}")
+    print(f"number of local datasets = {len(dataset[5])}")
     # replace class 3 with class 9; replace class 2 with class 1
     label_flipping_attack = LabelFlippingAttack(args)
-    label_flipping_attack.poison_data(train_data_local_dict[2])
+    label_flipping_attack.poison_data(dataset[5][2])
 
 
 if __name__ == "__main__":
     # test_attack_cifar10()
-    # test_attack_mnist()
-    test_attack_cifar100()
+    test_attack_mnist()
+    # test_attack_cifar100()

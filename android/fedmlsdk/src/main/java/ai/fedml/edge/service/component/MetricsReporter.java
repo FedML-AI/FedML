@@ -170,7 +170,7 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
     }
 
     private void notifyClientStatus(final long runId, final int status) {
-        LogHelper.d("FedMLDebug. notifyClientStatus [%s]", CLIENT_STATUS_MAP.get(status));
+        LogHelper.i("FedMLDebug. notifyClientStatus [%s]", CLIENT_STATUS_MAP.get(status));
         mClientStatus = status;
         if (status == KEY_CLIENT_STATUS_IDLE || status == KEY_CLIENT_STATUS_KILLED ||
                 status == KEY_CLIENT_STATUS_FINISHED || status == KEY_CLIENT_STATUS_FAILED) {
@@ -192,6 +192,6 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
         }
-        edgeCommunicator.sendMessage(FedMqttTopic.exitTrainWithException(runId), jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.clientExitTrainWithException(runId), jsonObject.toString());
     }
 }

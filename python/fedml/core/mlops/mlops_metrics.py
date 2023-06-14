@@ -3,11 +3,11 @@ import json
 import logging
 import os
 import time
+import traceback
 import uuid
 
 import multiprocess as multiprocessing
 
-from ..common.singleton import Singleton
 from ...cli.edge_deployment.client_constants import ClientConstants
 from ...cli.server_deployment.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -15,26 +15,30 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
 
 
-class MLOpsMetrics(Singleton):
+class MLOpsMetrics(object):
     FEDML_SYS_PERF_RUNNING_FILE_NAME = "sys_perf.id"
 
+    def __new__(cls, *args, **kw):
+        if not hasattr(cls, "_instance"):
+            orig = super(MLOpsMetrics, cls)
+            cls._instance = orig.__new__(cls, *args, **kw)
+            cls._instance.init()
+        return cls._instance
+
     def __init__(self):
+        pass
+
+    def init(self):
+        self.sys_stats_process = None
         self.messenger = None
         self.args = None
         self.run_id = None
         self.edge_id = None
         self.server_agent_id = None
         self.sys_performances = None
-        self.is_sys_perf_reporting = False
+        self.sys_perf_event = None
         self.current_device_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE
         self.current_run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
-        running_info_dir = os.path.join(
-            ClientConstants.get_data_dir(),
-            ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        if not os.path.exists(running_info_dir):
-            os.makedirs(running_info_dir)
-        self.sys_perf_running_file = os.path.join(running_info_dir,
-                                                  MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -408,50 +412,29 @@ class MLOpsMetrics(Singleton):
         logging.info("report_logs_updated. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def set_sys_reporting_status(self, enable, is_client=True):
-        if is_client:
-            running_info_dir = os.path.join(
-                ClientConstants.get_data_dir(),
-                ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-            if not os.path.exists(running_info_dir):
-                os.makedirs(running_info_dir)
-            self.sys_perf_running_file = os.path.join(running_info_dir,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
-        else:
-            running_info_dir = os.path.join(
-                ServerConstants.get_data_dir(),
-                ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-            if not os.path.exists(running_info_dir):
-                os.makedirs(running_info_dir)
-            self.sys_perf_running_file = os.path.join(running_info_dir,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+    def stop_sys_perf(self):
+        if self.sys_perf_event is not None:
+            self.sys_perf_event.set()
 
-        self.is_sys_perf_reporting = enable
-        sys_perf_file_handle = open(self.sys_perf_running_file, "w")
-        if sys_perf_file_handle is not None:
-            sys_perf_file_handle.writelines([str(self.is_sys_perf_reporting)])
-            sys_perf_file_handle.flush()
-            sys_perf_file_handle.close()
+    def setup_sys_perf_process(self, sys_args):
+        self.stop_sys_perf()
 
-    def is_system_perf_reporting(self):
-        sys_perf_file_handle = open(self.sys_perf_running_file, "r")
-        if sys_perf_file_handle is not None:
-            self.is_sys_perf_reporting = eval(sys_perf_file_handle.readline())
-            sys_perf_file_handle.close()
-        return self.is_sys_perf_reporting
+        self.args = sys_args
+        if self.sys_perf_event is None:
+            self.sys_perf_event = multiprocessing.Event()
+        self.sys_perf_event.clear()
+
+        self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances,
+                                                         args=(self.sys_perf_event,))
+        self.sys_stats_process.start()
 
     @staticmethod
-    def report_sys_perf(sys_args, is_client=True):
-        sys_metrics = MLOpsMetrics()
-        sys_metrics.args = sys_args
-        sys_metrics.set_sys_reporting_status(True, is_client)
-        sys_metrics.is_system_perf_reporting()
-        sys_metrics.sys_stats_process = multiprocessing.Process(
-            target=sys_metrics.report_sys_performances
-        )
-        sys_metrics.sys_stats_process.start()
+    def report_sys_perf(sys_args):
+        metrics = MLOpsMetrics()
+        metrics.setup_sys_perf_process(sys_args)
 
-    def report_sys_performances(self):
+    def report_sys_performances(self, sys_event):
+        self.sys_perf_event = sys_event
         self.set_messenger(None, self.args)
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],
@@ -467,10 +450,11 @@ class MLOpsMetrics(Singleton):
         mqtt_mgr.loop_start()
 
         # Notify MLOps with system information.
-        while self.is_system_perf_reporting() is True:
+        while not self.should_stop_sys_perf():
             try:
                 self.report_system_metric()
             except Exception as e:
+                logging.debug("exception when reporting system pref: {}.".format(traceback.format_exc()))
                 pass
 
             time.sleep(10)
@@ -481,6 +465,12 @@ class MLOpsMetrics(Singleton):
 
     def report_json_message(self, topic, payload):
         self.messenger.send_message_json(topic, payload)
+
+    def should_stop_sys_perf(self):
+        if self.sys_perf_event is not None and self.sys_perf_event.is_set():
+            return True
+
+        return False
 
 
 if __name__ == "__main__":
@@ -506,6 +496,6 @@ if __name__ == "__main__":
     while True:
         time.sleep(5)
         sys_metrics = MLOpsMetrics()
-        sys_metrics.set_sys_reporting_status(False)
+        sys_metrics.stop_sys_perf()
         break
     pass

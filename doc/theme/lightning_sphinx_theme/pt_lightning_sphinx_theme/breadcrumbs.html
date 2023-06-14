@@ -70,7 +70,7 @@
           {% elif show_source and source_url_prefix %}
             <a href="{{ source_url_prefix }}{{ pagename }}{{ suffix }}"><img src="{{ pathto('_static/images/view-page-source-icon.svg', 1) }}"></a>
           {% elif show_source and has_source and sourcename %}
-            <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow"><img src="{{ pathto('_static/images/view-page-source-icon.svg', 1) }}"></a>
+<!--            <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow"><img src="{{ pathto('_static/images/view-page-source-icon.svg', 1) }}"></a>-->
           {% endif %}
         {% endif %}
       </li>

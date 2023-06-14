@@ -35,7 +35,7 @@ import androidx.annotation.NonNull;
 class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
 
     /**
-     * mainfest meata key "fedml_key"
+     * manifest meta key "fedml_key"
      */
     private static final String META_ACCOUNT_KEY = new ObfuscatedString(new long[]{0x78DA743E5BE2970DL,
             0x380F3AEE359ADEEEL, 0x77E0C41263DBC235L}).toString();
@@ -44,6 +44,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
      */
     private static final String SECRET_KEY = new ObfuscatedString(new long[]{0xBA683391111A600DL, 0x84924D54717A16E1L,
             0xBE985554215915ACL}).toString();
+
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -51,6 +52,8 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
             Bundle bundle = new Bundle();
             bundle.putString("msg", "how are you?");
             sendMessage(MSG_FROM_CLIENT, bundle);
+
+            initBindingState(ContextHolder.getAppContext());
         }
 
         @Override
@@ -101,7 +104,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         LogHelper.i("FedEdge init, processName:%s", processName);
         if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
             bindService();
-            initBindingState(appContext);
         }
     }
 

@@ -6,15 +6,12 @@ import os
 import platform
 import subprocess
 import time
-from os.path import expanduser
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.cli.edge_deployment.client_data_interface import FedMLClientDataInterface
-from fedml.core.mlops import MLOpsProfilerEvent
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def init_logs(args, edge_id):

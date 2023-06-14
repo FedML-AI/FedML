@@ -31,11 +31,11 @@ final class FedEdgeTrainImpl implements FedEdgeTrainApi {
         mBindEdgeId = SharePreferencesData.getBindingId();
         if (mBindEdgeId != null && !mBindEdgeId.equals("")) {
             Initializer.getInstance().initial(() -> {
-                LogHelper.d("FedMLDebug. OnCreate() mBindEdgeId = " + mBindEdgeId);
+                LogHelper.i("FedMLDebug. OnCreate() mBindEdgeId = " + mBindEdgeId);
                 if (mClientAgent == null) {
                     mClientAgent = new ClientAgentManager(mBindEdgeId, mOnTrainingStatusListener, mOnTrainProgressListener);
                     mClientAgent.start();
-                    LogHelper.d("FedMLDebug. init() ClientAgentManager = " + mClientAgent);
+                    LogHelper.i("FedMLDebug. init() ClientAgentManager started");
                 }
             });
         }
@@ -45,11 +45,11 @@ final class FedEdgeTrainImpl implements FedEdgeTrainApi {
     public void bindEdge(String bindEdgeId) {
         mBindEdgeId = bindEdgeId;
         Initializer.getInstance().initial(() -> {
-            LogHelper.d("FedMLDebug. bindEdge() mBindEdgeId = " + mBindEdgeId);
+            LogHelper.i("FedMLDebug. bindEdge() mBindEdgeId = " + mBindEdgeId);
             if (mClientAgent == null) {
                 mClientAgent = new ClientAgentManager(mBindEdgeId, mOnTrainingStatusListener, mOnTrainProgressListener);
                 mClientAgent.start();
-                LogHelper.d("FedMLDebug. bindEdge() ClientAgentManager = " + mClientAgent);
+                LogHelper.i("FedMLDebug. bindEdge() ClientAgentManager started");
             }
         });
     }

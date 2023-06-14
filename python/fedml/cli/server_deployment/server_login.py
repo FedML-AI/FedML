@@ -6,9 +6,9 @@ import time
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
 from fedml.cli.server_deployment.server_constants import ServerConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
@@ -305,7 +305,7 @@ def __login_as_cloud_server(args, userid, version):
     print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
     print(
         "Your unique device ID is "
-        + str(env_current_device_id)
+        + str(unique_device_id)
         + "\n"
     )
     # Start the FedML server

@@ -95,18 +95,4 @@ public class RemoteStorage {
         return transferUtility.download(BUCKET_DOWNLOAD, key, file, listener);
     }
 
-    public InputStream readJson(String key) {
-        S3Object s3Object = s3.getObject(BUCKET_DOWNLOAD, key);
-        return s3Object.getObjectContent();
-    }
-
-    public void writeJson(String key, String json) {
-        try {
-            PutObjectResult result = s3.putObject(BUCKET_DOWNLOAD, key, json);
-            String md5 = result.getContentMd5();
-            LogHelper.d("writeJson(%s, %s)===%s", key, json, md5);
-        } catch (AmazonClientException e) {
-            LogHelper.e(e, "writeJson(%s, %s) Exception", key, json);
-        }
-    }
 }
