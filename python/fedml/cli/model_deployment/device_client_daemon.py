@@ -2,7 +2,6 @@
 import argparse
 import os
 import time
-import sys
 
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment.device_client_constants import ClientConstants

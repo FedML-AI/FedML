@@ -4,7 +4,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import traceback
 from os.path import expanduser
 
 import psutil

@@ -1,8 +1,5 @@
 import argparse
 import json
-import logging
-import traceback
-from os.path import expanduser
 
 import multiprocess as multiprocessing
 import os
@@ -14,6 +11,7 @@ import requests
 import yaml
 from ...core.mlops.mlops_configs import MLOpsConfigs
 
+
 class MLOpsRuntimeLogProcessor:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 3
@@ -22,6 +20,7 @@ class MLOpsRuntimeLogProcessor:
 
     def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
         self.args = in_args
+        self.is_log_reporting = False
         self.log_reporting_status_file = os.path.join(log_file_dir,
                                                       MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR,
                                                       MLOpsRuntimeLogProcessor.FEDML_LOG_REPORTING_STATUS_FILE_NAME +
@@ -54,6 +53,7 @@ class MLOpsRuntimeLogProcessor:
                                           + "-upload.log")
         self.run_list = list()
         self.log_source = None
+        self.log_process_event = None
 
     def set_log_source(self, source):
         self.log_source = source
@@ -217,13 +217,17 @@ class MLOpsRuntimeLogProcessor:
 
         return False
 
-    def log_process(self):
-        while True:
+    def log_process(self, process_event):
+        self.log_process_event = process_event
+
+        while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
                 self.log_upload(self.run_id, self.device_id)
             except Exception as e:
                 pass
+
+        self.log_upload(self.run_id, self.device_id)
         print("FedDebug log_process STOPPED")
 
     def log_relocation(self):
@@ -304,6 +308,12 @@ class MLOpsRuntimeLogProcessor:
         except Exception as e:
             pass
 
+    def should_stop(self):
+        if self.log_process_event is not None and self.log_process_event.is_set():
+            return True
+
+        return False
+
 
 class MLOpsRuntimeLogDaemon:
     _log_sdk_instance = None
@@ -353,6 +363,7 @@ class MLOpsRuntimeLogDaemon:
         self.log_file_dir = self.args.log_file_dir
         self.log_child_process_list = list()
         self.log_child_process = None
+        self.log_process_event = None
 
     @staticmethod
     def get_instance(args):
@@ -371,7 +382,12 @@ class MLOpsRuntimeLogDaemon:
                                                  self.log_server_url,
                                                  in_args=self.args)
         log_processor.set_log_source(self.log_source)
-        self.log_child_process = multiprocessing.Process(target=log_processor.log_process)
+        if self.log_process_event is None:
+            self.log_process_event = multiprocessing.Event()
+        self.log_process_event.clear()
+        log_processor.log_process_event = self.log_process_event
+        self.log_child_process = multiprocessing.Process(target=log_processor.log_process,
+                                                         args=(self.log_process_event,))
         # process = threading.Thread(target=log_processor.log_process)
         if self.log_child_process is not None:
             self.log_child_process.start()
@@ -381,16 +397,24 @@ class MLOpsRuntimeLogDaemon:
                 self.log_child_process_list.append((self.log_child_process, log_run_id, log_device_id))
 
     def stop_log_processor(self, log_run_id, log_device_id):
+        if log_run_id is None or log_device_id is None:
+            return
+
         # logging.info(f"FedMLDebug. stop log processor. log_run_id = {log_run_id}, log_device_id = {log_device_id}")
         for (log_child_process, run_id, device_id) in self.log_child_process_list:
             if str(run_id) == str(log_run_id) and str(device_id) == str(log_device_id):
-                log_child_process.terminate()
-                # logging.info("FedMLDebug. log_processor.set_log_reporting_status FALSE")
+                if self.log_process_event is not None:
+                    self.log_process_event.set()
+                else:
+                    log_child_process.terminate()
                 break
 
     def stop_all_log_processor(self):
         for (log_child_process, _, _) in self.log_child_process_list:
-            log_child_process.terminate()
+            if self.log_process_event is not None:
+                self.log_process_event.set()
+            else:
+                log_child_process.terminate()
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ import json
 import logging
 import multiprocessing
 import platform
-import random
 import sys
 
 from multiprocessing import Process
@@ -19,7 +18,6 @@ import uuid
 import zipfile
 from os import listdir
 
-import click
 import requests
 import torch
 
@@ -41,6 +39,7 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 from ...serving.fedml_server import FedMLModelServingServer
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 
 class RunnerError(BaseException):
@@ -98,6 +97,7 @@ class FedMLServerRunner:
         self.slave_deployment_results_mapping = {}
 
         self.model_runner_mapping = dict()
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -180,6 +180,8 @@ class FedMLServerRunner:
 
         self.run_process_event = process_event
         try:
+            MLOpsUtils.set_ntp_offset(self.ntp_offset)
+
             self.setup_client_mqtt_mgr()
 
             self.run_impl()
@@ -189,12 +191,24 @@ class FedMLServerRunner:
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
                                                              is_from_model=True)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.error("Runner exits with exceptions.")
+            self.mlops_metrics.report_server_training_status(self.run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                                             is_from_model=True)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
+            time.sleep(3)
             sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
 
@@ -376,7 +390,7 @@ class FedMLServerRunner:
         )
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -398,7 +412,7 @@ class FedMLServerRunner:
                                                             is_from_model=True)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -1460,9 +1474,8 @@ class FedMLServerRunner:
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
-        self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=False)
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args, is_client=False)
+        self.mlops_metrics.report_sys_perf(self.args)
 
         self.recover_start_deployment_msg_after_upgrading()
 

@@ -144,6 +144,7 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if all_client_is_finished:
+            mlops.stop_sys_perf()
             if self.is_main_process():
                 mlops.log_aggregation_finished_status()
             time.sleep(5)

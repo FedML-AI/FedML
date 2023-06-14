@@ -3,6 +3,7 @@ import os
 import time
 import certifi
 import requests
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 class Singleton(object):
@@ -13,10 +14,20 @@ class Singleton(object):
         return cls._instance
 
 
-class MLOpsConfigs(Singleton):
+class MLOpsConfigs(object):
     _config_instance = None
 
+    def __new__(cls):
+        if not hasattr(cls, "_instance"):
+            orig = super(MLOpsConfigs, cls)
+            cls._instance = orig.__new__(cls)
+            cls._instance.init()
+        return cls._instance
+
     def __init__(self):
+        pass
+
+    def init(self):
         self.args = None
 
     @staticmethod
@@ -99,7 +110,8 @@ class MLOpsConfigs(Singleton):
 
     def fetch_configs(self):
         url, cert_path = self.get_request_params()
-        json_params = {"config_name": ["mqtt_config", "s3_config"]}
+        json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
+                       "device_send_time": int(time.time() * 1000)}
 
         if cert_path is not None:
             try:
@@ -121,13 +133,16 @@ class MLOpsConfigs(Singleton):
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
             s3_config = response.json().get("data").get("s3_config")
+            mlops_config = response.json().get("data").get("ml_ops_config")
+            MLOpsUtils.calc_ntp_from_config(mlops_config)
         else:
             raise Exception("failed to fetch device configurations!")
         return mqtt_config, s3_config
 
     def fetch_web3_configs(self):
         url, cert_path = self.get_request_params()
-        json_params = {"config_name": ["mqtt_config", "web3_config"]}
+        json_params = {"config_name": ["mqtt_config", "web3_config", "ml_ops_config"],
+                       "device_send_time": int(time.time() * 1000)}
 
         if cert_path is not None:
             try:
@@ -149,13 +164,16 @@ class MLOpsConfigs(Singleton):
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
             web3_config = response.json().get("data").get("web3_config")
+            mlops_config = response.json().get("data").get("ml_ops_config")
+            MLOpsUtils.calc_ntp_from_config(mlops_config)
         else:
             raise Exception("failed to fetch device configurations!")
         return mqtt_config, web3_config
 
     def fetch_thetastore_configs(self):
         url, cert_path = self.get_request_params()
-        json_params = {"config_name": ["mqtt_config", "thetastore_config"]}
+        json_params = {"config_name": ["mqtt_config", "thetastore_config", "ml_ops_config"],
+                       "device_send_time": int(time.time() * 1000)}
 
         if cert_path is not None:
             try:
@@ -177,6 +195,8 @@ class MLOpsConfigs(Singleton):
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
             thetastore_config = response.json().get("data").get("thetastore_config")
+            mlops_config = response.json().get("data").get("ml_ops_config")
+            MLOpsUtils.calc_ntp_from_config(mlops_config)
         else:
             raise Exception("failed to fetch device configurations!")
         return mqtt_config, thetastore_config
@@ -210,6 +230,7 @@ class MLOpsConfigs(Singleton):
             s3_config = response.json().get("data").get("s3_config")
             mlops_config = response.json().get("data").get("ml_ops_config")
             docker_config = response.json().get("data").get("docker_config")
+            MLOpsUtils.calc_ntp_from_config(mlops_config)
         else:
             raise Exception("failed to fetch device configurations!")
 
