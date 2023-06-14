@@ -8,9 +8,6 @@ class MLOpsUtils:
 
     @staticmethod
     def calc_ntp_from_config(mlops_config):
-        if MLOpsUtils._ntp_offset is not None and MLOpsUtils._ntp_offset != 0.0:
-            return
-
         if mlops_config is None:
             return
 
