@@ -2,6 +2,7 @@ import math
 from pathlib import Path
 
 from peft import PeftModel
+from peft.utils import WEIGHTS_NAME as PEFT_WEIGHTS_NAME
 import torch
 from transformers import (
     TrainingArguments,
@@ -10,6 +11,7 @@ from transformers import (
     TrainerState,
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 
 class SavePeftModelCallback(TrainerCallback):
@@ -25,13 +27,18 @@ class SavePeftModelCallback(TrainerCallback):
             checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
             model = kwargs.get("model", None)
 
-            if isinstance(model, PeftModel):
+            # TODO: support shard loading; see transformers.modeling_utils.load_sharded_checkpoint
+            checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
+            adapter_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
+            if isinstance(model, PeftModel) and not adapter_checkpoint_path.exists():
+                # backward compatibility
+                assert checkpoint_path.is_file()
+
                 # when using DeepSpeed Zero 3, model weights need to be converted.
                 # conversion is done by Trainer, we need to load the saved weights manually
-                checkpoint = torch.load(str(checkpoint_dir / "pytorch_model.bin"), map_location="cpu")
+                checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
 
-                peft_model_path = checkpoint_dir / "adapter_model"
-                model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
+                model.save_pretrained(str(checkpoint_dir), state_dict=checkpoint)
 
         return control
 
