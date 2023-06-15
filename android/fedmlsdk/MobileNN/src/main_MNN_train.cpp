@@ -44,6 +44,16 @@ int main(int argc, char *argv[]) {
     double learningRate = 0.01;
     int epochNum = 10;
 
+    #ifdef IS_DEBUG
+    trainSize = 16;
+    testSize = 16;
+    batchSize = 1;
+    learningRate = 0.01;
+    epochNum = 1;
+    #endif
+    printf("trainSize = %d, testSize = %d, batchSize = %d, learningRate = %f, epochNum = %d\n",
+            trainSize, testSize, batchSize, learningRate, epochNum);
+
     FedMLBaseTrainer *pFedMLTrainer = FedMLTrainer().getTrainer();
     pFedMLTrainer->init(modelPath, dataPath,
                     datasetName, trainSize, testSize,
