@@ -7,6 +7,13 @@ set (TARGET "main_mnn_train.out")
 # path to  MobileNN directory
 set(MOBILENN_HOME_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../MobileNN")
 
+# set debug mode
+option(DEBUG_MODE "ON for debug or OFF for release" OFF)
+if(DEBUG_MODE)
+    add_definitions(-DIS_DEBUG=1)
+else()
+    remove_definitions(-DIS_DEBUG=1)
+endif()
 # enable MNN backend
 add_definitions(-DUSE_MNN_BACKEND)
 
