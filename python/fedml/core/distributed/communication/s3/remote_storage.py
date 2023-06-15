@@ -96,7 +96,10 @@ class S3Storage:
         )
 
         if not os.path.exists(local_model_cache_path):
-            os.makedirs(local_model_cache_path)
+            try:
+                os.makedirs(local_model_cache_path)
+            except Exception as e:
+                pass
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
             model.eval()
@@ -146,7 +149,10 @@ class S3Storage:
         global aws_s3_client
 
         if not os.path.exists(local_model_cache_path):
-            os.makedirs(local_model_cache_path)
+            try:
+                os.makedirs(local_model_cache_path)
+            except Exception as e:
+                pass
         model_input_path = os.path.join(local_model_cache_path, message_key)
         model_input_dict = {"input_size": input_size, "input_type": input_type}
         with open(model_input_path, "w") as f:
@@ -192,10 +198,17 @@ class S3Storage:
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
         cache_dir = os.path.join(expanduser("~"), "fedml_cache")
         if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
+            try:
+                os.makedirs(cache_dir)
+            except Exception as e:
+                pass
         temp_base_file_path = os.path.join(cache_dir, str(os.getpid()) + "@" + str(uuid.uuid4()))
         if not os.path.exists(temp_base_file_path):
-            os.makedirs(temp_base_file_path)
+            try:
+                os.makedirs(temp_base_file_path)
+            except Exception as e:
+                pass
+
         temp_file_path = temp_base_file_path + "/" + str(message_key)
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
@@ -238,7 +251,10 @@ class S3Storage:
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
         temp_base_file_path = local_model_cache_path
         if not os.path.exists(temp_base_file_path):
-            os.makedirs(temp_base_file_path)
+            try:
+                os.makedirs(temp_base_file_path)
+            except Exception as e:
+                pass
         temp_file_path = os.path.join(temp_base_file_path, str(message_key))
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
@@ -281,7 +297,10 @@ class S3Storage:
 
         temp_base_file_path = local_model_cache_path
         if not os.path.exists(temp_base_file_path):
-            os.makedirs(temp_base_file_path)
+            try:
+                os.makedirs(temp_base_file_path)
+            except Exception as e:
+                pass
         temp_file_path = os.path.join(temp_base_file_path, str(message_key))
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
