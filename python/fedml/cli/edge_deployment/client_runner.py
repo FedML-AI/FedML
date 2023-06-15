@@ -1,7 +1,6 @@
 import json
 import logging
 import multiprocessing
-import signal
 import sys
 
 from multiprocessing import Process
