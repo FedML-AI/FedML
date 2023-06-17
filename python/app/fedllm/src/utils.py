@@ -105,7 +105,7 @@ def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: Union[str,
     model.config.save_pretrained(str(output_dir))
 
 
-def is_main_process(trainer: Trainer, local: bool = True) -> bool:
+def is_main_process(trainer: Trainer, local: bool = False) -> bool:
     return trainer.is_local_process_zero() if local else trainer.is_world_process_zero()
 
 

@@ -5,10 +5,10 @@ from peft import PeftModel
 from peft.utils import WEIGHTS_NAME as PEFT_WEIGHTS_NAME
 import torch
 from transformers import (
-    TrainingArguments,
     TrainerCallback,
     TrainerControl,
     TrainerState,
+    TrainingArguments,
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
@@ -76,7 +76,7 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if self.start_global_step < 0 and self.start_epoch < 0:
             # if both values are unset
             self.start_epoch = state.epoch
@@ -94,12 +94,14 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if state.global_step - self.start_global_step >= self.step_threshold:
             control.should_training_stop = True
+
         elif self.use_epoch_threshold and state.epoch - self.start_epoch >= self.epoch_threshold:
             # epoch is a float; partial epoch is allowed which means it needs to be checked every step
             control.should_training_stop = True
+
         return control
 
     def on_epoch_end(
@@ -108,9 +110,10 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if state.epoch - self.start_epoch >= self.epoch_threshold:
             control.should_training_stop = True
+
         return control
 
     def on_train_end(
@@ -119,7 +122,7 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if args.max_steps is not None and state.global_step < args.max_steps:
             control.should_training_stop = False
 
