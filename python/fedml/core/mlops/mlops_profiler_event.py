@@ -73,6 +73,7 @@ class MLOpsProfilerEvent:
         else:
             edge_id = self.edge_id
 
+        time.sleep(0.1)
         event_topic, event_msg = self.__build_event_mqtt_msg(
             self.args.run_id,
             edge_id,
@@ -95,6 +96,7 @@ class MLOpsProfilerEvent:
         else:
             edge_id = self.edge_id
 
+        time.sleep(0.1)
         event_topic, event_msg = self.__build_event_mqtt_msg(
             self.args.run_id,
             edge_id,
@@ -114,9 +116,9 @@ class MLOpsProfilerEvent:
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
             current_time_ms = MLOpsUtils.get_ntp_time()
             if current_time_ms is None:
-                current_time = int(time.time())
+                current_time = int(time.time()*1000)
             else:
-                current_time = int(current_time_ms / 1000)
+                current_time = int(current_time_ms)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
@@ -127,9 +129,9 @@ class MLOpsProfilerEvent:
         elif event_type == MLOpsProfilerEvent.EVENT_TYPE_ENDED:
             current_time_ms = MLOpsUtils.get_ntp_time()
             if current_time_ms is None:
-                current_time = int(time.time())
+                current_time = int(time.time()*1000)
             else:
-                current_time = int(current_time_ms / 1000)
+                current_time = int(current_time_ms)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,

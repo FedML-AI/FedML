@@ -49,7 +49,12 @@ std::string FedMLMNNTrainer::train() {
         forwardInput = _Input({1, 1, 28, 28}, NC4HW4);
     }
     // stack: true, shuffle: true, drop_last: False, num_workers: 0
+    #ifdef IS_DEBUG
+    std::cout << "In Debug Mode" << std::endl;
+    auto dataLoader = std::shared_ptr<DataLoader>(dataset.createLoader(m_batchSizeNum, true, false, 0));    // avoid shuffle
+    #else
     auto dataLoader = std::shared_ptr<DataLoader>(dataset.createLoader(m_batchSizeNum, true, true, 0));
+    #endif
     size_t iterations = dataLoader->iterNumber();
     size_t trainSamples = dataLoader->size();
 
@@ -74,7 +79,9 @@ std::string FedMLMNNTrainer::train() {
             int moveBatchSize = 0;
             for (int i = 0; i < iterations; i++) {
                 if (bRunStopFlag) {printf("Training Stop By User."); return nullptr;}
-
+                #ifdef IS_DEBUG
+                std::cout << "Epoch: " << (epoch) << "  " << (i) << " / " << iterations << std::endl;
+                #endif
                 auto trainData  = dataLoader->next();
                 auto example    = trainData[0];
                 auto cast       = _Cast<float>(example.first[0]);
@@ -98,13 +105,19 @@ std::string FedMLMNNTrainer::train() {
                 auto predict = model->forward(example.first[0]);
                 // std::cout << "Predict: " << predict->readMap<float>()[0] << std::endl;
                 auto loss    = _CrossEntropy(predict, newTarget);
-                // std::cout << "Loss: " << loss->readMap<float>()[0] << std::endl;                
+                #ifdef IS_DEBUG
+                std::cout << "Before backprop, Loss: " << loss->readMap<float>()[0] << std::endl;
+                #endif
                 sgd->step(loss);
 
                 curLoss = loss->readMap<float>()[0];
                 m_loss_callback(epoch, loss->readMap<float>()[0]);
                 m_progress_callback(20.0 + 70.0*((epoch*iterations)+i)/(m_epochNum*iterations));
 
+                #ifdef IS_DEBUG
+                    std::cout << "After backprop, loss: " << loss->readMap<float>()[0] << std::endl;
+                    continue;
+                #endif
                 if (moveBatchSize % (10 * m_batchSizeNum) == 0 || i == iterations - 1) {
                     std::cout << "epoch: " << (epoch);
                     std::cout << "  " << moveBatchSize << " / " << dataLoader->size();
@@ -148,6 +161,10 @@ std::string FedMLMNNTrainer::train() {
     }
 
     // model saving
+    #ifdef IS_DEBUG
+    std::string result = std::to_string(trainSamples);
+    return result;
+    #else
     model->setIsTraining(true);  // save the training state computation graph
     forwardInput->setName("data");
     auto inputPredict = model->forward(forwardInput);
@@ -157,5 +174,6 @@ std::string FedMLMNNTrainer::train() {
 
     std::string result = std::to_string(trainSamples);
     return result;
+    #endif
 }
 
