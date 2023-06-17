@@ -213,6 +213,9 @@ class FedMLAggregator(object):
             else:
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
             logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
+
+            if round_idx == self.args.comm_round - 1:
+                mlops.log({"round_idx": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
 
