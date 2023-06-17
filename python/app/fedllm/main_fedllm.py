@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from collections import OrderedDict
 import logging
@@ -12,13 +12,16 @@ from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict
 import torch.cuda
-from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
+from transformers import HfArgumentParser, Trainer as HFTrainer, TrainingArguments
+from transformers.deepspeed import is_deepspeed_zero3_enabled
+from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from src.constants import DEFAULT_MAX_SEQ_LENGTH
 from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
 from src.utils import (
     barrier,
+    is_deepspeed_module,
     is_main_process,
     log_helper,
     save_config,
@@ -61,7 +64,7 @@ def _parse_args(args: Arguments) -> Arguments:
     return args
 
 
-def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
+def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HFTrainer:
     args_dict = dict(args.__dict__)
     # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
@@ -69,7 +72,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
         args_dict.pop("device", None)
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
-    return HfTrainer(
+    return HFTrainer(
         model=model,
         tokenizer=tokenizer,
         args=training_args,
@@ -78,9 +81,20 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     )
 
 
-def get_model_state_dict(trainer: HfTrainer, checkpoint_dir: Path) -> OrderedDict:
+def save_model(trainer: HFTrainer, checkpoint_dir: Union[str, Path]) -> None:
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model):
+        trainer.save_model(str(checkpoint_dir))
+
+    elif should_process_save(trainer):
+        torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+
+
+def get_model_state_dict(trainer: HFTrainer, checkpoint_dir: Union[str, Path]) -> OrderedDict:
     with trainer.args.main_process_first():
-        checkpoint_path = checkpoint_dir / "pytorch_model.bin"
+        checkpoint_path = Path(checkpoint_dir) / HF_WEIGHTS_NAME
         checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
     return checkpoint
 
@@ -132,7 +146,7 @@ class LLMTrainer(ClientTrainer):
 
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed
-        self.trainer.save_model(str(self.temp_ckpt_dir))
+        save_model(self.trainer, self.temp_ckpt_dir)
 
     def is_main_process(self) -> bool:
         return is_main_process(self.trainer)
@@ -202,7 +216,7 @@ class LLMTrainer(ClientTrainer):
         outputs = super().on_after_local_training(train_data, device, args)
 
         self.log(f"saving model to \"{self.temp_ckpt_dir}\"")
-        self.trainer.save_model(str(self.temp_ckpt_dir))
+        save_model(self.trainer, self.temp_ckpt_dir)
         # recover TrainingArguments.deepspeed
         self.trainer.args.deepspeed = self.args.deepspeed
 
@@ -254,7 +268,7 @@ class LLMAggregator(ServerAggregator):
         )
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed zero3
-        self.trainer.save_model(str(self.temp_ckpt_dir))
+        save_model(self.trainer, self.temp_ckpt_dir)
 
         # save config
         if should_process_save(self.trainer):
