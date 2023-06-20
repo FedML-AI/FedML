@@ -98,3 +98,10 @@ if [ "$build_arm_arch_images" != "" ]; then
 
   cd $pwd
 fi
+
+cd ./installation/build_fedml_docker
+docker build -f light/Dockerfile \
+    --network=host \
+    -t fedml/fedml:light .
+
+
