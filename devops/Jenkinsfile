@@ -274,7 +274,6 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
 
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
-                 sh 'docker logout'
                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
 
                  sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_DEV fedml/fedml-edge-client-server:latest'
