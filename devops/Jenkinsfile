@@ -274,6 +274,7 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
 
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker logout'
                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
 
                  sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_DEV fedml/fedml-edge-client-server:latest'
@@ -406,7 +407,7 @@ pipeline {
                     credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
-                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_DEV deployment/fedml-cloud-server'
+                    //sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_DEV deployment/fedml-cloud-server'
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME'
@@ -469,7 +470,7 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
-                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
+                    //sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
