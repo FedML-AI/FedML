@@ -1,0 +1,78 @@
+{
+    "gitbook": ">=3.2.3",
+    "language": "en",
+    "title": "FedML",
+    "description": "FedML——Doc",
+    "structure": {
+        "readme": "README.md",
+        "summary": "SUMMARY.md"
+    },
+    "links": {
+        "gitbook": false,
+        "sharing": {
+            "google": false,
+            "facebook": false,
+            "twitter": false,
+            "all": false
+        }
+    },
+    "plugins": [
+        "-sharing",
+        "-lunr", "-search", "search-plus",
+        "tbfed-pagefooter",
+        "copy-code-button",
+        "expandable-chapters-small",
+        "splitter",
+        "hide-element",
+        "back-to-top-button",
+        "theme-door"
+    ],
+    "variables": {
+        "doorTheme": {
+            "nav": [
+                {
+                    "url": "https://doc.fedml.ai/",
+                    "target": "_blank",
+                    "name": "Get Started"
+                },
+                {
+                    "url": "https://github.com/FedML-AI",
+                    "target": "_blank",
+                    "name": "Github"
+                },
+                {
+                    "url": "https://open.fedml.ai/",
+                    "target": "_blank",
+                    "name": "Platform"
+                },
+                {
+                    "url": "https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w",
+                    "target": "_blank",
+                    "name": "Join the Community"
+                },
+                {
+                    "url": "xxxxx",
+                    "target": "_blank",
+                    "name": "Resource"
+                },
+                {
+                    "url": "https://fedml.ai/",
+                    "target": "_blank",
+                    "name": "FedML.AI"
+                }
+            ]
+        }
+    },
+    "pluginsConfig":{
+        "hide-element": {
+            "elements": [".gitbook-link"]
+        },
+        "tbfed-pagefooter": {
+            "copyright":"FedML",
+            "modify_label": "Doc Update Time:",
+            "modify_format": "YYYY-MM-DD HH:mm"
+        },
+        "doorTheme": {
+        }
+    }
+}
