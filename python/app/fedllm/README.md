@@ -70,15 +70,19 @@ bash scripts/train_deepspeed.sh \
   ... # additional arguments
 ```
 
-**_Tips_**: if you have an Amper or newer GPU (e.g., RTX 3000 or newer), you could turn on **bf16** to have more
-efficient training by passing
-`--bf16 "True"` in the command line.
+> **Note**
+> If you have an Amper or newer GPU (e.g., RTX 3000 series or newer), you could turn on **bf16** to have more
+> efficient training by passing `--bf16 "True"` in the command line.
 
-**_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing,
-you need to turn off `find_unused_parameters`
-by passing `--ddp_find_unused_parameters "False"` in the command line.
+> **Warning**
+> when using PyTorch DDP with LoRA and gradient checkpointing, you need to turn off `find_unused_parameters`
+> by passing `--ddp_find_unused_parameters "False"` in the command line.
 
-### Cross-silo Federated Learning
+### Cross-silo Federated Learning with FedML
+
+Federated machine learning is all about moving the model to the data, rather than the data to the model. This approach
+enables the training of AI models on private, sensitive, or siloed enterprise data that can’t be centrally collected.
+FedML enables federated training of ML models across edge silo machines for any AI model/application.
 
 #### 1. Install FedML
 
@@ -88,17 +92,87 @@ Install FedML with the following command
 pip install fedml
 ```
 
-#### 2. Run FedML
+#### 2. Prepare a Configuration File
 
 To train/fine-tune in federated setting, you need to provide a FedML config file.
-An example can be found in [fedml_config/fedml_config.yaml](fedml_config/fedml_config.yaml).
-To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
-the client(s) and aggregator server.
+A concrete example can be found in [fedml_config/fedml_config.yaml](fedml_config/fedml_config.yaml).
 
-**_Notice_**: since we use `RUN_ID` to uniquely identify experiments,
-we recommend that you carefully choose the `RUN_ID`.
-You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`;
-e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your shell script.
+```yaml
+common_args:
+  training_type: "cross_silo"  # federated training type, we recommend `cross_silo` for LLMs
+  scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
+
+data_args:
+  dataset: "databricks-dolly"  # dataset name
+  dataset_path:
+    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # train dataset path
+    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # test dataset path
+  client_dataset_path: # [optional] if specified, will replace content in dataset_path for client
+    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # [optional] train dataset path for client
+    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # [optional] test dataset path for client
+  test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
+
+model_args:
+  model_name: "EleutherAI/pythia-6.9b"  # choose from `MODEL_NAMES` in `src/constants.py`
+  use_lora: True
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_optimizer: "adamw_hf"
+  server_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 2  # number of clients
+  client_num_per_round: 2  # choose from 1~client_num_in_total
+  comm_round: 5  # number of rounds of aggregation
+  # below are the same as HuggingFace settings
+  deepspeed: "configs/ds_z3_bf16_config.json"
+  seed: 1234
+  fp16: False
+  bf16: False
+  gradient_checkpointing: True
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 2
+  learning_rate: 1.0e-5
+  warmup_steps: 50
+  num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
+  output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
+  logging_steps: 50
+  eval_steps: 200
+  save_steps: 200
+  max_steps: 1000  # number of training steps for the entire training, should >= comm_round, this option overwrites `num_train_epochs`
+  save_total_limit: 20
+  logging_strategy: "no"
+  evaluation_strategy: "no"  # should be turned off
+  save_strategy: "no"
+  eval_accumulation_steps: 4
+
+validation_args:
+  frequency_of_the_test: 1
+  is_aggregator_test: True  # set to `True` to enable testing on aggregator after each aggregation
+  is_client_test: False  # set to `True` to enable testing on client after each local training round
+
+device_args:
+  using_gpu: True
+
+comm_args:
+  backend: "MQTT_S3"
+  is_mobile: 0
+
+tracking_args:
+  enable_wandb: False
+  wandb_only_server: True
+
+```
+
+#### 3. Run FedML
+
+To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all the client(s) and aggregator server.
+
+
+> **Note**
+> since we use `RUN_ID` to uniquely identify experiments, we recommend that you carefully choose the `RUN_ID`.
+> You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`; 
+> e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your shell script.
 
 Example scripts:
 
@@ -118,7 +192,7 @@ _See FedML's [Getting Started](https://doc.fedml.ai/starter/getting_started.html
 
 FedML Octopus is a MLOps platform that simplifies model training and deployment.
 
-_See [FedML MLOps User Guide](https://doc.fedml.ai/mlops/user_guide.html) for detail._
+We strongly recommend going through our [step-by-step introduction to Octopus](https://blog.fedml.ai/fedml-octopus-getting-started-federated-machine-learning/).
 
 #### 1. Login or Signup for FedML Account
 
