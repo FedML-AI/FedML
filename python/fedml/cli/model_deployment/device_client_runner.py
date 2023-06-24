@@ -784,9 +784,8 @@ class FedMLClientRunner:
                 if device_id is None:
                     device_id = hex(uuid.getnode())
             else:
-                device_id = subprocess.Popen(
-                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split(),
-                    preexec_fn=os.setsid
+                device_id = sys_utils.run_subprocess_open(
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
                 )
                 device_id = hex(device_id)
 
