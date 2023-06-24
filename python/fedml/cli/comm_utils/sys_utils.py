@@ -15,6 +15,7 @@ from pkg_resources import parse_version
 import fedml
 from packaging import version
 import sys
+import subprocess
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 
@@ -657,6 +658,15 @@ def is_runner_finished_normally(process_id):
         return True
 
     return False
+
+
+def run_subprocess_open(shell_script_list):
+    if platform.system() == 'Windows':
+        script_process = subprocess.Popen(shell_script_list, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    else:
+        script_process = subprocess.Popen(shell_script_list, preexec_fn=os.setsid)
+
+    return script_process
 
 
 if __name__ == '__main__':

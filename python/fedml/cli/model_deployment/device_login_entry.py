@@ -68,7 +68,7 @@ def login_as_model_device_agent(
         if is_cloud is True:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_FEDML_CLOUD_INDEX]
 
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 login_cmd,
@@ -88,7 +88,7 @@ def login_as_model_device_agent(
                 os_name,
                 "-ih",
                 infer_host
-            ], preexec_fn=os.setsid
+            ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -110,7 +110,7 @@ def login_as_model_device_agent(
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("device_server_login.py")
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 login_cmd,
@@ -138,7 +138,7 @@ def login_as_model_device_agent(
                 redis_port,
                 "-rpw",
                 redis_password
-            ], preexec_fn=os.setsid
+            ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)

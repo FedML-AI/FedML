@@ -216,7 +216,7 @@ def mlops_login(
         except ValueError as e:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
 
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 "-W",
@@ -236,8 +236,7 @@ def mlops_login(
                 device_id,
                 "-os",
                 os_name
-            ],
-            preexec_fn=os.setsid
+            ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -265,7 +264,7 @@ def mlops_login(
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 "-W",
@@ -287,8 +286,7 @@ def mlops_login(
                 device_id,
                 "-os",
                 os_name
-            ],
-            preexec_fn=os.setsid
+            ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -673,27 +671,27 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
     if check_mqtt_s3_backend_server:
         pip_source_dir = os.path.dirname(__file__)
         server_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
-        backend_server_process = subprocess.Popen([
+        backend_server_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             server_diagnosis_cmd,
             "-t",
             "server",
             "-r",
             run_id
-        ], preexec_fn=os.setsid
+        ]
         ).pid
 
     if check_mqtt_s3_backend_client:
         pip_source_dir = os.path.dirname(__file__)
         client_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
-        backend_client_process = subprocess.Popen([
+        backend_client_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             client_diagnosis_cmd,
             "-t",
             "client",
             "-r",
             run_id
-        ], preexec_fn=os.setsid
+        ]
         ).pid
 
 
