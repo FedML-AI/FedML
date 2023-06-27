@@ -110,7 +110,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
                     os.system(sudo_prefix + "systemctl restart docker")
 
-    test_llm = False
+    test_llm = True if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED else False
     # Convert models from pytorch to onnx format
     if model_is_from_open:
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
@@ -490,7 +490,7 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
     model_version = ""
     logging.info("triton infer url: {}.".format(local_infer_url))
     if is_hg_model:
-        inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
+        inference_model_name = "{}_{}_inference".format(model_name, str(inference_engine))
     else:
         inference_model_name = model_name
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
