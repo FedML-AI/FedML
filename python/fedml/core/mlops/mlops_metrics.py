@@ -348,6 +348,14 @@ class MLOpsMetrics(object):
         message_json = json.dumps(model_net_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
+    def report_llm_record(self, metric_json):
+        # if not self.comm_sanity_check():
+        #     return
+        topic_name = "model_serving/mlops/llm_input_output_record"
+        logging.info("report_llm_record. message_json = %s" % metric_json)
+        message_json = json.dumps(metric_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
     def report_system_metric(self, metric_json=None):
         # if not self.comm_sanity_check():
         #     return

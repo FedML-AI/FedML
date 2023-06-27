@@ -31,7 +31,6 @@ from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
 from .mlops_utils import MLOpsUtils
 
-
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
 __all__ = [
@@ -53,11 +52,13 @@ class MLOpsStore:
     mlops_run_id = None
     mlops_edge_id = None
     mlops_log_metrics = dict()
+    mlops_log_records = dict()
     mlops_log_round_info = dict()
     mlops_log_client_training_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING
     mlops_log_server_training_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING
     mlops_log_round_start_time = 0.0
     mlops_log_metrics_lock = None
+    mlops_log_records_lock = None
     mlops_log_mqtt_mgr = None
     mlops_log_mqtt_lock = None
     mlops_log_mqtt_is_connected = False
@@ -186,6 +187,39 @@ def log(metrics: dict, commit=True):
         MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
         MLOpsStore.mlops_log_metrics.clear()
         MLOpsStore.mlops_log_metrics_lock.release()
+
+
+def log_llm_record(metrics: dict, commit: bool = True) -> None:
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    if MLOpsStore.mlops_log_records_lock is None:
+        MLOpsStore.mlops_log_records_lock = threading.Lock()
+
+    MLOpsStore.mlops_log_records_lock.acquire()
+    for k, v in metrics.items():
+        k = str(k).replace("/", "_")
+        if k.startswith("round"):
+            k = "round_idx"
+
+        MLOpsStore.mlops_log_records[k] = v
+    MLOpsStore.mlops_log_records["run_id"] = str(MLOpsStore.mlops_run_id)
+    MLOpsStore.mlops_log_records["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
+    MLOpsStore.mlops_log_records_lock.release()
+
+    logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
+
+    if commit:
+        setup_log_mqtt_mgr()
+        MLOpsStore.mlops_log_records_lock.acquire()
+        MLOpsStore.mlops_metrics.report_llm_record(MLOpsStore.mlops_log_records)
+        MLOpsStore.mlops_log_records.clear()
+        MLOpsStore.mlops_log_records_lock.release()
 
 
 def log_training_status(status, run_id=None):
@@ -501,6 +535,7 @@ def log_server_payload(run_id, edge_id, payload):
     topic = "fedml_{}_{}".format(run_id, edge_id)
     logging.info("log json message, topic {}, payload {}.".format(topic, payload))
     MLOpsStore.mlops_metrics.report_json_message(topic, payload)
+
 
 def log_round_info(total_rounds, round_index):
     if not mlops_enabled(MLOpsStore.mlops_args):
