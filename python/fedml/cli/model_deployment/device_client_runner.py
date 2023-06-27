@@ -260,7 +260,7 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config.get("inference_engine", 0)
+        inference_engine = model_config.get("inference_engine", ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON)
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
         if self.model_is_from_open:
             model_net_url = model_config["model_net_url"]
