@@ -143,10 +143,8 @@ pipeline {
           }
           steps {
             container('base') {
-              withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
-                sh 'echo "building..."'
-                sh './devops/scripts/build-docs.sh'
-              }
+              sh 'echo "building..."'
+              sh './devops/scripts/build-docs.sh'
             }
           }
         }
