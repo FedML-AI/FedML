@@ -15,6 +15,22 @@ spec:
     spec:
       imagePullSecrets:
         - name: secret-$FEDML_REGISTRY_SECRET_SUFFIX
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: fedml-aggregator
+                operator: In
+                values:
+                - "true"
+      tolerations:
+      - key: "fedml-devops"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/ci"
+        operator: "Exists"
+        effect: "NoSchedule"
       containers:
       - name: fedml-aggregator
         image: $FEDML_AGGREGATOR_IMAGE_PATH
