@@ -21,8 +21,8 @@ def log(metrics):
     mlops.log(metrics)
 
 
-def log_llm_record(metrics: dict) -> None:
-    mlops.log_llm_record(metrics)
+def log_llm_record(metrics: dict, version="release") -> None:
+    mlops.log_llm_record(metrics, version)
 
 
 # status list : ClientStatus
