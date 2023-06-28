@@ -236,6 +236,50 @@ class MLOpsConfigs(object):
 
         return mqtt_config, s3_config, mlops_config, docker_config
 
+    @staticmethod
+    def fetch_all_configs_with_version(version):
+        url = "https://open{}.fedml.ai/fedmlOpsServer/configs/fetch".format(
+            "" if version == "release" else "-"+version)
+        cert_path = None
+        if str(url).startswith("https://"):
+            cur_source_dir = os.path.dirname(__file__)
+            cert_path = os.path.join(
+                cur_source_dir, "ssl", "open-" + version + ".fedml.ai_bundle.crt"
+            )
+
+        json_params = {
+            "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
+            "device_send_time": int(time.time() * 1000)
+        }
+
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+        else:
+            response = requests.post(
+                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+            )
+
+        status_code = response.json().get("code")
+        if status_code == "SUCCESS":
+            mqtt_config = response.json().get("data").get("mqtt_config")
+            s3_config = response.json().get("data").get("s3_config")
+            mlops_config = response.json().get("data").get("ml_ops_config")
+            docker_config = response.json().get("data").get("docker_config")
+            MLOpsUtils.calc_ntp_from_config(mlops_config)
+        else:
+            raise Exception("failed to fetch device configurations!")
+
+        return mqtt_config, s3_config, mlops_config, docker_config
+
 
 if __name__ == "__main__":
     pass

@@ -189,15 +189,7 @@ def log(metrics: dict, commit=True):
         MLOpsStore.mlops_log_metrics_lock.release()
 
 
-def log_llm_record(metrics: dict, commit: bool = True) -> None:
-    if not mlops_enabled(MLOpsStore.mlops_args):
-        return
-
-    set_realtime_params()
-
-    if not MLOpsStore.mlops_bind_result:
-        return
-
+def log_llm_record(metrics: dict, version="release", commit: bool = True) -> None:
     if MLOpsStore.mlops_log_records_lock is None:
         MLOpsStore.mlops_log_records_lock = threading.Lock()
 
@@ -213,6 +205,15 @@ def log_llm_record(metrics: dict, commit: bool = True) -> None:
     MLOpsStore.mlops_log_records_lock.release()
 
     logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
+
+    if len(MLOpsStore.mlops_log_agent_config) == 0:
+        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version(version)
+        service_config = dict()
+        service_config["mqtt_config"] = mqtt_config
+        service_config["s3_config"] = s3_config
+        service_config["ml_ops_config"] = mlops_config
+        service_config["docker_config"] = docker_config
+        MLOpsStore.mlops_log_agent_config = service_config
 
     if commit:
         setup_log_mqtt_mgr()
@@ -706,13 +707,19 @@ def setup_log_mqtt_mgr():
     #    "mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
     #                                                   MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_PORT"]))
 
+    if MLOpsStore.mlops_args is not None and hasattr(MLOpsStore.mlops_args, "device_id") and \
+            MLOpsStore.mlops_args.device_id is not None:
+        device_id = MLOpsStore.mlops_args.device_id
+    else:
+        device_id = str(uuid.uuid4())
+
     MLOpsStore.mlops_log_mqtt_mgr = MqttManager(
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_PORT"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_USER"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_PWD"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-        "FedML_MLOps_Metrics_{}_{}_{}".format(MLOpsStore.mlops_args.device_id,
+        "FedML_MLOps_Metrics_{}_{}_{}".format(device_id,
                                               str(MLOpsStore.mlops_edge_id),
                                               str(uuid.uuid4()))
     )

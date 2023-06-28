@@ -24,14 +24,23 @@ class MLOpsProfilerEvent:
 
     def __init__(self, args):
         self.args = args
-        self.enable_wandb = args.enable_wandb
-        self.run_id = args.run_id
+        if args is not None and hasattr(args, "enable_wandb") and args.enable_wandb is not None:
+            self.enable_wandb = args.enable_wandb
+        else:
+            self.enable_wandb = False
+
         self.edge_id = 0
         self.com_manager = None
-        self.set_messenger(self.com_manager, args)
+        if args is not None:
+            self.run_id = args.run_id
+            self.set_messenger(self.com_manager, args)
+        else:
+            self.run_id = 0
 
     def set_messenger(self, msg_messenger, args=None):
         self.com_manager = msg_messenger
+        if args is None:
+            return
         if args.rank == 0:
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
