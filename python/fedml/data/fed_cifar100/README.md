@@ -22,5 +22,5 @@ Data partition is the same as [TFF](https://www.tensorflow.org/federated/api_doc
 
 | DATASET   | TRAIN CLIENTS | TRAIN EXAMPLES | TEST CLIENTS | TEST EXAMPLES |
 | --------- | ------------- | -------------- | ------------ | ------------- |
-| EMNIST-62 | 500           | 50,000         | 100          | 10,000        |
+| CIFAR100  | 500           | 50,000         | 100          | 10,000        |
 
