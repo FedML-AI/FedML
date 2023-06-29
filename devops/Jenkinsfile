@@ -347,7 +347,7 @@ pipeline {
           steps {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
-                sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+                sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
                 sh './devops/scripts/push-fedml-docker.sh'
               }
 
