@@ -223,7 +223,8 @@ class FedMLServerManager(FedMLCommManager):
                 client_idx_in_this_round += 1
 
             # if user give {-1 : global_params_dict}, then record global_model url separately
-            if type(global_model_params) is dict and (-1 in global_model_params.keys()):
+            # Note MPI backend does not have rank -1
+            if self.backend != "MPI" and type(global_model_params) is dict and (-1 in global_model_params.keys()):
                 global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
                     -1, global_model_params[-1], -1
                 )
