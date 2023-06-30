@@ -104,6 +104,5 @@ fi
 cd ./installation/build_fedml_docker
 docker build -f light/Dockerfile \
     --network=host \
-    -t fedml/fedml:light .
-
-
+    -t ${DOCKER_REGISTRY}/fedml/fedml:light .
+cd $pwd

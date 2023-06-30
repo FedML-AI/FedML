@@ -23,3 +23,5 @@ if [[ $push_arm_arch_images != "" ]]; then
   docker push ${DOCKER_REGISTRY}/fedml/fedml:latest-raspberrypi4-64-py38
   docker push ${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-raspberrypi4-64-py38
 fi
+
+docker push ${DOCKER_REGISTRY}/fedml/fedml:light
