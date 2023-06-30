@@ -29,11 +29,7 @@ logger.info("load_data. dataset_name = %s" % dataset_name)
     train_data_local_dict,
     test_data_local_dict,
     class_num,
-) = fedml.data.load(
-    args.batch_size,
-    train_path=args.data_cache_dir + "/MNIST/train",
-    test_path=args.data_cache_dir + "/MNIST/test",
-)
+) = fedml.data.load(args)
 ```
 
 For more examples, please read through [https://github.com/FedML-AI/FedML/blob/master/python/fedml/data/data_loader.py](https://github.com/FedML-AI/FedML/blob/master/python/fedml/data/data_loader.py).
