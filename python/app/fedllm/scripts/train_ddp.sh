@@ -21,7 +21,7 @@ torchrun \
   --nnodes="${NUM_NODES}" \
   --nproc_per_node="${NUM_GPU}" \
   --rdzv-endpoint="${MASTER_ADDR}:${MASTER_PORT}" \
-  train.py \
+  run_train.py \
   --model_name "EleutherAI/pythia-6.9b" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \

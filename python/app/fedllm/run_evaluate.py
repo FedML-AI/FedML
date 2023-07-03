@@ -14,7 +14,7 @@ from transformers import (
     TrainingArguments,
 )
 
-from train import (
+from run_train import (
     DataArguments,
     get_data_collator,
     get_dataset,

@@ -14,7 +14,7 @@ DATASET_PATHS=(
   # add your datasets here
 )
 
-python3 train.py \
+python3 run_train.py \
   --model_name "EleutherAI/pythia-6.9b" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \

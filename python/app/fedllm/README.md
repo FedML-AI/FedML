@@ -51,7 +51,7 @@ bash scripts/setup.sh
 
 ### Conventional/Centralized Training
 
-The [`train.py`](train.py) contains a minimal example for conventional/centralized LLM training and fine-tuning
+The [`run_train.py`](run_train.py) contains a minimal example for conventional/centralized LLM training and fine-tuning
 on [`databricks-dolly-15k`](https://github.com/databrickslabs/dolly/tree/master/data) dataset.
 
 Example scripts:
@@ -233,10 +233,10 @@ To compile an example package, use the following command in the **FedLLM root di
 
 ```shell
 # build aggregator server package
-fedml build -t server -sf . -ep main_mlops.py -df build -cf "mlops_config" -ig "build"
+fedml build -t server -sf . -ep run_mlops.py -df build -cf "mlops_config" -ig "build"
 
 # build client package
-fedml build -t client -sf . -ep main_mlops.py -df build -cf "mlops_config" -ig "build"
+fedml build -t client -sf . -ep run_mlops.py -df build -cf "mlops_config" -ig "build"
 ```
 
 #### 2. Create an Octopus Application

@@ -22,7 +22,7 @@ deepspeed \
   --num_gpus="${NUM_GPU}" \
   --master_addr="${MASTER_ADDR}" \
   --master_port="${MASTER_PORT}" \
-  train.py \
+  run_train.py \
   --deepspeed "configs/ds_z3_bf16_config.json" \
   --model_name "EleutherAI/pythia-6.9b" \
   --dataset_path "${DATASET_PATHS[@]}" \
