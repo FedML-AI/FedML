@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import lombok.Data;
-
 public class ConfigReq {
     public static final String MQTT_CONFIG = "mqtt_config";
     public static final String S3_CONFIG = "s3_config";
