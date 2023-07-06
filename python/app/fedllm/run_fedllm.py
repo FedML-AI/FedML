@@ -18,7 +18,6 @@ from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from run_train import (
     DataArguments,
-    get_data_collator,
     get_dataset,
     get_model,
     get_max_seq_length,
@@ -28,8 +27,9 @@ from run_train import (
     SavePeftModelCallback,
     TokenizerType,
 )
-from src.constants import DEFAULT_MAX_SEQ_LENGTH
+from src.constants import DEFAULT_MAX_SEQ_LENGTH, RESPONSE_KEY_NL
 from src.hf_resume_trainer import HFResumeTrainer
+from src.modeling_utils import get_data_collator
 from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
 from src.utils import (
@@ -77,7 +77,11 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        data_collator=get_data_collator(tokenizer, getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)),
+        data_collator=get_data_collator(
+            tokenizer,
+            escape_token=RESPONSE_KEY_NL,
+            pad_to_multiple_of=getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)
+        ),
         **kwargs
     )
 

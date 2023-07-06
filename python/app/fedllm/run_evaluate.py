@@ -16,15 +16,15 @@ from transformers import (
 
 from run_train import (
     DataArguments,
-    get_data_collator,
     get_dataset,
     get_max_seq_length,
     get_model,
     get_tokenizer,
-    IGNORE_INDEX,
     ModelArguments,
     SavePeftModelCallback,
 )
+from src.constants import IGNORE_INDEX, RESPONSE_KEY_NL
+from src.modeling_utils import get_data_collator
 
 
 def answer_extraction(response: str, answer_type: Optional[str] = None) -> str:
@@ -178,7 +178,11 @@ def main() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=get_data_collator(tokenizer, pad_to_multiple_of=dataset_args.max_seq_length),
+        data_collator=get_data_collator(
+            tokenizer,
+            escape_token=RESPONSE_KEY_NL,
+            pad_to_multiple_of=dataset_args.max_seq_length
+        ),
         callbacks=[
             # save peft adapted model weights
             SavePeftModelCallback,

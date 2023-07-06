@@ -1,6 +1,4 @@
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
     Sequence,
@@ -11,20 +9,14 @@ from typing import (
 from dataclasses import dataclass, field
 
 from datasets import Dataset, load_dataset
-import numpy as np
 from peft import (
     get_peft_model,
     LoraConfig,
-    PeftModelForCausalLM,
     TaskType,
 )
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    DataCollatorForLanguageModeling,
-    GPTJModel,
-    GPTNeoXForCausalLM,
-    GPTNeoXTokenizerFast,
     HfArgumentParser,
     Trainer,
     TrainingArguments,
@@ -33,18 +25,16 @@ from transformers import (
 from src.constants import (
     DEFAULT_MAX_SEQ_LENGTH,
     END_KEY,
-    IGNORE_INDEX,
     INSTRUCTION_KEY,
     MODEL_NAMES,
     PROMPT_NO_INPUT_FORMAT,
     PROMPT_WITH_INPUT_FORMAT,
     RESPONSE_KEY_NL,
 )
+from src.modeling_utils import get_data_collator
 from src.trainer_callback import SavePeftModelCallback
+from src.typing import ModelType, TokenizerType
 from src.utils import save_config, should_process_save
-
-ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
-TokenizerType = Union[GPTNeoXTokenizerFast]
 
 
 @dataclass
@@ -78,37 +68,6 @@ class DataArguments:
         metadata={"help": "test set size. Will be ignored if `dataset_path` has more than one entry."},
     )
     max_seq_length: Optional[int] = field(default=None, metadata={"help": "max sequence length."})
-
-
-class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
-    def torch_call(self, examples: List[Union[List[int], Any, Dict[str, Any]]]) -> Dict[str, Any]:
-        batch = super().torch_call(examples)
-
-        # The prompt ends with the response key plus a newline.  We encode this and then try to find it in the
-        # sequence of tokens.  This should just be a single token.
-        response_token_ids = self.tokenizer.encode(RESPONSE_KEY_NL)
-
-        labels = batch["labels"].clone()
-
-        for i in range(len(examples)):
-            response_token_ids_start_idx = None
-            for idx in np.where(batch["labels"][i] == response_token_ids[0])[0]:
-                response_token_ids_start_idx = idx
-                break
-
-            if response_token_ids_start_idx is None:
-                raise RuntimeError(
-                    f'Could not find response key {response_token_ids} in token IDs {batch["labels"][i]}'
-                )
-
-            response_token_ids_end_idx = response_token_ids_start_idx + 1
-
-            # Make pytorch loss function ignore all tokens up through the end of the response key
-            labels[i, :response_token_ids_end_idx] = IGNORE_INDEX
-
-        batch["labels"] = labels
-
-        return batch
 
 
 def _add_text(rec):
@@ -256,15 +215,6 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
     return embedding_size
 
 
-def get_data_collator(tokenizer: TokenizerType, pad_to_multiple_of: int = 8) -> DataCollatorForCompletionOnlyLM:
-    return DataCollatorForCompletionOnlyLM(
-        tokenizer=tokenizer,
-        mlm=False,
-        return_tensors="pt",
-        pad_to_multiple_of=pad_to_multiple_of
-    )
-
-
 def train() -> None:
     # configs
     parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
@@ -295,7 +245,11 @@ def train() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=get_data_collator(tokenizer, pad_to_multiple_of=dataset_args.max_seq_length),
+        data_collator=get_data_collator(
+            tokenizer,
+            escape_token=RESPONSE_KEY_NL,
+            pad_to_multiple_of=dataset_args.max_seq_length
+        ),
         callbacks=[
             # save peft adapted model weights
             SavePeftModelCallback,
