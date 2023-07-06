@@ -12,12 +12,13 @@ from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict
 import torch.cuda
-from transformers import HfArgumentParser, TrainingArguments
+from transformers import HfArgumentParser
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from run_train import (
     DataArguments,
+    FinetuningArguments,
     get_dataset,
     get_model,
     get_max_seq_length,
@@ -71,7 +72,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
         args_dict.pop("device", None)
-    training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
+    training_args, *_ = HfArgumentParser(FinetuningArguments).parse_dict(args_dict, allow_extra_keys=True)
 
     return HFResumeTrainer(
         model=model,
@@ -79,7 +80,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
         args=training_args,
         data_collator=get_data_collator(
             tokenizer,
-            escape_token=RESPONSE_KEY_NL,
+            escape_token=RESPONSE_KEY_NL if training_args.is_instruction_finetune else None,
             pad_to_multiple_of=getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)
         ),
         **kwargs

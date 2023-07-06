@@ -11,11 +11,11 @@ from transformers import (
     HfArgumentParser,
     PreTrainedTokenizer,
     Trainer,
-    TrainingArguments,
 )
 
 from run_train import (
     DataArguments,
+    FinetuningArguments,
     get_dataset,
     get_max_seq_length,
     get_model,
@@ -145,7 +145,7 @@ def compute_acc(
 
 def main() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataArguments, FinetuningArguments))
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models
@@ -180,7 +180,7 @@ def main() -> None:
         eval_dataset=test_dataset,
         data_collator=get_data_collator(
             tokenizer,
-            escape_token=RESPONSE_KEY_NL,
+            escape_token=RESPONSE_KEY_NL if training_args.is_instruction_finetune else None,
             pad_to_multiple_of=dataset_args.max_seq_length
         ),
         callbacks=[

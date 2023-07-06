@@ -25,6 +25,7 @@ from transformers import (
 from src.constants import (
     DEFAULT_MAX_SEQ_LENGTH,
     END_KEY,
+    FINETUNE_TASKS,
     INSTRUCTION_KEY,
     MODEL_NAMES,
     PROMPT_NO_INPUT_FORMAT,
@@ -38,6 +39,15 @@ from src.utils import save_config, should_process_save
 
 
 @dataclass
+class FinetuningArguments(TrainingArguments):
+    task: str = field(default="finetune", metadata={"help": "finetune task type", "choices": FINETUNE_TASKS})
+
+    @property
+    def is_instruction_finetune(self) -> bool:
+        return self.task == "instruction"
+
+
+@dataclass
 class ModelArguments:
     model_name: str = field(
         default="EleutherAI/pythia-2.8b",
@@ -48,8 +58,8 @@ class ModelArguments:
     )
     use_lora: bool = field(default=False, metadata={"help": "Set to `True` to enable LoRA."})
     lora_r: int = field(default=8, metadata={"help": "LoRA attention dimension (rank)."})
-    lora_alpha: int = field(default=32, metadata={"help": "LoRA alpha"})
-    lora_dropout: float = field(default=0.1, metadata={"help": "LoRA dropout"})
+    lora_alpha: int = field(default=32, metadata={"help": "LoRA alpha."})
+    lora_dropout: float = field(default=0.1, metadata={"help": "LoRA dropout."})
     lora_target_modules: Optional[List[str]] = field(
         default=None,
         metadata={
@@ -217,7 +227,7 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
 
 def train() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataArguments, FinetuningArguments))
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models
@@ -247,7 +257,7 @@ def train() -> None:
         eval_dataset=test_dataset,
         data_collator=get_data_collator(
             tokenizer,
-            escape_token=RESPONSE_KEY_NL,
+            escape_token=RESPONSE_KEY_NL if training_args.is_instruction_finetune else None,
             pad_to_multiple_of=dataset_args.max_seq_length
         ),
         callbacks=[

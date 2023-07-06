@@ -7,6 +7,12 @@ DEFAULT_MAX_SEQ_LENGTH = 1024
 IGNORE_INDEX = -100
 
 # -----------------------------------------------------------------
+FINETUNE_TASKS = [
+    "finetune",
+    "instruction",
+]
+
+# -----------------------------------------------------------------
 MODEL_NAMES = [
     "EleutherAI/pythia-70m",
     "EleutherAI/pythia-160m",
