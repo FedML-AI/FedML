@@ -70,11 +70,19 @@ class FedMLAggregator(object):
         # TODO: change the name of "sample_num_dict"
         self.sample_num_dict[client_index] = sample_num * self.agg_strategy.get_weight_scaling_ratio(
             current_global_step_on_server, current_global_step_on_client)
+        
 
     def whether_to_aggregate(self):
-        return self.agg_strategy.whether_to_aggregate()
+        # TODO: cancel the timer thread
+        if self.agg_strategy.whether_to_aggregate():
+            return True
+        else:
+            # TODO: start a timer thread, wait for 3 minutes, if there is no arrival, then respond
+            pass
 
     def aggregate(self):
+        # TODO: when timeout, get last round global model parameters and return
+        
         start_time = time.time()
         model_list = []
         client_index_set = self.agg_strategy.get_client_update_index_in_buffer()
