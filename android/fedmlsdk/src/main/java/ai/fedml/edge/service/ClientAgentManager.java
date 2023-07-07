@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import ai.fedml.edge.OnTrainProgressListener;
@@ -20,7 +19,6 @@ import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.component.DeviceInfoReporter;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.utils.LogHelper;
-import ai.fedml.edge.utils.TimeUtils;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 import androidx.annotation.NonNull;
