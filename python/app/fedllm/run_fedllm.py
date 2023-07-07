@@ -387,9 +387,10 @@ def main(args: Arguments) -> None:
         setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
     train_dataset, test_dataset = get_dataset(
+        dataset_name=dataset_args.dataset_name,
         dataset_path=dataset_args.dataset_path,
         tokenizer=tokenizer,
-        max_length=dataset_args.max_seq_length,
+        max_seq_length=dataset_args.max_seq_length,
         seed=args.seed,
         test_dataset_size=dataset_args.test_dataset_size
     )

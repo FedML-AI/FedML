@@ -26,6 +26,12 @@ MODEL_NAMES = [
     "databricks/dolly-v2-12b",
 ]
 
+DATASET_NAMES = [
+    "databricks/databricks-dolly-15k",
+    "togethercomputer/RedPajama-Data-1T",
+    "togethercomputer/RedPajama-Data-1T-Sample",
+]
+
 # -----------------------------------------------------------------
 INTRO_BLURB = (
     "Below is an instruction that describes a task. Write a response that appropriately completes the request."

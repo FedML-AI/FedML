@@ -3,10 +3,10 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 from dataclasses import dataclass, field
+import warnings
 
 from datasets import Dataset, load_dataset
 from peft import (
@@ -23,6 +23,7 @@ from transformers import (
 )
 
 from src.constants import (
+    DATASET_NAMES,
     DEFAULT_MAX_SEQ_LENGTH,
     END_KEY,
     FINETUNE_TASKS,
@@ -72,12 +73,23 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    dataset_path: List[str] = field(metadata={"help": "Path to the training data file(s).", "nargs": "+"})
+    dataset_name: Optional[str] = field(default=None, metadata={"help": "dataset name", "choices": DATASET_NAMES})
+    dataset_path: List[str] = field(
+        default_factory=list,
+        metadata={"help": "Path to the training data file(s).", "nargs": "+"}
+    )
     test_dataset_size: int = field(
-        default=1_000,
-        metadata={"help": "test set size. Will be ignored if `dataset_path` has more than one entry."},
+        default=-1,
+        metadata={"help": "test set size. Will be ignored if `dataset_path` has more than 1 entry."},
     )
     max_seq_length: Optional[int] = field(default=None, metadata={"help": "max sequence length."})
+
+    def __post_init__(self) -> None:
+        if self.dataset_name is None and len(self.dataset_path) <= 0:
+            raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
+
+        if len(self.dataset_path) == 1 and self.test_dataset_size <= 0:
+            raise ValueError("\"test_dataset_size\" must be a positive value when dataset_path has only 1 entry.")
 
 
 def _add_text(rec):
@@ -106,51 +118,57 @@ def _add_text(rec):
 def preprocess_dataset(
         dataset: Dataset,
         tokenizer: TokenizerType,
-        max_length: int
+        max_seq_length: int
 ) -> Dataset:
-    dataset = dataset.map(_add_text)
+    remove_columns = list({"text", *dataset.column_names})
+    if "text" not in dataset.column_names:
+        dataset = dataset.map(_add_text)
 
     print(f"preprocessing dataset")
     dataset = dataset.map(
         lambda batch: tokenizer(
             batch["text"],
-            max_length=max_length,
+            max_length=max_seq_length,
             truncation=True,
         ),
         batched=True,
-        remove_columns=["instruction", "context", "response", "text", "category"]
+        remove_columns=remove_columns
     )
 
     print(f"dataset has {dataset.num_rows:,} rows")
-    dataset = dataset.filter(lambda rec: len(rec["input_ids"]) < max_length)
+
+    dataset = dataset.filter(lambda rec: len(rec["input_ids"]) <= max_seq_length)
     print(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
 
     return dataset
 
 
 def get_dataset(
-        dataset_path: Union[str, Sequence[str]],
+        dataset_name: Optional[str],
+        dataset_path: Sequence[str],
         tokenizer: TokenizerType,
-        max_length: int,
+        max_seq_length: int,
         seed: Optional[int] = None,
-        test_dataset_size: Optional[int] = None
+        test_dataset_size: int = -1
 ) -> Tuple[Dataset, Dataset]:
-    if isinstance(dataset_path, str):
-        dataset_path = [dataset_path]
+    if len(dataset_path) >= 2:
+        warnings.warn("More than 2 dataset paths provided. Only the first 2 will be loaded.")
+        data_files = {"train": dataset_path[0], "test": dataset_path[1]}
+    elif len(dataset_path) == 0:
+        if dataset_name is None:
+            raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
 
-    assert len(dataset_path) > 0, "Received empty dataset_path"
-    print(f"loading the following datasets:\n\t")
-    print(f"\n\t".join(dataset_path))
+        data_files = None
+    else:
+        data_files = dataset_path
 
-    # TODO: cleanup
-    if len(dataset_path) == 1:
-        assert test_dataset_size is not None, f"test_dataset_size is required when len(dataset_path) == 1"
-    elif len(dataset_path) >= 2:
-        dataset_path = {"train": dataset_path[0], "test": dataset_path[1]}
+    if dataset_name is not None:
+        dataset_dict = load_dataset(dataset_name, data_files=data_files)
+    else:
+        dataset_dict = load_dataset("json", data_files=data_files)
 
-    dataset_dict = load_dataset("json", data_files=dataset_path)
     if len(dataset_dict.keys()) == 1:
-        dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_length)
+        dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_seq_length)
 
         print("shuffling dataset")
         dataset = dataset.shuffle(seed)
@@ -162,8 +180,8 @@ def get_dataset(
         train_dataset = dataset_dict["train"]
         test_dataset = dataset_dict["test"]
     else:
-        train_dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_length)
-        test_dataset = preprocess_dataset(dataset_dict["test"], tokenizer, max_length)
+        train_dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_seq_length)
+        test_dataset = preprocess_dataset(dataset_dict["test"], tokenizer, max_seq_length)
         print(f"done preprocessing")
 
     print(f"Train data size: {train_dataset.num_rows:,}")
@@ -241,13 +259,15 @@ def train() -> None:
         dataset_args.max_seq_length = get_max_seq_length(model)
 
     # dataset
-    train_dataset, test_dataset = get_dataset(
-        dataset_path=dataset_args.dataset_path,
-        tokenizer=tokenizer,
-        max_length=dataset_args.max_seq_length,
-        seed=training_args.seed,
-        test_dataset_size=dataset_args.test_dataset_size
-    )
+    with training_args.main_process_first():
+        train_dataset, test_dataset = get_dataset(
+            dataset_name=dataset_args.dataset_name,
+            dataset_path=dataset_args.dataset_path,
+            tokenizer=tokenizer,
+            max_seq_length=dataset_args.max_seq_length,
+            seed=training_args.seed,
+            test_dataset_size=dataset_args.test_dataset_size
+        )
 
     trainer = Trainer(
         model=model,
