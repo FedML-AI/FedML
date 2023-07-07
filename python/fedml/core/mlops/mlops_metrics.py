@@ -13,6 +13,7 @@ from ...cli.server_deployment.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
+from .mlops_utils import MLOpsUtils
 
 
 class MLOpsMetrics(object):
@@ -367,6 +368,13 @@ class MLOpsMetrics(object):
                 return
 
             self.sys_performances.produce_info()
+
+            current_time_ms = MLOpsUtils.get_ntp_time()
+            if current_time_ms is None:
+                current_time = int(time.time()*1000)
+            else:
+                current_time = int(current_time_ms)
+
             metric_json = {
                 "run_id": self.run_id,
                 "edge_id": self.edge_id,
@@ -407,6 +415,7 @@ class MLOpsMetrics(object):
                 "gpu_power_usage": round(
                     self.sys_performances.get_gpu_power_usage(), 4
                 ),
+                "timestamp": int(current_time)
             }
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
