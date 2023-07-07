@@ -137,9 +137,6 @@ def preprocess_dataset(
 
     print(f"dataset has {dataset.num_rows:,} rows")
 
-    dataset = dataset.filter(lambda rec: len(rec["input_ids"]) <= max_seq_length)
-    print(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
-
     return dataset
 
 
@@ -170,11 +167,8 @@ def get_dataset(
     if len(dataset_dict.keys()) == 1:
         dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_seq_length)
 
-        print("shuffling dataset")
-        dataset = dataset.shuffle(seed)
-
         print("splitting dataset")
-        dataset_dict = dataset.train_test_split(test_size=test_dataset_size, seed=seed)
+        dataset_dict = dataset.train_test_split(test_size=test_dataset_size, shuffle=True, seed=seed)
 
         print(f"done preprocessing")
         train_dataset = dataset_dict["train"]
