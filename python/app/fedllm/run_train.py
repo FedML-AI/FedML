@@ -289,8 +289,10 @@ def train() -> None:
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
 
         print(f"Saving model to \"{training_args.output_dir}\"")
-        trainer.save_state()
-        trainer.save_model()
+        trainer._save_checkpoint(
+            trainer.model_wrapped if trainer.model_wrapped is not None else trainer.model,
+            trial=None
+        )
 
     if training_args.do_eval:
         print("Evaluating")
