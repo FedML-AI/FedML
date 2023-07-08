@@ -92,7 +92,7 @@ def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> No
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model):
-        trainer.save_checkpoint(str(checkpoint_dir))
+        trainer.save_checkpoint(str(checkpoint_dir), overwrite_peft_checkpoint=False)
 
     elif should_process_save(trainer):
         torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
