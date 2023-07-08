@@ -97,11 +97,13 @@ def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> No
     elif should_process_save(trainer):
         torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
 
+    # all process should wait
+    barrier()
 
-def get_model_state_dict(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> OrderedDict:
-    with trainer.args.main_process_first():
-        checkpoint_path = Path(checkpoint_dir) / HF_WEIGHTS_NAME
-        checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
+
+def get_model_state_dict(checkpoint_dir: Union[str, Path]) -> OrderedDict:
+    checkpoint_path = Path(checkpoint_dir) / HF_WEIGHTS_NAME
+    checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
     return checkpoint
 
 
@@ -168,7 +170,7 @@ class LLMTrainer(ClientTrainer):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
+        state_dict = get_model_state_dict(self.temp_ckpt_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
 
         self.log("finished")
@@ -289,7 +291,7 @@ class LLMAggregator(ServerAggregator):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
+        state_dict = get_model_state_dict(self.temp_ckpt_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
 
         self.log("finished")
