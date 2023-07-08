@@ -11,7 +11,7 @@ from typing import (
 from collections import OrderedDict
 import inspect
 import logging
-from os import PathLike
+import os
 from pathlib import Path
 
 import torch
@@ -20,6 +20,8 @@ from torch.nn import Module
 from transformers import PreTrainedModel, Trainer
 from transformers.deepspeed import is_deepspeed_available, is_deepspeed_zero3_enabled
 from peft import PeftModel, PromptLearningConfig
+
+from .typing import PathType
 
 if is_deepspeed_available():
     import deepspeed
@@ -30,6 +32,18 @@ else:
         return False
 
 T = TypeVar("T")
+
+
+def get_real_path(path: PathType) -> str:
+    return os.path.realpath(str(path))
+
+
+def is_file(path: PathType) -> bool:
+    return os.path.isfile(get_real_path(path))
+
+
+def is_directory(path: PathType) -> bool:
+    return os.path.isdir(get_real_path(path))
 
 
 def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = True) -> T:
@@ -78,7 +92,7 @@ def process_state_dict(state_dict: dict, reference_state_dict: dict) -> OrderedD
     return output_state_dict
 
 
-def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: Union[str, PathLike]) -> None:
+def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathType) -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
