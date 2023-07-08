@@ -28,6 +28,7 @@ train_args:
   client_num_per_round: 2  # choose from 1~client_num_in_total
   comm_round: 5  # number of rounds of aggregation
   # below are the same as HuggingFace settings
+  task: instruction
   deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
@@ -48,7 +49,7 @@ train_args:
   evaluation_strategy: "no"  # should be turned off
   save_strategy: "no"
   eval_accumulation_steps: 4
-  #  save_on_each_node: True
+  save_on_each_node: True
 
 validation_args:
   frequency_of_the_test: 1
