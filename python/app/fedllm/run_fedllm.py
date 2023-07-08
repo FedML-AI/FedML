@@ -111,13 +111,11 @@ class LLMTrainer(ClientTrainer):
             model: ModelType,
             args: Arguments,
             tokenizer: TokenizerType,
-            model_args: ModelArguments,
             test_dataset: Optional[Dataset] = None
     ):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
-        self.model_args = model_args
         self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, eval_dataset=test_dataset)
 
         max_steps = self.trainer.args.max_steps
@@ -399,8 +397,19 @@ def main(args: Arguments) -> None:
     dataset = transform_data_to_fedml_format(args, train_dataset, test_dataset)
 
     # FedML trainer
-    trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer, model_args=model_args, test_dataset=test_dataset)
-    aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
+    trainer = aggregator = None
+    if args.role == "client":
+        trainer = LLMTrainer(
+            model=model,
+            args=args,
+            tokenizer=tokenizer,
+            test_dataset=test_dataset
+        )
+    elif args.role == "server":
+        aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
+    else:
+        raise RuntimeError(f"Invalid value for \"role\". Only \"client\" and \"server\" "
+                           f"are allowed but received {args.role}")
 
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
