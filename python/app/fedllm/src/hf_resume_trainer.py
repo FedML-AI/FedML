@@ -2,12 +2,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from torch.optim import Optimizer
 from transformers import (
-    Trainer,
     TrainerCallback,
     TrainerControl,
     TrainerState,
     TrainingArguments,
 )
+
+from .hf_trainer import HFTrainer
 
 
 class HFResumeTrainerCallback(TrainerCallback):
@@ -36,7 +37,7 @@ class HFResumeTrainerCallback(TrainerCallback):
         return control
 
 
-class HFResumeTrainer(Trainer):
+class HFResumeTrainer(HFTrainer):
     def __init__(
             self,
             *pos_args,

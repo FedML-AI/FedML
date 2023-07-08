@@ -92,7 +92,7 @@ def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> No
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model):
-        trainer.save_model(str(checkpoint_dir))
+        trainer.save_checkpoint(str(checkpoint_dir))
 
     elif should_process_save(trainer):
         torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
@@ -409,7 +409,7 @@ def main(args: Arguments) -> None:
         aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
     else:
         raise RuntimeError(f"Invalid value for \"role\". Only \"client\" and \"server\" "
-                           f"are allowed but received {args.role}")
+                           f"are allowed but received \"{args.role}\"")
 
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)

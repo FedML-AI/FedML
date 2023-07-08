@@ -18,7 +18,6 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     HfArgumentParser,
-    Trainer,
     TrainingArguments,
 )
 
@@ -33,6 +32,7 @@ from src.constants import (
     PROMPT_WITH_INPUT_FORMAT,
     RESPONSE_KEY_NL,
 )
+from src.hf_trainer import HFTrainer
 from src.modeling_utils import get_data_collator
 from src.trainer_callback import SavePeftModelCallback
 from src.typing import ModelType, TokenizerType
@@ -263,7 +263,7 @@ def train() -> None:
             test_dataset_size=dataset_args.test_dataset_size
         )
 
-    trainer = Trainer(
+    trainer = HFTrainer(
         model=model,
         tokenizer=tokenizer,
         args=training_args,
@@ -276,7 +276,7 @@ def train() -> None:
         ),
         callbacks=[
             # save peft adapted model weights
-            SavePeftModelCallback,
+            SavePeftModelCallback(),
         ]
     )
 
@@ -289,10 +289,7 @@ def train() -> None:
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
 
         print(f"Saving model to \"{training_args.output_dir}\"")
-        trainer._save_checkpoint(
-            trainer.model_wrapped if trainer.model_wrapped is not None else trainer.model,
-            trial=None
-        )
+        trainer.save_checkpoint(training_args.output_dir)
 
     if training_args.do_eval:
         print("Evaluating")
