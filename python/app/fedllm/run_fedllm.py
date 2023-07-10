@@ -91,10 +91,14 @@ def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> No
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model):
+    if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model) and trainer.optimizer is not None:
+        # In DeepSpeed ZeRO3, huggingface Trainer saves full model checkpoint.
+        # When using Fairscale, Deepspeed or PyTorch FSDP, optimizer is only initialized during Trainer.train;
+        # to check if ZeRO3 is fully initialized, also need to check optimizer.
         trainer.save_checkpoint(str(checkpoint_dir), overwrite_peft_checkpoint=False)
 
     elif should_process_save(trainer):
+        # Need to manually save full checkpoint when not using DeepSpeed.
         torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
 
     # all process should wait
