@@ -1,4 +1,4 @@
-Most of this code is taken from the [FLamby intiative](https://github.com/owkin/FLamby), which was published in NeurIPS Datasets and Benchmarks Track in 2022.
+The dataset loader and reference models are based on the [FLamby library](https://github.com/owkin/FLamby), which was published in NeurIPS Datasets and Benchmarks Track in 2022.
 If you use it, please cite [the FLamby paper](https://proceedings.neurips.cc/paper_files/paper/2022/hash/232eee8ef411a0a316efa298d7be3c2b-Abstract-Datasets_and_Benchmarks.html) below:
 
 ```
