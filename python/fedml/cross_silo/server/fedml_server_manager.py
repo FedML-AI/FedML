@@ -130,7 +130,7 @@ class FedMLServerManager(FedMLCommManager):
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
     def start_new_round(self):
-        global_model_params = self.aggregator.get_global_model_params()
+        global_model_params = self.global_model_params
         client_idx_in_this_round = 0
         global_model_url = None
         global_model_key = None
@@ -245,7 +245,7 @@ class FedMLServerManager(FedMLCommManager):
                 if self.args.round_idx == 0:
                     MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
-                logging.info(f"\n\n==========end {self.args.round_idx}-th/{self.round_num} round training===========\n")
+                logging.info(f"\n\n==========end {self.args.round_idx + 1}-th/{self.round_num} round training===========\n")
 
                 self.args.round_idx += 1
                 if self.args.round_idx < self.round_num:
