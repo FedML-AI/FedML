@@ -13,6 +13,7 @@ import inspect
 import logging
 import os
 from pathlib import Path
+import shutil
 
 import torch
 from torch import distributed as dist, Tensor
@@ -44,6 +45,33 @@ def is_file(path: PathType) -> bool:
 
 def is_directory(path: PathType) -> bool:
     return os.path.isdir(get_real_path(path))
+
+
+def move_directory_content(src_path: PathType, dest_path: PathType) -> None:
+    """
+    Move all files/subdirectories in src_path into dest_path then remove src_path.
+
+    Args:
+        src_path: source directory path
+        dest_path: destination directory path
+
+    Returns:
+
+    """
+    if not is_directory(src_path):
+        raise FileNotFoundError(f"\"{src_path}\" is not a directory.")
+    if is_file(dest_path):
+        raise FileExistsError(f"\"{dest_path}\" is an existing file.")
+
+    if get_real_path(src_path) == get_real_path(dest_path):
+        return
+
+    src_path = Path(src_path)
+    dest_path = Path(dest_path)
+
+    for p in tuple(src_path.iterdir()):
+        shutil.move(str(p), str(dest_path / p.relative_to(src_path)))
+    shutil.rmtree(str(src_path))
 
 
 def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = True) -> T:
