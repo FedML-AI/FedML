@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 
 from collections import OrderedDict
 import logging
@@ -33,6 +33,7 @@ from src.hf_resume_trainer import HFResumeTrainer
 from src.modeling_utils import get_data_collator
 from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
+from src.typing import PathType
 from src.utils import (
     barrier,
     is_deepspeed_module,
@@ -63,12 +64,16 @@ def _parse_args(args: Arguments) -> Arguments:
         logging.warning(f"{args.role} rank {args.rank} does not have GPU! Fallback to CPU mode.")
         setattr(args, "deepspeed", None)
 
+    if not hasattr(args, "output_dir"):
+        raise ValueError("\"output_dir\" is required in the configuration file.")
+
+    args.output_dir = str(Path(args.output_dir) / f"node_{args.rank}")
+
     return args
 
 
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HFResumeTrainer:
     args_dict = dict(args.__dict__)
-    # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
         args_dict.pop("device", None)
@@ -87,7 +92,10 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     )
 
 
-def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> None:
+def save_model(trainer: HFResumeTrainer, checkpoint_dir: Optional[PathType] = None) -> None:
+    if checkpoint_dir is None:
+        checkpoint_dir = trainer.args.output_dir
+
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -105,7 +113,7 @@ def save_model(trainer: HFResumeTrainer, checkpoint_dir: Union[str, Path]) -> No
     barrier()
 
 
-def get_model_state_dict(checkpoint_dir: Union[str, Path]) -> OrderedDict:
+def get_model_state_dict(checkpoint_dir: PathType) -> OrderedDict:
     checkpoint_path = Path(checkpoint_dir) / HF_WEIGHTS_NAME
     checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
     return checkpoint
@@ -154,9 +162,12 @@ class LLMTrainer(ClientTrainer):
             epoch_threshold=epoch_threshold
         ))
 
-        self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed
-        save_model(self.trainer, self.temp_ckpt_dir)
+        save_model(self.trainer)
+
+    @property
+    def checkpoint_dir(self) -> Path:
+        return Path(self.trainer.args.output_dir)
 
     def is_main_process(self) -> bool:
         return is_main_process(self.trainer)
@@ -174,7 +185,7 @@ class LLMTrainer(ClientTrainer):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.temp_ckpt_dir)
+        state_dict = get_model_state_dict(self.checkpoint_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
 
         self.log("finished")
@@ -221,8 +232,8 @@ class LLMTrainer(ClientTrainer):
 
         outputs = super().on_after_local_training(train_data, device, args)
 
-        self.log(f"saving model to \"{self.temp_ckpt_dir}\"")
-        save_model(self.trainer, self.temp_ckpt_dir)
+        self.log(f"saving model to \"{self.checkpoint_dir}\"")
+        save_model(self.trainer)
 
         self.log("finished")
         return outputs
@@ -270,14 +281,18 @@ class LLMAggregator(ServerAggregator):
             # save peft adapted model weights
             callbacks=[SavePeftModelCallback]
         )
-        self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
+
         # this is required for DeepSpeed zero3
-        save_model(self.trainer, self.temp_ckpt_dir)
+        save_model(self.trainer)
 
         # save config
         if should_process_save(self.trainer):
             # save model config before training
-            save_config(model, self.trainer.args.output_dir)
+            save_config(model, self.checkpoint_dir)
+
+    @property
+    def checkpoint_dir(self) -> Path:
+        return Path(self.trainer.args.output_dir)
 
     def is_main_process(self) -> bool:
         return is_main_process(self.trainer)
@@ -295,7 +310,7 @@ class LLMAggregator(ServerAggregator):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.temp_ckpt_dir)
+        state_dict = get_model_state_dict(self.checkpoint_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
 
         self.log("finished")
