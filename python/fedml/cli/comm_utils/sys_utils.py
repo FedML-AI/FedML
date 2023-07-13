@@ -531,7 +531,9 @@ def versions(configuration_env, pkg_name):
         url = f'https://pypi.python.org/pypi/{pkg_name}/json'
     else:
         url = f'https://test.pypi.org/pypi/{pkg_name}/json'
-    releases = json.loads(request.urlopen(url).read())['releases']
+    import ssl
+    context = ssl._create_unverified_context()
+    releases = json.loads(request.urlopen(url, context=context).read())['releases']
     return sorted(releases, key=parse_version, reverse=True)
 
 
