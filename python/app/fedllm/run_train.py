@@ -20,6 +20,7 @@ from transformers import (
     HfArgumentParser,
     TrainingArguments,
 )
+from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from src.constants import (
     DATASET_NAMES,
@@ -198,7 +199,7 @@ def get_tokenizer(model_name: str, add_special_tokens: bool = False) -> Tokenize
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
-    kwargs.setdefault("low_cpu_mem_usage", True)
+    kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
 
     model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
