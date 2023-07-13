@@ -195,11 +195,13 @@ def get_tokenizer(model_name: str) -> TokenizerType:
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
+    kwargs.setdefault("low_cpu_mem_usage", True)
+
     model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
-    if tokenizer_length is not None:
+    embedding_size = model.get_input_embeddings().weight.shape[0]
+    if tokenizer_length is not None and tokenizer_length > embedding_size:
         print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
-        # TODO: resize when tokenizer_length < model embedding size?
         model.resize_token_embeddings(tokenizer_length)
 
         # update model configurations
