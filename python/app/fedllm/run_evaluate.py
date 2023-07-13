@@ -160,12 +160,9 @@ def main() -> None:
 
     # dataset
     train_dataset, test_dataset = get_dataset(
-        dataset_name=dataset_args.dataset_name,
-        dataset_path=dataset_args.dataset_path,
+        dataset_args=dataset_args,
         tokenizer=tokenizer,
-        max_seq_length=dataset_args.max_seq_length,
-        seed=training_args.seed,
-        test_dataset_size=dataset_args.test_dataset_size
+        seed=training_args.seed
     )
 
     def _preprocess_logits_for_metrics(logits: torch.Tensor, labels: torch.Tensor):

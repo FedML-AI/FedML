@@ -1,9 +1,4 @@
-from typing import (
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import List, Optional, Tuple
 
 from dataclasses import dataclass, field
 import warnings
@@ -105,9 +100,9 @@ def _add_text(rec):
         raise ValueError(f"Expected a response in: {rec}")
 
     # For some instructions there is an input that goes along with the instruction, providing context for the
-    # instruction.  For example, the input might be a passage from Wikipedia and the instruction says to extract
-    # some piece of information from it.  The response is that information to extract.  In other cases there is
-    # no input.  For example, the instruction might be open QA such as asking what year some historic figure was
+    # instruction. For example, the input might be a passage from Wikipedia and the instruction says to extract
+    # some piece of information from it. The response is that information to extract. In other cases there is
+    # no input. For example, the instruction might be open QA such as asking what year some historic figure was
     # born.
     if context:
         rec["text"] = PROMPT_WITH_INPUT_FORMAT.format(instruction=instruction, response=response, input=context)
@@ -117,9 +112,9 @@ def _add_text(rec):
 
 
 def preprocess_dataset(
+        dataset_args: DataArguments,
         dataset: Dataset,
-        tokenizer: TokenizerType,
-        max_seq_length: int
+        tokenizer: TokenizerType
 ) -> Dataset:
     remove_columns = list({"text", *dataset.column_names})
     if "text" not in dataset.column_names:
@@ -129,8 +124,9 @@ def preprocess_dataset(
     dataset = dataset.map(
         lambda batch: tokenizer(
             batch["text"],
-            max_length=max_seq_length,
+            max_length=dataset_args.max_seq_length,
             truncation=True,
+            return_overflowing_tokens=True
         ),
         batched=True,
         remove_columns=remove_columns
@@ -142,41 +138,42 @@ def preprocess_dataset(
 
 
 def get_dataset(
-        dataset_name: Optional[str],
-        dataset_path: Sequence[str],
+        dataset_args: DataArguments,
         tokenizer: TokenizerType,
-        max_seq_length: int,
-        seed: Optional[int] = None,
-        test_dataset_size: int = -1
+        seed: Optional[int] = None
 ) -> Tuple[Dataset, Dataset]:
-    if len(dataset_path) >= 2:
+    if len(dataset_args.dataset_path) >= 2:
         warnings.warn("More than 2 dataset paths provided. Only the first 2 will be loaded.")
-        data_files = {"train": dataset_path[0], "test": dataset_path[1]}
-    elif len(dataset_path) == 0:
-        if dataset_name is None:
+        data_files = {"train": dataset_args.dataset_path[0], "test": dataset_args.dataset_path[1]}
+    elif len(dataset_args.dataset_path) == 0:
+        if dataset_args.dataset_name is None:
             raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
 
         data_files = None
     else:
-        data_files = dataset_path
+        data_files = dataset_args.dataset_path
 
-    if dataset_name is not None:
-        dataset_dict = load_dataset(dataset_name, data_files=data_files)
+    if dataset_args.dataset_name is not None:
+        dataset_dict = load_dataset(dataset_args.dataset_name, data_files=data_files)
     else:
         dataset_dict = load_dataset("json", data_files=data_files)
 
     if len(dataset_dict.keys()) == 1:
-        dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_seq_length)
+        dataset = preprocess_dataset(dataset_args, dataset_dict["train"], tokenizer)
 
         print("splitting dataset")
-        dataset_dict = dataset.train_test_split(test_size=test_dataset_size, shuffle=True, seed=seed)
+        dataset_dict = dataset.train_test_split(
+            test_size=dataset_args.test_dataset_size,
+            shuffle=True,
+            seed=seed
+        )
 
         print(f"done preprocessing")
         train_dataset = dataset_dict["train"]
         test_dataset = dataset_dict["test"]
     else:
-        train_dataset = preprocess_dataset(dataset_dict["train"], tokenizer, max_seq_length)
-        test_dataset = preprocess_dataset(dataset_dict["test"], tokenizer, max_seq_length)
+        train_dataset = preprocess_dataset(dataset_args, dataset_dict["train"], tokenizer)
+        test_dataset = preprocess_dataset(dataset_args, dataset_dict["test"], tokenizer)
         print(f"done preprocessing")
 
     print(f"Train data size: {train_dataset.num_rows:,}")
@@ -261,12 +258,9 @@ def train() -> None:
     # dataset
     with training_args.main_process_first():
         train_dataset, test_dataset = get_dataset(
-            dataset_name=dataset_args.dataset_name,
-            dataset_path=dataset_args.dataset_path,
+            dataset_args=dataset_args,
             tokenizer=tokenizer,
-            max_seq_length=dataset_args.max_seq_length,
-            seed=training_args.seed,
-            test_dataset_size=dataset_args.test_dataset_size
+            seed=training_args.seed
         )
 
     trainer = HFTrainer(
