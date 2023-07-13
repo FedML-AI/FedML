@@ -131,7 +131,7 @@ afterEvaluate {
         }
         repositories {
             maven {
-                def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                def releasesRepoUrl = "https://s01.oss.sonatype.org/content/repositories/releases/"
                 def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
                 url = VERSION_NAME.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
