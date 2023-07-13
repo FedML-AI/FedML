@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from run_train import (
-    DataArguments,
+    DatasetArguments,
     FinetuningArguments,
     get_dataset,
     get_max_seq_length,
@@ -145,7 +145,7 @@ def compute_acc(
 
 def main() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DataArguments, FinetuningArguments))
+    parser = HfArgumentParser((ModelArguments, DatasetArguments, FinetuningArguments))
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models

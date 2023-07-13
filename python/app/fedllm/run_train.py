@@ -68,7 +68,7 @@ class ModelArguments:
 
 
 @dataclass
-class DataArguments:
+class DatasetArguments:
     dataset_name: Optional[str] = field(default=None, metadata={"help": "dataset name", "choices": DATASET_NAMES})
     dataset_path: List[str] = field(
         default_factory=list,
@@ -76,9 +76,17 @@ class DataArguments:
     )
     test_dataset_size: int = field(
         default=-1,
-        metadata={"help": "test set size. Will be ignored if `dataset_path` has more than 1 entry."},
+        metadata={"help": "test set size. Will be ignored if `dataset_path` has more than 1 entry."}
     )
     max_seq_length: Optional[int] = field(default=None, metadata={"help": "max sequence length."})
+    truncate_long_seq: bool = field(
+        default=True,
+        metadata={"help": "Whether to truncate long sequences whose length > max_seq_length."}
+    )
+    remove_long_seq: bool = field(
+        default=False,
+        metadata={"help": "Whether to remove all data whose token length > max_seq_length."}
+    )
 
     def __post_init__(self) -> None:
         if self.dataset_name is None and len(self.dataset_path) <= 0:
@@ -86,6 +94,18 @@ class DataArguments:
 
         if len(self.dataset_path) == 1 and self.test_dataset_size <= 0:
             raise ValueError("\"test_dataset_size\" must be a positive value when dataset_path has only 1 entry.")
+
+        if self.remove_long_seq and not self.truncate_long_seq:
+            warnings.warn("\"truncate_long_seq\" is set to `True` since \"remove_long_seq\" is `True`.")
+            self.truncate_long_seq = True
+
+    @property
+    def truncation_max_length(self) -> Optional[int]:
+        if self.max_seq_length is not None and self.remove_long_seq:
+            # set to max_seq_length + 1 so that sequences has length >= max_seq_lengths can be filtered
+            return self.max_seq_length + 1
+        else:
+            return self.max_seq_length
 
 
 def _add_text(rec):
@@ -112,7 +132,7 @@ def _add_text(rec):
 
 
 def preprocess_dataset(
-        dataset_args: DataArguments,
+        dataset_args: DatasetArguments,
         dataset: Dataset,
         tokenizer: TokenizerType
 ) -> Dataset:
@@ -120,17 +140,21 @@ def preprocess_dataset(
     if "text" not in dataset.column_names:
         dataset = dataset.map(_add_text)
 
+    tokenization_kwargs = dict(
+        truncation=dataset_args.truncate_long_seq,
+        max_length=dataset_args.truncation_max_length,
+    )
+
     print(f"preprocessing dataset")
     dataset = dataset.map(
-        lambda batch: tokenizer(
-            batch["text"],
-            max_length=dataset_args.max_seq_length,
-            truncation=True,
-            return_overflowing_tokens=True
-        ),
+        lambda batch: tokenizer(batch["text"], **tokenization_kwargs),
         batched=True,
         remove_columns=remove_columns
     )
+
+    if dataset_args.remove_long_seq and dataset_args.max_seq_length is not None:
+        dataset = dataset.filter(lambda rec: len(rec["input_ids"]) <= dataset_args.max_seq_length)
+        print(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
 
     print(f"dataset has {dataset.num_rows:,} rows")
 
@@ -138,7 +162,7 @@ def preprocess_dataset(
 
 
 def get_dataset(
-        dataset_args: DataArguments,
+        dataset_args: DatasetArguments,
         tokenizer: TokenizerType,
         seed: Optional[int] = None
 ) -> Tuple[Dataset, Dataset]:
@@ -242,7 +266,7 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
 
 def train() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DataArguments, FinetuningArguments))
+    parser = HfArgumentParser((ModelArguments, DatasetArguments, FinetuningArguments))
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models

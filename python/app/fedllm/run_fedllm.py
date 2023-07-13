@@ -17,7 +17,7 @@ from transformers.deepspeed import is_deepspeed_zero3_enabled
 from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from run_train import (
-    DataArguments,
+    DatasetArguments,
     FinetuningArguments,
     get_dataset,
     get_model,
@@ -390,7 +390,7 @@ def main(args: Arguments) -> None:
     # init device
     device = fedml.device.get_device(args)
 
-    parser = HfArgumentParser((ModelArguments, DataArguments))
+    parser = HfArgumentParser((ModelArguments, DatasetArguments))
     model_args, dataset_args = parser.parse_dict(dict(args.__dict__), allow_extra_keys=True)
 
     # Initialize model before initializing TrainingArgs to load the full model in memory
