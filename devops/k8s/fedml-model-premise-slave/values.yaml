@@ -90,8 +90,9 @@ env:
   fedmlRunningSource: "k8s"
 
 volume:
-  clientHomeDirHostPath: "/home/fedml-client"
-  clientHomeDirMountPath: "/home/fedml/fedml-client"
+  clientHomeDirHostPath: "/home/fedml-model-client"
+  slaveHomeDirMountPath: "/home/fedml/fedml-model-client"
+  servingHomeDirMountPath: "/home/fedml/fedml-client"
 
 inferenceBackend:
   name: fedml-inference-backend
