@@ -393,8 +393,12 @@ def main(args: Arguments) -> None:
     parser = HfArgumentParser((ModelArguments, DataArguments))
     model_args, dataset_args = parser.parse_dict(dict(args.__dict__), allow_extra_keys=True)
 
-    # TODO: init model here?
-    tokenizer = get_tokenizer(model_args.model_name)
+    # Initialize model before initializing TrainingArgs to load the full model in memory
+    # This is required when using DeepSpeed Zero3 w/ FedLLM
+    tokenizer = get_tokenizer(
+        model_args.model_name,
+        add_special_tokens=getattr(args, "task", "finetune") == "instruction"
+    )
     model = get_model(
         model_args,
         tokenizer_length=len(tokenizer),

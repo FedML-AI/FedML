@@ -183,12 +183,15 @@ def get_dataset(
     return train_dataset, test_dataset
 
 
-def get_tokenizer(model_name: str) -> TokenizerType:
+def get_tokenizer(model_name: str, add_special_tokens: bool = False) -> TokenizerType:
     tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_name)
 
-    # TODO: scrutinize
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.add_special_tokens({"additional_special_tokens": [END_KEY, INSTRUCTION_KEY, RESPONSE_KEY_NL]})
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # TODO: support additional tokens
+    if add_special_tokens:
+        tokenizer.add_special_tokens({"additional_special_tokens": [END_KEY, INSTRUCTION_KEY, RESPONSE_KEY_NL]})
 
     return tokenizer
 
@@ -246,7 +249,7 @@ def train() -> None:
 
     # prepare models
     print(f"Loading tokenizer for \"{model_args.model_name}\"")
-    tokenizer = get_tokenizer(model_args.model_name)
+    tokenizer = get_tokenizer(model_args.model_name, add_special_tokens=training_args.is_instruction_finetune)
 
     print(f"Loading model for \"{model_args.model_name}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)

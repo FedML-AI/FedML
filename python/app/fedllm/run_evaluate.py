@@ -150,7 +150,7 @@ def main() -> None:
 
     # prepare models
     print(f"Loading tokenizer for \"{model_args.model_name}\"")
-    tokenizer = get_tokenizer(model_args.model_name)
+    tokenizer = get_tokenizer(model_args.model_name, add_special_tokens=training_args.is_instruction_finetune)
 
     print(f"Loading model for \"{model_args.model_name}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)
