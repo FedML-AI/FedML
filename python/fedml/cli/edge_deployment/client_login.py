@@ -232,7 +232,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
         # Open simulator daemon process to process run status.
         simulator_daemon_cmd = os.path.join(os.path.dirname(__file__), "simulator_daemon.py")
-        simulator_daemon_process = subprocess.Popen(
+        simulator_daemon_process = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 simulator_daemon_cmd,
@@ -258,7 +258,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
                 args.config_version,
                 "-ci",
                 str(edge_id)
-            ], preexec_fn=os.setsid
+            ]
         ).pid
 
         # Start mqtt looper

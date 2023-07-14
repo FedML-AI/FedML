@@ -9,6 +9,8 @@ import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.TimeUtils;
+
 import androidx.annotation.NonNull;
 
 public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatus {
@@ -161,8 +163,10 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
                 jsonObject.put("process_memory_in_use_size", memoryStats.getMemoryInUseSize());
                 jsonObject.put("process_memory_available", memoryStats.getMemoryAvailable());
             }
+
             jsonObject.put("disk_utilization", sysStats.getDiskUtilization());
             jsonObject.put("network_traffic", sysStats.getNetworkTraffic());
+            jsonObject.put("timestamp", TimeUtils.getAccurateTime());
         } catch (JSONException e) {
             LogHelper.e(e, "reportSystemMetric(%s)", edgeId);
         }

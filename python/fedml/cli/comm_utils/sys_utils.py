@@ -15,6 +15,7 @@ from pkg_resources import parse_version
 import fedml
 from packaging import version
 import sys
+import subprocess
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 
@@ -125,10 +126,18 @@ def get_running_info(cs_home_dir, cs_info_dir):
 
 def get_python_program():
     python_program = "python3"
-    # force to use "python" as the default interpretator
-    python_version_str = os.popen("python3 --version").read()
-    if python_version_str.find("Python 3.") == -1:
-        python_program = "python"
+    current_python_version = sys.version.split(" ")[0]
+    try:
+        python_version_str = os.popen("python --version").read()
+        if python_version_str.find(current_python_version) != -1:
+            python_program = "python"
+        else:
+            python3_version_str = os.popen("python3 --version").read()
+            if python3_version_str.find(current_python_version) != -1:
+                python_program = "python3"
+    except Exception as e:
+        pass
+
     return python_program
 
 
@@ -522,7 +531,9 @@ def versions(configuration_env, pkg_name):
         url = f'https://pypi.python.org/pypi/{pkg_name}/json'
     else:
         url = f'https://test.pypi.org/pypi/{pkg_name}/json'
-    releases = json.loads(request.urlopen(url).read())['releases']
+    import ssl
+    context = ssl._create_unverified_context()
+    releases = json.loads(request.urlopen(url, context=context).read())['releases']
     return sorted(releases, key=parse_version, reverse=True)
 
 
@@ -657,6 +668,15 @@ def is_runner_finished_normally(process_id):
         return True
 
     return False
+
+
+def run_subprocess_open(shell_script_list):
+    if platform.system() == 'Windows':
+        script_process = subprocess.Popen(shell_script_list, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    else:
+        script_process = subprocess.Popen(shell_script_list, preexec_fn=os.setsid)
+
+    return script_process
 
 
 if __name__ == '__main__':
