@@ -15,6 +15,7 @@ DATASET_PATHS=(
 )
 
 python3 run_train.py \
+  --task "instruction" \
   --model_name "EleutherAI/pythia-6.9b" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
@@ -32,10 +33,12 @@ python3 run_train.py \
   --logging_steps 50 \
   --eval_steps 200 \
   --save_steps 200 \
-  --save_total_limit 20 \
+  --save_total_limit 10 \
   --logging_strategy "steps" \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
   --do_train "True" \
+  --do_eval "True" \
+  --remove_long_seq "True" \
   "${@}"

@@ -31,6 +31,10 @@ verify_download() {
 
 BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
+
+DATA_ROOT="${1:-"${BASE_DIR}/.data"}"
+DATA_ROOT="$(realpath "${DATA_ROOT}")"
+
 cd "${BASE_DIR}"
 
 TARGET_MD5_LIST=(
@@ -45,15 +49,15 @@ TARGET_MD5_LIST=(
   "8c7998ceb7a9ee1601ecd3261fe4cb1d"
 )
 DATASET_PATHS=(
-  "${BASE_DIR}/.data/databricks-dolly-15k.jsonl"
-  "${BASE_DIR}/.data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  "${BASE_DIR}/.data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
-  "${BASE_DIR}/.data/MedMCQA/train_182822.jsonl"
-  "${BASE_DIR}/.data/MedMCQA/valid_4183.jsonl"
-  "${BASE_DIR}/.data/PubMedQA/test_1000.jsonl"
-  "${BASE_DIR}/.data/PubMedQA/train_211269.jsonl"
-  "${BASE_DIR}/.data/MedQA-USMLE/train_10178.jsonl"
-  "${BASE_DIR}/.data/MedQA-USMLE/valid_1273.jsonl"
+  "${DATA_ROOT}/databricks-dolly-15k.jsonl"
+  "${DATA_ROOT}/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+  "${DATA_ROOT}/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
+  "${DATA_ROOT}/MedMCQA/train_182822.jsonl"
+  "${DATA_ROOT}/MedMCQA/valid_4183.jsonl"
+  "${DATA_ROOT}/PubMedQA/test_1000.jsonl"
+  "${DATA_ROOT}/PubMedQA/train_211269.jsonl"
+  "${DATA_ROOT}/MedQA-USMLE/train_10178.jsonl"
+  "${DATA_ROOT}/MedQA-USMLE/valid_1273.jsonl"
 )
 DATASET_URLS=(
   "https://huggingface.co/datasets/databricks/databricks-dolly-15k/resolve/d72c16e4644a463b9c678c71d9440befd4594556/databricks-dolly-15k.jsonl"
