@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 from dataclasses import dataclass, field
+import logging
 import warnings
 
 from datasets import Dataset, load_dataset
@@ -145,7 +146,7 @@ def preprocess_dataset(
         max_length=dataset_args.truncation_max_length,
     )
 
-    print(f"preprocessing dataset")
+    logging.info(f"preprocessing dataset")
     dataset = dataset.map(
         lambda batch: tokenizer(batch["text"], **tokenization_kwargs),
         batched=True,
@@ -154,9 +155,9 @@ def preprocess_dataset(
 
     if dataset_args.remove_long_seq and dataset_args.max_seq_length is not None:
         dataset = dataset.filter(lambda rec: len(rec["input_ids"]) <= dataset_args.max_seq_length)
-        print(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
+        logging.info(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
 
-    print(f"dataset has {dataset.num_rows:,} rows")
+    logging.info(f"dataset has {dataset.num_rows:,} rows")
 
     return dataset
 
@@ -185,23 +186,23 @@ def get_dataset(
     if len(dataset_dict.keys()) == 1:
         dataset = preprocess_dataset(dataset_args, dataset_dict["train"], tokenizer)
 
-        print("splitting dataset")
+        logging.info("splitting dataset")
         dataset_dict = dataset.train_test_split(
             test_size=dataset_args.test_dataset_size,
             shuffle=True,
             seed=seed
         )
 
-        print(f"done preprocessing")
         train_dataset = dataset_dict["train"]
         test_dataset = dataset_dict["test"]
     else:
         train_dataset = preprocess_dataset(dataset_args, dataset_dict["train"], tokenizer)
         test_dataset = preprocess_dataset(dataset_args, dataset_dict["test"], tokenizer)
-        print(f"done preprocessing")
 
-    print(f"Train data size: {train_dataset.num_rows:,}")
-    print(f"Test data size: {test_dataset.num_rows:,}")
+    logging.info(f"done preprocessing")
+
+    logging.info(f"Train data size: {train_dataset.num_rows:,}")
+    logging.info(f"Test data size: {test_dataset.num_rows:,}")
     return train_dataset, test_dataset
 
 
@@ -226,7 +227,7 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
 
     embedding_size = model.get_input_embeddings().weight.shape[0]
     if tokenizer_length is not None and tokenizer_length > embedding_size:
-        print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
+        logging.info(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
         model.resize_token_embeddings(tokenizer_length)
 
         # update model configurations
@@ -255,11 +256,11 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
     for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
         embedding_size = getattr(model.config, length_setting, None)
         if embedding_size is not None:
-            print(f"Found max length: {embedding_size}")
+            logging.info(f"Found max length: {embedding_size}")
             break
     else:
         embedding_size = default_max_seq_length
-        print(f"Using default max length: {embedding_size}")
+        logging.info(f"Using default max length: {embedding_size}")
 
     return embedding_size
 
@@ -270,10 +271,10 @@ def train() -> None:
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models
-    print(f"Loading tokenizer for \"{model_args.model_name}\"")
+    logging.info(f"Loading tokenizer for \"{model_args.model_name}\"")
     tokenizer = get_tokenizer(model_args.model_name, add_special_tokens=training_args.is_instruction_finetune)
 
-    print(f"Loading model for \"{model_args.model_name}\"")
+    logging.info(f"Loading model for \"{model_args.model_name}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)
 
     if dataset_args.max_seq_length is None:
@@ -309,16 +310,18 @@ def train() -> None:
             # save model config before training
             save_config(model, training_args.output_dir)
 
-        print("Training")
+        logging.info("Training")
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
 
-        print(f"Saving model to \"{training_args.output_dir}\"")
+        logging.info(f"Saving model to \"{training_args.output_dir}\"")
         trainer.save_checkpoint(training_args.output_dir)
 
     if training_args.do_eval:
-        print("Evaluating")
-        print(trainer.evaluate())
+        logging.info("Evaluating")
+        logging.info(trainer.evaluate())
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     train()
