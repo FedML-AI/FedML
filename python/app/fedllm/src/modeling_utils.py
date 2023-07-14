@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, List, Optional, Union
 
 from dataclasses import dataclass, field
@@ -27,15 +28,15 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
             labels = batch["labels"].clone()
 
             for i in range(len(examples)):
-                response_token_ids_start_idx = None
                 for idx in np.where(batch["labels"][i] == response_token_ids[0])[0]:
                     response_token_ids_start_idx = idx
                     break
-
-                if response_token_ids_start_idx is None:
-                    raise RuntimeError(
-                        f'Could not find response key {response_token_ids} in token IDs {batch["labels"][i]}'
+                else:
+                    warnings.warn(
+                        f"{type(self).__name__} Could not find response key {response_token_ids} in token IDs {batch['labels'][i]}"
                     )
+
+                    response_token_ids_start_idx = len(batch["labels"][i])
 
                 response_token_ids_end_idx = response_token_ids_start_idx + 1
 
