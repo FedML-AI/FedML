@@ -256,13 +256,13 @@ class FedMLAggregator(object):
 
         if report_metrics:
             logging.info("test acc = {}".format(test_accuracy))
-            logging.info("test loss = {}".format(test_loss))
+            logging.info("test loss = {}, round loss {}".format(test_loss, round(float(np.round(test_loss, 4)), 4)))
 
             mlops.log(
                 {
                     "round_idx": round_idx,
-                    "accuracy": round(np.round(test_accuracy, 4), 4),
-                    "loss": round(np.round(test_loss, 4), 4),
+                    "accuracy": round(float(np.round(test_accuracy, 4)), 4),
+                    "loss": round(float(np.round(test_loss, 4)), 4),
                 }
             )
 
