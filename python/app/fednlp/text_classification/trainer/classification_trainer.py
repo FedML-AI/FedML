@@ -126,6 +126,7 @@ class MyModelTrainer(ClientTrainer):
                 )
 
     def test(self, test_data, device, args):
+        logging.info(f"----------test_on_the_client {args.rank} @ round {args.round_idx}--------")
         model = self.model
 
         model.to(device)
