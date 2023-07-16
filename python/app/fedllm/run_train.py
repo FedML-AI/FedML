@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from dataclasses import dataclass, field
 import logging
@@ -30,9 +30,9 @@ from src.constants import (
     RESPONSE_KEY_NL,
 )
 from src.hf_trainer import HFTrainer
-from src.modeling_utils import get_data_collator
+from src.modeling_utils import get_data_collator, get_max_seq_length as _get_max_seq_length
 from src.trainer_callback import SavePeftModelCallback
-from src.typing import ModelType, TokenizerType
+from src.typing import ModelConfigType, ModelType, TokenizerType
 from src.utils import save_config, should_process_save
 
 
@@ -252,12 +252,14 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
     return model
 
 
-def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_MAX_SEQ_LENGTH) -> int:
-    for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
-        embedding_size = getattr(model.config, length_setting, None)
-        if embedding_size is not None:
-            logging.info(f"Found max length: {embedding_size}")
-            break
+def get_max_seq_length(
+        model_or_config: Union[str, ModelConfigType, ModelType],
+        default_max_seq_length: int = DEFAULT_MAX_SEQ_LENGTH
+) -> int:
+    embedding_size = _get_max_seq_length(model_or_config)
+
+    if embedding_size is not None:
+        logging.info(f"Found max length: {embedding_size}")
     else:
         embedding_size = default_max_seq_length
         logging.info(f"Using default max length: {embedding_size}")
