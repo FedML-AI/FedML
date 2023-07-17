@@ -134,6 +134,12 @@ def display_server_logs():
     "--server", "-s", default=None, is_flag=True, help="login as the FedML server.",
 )
 @click.option(
+    "--gpu_supplier", "-g", default=None, is_flag=True, help="login as the FedML Cheetah GPU supplier.",
+)
+@click.option(
+    "--api_key", "-k", type=str, default="NONE", help="user api key.",
+)
+@click.option(
     "--local_server",
     "-ls",
     type=str,
@@ -167,7 +173,7 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-        userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
+        userid, version, client, server, gpu_supplier, api_key, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
@@ -193,12 +199,22 @@ def mlops_login(
     if client is None and server is None:
         is_client = True
 
+    # Check gpu supplier
+    is_gpu_supplier = gpu_supplier
+    if gpu_supplier is None:
+        is_gpu_supplier = False
+
+    # Check api key
+    user_api_key = api_key
+    if api_key is None:
+        user_api_key = "NONE"
+
     # Check docker mode.
     is_docker = docker
     if docker is None:
         is_docker = False
 
-    if is_client is True:
+    if is_client is True or is_gpu_supplier is True:
         if is_docker:
             login_with_docker_mode(account_id, version, docker_rank)
             return
@@ -215,6 +231,9 @@ def mlops_login(
             ClientConstants.login_role_list.index(role)
         except ValueError as e:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
+
+        if is_gpu_supplier is True:
+            role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]
 
         login_pid = sys_utils.run_subprocess_open(
             [
@@ -235,7 +254,9 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-k",
+                user_api_key
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,

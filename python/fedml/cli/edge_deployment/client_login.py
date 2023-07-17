@@ -27,7 +27,7 @@ def init_logs(args, edge_id):
     # logging.info("client ids:{}".format(args.client_id_list))
 
 
-def __login_as_client(args, userid, version):
+def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suffix=None):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -95,13 +95,17 @@ def __login_as_client(args, userid, version):
     if is_from_fedml_docker_hub:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Device"
 
+    if use_extra_device_id_suffix is not None:
+        unique_device_id = args.current_device_id + "@" + args.os_name + use_extra_device_id_suffix
+
     # Bind account id to the MLOps platform.
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
         try:
             edge_id = runner.bind_account_and_device_id(
-                service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name
+                service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
+                api_key=api_key
             )
             if edge_id > 0:
                 runner.edge_id = edge_id
@@ -269,7 +273,10 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
 def login(args):
     if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]:
-        __login_as_client(args, args.user, args.version)
+        __login_as_client(args, args.user, args.version, api_key=args.api_key)
+    elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]:
+        __login_as_client(args, args.user, args.version, api_key=args.api_key,
+                          use_extra_device_id_suffix=".Edge.GPU.Supplier")
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:
         __login_as_simulator(args, args.user, args.version)
 
@@ -291,6 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--api_key", "-k", type=str, default="")
     args = parser.parse_args()
     
     args.user = args.user

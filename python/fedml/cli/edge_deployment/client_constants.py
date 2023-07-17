@@ -62,7 +62,8 @@ class ClientConstants(object):
 
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
-    login_role_list = ["client", "edge_simulator"]
+    LOGIN_MODE_GPU_SUPPLIER_INDEX = 2
+    login_role_list = ["client", "edge_simulator", "gpu_supplier"]
 
     @staticmethod
     def get_fedml_home_dir():
