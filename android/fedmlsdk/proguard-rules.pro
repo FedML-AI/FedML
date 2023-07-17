@@ -76,6 +76,7 @@
 -keep interface ai.fedml.edge.FedEdgeApi{*;}
 -keep interface ai.fedml.edge.OnTrainingStatusListener{*;}
 -keep interface ai.fedml.edge.OnTrainProgressListener{*;}
+-keep interface ai.fedml.edge.nativemobilenn.TrainingCallback{*;}
 -keep class ai.fedml.edge.FedEdgeManager {
     public *;
 }

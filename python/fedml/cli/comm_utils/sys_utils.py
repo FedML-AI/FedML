@@ -531,7 +531,9 @@ def versions(configuration_env, pkg_name):
         url = f'https://pypi.python.org/pypi/{pkg_name}/json'
     else:
         url = f'https://test.pypi.org/pypi/{pkg_name}/json'
-    releases = json.loads(request.urlopen(url).read())['releases']
+    import ssl
+    context = ssl._create_unverified_context()
+    releases = json.loads(request.urlopen(url, context=context).read())['releases']
     return sorted(releases, key=parse_version, reverse=True)
 
 
@@ -566,7 +568,11 @@ def run_cmd(command, show_local_console=False):
     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
     if ret_code is None or ret_code <= 0:
         if out is not None:
-            out_str = out.decode(encoding="utf-8")
+            try:
+                out_str = out.decode(encoding="utf-8")
+            except:
+                logging.info("utf-8 could not decode the output msg")
+                out_str = ""
             if out_str != "":
                 logging.info("{}".format(out_str))
                 if show_local_console:
@@ -577,7 +583,11 @@ def run_cmd(command, show_local_console=False):
         is_cmd_run_ok = True
     else:
         if err is not None:
-            err_str = err.decode(encoding="utf-8")
+            try:
+                err_str = err.decode(encoding="utf-8")
+            except:
+                logging.info("utf-8 could not decode the err msg")
+                err_str = ""
             if err_str != "":
                 logging.error("{}".format(err_str))
                 if show_local_console:

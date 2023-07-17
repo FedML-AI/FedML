@@ -71,7 +71,7 @@ comm_args:
 
 tracking_args:
   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
-  enable_wandb: true
+  enable_wandb: false
   wandb_entity: fedml-team
   wandb_only_server: true
   wandb_key: 404bae40078b1624faed523c4e9d25b40590e537
