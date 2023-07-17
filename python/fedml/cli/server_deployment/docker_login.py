@@ -66,10 +66,7 @@ def login_with_server_docker_mode(userid, version, docker_rank):
 
     # Compose the command for running the client agent docker
     fedml_server_home_dir = os.path.join(env_current_running_dir, "docker", "rank-"+str(docker_rank))
-    try:
-        os.makedirs(fedml_server_home_dir)
-    except:
-        pass
+    os.makedirs(fedml_server_home_dir, exist_ok=True)
     docker_run_cmd = "docker run --name " + fedml_docker_name + \
                      " -v " + fedml_server_home_dir + ":/home/fedml/fedml-server" + \
                      " --env ACCOUNT_ID=" + str(env_account_id) + \
