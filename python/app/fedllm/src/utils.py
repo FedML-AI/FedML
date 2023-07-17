@@ -1,9 +1,13 @@
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     MutableMapping,
     Optional,
+    Sequence,
+    Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -15,14 +19,15 @@ import os
 from pathlib import Path
 import shutil
 
-import torch
+from fedml.arguments import Arguments
+import torch.cuda
 from torch import distributed as dist, Tensor
 from torch.nn import Module
-from transformers import PreTrainedModel, Trainer
+from transformers import HfArgumentParser, Trainer
 from transformers.deepspeed import is_deepspeed_available, is_deepspeed_zero3_enabled
 from peft import PeftModel, PromptLearningConfig
 
-from .typing import PathType
+from .typing import ModelType, PathType
 
 if is_deepspeed_available():
     import deepspeed
@@ -120,7 +125,7 @@ def process_state_dict(state_dict: dict, reference_state_dict: dict) -> OrderedD
     return output_state_dict
 
 
-def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathType) -> None:
+def save_config(model: ModelType, output_dir: PathType) -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -277,3 +282,33 @@ def load_state_dict_helper(
             prefix=f"{prefix}{name}.",
             metadata=metadata
         )
+
+
+def parse_hf_args(
+        dataclass_types: Union[Type[T], Iterable[Type[T]]],
+        args: Optional[Union[Sequence[str], Arguments, Dict[str, Any]]] = None,
+        parser_kwargs: Optional[Dict[str, Any]] = None,
+        **kwargs: Any
+) -> Tuple[T, ...]:
+    if parser_kwargs is None:
+        parser_kwargs = {}
+
+    parser = HfArgumentParser(dataclass_types, **parser_kwargs)
+
+    if args is None or isinstance(args, Sequence):
+        return parser.parse_args_into_dataclasses(args=args, **kwargs)
+
+    elif isinstance(args, Arguments):
+        args_dict = dict(args.__dict__)
+        if not getattr(args, "using_gpu", True) or torch.cuda.device_count() == 1:
+            args_dict.pop("local_rank", None)
+            args_dict.pop("device", None)
+
+    elif isinstance(args, dict):
+        args_dict = args
+
+    else:
+        raise TypeError(f"{type(args)} is not a supported type")
+
+    kwargs.setdefault("allow_extra_keys", True)
+    return parser.parse_dict(args_dict, **kwargs)

@@ -10,12 +10,7 @@ from peft import (
     LoraConfig,
     TaskType,
 )
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    HfArgumentParser,
-    TrainingArguments,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from src.constants import (
@@ -33,7 +28,7 @@ from src.hf_trainer import HFTrainer
 from src.modeling_utils import get_data_collator, get_max_seq_length as _get_max_seq_length
 from src.trainer_callback import SavePeftModelCallback
 from src.typing import ModelConfigType, ModelType, TokenizerType
-from src.utils import save_config, should_process_save
+from src.utils import parse_hf_args, save_config, should_process_save
 
 
 @dataclass
@@ -269,8 +264,7 @@ def get_max_seq_length(
 
 def train() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DatasetArguments, FinetuningArguments))
-    model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
+    model_args, dataset_args, training_args = parse_hf_args((ModelArguments, DatasetArguments, FinetuningArguments))
 
     # prepare models
     logging.info(f"Loading tokenizer for \"{model_args.model_name}\"")
