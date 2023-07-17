@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, Union
 
 from collections import OrderedDict
+import gc
 import logging
 import math
 from pathlib import Path
@@ -12,6 +13,7 @@ from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict
 import torch.cuda
+from torch.nn import Module
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
@@ -29,6 +31,7 @@ from run_train import (
 )
 from src.constants import DEFAULT_MAX_SEQ_LENGTH, RESPONSE_KEY_NL
 from src.hf_resume_trainer import HFResumeTrainer
+from src.hf_trainer import HFTrainer
 from src.modeling_utils import get_data_collator
 from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
@@ -72,9 +75,13 @@ def _parse_args(args: Arguments) -> Arguments:
     return args
 
 
-def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HFResumeTrainer:
-    training_args, *_ = parse_hf_args(FinetuningArguments, args)
-
+def get_hf_trainer(
+        args: Arguments,
+        model: ModelType,
+        tokenizer: TokenizerType,
+        training_args: FinetuningArguments,
+        **kwargs
+) -> HFResumeTrainer:
     return HFResumeTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -88,22 +95,33 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     )
 
 
-def save_model(trainer: HFResumeTrainer, checkpoint_dir: Optional[PathType] = None) -> None:
-    if checkpoint_dir is None:
-        checkpoint_dir = trainer.args.output_dir
+def save_model(model_or_trainer: Union[HFTrainer, Module], checkpoint_dir: Optional[PathType] = None) -> None:
+    if checkpoint_dir is None and isinstance(model_or_trainer, HFTrainer):
+        checkpoint_dir = model_or_trainer.args.output_dir
 
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    if is_deepspeed_zero3_enabled() and is_deepspeed_module(trainer.model) and trainer.optimizer is not None:
-        # In DeepSpeed ZeRO3, huggingface Trainer saves full model checkpoint.
-        # When using Fairscale, Deepspeed or PyTorch FSDP, optimizer is only initialized during Trainer.train;
-        # to check if ZeRO3 is fully initialized, also need to check optimizer.
-        trainer.save_checkpoint(str(checkpoint_dir), overwrite_peft_checkpoint=False)
+    if isinstance(model_or_trainer, HFTrainer):
+        if (
+                is_deepspeed_zero3_enabled() and
+                is_deepspeed_module(model_or_trainer.model) and
+                model_or_trainer.optimizer is not None
+        ):
+            # In DeepSpeed ZeRO3, huggingface Trainer saves full model checkpoint.
+            # When using Fairscale, Deepspeed or PyTorch FSDP, optimizer is only initialized during Trainer.train;
+            # to check if ZeRO3 is fully initialized, also need to check optimizer.
+            model_or_trainer.save_checkpoint(str(checkpoint_dir), overwrite_peft_checkpoint=False)
 
-    elif should_process_save(trainer):
-        # Need to manually save full checkpoint when not using DeepSpeed.
-        torch.save(trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+        elif should_process_save(model_or_trainer):
+            # Need to manually save full checkpoint when not using DeepSpeed.
+            torch.save(model_or_trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+
+    elif isinstance(model_or_trainer, Module):
+        torch.save(model_or_trainer.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+
+    else:
+        raise TypeError(f"\"{type(model_or_trainer)}\" is not a supported type.")
 
     # all process should wait
     barrier()
@@ -121,12 +139,20 @@ class LLMTrainer(ClientTrainer):
             model: ModelType,
             args: Arguments,
             tokenizer: TokenizerType,
+            training_args: FinetuningArguments,
             test_dataset: Optional[Dataset] = None
     ):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
-        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, eval_dataset=test_dataset)
+        self.training_args = training_args
+        self.trainer = get_hf_trainer(
+            args=self.args,
+            model=self.model,
+            tokenizer=self.tokenizer,
+            training_args=self.training_args,
+            eval_dataset=test_dataset
+        )
 
         max_steps = self.trainer.args.max_steps
         num_train_epochs = self.trainer.args.num_train_epochs
@@ -157,9 +183,6 @@ class LLMTrainer(ClientTrainer):
             step_threshold=step_threshold,
             epoch_threshold=epoch_threshold
         ))
-
-        # this is required for DeepSpeed
-        save_model(self.trainer)
 
     @property
     def checkpoint_dir(self) -> Path:
@@ -265,21 +288,21 @@ class LLMAggregator(ServerAggregator):
             self,
             model: ModelType,
             args: Arguments,
-            tokenizer: TokenizerType
+            tokenizer: TokenizerType,
+            training_args: FinetuningArguments
     ):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
+        self.training_args = training_args
         self.trainer = get_hf_trainer(
             args=self.args,
             model=self.model,
             tokenizer=self.tokenizer,
+            training_args=self.training_args,
             # save peft adapted model weights
             callbacks=[SavePeftModelCallback]
         )
-
-        # this is required for DeepSpeed zero3
-        save_model(self.trainer)
 
         # save config
         if should_process_save(self.trainer):
@@ -404,11 +427,27 @@ def main(args: Arguments) -> None:
         dataset_args.max_seq_length = get_max_seq_length(model)
         setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
-    train_dataset, test_dataset = get_dataset(
-        dataset_args=dataset_args,
-        tokenizer=tokenizer,
-        seed=args.seed
+    if args.local_rank == 0:
+        # save initial model. This is required for DeepSpeed
+        save_model(model, args.output_dir)
+    del model
+    gc.collect()
+    barrier()
+
+    training_args, *_ = parse_hf_args(FinetuningArguments, args)
+
+    model = get_model(
+        model_args,
+        tokenizer_length=len(tokenizer),
+        use_cache=not getattr(args, "gradient_checkpointing", False)
     )
+
+    with training_args.main_process_first():
+        train_dataset, test_dataset = get_dataset(
+            dataset_args=dataset_args,
+            tokenizer=tokenizer,
+            seed=args.seed
+        )
 
     # load data
     dataset = transform_data_to_fedml_format(args, train_dataset, test_dataset)
@@ -420,10 +459,16 @@ def main(args: Arguments) -> None:
             model=model,
             args=args,
             tokenizer=tokenizer,
+            training_args=training_args,
             test_dataset=test_dataset
         )
     elif args.role == "server":
-        aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
+        aggregator = LLMAggregator(
+            model=model,
+            args=args,
+            tokenizer=tokenizer,
+            training_args=training_args
+        )
     else:
         raise RuntimeError(f"Invalid value for \"role\". Only \"client\" and \"server\" "
                            f"are allowed but received \"{args.role}\"")
