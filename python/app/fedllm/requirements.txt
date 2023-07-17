@@ -7,7 +7,7 @@ accelerate
 transformers[torch]>=4.25.1
 datasets>=2.8.0
 evaluate
-fedml>=0.8.4a7
+fedml>=0.8.7a3
 mpi4py
 sentencepiece
 tensorboard

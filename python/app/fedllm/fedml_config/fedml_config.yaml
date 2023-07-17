@@ -19,6 +19,7 @@ data_args:
   remove_long_seq: True  # if `True` remove all data whose sequence length > max_seq_length
 
 model_args:
+  skip_log_model_net: True  # toggle auto model input shape inference; if turned on, could slow down the training
   model_name: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
