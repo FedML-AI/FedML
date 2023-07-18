@@ -69,6 +69,50 @@ class FedMLJobManager(Singleton):
 
         return job_start_result
 
+    def list_job(self, platform, project_name, job_name, user_id, user_api_key):
+        result = self.list_job_api(platform, project_name, job_name, user_id, user_api_key)
+        if result is None:
+            return False
+
+        return True
+
+    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key):
+        job_list_result = None
+        jot_list_url = ServerConstants.get_job_list_url(self.config_version)
+        job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        job_list_json = {
+            "platformType": platform,
+            "jobName": job_name,
+            "projectName": project_name,
+            "userId": user_id,
+            "apiKey": user_api_key
+        }
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    jot_list_url, verify=True, headers=job_api_headers, json=job_list_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    jot_list_url, verify=True, headers=job_api_headers, json=job_list_json
+                )
+        else:
+            response = requests.post(jot_list_url, headers=job_api_headers, json=job_list_json)
+        if response.status_code != 200:
+            pass
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            job_list_result = resp_data
+
+        return job_list_result
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

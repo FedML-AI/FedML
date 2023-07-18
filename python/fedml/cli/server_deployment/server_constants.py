@@ -124,6 +124,12 @@ class ServerConstants(object):
         return job_ops_url
 
     @staticmethod
+    def get_job_list_url(config_version="release"):
+        job_ops_url = "{}/fedmlOpsServer/api/v1/runs/listJobsFromCli".format(
+            ServerConstants.get_mlops_url(config_version))
+        return job_ops_url
+
+    @staticmethod
     def get_app_create_url(config_version="release"):
         app_url = "{}/fedmlOpsServer/api/v1/application/createApplicationFromCli".format(
             ServerConstants.get_mlops_url(config_version))

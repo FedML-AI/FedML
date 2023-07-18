@@ -1,9 +1,14 @@
 import argparse
+import os
+import uuid
+
 import requests
 
 from ...core.common.singleton import Singleton
 from .server_constants import ServerConstants
+from ..edge_deployment.client_constants import ClientConstants
 from ...core.mlops.mlops_configs import MLOpsConfigs
+from ...core.distributed.communication.s3.remote_storage import S3Storage
 
 
 class FedMLAppManager(Singleton):
@@ -19,9 +24,13 @@ class FedMLAppManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def create_app(self, platform, application_name,
-                   client_package_url, client_package_file, server_package_url, server_package_file,
+    def create_app(self, platform, application_name, client_package_file, server_package_file,
                    user_id, user_api_key):
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id) \
+            if client_package_file != "" else ""
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id) \
+            if client_package_file != "" else ""
+
         result = self.create_app_api(platform, application_name,
                                      client_package_url, client_package_file, server_package_url, server_package_file,
                                      user_id, user_api_key)
@@ -31,9 +40,12 @@ class FedMLAppManager(Singleton):
         return True
 
     def create_app_api(self, platform, application_name,
-                       client_package_url, client_package_file, server_package_url, server_package_file,
+                       client_package_file, server_package_file,
                        user_id, user_api_key):
         app_create_result = None
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id)
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id)
+
         app_create_url = ServerConstants.get_app_create_url(self.config_version)
         app_create_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         app_create_json = {
@@ -109,6 +121,7 @@ class FedMLAppManager(Singleton):
             "userId": user_id,
             "apiKey": user_api_key
         }
+
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
@@ -136,8 +149,11 @@ class FedMLAppManager(Singleton):
         return app_create_result
 
     def update_app(self, platform, application_name,
-                   client_package_url, client_package_file, server_package_url, server_package_file,
+                   client_package_file, server_package_file,
                    user_id, user_api_key):
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id)
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id)
+
         result = self.update_app_api(platform, application_name,
                                      client_package_url, client_package_file, server_package_url, server_package_file,
                                      user_id, user_api_key)
@@ -250,6 +266,30 @@ class FedMLAppManager(Singleton):
             app_create_result = resp_data
 
         return app_create_result
+
+    def push_app_package_to_s3(self, app_name, app_package_path, user_id):
+        args = {"config_version": self.config_version}
+        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs(self.config_version)
+        s3_storage = S3Storage(s3_config)
+        app_dst_key = "{}@{}@{}".format(user_id, app_name, str(uuid.uuid4()))
+        app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key)
+        return app_storage_url
+
+    def pull_app_package_from_s3(self, model_storage_url, model_name):
+        args = {"config_version": self.config_version}
+        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs(self.config_version)
+        s3_storage = S3Storage(s3_config)
+        local_app_package = os.path.join(ClientConstants.get_package_download_dir(), model_name)
+        local_app_package = "{}.zip".format(local_app_package)
+        print("Pulling......")
+        ClientConstants.retrieve_and_unzip_package(model_storage_url,
+                                                   model_name,
+                                                   local_app_package,
+                                                   ClientConstants.get_model_dir())
+        if os.path.exists(local_app_package):
+            return local_app_package
+
+        return ""
 
 
 if __name__ == "__main__":
