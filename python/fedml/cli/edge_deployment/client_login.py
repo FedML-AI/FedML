@@ -27,7 +27,7 @@ def init_logs(args, edge_id):
     # logging.info("client ids:{}".format(args.client_id_list))
 
 
-def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suffix=None):
+def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suffix=None, role="client"):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -105,7 +105,7 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
         try:
             edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
-                api_key=api_key
+                api_key=api_key, role=role
             )
             if edge_id > 0:
                 runner.edge_id = edge_id
@@ -276,7 +276,7 @@ def login(args):
         __login_as_client(args, args.user, args.version, api_key=args.api_key)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]:
         __login_as_client(args, args.user, args.version, api_key=args.api_key,
-                          use_extra_device_id_suffix=".Edge.GPU.Supplier")
+                          use_extra_device_id_suffix=".Edge.GPU.Supplier", role=args.role)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:
         __login_as_simulator(args, args.user, args.version)
 
