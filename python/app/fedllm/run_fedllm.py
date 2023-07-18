@@ -184,6 +184,9 @@ class LLMTrainer(ClientTrainer):
             epoch_threshold=epoch_threshold
         ))
 
+        barrier()
+        self.log("initialized")
+
     @property
     def checkpoint_dir(self) -> Path:
         return Path(self.trainer.args.output_dir)
@@ -308,6 +311,9 @@ class LLMAggregator(ServerAggregator):
         if should_process_save(self.trainer):
             # save model config before training
             save_config(model, self.checkpoint_dir)
+
+        barrier()
+        self.log("initialized")
 
     @property
     def checkpoint_dir(self) -> Path:
