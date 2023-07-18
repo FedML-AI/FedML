@@ -144,7 +144,7 @@ def logging_inference_request(request, response):
     try:
         log_dir = ServerConstants.get_log_file_dir()
         if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+            os.makedirs(log_dir, exist_ok=True)
         inference_log_file = os.path.join(log_dir, "inference.log")
         with open(inference_log_file, "a") as f:
             f.writelines([f"request: {request}, response: {response}\n"])

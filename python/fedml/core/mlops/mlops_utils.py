@@ -48,7 +48,7 @@ class MLOpsUtils:
     def write_log_trace(log_trace):
         log_trace_dir = os.path.join(expanduser("~"), "fedml_log")
         if not os.path.exists(log_trace_dir):
-            os.makedirs(log_trace_dir)
+            os.makedirs(log_trace_dir, exist_ok=True)
 
         log_file_obj = open(os.path.join(log_trace_dir, "logs.txt"), "a")
         log_file_obj.write("{}\n".format(log_trace))

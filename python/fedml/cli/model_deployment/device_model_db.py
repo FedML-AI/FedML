@@ -133,7 +133,7 @@ class FedMLModelDatabase(object):
             return
 
         if not os.path.exists(ServerConstants.get_database_dir()):
-            os.makedirs(ServerConstants.get_database_dir())
+            os.makedirs(ServerConstants.get_database_dir(), exist_ok=True)
         job_db_path = os.path.join(ServerConstants.get_database_dir(), FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
         self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 

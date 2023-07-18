@@ -577,10 +577,7 @@ def build_mlops_package(
         base_dir=mlops_package_name,
     )
     if not os.path.exists(dist_package_dir):
-        try:
-            os.makedirs(dist_package_dir)
-        except Exception as e:
-            pass
+        os.makedirs(dist_package_dir, exist_ok=True)
     if os.path.exists(dist_package_file) and not os.path.isdir(dist_package_file):
         os.remove(dist_package_file)
     mlops_archive_zip_file = mlops_archive_name + ".zip"
