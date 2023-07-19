@@ -244,7 +244,7 @@ class ServerConstants(object):
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        return "https://model{}.fedml.ai/fedmlModelServer".format(
+        return "https://open{}.fedml.ai/serving".format(
             "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
