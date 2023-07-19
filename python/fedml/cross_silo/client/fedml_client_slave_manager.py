@@ -2,6 +2,8 @@ import logging
 
 import torch.distributed as dist
 
+from fedml.constants import FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY
+
 
 class ClientSlaveManager:
     def __init__(self, args, trainer_dist_adapter):
@@ -11,8 +13,15 @@ class ClientSlaveManager:
         self.num_rounds = args.comm_round
         self.finished = False
 
+    @property
+    def use_customized_hierarchical(self) -> bool:
+        return getattr(self.args, FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY, False)
+
     def train(self):
-        [round_idx, model_params, client_index] = self.await_sync_process_group()
+        if self.use_customized_hierarchical:
+            [round_idx, model_params, client_index] = self.trainer_dist_adapter.trainer.trainer.await_sync_process_group()
+        else:
+            [round_idx, model_params, client_index] = self.await_sync_process_group()
         if round_idx:
             self.round_idx = round_idx
         if model_params:
@@ -28,12 +37,14 @@ class ClientSlaveManager:
         self.trainer_dist_adapter.train(self.round_idx)
 
     def finish(self):
-        # pass
-        self.trainer_dist_adapter.cleanup_pg()
-        logging.info(
-            "Training finished for slave client rank %s in silo %s"
-            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
-        )
+        if self.use_customized_hierarchical:
+            self.trainer_dist_adapter.trainer.trainer.cleanup_process_group()
+        else:
+            self.trainer_dist_adapter.cleanup_pg()
+            logging.info(
+                "Training finished for slave client rank %s in silo %s"
+                % (self.args.proc_rank_in_silo, self.args.rank_in_node)
+            )
         self.finished = True
 
     def await_sync_process_group(self, src=0):
