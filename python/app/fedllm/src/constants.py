@@ -26,6 +26,12 @@ MODEL_NAMES = [
     "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
     "databricks/dolly-v2-12b",
+    "meta-llama/Llama-2-7b-hf",
+    "meta-llama/Llama-2-7b-chat-hf",
+    "meta-llama/Llama-2-13b-hf",
+    "meta-llama/Llama-2-13b-chat-hf",
+    "meta-llama/Llama-2-70b-hf",
+    "meta-llama/Llama-2-70b-chat-hf",
 ]
 
 DATASET_NAMES = [

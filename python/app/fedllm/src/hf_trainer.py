@@ -14,6 +14,7 @@ from .utils import (
     move_directory_content,
     is_deepspeed_module,
     is_directory,
+    is_file,
 )
 
 
@@ -38,9 +39,12 @@ class HFTrainer(Trainer):
                         overwrite_peft_checkpoint and
                         is_deepspeed_zero3_enabled() and
                         is_deepspeed_module(model_wrapped) and
-                        isinstance(model, PeftModel)
+                        isinstance(model, PeftModel) and
+                        # starting from transformers >= 4.31.0 and peft >= 0.4.0, full model weight is no
+                        # longer saved. Also, incomplete PEFT checkpoint bug has also been fixed since then
+                        is_file(checkpoint_dir / HF_WEIGHTS_NAME)
                 ):
-                    # As of transformers 4.30.2, manually calling Trainer._save_checkpoint
+                    # As of transformers <= 4.30.2, manually calling Trainer._save_checkpoint
                     # leads to incomplete PEFT checkpoint. Thus, need to overwrite the checkpoint
                     checkpoint = torch.load(str(checkpoint_dir / HF_WEIGHTS_NAME), map_location="cpu")
                     model.save_pretrained(str(checkpoint_dir), state_dict=checkpoint)

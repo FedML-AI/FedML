@@ -445,7 +445,7 @@ def main(args: Arguments) -> None:
     # Initialize model before initializing TrainingArgs to load the full model in memory
     # This is required when using DeepSpeed Zero3 w/ FedLLM
     tokenizer = get_tokenizer(
-        model_args.model_name,
+        model_args,
         add_special_tokens=getattr(args, "task", "finetune") == "instruction"
     )
     model = get_model(

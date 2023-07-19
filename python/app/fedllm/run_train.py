@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import logging
 import warnings
 
+from accelerate.utils import compare_versions
 from datasets import Dataset, load_dataset
 from peft import (
     get_peft_model,
@@ -45,7 +46,7 @@ class ModelArguments:
     model_name: str = field(
         default="EleutherAI/pythia-2.8b",
         metadata={
-            "help": "model name or checkpoint path.",
+            "help": "model name.",
             "choices": MODEL_NAMES
         },
     )
@@ -61,6 +62,46 @@ class ModelArguments:
             "nargs": "+",
         },
     )
+    auth_token: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Authentication token for Hugging Face private models such as Llama 2.",
+        },
+    )
+
+    _use_auth_token: Optional[Union[bool, str]] = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        if self.model_name.startswith("meta-llama/Llama-2-"):
+            if compare_versions("transformers", "<", "4.31.0"):
+                raise NotImplementedError(f"{self.model_name} requires transformers >= 4.31.0")
+
+            if self.auth_token is None:
+                # if no auth_token is provided, need to verify if already logged in
+                from huggingface_hub import HfApi
+                from huggingface_hub.utils import LocalTokenNotFoundError
+
+                try:
+                    HfApi().whoami()
+                except LocalTokenNotFoundError:
+                    raise LocalTokenNotFoundError(
+                        f"Token is required for {self.model_name}, but no token found. You need to provide a"
+                        f" token or be logged in to Hugging Face."
+                        f"\nTo pass a token, you could pass `--auth_token \"<your token>\"` or set environment"
+                        f" variable `HUGGING_FACE_HUB_TOKEN=\"${{your_token}}\"`."
+                        f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
+                        f" See https://huggingface.co/settings/tokens."
+                    )
+                else:
+                    # if logged in
+                    self._use_auth_token = True
+
+    @property
+    def use_auth_token(self) -> Optional[Union[str, bool]]:
+        if self.auth_token is not None:
+            return self.auth_token
+        else:
+            return self._use_auth_token
 
 
 @dataclass
@@ -201,8 +242,11 @@ def get_dataset(
     return train_dataset, test_dataset
 
 
-def get_tokenizer(model_name: str, add_special_tokens: bool = False) -> TokenizerType:
-    tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_name)
+def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, **kwargs) -> TokenizerType:
+    kwargs.setdefault("trust_remote_code", True)
+    kwargs.setdefault("use_auth_token", model_args.use_auth_token)
+
+    tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_args.model_name, **kwargs)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -217,6 +261,7 @@ def get_tokenizer(model_name: str, add_special_tokens: bool = False) -> Tokenize
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
     kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
+    kwargs.setdefault("use_auth_token", model_args.use_auth_token)
 
     model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
@@ -268,7 +313,7 @@ def train() -> None:
 
     # prepare models
     logging.info(f"Loading tokenizer for \"{model_args.model_name}\"")
-    tokenizer = get_tokenizer(model_args.model_name, add_special_tokens=training_args.is_instruction_finetune)
+    tokenizer = get_tokenizer(model_args, add_special_tokens=training_args.is_instruction_finetune)
 
     logging.info(f"Loading model for \"{model_args.model_name}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)
