@@ -267,7 +267,7 @@ class ClientConstants(object):
         if config_version == "local":
             return "http://{}:9000/fedmlModelServer".format(
                 "localhost" if local_server is None else local_server)
-        return "https://open{}.fedml.ai/serving".format(
+        return "https://open{}.fedml.ai/fedmlModelServer".format(
             "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
