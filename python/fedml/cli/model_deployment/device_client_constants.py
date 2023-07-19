@@ -140,21 +140,21 @@ class ClientConstants(object):
         home_dir = expanduser("~")
         fedml_home_dir = os.path.join(home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
-            os.makedirs(fedml_home_dir)
+            os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
 
     @staticmethod
     def get_log_file_dir():
         log_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs")
         if not os.path.exists(log_file_dir):
-            os.makedirs(log_file_dir)
+            os.makedirs(log_file_dir, exist_ok=True)
         return log_file_dir
 
     @staticmethod
     def get_data_dir():
         data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "data")
         if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
+            os.makedirs(data_dir, exist_ok=True)
         return data_dir
 
     @staticmethod
@@ -162,14 +162,14 @@ class ClientConstants(object):
         package_download_dir = os.path.join(ClientConstants.get_fedml_home_dir(),
                                             ClientConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
         if not os.path.exists(package_download_dir):
-            os.makedirs(package_download_dir)
+            os.makedirs(package_download_dir, exist_ok=True)
         return package_download_dir
 
     @staticmethod
     def get_package_unzip_dir():
         package_unzip_dir = ClientConstants.get_package_download_dir()
         if not os.path.exists(package_unzip_dir):
-            os.makedirs(package_unzip_dir)
+            os.makedirs(package_unzip_dir, exist_ok=True)
         return package_unzip_dir
 
     @staticmethod
@@ -178,35 +178,35 @@ class ClientConstants(object):
         package_run_dir = os.path.join(ClientConstants.get_package_unzip_dir(),
                                        package_file_no_extension)
         if not os.path.exists(package_run_dir):
-            os.makedirs(package_run_dir)
+            os.makedirs(package_run_dir, exist_ok=True)
         return package_run_dir
 
     @staticmethod
     def get_model_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models")
         if not os.path.exists(model_file_dir):
-            os.makedirs(model_file_dir)
+            os.makedirs(model_file_dir, exist_ok=True)
         return model_file_dir
 
     @staticmethod
     def get_model_package_dir():
         model_packages_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_packages")
         if not os.path.exists(model_packages_dir):
-            os.makedirs(model_packages_dir)
+            os.makedirs(model_packages_dir, exist_ok=True)
         return model_packages_dir
 
     @staticmethod
     def get_model_cache_dir():
         model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
         if not os.path.exists(model_cache_dir):
-            os.makedirs(model_cache_dir)
+            os.makedirs(model_cache_dir, exist_ok=True)
         return model_cache_dir
 
     @staticmethod
     def get_database_dir():
         database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
         if not os.path.exists(database_dir):
-            os.makedirs(database_dir)
+            os.makedirs(database_dir, exist_ok=True)
         return database_dir
 
     @staticmethod
@@ -240,14 +240,14 @@ class ClientConstants(object):
     def get_model_serving_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
         if not os.path.exists(model_file_dir):
-            os.makedirs(model_file_dir)
+            os.makedirs(model_file_dir, exist_ok=True)
         return model_file_dir
 
     @staticmethod
     def get_model_infer_data_dir():
         model_infer_data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_infer_data")
         if not os.path.exists(model_infer_data_dir):
-            os.makedirs(model_infer_data_dir)
+            os.makedirs(model_infer_data_dir, exist_ok=True)
         return model_infer_data_dir
 
     @staticmethod
@@ -267,7 +267,7 @@ class ClientConstants(object):
         if config_version == "local":
             return "http://{}:9000/fedmlModelServer".format(
                 "localhost" if local_server is None else local_server)
-        return "https://model{}.fedml.ai/fedmlModelServer".format(
+        return "https://open{}.fedml.ai/fedmlModelServer".format(
             "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
@@ -471,14 +471,8 @@ class ClientConstants(object):
     @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
         local_pkg_data_dir = ClientConstants.get_data_dir()
-        try:
-            os.makedirs(local_pkg_data_dir)
-        except Exception as e:
-            pass
-        try:
-            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
-        except Exception as e:
-            pass
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
 
         runner_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
                                         "runner_infos.yaml")
@@ -491,14 +485,8 @@ class ClientConstants(object):
     @staticmethod
     def save_training_infos(edge_id, training_status):
         local_pkg_data_dir = ClientConstants.get_data_dir()
-        try:
-            os.makedirs(local_pkg_data_dir)
-        except Exception as e:
-            pass
-        try:
-            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
-        except Exception as e:
-            pass
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
 
         training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
                                           "training_infos.yaml")

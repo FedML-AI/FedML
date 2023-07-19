@@ -151,7 +151,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                            ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                            running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
             if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path)
+                os.makedirs(onnx_model_path, exist_ok=True)
             onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
             convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
@@ -198,7 +198,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                            running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
             logging.info("converted onnx model path: {}".format(onnx_model_path))
             if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path)
+                os.makedirs(onnx_model_path, exist_ok=True)
             onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
             convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
@@ -233,7 +233,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
-        os.makedirs(model_serving_dir)
+        os.makedirs(model_serving_dir, exist_ok=True)
     converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
     if os.path.exists(converted_model_path):
         model_file_list = os.listdir(converted_model_path)
@@ -627,7 +627,7 @@ def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_nam
                                   ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                   model_name, ClientConstants.INFERENCE_MODEL_VERSION)
     if not os.path.exists(onnx_model_dir):
-        os.makedirs(onnx_model_dir)
+        os.makedirs(onnx_model_dir, exist_ok=True)
     onnx_model_path = os.path.join(onnx_model_dir, "model.onnx")
 
     convert_model_to_onnx(torch_model, onnx_model_path, dummy_input_list, input_size,

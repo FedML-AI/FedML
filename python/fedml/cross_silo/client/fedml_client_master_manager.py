@@ -6,7 +6,10 @@ import time
 import torch.distributed as dist
 
 from fedml import mlops
-from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+from fedml.constants import (
+    FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY,
+    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
+)
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
@@ -33,6 +36,10 @@ class ClientMasterManager(FedMLCommManager):
 
         self.has_sent_online_msg = False
         self.is_inited = False
+
+    @property
+    def use_customized_hierarchical(self) -> bool:
+        return getattr(self.args, FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY, False)
 
     def is_main_process(self):
         return getattr(self.trainer_dist_adapter, "trainer", None) is None or \
@@ -84,6 +91,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             global_model_params = convert_model_params_to_ddp(global_model_params)
             self.sync_process_group(0, global_model_params, data_silo_index)
+        elif self.use_customized_hierarchical:
+            self.trainer_dist_adapter.trainer.trainer.sync_process_group(0, global_model_params, data_silo_index)
 
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.trainer_dist_adapter.update_model(global_model_params)
@@ -100,6 +109,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             model_params = convert_model_params_to_ddp(model_params)
             self.sync_process_group(self.round_idx, model_params, client_index)
+        elif self.use_customized_hierarchical:
+            self.trainer_dist_adapter.trainer.trainer.sync_process_group(self.round_idx, model_params, client_index)
 
         self.trainer_dist_adapter.update_dataset(int(client_index))
         logging.info("current round index {}, total rounds {}".format(self.round_idx, self.num_rounds))

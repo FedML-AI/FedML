@@ -101,7 +101,7 @@ class FedMLClientRunner:
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path)
+            os.makedirs(local_package_path, exist_ok=True)
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
@@ -124,7 +124,7 @@ class FedMLClientRunner:
     def retrieve_binary_model_file(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path)
+            os.makedirs(local_package_path, exist_ok=True)
         unzip_package_path = ClientConstants.get_model_dir()
         local_package_file = "{}".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
@@ -133,7 +133,7 @@ class FedMLClientRunner:
 
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         if not os.path.exists(unzip_package_path):
-            os.makedirs(unzip_package_path)
+            os.makedirs(unzip_package_path, exist_ok=True)
         dst_model_file = os.path.join(unzip_package_path, package_name)
         if os.path.exists(local_package_file):
             shutil.copy(local_package_file, dst_model_file)

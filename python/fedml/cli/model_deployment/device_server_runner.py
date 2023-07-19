@@ -130,7 +130,7 @@ class FedMLServerRunner:
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ServerConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path)
+            os.makedirs(local_package_path, exist_ok=True)
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)

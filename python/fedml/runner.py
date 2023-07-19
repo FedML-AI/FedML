@@ -209,7 +209,7 @@ class FedMLRunner:
     def log_runner_result():
         log_runner_result_dir = os.path.join(expanduser("~"), "fedml_trace")
         if not os.path.exists(log_runner_result_dir):
-            os.makedirs(log_runner_result_dir)
+            os.makedirs(log_runner_result_dir, exist_ok=True)
 
         log_file_obj = open(os.path.join(log_runner_result_dir, str(os.getpid())), "w")
         log_file_obj.write("{}".format(str(os.getpid())))

@@ -150,10 +150,7 @@ class FedMLClientRunner:
 
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ClientConstants.get_package_download_dir()
-        try:
-            os.makedirs(local_package_path)
-        except Exception as e:
-            pass
+        os.makedirs(local_package_path, exist_ok=True)
         local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
@@ -219,10 +216,7 @@ class FedMLClientRunner:
             unzip_package_path, "fedml", "config", os.path.basename(container_dynamic_args_config["s3_config_path"])
         )
         log_file_dir = ClientConstants.get_log_file_dir()
-        try:
-            os.makedirs(log_file_dir)
-        except Exception as e:
-            pass
+        os.makedirs(log_file_dir, exist_ok=True)
         package_conf_object["dynamic_args"]["log_file_dir"] = log_file_dir
 
         # Save new config dictionary to local file
@@ -277,7 +271,7 @@ class FedMLClientRunner:
                         bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
                     )
         # try:
-        #     os.makedirs(package_dynamic_args["data_cache_dir"])
+        #     os.makedirs(package_dynamic_args["data_cache_dir"], exist_ok=True)
         # except Exception as e:
         #     pass
         fedml_conf_object["dynamic_args"] = package_dynamic_args
@@ -895,7 +889,7 @@ class FedMLClientRunner:
                                         ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         file_for_device_id = os.path.join(device_file_path, "devices.id")
         if not os.path.exists(device_file_path):
-            os.makedirs(device_file_path)
+            os.makedirs(device_file_path, exist_ok=True)
         elif os.path.exists(file_for_device_id):
             with open(file_for_device_id, 'r', encoding='utf-8') as f:
                 device_id_from_file = f.readline()

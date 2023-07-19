@@ -178,14 +178,8 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
 def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
     home_dir = expanduser("~")
     local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
-    try:
-        os.makedirs(local_pkg_data_dir)
-    except Exception as e:
-        pass
-    try:
-        os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir))
-    except Exception as e:
-        pass
+    os.makedirs(local_pkg_data_dir, exist_ok=True)
+    os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir), exist_ok=True)
 
     try:
         edge_process_id_file = os.path.join(
@@ -439,10 +433,7 @@ def edge_simulator_has_login(login_program="client_login.py"):
 
 def save_simulator_process(data_dir, runner_info_dir, process_id, run_id, run_status=None):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
-    try:
-        os.makedirs(simulator_proc_path)
-    except Exception as e:
-        pass
+    os.makedirs(simulator_proc_path, exist_ok=True)
 
     try:
         simulator_process_id_file = os.path.join(
@@ -477,10 +468,7 @@ def get_simulator_process_list(data_dir, runner_info_dir):
 
 def remove_simulator_process(data_dir, runner_info_dir, process_id):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
-    try:
-        os.makedirs(simulator_proc_path)
-    except Exception as e:
-        pass
+    os.makedirs(simulator_proc_path, exist_ok=True)
 
     try:
         simulator_process_id_file = os.path.join(

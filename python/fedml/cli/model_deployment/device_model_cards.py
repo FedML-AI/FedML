@@ -38,7 +38,7 @@ class FedMLModelCards(Singleton):
         self.current_model_name = model_name
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
+            os.makedirs(model_dir, exist_ok=True)
         return True
 
     def delete_model(self, model_name):
@@ -150,7 +150,7 @@ class FedMLModelCards(Singleton):
             return ""
 
         if not os.path.exists(ClientConstants.get_model_package_dir()):
-            os.makedirs(ClientConstants.get_model_package_dir())
+            os.makedirs(ClientConstants.get_model_package_dir(), exist_ok=True)
 
         model_archive_name = os.path.join(ClientConstants.get_model_package_dir(), model_name)
         model_zip_path = "{}.zip".format(model_archive_name)
@@ -199,7 +199,7 @@ class FedMLModelCards(Singleton):
                 return "", ""
 
             if not os.path.exists(ClientConstants.get_model_package_dir()):
-                os.makedirs(ClientConstants.get_model_package_dir())
+                os.makedirs(ClientConstants.get_model_package_dir(), exist_ok=True)
 
             model_archive_name = os.path.join(ClientConstants.get_model_package_dir(), model_name)
             model_zip_path = "{}.zip".format(model_archive_name)

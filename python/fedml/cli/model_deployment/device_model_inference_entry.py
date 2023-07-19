@@ -25,11 +25,11 @@ if __name__ == "__main__":
 
     # create directories
     if not os.path.exists(ClientConstants.get_model_dir()):
-        os.makedirs(ClientConstants.get_model_dir())
+        os.makedirs(ClientConstants.get_model_dir(), exist_ok=True)
     if not os.path.exists(ClientConstants.get_model_package_dir()):
-        os.makedirs(ClientConstants.get_model_package_dir())
+        os.makedirs(ClientConstants.get_model_package_dir(), exist_ok=True)
     if not os.path.exists(ClientConstants.get_model_serving_dir()):
-        os.makedirs(ClientConstants.get_model_serving_dir())
+        os.makedirs(ClientConstants.get_model_serving_dir(), exist_ok=True)
 
     # start unified inference server
     running_model_name = ClientConstants.get_running_model_name(args.end_point_name,

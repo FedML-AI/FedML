@@ -84,7 +84,7 @@ class ThetaStorage:
         home_dir = expanduser("~")
         file_path = os.path.join(home_dir, "thetastore")
         if not os.path.exists(file_path):
-            os.makedirs(file_path)
+            os.makedirs(file_path, exist_ok=True)
         file_path = os.path.join(file_path, str(uuid.uuid4()))
         with open(file_path, "wb") as file_handle:
             file_handle.write(file_obj)
