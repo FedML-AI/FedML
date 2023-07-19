@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from collections import OrderedDict
 import gc
@@ -6,6 +6,7 @@ import logging
 import math
 from pathlib import Path
 
+from accelerate.utils import broadcast_object_list
 from datasets import Dataset
 import fedml
 from fedml import FedMLRunner, mlops
@@ -285,6 +286,30 @@ class LLMTrainer(ClientTrainer):
     def round_idx(self, round_idx: int) -> None:
         setattr(self.args, "round_idx", round_idx)
 
+    def sync_process_group(
+            self,
+            round_idx: Optional[int] = None,
+            model_params: Optional[Any] = None,
+            client_index: Optional[int] = None,
+            from_process: int = 0
+    ) -> None:
+        self.log("start")
+
+        if round_idx is None:
+            round_idx = self.round_idx
+
+        broadcast_object_list([round_idx, model_params, client_index], from_process=from_process)
+
+        self.log("finished")
+
+    def await_sync_process_group(self, from_process: int = 0) -> list:
+        self.log("start")
+
+        outputs = broadcast_object_list([None, None, None], from_process=from_process)
+
+        self.log("finished")
+        return outputs
+
 
 class LLMAggregator(ServerAggregator):
     def __init__(
@@ -441,6 +466,12 @@ def main(args: Arguments) -> None:
     barrier()
 
     training_args, *_ = parse_hf_args(FinetuningArguments, args)
+
+    # update cross-silo hierarchical related settings
+    if getattr(args, "use_customized_hierarchical", False):
+        setattr(args, "proc_rank_in_silo", training_args.process_index)
+        setattr(args, "rank_in_node", training_args.local_process_index)
+        setattr(args, "process_id", training_args.process_index)
 
     model = get_model(
         model_args,
