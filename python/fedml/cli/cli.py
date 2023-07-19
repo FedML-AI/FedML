@@ -24,9 +24,11 @@ from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment import device_login_entry
 from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
-from fedml.cli.server_deployment.job_manager import FedMLJobManager
+from fedml.cli.scheduler.job_manager import FedMLJobManager
 from fedml.cli.cli_utils import platform_is_valid
-from fedml.cli.server_deployment.app_manager import FedMLAppManager
+from fedml.cli.scheduler.app_manager import FedMLAppManager
+from fedml.cli.scheduler.launch_manager import FedMLLaunchManager
+
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 simulator_process_list = list()
@@ -747,12 +749,22 @@ def launch_local(arguments):
     "job", help="launch job at the MLOps platform", context_settings={"ignore_unknown_options": True}
 )
 @click.argument("yaml_file", nargs=-1)
-def launch_job(arguments):
-    # TODO: launch job with the given yaml file.
-    # fedml build
-    # fedml app update
-    # fedml jobs start
-    pass
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+def launch_job(yaml_file, user_id, api_key):
+    result = FedMLLaunchManager.launch_job(yaml_file, user_id, api_key)
+    if result is not None:
+        click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+        click.echo(f"Please go to this web page with your account {user_id} to review your job "
+                   f"and confirm the launch start: {result.job_url}")
+        click.echo(f"For querying the status of the job, please run the command: "
+                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
+    else:
+        click.echo("Failed to launch the job.")
 
 
 @cli.group("app")
@@ -803,11 +815,11 @@ def create_application(platform, application_name, client_package, server_packag
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
 
-    FedMLJobManager.get_instance().set_config_version(version)
+    FedMLAppManager.get_instance().set_config_version(version)
     result = FedMLAppManager.get_instance().create_app(platform, application_name,
-                                                       client_package,
-                                                       server_package,
-                                                       user, api_key)
+                                                       user, api_key,
+                                                       client_package_file=client_package,
+                                                       server_package_file=server_package)
     if result:
         click.echo("Create application {} successfully.".format(application_name))
     else:
@@ -855,10 +867,11 @@ def update_application(platform, application_name, client_package, server_packag
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
 
-    FedMLJobManager.get_instance().set_config_version(version)
+    FedMLAppManager.get_instance().set_config_version(version)
     result = FedMLAppManager.get_instance().update_app(platform, application_name,
-                                                       client_package, server_package,
-                                                       user, api_key)
+                                                       user, api_key,
+                                                       client_package_file=client_package,
+                                                       server_package_file=server_package)
     if result:
         click.echo("Update application {} successfully.".format(application_name))
     else:
@@ -918,7 +931,11 @@ def start_job(platform, project_name, application_name, devices, user, api_key, 
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices, user, api_key)
     if result:
-        click.echo("Job started, please review the job details at the MLOps platform.")
+        click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+        click.echo(f"Please go to this web page with your account {user} to review your job "
+                   f"and confirm the launch start: {result.job_url}")
+        click.echo(f"For querying the status of the job, please run the command: "
+                   f"fedml jobs list -prj {project_name} -n {result.job_name} -u {user} -k {api_key}.")
     else:
         click.echo("Failed to start job, please check your network connection "
                    "and make sure be able to access the MLOps platform.")
@@ -962,11 +979,16 @@ def list_jobs(platform, project_name, job_name, user, api_key, version):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    job_list = FedMLJobManager.get_instance().list_job(platform, project_name, job_name, user, api_key)
-    if len(job_list) > 0:
-        for job in job_list:
-            click.echo(f"name {job.name}, status {job.status}, started time {job.started_time}, "
-                       f"ended time {job.ended_time}, link {job.url}.")
+    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name, user, api_key)
+    if job_list_obj is not None:
+        if len(job_list_obj.job_list) > 0:
+            for job in job_list_obj.job_list:
+                click.echo(f"job name {job.job_name}, status {job.status}, started time {job.started_time}, "
+                           f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost},"
+                           f"computing device id {job.device_id}, computing device info {job.device_info},"
+                           f"job link {job.job_url}.")
+        else:
+            click.echo("Not found any jobs.")
     else:
         click.echo("Failed to list jobs, please check your network connection "
                    "and make sure be able to access the MLOps platform.")

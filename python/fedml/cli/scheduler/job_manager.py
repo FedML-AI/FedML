@@ -1,11 +1,11 @@
-import argparse
+
 import json
 import uuid
 
 import requests
 
 from ...core.common.singleton import Singleton
-from .server_constants import ServerConstants
+from ..server_deployment.server_constants import ServerConstants
 from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
@@ -65,7 +65,7 @@ class FedMLJobManager(Singleton):
             if resp_data["code"] == "FAILURE":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
-            job_start_result = resp_data
+            job_start_result = FedMLJobStartedModel(resp_data["data"])
 
         return job_start_result
 
@@ -109,13 +109,46 @@ class FedMLJobManager(Singleton):
             if resp_data["code"] == "FAILURE":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
-            job_list_result = resp_data
+            job_list_result = FedMLJobModelList(resp_data["data"])
 
         return job_list_result
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cf", "-c", help="config file")
-    parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    in_args = parser.parse_args()
+class FedMLJobStartedModel(object):
+    def __init__(self, job_started_json):
+        self.job_name = job_started_json["job_name"]
+        self.status = job_started_json["status"]
+        self.job_url = job_started_json["job_url"]
+        self.started_time = job_started_json["started_time"]
+
+
+class FedMLJobModelList(object):
+    def __init__(self, job_list_json):
+        self.total_num = job_list_json["total"]
+        self.total_page = job_list_json["totalPage"]
+        self.page_num = job_list_json["pageNum"]
+        self.page_size = job_list_json["pageSize"]
+        job_list_data = job_list_json["data"]
+        self.job_list = list()
+        for job_obj_json in job_list_data:
+            job_obj = FedMLJobModel(job_obj_json)
+            self.job_list.append(job_obj)
+
+
+class FedMLJobModel(object):
+    def __init__(self, job_json):
+        self.job_name = job_json["job_name"]
+        self.status = job_json["status"]
+        self.started_time = job_json["started_time"]
+        self.ended_time = job_json["ended_time"]
+        self.running_time = job_json["running_time"]
+        self.compute_start_time = job_json["compute_start_time"]
+        self.compute_end_time = job_json["compute_end_time"]
+        self.compute_duration = job_json["compute_duration"]
+        self.cost = job_json["cost"]
+        self.device_id = job_json["device_id"]
+        self.device_info = job_json["device_info"]
+        self.job_url = job_json["job_url"]
+
+    def parse(self, job_json):
+        pass

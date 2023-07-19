@@ -5,7 +5,7 @@ import uuid
 import requests
 
 from ...core.common.singleton import Singleton
-from .server_constants import ServerConstants
+from ..server_deployment.server_constants import ServerConstants
 from ..edge_deployment.client_constants import ClientConstants
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.distributed.communication.s3.remote_storage import S3Storage
@@ -40,11 +40,17 @@ class FedMLAppManager(Singleton):
         return True
 
     def create_app_api(self, platform, application_name,
-                       client_package_file, server_package_file,
-                       user_id, user_api_key):
+                       user_id, user_api_key,
+                       client_package_file=None, server_package_file=None):
         app_create_result = None
-        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id)
-        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id)
+
+        if client_package_file is None and server_package_file is None:
+            return False
+
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id) \
+            if client_package_file is not None else ""
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id) \
+            if server_package_file is not None else ""
 
         app_create_url = ServerConstants.get_app_create_url(self.config_version)
         app_create_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -149,10 +155,15 @@ class FedMLAppManager(Singleton):
         return app_create_result
 
     def update_app(self, platform, application_name,
-                   client_package_file, server_package_file,
-                   user_id, user_api_key):
-        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id)
-        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id)
+                   user_id, user_api_key,
+                   client_package_file=None, server_package_file=None):
+        if client_package_file is None and server_package_file is None:
+            return False
+
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id) \
+            if client_package_file is not None else ""
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id) \
+            if server_package_file is not None else ""
 
         result = self.update_app_api(platform, application_name,
                                      client_package_url, client_package_file, server_package_url, server_package_file,
@@ -290,10 +301,3 @@ class FedMLAppManager(Singleton):
             return local_app_package
 
         return ""
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cf", "-c", help="config file")
-    parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    in_args = parser.parse_args()
