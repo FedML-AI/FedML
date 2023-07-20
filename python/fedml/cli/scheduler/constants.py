@@ -1,7 +1,7 @@
 import os
 from os.path import expanduser
 
-from ...core.common.singleton import Singleton
+from fedml.core.common.singleton import Singleton
 
 
 class Constants(Singleton):

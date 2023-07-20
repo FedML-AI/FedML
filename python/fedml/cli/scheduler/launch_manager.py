@@ -2,9 +2,9 @@ import os
 import shutil
 from os.path import expanduser
 
-from ...core.common.singleton import Singleton
-from ..comm_utils.yaml_utils import load_yaml_config
-from ..cli_utils import platform_is_valid
+from fedml.core.common.singleton import Singleton
+from fedml.cli.comm_utils.yaml_utils import load_yaml_config
+from fedml.cli.cli_utils import platform_is_valid
 from constants import Constants
 from app_manager import FedMLAppManager
 from job_manager import FedMLJobManager
@@ -24,6 +24,9 @@ class FedMLLaunchManager(Singleton):
             self.config_version = config_version
 
     def launch_job(self, yaml_file, user_id, user_api_key):
+        if os.path.dirname(yaml_file) == "":
+            yaml_file = os.path.join(os.getcwd(), yaml_file)
+
         self.parse_job_yaml(yaml_file)
 
         platform = Constants.FEDML_PLATFORM_CHEETAH
@@ -282,15 +285,15 @@ fedml_params:
     job_name: fine_day
 development_resources:
     dev_env: tbd        # development resources bundle to load on each machine
-    network: tbd        # network protocol for comms between machines
+    network: tbd        # network protocol for communication between machines
 executable_code_and_data:
     executable_file: tbd       # your main executable file, which can be empty
-    executable_conf: tbd   # your config file for main executable prgram, which can be empty
-    data_location: tbd          # path to your data
-    pre_setup:  | tbd                # presetup shell commands. support multiple lines, which can be empty
-    run_commands: | tbd  # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empy. Both the run_commands and excecutable_file can be the main executable commands. First run  run_commands, then run excecutable_file.
-gpu_requirements
-    minimum_num_gpus: 8                  # minimum # of GPUs to provision
+    executable_conf: tbd       # your config file for the main executable program, which can be empty
+    data_location: tbd         # path to your data
+    pre_setup:  | tbd          # presetup shell commands. support multiple lines, which can be empty
+    run_commands: | tbd        # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empy. Both the run_commands and excecutable_file can be the main executable commands. First run  run_commands, then run excecutable_file.
+gpu_requirements:
+    minimum_num_gpus: 8             # minimum # of GPUs to provision
     maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
 '''
 
@@ -298,16 +301,16 @@ gpu_requirements
 class FedMLJobConfig(object):
     def __init__(self, job_yaml_file):
         job_config = load_yaml_config(job_yaml_file)
-        self.account_id = job_config["fedml_account_id"]
-        self.project_name = job_config["project_name"]
-        self.job_name = job_config["job_name"]
-        self.dev_env = job_config["dev_env"]
-        self.network = job_config["network"]
-        self.executable_file = job_config["executable_file"]
-        self.executable_conf = job_config["executable_conf"]
-        self.data_location = job_config["data_location"]
-        self.pre_setup = job_config["presetup"]
-        self.run_commands = job_config["run_commands"]
-        self.minimum_num_gpus = job_config["minimum_num_gpus"]
-        self.maximum_cost_per_hour = job_config["maximum_cost_per_hour"]
+        self.account_id = job_config["fedml_params"]["fedml_account_id"]
+        self.project_name = job_config["fedml_params"]["project_name"]
+        self.job_name = job_config["fedml_params"]["job_name"]
+        self.dev_env = job_config["development_resources"]["dev_env"]
+        self.network = job_config["development_resources"]["network"]
+        self.executable_file = job_config["executable_code_and_data"]["executable_file"]
+        self.executable_conf = job_config["executable_code_and_data"]["executable_conf"]
+        self.data_location = job_config["executable_code_and_data"]["data_location"]
+        self.pre_setup = job_config["executable_code_and_data"]["pre_setup"]
+        self.run_commands = job_config["executable_code_and_data"]["run_commands"]
+        self.minimum_num_gpus = job_config["gpu_requirements"]["minimum_num_gpus"]
+        self.maximum_cost_per_hour = job_config["gpu_requirements"]["maximum_cost_per_hour"]
         self.application_name = f"App-{self.job_name}"

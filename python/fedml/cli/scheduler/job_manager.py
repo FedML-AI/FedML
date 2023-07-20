@@ -4,9 +4,9 @@ import uuid
 
 import requests
 
-from ...core.common.singleton import Singleton
-from ..server_deployment.server_constants import ServerConstants
-from ...core.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.common.singleton import Singleton
+from fedml.cli.server_deployment.server_constants import ServerConstants
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 class FedMLJobManager(Singleton):

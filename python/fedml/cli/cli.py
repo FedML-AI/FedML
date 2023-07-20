@@ -755,14 +755,14 @@ def launch_local(arguments):
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
-def launch_job(yaml_file, user_id, api_key):
-    result = FedMLLaunchManager.launch_job(yaml_file, user_id, api_key)
+def launch_job(yaml_file, user, api_key):
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user, api_key)
     if result is not None:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-        click.echo(f"Please go to this web page with your account {user_id} to review your job "
+        click.echo(f"Please go to this web page with your account {user} to review your job "
                    f"and confirm the launch start: {result.job_url}")
         click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
+                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user} -k {api_key}.")
     else:
         click.echo("Failed to launch the job.")
 

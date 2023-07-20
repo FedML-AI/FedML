@@ -4,11 +4,11 @@ import uuid
 
 import requests
 
-from ...core.common.singleton import Singleton
-from ..server_deployment.server_constants import ServerConstants
-from ..edge_deployment.client_constants import ClientConstants
-from ...core.mlops.mlops_configs import MLOpsConfigs
-from ...core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.core.common.singleton import Singleton
+from fedml.cli.server_deployment.server_constants import ServerConstants
+from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
 
 class FedMLAppManager(Singleton):
