@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from dataclasses import dataclass, field
 import logging
@@ -26,7 +26,7 @@ from src.constants import (
     RESPONSE_KEY_NL,
 )
 from src.hf_trainer import HFTrainer
-from src.modeling_utils import get_data_collator, get_max_seq_length as _get_max_seq_length
+from src.modeling_utils import get_data_collator, get_max_seq_length as _get_max_seq_length, get_vocab_size
 from src.trainer_callback import SavePeftModelCallback
 from src.typing import ModelConfigType, ModelType, TokenizerType
 from src.utils import parse_hf_args, save_config, should_process_save
@@ -265,14 +265,13 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
 
     model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
-    embedding_size = model.get_input_embeddings().weight.shape[0]
-    if tokenizer_length is not None and tokenizer_length > embedding_size:
-        logging.info(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
+    model_vocab_size = get_vocab_size(model.config)
+    if tokenizer_length is not None and model_vocab_size < tokenizer_length:
+        logging.info(f"Resize embedding from {model_vocab_size:,} to tokenizer length: {tokenizer_length:,}")
         model.resize_token_embeddings(tokenizer_length)
 
-        # update model configurations
-        if hasattr(model.config, "vocab_size"):
-            model.config.vocab_size = tokenizer_length
+        # model.config should also be updated
+        assert model.config.vocab_size == tokenizer_length
 
     if model_args.use_lora:
         # apply LoRA
@@ -294,9 +293,10 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
 
 def get_max_seq_length(
         model_or_config: Union[str, ModelConfigType, ModelType],
-        default_max_seq_length: int = DEFAULT_MAX_SEQ_LENGTH
+        default_max_seq_length: int = DEFAULT_MAX_SEQ_LENGTH,
+        **kwargs: Any
 ) -> int:
-    embedding_size = _get_max_seq_length(model_or_config)
+    embedding_size = _get_max_seq_length(model_or_config, **kwargs)
 
     if embedding_size is not None:
         logging.info(f"Found max length: {embedding_size}")
