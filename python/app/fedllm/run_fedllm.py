@@ -503,26 +503,28 @@ def main(args: Arguments) -> None:
 
     model_args, dataset_args = parse_hf_args((ModelArguments, DatasetArguments), args)
 
-    # Initialize model before initializing TrainingArgs to load the full model in memory
-    # This is required when using DeepSpeed Zero3 w/ FedLLM
     tokenizer = get_tokenizer(
         model_args,
         add_special_tokens=getattr(args, "task", "finetune") == "instruction"
     )
-    model = get_model(
-        model_args,
-        tokenizer_length=len(tokenizer),
-        use_cache=not getattr(args, "gradient_checkpointing", False)
-    )
 
-    if dataset_args.max_seq_length is None:
-        dataset_args.max_seq_length = get_max_seq_length(model)
-        setattr(args, "max_seq_length", dataset_args.max_seq_length)
+    if args.local_rank == 0:
+        # Initialize model before initializing TrainingArgs to load the full model in memory
+        # This is required when using DeepSpeed Zero3 w/ FedLLM
+        model = get_model(
+            model_args,
+            tokenizer_length=len(tokenizer),
+            use_cache=not getattr(args, "gradient_checkpointing", False)
+        )
 
-    # save initial model. This is required for DeepSpeed
-    save_model_state_dict(model, args.output_dir, is_saving_process=args.local_rank == 0)
-    del model
-    gc.collect()
+        # save initial model. This is required for DeepSpeed
+        save_model_state_dict(
+            model_or_trainer=model,
+            checkpoint_dir=args.output_dir,
+            is_saving_process=True
+        )
+        del model
+        gc.collect()
     barrier()
 
     training_args, *_ = parse_hf_args(FinetuningArguments, args)
@@ -538,6 +540,10 @@ def main(args: Arguments) -> None:
         tokenizer_length=len(tokenizer),
         use_cache=not getattr(args, "gradient_checkpointing", False)
     )
+
+    if dataset_args.max_seq_length is None:
+        dataset_args.max_seq_length = get_max_seq_length(model)
+        setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
     with training_args.main_process_first():
         train_dataset, test_dataset = get_dataset(
