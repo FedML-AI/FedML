@@ -12,7 +12,8 @@ import fedml
 from fedml import FedMLRunner, mlops
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
-from peft import get_peft_model_state_dict
+from peft import get_peft_model_state_dict, PeftModel
+from peft.utils import WEIGHTS_NAME as PEFT_WEIGHTS_NAME
 import torch.cuda
 from torch.nn import Module
 from transformers.deepspeed import is_deepspeed_zero3_enabled
@@ -40,6 +41,7 @@ from src.typing import PathType
 from src.utils import (
     barrier,
     is_deepspeed_module,
+    is_file,
     is_main_process,
     log_helper,
     parse_hf_args,
@@ -96,42 +98,103 @@ def get_hf_trainer(
     )
 
 
-def save_model(model_or_trainer: Union[HFTrainer, Module], checkpoint_dir: Optional[PathType] = None) -> None:
-    if checkpoint_dir is None and isinstance(model_or_trainer, HFTrainer):
-        checkpoint_dir = model_or_trainer.args.output_dir
+def save_model_helper(model: Module, checkpoint_dir: PathType) -> None:
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
+    peft_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
+
+    state_dict = to_device(model.state_dict(), device="cpu")
+
+    if isinstance(model, PeftModel):
+        torch.save(
+            get_peft_model_state_dict(model, state_dict=state_dict),
+            str(peft_checkpoint_path)
+        )
+    else:
+        torch.save(state_dict, str(checkpoint_path))
+
+    del state_dict
+    gc.collect()
+
+
+def save_model_state_dict(
+        model_or_trainer: Union[HFTrainer, Module],
+        checkpoint_dir: Optional[PathType] = None,
+        is_saving_process: Optional[bool] = None
+) -> None:
+    if isinstance(model_or_trainer, HFTrainer):
+        if checkpoint_dir is None:
+            checkpoint_dir = model_or_trainer.args.output_dir
+        if is_saving_process is None:
+            is_saving_process = should_process_save(model_or_trainer)
 
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
+    checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
+    peft_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
+
     if isinstance(model_or_trainer, HFTrainer):
+        model = model_or_trainer.model
+
         if (
                 is_deepspeed_zero3_enabled() and
-                is_deepspeed_module(model_or_trainer.model) and
+                is_deepspeed_module(model) and
                 model_or_trainer.optimizer is not None
         ):
             # In DeepSpeed ZeRO3, huggingface Trainer saves full model checkpoint.
             # When using Fairscale, Deepspeed or PyTorch FSDP, optimizer is only initialized during Trainer.train;
             # to check if ZeRO3 is fully initialized, also need to check optimizer.
-            model_or_trainer.save_checkpoint(str(checkpoint_dir), overwrite_peft_checkpoint=False)
+            model_or_trainer.save_checkpoint(str(checkpoint_dir))
 
-        elif should_process_save(model_or_trainer):
+        elif is_saving_process:
             # Need to manually save full checkpoint when not using DeepSpeed.
-            torch.save(model_or_trainer.model.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+            save_model_helper(model, checkpoint_dir)
 
     elif isinstance(model_or_trainer, Module):
-        torch.save(model_or_trainer.state_dict(), str(checkpoint_dir / HF_WEIGHTS_NAME))
+        model = model_or_trainer
+
+        save_model_helper(model, checkpoint_dir)
 
     else:
         raise TypeError(f"\"{type(model_or_trainer)}\" is not a supported type.")
+
+    barrier()
+
+    # save PEFT model if do not exist
+    if is_saving_process and isinstance(model, PeftModel) and not is_file(peft_checkpoint_path):
+        state_dict = torch.load(str(checkpoint_path), map_location="cpu")
+
+        torch.save(
+            get_peft_model_state_dict(model, state_dict=state_dict),
+            str(peft_checkpoint_path)
+        )
+
+        del state_dict
+        gc.collect()
 
     # all process should wait
     barrier()
 
 
-def get_model_state_dict(checkpoint_dir: PathType) -> OrderedDict:
-    checkpoint_path = Path(checkpoint_dir) / HF_WEIGHTS_NAME
-    checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
-    return checkpoint
+def load_model_state_dict(checkpoint_dir: PathType) -> OrderedDict:
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
+    peft_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
+
+    if is_file(peft_checkpoint_path):
+        state_dict = torch.load(str(peft_checkpoint_path), map_location="cpu")
+    elif is_file(checkpoint_path):
+        state_dict = torch.load(str(checkpoint_path), map_location="cpu")
+    else:
+        raise FileNotFoundError(
+            f"Could not find either PEFT checkpoint in \"{peft_checkpoint_path}\" nor full checkpoint"
+            f" in {checkpoint_path}."
+        )
+
+    return state_dict
 
 
 class LLMTrainer(ClientTrainer):
@@ -208,8 +271,7 @@ class LLMTrainer(ClientTrainer):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.checkpoint_dir)
-        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        peft_state_dict = load_model_state_dict(self.checkpoint_dir)
 
         self.log("finished")
         return OrderedDict(peft_state_dict)
@@ -256,7 +318,7 @@ class LLMTrainer(ClientTrainer):
         outputs = super().on_after_local_training(train_data, device, args)
 
         self.log(f"saving model to \"{self.checkpoint_dir}\"")
-        save_model(self.trainer)
+        save_model_state_dict(self.trainer)
 
         self.log("finished")
         return outputs
@@ -360,8 +422,7 @@ class LLMAggregator(ServerAggregator):
     def get_model_params(self) -> OrderedDict:
         self.log("start")
 
-        state_dict = get_model_state_dict(self.checkpoint_dir)
-        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        peft_state_dict = load_model_state_dict(self.checkpoint_dir)
 
         self.log("finished")
         return OrderedDict(peft_state_dict)
@@ -458,9 +519,8 @@ def main(args: Arguments) -> None:
         dataset_args.max_seq_length = get_max_seq_length(model)
         setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
-    if args.local_rank == 0:
-        # save initial model. This is required for DeepSpeed
-        save_model(model, args.output_dir)
+    # save initial model. This is required for DeepSpeed
+    save_model_state_dict(model, args.output_dir, is_saving_process=args.local_rank == 0)
     del model
     gc.collect()
     barrier()
