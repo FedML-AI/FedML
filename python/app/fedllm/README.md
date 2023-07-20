@@ -20,6 +20,46 @@ The repo contains:
     - Dataset implementation with [datasets](https://huggingface.co/docs/datasets/index).
 - Cross-silo Federated training/fine-tuning implementation with [FedML](https://github.com/FedML-AI/FedML).
 
+## News
+
+* __[2023/07/19]__ FedLLM supports [Llama 2](https://ai.meta.com/llama/). See [How to use Llama 2](#how-to-use-llama-2)
+  for detail.
+
+* __[2023/04/27]__ FedLLM initial release. Please visit [this blog](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/) for details.
+
+## How to Use Llama 2
+
+To use [Llama 2](https://ai.meta.com/llama/), you need to apply access from Meta and request Meta's private
+Hugging Face repo access.
+
+1. Please visit the [Meta website](https://ai.meta.com/resources/models-and-libraries/llama-downloads/) and apply for
+   access.
+2. Apply for [Meta's private repo](https://huggingface.co/meta-llama/Llama-2-7b-hf)
+   on [Hugging Face](https://huggingface.co/meta-llama/Llama-2-7b-hf). See below image for detail.
+   ![Meta's private repo on Hugging Face](assets/Llama/huggingface_llama_repo.png)
+3. Once both access are granted, you can start using Llama with FedLLM
+   1. For centralized/conventional training, pass `--model_name "meta-llama/Llama-2-7b-hf"` to the training script.
+   2. For federated training, update the fedml_config as follow
+   ```yaml
+   model_args:
+      model_name: "meta-llama/Llama-2-7b-hf"
+      ...
+   ```
+
+> **Warning**
+> Since Llama 2 is on a private Hugging Face repo, you need to either login to Hugging Face or provide your access token.
+> - To login to huggingface (see https://huggingface.co/settings/tokens for detail), run `huggingface-cli login` in
+    command line.
+> - To pass an access token, you need to do one of the following:
+>   - Set environment variable `HUGGING_FACE_HUB_TOKEN="<your access token>"`
+>   - For centralized/conventional training, pass `--auth_token "<your access token>"` in the command line.
+>   - For federated training, update the [fedml_config.yaml](fedml_config/fedml_config.yaml) as follow:
+>   - ```yaml
+>     model_args:
+>        auth_token: "<your access token>"
+>        ...
+>     ```
+
 ## Getting Started
 
 Clone the repo then go to FedLLM directory:
@@ -103,7 +143,8 @@ common_args:
   scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
 
 data_args:
-  dataset: "databricks-dolly"  # dataset name
+  dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
+  dataset_name: null
   dataset_path:
     - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # train dataset path
     - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # test dataset path
@@ -113,6 +154,7 @@ data_args:
   test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
 
 model_args:
+  skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
   model_name: "EleutherAI/pythia-6.9b"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
@@ -125,6 +167,7 @@ train_args:
   client_num_per_round: 2  # choose from 1~client_num_in_total
   comm_round: 5  # number of rounds of aggregation
   # below are the same as HuggingFace settings
+  task: instruction  # choose from `finetune` and `instruction`. If set to `instruction`, will apply template to the dataset and affects loss calculation.
   deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
@@ -132,6 +175,8 @@ train_args:
   gradient_checkpointing: True
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 1
+  eval_accumulation_steps: 4
   learning_rate: 1.0e-5
   warmup_steps: 50
   num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
@@ -144,7 +189,6 @@ train_args:
   logging_strategy: "no"
   evaluation_strategy: "no"  # should be turned off
   save_strategy: "no"
-  eval_accumulation_steps: 4
 
 validation_args:
   frequency_of_the_test: 1
@@ -307,16 +351,16 @@ for detail.
 
 We have tested our implement with the following setup:
 
-- Ubuntu `20.04.5 LTS`
+- Ubuntu `20.04.5 LTS` and `22.04.2 LTS`
 - CUDA `11.8`, `11.7` and `11.6`
 - Python `3.8.13`
-    - `fedml>=0.8.4a7,<=0.8.4a17`
-    - `torch==0.2.0`
-    - `torchvision==0.15.1`
-    - `transformers==4.28.1`
-    - `peft==0.3.0`
-    - `datasets==2.11.0`
-    - `deepspeed==0.9.1`
-    - `numpy==1.24.3`
-    - `tensorboard==2.12.2`
+    - `fedml>=0.8.4a7`
+    - `torch>=2.0.0,<=2.0.1`
+    - `torchvision>=0.15.1,<=0.15.2`
+    - `transformers>=4.29.2,<=4.31.0`
+    - `peft>=0.3.0,<=0.4.0`
+    - `datasets>=2.11.0,<=2.13.1`
+    - `deepspeed>=0.9.1,<=0.10.0`
+    - `numpy>=1.24.3,<=1.24.4`
+    - `tensorboard>=2.12.2,<=2.13.0`
     - `mpi4py==3.1.4`
