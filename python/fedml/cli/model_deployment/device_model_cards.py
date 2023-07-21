@@ -4,6 +4,7 @@ import os
 import shutil
 import time
 import uuid
+import yaml
 
 import requests
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -139,15 +140,26 @@ class FedMLModelCards(Singleton):
 
         model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
         if not os.path.exists(model_bin_file):
-            print("You model repository is missing file {}, you should add it.".format(
-                ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
-            return ""
+            # User May not upload model bin file
+            # Check there is a key value pair in the config file {local_model_dir : path}
+            try:
+                with open(model_config_file, 'r') as f:
+                    config = yaml.safe_load(f)
+                    local_model_dir = config.get("local_model_dir", "")
+                    assert local_model_dir != "", "local_model_dir is not set in the config file."
+            except:
+                print("You model repository is missing file {}, you should add it.".format(
+                    ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
+                return ""
 
         model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
         if not os.path.exists(model_readme_file):
-            print("You model repository is missing file {}, you should add it.".format(
+            print("You model repository is missing file {}, we've create an empty README.md for you.".format(
                 ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
-            return ""
+            # create a empty readme file called README.md
+            with open(model_readme_file, 'w') as f:
+                f.write("")
+            pass
 
         if not os.path.exists(ClientConstants.get_model_package_dir()):
             os.makedirs(ClientConstants.get_model_package_dir(), exist_ok=True)
@@ -188,15 +200,26 @@ class FedMLModelCards(Singleton):
 
             model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
             if not os.path.exists(model_bin_file):
-                print("You model repository is missing file {}, you should add it.".format(
-                    ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
-                return "", ""
+                # User May not upload model bin file
+                # Check there is a key value pair in the config file {local_model_dir : path}
+                try:
+                    with open(model_config_file, 'r') as f:
+                        config = yaml.safe_load(f)
+                        local_model_dir = config.get("local_model_dir", "")
+                        assert local_model_dir != "", "local_model_dir is not set in the config file."
+                except:
+                    print("You model repository is missing file {}, you should add it.".format(
+                        ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
+                    return ""
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("You model repository is missing file {}, you should add it.".format(
+                print("You model repository is missing file {}, we've create an empty README.md for you.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
-                return "", ""
+                # create a empty readme file called README.md
+                with open(model_readme_file, 'w') as f:
+                    f.write("")
+                pass
 
             if not os.path.exists(ClientConstants.get_model_package_dir()):
                 os.makedirs(ClientConstants.get_model_package_dir(), exist_ok=True)
@@ -221,7 +244,7 @@ class FedMLModelCards(Singleton):
         if not no_uploading_modelops:
             if model_storage_url != "":
                 with open(model_config_file, 'r') as f:
-                    model_params = json.load(f)
+                    model_params = yaml.safe_load(f)
 
                 upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
                                                       model_net_url, user_id, user_api_key,
