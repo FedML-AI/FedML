@@ -9,6 +9,7 @@ is an MLOps-supported training pipeline to help users build their own large lang
 data.
 This repo aims to provide a minimalist example of efficient LLM training/fine-tuning
 and to illustrate how to use FedML for federated LLM training and fine-tuning.
+We leverage Pythia 7B by default and recently added support for Llama 2.
 
 The repo contains:
 
@@ -29,10 +30,15 @@ The repo contains:
 
 ## How to Use Llama 2
 
+Our FedLLM example uses Pythia by default, but we recently added support for Llama2.
+If you'd like to use Llama2, please see the following instructions before getting started.
+
 To use [Llama 2](https://ai.meta.com/llama/), you need to apply access from Meta and request Meta's private
 Hugging Face repo access.
 
-1. Please visit the [Meta website](https://ai.meta.com/resources/models-and-libraries/llama-downloads/) and apply for
+1. Make sure your `transformers` version is `4.31.0` or newer. You could update your transformers via
+   `pip install --upgrade transformers`.
+2. Please visit the [Meta website](https://ai.meta.com/resources/models-and-libraries/llama-downloads/) and apply for
    access.
 2. Apply for [Meta's private repo](https://huggingface.co/meta-llama/Llama-2-7b-hf)
    on [Hugging Face](https://huggingface.co/meta-llama/Llama-2-7b-hf). See below image for detail.
