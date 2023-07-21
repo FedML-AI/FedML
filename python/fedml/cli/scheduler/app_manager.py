@@ -176,10 +176,10 @@ class FedMLAppManager(Singleton):
     def update_app_api(self, platform, application_name,
                        client_package_url, client_package_file, server_package_url, server_package_file,
                        user_id, user_api_key):
-        app_create_result = None
-        app_create_url = ServerConstants.get_app_update_url(self.config_version)
-        app_create_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-        app_create_json = {
+        app_update_result = None
+        app_update_url = ServerConstants.get_app_update_url(self.config_version)
+        app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        app_update_json = {
             "owner": user_id,
             "avatar": "https://fedml.s3.us-west-1.amazonaws.com/profile_picture2.png",
             "githubLink": "",
@@ -258,15 +258,15 @@ class FedMLAppManager(Singleton):
             try:
                 requests.session().verify = cert_path
                 response = requests.post(
-                    app_create_url, verify=True, headers=app_create_api_headers, json=app_create_json
+                    app_update_url, verify=True, headers=app_update_api_headers, json=app_update_json
                 )
             except requests.exceptions.SSLError as err:
                 MLOpsConfigs.install_root_ca_file()
                 response = requests.post(
-                    app_create_url, verify=True, headers=app_create_api_headers, json=app_create_json
+                    app_update_url, verify=True, headers=app_update_api_headers, json=app_update_json
                 )
         else:
-            response = requests.post(app_create_url, headers=app_create_api_headers, json=app_create_json)
+            response = requests.post(app_update_url, headers=app_update_api_headers, json=app_update_json)
         if response.status_code != 200:
             pass
         else:
@@ -274,13 +274,13 @@ class FedMLAppManager(Singleton):
             if resp_data["code"] == "FAILURE":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
-            app_create_result = resp_data
+            app_update_result = resp_data
 
-        return app_create_result
+        return app_update_result
 
     def push_app_package_to_s3(self, app_name, app_package_path, user_id):
         args = {"config_version": self.config_version}
-        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs(self.config_version)
+        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         s3_storage = S3Storage(s3_config)
         app_dst_key = "{}@{}@{}".format(user_id, app_name, str(uuid.uuid4()))
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key)
@@ -288,7 +288,7 @@ class FedMLAppManager(Singleton):
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):
         args = {"config_version": self.config_version}
-        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs(self.config_version)
+        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         s3_storage = S3Storage(s3_config)
         local_app_package = os.path.join(ClientConstants.get_package_download_dir(), model_name)
         local_app_package = "{}.zip".format(local_app_package)

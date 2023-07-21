@@ -8,12 +8,16 @@ development_resources:
   network: mqtt_s3    # network protocol for communication between machines
 
 executable_code_and_data:
-  executable_file: torch_client.py     # your main executable file, which can be empty
-  executable_conf: fedml_config.yaml   # your config file for the main executable program, which can be empty
+  executable_file: hello_world/torch_client.py     # your main executable file in the base directory, which can be empty
+  executable_conf: hello_world/conf/fedml_config.yaml   # your config file for the main executable program in the base directory, which can be empty
   data_location: ~/fedml_data          # path to your data
-  pre_setup:  "ls -la ~"               # presetup shell commands. support multiple lines, which can be empty
-  run_commands: "python --version"     # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empy. Both the run_commands and excecutable_file can be the main executable commands. First run  run_commands, then run excecutable_file.
-
+  # pre setup shell commands. support multiple lines, which can be empty
+  pre_setup: | 
+    ls -la ~               
+    echo "Bootstrap..."
+  # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empty. Both the run_commands and executable_file can be the main executable commands. First run  run_commands, then run executable_file.
+  run_commands: |
+    python --version
 gpu_requirements:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine

@@ -121,6 +121,23 @@ def generate_yaml_doc(yaml_object, yaml_file, append=False):
         pass
 
 
+def get_gpu_count_vendor():
+    gpu_count = 0
+    gpu_vendor = ""
+    try:
+        import nvidia_smi
+
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_vendor = "nvidia"
+        nvidia_smi.nvmlShutdown()
+    except:
+        pass
+
+    return gpu_count, gpu_vendor
+
 def get_running_info(cs_home_dir, cs_info_dir):
     home_dir = expanduser("~")
     runner_info_file = os.path.join(

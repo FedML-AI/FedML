@@ -12,8 +12,7 @@ from job_manager import FedMLJobManager
 
 class FedMLLaunchManager(Singleton):
     def __init__(self):
-        self.job_config = None
-        self.config_version = None
+        pass
 
     @staticmethod
     def get_instance():
@@ -31,23 +30,25 @@ class FedMLLaunchManager(Singleton):
 
         platform = Constants.FEDML_PLATFORM_CHEETAH
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
-        source_folder = os.path.dirname(self.job_config.executable_file)
+        source_folder = os.path.join(self.job_config.base_dir, os.path.dirname(self.job_config.executable_file))
         entry_point = os.path.basename(self.job_config.executable_file)
-        config_folder = os.path.dirname(self.job_config.executable_conf)
+        config_folder = os.path.join(self.job_config.base_dir, os.path.dirname(self.job_config.executable_conf))
         dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
+        os.makedirs(dest_folder, exist_ok=True)
 
         build_result_package = FedMLLaunchManager.build_job_package(platform, client_server_type, source_folder,
                                                                     entry_point, config_folder, dest_folder, "")
 
-        app_updated_result = FedMLAppManager.update_app(platform, self.job_config.application_name,
-                                                        user_id, user_api_key,
-                                                        client_package_file=build_result_package)
+        FedMLAppManager.get_instance().set_config_version(self.config_version)
+        app_updated_result = FedMLAppManager.get_instance().update_app(platform, self.job_config.application_name,
+                                                                       user_id, user_api_key,
+                                                                       client_package_file=build_result_package)
         if not app_updated_result:
             return None
 
-        launch_result = FedMLJobManager.start_job(platform, self.job_config.project_name,
-                                                  self.job_config.application_name,
-                                                  "[]", user_id, user_api_key)
+        launch_result = FedMLJobManager.get_instance().start_job(platform, self.job_config.project_name,
+                                                                 self.job_config.application_name,
+                                                                 "[]", user_id, user_api_key)
         launch_result.project_name = self.job_config.project_name
         return launch_result
 
@@ -68,7 +69,7 @@ class FedMLLaunchManager(Singleton):
         if not platform_is_valid(platform):
             return
 
-        if type == "client" or type == "server":
+        if client_server_type == "client" or client_server_type == "server":
             if verbose:
                 print(
                     "Now, you are building the fedml packages which will be used in the MLOps "
@@ -107,7 +108,7 @@ class FedMLLaunchManager(Singleton):
         shutil.copytree(pip_build_path, mlops_build_path,
                         ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*build_dir_ignore_list))
 
-        if type == "client":
+        if client_server_type == "client":
             result = FedMLLaunchManager.build_mlops_package(
                 ignore_list,
                 source_folder,
@@ -133,7 +134,7 @@ class FedMLLaunchManager(Singleton):
                 )
 
             return build_result_package
-        elif type == "server":
+        elif client_server_type == "server":
             result = FedMLLaunchManager.build_mlops_package(
                 ignore_list,
                 source_folder,
@@ -290,8 +291,15 @@ executable_code_and_data:
     executable_file: tbd       # your main executable file, which can be empty
     executable_conf: tbd       # your config file for the main executable program, which can be empty
     data_location: tbd         # path to your data
-    pre_setup:  | tbd          # presetup shell commands. support multiple lines, which can be empty
-    run_commands: | tbd        # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empy. Both the run_commands and excecutable_file can be the main executable commands. First run  run_commands, then run excecutable_file.
+    # pre setup shell commands. support multiple lines, which can be empty
+    pre_setup:  | 
+        tbd  
+        tbd       
+    # run shell commands. support multiple lines, which can be empty, but at least one of run_commands and excecutable_file must not be empty. 
+    # Both the run_commands and executable_file can be the main executable commands. First run run_commands, then run executable_file. 
+    run_commands: | 
+        tbd  
+        tbd      
 gpu_requirements:
     minimum_num_gpus: 8             # minimum # of GPUs to provision
     maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
@@ -306,6 +314,7 @@ class FedMLJobConfig(object):
         self.job_name = job_config["fedml_params"]["job_name"]
         self.dev_env = job_config["development_resources"]["dev_env"]
         self.network = job_config["development_resources"]["network"]
+        self.base_dir = os.path.dirname(job_yaml_file)
         self.executable_file = job_config["executable_code_and_data"]["executable_file"]
         self.executable_conf = job_config["executable_code_and_data"]["executable_conf"]
         self.data_location = job_config["executable_code_and_data"]["data_location"]
