@@ -138,6 +138,7 @@ def get_gpu_count_vendor():
 
     return gpu_count, gpu_vendor
 
+
 def get_running_info(cs_home_dir, cs_info_dir):
     home_dir = expanduser("~")
     runner_info_file = os.path.join(
