@@ -89,14 +89,14 @@ class FedMLClientRunner:
         self.model_runner_mapping = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
-    def unzip_file(self, zip_file, unzip_file_path):
-        result = False
+    def unzip_file(self, zip_file, unzip_file_path) -> str:
+        unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
-                result = True
+                unziped_file_name = zipf.namelist()[0]
 
-        return result
+        return unziped_file_name
 
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
@@ -105,7 +105,7 @@ class FedMLClientRunner:
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress)   # Do NOT rename, use the filename from MLOps
         unzip_package_path = ClientConstants.get_model_dir()
         self.fedml_packages_base_dir = unzip_package_path
         try:
@@ -116,7 +116,7 @@ class FedMLClientRunner:
             pass
         logging.info("local_package_file {}, unzip_package_path {}".format(
             local_package_file, unzip_package_path))
-        self.unzip_file(local_package_file, unzip_package_path)
+        package_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
         return unzip_package_path, model_bin_file

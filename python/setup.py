@@ -57,6 +57,7 @@ requirements = [
     "chardet",
     "graphviz<0.9.0,>=0.8.1",
     "sqlalchemy",
+    "onnx",
 ]
 
 requirements_extra_mpi = [
