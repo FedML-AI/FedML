@@ -11,11 +11,11 @@ data_args:
   dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
   dataset_name: null
   dataset_path:
-    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # train dataset path
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # test dataset path
+    - "~/fedml_data/FedLLM/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # train dataset path
+    - "~/fedml_data/FedLLM/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # test dataset path
   client_dataset_path: # [optional] if specified, will replace content in dataset_path for client
-    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # [optional] train dataset path for client
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # [optional] test dataset path for client
+    - "~/fedml_data/FedLLM/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # [optional] train dataset path for client
+    - "~/fedml_data/FedLLM/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # [optional] test dataset path for client
   test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
   remove_long_seq: True  # if `True` remove all data whose sequence length > max_seq_length
 
@@ -45,7 +45,7 @@ train_args:
   learning_rate: 1.0e-5
   warmup_steps: 50
   num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
-  output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
+  output_dir: "~/fedml_logs/MLOps/{run_id}/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200

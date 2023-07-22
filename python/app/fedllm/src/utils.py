@@ -41,7 +41,7 @@ T = TypeVar("T")
 
 
 def get_real_path(path: PathType) -> str:
-    return os.path.realpath(str(path))
+    return os.path.realpath(os.path.expanduser(str(path)))
 
 
 def is_file(path: PathType) -> bool:

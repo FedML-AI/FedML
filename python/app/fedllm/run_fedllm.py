@@ -40,6 +40,7 @@ from src.trainer_callback import PauseResumeCallback
 from src.typing import PathType
 from src.utils import (
     barrier,
+    get_real_path,
     is_deepspeed_module,
     is_file,
     is_main_process,
@@ -60,9 +61,15 @@ def _parse_args(args: Arguments) -> Arguments:
             setattr(args, "report_to", "none")
         setattr(args, "disable_tqdm", True)
 
+    if hasattr(args, "client_dataset_path"):
+        delattr(args, "client_dataset_path")
+
+    if isinstance(args.dataset_path, str):
+        args.dataset_path = [args.dataset_path]
+
     if isinstance(args.dataset_path, (tuple, list)):
         args.dataset_path = [
-            p.format(rank=args.rank, client_num_in_total=args.client_num_in_total)
+            get_real_path(p.format(rank=args.rank, client_num_in_total=args.client_num_in_total))
             for p in args.dataset_path
         ]
 
@@ -73,6 +80,7 @@ def _parse_args(args: Arguments) -> Arguments:
     if not hasattr(args, "output_dir"):
         raise ValueError("\"output_dir\" is required in the configuration file.")
 
+    args.output_dir = get_real_path(args.output_dir.format(run_id=args.run_id))
     args.output_dir = str(Path(args.output_dir) / f"node_{args.rank}")
 
     return args

@@ -45,7 +45,7 @@ train_args:
   learning_rate: 1.0e-5
   warmup_steps: 50
   num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
-  output_dir: ".logs/FedML/dolly_niid_pythia-70m"
+  output_dir: ".logs/FedML/{run_id}/dolly_niid_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
