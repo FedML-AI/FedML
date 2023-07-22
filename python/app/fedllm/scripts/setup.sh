@@ -33,7 +33,8 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
 
 DATA_ROOT="${1:-"${BASE_DIR}/.data"}"
-DATA_ROOT="$(realpath "${DATA_ROOT}")"
+DATA_ROOT="$(python3 -c "import os; print(os.path.realpath(os.path.expanduser(\"${DATA_ROOT}\")))")"
+mkdir -p "${DATA_ROOT}"
 
 cd "${BASE_DIR}"
 
