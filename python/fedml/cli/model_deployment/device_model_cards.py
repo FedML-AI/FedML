@@ -154,7 +154,7 @@ class FedMLModelCards(Singleton):
 
         model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
         if not os.path.exists(model_readme_file):
-            print("You model repository is missing file {}, we've create an empty README.md for you.".format(
+            print("You model repository is missing file {}, we've created an empty README.md for you.".format(
                 ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
             # create a empty readme file called README.md
             with open(model_readme_file, 'w') as f:
@@ -214,7 +214,7 @@ class FedMLModelCards(Singleton):
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("You model repository is missing file {}, we've create an empty README.md for you.".format(
+                print("You model repository is missing file {}, we've created an empty README.md for you.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
                 # create a empty readme file called README.md
                 with open(model_readme_file, 'w') as f:
