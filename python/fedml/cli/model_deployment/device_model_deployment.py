@@ -110,7 +110,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
                     os.system(sudo_prefix + "systemctl restart docker")
 
-    test_llm = True if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED else False
     # Convert models from pytorch to onnx format
     if model_is_from_open:
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
@@ -132,7 +131,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model_from_open.load_state_dict(open_model_params)
             model_from_open.eval()
 
-        if not test_llm:
+        if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             logging.info("convert the onnx model when the mode is from the MLOps platform...")
             logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                                 model_params["input_types"]))
@@ -151,20 +150,21 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                            ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                            running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
             if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path)
+                os.makedirs(onnx_model_path, exist_ok=True)
             onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
             convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
-        else:  # we do not convert the model to onnx in llm
+        elif ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:  # we do not convert the model to onnx in llm
             logging.info("LLM model loaded from the open")
-    else:
-        # not from open
+        else:
+            raise Exception("Unsupported inference engine type: {}".format(inference_engine))
+    elif model_is_from_open == False:
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
                                                                     model_version, end_point_id, model_id)
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         try:
-            model = torch.jit.load(model_location)  # model def + params
+            model = torch.jit.load(model_location)
             model.eval()
         except Exception as e:
             logging.info(
@@ -174,11 +174,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
             with open(local_model_location, 'r') as file:
                 config = yaml.safe_load(file)
-                local_model_dir = config.get('local_model_dir')
-
-            local_model_dir_from_config = local_model_dir
-
-        if not test_llm:
+                local_model_dir = config.get('local_model_dir', "")
+                inference_image_name = config.get('inference_image_name', "")
+            
+            if local_model_dir == "":
+                raise Exception("Please indicate local_model_dir in the fedml_model_config.yaml")
+            if inference_image_name == "":
+                raise Exception("Please indicate inference_image_name in the fedml_model_config.yaml")
+            
+        if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli
             input_size = model_params["input_size"]
             input_types = model_params["input_types"]
@@ -198,42 +202,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                            running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
             logging.info("converted onnx model path: {}".format(onnx_model_path))
             if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path)
+                os.makedirs(onnx_model_path, exist_ok=True)
             onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
             convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
 
-        # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
-        #                                                  str(end_point_id),
-        #                                                  str(model_id))
-        # running_model_name = ClientConstants.get_running_model_name(end_point_name,
-        #                                                             inference_model_name,
-        #                                                             model_version, end_point_id, model_id)
-        # model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
-        # convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
-        #                     "{}docker run --name {} --rm {} -v {}:/project " \
-        #                     "{} bash -c \"cd /project && convert_model -m /project --name {} " \
-        #                     "--backend {} --seq-len 16 128 128\"; exit". \
-        #     format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
-        #            sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
-        #            inference_convertor_image, running_model_name,
-        #            inference_engine)
-        # logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
-        # logging.info("Now is converting the model to onnx, please wait...")
-        # os.system(convert_model_cmd)
-        # # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
-        # #                                                            should_capture_stdout=False,
-        # #                                                            should_capture_stderr=False,
-        # #                                                            no_sys_out_err=True)
-        # log_deployment_result(end_point_id, model_id, convert_model_container_name,
-        #                       ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
-        #                       running_model_name, inference_engine, inference_http_port)
-
-    # Move converted model to serving dir for inference
     logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
-        os.makedirs(model_serving_dir)
+        os.makedirs(model_serving_dir, exist_ok=True)
     converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
     if os.path.exists(converted_model_path):
         model_file_list = os.listdir(converted_model_path)
@@ -248,11 +225,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not os.path.exists(dst_model_file):
                     shutil.copyfile(src_model_file, dst_model_file)
 
-    if test_llm:
-        logging.info(f"local_model_dir: {local_model_dir_from_config}")
-        inference_server_image = "myimage"  # TODO:download from dockerhub
-        inference_http_port = 2345
-        local_model_dir = local_model_dir_from_config
+    if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:
+        logging.info(f"local_model_dir: {local_model_dir}")
+        logging.info(f"inference_image_name: {inference_image_name}")
+        inference_server_image = inference_image_name
+        inference_http_port = 2345  # TODO: using a threading pool to manage the model
+        local_model_dir = local_model_dir
         llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX)
         volume_dst_loc = "code/model_and_config"
         llm_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --gpus all --name {} -p{}:2345 " \
@@ -285,12 +263,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             except Exception as e:
                 logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
                 inference_output_url = ""
+        else:
+            raise Exception("Failed to get the inference output url")
         model_metadata = ret_model_metadata
 
         # metadata to report
         logging.info(model_metadata)
-    else:
-        # Run triton server
+    elif inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
         logging.info("prepare to run triton server...")
         if not use_simulation_test_without_triton:
             if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
@@ -343,6 +322,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     model_config = ret_model_config
         else:
             inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
+    else:
+        raise Exception("inference engine {} is not supported".format(inference_engine))
 
     return running_model_name, inference_output_url, model_version, model_metadata, model_config
 
@@ -478,7 +459,7 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
                 time.sleep(10)
                 wait_count += 1
                 if wait_count >= 15:
-                    return "", model_version, {}, {}
+                    raise Exception("Can not get response from {}".format(llm_server_test_ready_url))
             else:
                 break
         model_metadata = {}
@@ -627,7 +608,7 @@ def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_nam
                                   ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                   model_name, ClientConstants.INFERENCE_MODEL_VERSION)
     if not os.path.exists(onnx_model_dir):
-        os.makedirs(onnx_model_dir)
+        os.makedirs(onnx_model_dir, exist_ok=True)
     onnx_model_path = os.path.join(onnx_model_dir, "model.onnx")
 
     convert_model_to_onnx(torch_model, onnx_model_path, dummy_input_list, input_size,

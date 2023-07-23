@@ -52,7 +52,7 @@ class ClassificationAggregator(ServerAggregator):
     def test_all(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
-        logging.info("----------test_on_the_server--------")
+        logging.info(f"----------test_on_the_server @ round {args.round_idx}--------")
         accuracy_list, loss_list, metric_list = [], [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
@@ -71,6 +71,5 @@ class ClassificationAggregator(ServerAggregator):
         if self.args.enable_wandb:
             wandb.log({"Test/Acc": avg_accuracy, "round": self.args.round_idx})
             wandb.log({"Test/Loss": avg_loss, "round": self.args.round_idx})
-        mlops.log({"Test/Acc": avg_accuracy, "round": self.args.round_idx})
-        mlops.log({"Test/Loss": avg_loss, "round": self.args.round_idx})
+        mlops.log({"round_idx": args.round_idx, "loss": avg_loss, "evaluation_result": avg_accuracy})
         return True

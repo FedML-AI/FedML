@@ -15,7 +15,7 @@ import logging
 
 def download_mnist(data_cache_dir):
     if not os.path.exists(data_cache_dir):
-        os.makedirs(data_cache_dir)
+        os.makedirs(data_cache_dir, exist_ok=True)
 
     file_path = os.path.join(data_cache_dir, "MNIST.zip")
     logging.info(file_path)

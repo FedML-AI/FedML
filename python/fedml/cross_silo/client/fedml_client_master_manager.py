@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 import json
 import logging
 import platform
@@ -6,9 +8,12 @@ import time
 import torch.distributed as dist
 
 from fedml import mlops
-from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+from fedml.constants import (
+    FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY,
+    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
+)
 from .message_define import MyMessage
-from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
+from .utils import check_method_override, convert_model_params_from_ddp, convert_model_params_to_ddp
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -33,6 +38,26 @@ class ClientMasterManager(FedMLCommManager):
 
         self.has_sent_online_msg = False
         self.is_inited = False
+
+        if self.use_customized_hierarchical:
+            trainer_class_name = self.trainer_dist_adapter.trainer.trainer.__class__.__name__
+
+            if not self.has_customized_sync_process_group:
+                raise RuntimeError(
+                    f"\"sync_process_group\" implementation is required for class {trainer_class_name}"
+                    f" for customized hierarchical cross-silo."
+                )
+
+    @property
+    def use_customized_hierarchical(self) -> bool:
+        return getattr(self.args, FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY, False)
+
+    @property
+    def has_customized_sync_process_group(self) -> bool:
+        return check_method_override(
+            cls_obj=self.trainer_dist_adapter.trainer.trainer,
+            method_name="sync_process_group"
+        )
 
     def is_main_process(self):
         return getattr(self.trainer_dist_adapter, "trainer", None) is None or \
@@ -84,6 +109,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             global_model_params = convert_model_params_to_ddp(global_model_params)
             self.sync_process_group(0, global_model_params, data_silo_index)
+        elif self.use_customized_hierarchical:
+            self.customized_sync_process_group(0, global_model_params, data_silo_index)
 
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.trainer_dist_adapter.update_model(global_model_params)
@@ -100,6 +127,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             model_params = convert_model_params_to_ddp(model_params)
             self.sync_process_group(self.round_idx, model_params, client_index)
+        elif self.use_customized_hierarchical:
+            self.customized_sync_process_group(self.round_idx, model_params, client_index)
 
         self.trainer_dist_adapter.update_dataset(int(client_index))
         logging.info("current round index {}, total rounds {}".format(self.round_idx, self.num_rounds))
@@ -160,13 +189,37 @@ class ClientMasterManager(FedMLCommManager):
     def report_training_status(self, status):
         mlops.log_training_status(status)
 
-    def sync_process_group(self, round_idx, model_params=None, client_index=None, src=0):
+    def sync_process_group(
+            self,
+            round_idx: int,
+            model_params: Optional[Any] = None,
+            client_index: Optional[int] = None,
+            src: int = 0
+    ) -> None:
         logging.info("sending round number to pg")
         round_number = [round_idx, model_params, client_index]
         dist.broadcast_object_list(
             round_number, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
         )
         logging.info("round number %d broadcast to process group" % round_number[0])
+
+    def customized_sync_process_group(
+            self,
+            round_idx: int,
+            model_params: Optional[Any] = None,
+            client_index: Optional[int] = None,
+            src: int = 0
+    ) -> None:
+        trainer = self.trainer_dist_adapter.trainer.trainer
+        trainer_class_name = trainer.__class__.__name__
+
+        if not self.has_customized_sync_process_group:
+            raise RuntimeError(
+                f"\"sync_process_group\" implementation is required for class {trainer_class_name}"
+                f" for customized hierarchical cross-silo."
+            )
+
+        trainer.sync_process_group(round_idx, model_params, client_index, src)
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)

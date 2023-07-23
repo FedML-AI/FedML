@@ -57,6 +57,7 @@ requirements = [
     "chardet",
     "graphviz<0.9.0,>=0.8.1",
     "sqlalchemy",
+    "onnx",
 ]
 
 requirements_extra_mpi = [
@@ -90,7 +91,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.7a4",
+    version="0.8.7a5",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

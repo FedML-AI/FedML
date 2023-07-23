@@ -96,10 +96,7 @@ class S3Storage:
         )
 
         if not os.path.exists(local_model_cache_path):
-            try:
-                os.makedirs(local_model_cache_path)
-            except Exception as e:
-                pass
+            os.makedirs(local_model_cache_path, exist_ok=True)
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
             model.eval()

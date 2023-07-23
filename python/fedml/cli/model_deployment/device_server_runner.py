@@ -103,13 +103,13 @@ class FedMLServerRunner:
         pass
 
     def unzip_file(self, zip_file, unzip_file_path):
-        result = False
+        unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
-                result = True
+                unziped_file_name = zipf.namelist()[0]
 
-        return result
+        return unziped_file_name
 
     def package_download_progress(self, count, blksize, filesize):
         self.check_runner_stop_event()
@@ -130,11 +130,11 @@ class FedMLServerRunner:
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ServerConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path)
+            os.makedirs(local_package_path, exist_ok=True)
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress) # do not rename
         unzip_package_path = ServerConstants.get_model_dir()
         self.fedml_packages_base_dir = unzip_package_path
         try:
@@ -145,7 +145,7 @@ class FedMLServerRunner:
             pass
         logging.info("local_package_file {}, unzip_package_path {}".format(
             local_package_file, unzip_package_path))
-        self.unzip_file(local_package_file, unzip_package_path)
+        package_name = self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         return unzip_package_path
 
@@ -171,6 +171,12 @@ class FedMLServerRunner:
 
         return unzip_package_path, package_conf_object
 
+    def get_usr_indicated_token(self, request_json) -> str:
+        usr_indicated_token = ""
+        if "parameters" in request_json and "inference_token" in request_json["parameters"]:
+            usr_indicated_token = request_json["parameters"]["inference_token"]
+        return usr_indicated_token
+    
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
 
@@ -744,6 +750,10 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(run_id, end_point_name, json.dumps(device_objs))
+        usr_indicated_token = self.get_usr_indicated_token(request_json)
+        if usr_indicated_token != "":
+            logging.info(f"Change Token from{token} to {usr_indicated_token}")
+            token = usr_indicated_token
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, end_point_name, model_name, token)
 

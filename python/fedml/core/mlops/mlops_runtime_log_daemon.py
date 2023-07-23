@@ -25,10 +25,7 @@ class MLOpsRuntimeLogProcessor:
                                                       MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR,
                                                       MLOpsRuntimeLogProcessor.FEDML_LOG_REPORTING_STATUS_FILE_NAME +
                                                       "-" + str(log_run_id) + ".conf")
-        try:
-            os.makedirs(os.path.join(log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR))
-        except Exception as e:
-            pass
+        os.makedirs(os.path.join(log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR), exist_ok=True)
         self.logger = None
         self.should_upload_log_file = using_mlops
         self.log_file_dir = log_file_dir
@@ -88,7 +85,7 @@ class MLOpsRuntimeLogProcessor:
             program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
 
         if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir)
+            os.makedirs(in_args.log_file_dir, exist_ok=True)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
                                      + str(in_args.run_id)
                                      + "-edge-"

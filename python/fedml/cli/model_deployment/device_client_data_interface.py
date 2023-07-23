@@ -125,7 +125,7 @@ class FedMLClientDataInterface(Singleton):
 
     def open_job_db(self):
         if not os.path.exists(ClientConstants.get_database_dir()):
-            os.makedirs(ClientConstants.get_database_dir())
+            os.makedirs(ClientConstants.get_database_dir(), exist_ok=True)
         job_db_path = os.path.join(ClientConstants.get_database_dir(), FedMLClientDataInterface.JOBS_DB)
         self.db_connection = sqlite3.connect(job_db_path)
 
