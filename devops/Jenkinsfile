@@ -413,6 +413,9 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_3'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_3'
                 }
 
 //                 withCredentials([
