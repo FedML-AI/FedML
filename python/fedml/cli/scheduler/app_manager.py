@@ -187,7 +187,7 @@ class FedMLAppManager(Singleton):
             "applicationName": application_name,
             "privateLocalData": "",
             "pictureUrl": "",
-            "platformId": "1",
+            "platformId": platform,
             "dataType": 1,
             "dataId": 1,
             "description": "# Please describe your application with this markdown editor\n"

@@ -2,6 +2,7 @@ import os
 import shutil
 from os.path import expanduser
 
+import click
 from fedml.core.common.singleton import Singleton
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.cli_utils import platform_is_valid
@@ -28,19 +29,30 @@ class FedMLLaunchManager(Singleton):
 
         self.parse_job_yaml(yaml_file)
 
-        platform = Constants.FEDML_PLATFORM_CHEETAH
+        platform_str = Constants.FEDML_PLATFORM_FALCON_STR
+        platform_type = Constants.FEDML_PLATFORM_FALCON_TYPE
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
-        source_folder = os.path.join(self.job_config.base_dir, os.path.dirname(self.job_config.executable_file))
+        source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file)
+        source_folder = os.path.dirname(source_full_path)
         entry_point = os.path.basename(self.job_config.executable_file)
-        config_folder = os.path.join(self.job_config.base_dir, os.path.dirname(self.job_config.executable_conf))
+        config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf)
+        config_folder = os.path.join(config_full_path)
         dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
         os.makedirs(dest_folder, exist_ok=True)
+        if not os.path.exists(source_full_path):
+            click.echo(f"Executable file {source_full_path} does not exist. Please check it.")
+            return None
+        if not os.path.exists(config_full_path):
+            config_file = open(config_full_path, 'w')
+            config_file.close()
 
-        build_result_package = FedMLLaunchManager.build_job_package(platform, client_server_type, source_folder,
+        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_folder,
                                                                     entry_point, config_folder, dest_folder, "")
+        if build_result_package is None:
+            click.echo("Build ")
 
         FedMLAppManager.get_instance().set_config_version(self.config_version)
-        app_updated_result = FedMLAppManager.get_instance().update_app(platform, self.job_config.application_name,
+        app_updated_result = FedMLAppManager.get_instance().update_app(platform_type, self.job_config.application_name,
                                                                        user_id, user_api_key,
                                                                        client_package_file=build_result_package)
         if not app_updated_result:

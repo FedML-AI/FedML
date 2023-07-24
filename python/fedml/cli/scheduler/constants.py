@@ -6,10 +6,17 @@ from fedml.core.common.singleton import Singleton
 
 class Constants(Singleton):
     FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
-    FEDML_PLATFORM_CHEETAH = "cheetah"
-    FEDML_PLATFORM_OCTOPUS = "octopus"
-    FEDML_PLATFORM_BEEHIVE = "beehive"
-    FEDML_PLATFORM_PARROT = "parrot"
+    FEDML_PLATFORM_OCTOPUS_STR = "octopus"
+    FEDML_PLATFORM_PARROT_STR = "parrot"
+    FEDML_PLATFORM_CHEETAH_STR = "cheetah"
+    FEDML_PLATFORM_BEEHIVE_STR = "beehive"
+    FEDML_PLATFORM_FALCON_STR = "falcon"
+    FEDML_PLATFORM_OCTOPUS_TYPE = 1
+    FEDML_PLATFORM_PARROT_TYPE = 2
+    FEDML_PLATFORM_CHEETAH_TYPE = 3
+    FEDML_PLATFORM_BEEHIVE_TYPE = 4
+    FEDML_PLATFORM_FALCON_TYPE = 5
+
     FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT = "client"
     FEDML_PACKAGE_BUILD_TARGET_TYPE_SERVER = "server"
 
