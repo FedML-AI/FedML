@@ -1,4 +1,5 @@
 import os
+import platform
 import shutil
 from os.path import expanduser
 
@@ -29,25 +30,45 @@ class FedMLLaunchManager(Singleton):
 
         self.parse_job_yaml(yaml_file)
 
+        # Generate source, config and bootstrap related paths.
         platform_str = Constants.FEDML_PLATFORM_FALCON_STR
         platform_type = Constants.FEDML_PLATFORM_FALCON_TYPE
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
         source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file)
-        source_folder = os.path.dirname(source_full_path)
+        source_full_folder = os.path.dirname(source_full_path)
+        source_folder = os.path.dirname(self.job_config.executable_file)
         entry_point = os.path.basename(self.job_config.executable_file)
         config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf)
-        config_folder = os.path.join(config_full_path)
+        config_full_folder = os.path.dirname(config_full_path)
+        config_folder = os.path.dirname(self.job_config.executable_conf)
         dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
+        bootstrap_full_path = os.path.join(config_full_folder, Constants.BOOTSTRAP_FILE_NAME)
+        bootstrap_file = os.path.join(config_folder, Constants.BOOTSTRAP_FILE_NAME)
+        if platform.system() == Constants.OS_PLATFORM_WINDOWS:
+            bootstrap_full_path = bootstrap_full_path.replace('.sh', '.bat')
         os.makedirs(dest_folder, exist_ok=True)
+
+        # Check the paths.
         if not os.path.exists(source_full_path):
             click.echo(f"Executable file {source_full_path} does not exist. Please check it.")
             return None
         if not os.path.exists(config_full_path):
-            config_file = open(config_full_path, 'w')
-            config_file.close()
+            os.makedirs(config_folder, exist_ok=True)
+            with open(config_full_path, 'w') as config_file_handle:
+                config_file_handle.writelines(["environment_args:", f"  bootstrap: {bootstrap_file}"])
+                config_file_handle.close()
 
-        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_folder,
-                                                                    entry_point, config_folder, dest_folder, "")
+        # Write pre setup commands into the bootstrap file.
+        configs = load_yaml_config(config_full_path)
+        configs[Constants.STD_CONFIG_ENV_SECTION][Constants.STD_CONFIG_ENV_SECTION_BOOTSTRAP_KEY] = bootstrap_file
+        Constants.generate_yaml_doc(configs, config_full_path)
+        with open(bootstrap_full_path, 'w') as bootstrap_file_handle:
+            bootstrap_file_handle.writelines(self.job_config.pre_setup)
+            bootstrap_file_handle.writelines(self.job_config.run_commands)
+            bootstrap_file_handle.close()
+
+        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_full_folder,
+                                                                    entry_point, config_full_folder, dest_folder, "")
         if build_result_package is None:
             click.echo("Failed to build the application package for the executable file.")
             return None
@@ -331,6 +352,8 @@ class FedMLJobConfig(object):
         self.base_dir = os.path.dirname(job_yaml_file)
         self.executable_file = job_config["executable_code_and_data"]["executable_file"]
         self.executable_conf = job_config["executable_code_and_data"]["executable_conf"]
+        self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
+        self.executable_conf = str(self.executable_conf).replace('\\', os.sep).replace('/', os.sep)
         self.data_location = job_config["executable_code_and_data"]["data_location"]
         self.pre_setup = job_config["executable_code_and_data"]["pre_setup"]
         self.run_commands = job_config["executable_code_and_data"]["run_commands"]

@@ -9,7 +9,7 @@ development_resources:
 
 executable_code_and_data:
   executable_file: hello_world/torch_client.py     # your main executable file in the base directory, which can be empty
-  executable_conf: hello_world/conf/fedml_config.yaml   # your config file for the main executable program in the base directory, which can be empty
+  executable_conf: hello_world/config/fedml_config.yaml   # your config file for the main executable program in the base directory, which can be empty
   data_location: ~/fedml_data          # path to your data
   # pre setup shell commands. support multiple lines, which can be empty
   pre_setup: | 

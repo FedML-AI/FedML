@@ -1,6 +1,7 @@
 import os
 from os.path import expanduser
 
+import yaml
 from fedml.core.common.singleton import Singleton
 
 
@@ -25,6 +26,12 @@ class Constants(Singleton):
 
     FEDML_LAUNCH_JOB_TEMP_DIR = "tmp"
 
+    BOOTSTRAP_FILE_NAME = "bootstrap.sh"
+    STD_CONFIG_ENV_SECTION = "environment_args"
+    STD_CONFIG_ENV_SECTION_BOOTSTRAP_KEY = "bootstrap"
+
+    OS_PLATFORM_WINDOWS = 'Windows'
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")
@@ -34,3 +41,12 @@ class Constants(Singleton):
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
+
+    @staticmethod
+    def generate_yaml_doc(run_config_object, yaml_file):
+        try:
+            file = open(yaml_file, 'w', encoding='utf-8')
+            yaml.dump(run_config_object, file)
+            file.close()
+        except Exception as e:
+            pass
