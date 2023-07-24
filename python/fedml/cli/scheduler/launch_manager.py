@@ -58,7 +58,7 @@ class FedMLLaunchManager(Singleton):
         if not app_updated_result:
             return None
 
-        launch_result = FedMLJobManager.get_instance().start_job(platform, self.job_config.project_name,
+        launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
                                                                  "[]", user_id, user_api_key)
         launch_result.project_name = self.job_config.project_name
