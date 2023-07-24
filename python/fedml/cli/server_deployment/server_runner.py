@@ -1307,14 +1307,15 @@ class FedMLServerRunner:
 
         return device_id
 
-    def bind_account_and_device_id(self, url, account_id, device_id, os_name):
-        role = "edge_server"
-        if self.run_as_edge_server_and_agent:
+    def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role=None):
+        if role is None:
             role = "edge_server"
-        elif self.run_as_cloud_agent:
-            role = "cloud_agent"
-        elif self.run_as_cloud_server:
-            role = "cloud_server"
+            if self.run_as_edge_server_and_agent:
+                role = "edge_server"
+            elif self.run_as_cloud_agent:
+                role = "cloud_agent"
+            elif self.run_as_cloud_server:
+                role = "cloud_server"
 
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
@@ -1332,6 +1333,7 @@ class FedMLServerRunner:
             "os_ver": os_ver,
             "memory": total_mem,
             "ip": ip,
+            "api_key": api_key,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,

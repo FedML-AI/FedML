@@ -49,13 +49,15 @@ class FedMLLaunchManager(Singleton):
         build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_folder,
                                                                     entry_point, config_folder, dest_folder, "")
         if build_result_package is None:
-            click.echo("Build ")
+            click.echo("Failed to build the application package for the executable file.")
+            return None
 
         FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(platform_type, self.job_config.application_name,
                                                                        user_id, user_api_key,
                                                                        client_package_file=build_result_package)
         if not app_updated_result:
+            click.echo("Failed to upload the application package to MLOps.")
             return None
 
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,

@@ -138,7 +138,10 @@ def display_server_logs():
     "--gpu_supplier", "-g", default=None, is_flag=True, help="login as the FedML Cheetah GPU supplier.",
 )
 @click.option(
-    "--api_key", "-k", type=str, default="NONE", help="user api key.",
+    "--gpu_master_server", "-gms", default=None, is_flag=True, help="login as the FedML Cheetah GPU master server.",
+)
+@click.option(
+    "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
     "--local_server",
@@ -152,7 +155,7 @@ def display_server_logs():
     "-r",
     type=str,
     default="edge_server",
-    help="run as the role (options: edge_server, cloud_agent, cloud_server, edge_simulator.",
+    help="run as the role (options: edge_server, cloud_agent, cloud_server, edge_simulator, gpu_master_server.",
 )
 @click.option(
     "--runner_cmd",
@@ -174,7 +177,8 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-        userid, version, client, server, gpu_supplier, api_key, local_server, role, runner_cmd, device_id, os_name,
+        userid, version, client, server, gpu_supplier, gpu_master_server,
+        api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
@@ -198,13 +202,18 @@ def mlops_login(
     # Set client as default entity.
     is_client = client
     is_server = server
-    if client is None and server is None:
+    if client is None and server is None and gpu_supplier is None and gpu_master_server is None:
         is_client = True
 
     # Check gpu supplier
     is_gpu_supplier = gpu_supplier
     if gpu_supplier is None:
         is_gpu_supplier = False
+
+    # Check gpu master server
+    is_gpu_master_server = gpu_master_server
+    if gpu_master_server is None:
+        is_gpu_master_server = False
 
     # Check api key
     user_api_key = api_key
@@ -263,17 +272,20 @@ def mlops_login(
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
-    if is_server is True:
+    if is_server is True or is_gpu_master_server is True:
         # Check login mode.
-        try:
-            ServerConstants.login_role_list.index(role)
-        except ValueError as e:
-            click.echo(
-                "Please specify login mode as follows ({}).".format(
-                    str(ServerConstants.login_role_list)
+        if is_gpu_master_server is True:
+            role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_GPU_MASTER_SERVER_INDEX]
+        else:
+            try:
+                ServerConstants.login_role_list.index(role)
+            except ValueError as e:
+                click.echo(
+                    "Please specify login mode as follows ({}).".format(
+                        str(ServerConstants.login_role_list)
+                    )
                 )
-            )
-            return
+                return
 
         if is_docker:
             login_with_server_docker_mode(account_id, version, docker_rank)
@@ -308,7 +320,9 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-k",
+                user_api_key
             ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
