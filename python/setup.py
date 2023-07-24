@@ -58,6 +58,7 @@ requirements = [
     "graphviz<0.9.0,>=0.8.1",
     "sqlalchemy",
     "onnx",
+    "docker==6.1.3"
 ]
 
 requirements_extra_mpi = [

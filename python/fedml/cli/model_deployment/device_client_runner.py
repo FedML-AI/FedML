@@ -95,6 +95,8 @@ class FedMLClientRunner:
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
                 unziped_file_name = zipf.namelist()[0]
+        else:
+            raise Exception("Invalid zip file {}".format(zip_file))
 
         return unziped_file_name
 
@@ -105,7 +107,7 @@ class FedMLClientRunner:
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress)   # Do NOT rename, use the filename from MLOps
+        urllib.request.urlretrieve(package_url, filename=local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = ClientConstants.get_model_dir()
         self.fedml_packages_base_dir = unzip_package_path
         try:

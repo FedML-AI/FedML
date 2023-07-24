@@ -140,13 +140,14 @@ class FedMLModelCards(Singleton):
 
         model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
         if not os.path.exists(model_bin_file):
-            # User May not upload model bin file
-            # Check there is a key value pair in the config file {local_model_dir : path}
+            # User May not upload model bin file, in this case, it means they want to serve a python script
             try:
                 with open(model_config_file, 'r') as f:
                     config = yaml.safe_load(f)
-                    local_model_dir = config.get("local_model_dir", "")
-                    assert local_model_dir != "", "local_model_dir is not set in the config file."
+                    main_entry_file = config.get("entry_point", "")
+                    if main_entry_file == "":
+                        print("The entry_point is missing in the model config file.")
+                        return ""
             except:
                 print("You model repository is missing file {}, you should add it.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
@@ -200,17 +201,18 @@ class FedMLModelCards(Singleton):
 
             model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
             if not os.path.exists(model_bin_file):
-                # User May not upload model bin file
-                # Check there is a key value pair in the config file {local_model_dir : path}
+                # User May not upload model bin file, in this case, it means they want to serve a python script
                 try:
                     with open(model_config_file, 'r') as f:
                         config = yaml.safe_load(f)
-                        local_model_dir = config.get("local_model_dir", "")
-                        assert local_model_dir != "", "local_model_dir is not set in the config file."
+                        main_entry_file = config.get("entry_point", "")
+                        if main_entry_file == "":
+                            print("The entry_point is missing in the model config file.")
+                            return "", ""
                 except:
                     print("You model repository is missing file {}, you should add it.".format(
-                        ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
-                    return ""
+                    ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
+                    return "", ""
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
