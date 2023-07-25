@@ -360,7 +360,7 @@ class FedMLClientRunner:
     def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         packages_config = run_config["packages_config"]
 
         self.check_runner_stop_event()
@@ -424,18 +424,18 @@ class FedMLClientRunner:
         logging.info("starting the learning process...")
 
         python_program = get_python_program()
-        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
-            python_program, entry_fill_full_path, conf_file_full_path, str(dynamic_args_config["rank"])))
+            python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
         process = ClientConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_fill_full_path,
+                entry_file_full_path,
                 "--cf",
                 conf_file_full_path,
                 "--rank",
-                str(dynamic_args_config["rank"]),
+                str(dynamic_args_config.get("rank", 1)),
                 "--role",
                 "client"
             ],
@@ -454,6 +454,9 @@ class FedMLClientRunner:
                     if out_str != "":
                         logging.info("{}".format(out_str))
 
+                self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                                                                 in_run_id=run_id)
                 sys_utils.log_return_info(entry_file, 0)
         else:
             is_run_ok = False

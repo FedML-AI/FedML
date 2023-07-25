@@ -407,7 +407,7 @@ class FedMLServerRunner:
 
         if server_package_url is None:
             self.mlops_metrics.report_server_training_status(run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
                                                              running_json=self.start_request_json)
             return
 
@@ -466,14 +466,14 @@ class FedMLServerRunner:
         logging.info("starting the aggregation process...")
 
         python_program = get_python_program()
-        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
-            python_program, entry_fill_full_path, conf_file_full_path))
+            python_program, entry_file_full_path, conf_file_full_path))
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_fill_full_path,
+                entry_file_full_path,
                 "--cf",
                 conf_file_full_path,
                 "--rank ",

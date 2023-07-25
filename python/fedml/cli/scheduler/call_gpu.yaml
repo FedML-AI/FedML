@@ -1,7 +1,7 @@
 fedml_params:
   fedml_account_id: 1111
   project_name: Cheetah_HelloWorld
-  job_name: HelloWorld
+  job_name: Cheetah_HelloWorld
 
 development_resources:
   dev_env: "https://open.fedml.ai"  # development resources bundle to load on each machine
