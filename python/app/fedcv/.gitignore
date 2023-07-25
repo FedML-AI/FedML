@@ -1,5 +1,12 @@
+__pycache__
+wandb
+runs
+*.cache
 *.zip
-__MACOSX/
-__pycache__/
-*.tmp
-mpi_host_file
+*.jpg
+*.png
+mlops
+config/exp*
+.idea
+.DS_Store
+devops
