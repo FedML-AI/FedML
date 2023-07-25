@@ -24,15 +24,15 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_id, user_api_key, devices):
+    def launch_job(self, yaml_file, user_id, user_api_key, mlops_platform_type, devices):
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
         self.parse_job_yaml(yaml_file)
 
         # Generate source, config and bootstrap related paths.
-        platform_str = Constants.FEDML_PLATFORM_OCTOPUS_STR
-        platform_type = Constants.FEDML_PLATFORM_OCTOPUS_TYPE
+        platform_str = mlops_platform_type
+        platform_type = Constants.platform_str_to_type(mlops_platform_type)
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
         source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file)
         source_full_folder = os.path.dirname(source_full_path)

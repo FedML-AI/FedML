@@ -50,3 +50,18 @@ class Constants(Singleton):
             file.close()
         except Exception as e:
             pass
+
+    @staticmethod
+    def platform_str_to_type(platform_str):
+        if platform_str == Constants.FEDML_PLATFORM_OCTOPUS_STR:
+            return Constants.FEDML_PLATFORM_OCTOPUS_TYPE
+        elif platform_str == Constants.FEDML_PLATFORM_PARROT_STR:
+            return Constants.FEDML_PLATFORM_PARROT_TYPE
+        elif platform_str == Constants.FEDML_PLATFORM_BEEHIVE_STR:
+            return Constants.FEDML_PLATFORM_BEEHIVE_TYPE
+        elif platform_str == Constants.FEDML_PLATFORM_CHEETAH_STR:
+            return Constants.FEDML_PLATFORM_CHEETAH_TYPE
+        elif platform_str == Constants.FEDML_PLATFORM_FALCON_STR:
+            return Constants.FEDML_PLATFORM_FALCON_TYPE
+
+        return Constants.FEDML_PLATFORM_FALCON_TYPE
