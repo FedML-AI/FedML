@@ -24,15 +24,15 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_id, user_api_key):
+    def launch_job(self, yaml_file, user_id, user_api_key, devices):
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
         self.parse_job_yaml(yaml_file)
 
         # Generate source, config and bootstrap related paths.
-        platform_str = Constants.FEDML_PLATFORM_FALCON_STR
-        platform_type = Constants.FEDML_PLATFORM_FALCON_TYPE
+        platform_str = Constants.FEDML_PLATFORM_OCTOPUS_STR
+        platform_type = Constants.FEDML_PLATFORM_OCTOPUS_TYPE
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
         source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file)
         source_full_folder = os.path.dirname(source_full_path)
@@ -67,23 +67,29 @@ class FedMLLaunchManager(Singleton):
             bootstrap_file_handle.writelines(self.job_config.run_commands)
             bootstrap_file_handle.close()
 
+        # Build the client or server package.
         build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_full_folder,
                                                                     entry_point, config_full_folder, dest_folder, "")
         if build_result_package is None:
             click.echo("Failed to build the application package for the executable file.")
             return None
 
+        # Create and update an application with the built packages.
         FedMLAppManager.get_instance().set_config_version(self.config_version)
-        app_updated_result = FedMLAppManager.get_instance().update_app(platform_type, self.job_config.application_name,
+        app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
+                                                                       self.job_config.application_name, configs,
                                                                        user_id, user_api_key,
                                                                        client_package_file=build_result_package)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
             return None
 
+        # Start the job with the above application.
+        FedMLJobManager.get_instance().set_config_version(self.config_version)
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
-                                                                 "[]", user_id, user_api_key)
+                                                                 devices, user_id, user_api_key,
+                                                                 self.job_config.job_name)
         launch_result.project_name = self.job_config.project_name
         return launch_result
 

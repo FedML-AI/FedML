@@ -1,5 +1,6 @@
 
 import json
+import time
 import uuid
 
 import requests
@@ -22,14 +23,13 @@ class FedMLJobManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def start_job(self, platform, project_name, application_name, devices, user_id, user_api_key):
-        result = self.start_job_api(platform, project_name, application_name, devices, user_id, user_api_key)
-        if result is None:
-            return False
+    def start_job(self, platform, project_name, application_name, devices,
+                  user_id, user_api_key, job_name=None):
+        return self.start_job_api(platform, project_name, application_name, devices,
+                                  user_id, user_api_key, job_name=job_name)
 
-        return True
-
-    def start_job_api(self, platform, project_name, application_name, devices, user_id, user_api_key):
+    def start_job_api(self, platform, project_name, application_name, devices,
+                      user_id, user_api_key, job_name=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -43,6 +43,8 @@ class FedMLJobManager(Singleton):
             "userId": user_id,
             "apiKey": user_api_key
         }
+        if job_name is not None:
+            job_start_json["jobName"] = job_name
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
@@ -65,7 +67,9 @@ class FedMLJobManager(Singleton):
             if resp_data["code"] == "FAILURE":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
-            job_start_result = FedMLJobStartedModel(resp_data["data"])
+            # job_start_result = FedMLJobStartedModel(resp_data["data"])
+            job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
+                                                     "job_url": "https://open.fedml.ai", "started_time": time.time()})
 
         return job_start_result
 

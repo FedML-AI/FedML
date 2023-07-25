@@ -109,11 +109,11 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
         is_using_local_data = 0
-        private_data_dir = data_config["privateLocalData"]
-        synthetic_data_url = data_config["syntheticDataUrl"]
+        private_data_dir = data_config.get("privateLocalData", "")
+        synthetic_data_url = data_config.get("syntheticDataUrl", "")
         edges = self.request_json["edges"]
         # if private_data_dir is not None \
         #         and len(str(private_data_dir).strip(' ')) > 0:
@@ -187,7 +187,9 @@ class FedMLServerRunner:
         packages_config = run_config["packages_config"]
 
         # Copy config file from the client
-        unzip_package_path = self.retrieve_and_unzip_package(packages_config["server"], packages_config["serverUrl"])
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
+        unzip_package_path = self.retrieve_and_unzip_package(server_package_name, server_package_url)
         self.fedml_packages_unzip_dir = unzip_package_path
         fedml_local_config_file = os.path.join(unzip_package_path, "conf", "fedml.yaml")
 
@@ -390,6 +392,8 @@ class FedMLServerRunner:
         data_config = run_config["data_config"]
         packages_config = run_config["packages_config"]
         edge_ids = self.request_json["edgeids"]
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
 
         self.check_runner_stop_event()
 
@@ -400,6 +404,12 @@ class FedMLServerRunner:
         logging.info("send training request to edges...")
 
         self.send_training_request_to_edges()
+
+        if server_package_url is None:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                                                             running_json=self.start_request_json)
+            return
 
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,

@@ -436,7 +436,7 @@ class S3Storage:
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
                 f.seek(old_file_position, os.SEEK_SET)
-                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc="Uploading Model to AWS S3") as pbar:
+                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc="Uploading Package to AWS S3") as pbar:
                     aws_s3_client.upload_fileobj(
                         f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
                         Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
@@ -474,7 +474,7 @@ class S3Storage:
                 kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
                 object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
                 with tqdm.tqdm(total=object_size, unit="B", unit_scale=True,
-                               desc="Downloading Model to AWS S3") as pbar:
+                               desc="Downloading Package from AWS S3") as pbar:
                     with open(path_local, 'wb') as f:
                         aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
                                                        Callback=lambda bytes_transferred: pbar.update(

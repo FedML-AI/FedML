@@ -770,15 +770,19 @@ def launch_local(arguments):
     "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
+    "--devices", "-d", type=str, default="[]",
+    help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
+)
+@click.option(
     "--version",
     "-v",
     type=str,
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, user, api_key, version):
+def launch_job(yaml_file, user, api_key, devices, version):
     FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user, api_key)
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user, api_key, devices)
     if result is not None:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
         click.echo(f"Please go to this web page with your account {user} to review your job "

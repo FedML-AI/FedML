@@ -92,13 +92,13 @@ class FedMLClientRunner:
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
         local_edge_id_list = [1]
         local_edge_id_list[0] = self.edge_id
         is_using_local_data = 0
-        private_data_dir = data_config["privateLocalData"]
-        synthetic_data_url = data_config["syntheticDataUrl"]
+        private_data_dir = data_config.get("privateLocalData", "")
+        synthetic_data_url = data_config.get("syntheticDataUrl", "")
         edges = self.request_json["edges"]
         # if private_data_dir is not None \
         #         and len(str(private_data_dir).strip(' ')) > 0:
@@ -242,21 +242,26 @@ class FedMLClientRunner:
             fedml_conf_object = parameters_object
 
         package_dynamic_args = package_conf_object["dynamic_args"]
-        fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
-        fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
-        fedml_conf_object["common_args"]["using_mlops"] = True
-        fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
-        fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
-        fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["client_id"] = self.edge_id
-        fedml_conf_object["train_args"]["server_id"] = self.request_json.get("server_id", "0")
-        fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
+        if fedml_conf_object.get("comm_args", None) is not None:
+            fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
+            fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
+            fedml_conf_object["common_args"]["using_mlops"] = True
+            if hasattr(self.args, "local_server") and self.args.local_server is not None:
+                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("train_args", None) is not None:
+            fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
+            fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
+            fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["client_id"] = self.edge_id
+            fedml_conf_object["train_args"]["server_id"] = self.request_json.get("server_id", "0")
+        if fedml_conf_object.get("device_args", None) is not None:
+            fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
-        fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
-        fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
-        if hasattr(self.args, "local_server") and self.args.local_server is not None:
-            fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("tracking_args", None) is not None:
+            fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
+            fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
+
         bootstrap_script_path = None
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
