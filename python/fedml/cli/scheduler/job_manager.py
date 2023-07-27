@@ -65,7 +65,6 @@ class FedMLJobManager(Singleton):
         else:
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
-                print("Error: {}.".format(resp_data["message"]))
                 return None
             # job_start_result = FedMLJobStartedModel(resp_data["data"])
             job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",

@@ -803,7 +803,7 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, versio
         click.echo(f"For querying the status of the job, please run the command: "
                    f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
     else:
-        click.echo("Failed to launch the job.")
+        click.echo("Failed to launch the job. Please check if the network is available or the job name is duplicated.")
 
 
 @cli.group("app")
