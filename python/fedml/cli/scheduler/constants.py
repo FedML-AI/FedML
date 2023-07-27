@@ -32,6 +32,8 @@ class Constants(Singleton):
 
     OS_PLATFORM_WINDOWS = 'Windows'
 
+    LAUNCH_PARAMETER_JOB_YAML_KEY = "job_yaml"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

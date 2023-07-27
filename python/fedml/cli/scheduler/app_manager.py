@@ -26,11 +26,11 @@ class FedMLAppManager(Singleton):
 
     def create_app(self, platform, application_name, client_package_file, server_package_file,
                    user_id, user_api_key):
-        return self.update_app(platform, application_name, None, user_id, user_api_key,
+        return self.update_app(platform, application_name, None, user_id, user_id, user_api_key,
                                client_package_file, server_package_file)
 
     def update_app(self, platform, application_name, app_config,
-                   user_id, user_api_key,
+                   user_name, user_id, user_api_key,
                    client_package_file=None, server_package_file=None):
         if client_package_file is None and server_package_file is None:
             return False
@@ -45,7 +45,7 @@ class FedMLAppManager(Singleton):
                                      os.path.basename(client_package_file) if client_package_file is not None else None,
                                      server_package_url,
                                      os.path.basename(server_package_file) if server_package_file is not None else None,
-                                     user_id, user_api_key)
+                                     user_name, user_id, user_api_key)
         if result is None:
             return False
 
@@ -53,12 +53,12 @@ class FedMLAppManager(Singleton):
 
     def update_app_api(self, platform, application_name, app_config,
                        client_package_url, client_package_file, server_package_url, server_package_file,
-                       user_id, user_api_key):
+                       user_name, user_id, user_api_key):
         app_update_result = None
         app_update_url = ServerConstants.get_app_update_url(self.config_version)
         app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         app_update_json = {
-            #"owner": user_id,
+            "owner": user_name,
             "avatar": "https://fedml.s3.us-west-1.amazonaws.com/profile_picture2.png",
             "githubLink": "",
             "accessPermission": 1,

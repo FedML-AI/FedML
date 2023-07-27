@@ -24,7 +24,7 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_id, user_api_key, mlops_platform_type, devices):
+    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type, devices):
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
@@ -66,6 +66,7 @@ class FedMLLaunchManager(Singleton):
             bootstrap_file_handle.writelines(self.job_config.pre_setup)
             bootstrap_file_handle.writelines(self.job_config.run_commands)
             bootstrap_file_handle.close()
+        configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = self.job_config.job_config_dict
 
         # Build the client or server package.
         build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_full_folder,
@@ -78,7 +79,7 @@ class FedMLLaunchManager(Singleton):
         FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
                                                                        self.job_config.application_name, configs,
-                                                                       user_id, user_api_key,
+                                                                       user_name, user_id, user_api_key,
                                                                        client_package_file=build_result_package)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
@@ -349,20 +350,20 @@ gpu_requirements:
 
 class FedMLJobConfig(object):
     def __init__(self, job_yaml_file):
-        job_config = load_yaml_config(job_yaml_file)
-        self.account_id = job_config["fedml_params"]["fedml_account_id"]
-        self.project_name = job_config["fedml_params"]["project_name"]
-        self.job_name = job_config["fedml_params"]["job_name"]
-        self.dev_env = job_config["development_resources"]["dev_env"]
-        self.network = job_config["development_resources"]["network"]
+        self.job_config_dict = load_yaml_config(job_yaml_file)
+        self.account_id = self.job_config_dict["fedml_params"]["fedml_account_id"]
+        self.project_name = self.job_config_dict["fedml_params"]["project_name"]
+        self.job_name = self.job_config_dict["fedml_params"]["job_name"]
+        self.dev_env = self.job_config_dict["development_resources"]["dev_env"]
+        self.network = self.job_config_dict["development_resources"]["network"]
         self.base_dir = os.path.dirname(job_yaml_file)
-        self.executable_file = job_config["executable_code_and_data"]["executable_file"]
-        self.executable_conf = job_config["executable_code_and_data"]["executable_conf"]
+        self.executable_file = self.job_config_dict["executable_code_and_data"]["executable_file"]
+        self.executable_conf = self.job_config_dict["executable_code_and_data"]["executable_conf"]
         self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
         self.executable_conf = str(self.executable_conf).replace('\\', os.sep).replace('/', os.sep)
-        self.data_location = job_config["executable_code_and_data"]["data_location"]
-        self.pre_setup = job_config["executable_code_and_data"]["pre_setup"]
-        self.run_commands = job_config["executable_code_and_data"]["run_commands"]
-        self.minimum_num_gpus = job_config["gpu_requirements"]["minimum_num_gpus"]
-        self.maximum_cost_per_hour = job_config["gpu_requirements"]["maximum_cost_per_hour"]
+        self.data_location = self.job_config_dict["executable_code_and_data"]["data_location"]
+        self.pre_setup = self.job_config_dict["executable_code_and_data"]["pre_setup"]
+        self.run_commands = self.job_config_dict["executable_code_and_data"]["run_commands"]
+        self.minimum_num_gpus = self.job_config_dict["gpu_requirements"]["minimum_num_gpus"]
+        self.maximum_cost_per_hour = self.job_config_dict["gpu_requirements"]["maximum_cost_per_hour"]
         self.application_name = f"App-{self.job_name}"

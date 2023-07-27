@@ -764,7 +764,10 @@ def launch_local(arguments):
 )
 @click.argument("yaml_file", nargs=-1)
 @click.option(
-    "--user", "-u", type=str, help="user id.",
+    "--user_name", "-uname", type=str, help="user name.",
+)
+@click.option(
+    "--user_id", "-uid", type=str, help="user id.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -787,18 +790,18 @@ def launch_local(arguments):
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, user, api_key, platform, devices, version):
+def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, version):
     if not platform_is_valid(platform):
         return
 
     FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user, api_key, platform, devices)
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform, devices)
     if result is not None:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-        click.echo(f"Please go to this web page with your account {user} to review your job "
+        click.echo(f"Please go to this web page with your account {user_id} to review your job "
                    f"and confirm the launch start: {result.job_url}")
         click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user} -k {api_key}.")
+                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
     else:
         click.echo("Failed to launch the job.")
 
