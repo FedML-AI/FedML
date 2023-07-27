@@ -1,2 +1,0 @@
-ls -la ~               
-echo "Bootstrap..."
