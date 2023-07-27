@@ -334,6 +334,8 @@ executable_code_and_data:
     # executable_interpreter executable_file executable_conf_option executable_conf_file executable_args
     # e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
     # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args> 
+    # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
+    # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
     executable_interpreter: tbd # shell interpreter for executable_file, e.g. bash, sh, zsh, python, etc.
     executable_file: tbd        # your main executable file, which can be empty
     executable_conf_option: tbd # your command option for executable_conf_file, which can be empty
