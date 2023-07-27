@@ -37,7 +37,7 @@ class FedMLJobManager(Singleton):
             "platformType": platform,
             "applicationName": application_name,
             "devices": json.loads(devices),
-            "name": "FedML-CLI-Job-" + str(uuid.uuid4()),
+            "name": job_name if job_name is not None and job_name != "" else f"FedML-CLI-Job-{str(uuid.uuid4())}",
             "projectName": project_name,
             "urls": [],
             "userId": user_id,
