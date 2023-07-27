@@ -91,8 +91,6 @@ class FedMLLaunchManager(Singleton):
                                                                  self.job_config.application_name,
                                                                  devices, user_id, user_api_key,
                                                                  self.job_config.job_name)
-        if launch_result is None:
-            return None
         launch_result.project_name = self.job_config.project_name
         return launch_result
 

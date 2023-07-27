@@ -797,13 +797,17 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, versio
     FedMLLaunchManager.get_instance().set_config_version(version)
     result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform, devices)
     if result is not None:
-        click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-        click.echo(f"Please go to this web page with your account {user_id} to review your job "
-                   f"and confirm the launch start: {result.job_url}")
-        click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
+        if result.job_url == "":
+            click.echo(f"Failed to launch the job. Please check if the network is available "
+                       f"or the job name {result.job_name} is duplicated.")
+        else:
+            click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+            click.echo(f"Please go to this web page with your account {user_id} to review your job "
+                       f"and confirm the launch start: {result.job_url}")
+            click.echo(f"For querying the status of the job, please run the command: "
+                       f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
     else:
-        click.echo("Failed to launch the job. Please check if the network is available or the job name is duplicated.")
+        click.echo(f"Failed to launch the job.")
 
 
 @cli.group("app")
