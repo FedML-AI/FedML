@@ -423,30 +423,16 @@ class FedMLClientRunner:
 
         logging.info("starting the learning process...")
 
-        python_program = get_python_program()
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
-            python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
-        process = ClientConstants.exec_console_with_shell_script_list(
-            [
-                python_program,
-                entry_file_full_path,
-                "--cf",
-                conf_file_full_path,
-                "--rank",
-                str(dynamic_args_config.get("rank", 1)),
-                "--role",
-                "client"
-            ],
-            should_capture_stdout=False,
-            should_capture_stderr=True
-        )
+        process, is_fl_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         logging.info("waiting the learning process to train models...")
         ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
+        if not is_fl_task:
+            is_run_ok = True
         if ret_code is None or ret_code <= 0:
             if is_run_ok:
                 if out is not None:
@@ -484,6 +470,54 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+
+    def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        executable_code_and_data = job_yaml.get("executable_code_and_data", {})
+        executable_interpreter = executable_code_and_data.get("executable_interpreter", "")
+        executable_file = executable_code_and_data.get("executable_file", "")
+        executable_conf_option = executable_code_and_data.get("executable_conf_option", "")
+        executable_conf_file = executable_code_and_data.get("executable_conf_file", "")
+        executable_args = executable_code_and_data.get("executable_args", "")
+
+        if job_yaml is None:
+            python_program = get_python_program()
+            logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
+                python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
+
+            process = ClientConstants.exec_console_with_shell_script_list(
+                [
+                    python_program,
+                    entry_file_full_path,
+                    "--cf",
+                    conf_file_full_path,
+                    "--rank",
+                    str(dynamic_args_config.get("rank", 1)),
+                    "--role",
+                    "client"
+                ],
+                should_capture_stdout=False,
+                should_capture_stderr=True
+            )
+            is_fl_task = True
+        else:
+            shell_cmd_list = list()
+            shell_cmd_list.append(executable_interpreter)
+            if executable_file != "":
+                shell_cmd_list.append(entry_file_full_path)
+            if executable_conf_file != "" and executable_conf_option != "":
+                shell_cmd_list.append(executable_conf_option)
+                shell_cmd_list.append(entry_file_full_path)
+            shell_cmd_list.append(executable_args)
+            process = ClientConstants.exec_console_with_shell_script_list(
+                shell_cmd_list,
+                should_capture_stdout=False,
+                should_capture_stderr=True
+            )
+            is_fl_task = False
+        return process, is_fl_task
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
