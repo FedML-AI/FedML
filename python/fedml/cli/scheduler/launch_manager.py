@@ -36,13 +36,21 @@ class FedMLLaunchManager(Singleton):
         platform_type = Constants.platform_str_to_type(mlops_platform_type)
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
         shell_interpreter = self.job_config.executable_interpreter
-        source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file)
+        if os.path.exists(self.job_config.executable_file_folder):
+            source_full_path = os.path.join(self.job_config.executable_file_folder, self.job_config.executable_file)
+        else:
+            source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file_folder,
+                                            self.job_config.executable_file)
         source_full_folder = os.path.dirname(source_full_path)
         source_folder = os.path.dirname(self.job_config.executable_file)
         entry_point = os.path.basename(self.job_config.executable_file)
-        config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf_file)
+        if os.path.exists(self.job_config.executable_conf_file_folder):
+            config_full_path = os.path.join(self.job_config.executable_conf_file_folder, self.job_config.executable_conf_file)
+        else:
+            config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf_file_folder,
+                                            self.job_config.executable_conf_file)
         config_full_folder = os.path.dirname(config_full_path)
-        config_folder = os.path.dirname(self.job_config.executable_conf_file)
+        config_folder = self.job_config.executable_conf_file_folder
         dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
         bootstrap_full_path = os.path.join(config_full_folder, Constants.BOOTSTRAP_FILE_NAME)
         bootstrap_file = os.path.join(config_folder, Constants.BOOTSTRAP_FILE_NAME)
@@ -52,10 +60,11 @@ class FedMLLaunchManager(Singleton):
 
         # Check the paths.
         if not os.path.exists(source_full_path):
+            os.makedirs(source_full_folder, exist_ok=True)
             with open(source_full_path, 'w') as source_file_handle:
                 source_file_handle.close()
         if not os.path.exists(config_full_path):
-            os.makedirs(config_folder, exist_ok=True)
+            os.makedirs(config_full_folder, exist_ok=True)
             with open(config_full_path, 'w') as config_file_handle:
                 config_file_handle.writelines(["environment_args:\n", f"  bootstrap: {bootstrap_file}\n"])
                 config_file_handle.close()
@@ -333,14 +342,16 @@ development_resources:
     network: tbd        # network protocol for communication between machines
 executable_code_and_data:
     # The entire command will be executed as follows:
-    # executable_interpreter executable_file executable_conf_option executable_conf_file executable_args
+    # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
     # e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
     # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args> 
     # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
     # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
     executable_interpreter: tbd # shell interpreter for executable_file, e.g. bash, sh, zsh, python, etc.
-    executable_file: tbd        # your main executable file, which can be empty
+    executable_file_folder: tbd # directory for executable file
+    executable_file: tbd        # your main executable file in the executable_file_folder, which can be empty
     executable_conf_option: tbd # your command option for executable_conf_file, which can be empty
+    executable_conf_file_folder: config # directory for config file
     executable_conf_file: tbd        # your config file for the main executable program, which can be empty
     executable_args: tbd        # command arguments for the executable_interpreter and executable_file
     data_location: tbd          # path to your data
@@ -364,6 +375,7 @@ class FedMLJobConfig(object):
         self.network = self.job_config_dict["development_resources"]["network"]
         self.base_dir = os.path.dirname(job_yaml_file)
         self.executable_interpreter = self.job_config_dict["executable_code_and_data"]["executable_interpreter"]
+        self.executable_file_folder = self.job_config_dict["executable_code_and_data"]["executable_file_folder"]
         self.executable_file = self.job_config_dict["executable_code_and_data"]["executable_file"]
         default_example_job_dir = os.path.join(self.base_dir, "example_job")
         default_example_job_conf_dir = os.path.join(self.base_dir, "example_job", "config")
@@ -371,6 +383,7 @@ class FedMLJobConfig(object):
             os.makedirs(default_example_job_dir, exist_ok=True)
             self.executable_file = os.path.join(default_example_job_dir, "example_entry.py")
         self.executable_conf_option = self.job_config_dict["executable_code_and_data"]["executable_conf_option"]
+        self.executable_conf_file_folder = self.job_config_dict["executable_code_and_data"]["executable_conf_file_folder"]
         self.executable_conf_file = self.job_config_dict["executable_code_and_data"]["executable_conf_file"]
         if self.executable_conf_file is None or self.executable_conf_file == "":
             os.makedirs(default_example_job_conf_dir, exist_ok=True)
