@@ -24,7 +24,8 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type, devices):
+    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type, devices,
+                   no_confirmation=False):
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
@@ -90,7 +91,8 @@ class FedMLLaunchManager(Singleton):
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
                                                                  devices, user_id, user_api_key,
-                                                                 self.job_config.job_name)
+                                                                 job_name=self.job_config.job_name,
+                                                                 no_confirmation=no_confirmation)
         launch_result.project_name = self.job_config.project_name
         return launch_result
 

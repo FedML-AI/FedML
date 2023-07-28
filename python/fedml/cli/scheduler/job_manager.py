@@ -24,12 +24,12 @@ class FedMLJobManager(Singleton):
             self.config_version = config_version
 
     def start_job(self, platform, project_name, application_name, devices,
-                  user_id, user_api_key, job_name=None):
+                  user_id, user_api_key, job_name=None, no_confirmation=False):
         return self.start_job_api(platform, project_name, application_name, devices,
-                                  user_id, user_api_key, job_name=job_name)
+                                  user_id, user_api_key, job_name=job_name, no_confirmation=no_confirmation)
 
     def start_job_api(self, platform, project_name, application_name, devices,
-                      user_id, user_api_key, job_name=None):
+                      user_id, user_api_key, job_name=None, no_confirmation=False):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -42,7 +42,8 @@ class FedMLJobManager(Singleton):
             "projectName": project_name,
             "urls": [],
             "userId": user_id,
-            "apiKey": user_api_key
+            "apiKey": user_api_key,
+            "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
         }
         if job_name is not None:
             job_start_json["jobName"] = job_name

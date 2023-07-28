@@ -784,18 +784,26 @@ def launch_local(arguments):
     help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
 )
 @click.option(
+    "--no_confirmation", "-nc", default=None, is_flag=False, help="no confirmation after initiating launching request.",
+)
+@click.option(
     "--version",
     "-v",
     type=str,
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, version):
+def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, no_confirmation, version):
     if not platform_is_valid(platform):
         return
 
+    is_no_confirmation = no_confirmation
+    if no_confirmation is None:
+        is_no_confirmation = False
+
     FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform, devices)
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform, devices,
+                                                          no_confirmation=is_no_confirmation)
     if result is not None:
         if result.job_url == "":
             click.echo(f"Failed to launch the job. Please check if the network is available "
@@ -972,7 +980,8 @@ def start_job(platform, project_name, application_name, devices, user, api_key, 
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices, user, api_key)
+    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices,
+                                                      user, api_key, need_confirmation=False)
     if result:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
         click.echo(f"Please go to this web page with your account {user} to review your job "
