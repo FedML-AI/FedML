@@ -141,6 +141,10 @@ def display_server_logs():
     "--gpu_master_server", "-gms", default=None, is_flag=True, help="login as the FedML Cheetah GPU master server.",
 )
 @click.option(
+    "--no_gpu_check", "-ngc", default=None, is_flag=True,
+    help="Not need to check if the GPU is available when logining as the GPU supplier.",
+)
+@click.option(
     "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
@@ -177,7 +181,7 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-        userid, version, client, server, gpu_supplier, gpu_master_server,
+        userid, version, client, server, gpu_supplier, gpu_master_server, no_gpu_check,
         api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
@@ -214,6 +218,11 @@ def mlops_login(
     is_gpu_master_server = gpu_master_server
     if gpu_master_server is None:
         is_gpu_master_server = False
+
+    # Ignore to check gpu
+    is_no_gpu_check = no_gpu_check
+    if no_gpu_check is None:
+        is_no_gpu_check = False
 
     # Check api key
     user_api_key = api_key
@@ -267,7 +276,9 @@ def mlops_login(
                 "-os",
                 os_name,
                 "-k",
-                user_api_key
+                user_api_key,
+                "-ngc",
+                "1" if is_no_gpu_check else "0"
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -784,7 +795,8 @@ def launch_local(arguments):
     help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
 )
 @click.option(
-    "--no_confirmation", "-nc", default=None, is_flag=False, help="no confirmation after initiating launching request.",
+    "--no_confirmation", "-nc", default=None, is_flag=True,
+    help="no confirmation after initiating launching request.",
 )
 @click.option(
     "--version",

@@ -34,6 +34,11 @@ class Constants(Singleton):
 
     LAUNCH_PARAMETER_JOB_YAML_KEY = "job_yaml"
 
+    MLOPS_CLIENT_STATUS_NOT_STARTED = "NotStarted"
+    MLOPS_CLIENT_STATUS_ACTIVE = "Active"
+    MLOPS_CLIENT_STATUS_DONE = "Done"
+    MLOPS_CLIENT_STATUS_STOPPED = "Stopped"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

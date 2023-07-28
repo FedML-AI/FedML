@@ -4,6 +4,7 @@ import time
 import uuid
 
 import requests
+from fedml.cli.scheduler.constants import Constants
 
 from fedml.core.common.singleton import Singleton
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -71,9 +72,9 @@ class FedMLJobManager(Singleton):
                                                          "job_url": "",
                                                          "started_time": time.time()})
                 return job_start_result
-            # job_start_result = FedMLJobStartedModel(resp_data["data"])
-            job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
-                                                     "job_url": "https://open.fedml.ai", "started_time": time.time()})
+            job_start_result = FedMLJobStartedModel(resp_data["data"], job_name=job_name)
+            #job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
+            #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})
 
         return job_start_result
 
@@ -122,11 +123,17 @@ class FedMLJobManager(Singleton):
 
 
 class FedMLJobStartedModel(object):
-    def __init__(self, job_started_json):
-        self.job_name = job_started_json["job_name"]
-        self.status = job_started_json["status"]
-        self.job_url = job_started_json["job_url"]
-        self.started_time = job_started_json["started_time"]
+    def __init__(self, job_started_json, job_name=None):
+        if job_started_json is dict:
+            self.job_name = job_started_json.get("job_name", job_name)
+            self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
+            self.job_url = job_started_json.get("job_url", job_started_json)
+            self.started_time = job_started_json.get("started_time", time.time())
+        else:
+            self.job_name = job_name
+            self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
+            self.job_url = job_started_json
+            self.started_time = time.time()
 
 
 class FedMLJobModelList(object):

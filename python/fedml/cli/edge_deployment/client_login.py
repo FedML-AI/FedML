@@ -275,12 +275,13 @@ def login(args):
     if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]:
         __login_as_client(args, args.user, args.version, api_key=args.api_key)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]:
-        gpu_count, _ = sys_utils.get_gpu_count_vendor()
-        if gpu_count <= 0:
-            click.echo("We can't find any gpu device on your machine. \n"
-                       "With the gpu_supplier(-g) option, you need to check if your machine "
-                       "has nvidia GPUs and installs CUDA related drivers.")
-            return
+        if args.no_gpu_check == 0:
+            gpu_count, _ = sys_utils.get_gpu_count_vendor()
+            if gpu_count <= 0:
+                click.echo("We can't find any gpu device on your machine. \n"
+                           "With the gpu_supplier(-g) option, you need to check if your machine "
+                           "has nvidia GPUs and installs CUDA related drivers.")
+                return
         __login_as_client(args, args.user, args.version, api_key=args.api_key,
                           use_extra_device_id_suffix=".Edge.GPU.Supplier", role=args.role)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:
@@ -305,6 +306,7 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
+    parser.add_argument("--no_gpu_check", "-ngc", type=int, default=0)
     args = parser.parse_args()
     
     args.user = args.user
