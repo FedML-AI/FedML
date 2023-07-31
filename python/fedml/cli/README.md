@@ -149,7 +149,7 @@ Options:
 -v, --version TEXT        launch job to which version of MLOps platform. It should be dev, test or release
 --help                    Show this message and exit.
 ```
-After you define your job properties in the job yaml file, e.g. entry file, config file, command arguments, etc.
+At first, you need to define your job properties in the job yaml file, e.g. entry file, config file, command arguments, etc.
 
 The job yaml file is as follows:
 ```
