@@ -63,11 +63,15 @@ executable_conf_file: fedml_config.yaml   # your config file for the main execut
 ```
  
 The actual job command will be executed with the following combination.
+
 executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args 
 
 e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
+
 e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
+
 e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
+
 e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
 
 You may use the following example CLI to launch the job at the MLOps platform.
