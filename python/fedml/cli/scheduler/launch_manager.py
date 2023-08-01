@@ -26,6 +26,7 @@ class FedMLLaunchManager(Singleton):
 
     def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type,
                    device_server, device_edges,
+                   job_name=None,
                    no_confirmation=False):
         if not os.path.exists(yaml_file):
             click.echo(f"{yaml_file} does not exist. Please specify the full path of your job yaml file.")
@@ -35,6 +36,8 @@ class FedMLLaunchManager(Singleton):
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
         self.parse_job_yaml(yaml_file)
+        if job_name is not None and job_name != "":
+            self.job_config.application_name = FedMLJobConfig.generate_application_name(job_name)
 
         # Generate source, config and bootstrap related paths.
         platform_str = mlops_platform_type
@@ -50,7 +53,8 @@ class FedMLLaunchManager(Singleton):
         source_folder = os.path.dirname(self.job_config.executable_file)
         entry_point = os.path.basename(self.job_config.executable_file)
         if os.path.exists(self.job_config.executable_conf_file_folder):
-            config_full_path = os.path.join(self.job_config.executable_conf_file_folder, self.job_config.executable_conf_file)
+            config_full_path = os.path.join(self.job_config.executable_conf_file_folder,
+                                            self.job_config.executable_conf_file)
         else:
             config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf_file_folder,
                                             self.job_config.executable_conf_file)
@@ -84,7 +88,8 @@ class FedMLLaunchManager(Singleton):
         configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = self.job_config.job_config_dict
 
         # Build the client or server package.
-        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type, source_full_folder,
+        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
+                                                                    source_full_folder,
                                                                     entry_point, config_full_folder, dest_folder, "")
         if build_result_package is None:
             click.echo("Failed to build the application package for the executable file.")
@@ -102,10 +107,11 @@ class FedMLLaunchManager(Singleton):
 
         # Start the job with the above application.
         FedMLJobManager.get_instance().set_config_version(self.config_version)
+        real_job_name = self.job_config.job_name if job_name is None or job_name == "" else job_name
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
                                                                  device_server, device_edges, user_id, user_api_key,
-                                                                 job_name=self.job_config.job_name,
+                                                                 job_name=real_job_name,
                                                                  no_confirmation=no_confirmation)
         launch_result.project_name = self.job_config.project_name
         return launch_result
@@ -388,7 +394,8 @@ class FedMLJobConfig(object):
             os.makedirs(default_example_job_dir, exist_ok=True)
             self.executable_file = os.path.join(default_example_job_dir, "example_entry.py")
         self.executable_conf_option = self.job_config_dict["executable_code_and_data"]["executable_conf_option"]
-        self.executable_conf_file_folder = self.job_config_dict["executable_code_and_data"]["executable_conf_file_folder"]
+        self.executable_conf_file_folder = self.job_config_dict["executable_code_and_data"][
+            "executable_conf_file_folder"]
         self.executable_conf_file = self.job_config_dict["executable_code_and_data"]["executable_conf_file"]
         if self.executable_conf_file is None or self.executable_conf_file == "":
             os.makedirs(default_example_job_conf_dir, exist_ok=True)
@@ -400,4 +407,8 @@ class FedMLJobConfig(object):
         self.bootstrap = self.job_config_dict["executable_code_and_data"]["bootstrap"]
         self.minimum_num_gpus = self.job_config_dict["gpu_requirements"]["minimum_num_gpus"]
         self.maximum_cost_per_hour = self.job_config_dict["gpu_requirements"]["maximum_cost_per_hour"]
-        self.application_name = f"App-{self.job_name}"
+        self.application_name = FedMLJobConfig.generate_application_name(self.job_name)
+
+    @staticmethod
+    def generate_application_name(job_name):
+        return f"App-{job_name}"

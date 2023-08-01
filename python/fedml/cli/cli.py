@@ -772,6 +772,14 @@ def env():
          "default is falcon).",
 )
 @click.option(
+    "--job_name",
+    "-jn",
+    type=str,
+    default="",
+    help="The job name at the MLOps platform. "
+         "If you don't specify here, the job name from the job yaml file will be used.",
+)
+@click.option(
     "--devices_server", "-ds", type=str, default="",
     help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
 )
@@ -791,7 +799,8 @@ def env():
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, user_name, user_id, api_key, platform, devices_server, devices_edges, no_confirmation, version):
+def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
+               devices_server, devices_edges, no_confirmation, version):
     if not platform_is_valid(platform):
         return
 
@@ -800,7 +809,8 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, devices_server,
         is_no_confirmation = False
 
     FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform,
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key,
+                                                          platform, job_name,
                                                           devices_server, devices_edges,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
@@ -958,6 +968,13 @@ def jobs():
     help="Application name in the My Application list at the MLOps platform.",
 )
 @click.option(
+    "--job_name",
+    "-jn",
+    type=str,
+    default="",
+    help="The job name at the MLOps platform.",
+)
+@click.option(
     "--devices_server", "-ds", type=str, default="",
     help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
 )
@@ -979,14 +996,15 @@ def jobs():
     default="release",
     help="start job at which version of MLOps platform. It should be dev, test or release",
 )
-def start_job(platform, project_name, application_name, devices_server, devices_edges, user, api_key, version):
+def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key, version):
     if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
                                                       devices_server, devices_edges,
-                                                      user, api_key, need_confirmation=False)
+                                                      user, api_key,
+                                                      job_name=job_name, need_confirmation=False)
     if result:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
         click.echo(f"Please go to this web page with your account {user} to review your job "
