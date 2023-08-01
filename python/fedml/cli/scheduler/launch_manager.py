@@ -72,7 +72,20 @@ class FedMLLaunchManager(Singleton):
         else:
             config_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_conf_file_folder,
                                             self.job_config.executable_conf_file)
+        if config_full_path == source_full_path:
+            config_full_path = os.path.join(os.path.dirname(config_full_path), "config",
+                                            self.job_config.executable_conf_file)
+            self.job_config.executable_conf_file_folder = os.path.join(self.job_config.executable_conf_file_folder, "config")
         config_full_folder = os.path.dirname(config_full_path)
+        os.makedirs(source_full_folder, exist_ok=True)
+        os.makedirs(config_full_folder, exist_ok=True)
+        if not os.path.exists(config_full_folder):
+            self.job_config.executable_conf_file_folder = os.path.join(Constants.get_fedml_home_dir(),
+                                                                       Constants.FEDML_LAUNCH_JOB_TEMP_DIR,
+                                                                       self.job_config.executable_conf_file_folder)
+            config_full_path = config_full_path = os.path.join(self.job_config.executable_conf_file_folder,
+                                                               self.job_config.executable_conf_file)
+            config_full_folder = os.path.dirname(config_full_path)
         config_folder = self.job_config.executable_conf_file_folder
         dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
         bootstrap_full_path = os.path.join(config_full_folder, Constants.BOOTSTRAP_FILE_NAME)
@@ -86,8 +99,6 @@ class FedMLLaunchManager(Singleton):
             os.makedirs(source_full_folder, exist_ok=True)
             with open(source_full_path, 'w') as source_file_handle:
                 source_file_handle.close()
-        if config_full_path == source_full_path:
-            config_full_path = os.path.join(os.path.dirname(config_full_path), "config")
         if not os.path.exists(config_full_path):
             os.makedirs(config_full_folder, exist_ok=True)
             with open(config_full_path, 'w') as config_file_handle:

@@ -161,7 +161,7 @@ fedml_params:
     fedml_account_id: "111"
     fedml_account_name: "fedml-demo"
     project_name: Cheetah_HelloWorld
-    job_name: Cheetah_HelloWorld13
+    job_name: Cheetah_HelloWorld
 
 development_resources:
     dev_env: "https://open.fedml.ai"  # development resources bundle to load on each machine
@@ -198,7 +198,7 @@ executable_file_folder: hello_world # directory for executable file
 executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
 executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
 executable_conf_file_folder: hello_world/config # directory for config file
-executable_conf_file: fedml_config.yaml   # your config file for the main executable program in the executable_conf_file_folder, which can be emptyexecutable_args
+executable_conf_file: fedml_config.yaml   # your yaml config file for the main executable program in the executable_conf_file_folder, which can be emptyexecutable_args
 executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
 ```
 
