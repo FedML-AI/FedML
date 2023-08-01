@@ -1,5 +1,6 @@
 fedml_params:
-  fedml_account_id: 1111
+  fedml_account_id: "214"
+  fedml_account_name: "fedml-alex"
   project_name: Cheetah_HelloWorld
   job_name: Cheetah_HelloWorld
 

@@ -755,10 +755,14 @@ def env():
 )
 @click.argument("yaml_file", nargs=-1)
 @click.option(
-    "--user_name", "-uname", type=str, help="user name.",
+    "--user_name", "-uname", type=str, default="", help="user name. "
+                                                        "If you do not specify this option, "
+                                                        "the fedml_account_name field from YAML_FILE will be used.",
 )
 @click.option(
-    "--user_id", "-uid", type=str, help="user id.",
+    "--user_id", "-uid", type=str, default="", help="user id. "
+                                                    "If you do not specify this option, "
+                                                    "the fedml_account_id field from YAML_FILE will be used.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",

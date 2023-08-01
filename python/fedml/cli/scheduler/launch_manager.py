@@ -29,15 +29,29 @@ class FedMLLaunchManager(Singleton):
                    job_name=None,
                    no_confirmation=False):
         if not os.path.exists(yaml_file):
-            click.echo(f"{yaml_file} does not exist. Please specify the full path of your job yaml file.")
+            click.echo(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
             return
 
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
+        # Parse the job yaml file and regenerated application name if the job name is not given.
         self.parse_job_yaml(yaml_file)
         if job_name is not None and job_name != "":
-            self.job_config.application_name = FedMLJobConfig.generate_application_name(job_name)
+            self.job_config.application_name = FedMLJobConfig.generate_application_name(job_name,
+                                                                                        self.job_config.project_name)
+
+        # Check the params for username and user id
+        if user_name is None or user_name == "":
+            user_name = self.job_config.account_name
+        if user_id is None or user_id == "":
+            user_id = self.job_config.account_id
+        if user_name is None or user_name == "":
+            click.echo("Username is empty. Please provide your username from open.fedml.ai")
+            return
+        if user_id is None or user_id == "":
+            click.echo("User id is empty. Please provide your user id from open.fedml.ai")
+            return
 
         # Generate source, config and bootstrap related paths.
         platform_str = mlops_platform_type
@@ -72,6 +86,8 @@ class FedMLLaunchManager(Singleton):
             os.makedirs(source_full_folder, exist_ok=True)
             with open(source_full_path, 'w') as source_file_handle:
                 source_file_handle.close()
+        if config_full_path == source_full_path:
+            config_full_path = os.path.join(os.path.dirname(config_full_path), "config")
         if not os.path.exists(config_full_path):
             os.makedirs(config_full_folder, exist_ok=True)
             with open(config_full_path, 'w') as config_file_handle:
@@ -345,7 +361,8 @@ class FedMLLaunchManager(Singleton):
 '''
 Job yaml file is as follows:
 fedml_params:
-    fedml_account_id: 1111
+    fedml_account_id: "111"
+    fedml_account_name: "fedml-demo"
     project_name: customer_service_llm
     job_name: fine_day
 development_resources:
@@ -363,7 +380,7 @@ executable_code_and_data:
     executable_file: tbd        # your main executable file in the executable_file_folder, which can be empty
     executable_conf_option: tbd # your command option for executable_conf_file, which can be empty
     executable_conf_file_folder: config # directory for config file
-    executable_conf_file: tbd        # your config file for the main executable program, which can be empty
+    executable_conf_file: tbd        # your yaml config file for the main executable program, which can be empty
     executable_args: tbd        # command arguments for the executable_interpreter and executable_file
     data_location: tbd          # path to your data
     # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
@@ -380,6 +397,7 @@ class FedMLJobConfig(object):
     def __init__(self, job_yaml_file):
         self.job_config_dict = load_yaml_config(job_yaml_file)
         self.account_id = self.job_config_dict["fedml_params"]["fedml_account_id"]
+        self.account_name = self.job_config_dict["fedml_params"]["fedml_account_name"]
         self.project_name = self.job_config_dict["fedml_params"]["project_name"]
         self.job_name = self.job_config_dict["fedml_params"]["job_name"]
         self.dev_env = self.job_config_dict["development_resources"]["dev_env"]
@@ -407,8 +425,8 @@ class FedMLJobConfig(object):
         self.bootstrap = self.job_config_dict["executable_code_and_data"]["bootstrap"]
         self.minimum_num_gpus = self.job_config_dict["gpu_requirements"]["minimum_num_gpus"]
         self.maximum_cost_per_hour = self.job_config_dict["gpu_requirements"]["maximum_cost_per_hour"]
-        self.application_name = FedMLJobConfig.generate_application_name(self.job_name)
+        self.application_name = FedMLJobConfig.generate_application_name(self.job_name, self.project_name)
 
     @staticmethod
-    def generate_application_name(job_name):
-        return f"App-{job_name}"
+    def generate_application_name(job_name, project_name):
+        return f"{job_name}-{project_name}"

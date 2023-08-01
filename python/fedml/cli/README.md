@@ -142,8 +142,8 @@ Usage: fedml launch [OPTIONS] [YAML_FILE]...
 launch job at the MLOps platform
 
 Options:
--uname, --user_name TEXT  user name.
--uid, --user_id TEXT      user id.
+-uname, --user_name TEXT  user name. If you do not specify this option, the fedml_account_name field from YAML_FILE will be used.
+-uid, --user_id TEXT      user id. If you do not specify this option, the fedml_account_id field from YAML_FILE will be used.
 -k, --api_key TEXT        user api key.
 -pf, --platform TEXT      The platform name at the MLOps platform (options:octopus, parrot, spider, beehive, falcon, default is falcon).
 -jn, --job_name TEXT      The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
@@ -158,7 +158,8 @@ At first, you need to define your job properties in the job yaml file, e.g. entr
 The job yaml file is as follows:
 ```
 fedml_params:
-    fedml_account_id: 1111
+    fedml_account_id: "111"
+    fedml_account_name: "fedml-demo"
     project_name: Cheetah_HelloWorld
     job_name: Cheetah_HelloWorld13
 
@@ -178,7 +179,7 @@ executable_code_and_data:
     executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
     executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
     executable_conf_file_folder: hello_world/config # directory for config file
-    executable_conf_file: fedml_config.yaml   # your config file for the main executable program in the executable_conf_file_folder, which can be empty
+    executable_conf_file: fedml_config.yaml   # your yaml config file for the main executable program in the executable_conf_file_folder, which can be empty
     executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
     data_location: ~/fedml_data          # path to your data
     # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
@@ -214,9 +215,9 @@ e.g. python --version (executable_interpreter=python, executable_args=--version,
 e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
 
 You may use the following example CLI to launch the job at the MLOps platform.
-(Replace $YourUserName, $YourUserId, $YourApiKey with your own username, user id and account API key from open.fedml.ai)
+(Replace $YourApiKey with your own account API key from open.fedml.ai)
 
 Example:
 ```
-fedml launch call_gpu.yaml -uname $YourUserName -uid $YourUserId -k $YourApiKey
+fedml launch call_gpu.yaml -k $YourApiKey
 ```
