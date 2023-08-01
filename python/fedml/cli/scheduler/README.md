@@ -1,7 +1,7 @@
 
 ## Launch jobs with customized commands in the job yaml
 ```
-Usage: fedml launch job [OPTIONS] [YAML_FILE]...
+Usage: fedml launch [OPTIONS] [YAML_FILE]...
 
 launch job at the MLOps platform
 
@@ -82,7 +82,7 @@ You may use the following example CLI to launch the job at the MLOps platform.
 
 Example:
 ```
-fedml launch job call_gpu.yaml -uname $YourUserName -uid $YourUserId -k $YourApiKey
+fedml launch call_gpu.yaml -uname $YourUserName -uid $YourUserId -k $YourApiKey
 ```
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
@@ -103,5 +103,5 @@ Then you may find your GPU device in the FedML Falcon platform https://open.fedm
 
 And then you may bind your FedML account to your payment account. Once your GPU device is scheduled to run any computing work load, 
 
-you will get some rewards from the GPU consumer with the `fedml launch job` CLI.
+you will get some rewards from the GPU consumer with the `fedml launch` CLI.
 
