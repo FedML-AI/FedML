@@ -768,7 +768,8 @@ def env():
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
+         "default is falcon).",
 )
 @click.option(
     "--devices_server", "-ds", type=str, default="",
