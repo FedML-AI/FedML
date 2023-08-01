@@ -750,28 +750,8 @@ def env():
     collect_env()
 
 
-@cli.group("launch")
-def launch():
-    """
-    Launch related CLI.
-    """
-    pass
-
-
-@launch.command(
-    "local", help="launch local runner", context_settings={"ignore_unknown_options": True}
-)
-@click.argument("arguments", nargs=-1, type=click.Path())
-def launch_local(arguments):
-    # for argument in arguments:
-    #     click.echo(argument)
-
-    from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
-    CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
-
-
-@launch.command(
-    "job", help="launch job at the MLOps platform", context_settings={"ignore_unknown_options": True}
+@cli.command(
+    "launch", help="launch job at the MLOps platform", context_settings={"ignore_unknown_options": True}
 )
 @click.argument("yaml_file", nargs=-1)
 @click.option(
