@@ -35,10 +35,14 @@ class FedMLJobManager(Singleton):
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         real_job_name = job_name if job_name is not None and job_name != "" else f"FedML-CLI-Job-{str(uuid.uuid4())}"
+        device_lists = json.loads(devices)
+        if len(device_lists) <= 0:
+            device_lists = [{"account": "", "edgeIds": [], "serverId": 0}]
         job_start_json = {
             "platformType": platform,
             "applicationName": application_name,
-            "devices": json.loads(devices),
+            "applicationConfigId": 0,
+            "devices": device_lists,
             "name": real_job_name,
             "projectName": project_name,
             "urls": [],
@@ -46,8 +50,6 @@ class FedMLJobManager(Singleton):
             "apiKey": user_api_key,
             "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
         }
-        if job_name is not None:
-            job_start_json["jobName"] = job_name
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:

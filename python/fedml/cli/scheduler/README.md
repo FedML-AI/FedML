@@ -35,7 +35,7 @@ executable_code_and_data:
     # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
     # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
     # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
-    executable_interpreter: python                   # shell interpreter for executable_file, e.g. bash, sh, zsh, python, etc.
+    executable_interpreter: python    # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
     executable_file_folder: hello_world # directory for executable file
     executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
     executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
@@ -54,12 +54,13 @@ gpu_requirements:
 
 You need to customize the following items (hello_world is an example job).
 ```
-executable_interpreter: python      # shell interpreter for executable_file, e.g. bash, sh, zsh, python, etc.
+executable_interpreter: python      # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
 executable_file_folder: hello_world # directory for executable file
 executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
 executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
 executable_conf_file_folder: hello_world/config # directory for config file
 executable_conf_file: fedml_config.yaml   # your config file for the main executable program in the executable_conf_file_folder, which can be emptyexecutable_args
+executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
 ```
  
 The actual job command will be executed with the following combination.
