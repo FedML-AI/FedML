@@ -1,7 +1,7 @@
 common_args:
   training_type: "cross_silo"
   scenario: "horizontal"
-  use_customized_hierarchical: False  # if `True`, will use customized hierarchical cross-silo; this requires installing FedML from source
+  use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-silo; this could improve the training stability
   random_seed: 0
 
 environment_args:
