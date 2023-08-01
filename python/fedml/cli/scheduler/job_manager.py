@@ -24,20 +24,26 @@ class FedMLJobManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def start_job(self, platform, project_name, application_name, devices,
+    def start_job(self, platform, project_name, application_name, device_server, device_edges,
                   user_id, user_api_key, job_name=None, no_confirmation=False):
-        return self.start_job_api(platform, project_name, application_name, devices,
+        return self.start_job_api(platform, project_name, application_name, device_server, device_edges,
                                   user_id, user_api_key, job_name=job_name, no_confirmation=no_confirmation)
 
-    def start_job_api(self, platform, project_name, application_name, devices,
+    def start_job_api(self, platform, project_name, application_name, device_server, device_edges,
                       user_id, user_api_key, job_name=None, no_confirmation=False):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         real_job_name = job_name if job_name is not None and job_name != "" else f"FedML-CLI-Job-{str(uuid.uuid4())}"
-        device_lists = json.loads(devices)
-        if len(device_lists) <= 0:
+        if device_server == "" or device_edges == "":
             device_lists = [{"account": "", "edgeIds": [], "serverId": 0}]
+        else:
+            device_lists = list()
+            device_item = dict()
+            device_item["account"] = user_id
+            device_item["serverId"] = device_server
+            device_item["edgeIds"] = str(device_edges).split(',')
+            device_lists.append(device_item)
         job_start_json = {
             "platformType": platform,
             "applicationName": application_name,

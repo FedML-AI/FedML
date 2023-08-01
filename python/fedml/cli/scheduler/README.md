@@ -10,7 +10,8 @@ Options:
 -uid, --user_id TEXT      user id.
 -k, --api_key TEXT        user api key.
 -pf, --platform TEXT      The platform name at the MLOps platform (options:octopus, parrot, spider, beehive, falcon).
--d, --devices TEXT        The devices with the format: [{"serverId": 727,"edgeIds": ["693"], "account": 105}]
+-ds, --devices_server TEXT  The server to run the launching job, for the Falcon platform, we do not need to set this option.
+-de, --devices_edges TEXT   The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the Falcon platform, we do not need to set this option.
 -nc, --no_confirmation    no confirmation after initiating launching request.
 -v, --version TEXT        launch job to which version of MLOps platform. It should be dev, test or release
 --help                    Show this message and exit.
@@ -99,7 +100,7 @@ fedml login $YouUserId -k $YouApiKey -g
 
 Then you may find your GPU device in the FedML Falcon platform https://open.fedml.ai/gpu-supplier/gpus/index
 
-After you FedML account bind to your payment account. Once your GPU device is scheduled to run any computing work load, 
+And then you may bind your FedML account to your payment account. Once your GPU device is scheduled to run any computing work load, 
 
 you will get some rewards from the GPU consumer with the `fedml launch job` CLI.
 

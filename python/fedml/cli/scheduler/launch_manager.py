@@ -24,8 +24,13 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type, devices,
+    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type,
+                   device_server, device_edges,
                    no_confirmation=False):
+        if not os.path.exists(yaml_file):
+            click.echo(f"{yaml_file} does not exist. Please specify the full path of your job yaml file.")
+            return
+
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
 
@@ -99,7 +104,7 @@ class FedMLLaunchManager(Singleton):
         FedMLJobManager.get_instance().set_config_version(self.config_version)
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
-                                                                 devices, user_id, user_api_key,
+                                                                 device_server, device_edges, user_id, user_api_key,
                                                                  job_name=self.job_config.job_name,
                                                                  no_confirmation=no_confirmation)
         launch_result.project_name = self.job_config.project_name

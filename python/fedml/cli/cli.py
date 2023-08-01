@@ -771,8 +771,13 @@ def env():
     help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon).",
 )
 @click.option(
-    "--devices", "-d", type=str, default="[]",
-    help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
+)
+@click.option(
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the Falcon platform, we do not need to set this option."
 )
 @click.option(
     "--no_confirmation", "-nc", default=None, is_flag=True,
@@ -785,7 +790,7 @@ def env():
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, no_confirmation, version):
+def launch_job(yaml_file, user_name, user_id, api_key, platform, devices_server, devices_edges, no_confirmation, version):
     if not platform_is_valid(platform):
         return
 
@@ -794,7 +799,8 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, devices, no_con
         is_no_confirmation = False
 
     FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform, devices,
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key, platform,
+                                                          devices_server, devices_edges,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
         if result.job_url == "":
@@ -936,7 +942,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah, falcon).",
 )
 @click.option(
     "--project_name",
@@ -951,8 +957,13 @@ def jobs():
     help="Application name in the My Application list at the MLOps platform.",
 )
 @click.option(
-    "--devices", "-d", type=str, default="[]",
-    help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
+)
+@click.option(
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the Falcon platform, we do not need to set this option."
 )
 @click.option(
     "--user", "-u", type=str, help="user id or api key.",
@@ -967,12 +978,13 @@ def jobs():
     default="release",
     help="start job at which version of MLOps platform. It should be dev, test or release",
 )
-def start_job(platform, project_name, application_name, devices, user, api_key, version):
+def start_job(platform, project_name, application_name, devices_server, devices_edges, user, api_key, version):
     if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices,
+    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
+                                                      devices_server, devices_edges,
                                                       user, api_key, need_confirmation=False)
     if result:
         click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
