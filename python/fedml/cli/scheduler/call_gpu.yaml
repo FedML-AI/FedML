@@ -4,10 +4,6 @@ fedml_params:
   project_name: Cheetah_HelloWorld
   job_name: Cheetah_HelloWorld
 
-development_resources:
-  dev_env: "https://open.fedml.ai"  # development resources bundle to load on each machine
-  network: mqtt_s3    # network protocol for communication between machines
-
 executable_code_and_data:
   # The entire command will be executed as follows:
   # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args

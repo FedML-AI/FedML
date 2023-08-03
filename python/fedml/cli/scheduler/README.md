@@ -6,15 +6,7 @@ Usage: fedml launch [OPTIONS] [YAML_FILE]...
 launch job at the MLOps platform
 
 Options:
--uname, --user_name TEXT  user name. If you do not specify this option, the fedml_account_name field from YAML_FILE will be used.
--uid, --user_id TEXT      user id. If you do not specify this option, the fedml_account_id field from YAML_FILE will be used.
 -k, --api_key TEXT        user api key.
--pf, --platform TEXT      The platform name at the MLOps platform (options:octopus, parrot, spider, beehive, falcon, default is falcon).
--jn, --job_name TEXT      The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
--ds, --devices_server TEXT  The server to run the launching job, for the Falcon platform, we do not need to set this option.
--de, --devices_edges TEXT   The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the Falcon platform, we do not need to set this option.
--nc, --no_confirmation    no confirmation after initiating launching request.
--v, --version TEXT        launch job to which version of MLOps platform. It should be dev, test or release
 --help                    Show this message and exit.
 ```
 At first, you need to define your job properties in the job yaml file, e.g. entry file, config file, command arguments, etc.
@@ -26,11 +18,7 @@ fedml_params:
     fedml_account_name: "fedml-demo"
     project_name: Cheetah_HelloWorld
     job_name: Cheetah_HelloWorld
-
-development_resources:
-    dev_env: "https://open.fedml.ai"  # development resources bundle to load on each machine
-    network: mqtt_s3    # network protocol for communication between machines
-
+    
 executable_code_and_data:
     # The entire command will be executed as follows:
     # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args

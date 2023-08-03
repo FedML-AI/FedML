@@ -376,9 +376,6 @@ fedml_params:
     fedml_account_name: "fedml-demo"
     project_name: customer_service_llm
     job_name: fine_day
-development_resources:
-    dev_env: tbd        # development resources bundle to load on each machine
-    network: tbd        # network protocol for communication between machines
 executable_code_and_data:
     # The entire command will be executed as follows:
     # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
@@ -411,8 +408,6 @@ class FedMLJobConfig(object):
         self.account_name = self.job_config_dict["fedml_params"]["fedml_account_name"]
         self.project_name = self.job_config_dict["fedml_params"]["project_name"]
         self.job_name = self.job_config_dict["fedml_params"]["job_name"]
-        self.dev_env = self.job_config_dict["development_resources"]["dev_env"]
-        self.network = self.job_config_dict["development_resources"]["network"]
         self.base_dir = os.path.dirname(job_yaml_file)
         self.executable_interpreter = self.job_config_dict["executable_code_and_data"]["executable_interpreter"]
         self.executable_file_folder = self.job_config_dict["executable_code_and_data"]["executable_file_folder"]
