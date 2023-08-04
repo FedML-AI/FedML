@@ -4,6 +4,8 @@ import shutil
 import signal
 import subprocess
 import sys
+import urllib
+import zipfile
 from os.path import expanduser
 
 import psutil
@@ -62,7 +64,8 @@ class ClientConstants(object):
 
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
-    login_role_list = ["client", "edge_simulator"]
+    LOGIN_MODE_GPU_SUPPLIER_INDEX = 2
+    login_role_list = ["client", "edge_simulator", "gpu_supplier"]
 
     @staticmethod
     def get_fedml_home_dir():
@@ -436,6 +439,30 @@ class ClientConstants(object):
             return False
 
         return True
+
+    @staticmethod
+    def unzip_file(zip_file, unzip_file_path):
+        result = False
+        if zipfile.is_zipfile(zip_file):
+            with zipfile.ZipFile(zip_file, "r") as zipf:
+                zipf.extractall(unzip_file_path)
+                result = True
+
+        return result
+
+    @staticmethod
+    def retrieve_and_unzip_package(package_url, package_name, local_package_file, unzip_package_path):
+        if not os.path.exists(local_package_file):
+            urllib.request.urlretrieve(package_url, local_package_file)
+        try:
+            shutil.rmtree(
+                os.path.join(unzip_package_path, package_name), ignore_errors=True
+            )
+        except Exception as e:
+            pass
+        ClientConstants.unzip_file(local_package_file, unzip_package_path)
+        unzip_package_path = os.path.join(unzip_package_path, package_name)
+        return unzip_package_path
 
 
 if __name__ == "__main__":

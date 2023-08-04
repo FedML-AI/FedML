@@ -48,6 +48,9 @@ def get_sys_runner_info():
     gpu_info = None
     gpu_available_mem = None
     gpu_total_mem = None
+    gpu_count = 0
+    gpu_vendor = None
+    cpu_count = 1
 
     import platform
     os_ver = platform.platform()
@@ -93,12 +96,17 @@ def get_sys_runner_info():
         gpu_info = str(handle)
         gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
         gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
+        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_vendor = "nvidia"
         nvidia_smi.nvmlShutdown()
     except:
         pass
 
+    cpu_count = os.cpu_count()
+
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+        gpu_count, gpu_vendor, cpu_count
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
@@ -111,6 +119,24 @@ def generate_yaml_doc(yaml_object, yaml_file, append=False):
         file.close()
     except Exception as e:
         pass
+
+
+def get_gpu_count_vendor():
+    gpu_count = 0
+    gpu_vendor = ""
+    try:
+        import nvidia_smi
+
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_vendor = "nvidia"
+        nvidia_smi.nvmlShutdown()
+    except:
+        pass
+
+    return gpu_count, gpu_vendor
 
 
 def get_running_info(cs_home_dir, cs_info_dir):

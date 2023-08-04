@@ -118,21 +118,103 @@ Usage: fedml jobs start [OPTIONS]
 Start a job at the MLOps platform.
 
 Options:
--pf, --platform TEXT           The platform name at the MLOps platform
-(options: octopus, parrot, spider, beehive).
+-pf, --platform TEXT           The platform name at the MLOps platform(options: octopus, parrot, spider, beehive).
 -prj, --project_name TEXT      The project name at the MLOps platform.
--app, --application_name TEXT  Application name in the My Application list
-at the MLOps platform.
--d, --devices TEXT             The devices with the format: [{"serverId":
-727, "edgeIds": ["693"], "account": 105}]
+-app, --application_name TEXT  Application name in the My Application list at the MLOps platform.
+-jn, --job_name TEXT           The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
+-ds, --devices_server TEXT     The server to run the launching job, for the Falcon platform, we do not need to set this option.
+-de, --devices_edges TEXT      The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the Falcon platform, we do not need to set this option.
 -u, --user TEXT                user id or api key.
 -k, --api_key TEXT             user api key.
--v, --version TEXT             start job at which version of MLOps platform.
-It should be dev, test or release
+-v, --version TEXT             start job at which version of MLOps platform. It should be dev, test or release
 --help                         Show this message and exit.
 ```
 
 Example: 
 ```
-fedml jobs start -pf octopus -prj test-fedml -app test-alex-app -d '[{"serverId":706,"edgeIds":["705"],"account":214}]' -u 214 -k c9356b9c4ce44363bb66366d210301
+fedml jobs start -pf octopus -prj test-fedml -app test-alex-app -ds 706 -de 705,704 -u 214 -k c9356b9c4ce44363bb66366d210301
+```
+
+## 8. Launch jobs with customized commands in the job yaml
+```
+Usage: fedml launch [OPTIONS] [YAML_FILE]...
+
+launch job at the MLOps platform
+
+Options:
+-uname, --user_name TEXT  user name. If you do not specify this option, the fedml_account_name field from YAML_FILE will be used.
+-uid, --user_id TEXT      user id. If you do not specify this option, the fedml_account_id field from YAML_FILE will be used.
+-k, --api_key TEXT        user api key.
+-pf, --platform TEXT      The platform name at the MLOps platform (options:octopus, parrot, spider, beehive, falcon, default is falcon).
+-jn, --job_name TEXT      The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
+-ds, --devices_server TEXT  The server to run the launching job, for the Falcon platform, we do not need to set this option.
+-de, --devices_edges TEXT   The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the Falcon platform, we do not need to set this option.
+-nc, --no_confirmation    no confirmation after initiating launching request.
+-v, --version TEXT        launch job to which version of MLOps platform. It should be dev, test or release
+--help                    Show this message and exit.
+```
+At first, you need to define your job properties in the job yaml file, e.g. entry file, config file, command arguments, etc.
+
+The job yaml file is as follows:
+```
+fedml_params:
+    fedml_account_id: "111"
+    fedml_account_name: "fedml-demo"
+    project_name: Cheetah_HelloWorld
+    job_name: Cheetah_HelloWorld
+
+executable_code_and_data:
+    # The entire command will be executed as follows:
+    # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
+    # e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
+    # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
+    # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
+    # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
+    executable_interpreter: python    # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
+    executable_file_folder: hello_world # directory for executable file
+    executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
+    executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
+    executable_conf_file_folder: hello_world/config # directory for config file
+    executable_conf_file: fedml_config.yaml   # your yaml config file for the main executable program in the executable_conf_file_folder, which can be empty
+    executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
+    data_location: ~/fedml_data          # path to your data
+    # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
+    bootstrap: |
+        ls -la ~               
+        echo "Bootstrap..."
+        
+gpu_requirements:
+    minimum_num_gpus: 1             # minimum # of GPUs to provision
+    maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
+```
+
+You need to customize the following items (hello_world is an example job).
+```
+executable_interpreter: python      # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
+executable_file_folder: hello_world # directory for executable file
+executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
+executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
+executable_conf_file_folder: hello_world/config # directory for config file
+executable_conf_file: fedml_config.yaml   # your yaml config file for the main executable program in the executable_conf_file_folder, which can be emptyexecutable_args
+executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
+```
+
+The actual job command will be executed with the following combination.
+
+executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
+
+e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
+
+e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
+
+e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
+
+e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
+
+You may use the following example CLI to launch the job at the MLOps platform.
+(Replace $YourApiKey with your own account API key from open.fedml.ai)
+
+Example:
+```
+fedml launch call_gpu.yaml -k $YourApiKey
 ```

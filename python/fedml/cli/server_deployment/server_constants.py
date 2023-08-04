@@ -54,7 +54,8 @@ class ServerConstants(object):
     LOGIN_MODE_LOCAL_INDEX = 0
     LOGIN_MODE_CLOUD_AGENT_INDEX = 1
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
-    login_role_list = ["edge_server", "cloud_agent", "cloud_server"]
+    LOGIN_MODE_GPU_MASTER_SERVER_INDEX = 3
+    login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server"]
 
     @staticmethod
     def get_fedml_home_dir():
@@ -120,6 +121,12 @@ class ServerConstants(object):
     @staticmethod
     def get_job_start_url(config_version="release"):
         job_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
+            ServerConstants.get_mlops_url(config_version))
+        return job_ops_url
+
+    @staticmethod
+    def get_job_list_url(config_version="release"):
+        job_ops_url = "{}/fedmlOpsServer/api/v1/runs/listJobsFromCli".format(
             ServerConstants.get_mlops_url(config_version))
         return job_ops_url
 

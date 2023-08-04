@@ -92,13 +92,13 @@ class FedMLClientRunner:
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
         local_edge_id_list = [1]
         local_edge_id_list[0] = self.edge_id
         is_using_local_data = 0
-        private_data_dir = data_config["privateLocalData"]
-        synthetic_data_url = data_config["syntheticDataUrl"]
+        private_data_dir = data_config.get("privateLocalData", "")
+        synthetic_data_url = data_config.get("syntheticDataUrl", "")
         edges = self.request_json["edges"]
         # if private_data_dir is not None \
         #         and len(str(private_data_dir).strip(' ')) > 0:
@@ -242,21 +242,26 @@ class FedMLClientRunner:
             fedml_conf_object = parameters_object
 
         package_dynamic_args = package_conf_object["dynamic_args"]
-        fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
-        fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
-        fedml_conf_object["common_args"]["using_mlops"] = True
-        fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
-        fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
-        fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["client_id"] = self.edge_id
-        fedml_conf_object["train_args"]["server_id"] = self.request_json.get("server_id", "0")
-        fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
+        if fedml_conf_object.get("comm_args", None) is not None:
+            fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
+            fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
+            fedml_conf_object["common_args"]["using_mlops"] = True
+            if hasattr(self.args, "local_server") and self.args.local_server is not None:
+                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("train_args", None) is not None:
+            fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
+            fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
+            fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["client_id"] = self.edge_id
+            fedml_conf_object["train_args"]["server_id"] = self.request_json.get("server_id", "0")
+        if fedml_conf_object.get("device_args", None) is not None:
+            fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
-        fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
-        fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
-        if hasattr(self.args, "local_server") and self.args.local_server is not None:
-            fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("tracking_args", None) is not None:
+            fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
+            fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
+
         bootstrap_script_path = None
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
@@ -355,7 +360,7 @@ class FedMLClientRunner:
     def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         packages_config = run_config["packages_config"]
 
         self.check_runner_stop_event()
@@ -418,30 +423,16 @@ class FedMLClientRunner:
 
         logging.info("starting the learning process...")
 
-        python_program = get_python_program()
-        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
-            python_program, entry_fill_full_path, conf_file_full_path, str(dynamic_args_config["rank"])))
-        process = ClientConstants.exec_console_with_shell_script_list(
-            [
-                python_program,
-                entry_fill_full_path,
-                "--cf",
-                conf_file_full_path,
-                "--rank",
-                str(dynamic_args_config["rank"]),
-                "--role",
-                "client"
-            ],
-            should_capture_stdout=False,
-            should_capture_stderr=True
-        )
+        process, is_fl_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         logging.info("waiting the learning process to train models...")
         ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
+        if not is_fl_task:
+            is_run_ok = True
         if ret_code is None or ret_code <= 0:
             if is_run_ok:
                 if out is not None:
@@ -449,6 +440,9 @@ class FedMLClientRunner:
                     if out_str != "":
                         logging.info("{}".format(out_str))
 
+                self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                                                                 in_run_id=run_id)
                 sys_utils.log_return_info(entry_file, 0)
         else:
             is_run_ok = False
@@ -476,6 +470,57 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+
+    def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        executable_code_and_data = job_yaml.get("executable_code_and_data", {})
+        executable_interpreter = executable_code_and_data.get("executable_interpreter", "")
+        executable_file = executable_code_and_data.get("executable_file", "")
+        executable_conf_option = executable_code_and_data.get("executable_conf_option", "")
+        executable_conf_file = executable_code_and_data.get("executable_conf_file", "")
+        executable_args = executable_code_and_data.get("executable_args", "")
+
+        if job_yaml is None:
+            python_program = get_python_program()
+            logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
+                python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
+
+            process = ClientConstants.exec_console_with_shell_script_list(
+                [
+                    python_program,
+                    entry_file_full_path,
+                    "--cf",
+                    conf_file_full_path,
+                    "--rank",
+                    str(dynamic_args_config.get("rank", 1)),
+                    "--role",
+                    "client"
+                ],
+                should_capture_stdout=False,
+                should_capture_stderr=True
+            )
+            is_fl_task = True
+        else:
+            shell_cmd_list = list()
+            shell_cmd_list.append(executable_interpreter)
+            if executable_file != "":
+                shell_cmd_list.append(entry_file_full_path)
+            if executable_conf_file != "" and executable_conf_option != "":
+                shell_cmd_list.append(executable_conf_option)
+                shell_cmd_list.append(conf_file_full_path)
+            shell_cmd_list.append(executable_args)
+            shell_cmd_list.append(f"--run_id {self.run_id}")
+            shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+            shell_cmd_list.append("--using_mlops True")
+            process = ClientConstants.exec_console_with_shell_script_list(
+                shell_cmd_list,
+                should_capture_stdout=False,
+                should_capture_stderr=True
+            )
+            is_fl_task = False
+        return process, is_fl_task
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -941,10 +986,11 @@ class FedMLClientRunner:
 
         return device_id
 
-    def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
+    def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+            gpu_count, gpu_vendor, cpu_count = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -957,10 +1003,12 @@ class FedMLClientRunner:
             "os_ver": os_ver,
             "memory": total_mem,
             "ip": ip,
+            "api_key": api_key,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
-                            "available_mem": available_mem, "total_mem": total_mem}
+                            "available_mem": available_mem, "total_mem": total_mem,
+                            "cpu_count": cpu_count, "gpu_count": 0}
         }
         if gpu_info is not None:
             if gpu_total_mem is not None:
@@ -972,6 +1020,9 @@ class FedMLClientRunner:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
                 json_params["extra_infos"]["gpu_total_mem"] = gpu_total_mem
+
+            json_params["extra_infos"]["gpu_count"] = gpu_count
+            json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
         else:
             json_params["gpu"] = "None"
 

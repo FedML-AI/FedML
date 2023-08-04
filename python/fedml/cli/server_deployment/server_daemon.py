@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--api_key", "-k", type=str, default="")
     args = parser.parse_args()
     args.user = args.user
 
@@ -58,7 +59,9 @@ if __name__ == "__main__":
                 "-id",
                 args.device_id,
                 "-os",
-                args.os_name
+                args.os_name,
+                "-k",
+                args.api_key
             ]
         )
         ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)

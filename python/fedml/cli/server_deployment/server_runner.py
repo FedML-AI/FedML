@@ -109,11 +109,11 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
         is_using_local_data = 0
-        private_data_dir = data_config["privateLocalData"]
-        synthetic_data_url = data_config["syntheticDataUrl"]
+        private_data_dir = data_config.get("privateLocalData", "")
+        synthetic_data_url = data_config.get("syntheticDataUrl", "")
         edges = self.request_json["edges"]
         # if private_data_dir is not None \
         #         and len(str(private_data_dir).strip(' ')) > 0:
@@ -187,7 +187,9 @@ class FedMLServerRunner:
         packages_config = run_config["packages_config"]
 
         # Copy config file from the client
-        unzip_package_path = self.retrieve_and_unzip_package(packages_config["server"], packages_config["serverUrl"])
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
+        unzip_package_path = self.retrieve_and_unzip_package(server_package_name, server_package_url)
         self.fedml_packages_unzip_dir = unzip_package_path
         fedml_local_config_file = os.path.join(unzip_package_path, "conf", "fedml.yaml")
 
@@ -390,6 +392,8 @@ class FedMLServerRunner:
         data_config = run_config["data_config"]
         packages_config = run_config["packages_config"]
         edge_ids = self.request_json["edgeids"]
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
 
         self.check_runner_stop_event()
 
@@ -400,6 +404,12 @@ class FedMLServerRunner:
         logging.info("send training request to edges...")
 
         self.send_training_request_to_edges()
+
+        if server_package_url is None:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+                                                             running_json=self.start_request_json)
+            return
 
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,
@@ -456,14 +466,14 @@ class FedMLServerRunner:
         logging.info("starting the aggregation process...")
 
         python_program = get_python_program()
-        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
-            python_program, entry_fill_full_path, conf_file_full_path))
+            python_program, entry_file_full_path, conf_file_full_path))
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_fill_full_path,
+                entry_file_full_path,
                 "--cf",
                 conf_file_full_path,
                 "--rank ",
@@ -1307,18 +1317,20 @@ class FedMLServerRunner:
 
         return device_id
 
-    def bind_account_and_device_id(self, url, account_id, device_id, os_name):
-        role = "edge_server"
-        if self.run_as_edge_server_and_agent:
+    def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role=None):
+        if role is None:
             role = "edge_server"
-        elif self.run_as_cloud_agent:
-            role = "cloud_agent"
-        elif self.run_as_cloud_server:
-            role = "cloud_server"
+            if self.run_as_edge_server_and_agent:
+                role = "edge_server"
+            elif self.run_as_cloud_agent:
+                role = "cloud_agent"
+            elif self.run_as_cloud_server:
+                role = "cloud_server"
 
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+            gpu_count, gpu_vendor, cpu_count = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -1331,10 +1343,12 @@ class FedMLServerRunner:
             "os_ver": os_ver,
             "memory": total_mem,
             "ip": ip,
+            "api_key": api_key,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
-                            "available_mem": available_mem, "total_mem": total_mem}
+                            "available_mem": available_mem, "total_mem": total_mem,
+                            "cpu_count": cpu_count, "gpu_count": 0}
         }
         if gpu_info is not None:
             if gpu_total_mem is not None:
@@ -1346,6 +1360,9 @@ class FedMLServerRunner:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
                 json_params["extra_infos"]["gpu_total_mem"] = gpu_total_mem
+
+            json_params["extra_infos"]["gpu_count"] = gpu_count
+            json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
         else:
             json_params["gpu"] = "None"
 

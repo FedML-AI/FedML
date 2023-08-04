@@ -24,9 +24,10 @@ from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment import device_login_entry
 from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
-from fedml.cli.server_deployment.job_manager import FedMLJobManager
+from fedml.cli.scheduler.job_manager import FedMLJobManager
 from fedml.cli.cli_utils import platform_is_valid
-from fedml.cli.server_deployment.app_manager import FedMLAppManager
+from fedml.cli.scheduler.app_manager import FedMLAppManager
+from fedml.cli.scheduler.launch_manager import FedMLLaunchManager
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
@@ -134,6 +135,19 @@ def display_server_logs():
     "--server", "-s", default=None, is_flag=True, help="login as the FedML server.",
 )
 @click.option(
+    "--gpu_supplier", "-g", default=None, is_flag=True, help="login as the FedML Cheetah GPU supplier.",
+)
+@click.option(
+    "--gpu_master_server", "-gms", default=None, is_flag=True, help="login as the FedML Cheetah GPU master server.",
+)
+@click.option(
+    "--no_gpu_check", "-ngc", default=None, is_flag=True,
+    help="Not need to check if the GPU is available when logining as the GPU supplier.",
+)
+@click.option(
+    "--api_key", "-k", type=str, default="", help="user api key.",
+)
+@click.option(
     "--local_server",
     "-ls",
     type=str,
@@ -145,7 +159,7 @@ def display_server_logs():
     "-r",
     type=str,
     default="edge_server",
-    help="run as the role (options: edge_server, cloud_agent, cloud_server, edge_simulator.",
+    help="run as the role (options: edge_server, cloud_agent, cloud_server, edge_simulator, gpu_master_server.",
 )
 @click.option(
     "--runner_cmd",
@@ -167,7 +181,9 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-        userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
+        userid, version, client, server, gpu_supplier, gpu_master_server, no_gpu_check,
+        api_key, local_server, role, runner_cmd, device_id, os_name,
+        docker, docker_rank
 ):
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
@@ -190,15 +206,35 @@ def mlops_login(
     # Set client as default entity.
     is_client = client
     is_server = server
-    if client is None and server is None:
+    if client is None and server is None and gpu_supplier is None and gpu_master_server is None:
         is_client = True
+
+    # Check gpu supplier
+    is_gpu_supplier = gpu_supplier
+    if gpu_supplier is None:
+        is_gpu_supplier = False
+
+    # Check gpu master server
+    is_gpu_master_server = gpu_master_server
+    if gpu_master_server is None:
+        is_gpu_master_server = False
+
+    # Ignore to check gpu
+    is_no_gpu_check = no_gpu_check
+    if no_gpu_check is None:
+        is_no_gpu_check = False
+
+    # Check api key
+    user_api_key = api_key
+    if api_key is None:
+        user_api_key = "NONE"
 
     # Check docker mode.
     is_docker = docker
     if docker is None:
         is_docker = False
 
-    if is_client is True:
+    if is_client is True or is_gpu_supplier is True:
         if is_docker:
             login_with_docker_mode(account_id, version, docker_rank)
             return
@@ -215,6 +251,9 @@ def mlops_login(
             ClientConstants.login_role_list.index(role)
         except ValueError as e:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
+
+        if is_gpu_supplier is True:
+            role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]
 
         login_pid = sys_utils.run_subprocess_open(
             [
@@ -235,22 +274,29 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-k",
+                user_api_key,
+                "-ngc",
+                "1" if is_no_gpu_check else "0"
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
-    if is_server is True:
+    if is_server is True or is_gpu_master_server is True:
         # Check login mode.
-        try:
-            ServerConstants.login_role_list.index(role)
-        except ValueError as e:
-            click.echo(
-                "Please specify login mode as follows ({}).".format(
-                    str(ServerConstants.login_role_list)
+        if is_gpu_master_server is True:
+            role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_GPU_MASTER_SERVER_INDEX]
+        else:
+            try:
+                ServerConstants.login_role_list.index(role)
+            except ValueError as e:
+                click.echo(
+                    "Please specify login mode as follows ({}).".format(
+                        str(ServerConstants.login_role_list)
+                    )
                 )
-            )
-            return
+                return
 
         if is_docker:
             login_with_server_docker_mode(account_id, version, docker_rank)
@@ -285,7 +331,9 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-k",
+                user_api_key
             ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -341,6 +389,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
     print("\nlogout successfully!\n")
+
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
 @click.option(
@@ -702,133 +751,85 @@ def env():
 
 
 @cli.command(
-    "launch", help="launch tool", context_settings={"ignore_unknown_options": True}
+    "launch", help="launch job at the MLOps platform", context_settings={"ignore_unknown_options": True}
 )
-@click.argument("arguments", nargs=-1, type=click.Path())
-def launch(arguments):
-    # for argument in arguments:
-    #     click.echo(argument)
-
-    from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
-    CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
-
-
-@cli.group("app")
-def app():
-    """
-    Manage applications on the MLOps platform..
-    """
-    pass
-
-
-@app.command("create", help="Create an application on the MLOps platform (open.fedml.ai).")
+@click.argument("yaml_file", nargs=-1)
+@click.option(
+    "--user_name", "-uname", type=str, default="", help="user name. "
+                                                        "If you do not specify this option, "
+                                                        "the fedml_account_name field from YAML_FILE will be used.",
+)
+@click.option(
+    "--user_id", "-uid", type=str, default="", help="user id. "
+                                                    "If you do not specify this option, "
+                                                    "the fedml_account_id field from YAML_FILE will be used.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
 @click.option(
     "--platform",
     "-pf",
     type=str,
-    default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
+         "default is falcon).",
 )
 @click.option(
-    "--client_package", "-cp", type=str, help="client package path.",
+    "--job_name",
+    "-jn",
+    type=str,
+    default="",
+    help="The job name at the MLOps platform. "
+         "If you don't specify here, the job name from the job yaml file will be used.",
 )
 @click.option(
-    "--server_package", "-sp", type=str, help="server package path.",
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
 )
 @click.option(
-    "--user", "-u", type=str, help="user id.",
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the Falcon platform, we do not need to set this option."
 )
 @click.option(
-    "--api_key", "-k", type=str, help="user api key.",
+    "--no_confirmation", "-nc", default=None, is_flag=True,
+    help="no confirmation after initiating launching request.",
 )
 @click.option(
     "--version",
     "-v",
     type=str,
     default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
+    help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-def create_application(platform, application_name, client_package, server_package,
-                       user, api_key, version, local_server):
-    if user is None or api_key is None:
-        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
+               devices_server, devices_edges, no_confirmation, version):
+    if not platform_is_valid(platform):
         return
 
-    client_package_file = os.path.basename(client_package)
-    server_package_file = os.path.basename(server_package)
-    client_package_url = client_package_file
-    server_package_url = server_package_file
-    FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLAppManager.get_instance().create_app(platform, application_name,
-                                                       client_package_url, client_package_file, server_package_url, server_package_file,
-                                                       user, api_key)
-    if result:
-        click.echo("Create application {} successfully.".format(application_name))
+    is_no_confirmation = no_confirmation
+    if no_confirmation is None:
+        is_no_confirmation = False
+
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key,
+                                                          platform,
+                                                          devices_server, devices_edges,
+                                                          job_name=job_name,
+                                                          no_confirmation=is_no_confirmation)
+    if result is not None:
+        if result.job_url == "":
+            click.echo(f"Failed to launch the job. Please check if the network is available "
+                       f"or the job name {result.job_name} is duplicated.")
+        else:
+            click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+            click.echo(f"Please go to this web page with your account {user_id} to review your job "
+                       f"and confirm the launch start: {result.job_url}")
+            click.echo(f"For querying the status of the job, please run the command: "
+                       f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
     else:
-        click.echo("Failed to create application, please check your network connection "
-                   "whether could be access the MLOps platform.")
-
-
-@app.command("update", help="Update an application on the MLOps platform (open.fedml.ai).")
-@click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
-)
-@click.option(
-    "--client_package", "-cp", type=str, help="client package path.",
-)
-@click.option(
-    "--server_package", "-sp", type=str, help="server package path.",
-)
-@click.option(
-    "--user", "-u", type=str, help="user id.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
-)
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-def update_application(platform, application_name, client_package, server_package,
-                       user, api_key, version, local_server):
-    if user is None or api_key is None:
-        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
-        return
-
-    client_package_file = os.path.basename(client_package)
-    server_package_file = os.path.basename(server_package)
-    client_package_url = client_package_file
-    server_package_url = server_package_file
-    FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLAppManager.get_instance().update_app(platform, application_name,
-                                                       client_package_url, client_package_file, server_package_url, server_package_file,
-                                                       user, api_key)
-    if result:
-        click.echo("Create application {} successfully.".format(application_name))
-    else:
-        click.echo("Failed to create application, please check your network connection "
-                   "whether could be access the MLOps platform.")
+        click.echo(f"Failed to launch the job.")
 
 
 @cli.group("jobs")
@@ -845,7 +846,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah, falcon).",
 )
 @click.option(
     "--project_name",
@@ -860,8 +861,20 @@ def jobs():
     help="Application name in the My Application list at the MLOps platform.",
 )
 @click.option(
-    "--devices", "-d", type=str, default="[]",
-    help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
+    "--job_name",
+    "-jn",
+    type=str,
+    default="",
+    help="The job name at the MLOps platform.",
+)
+@click.option(
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
+)
+@click.option(
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the Falcon platform, we do not need to set this option."
 )
 @click.option(
     "--user", "-u", type=str, help="user id or api key.",
@@ -876,18 +889,77 @@ def jobs():
     default="release",
     help="start job at which version of MLOps platform. It should be dev, test or release",
 )
-def start_job(platform, project_name, application_name, devices, user, api_key, version):
-    if platform != 'octopus' and platform != 'parrot' and platform != 'spider' and platform != 'beehive':
-        click.echo("The platform should be the following options: octopus, parrot, spider, beehive")
+def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key, version):
+    if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices, user, api_key)
+    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
+                                                      devices_server, devices_edges,
+                                                      user, api_key,
+                                                      job_name=job_name, need_confirmation=False)
     if result:
-        click.echo("Job started, please review the job details at the MLOps platform.")
+        click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+        click.echo(f"Please go to this web page with your account {user} to review your job "
+                   f"and confirm the launch start: {result.job_url}")
+        click.echo(f"For querying the status of the job, please run the command: "
+                   f"fedml jobs list -prj {project_name} -n {result.job_name} -u {user} -k {api_key}.")
     else:
         click.echo("Failed to start job, please check your network connection "
-                   "whether could be access the MLOps platform.")
+                   "and make sure be able to access the MLOps platform.")
+
+
+@jobs.command("list", help="List jobs from the MLOps platform.")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah).",
+)
+@click.option(
+    "--project_name",
+    "-prj",
+    type=str,
+    help="The project name at the MLOps platform.",
+)
+@click.option(
+    "--job_name",
+    "-n",
+    type=str,
+    help="Job name at the MLOps platform.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id or api key.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="list jobs at which version of MLOps platform. It should be dev, test or release",
+)
+def list_jobs(platform, project_name, job_name, user, api_key, version):
+    if not platform_is_valid(platform):
+        return
+
+    FedMLJobManager.get_instance().set_config_version(version)
+    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name, user, api_key)
+    if job_list_obj is not None:
+        if len(job_list_obj.job_list) > 0:
+            for job in job_list_obj.job_list:
+                click.echo(f"job name {job.job_name}, status {job.status}, started time {job.started_time}, "
+                           f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost},"
+                           f"computing device id {job.device_id}, computing device info {job.device_info},"
+                           f"job link {job.job_url}.")
+        else:
+            click.echo("Not found any jobs.")
+    else:
+        click.echo("Failed to list jobs, please check your network connection "
+                   "and make sure be able to access the MLOps platform.")
 
 
 @cli.group("model")
@@ -989,6 +1061,7 @@ def login_as_model_device_agent(
 def logout_from_model_ops(slave, master, docker, docker_rank):
     device_login_entry.logout_from_model_ops(slave, master, docker, docker_rank)
     print("\nlogout successfully!\n")
+
 
 @model.command("create", help="Create local model repository.")
 @click.option(

@@ -19,6 +19,8 @@ if __name__ == "__main__":
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--api_key", "-k", type=str, default="")
+    parser.add_argument("--no_gpu_check", "-ngc", type=int, default=0)
     args = parser.parse_args()
     args.user = args.user
 
@@ -54,7 +56,11 @@ if __name__ == "__main__":
                 "-id",
                 args.device_id,
                 "-os",
-                args.os_name
+                args.os_name,
+                "-k",
+                args.api_key,
+                "-ngc",
+                str(args.no_gpu_check)
             ]
         )
         ret_code, exec_out, exec_err = ClientConstants.get_console_sys_out_pipe_err_results(login_pid)

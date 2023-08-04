@@ -11,7 +11,7 @@ from fedml.cli.server_deployment.server_constants import ServerConstants
 from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
-def __login_as_edge_server_and_agent(args, userid, version):
+def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extra_device_id_suffix=None, role=None):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ServerConstants.get_fedml_home_dir())
 
@@ -80,13 +80,17 @@ def __login_as_edge_server_and_agent(args, userid, version):
     if is_from_fedml_docker_hub:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Server"
 
+    if use_extra_device_id_suffix is not None:
+        unique_device_id = args.current_device_id + "@" + args.os_name + use_extra_device_id_suffix
+
     # Bind account id to the MLOps platform.
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
         try:
             edge_id = runner.bind_account_and_device_id(
-                service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name
+                service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
+                api_key=api_key, role=role
             )
             if edge_id > 0:
                 runner.edge_id = edge_id
@@ -330,6 +334,9 @@ def login(args):
         __login_as_cloud_agent(args, args.user, args.version)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
         __login_as_cloud_server(args, args.user, args.version)
+    elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_GPU_MASTER_SERVER_INDEX]:
+        __login_as_edge_server_and_agent(args, args.user, args.version, api_key=args.api_key,
+                                         use_extra_device_id_suffix=".Edge.GPU.MasterServer", role=args.role)
 
 
 def logout():
@@ -350,6 +357,7 @@ if __name__ == "__main__":
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--api_key", "-k", type=str, default="")
 
     args = parser.parse_args()
     args.user = args.user
