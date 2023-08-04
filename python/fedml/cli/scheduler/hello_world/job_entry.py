@@ -1,10 +1,11 @@
 # import torch
 #
+import logging
+import time
 
-from fedml import FedMLRunner
+from fedml import FedMLRunner, mlops, constants
+import fedml
 
-# from fedml import FedMLRunner
-# import fedml
 # from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 #
 #
@@ -61,11 +62,19 @@ from fedml import FedMLRunner
 
 
 if __name__ == "__main__":
-    print("Hello world. Here is the Falcon platform.")
-    FedMLRunner.log_runner_result()
 
-    # # init FedML framework
-    # args = fedml.init()
+    # Init logs before the program starts to log.
+    mlops.log_print_init()
+
+    # Use print or logging.info to print your logs, which will be uploaded to MLOps and can be showed in the logs page.
+    print("Hello world. Here is the Falcon platform.")
+    # logging.info("Hello world. Here is the Falcon platform.")
+
+    time.sleep(10)
+
+    # Cleanup logs when the program will be ended.
+    mlops.log_print_cleanup()
+
     #
     # # init device
     # device = fedml.device.get_device(args)

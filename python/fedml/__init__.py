@@ -35,8 +35,10 @@ def init(args=None):
     """Initialize FedML Engine."""
     collect_env(args)
 
-    fedml._global_training_type = args.training_type
-    fedml._global_comm_backend = args.backend
+    if hasattr(args, "training_type"):
+        fedml._global_training_type = args.training_type
+    if hasattr(args, "backend"):
+        fedml._global_comm_backend = args.backend
 
     """
     # Windows/Linux/MacOS compatability issues on multi-processing
@@ -51,7 +53,7 @@ def init(args=None):
     """
     os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
-    seed = args.random_seed
+    seed = args.random_seed if hasattr(args, "random_seed") else 0
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -60,36 +62,43 @@ def init(args=None):
 
     mlops.pre_setup(args)
 
-    if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "MPI":
-        args = init_simulation_mpi(args)
+    if not hasattr(args, "training_type"):
+        setattr(args, "training_type", fedml._global_training_type)
 
-    elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "sp":
-        args = init_simulation_sp(args)
-    elif (
-        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-        and hasattr(args, "backend")
-        and args.backend == FEDML_SIMULATION_TYPE_NCCL
-    ):
-        from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
+    if not hasattr(args, "backend"):
+        setattr(args, "backend", fedml._global_comm_backend)
 
-        args = FedML_NCCL_Similulation_init(args)
+    if hasattr(args, "training_type"):
+        if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "MPI":
+            args = init_simulation_mpi(args)
 
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-        if not hasattr(args, "scenario"):
-            args.scenario = "horizontal"
-        if args.scenario == "horizontal":
-            init_cross_silo_horizontal(args)
-        elif args.scenario == "hierarchical":
-            args = init_cross_silo_hierarchical(args)
+        elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "sp":
+            args = init_simulation_sp(args)
+        elif (
+            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+            and hasattr(args, "backend")
+            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+        ):
+            from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
 
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
-        args = init_cross_device(args)
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
-        args = init_cheetah(args)
-    elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
-        args = init_model_serving(args)
-    else:
-        raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
+            args = FedML_NCCL_Similulation_init(args)
+
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+            if not hasattr(args, "scenario"):
+                args.scenario = "horizontal"
+            if args.scenario == "horizontal":
+                init_cross_silo_horizontal(args)
+            elif args.scenario == "hierarchical":
+                args = init_cross_silo_hierarchical(args)
+
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+            args = init_cross_device(args)
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
+            args = init_cheetah(args)
+        elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
+            args = init_model_serving(args)
+        else:
+            raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
     manage_profiling_args(args)
 
@@ -97,10 +106,11 @@ def init(args=None):
 
     mlops.init(args)
 
-    if hasattr(args, "process_id") and args.process_id is not None:
-        logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
-    else:
-        logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
+    if hasattr(args, "rank") and hasattr(args, "worker_num"):
+        if hasattr(args, "process_id") and args.process_id is not None:
+            logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+        else:
+            logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
 
     update_client_specific_args(args)
     print_args(args)
@@ -185,12 +195,12 @@ def manage_profiling_args(args):
     if not hasattr(args, "sys_perf_profiling"):
         args.sys_perf_profiling = True
 
-    if args.sys_perf_profiling:
+    if hasattr(args, "sys_perf_profiling") and args.sys_perf_profiling:
         from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
         MLOpsProfilerEvent.enable_sys_perf_profiling()
 
-    if args.enable_wandb:
+    if hasattr(args, "enable_wandb") and args.enable_wandb:
         wandb_only_server = getattr(args, "wandb_only_server", None)
         if (wandb_only_server and args.rank == 0 and args.process_id == 0) or not wandb_only_server:
             wandb_entity = getattr(args, "wandb_entity", None)

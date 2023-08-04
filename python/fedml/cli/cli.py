@@ -814,8 +814,9 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
 
     FedMLLaunchManager.get_instance().set_config_version(version)
     result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key,
-                                                          platform, job_name,
+                                                          platform,
                                                           devices_server, devices_edges,
+                                                          job_name=job_name,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
         if result.job_url == "":

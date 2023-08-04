@@ -509,8 +509,11 @@ class FedMLClientRunner:
                 shell_cmd_list.append(entry_file_full_path)
             if executable_conf_file != "" and executable_conf_option != "":
                 shell_cmd_list.append(executable_conf_option)
-                shell_cmd_list.append(entry_file_full_path)
+                shell_cmd_list.append(conf_file_full_path)
             shell_cmd_list.append(executable_args)
+            shell_cmd_list.append(f"--run_id {self.run_id}")
+            shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+            shell_cmd_list.append("--using_mlops True")
             process = ClientConstants.exec_console_with_shell_script_list(
                 shell_cmd_list,
                 should_capture_stdout=False,

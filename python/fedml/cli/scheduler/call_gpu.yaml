@@ -23,6 +23,7 @@ executable_code_and_data:
   bootstrap: | 
     ls -la ~               
     echo "Bootstrap..."
+
 gpu_requirements:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
