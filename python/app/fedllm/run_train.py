@@ -2,6 +2,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 from dataclasses import dataclass, field
 import logging
+import os
 import warnings
 
 from accelerate.utils import compare_versions
@@ -69,39 +70,29 @@ class ModelArguments:
         },
     )
 
-    _use_auth_token: Optional[Union[bool, str]] = field(default=None, init=False)
-
     def __post_init__(self) -> None:
         if self.model_name.startswith("meta-llama/Llama-2-"):
             if compare_versions("transformers", "<", "4.31.0"):
                 raise NotImplementedError(f"{self.model_name} requires transformers >= 4.31.0")
 
-            if self.auth_token is None:
-                # if no auth_token is provided, need to verify if already logged in
-                from huggingface_hub import HfApi
-                from huggingface_hub.utils import LocalTokenNotFoundError
+            if self.auth_token is not None:
+                os.environ["HUGGING_FACE_HUB_TOKEN"] = str(self.auth_token)
 
-                try:
-                    HfApi().whoami()
-                except LocalTokenNotFoundError:
-                    raise LocalTokenNotFoundError(
-                        f"Token is required for {self.model_name}, but no token found. You need to provide a"
-                        f" token or be logged in to Hugging Face."
-                        f"\nTo pass a token, you could pass `--auth_token \"<your token>\"` or set environment"
-                        f" variable `HUGGING_FACE_HUB_TOKEN=\"${{your_token}}\"`."
-                        f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
-                        f" See https://huggingface.co/settings/tokens."
-                    )
-                else:
-                    # if logged in
-                    self._use_auth_token = True
+            # need to verify if already logged in
+            from huggingface_hub import HfApi
+            from huggingface_hub.utils import LocalTokenNotFoundError
 
-    @property
-    def use_auth_token(self) -> Optional[Union[str, bool]]:
-        if self.auth_token is not None:
-            return self.auth_token
-        else:
-            return self._use_auth_token
+            try:
+                HfApi().whoami()
+            except LocalTokenNotFoundError:
+                raise LocalTokenNotFoundError(
+                    f"Token is required for {self.model_name}, but no token found. You need to provide a"
+                    f" token or be logged in to Hugging Face."
+                    f"\nTo pass a token, you could pass `--auth_token \"<your token>\"` or set environment"
+                    f" variable `HUGGING_FACE_HUB_TOKEN=\"${{your_token}}\"`."
+                    f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
+                    f" See https://huggingface.co/settings/tokens."
+                )
 
 
 @dataclass
@@ -244,7 +235,6 @@ def get_dataset(
 
 def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, **kwargs) -> TokenizerType:
     kwargs.setdefault("trust_remote_code", True)
-    kwargs.setdefault("use_auth_token", model_args.use_auth_token)
 
     tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_args.model_name, **kwargs)
 
@@ -261,7 +251,6 @@ def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
     kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
-    kwargs.setdefault("use_auth_token", model_args.use_auth_token)
 
     model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
