@@ -475,6 +475,7 @@ class FedMLClientRunner:
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
+        job_yaml_default_none = run_params.get("job_yaml", None)
         executable_code_and_data = job_yaml.get("executable_code_and_data", {})
         executable_interpreter = executable_code_and_data.get("executable_interpreter", "")
         executable_file = executable_code_and_data.get("executable_file", "")
@@ -482,7 +483,7 @@ class FedMLClientRunner:
         executable_conf_file = executable_code_and_data.get("executable_conf_file", "")
         executable_args = executable_code_and_data.get("executable_args", "")
 
-        if job_yaml is None:
+        if job_yaml_default_none is None:
             python_program = get_python_program()
             logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
                 python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
