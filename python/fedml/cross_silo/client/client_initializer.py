@@ -35,7 +35,10 @@ def init_client(
     )
     if (
             args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL or
-            getattr(args, FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY, False)
+            (
+                    args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL and
+                    getattr(args, FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY, False)
+            )
     ):
         if args.proc_rank_in_silo == 0:
             client_manager = get_client_manager_master(
@@ -49,7 +52,7 @@ def init_client(
         client_manager = get_client_manager_master(args, trainer_dist_adapter, comm, client_rank, client_num, backend)
 
     else:
-        raise Exception("we do not support {}. Please check whether this is typo.".format(args.scenario))
+        raise RuntimeError("we do not support {}. Please check whether this is typo.".format(args.scenario))
 
     client_manager.run()
 
