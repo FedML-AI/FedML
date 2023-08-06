@@ -823,11 +823,18 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
             click.echo(f"Failed to launch the job. Please check if the network is available "
                        f"or the job name {result.job_name} is duplicated.")
         else:
-            click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-            click.echo(f"Please go to this web page with your account {user_id} to review your job "
-                       f"and confirm the launch start: {result.job_url}")
-            click.echo(f"For querying the status of the job, please run the command: "
-                       f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
+            if is_no_confirmation:
+                click.echo(f"Job {result.job_name} has started.")
+                click.echo(f"Please go to this web page with your account {result.user_id} to review your job details.")
+                click.echo(f"{result.job_url}")
+            else:
+                click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+                click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
+                           f"and confirm the launch start.")
+                click.echo(f"{result.job_url}")
+            click.echo(f"For querying the status of the job, please run the following command.")
+            click.echo(f"fedml jobs list -prj {result.project_name} -n {result.job_name} "
+                       f"-u {result.user_id} -k {api_key}.")
     else:
         click.echo(f"Failed to launch the job.")
 
@@ -846,7 +853,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah, falcon).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon."
 )
 @click.option(
     "--project_name",
@@ -915,7 +922,8 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
+         "default is falcon).",
 )
 @click.option(
     "--project_name",

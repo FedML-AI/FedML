@@ -132,12 +132,14 @@ class FedMLJobManager(Singleton):
 
 class FedMLJobStartedModel(object):
     def __init__(self, job_started_json, job_name=None):
-        if job_started_json is dict:
+        if isinstance(job_started_json, dict):
+            self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.started_time = job_started_json.get("started_time", time.time())
         else:
+            self.job_id = "0"
             self.job_name = job_name
             self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
             self.job_url = job_started_json
