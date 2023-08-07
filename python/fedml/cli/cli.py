@@ -29,7 +29,6 @@ from fedml.cli.cli_utils import platform_is_valid
 from fedml.cli.scheduler.app_manager import FedMLAppManager
 from fedml.cli.scheduler.launch_manager import FedMLLaunchManager
 
-
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 simulator_process_list = list()
 
@@ -823,11 +822,18 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
             click.echo(f"Failed to launch the job. Please check if the network is available "
                        f"or the job name {result.job_name} is duplicated.")
         else:
-            click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-            click.echo(f"Please go to this web page with your account {user_id} to review your job "
-                       f"and confirm the launch start: {result.job_url}")
-            click.echo(f"For querying the status of the job, please run the command: "
-                       f"fedml jobs list -prj {result.project_name} -n {result.job_name} -u {user_id} -k {api_key}.")
+            if is_no_confirmation:
+                click.echo(f"Job {result.job_name} has started.")
+                click.echo(f"Please go to this web page with your account id {result.user_id} "
+                           f"to review your job details.")
+                click.echo(f"{result.job_url}")
+            else:
+                click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
+                click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
+                           f"and confirm the launch start.")
+                click.echo(f"{result.job_url}")
+            click.echo(f"For querying the status of the job, please run the following command.")
+            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}.")
     else:
         click.echo(f"Failed to launch the job.")
 
@@ -846,7 +852,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah, falcon).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon."
 )
 @click.option(
     "--project_name",
@@ -877,7 +883,7 @@ def jobs():
          "for the Falcon platform, we do not need to set this option."
 )
 @click.option(
-    "--user", "-u", type=str, help="user id or api key.",
+    "--user", "-u", type=str, help="user id.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -889,7 +895,8 @@ def jobs():
     default="release",
     help="start job at which version of MLOps platform. It should be dev, test or release",
 )
-def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key, version):
+def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key,
+              version):
     if not platform_is_valid(platform):
         return
 
@@ -899,11 +906,11 @@ def start_job(platform, project_name, application_name, job_name, devices_server
                                                       user, api_key,
                                                       job_name=job_name, need_confirmation=False)
     if result:
-        click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-        click.echo(f"Please go to this web page with your account {user} to review your job "
-                   f"and confirm the launch start: {result.job_url}")
+        click.echo(f"Job {result.job_name} has started.")
+        click.echo(f"Please go to this web page with your account id {result.user_id} to review your job details.")
+        click.echo(f"{result.job_url}")
         click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -prj {project_name} -n {result.job_name} -u {user} -k {api_key}.")
+                   f"fedml jobs list -id {result.job_id} -u {user} -k {api_key}.")
     else:
         click.echo("Failed to start job, please check your network connection "
                    "and make sure be able to access the MLOps platform.")
@@ -915,7 +922,8 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, cheetah).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
+         "default is falcon).",
 )
 @click.option(
     "--project_name",
@@ -930,7 +938,14 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     help="Job name at the MLOps platform.",
 )
 @click.option(
-    "--user", "-u", type=str, help="user id or api key.",
+    "--job_id",
+    "-id",
+    type=str,
+    default="",
+    help="Job id at the MLOps platform.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -942,12 +957,13 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     default="release",
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
-def list_jobs(platform, project_name, job_name, user, api_key, version):
+def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
     if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name, user, api_key)
+    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name,
+                                                           user, api_key, job_id=job_id)
     if job_list_obj is not None:
         if len(job_list_obj.job_list) > 0:
             for job in job_list_obj.job_list:
@@ -959,6 +975,61 @@ def list_jobs(platform, project_name, job_name, user, api_key, version):
             click.echo("Not found any jobs.")
     else:
         click.echo("Failed to list jobs, please check your network connection "
+                   "and make sure be able to access the MLOps platform.")
+
+
+@jobs.command("stop", help="Stop a job from the MLOps platform.")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
+         "default is falcon).",
+)
+@click.option(
+    "--project_name",
+    "-prj",
+    type=str,
+    help="The project name at the MLOps platform.",
+)
+@click.option(
+    "--job_name",
+    "-n",
+    type=str,
+    help="Job name at the MLOps platform.",
+)
+@click.option(
+    "--job_id",
+    "-id",
+    type=str,
+    default="",
+    help="Job id at the MLOps platform.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="stop a job at which version of MLOps platform. It should be dev, test or release",
+)
+def stop_jobs(platform, project_name, job_name, job_id, user, api_key, version):
+    if not platform_is_valid(platform):
+        return
+
+    FedMLJobManager.get_instance().set_config_version(version)
+    is_stopped = FedMLJobManager.get_instance().stop_job(platform, project_name, job_name,
+                                                         user, api_key, job_id=job_id)
+    if is_stopped:
+        click.echo("Job has been stopped.")
+    else:
+        click.echo("Failed to stop the job, please check your network connection "
                    "and make sure be able to access the MLOps platform.")
 
 

@@ -1,4 +1,3 @@
-
 import json
 import time
 import uuid
@@ -81,19 +80,19 @@ class FedMLJobManager(Singleton):
                                                          "started_time": time.time()})
                 return job_start_result
             job_start_result = FedMLJobStartedModel(resp_data["data"], job_name=job_name)
-            #job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
+            # job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
             #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})
 
         return job_start_result
 
-    def list_job(self, platform, project_name, job_name, user_id, user_api_key):
-        result = self.list_job_api(platform, project_name, job_name, user_id, user_api_key)
+    def list_job(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        result = self.list_job_api(platform, project_name, job_name, user_id, user_api_key, job_id=job_id)
         if result is None:
             return False
 
         return True
 
-    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key):
+    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
         job_list_result = None
         jot_list_url = ServerConstants.get_job_list_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -104,6 +103,8 @@ class FedMLJobManager(Singleton):
             "userId": user_id,
             "apiKey": user_api_key
         }
+        if job_id is not None and job_id != "":
+            job_list_json["jobId"] = job_id
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
@@ -129,15 +130,56 @@ class FedMLJobManager(Singleton):
 
         return job_list_result
 
+    def stop_job(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        return self.stop_job_api(platform, project_name, job_name, user_id, user_api_key, job_id=job_id)
+
+    def stop_job_api(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
+        job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        job_stop_json = {
+            "platformType": platform,
+            "jobName": job_name,
+            "projectName": project_name,
+            "userId": user_id,
+            "apiKey": user_api_key
+        }
+        if job_id is not None and job_id != "":
+            job_stop_json["jobId"] = job_id
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                )
+        else:
+            response = requests.post(jot_stop_url, headers=job_api_headers, json=job_stop_json)
+        if response.status_code != 200:
+            return False
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                return False
+
+        return True
+
 
 class FedMLJobStartedModel(object):
     def __init__(self, job_started_json, job_name=None):
-        if job_started_json is dict:
+        if isinstance(job_started_json, dict):
+            self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.started_time = job_started_json.get("started_time", time.time())
         else:
+            self.job_id = "0"
             self.job_name = job_name
             self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
             self.job_url = job_started_json

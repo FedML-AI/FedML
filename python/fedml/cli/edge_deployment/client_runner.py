@@ -54,6 +54,8 @@ class FedMLClientRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.edge_id = edge_id
+        self.edge_user_name = None
+        self.edge_extra_url = None
         self.run_id = run_id
         self.unique_device_id = None
         self.args = args
@@ -1047,9 +1049,11 @@ class FedMLClientRunner:
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             edge_id = response.json().get("data").get("id")
+            user_name = response.json().get("data").get("userName", None)
+            extra_url = response.json().get("data").get("url", None)
         else:
-            return 0
-        return edge_id
+            return 0, None, None
+        return edge_id, user_name, extra_url
 
     def fetch_configs(self):
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
@@ -1135,6 +1139,9 @@ class FedMLClientRunner:
             + str(self.unique_device_id)
             + "\n"
         )
+        if self.edge_extra_url is not None and self.edge_extra_url != "":
+            print(f"You may visit the following url to fill in more information with your device.\n"
+                  f"{self.edge_extra_url}\n")
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
