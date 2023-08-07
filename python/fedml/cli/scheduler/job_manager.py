@@ -86,14 +86,14 @@ class FedMLJobManager(Singleton):
 
         return job_start_result
 
-    def list_job(self, platform, project_name, job_name, user_id, user_api_key):
-        result = self.list_job_api(platform, project_name, job_name, user_id, user_api_key)
+    def list_job(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        result = self.list_job_api(platform, project_name, job_name, user_id, user_api_key, job_id=job_id)
         if result is None:
             return False
 
         return True
 
-    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key):
+    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
         job_list_result = None
         jot_list_url = ServerConstants.get_job_list_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -104,6 +104,8 @@ class FedMLJobManager(Singleton):
             "userId": user_id,
             "apiKey": user_api_key
         }
+        if job_id is not None and job_id != "":
+            job_list_json["jobId"] = job_id
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
