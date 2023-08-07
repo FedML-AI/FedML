@@ -103,12 +103,14 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, user_name, extra_url = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
                 api_key=api_key, role=role
             )
             if edge_id > 0:
                 runner.edge_id = edge_id
+                runner.edge_user_name = user_name
+                runner.edge_extra_url = extra_url
                 break
         except Exception as e:
             register_try_count += 1
@@ -196,7 +198,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id,
                 unique_device_id, args.os_name, role="simulator"
             )
