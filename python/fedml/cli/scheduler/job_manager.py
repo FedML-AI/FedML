@@ -1,4 +1,3 @@
-
 import json
 import time
 import uuid
@@ -81,7 +80,7 @@ class FedMLJobManager(Singleton):
                                                          "started_time": time.time()})
                 return job_start_result
             job_start_result = FedMLJobStartedModel(resp_data["data"], job_name=job_name)
-            #job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
+            # job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
             #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})
 
         return job_start_result
@@ -130,6 +129,45 @@ class FedMLJobManager(Singleton):
             job_list_result = FedMLJobModelList(resp_data["data"])
 
         return job_list_result
+
+    def stop_job(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        return self.stop_job_api(platform, project_name, job_name, user_id, user_api_key, job_id=job_id)
+
+    def stop_job_api(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+        jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
+        job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        job_stop_json = {
+            "platformType": platform,
+            "jobName": job_name,
+            "projectName": project_name,
+            "userId": user_id,
+            "apiKey": user_api_key
+        }
+        if job_id is not None and job_id != "":
+            job_stop_json["jobId"] = job_id
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                )
+        else:
+            response = requests.post(jot_stop_url, headers=job_api_headers, json=job_stop_json)
+        if response.status_code != 200:
+            return False
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                return False
+
+        return True
 
 
 class FedMLJobStartedModel(object):
