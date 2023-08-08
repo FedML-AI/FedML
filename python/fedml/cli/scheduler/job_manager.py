@@ -101,7 +101,7 @@ class FedMLJobManager(Singleton):
             "jobName": job_name,
             "projectName": project_name,
             "userId": user_id,
-            "apiKey": user_api_key
+            "userApiKey": user_api_key
         }
         if job_id is not None and job_id != "":
             job_list_json["jobId"] = job_id
@@ -177,6 +177,11 @@ class FedMLJobStartedModel(object):
             self.job_name = job_started_json.get("job_name", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
+            self.gpu_matched = list()
+            gpu_list_json = job_started_json.get("gpu_matched", None)
+            if gpu_list_json is not None:
+                for gpu_dev_json in gpu_list_json:
+                    self.gpu_matched.append(FedMLGpuDevices(gpu_dev_json))
             self.started_time = job_started_json.get("started_time", time.time())
         else:
             self.job_id = "0"
@@ -184,6 +189,14 @@ class FedMLJobStartedModel(object):
             self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
             self.job_url = job_started_json
             self.started_time = time.time()
+
+
+class FedMLGpuDevices(object):
+    def __init__(self, gpu_device_json):
+        self.gpu_vendor = gpu_device_json["gpu_vendor"]
+        self.gpu_num = gpu_device_json["gpu_num"]
+        self.gpu_type = gpu_device_json["gpu_type"]
+        self.cost = gpu_device_json["cost"]
 
 
 class FedMLJobModelList(object):
