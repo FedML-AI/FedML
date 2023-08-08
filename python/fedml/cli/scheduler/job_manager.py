@@ -101,7 +101,7 @@ class FedMLJobManager(Singleton):
             "jobName": job_name,
             "projectName": project_name,
             "userId": user_id,
-            "apiKey": user_api_key
+            "userApiKey": user_api_key
         }
         if job_id is not None and job_id != "":
             job_list_json["jobId"] = job_id
