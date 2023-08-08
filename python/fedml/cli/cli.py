@@ -832,6 +832,15 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                 click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
                            f"and confirm the launch start.")
                 click.echo(f"{result.job_url}")
+
+            click.echo("")
+            if len(result.gpu_matched) > 0:
+                click.echo(f"Found matched GPU devices for you, which are as follows.")
+                for gpu_device in result.gpu_matched:
+                    click.echo(f"Vendor: {gpu_device.gpu_vendor}, num: {gpu_device.gpu_num}, "
+                               f"type: {gpu_device.gpu_type}, cost {gpu_device.cost}")
+                click.echo("")
+
             click.echo(f"For querying the status of the job, please run the following command.")
             click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}.")
     else:
