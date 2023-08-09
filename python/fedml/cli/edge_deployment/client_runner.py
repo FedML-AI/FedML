@@ -479,11 +479,18 @@ class FedMLClientRunner:
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         executable_code_and_data = job_yaml.get("executable_code_and_data", {})
-        executable_interpreter = executable_code_and_data.get("executable_interpreter", "")
-        executable_file = executable_code_and_data.get("executable_file", "")
-        executable_conf_option = executable_code_and_data.get("executable_conf_option", "")
-        executable_conf_file = executable_code_and_data.get("executable_conf_file", "")
-        executable_args = executable_code_and_data.get("executable_args", "")
+        using_easy_mode = executable_code_and_data.get("using_easy_mode", True)
+        easy_model = executable_code_and_data.get("easy_mode", {})
+        expert_mode = executable_code_and_data.get("expert_mode", {})
+        if using_easy_mode:
+            executable_interpreter = easy_model.get("executable_shell", "")
+            executable_commands = easy_model.get("executable_commands", "")
+        else:
+            executable_interpreter = expert_mode.get("executable_interpreter", "")
+            executable_file = expert_mode.get("executable_file", "")
+            executable_conf_option = expert_mode.get("executable_conf_option", "")
+            executable_conf_file = expert_mode.get("executable_conf_file", "")
+            executable_args = expert_mode.get("executable_args", "")
 
         if job_yaml_default_none is None:
             python_program = get_python_program()
@@ -508,15 +515,19 @@ class FedMLClientRunner:
         else:
             shell_cmd_list = list()
             shell_cmd_list.append(executable_interpreter)
-            if executable_file != "":
+            if using_easy_mode:
                 shell_cmd_list.append(entry_file_full_path)
-            if executable_conf_file != "" and executable_conf_option != "":
-                shell_cmd_list.append(executable_conf_option)
-                shell_cmd_list.append(conf_file_full_path)
-            shell_cmd_list.append(executable_args)
-            shell_cmd_list.append(f"--run_id {self.run_id}")
-            shell_cmd_list.append(f"--run_device_id {self.edge_id}")
-            shell_cmd_list.append("--using_mlops True")
+            else:
+                if executable_file != "":
+                    shell_cmd_list.append(entry_file_full_path)
+                if executable_conf_file != "" and executable_conf_option != "":
+                    shell_cmd_list.append(executable_conf_option)
+                    shell_cmd_list.append(conf_file_full_path)
+                shell_cmd_list.append(executable_args)
+                shell_cmd_list.append(f"--run_id {self.run_id}")
+                shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+                shell_cmd_list.append("--using_mlops True")
+            logging.info("Run the client: {}".format(shell_cmd_list))
             process = ClientConstants.exec_console_with_shell_script_list(
                 shell_cmd_list,
                 should_capture_stdout=False,
