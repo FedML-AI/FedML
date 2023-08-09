@@ -842,7 +842,7 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                 click.echo("")
 
             click.echo(f"For querying the status of the job, please run the following command.")
-            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}.")
+            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}")
     else:
         click.echo(f"Failed to launch the job.")
 
@@ -975,11 +975,19 @@ def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
                                                            user, api_key, job_id=job_id)
     if job_list_obj is not None:
         if len(job_list_obj.job_list) > 0:
+            if len(job_list_obj.job_list) > 0:
+                click.echo("Found the following matched jobs.")
+            jobs_count = 0
             for job in job_list_obj.job_list:
-                click.echo(f"job name {job.job_name}, status {job.status}, started time {job.started_time}, "
-                           f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost},"
-                           f"computing device id {job.device_id}, computing device info {job.device_info},"
-                           f"job link {job.job_url}.")
+                jobs_count += 1
+                click.echo(f"{jobs_count}. job name {job.job_name}, job id {job.job_id}, status {job.status}, started time {job.started_time}, "
+                           f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost}.")
+                if len(job.device_infos) > 0:
+                    click.echo("Devices in this job are as follows.")
+                device_count = 0
+                for device_info_item in job.device_infos:
+                    device_count += 1
+                    click.echo(f"({device_count}). {device_info_item}")
         else:
             click.echo("Not found any jobs.")
     else:
