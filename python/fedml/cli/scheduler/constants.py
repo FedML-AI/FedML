@@ -39,6 +39,11 @@ class Constants(Singleton):
     MLOPS_CLIENT_STATUS_DONE = "Done"
     MLOPS_CLIENT_STATUS_STOPPED = "Stopped"
 
+    LAUNCH_JOB_DEFAULT_FOLDER_NAME = "example_job"
+    LAUNCH_JOB_DEFAULT_ENTRY_NAME = "example_entry.sh"
+    LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME = "config"
+    LAUNCH_JOB_DEFAULT_CONF_NAME = "fedml_config.yaml"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

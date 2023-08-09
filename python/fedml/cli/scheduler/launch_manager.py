@@ -95,9 +95,11 @@ class FedMLLaunchManager(Singleton):
         os.makedirs(dest_folder, exist_ok=True)
 
         # Check the paths.
-        if not os.path.exists(source_full_path):
+        if not os.path.exists(source_full_path) or self.job_config.using_easy_mode:
             os.makedirs(source_full_folder, exist_ok=True)
             with open(source_full_path, 'w') as source_file_handle:
+                if self.job_config.using_easy_mode:
+                    source_file_handle.writelines(self.job_config.executable_commands)
                 source_file_handle.close()
         if not os.path.exists(config_full_path):
             os.makedirs(config_full_folder, exist_ok=True)
@@ -373,36 +375,7 @@ class FedMLLaunchManager(Singleton):
 
 
 '''
-Job yaml file is as follows:
-fedml_params:
-    fedml_account_id: "111"
-    fedml_account_name: "fedml-demo"
-    project_name: customer_service_llm
-    job_name: fine_day
-    
-executable_code_and_data:
-    # The entire command will be executed as follows:
-    # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
-    # e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
-    # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args> 
-    # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
-    # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
-    executable_interpreter: tbd # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
-    executable_file_folder: tbd # directory for executable file
-    executable_file: tbd        # your main executable file in the executable_file_folder, which can be empty
-    executable_conf_option: tbd # your command option for executable_conf_file, which can be empty
-    executable_conf_file_folder: config # directory for config file
-    executable_conf_file: tbd        # your yaml config file for the main executable program, which can be empty
-    executable_args: tbd        # command arguments for the executable_interpreter and executable_file
-    data_location: tbd          # path to your data
-    # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
-    bootstrap: | 
-        tbd  
-        tbd       
-        
-gpu_requirements:
-    minimum_num_gpus: 8             # minimum # of GPUs to provision
-    maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
+For the Job yaml file, please review the call_gpu.yaml :
 '''
 
 
@@ -414,26 +387,55 @@ class FedMLJobConfig(object):
         self.project_name = self.job_config_dict["fedml_params"]["project_name"]
         self.job_name = self.job_config_dict["fedml_params"]["job_name"]
         self.base_dir = os.path.dirname(job_yaml_file)
-        self.executable_interpreter = self.job_config_dict["executable_code_and_data"]["executable_interpreter"]
-        self.executable_file_folder = self.job_config_dict["executable_code_and_data"]["executable_file_folder"]
-        self.executable_file = self.job_config_dict["executable_code_and_data"]["executable_file"]
-        default_example_job_dir = os.path.join(self.base_dir, "example_job")
-        default_example_job_conf_dir = os.path.join(self.base_dir, "example_job", "config")
+        self.using_easy_mode = self.job_config_dict["executable_code_and_data"]["using_easy_mode"]
+        if self.using_easy_mode:
+            self.executable_interpreter = self.job_config_dict["executable_code_and_data"][
+                "easy_mode"]["executable_shell"]
+            self.executable_commands = self.job_config_dict["executable_code_and_data"][
+                "easy_mode"]["executable_commands"]
+            self.bootstrap = self.job_config_dict["executable_code_and_data"]["easy_mode"]["bootstrap"]
+            self.executable_file_folder = None
+            self.executable_file = None
+            self.executable_conf_option = ""
+            self.executable_conf_file_folder = None
+            self.executable_conf_file = None
+        else:
+            self.executable_interpreter = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_interpreter"]
+            self.executable_commands = None
+            self.bootstrap = self.job_config_dict["executable_code_and_data"]["expert_mode"]["bootstrap"]
+            self.executable_file_folder = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_file_folder"]
+            self.executable_file = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_file"]
+            self.executable_conf_option = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_conf_option"]
+            self.executable_conf_file_folder = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_conf_file_folder"]
+            self.executable_conf_file = self.job_config_dict["executable_code_and_data"][
+                "expert_mode"]["executable_conf_file"]
+
+        default_example_job_dir_name = Constants.LAUNCH_JOB_DEFAULT_FOLDER_NAME
+        default_example_job_dir = os.path.join(self.base_dir, default_example_job_dir_name)
+        default_example_job_conf_dir_name = os.path.join(default_example_job_dir_name,
+                                                         Constants.LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME)
+        default_example_job_conf_dir = os.path.join(self.base_dir, default_example_job_conf_dir_name)
         if self.executable_file is None or self.executable_file == "":
             os.makedirs(default_example_job_dir, exist_ok=True)
-            self.executable_file = os.path.join(default_example_job_dir, "example_entry.py")
-        self.executable_conf_option = self.job_config_dict["executable_code_and_data"]["executable_conf_option"]
-        self.executable_conf_file_folder = self.job_config_dict["executable_code_and_data"][
-            "executable_conf_file_folder"]
-        self.executable_conf_file = self.job_config_dict["executable_code_and_data"]["executable_conf_file"]
+            self.executable_file_folder = default_example_job_dir_name
+            self.executable_file = Constants.LAUNCH_JOB_DEFAULT_ENTRY_NAME
+
         if self.executable_conf_file is None or self.executable_conf_file == "":
             os.makedirs(default_example_job_conf_dir, exist_ok=True)
-            self.executable_conf_file = os.path.join(default_example_job_conf_dir, "fedml_config.yaml")
+            self.executable_conf_file_folder = default_example_job_conf_dir_name
+            self.executable_conf_file = Constants.LAUNCH_JOB_DEFAULT_CONF_NAME
+        self.executable_file_folder = str(self.executable_file_folder).replace('\\', os.sep).replace('/', os.sep)
+        self.executable_conf_file_folder = str(self.executable_conf_file_folder).replace('\\', os.sep).replace('/', os.sep)
         self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
         self.executable_conf_file = str(self.executable_conf_file).replace('\\', os.sep).replace('/', os.sep)
-        self.executable_args = self.job_config_dict["executable_code_and_data"]["executable_args"]
-        self.data_location = self.job_config_dict["executable_code_and_data"]["data_location"]
-        self.bootstrap = self.job_config_dict["executable_code_and_data"]["bootstrap"]
+        self.executable_args = self.job_config_dict["executable_code_and_data"]["expert_mode"]["executable_args"]
+        self.data_location = self.job_config_dict["executable_code_and_data"]["expert_mode"]["data_location"]
+
         self.minimum_num_gpus = self.job_config_dict["gpu_requirements"]["minimum_num_gpus"]
         self.maximum_cost_per_hour = self.job_config_dict["gpu_requirements"]["maximum_cost_per_hour"]
         self.application_name = FedMLJobConfig.generate_application_name(self.job_name, self.project_name)
