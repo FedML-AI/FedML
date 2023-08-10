@@ -107,6 +107,7 @@ class FedMLServerRunner:
         self.server_active_list = dict()
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
+        self.runner_list = dict()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -394,6 +395,8 @@ class FedMLServerRunner:
         edge_ids = self.request_json["edgeids"]
         server_package_name = packages_config.get("server", None)
         server_package_url = packages_config.get("serverUrl", None)
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", None)
 
         self.check_runner_stop_event()
 
@@ -405,10 +408,7 @@ class FedMLServerRunner:
 
         self.send_training_request_to_edges()
 
-        if server_package_url is None:
-            self.mlops_metrics.report_server_training_status(run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                             running_json=self.start_request_json)
+        if self.execute_job_task(job_yaml, edge_ids, run_id):
             return
 
         # report server running status
@@ -518,6 +518,52 @@ class FedMLServerRunner:
             sys_utils.log_return_info(entry_file, ret_code)
 
             self.stop_run_when_starting_failed()
+
+    def init_job_task(self, job_yaml=None, edge_ids=None):
+        if job_yaml is None:
+            run_id = self.request_json["runId"]
+            run_config = self.request_json["run_config"]
+            edge_ids = self.request_json["edgeids"]
+            run_params = run_config.get("parameters", {})
+            job_yaml = run_params.get("job_yaml", None)
+
+        if job_yaml is not None:
+            self.setup_listeners_for_edge_status(run_id, edge_ids)
+
+    def execute_job_task(self, job_yaml, edge_ids, run_id):
+        if job_yaml is not None:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                                                             running_json=self.start_request_json)
+            return True
+
+        return False
+
+    def process_job_status(self, run_id):
+        all_edges_is_finished = True
+        any_edge_is_failed = False
+        edge_id_status_dict = self.client_agent_active_list[f"{run_id}"]
+        for edge_id, status in edge_id_status_dict.items():
+            if status is None:
+                all_edges_is_finished = False
+                continue
+
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+                any_edge_is_failed = True
+                break
+
+            if status != ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+                all_edges_is_finished = False
+                break
+
+        if any_edge_is_failed:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            return
+
+        if all_edges_is_finished:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -630,10 +676,36 @@ class FedMLServerRunner:
         run_id = self.request_json["runId"]
         edge_id_list = self.request_json["edgeids"]
         logging.info("Edge ids: " + str(edge_id_list))
+
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
+
+    def setup_listeners_for_edge_status(self, run_id, edge_ids):
+        self.client_agent_active_list[f"{run_id}"] = dict()
+        for edge_id in edge_ids:
+            self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            self.mqtt_mgr.add_message_listener(edge_status_topic, self.callback_edge_status)
+            self.mqtt_mgr.subscribe_msg(edge_status_topic)
+
+    def remove_listeners_for_edge_status(self, edge_ids=None):
+        if edge_ids is None:
+            edge_ids = self.request_json["edgeids"]
+
+        for edge_id in edge_ids:
+            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            self.mqtt_mgr.remove_message_listener(edge_status_topic)
+
+    def callback_edge_status(self, topic, payload):
+        payload_json = json.loads(payload)
+        run_id = payload_json.get("run_id", None)
+        edge_id = payload_json.get("edge_id", None)
+        status = payload_json.get("status", None)
+        if run_id is not None and edge_id is not None:
+            self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
+            self.process_job_status(run_id)
 
     def ota_upgrade(self, payload, request_json):
         no_upgrade = False
@@ -735,6 +807,8 @@ class FedMLServerRunner:
             self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
                                                self.callback_client_exit_train_with_exception)
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
+
+        self.init_job_task()
 
         if self.run_as_edge_server_and_agent:
             self.args.run_id = run_id
@@ -1046,6 +1120,8 @@ class FedMLServerRunner:
             return
 
         # logging.info("Stop run with multiprocessing.")
+
+        self.remove_listeners_for_edge_status()
 
         # Stop server with multiprocessing mode
         stop_request_json = self.running_request_json.get(str(run_id), None)

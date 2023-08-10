@@ -12,12 +12,12 @@ executable_code_and_data:
     # e.g. bash 'echo "Hello, Here is the Falcon platform.";echo "Current directory is as follows.";pwd'
     # e.g. bash 'python ~/my_project/torch_client.py --cf ~/my_project/config/fedml_config.yaml --rank 1'
     # e.g. bash 'deepspeed <client_entry.py> --deepspeed_config ~/my_project/deepspeed/ds_config.json --num_nodes=2 --deepspeed <client args>'
-    executable_shell: bash      # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, etc.
+    executable_shell: bash      # shell interpreter for executable commands, e.g. bash, sh, zsh, etc.
     executable_commands: |
       echo "Hello, Here is the Falcon platform."
       echo "Current directory is as follows."
       pwd
-    # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
+    # bootstrap shell commands which will be executed before running executable_commands. support multiple lines, which can be empty
     bootstrap: |
       ls -la ~               
       echo "Bootstrap..."

@@ -357,6 +357,24 @@ class MLOpsMetrics(object):
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
+    def report_edge_job_computing_cost(self, job_id, edge_id,
+                                       computing_started_time, computing_ended_time,
+                                       user_id, api_key):
+        """
+        this is used for reporting the computing cost of a job running on an edge to MLOps
+        """
+        topic_name = "ml_client/mlops/job_computing_cost"
+        duration = computing_ended_time - computing_started_time
+        if duration < 0:
+            duration = 0
+        msg = {"edge_id": edge_id, "job_id": job_id,
+               "computing_started_time": computing_started_time,
+               "computing_ended_time": computing_ended_time,
+               "duration": duration, "user_id": user_id, "apk_key": api_key}
+        message_json = json.dumps(msg)
+        self.messenger.send_message_json(topic_name, message_json)
+        # logging.info("report_job_computing_cost. message_json = %s" % message_json)
+
     def report_system_metric(self, metric_json=None):
         # if not self.comm_sanity_check():
         #     return
@@ -371,7 +389,7 @@ class MLOpsMetrics(object):
 
             current_time_ms = MLOpsUtils.get_ntp_time()
             if current_time_ms is None:
-                current_time = int(time.time()*1000)
+                current_time = int(time.time() * 1000)
             else:
                 current_time = int(current_time_ms)
 

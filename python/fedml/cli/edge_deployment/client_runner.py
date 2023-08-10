@@ -427,11 +427,16 @@ class FedMLClientRunner:
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
+        computing_started_time = MLOpsUtils.get_ntp_time()
         process, is_fl_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         logging.info("waiting the learning process to train models...")
         ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+        computing_ended_time = MLOpsUtils.get_ntp_time()
+        self.mlops_metrics.report_edge_job_computing_cost(run_id, self.edge_id,
+                                                          computing_started_time, computing_ended_time,
+                                                          self.args.user, self.args.api_key)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if not is_fl_task:
             is_run_ok = True
