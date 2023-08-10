@@ -1005,18 +1005,6 @@ def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
          "default is falcon).",
 )
 @click.option(
-    "--project_name",
-    "-prj",
-    type=str,
-    help="The project name at the MLOps platform.",
-)
-@click.option(
-    "--job_name",
-    "-n",
-    type=str,
-    help="Job name at the MLOps platform.",
-)
-@click.option(
     "--job_id",
     "-id",
     type=str,
@@ -1036,13 +1024,13 @@ def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
     default="release",
     help="stop a job at which version of MLOps platform. It should be dev, test or release",
 )
-def stop_jobs(platform, project_name, job_name, job_id, user, api_key, version):
+def stop_jobs(platform, job_id, user, api_key, version):
     if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    is_stopped = FedMLJobManager.get_instance().stop_job(platform, project_name, job_name,
-                                                         user, api_key, job_id=job_id)
+    is_stopped = FedMLJobManager.get_instance().stop_job(platform, job_id,
+                                                         user, api_key)
     if is_stopped:
         click.echo("Job has been stopped.")
     else:
