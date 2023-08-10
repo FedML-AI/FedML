@@ -132,7 +132,7 @@ class ServerConstants(object):
 
     @staticmethod
     def get_job_stop_url(config_version="release"):
-        job_ops_url = "{}/fedmlOpsServer/api/v1/runs/stopApplicationFromCli".format(
+        job_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
             ServerConstants.get_mlops_url(config_version))
         return job_ops_url
 
