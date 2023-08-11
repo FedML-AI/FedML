@@ -347,10 +347,10 @@ def mlops_login(
     "--server", "-s", default=None, is_flag=True, help="logout from the FedML server.",
 )
 @click.option(
-    "--gpu_supplier", "-g", default=None, is_flag=True, help="logout as the FedML Cheetah GPU supplier.",
+    "--gpu_supplier", "-g", default=None, is_flag=True, help="logout from the FedML Cheetah GPU supplier.",
 )
 @click.option(
-    "--gpu_master_server", "-gms", default=None, is_flag=True, help="logout as the FedML Cheetah GPU master server.",
+    "--gpu_master_server", "-gms", default=None, is_flag=True, help="logout from the FedML Cheetah GPU master server.",
 )
 @click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the client agent.",
