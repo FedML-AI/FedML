@@ -207,7 +207,7 @@ gpu_requirements:
 
 We provide two modes for you, the first is easy mode which uses one line config to customize your commands.
 
-For easy mode, you just customize config items named executable_shell and executable_commands,
+For easy mode, you just need to customize config items named executable_shell and executable_commands,
 then the actual job commands will be executed with the following combination.
 
 executable_shell executable_commands
