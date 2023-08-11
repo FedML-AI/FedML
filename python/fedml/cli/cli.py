@@ -347,22 +347,38 @@ def mlops_login(
     "--server", "-s", default=None, is_flag=True, help="logout from the FedML server.",
 )
 @click.option(
+    "--gpu_supplier", "-g", default=None, is_flag=True, help="logout from the FedML Cheetah GPU supplier.",
+)
+@click.option(
+    "--gpu_master_server", "-gms", default=None, is_flag=True, help="logout from the FedML Cheetah GPU master server.",
+)
+@click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the client agent.",
 )
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def mlops_logout(client, server, docker, docker_rank):
+def mlops_logout(client, server, gpu_supplier, gpu_master_server, docker, docker_rank):
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
+    # Check gpu supplier
+    is_gpu_supplier = gpu_supplier
+    if gpu_supplier is None:
+        is_gpu_supplier = False
+
+    # Check gpu master server
+    is_gpu_master_server = gpu_master_server
+    if gpu_master_server is None:
+        is_gpu_master_server = False
+
     is_docker = docker
     if docker is None:
         is_docker = False
 
-    if is_client is True:
+    if is_client is True or is_gpu_supplier is True:
         if is_docker:
             logout_with_docker_mode(docker_rank)
             return
@@ -375,7 +391,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
-    if is_server is True:
+    if is_server is True or is_gpu_master_server is True:
         if is_docker:
             logout_with_server_docker_mode(docker_rank)
             return
