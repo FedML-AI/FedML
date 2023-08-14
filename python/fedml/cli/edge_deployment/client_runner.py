@@ -343,6 +343,8 @@ class FedMLClientRunner:
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            self.mlops_metrics.common_report_client_id_status(self.run_id, self.edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
@@ -483,14 +485,14 @@ class FedMLClientRunner:
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
-        executable_code_and_data = job_yaml.get("executable_code_and_data", {})
-        using_easy_mode = executable_code_and_data.get("using_easy_mode", True)
-        easy_model = executable_code_and_data.get("easy_mode", {})
-        expert_mode = executable_code_and_data.get("expert_mode", {})
-        if using_easy_mode:
-            executable_interpreter = easy_model.get("executable_shell", "")
-            executable_commands = easy_model.get("executable_commands", "")
+        using_easy_mode = True
+        expert_mode = job_yaml.get("expert_mode", None)
+        if expert_mode is None:
+            executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
+                if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
+            executable_commands = job_yaml.get("run", "")
         else:
+            using_easy_mode = False
             executable_interpreter = expert_mode.get("executable_interpreter", "")
             executable_file = expert_mode.get("executable_file", "")
             executable_conf_option = expert_mode.get("executable_conf_option", "")

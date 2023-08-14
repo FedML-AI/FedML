@@ -57,6 +57,10 @@ class ClientConstants(object):
     CLIENT_BOOTSTRAP_LINUX_PROGRAM = "bootstrap.sh"
     CLIENT_BOOTSTRAP_WIN_PROGRAM = "bootstrap.bat"
 
+    CLIENT_SHELL_BASH = "bash"
+    CLIENT_SHELL_PS = "powershell"
+    PLATFORM_WINDOWS = "Windows"
+
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
