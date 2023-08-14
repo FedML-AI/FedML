@@ -49,6 +49,10 @@ class ModelArguments:
     lora_r: int = field(default=8, metadata={"help": "LoRA attention dimension (rank)."})
     lora_alpha: int = field(default=32, metadata={"help": "LoRA alpha."})
     lora_dropout: float = field(default=0.1, metadata={"help": "LoRA dropout."})
+    lora_on_all_modules: bool = field(
+        default=False,
+        metadata={"help": "If `True`, apply LoRA on all supported layers and track gradient for all non-LoRA layers."}
+    )
     lora_target_modules: Optional[List[str]] = field(
         default=None,
         metadata={
@@ -302,6 +306,19 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
         assert model.config.vocab_size == tokenizer_length
 
     if model_args.use_lora:
+        if model_args.lora_on_all_modules:
+            from src.peft_utils import LORA_LAYER_TYPES
+
+            additional_target_modules = []
+            for n, m in model.named_modules():
+                if isinstance(m, tuple(LORA_LAYER_TYPES)):
+                    additional_target_modules.append(n.split(".")[-1])
+
+            if len(additional_target_modules) > 0:
+                if model_args.lora_target_modules is None:
+                    model_args.lora_target_modules = []
+                model_args.lora_target_modules = list(set(model_args.lora_target_modules + additional_target_modules))
+
         # apply LoRA
         peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
@@ -315,6 +332,16 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
         model.enable_input_require_grads()
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
+
+        if model_args.lora_on_all_modules:
+            from peft.tuners.lora import LoraLayer
+
+            # enable gradient for non-LoRA layers
+            lora_layer_prefixes = tuple({n for n, m in model.named_modules() if isinstance(m, LoraLayer)})
+
+            for n, p in model.named_parameters():
+                if not n.startswith(lora_layer_prefixes):
+                    p.requires_grad = True
 
     return model
 
