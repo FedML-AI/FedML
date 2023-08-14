@@ -537,7 +537,7 @@ class FedMLClientRunner:
             logging.info("Run the client: {}".format(shell_cmd_list))
             process = ClientConstants.exec_console_with_shell_script_list(
                 shell_cmd_list,
-                should_capture_stdout=False,
+                should_capture_stdout=True,
                 should_capture_stderr=True
             )
             is_fl_task = False
