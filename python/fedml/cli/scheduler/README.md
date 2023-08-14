@@ -13,41 +13,41 @@ At first, you need to define your job properties in the job yaml file, e.g. entr
 
 The job yaml file is as follows:
 ```
-fedml_params:
-    fedml_account_id: "111"
-    fedml_account_name: "fedml-demo"
-    project_name: Cheetah_HelloWorld
-    job_name: Cheetah_HelloWorld
-    
+fedml_arguments:
+  fedml_account_id: "214"
+  fedml_account_name: "fedml-alex"
+  project_name: Cheetah_HelloWorld
+  job_name: Cheetah_HelloWorld080504
+
 # Local directory where your source code resides.
-work_dir: ~/falcon_examples
+Workspace: hello_world
 
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
-run: | 
+Job: | 
     echo "Hello, Here is the Falcon platform."
     echo "Current directory is as follows."
     pwd
-    python train.py
+    python hello_world.py
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
-setup: |
-  pip install fedml              
+Bootstrap: |
+  pip install -r requirements.txt
   echo "Bootstrap finished."
-        
-gpu_requirements:
-    minimum_num_gpus: 1             # minimum # of GPUs to provision
-    maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
+
+computing:
+  minimum_num_gpus: 1             # minimum # of GPUs to provision
+  maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
 ```
 
 You just need to customize the following config items. 
 
-1. `work_dir`, It is the local directory where your source code resides.
+1. `Workspace`, It is the local directory where your source code resides.
 
-2. `run`,  It is the running entry command which will be executed as the job entry point.
+2. `Job`,  It is the running entry command which will be executed as the job entry point.
 
-3. `setup`, It is the bootstrap shell command which will be executed before running entry commands.
+3. `Bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
 
 Then you can use the following example CLI to launch the job at the MLOps platform.
 (Replace $YourApiKey with your own account API key from open.fedml.ai)

@@ -490,7 +490,7 @@ class FedMLClientRunner:
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
                 if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
-            executable_commands = job_yaml.get("run", "")
+            executable_commands = job_yaml.get("Job", "")
         else:
             using_easy_mode = False
             executable_interpreter = expert_mode.get("executable_interpreter", "")
@@ -537,7 +537,7 @@ class FedMLClientRunner:
             logging.info("Run the client: {}".format(shell_cmd_list))
             process = ClientConstants.exec_console_with_shell_script_list(
                 shell_cmd_list,
-                should_capture_stdout=False,
+                should_capture_stdout=True,
                 should_capture_stderr=True
             )
             is_fl_task = False
