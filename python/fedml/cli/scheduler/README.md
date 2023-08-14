@@ -19,85 +19,37 @@ fedml_params:
     project_name: Cheetah_HelloWorld
     job_name: Cheetah_HelloWorld
     
-executable_code_and_data:
-  using_easy_mode: true # Whether we are going to use the easy mode to run the executable program, false means we will use the expert mode.
-  easy_mode:
-    # For easy mode, the entire command will be executed as follows:
-    # executable_shell executable_commands
-    # e.g. bash 'echo "Hello, Here is the Falcon platform.";echo "Current directory is as follows.";pwd'
-    # e.g. bash 'python ~/my_project/torch_client.py --cf ~/my_project/config/fedml_config.yaml --rank 1'
-    # e.g. bash 'deepspeed <client_entry.py> --deepspeed_config ~/my_project/deepspeed/ds_config.json --num_nodes=2 --deepspeed <client args>'
-    executable_shell: bash      # shell interpreter for executable commands, e.g. bash, sh, zsh, etc.
-    executable_commands: |
-      echo "Hello, Here is the Falcon platform."
-      echo "Current directory is as follows."
-      pwd
-    # bootstrap shell commands which will be executed before running executable_commands. support multiple lines, which can be empty
-    bootstrap: |
-      ls -la ~               
-      echo "Bootstrap..."
-  expert_mode:
-    # For expert mode, the entire command will be executed as follows:
-    # executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args
-    # e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
-    # e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
-    # e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
-    # e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
-    executable_interpreter: python      # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
-    executable_file_folder: hello_world # directory for executable file
-    executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
-    executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
-    executable_conf_file_folder: hello_world/config # directory for config file
-    executable_conf_file: fedml_config.yaml   # your config file for the main executable program in the executable_conf_file_folder, which can be empty
-    executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
-    data_location: ~/fedml_data          # path to your data
-    # bootstrap shell commands which will be executed before running executable_file. support multiple lines, which can be empty
-    bootstrap: | 
-      ls -la ~               
-      echo "Bootstrap..."
+# Local directory where your source code resides.
+work_dir: ~/falcon_examples
+
+# Running entry commands which will be executed as the job entry point.
+# Support multiple lines, which can not be empty.
+run: | 
+    echo "Hello, Here is the Falcon platform."
+    echo "Current directory is as follows."
+    pwd
+    python train.py
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+setup: |
+  pip install fedml              
+  echo "Bootstrap finished."
         
 gpu_requirements:
     minimum_num_gpus: 1             # minimum # of GPUs to provision
     maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
 ```
 
-We provide two modes for you, the first is easy mode which uses one line config to customize your commands.
+You just need to customize the following config items. 
 
-For easy mode, you just need to customize config items named executable_shell and executable_commands, 
-then the actual job commands will be executed with the following combination.
+1. `work_dir`, It is the local directory where your source code resides.
 
-executable_shell executable_commands
+2. `run`,  It is the running entry command which will be executed as the job entry point.
 
-e.g. bash 'echo "Hello, Here is the Falcon platform.";echo "Current directory is as follows.";pwd'
+3. `setup`, It is the bootstrap shell command which will be executed before running entry commands.
 
-e.g. bash 'python ~/my_project/torch_client.py --cf ~/my_project/config/fedml_config.yaml --rank 1'
-
-e.g. bash 'deepspeed <client_entry.py> --deepspeed_config ~/my_project/deepspeed/ds_config.json --num_nodes=2 --deepspeed <client args>'
-
-The second is expert mode which will allows you to do more deep config, you need to customize the following items (hello_world is an example job).
-```
-executable_interpreter: python      # shell interpreter for executable_file or the executable command, e.g. bash, sh, zsh, python, deepspeed, echo, etc.
-executable_file_folder: hello_world # directory for executable file
-executable_file: job_entry.py     # your main executable file in the executable_file_folder, which can be empty
-executable_conf_option: --cf     # your command option for executable_conf_file, which can be empty
-executable_conf_file_folder: hello_world/config # directory for config file
-executable_conf_file: fedml_config.yaml   # your yaml config file for the main executable program in the executable_conf_file_folder, which can be emptyexecutable_args
-executable_args: --rank 1            # command arguments for the executable_interpreter and executable_file
-```
-
-For expert mode, the actual job command will be executed with the following combination.
-
-executable_interpreter executable_file_folder/executable_file executable_conf_option executable_conf_file_folder/executable_conf_file executable_args 
-
-e.g. python hello_world/torch_client.py --cf hello_world/config/fedml_config.yaml --rank 1
-
-e.g. deepspeed <client_entry.py> --deepspeed_config ds_config.json --num_nodes=2 --deepspeed <client args>
-
-e.g. python --version (executable_interpreter=python, executable_args=--version, any else is empty)
-
-e.g. echo "Hello World!" (executable_interpreter=echo, executable_args="Hello World!", any else is empty)
-
-You may use the following example CLI to launch the job at the MLOps platform.
+Then you can use the following example CLI to launch the job at the MLOps platform.
 (Replace $YourApiKey with your own account API key from open.fedml.ai)
 
 Example:

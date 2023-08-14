@@ -557,13 +557,15 @@ class FedMLServerRunner:
                 break
 
         if any_edge_is_failed:
-            self.mlops_metrics.report_server_training_status(run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            self.mlops_metrics.server_agent_id = self.edge_id
+            self.mlops_metrics.report_server_id_status(run_id,
+                                                       ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
             return
 
         if all_edges_is_finished:
-            self.mlops_metrics.report_server_training_status(run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+            self.mlops_metrics.server_agent_id = self.edge_id
+            self.mlops_metrics.report_server_id_status(run_id,
+                                                       ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -1554,7 +1556,7 @@ class FedMLServerRunner:
             + str(self.unique_device_id)
             + "\n"
         )
-        
+
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE
