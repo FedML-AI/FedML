@@ -113,6 +113,11 @@ class DatasetArguments:
         default_factory=list,
         metadata={"help": "Path to the training data file(s).", "nargs": "+"}
     )
+    dataset_config_name: Optional[str] = field(default=None, metadata={"help": "dataset configuration name"})
+    dataset_streaming: bool = field(
+        default=False,
+        metadata={"help": "If `True`, streams the data progressively while iterating on the dataset."}
+    )
     test_dataset_size: int = field(
         default=-1,
         metadata={"help": "test set size. Will be ignored if `dataset_path` has more than 1 entry."}
@@ -128,10 +133,18 @@ class DatasetArguments:
     )
 
     def __post_init__(self) -> None:
-        if self.dataset_name is None and len(self.dataset_path) <= 0:
+        if self.dataset_name is not None:
+            self.dataset_path = []
+
+        elif len(self.dataset_path) <= 0:
+            # if dataset_name is None
             raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
 
-        if len(self.dataset_path) == 1 and self.test_dataset_size <= 0:
+        elif len(self.dataset_path) >= 3:
+            warnings.warn("More than 2 dataset paths provided. Only the first 2 will be loaded.")
+            self.dataset_path = self.dataset_path[:2]
+
+        elif len(self.dataset_path) == 1 and self.test_dataset_size <= 0:
             raise ValueError("\"test_dataset_size\" must be a positive value when dataset_path has only 1 entry.")
 
         if self.remove_long_seq and not self.truncate_long_seq:
@@ -193,9 +206,12 @@ def preprocess_dataset(
 
     if dataset_args.remove_long_seq and dataset_args.max_seq_length is not None:
         dataset = dataset.filter(lambda rec: len(rec["input_ids"]) <= dataset_args.max_seq_length)
-        logging.info(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
 
-    logging.info(f"dataset has {dataset.num_rows:,} rows")
+        if hasattr(dataset, "num_rows"):
+            logging.info(f"dataset has {dataset.num_rows:,} rows after filtering for truncated records")
+
+    if hasattr(dataset, "num_rows"):
+        logging.info(f"dataset has {dataset.num_rows:,} rows")
 
     return dataset
 
@@ -205,22 +221,26 @@ def get_dataset(
         tokenizer: TokenizerType,
         seed: Optional[int] = None
 ) -> Tuple[Dataset, Dataset]:
-    if len(dataset_args.dataset_path) >= 2:
-        warnings.warn("More than 2 dataset paths provided. Only the first 2 will be loaded.")
-        data_files = {"train": dataset_args.dataset_path[0], "test": dataset_args.dataset_path[1]}
-    elif len(dataset_args.dataset_path) == 0:
-        if dataset_args.dataset_name is None:
-            raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
-
-        data_files = None
-    else:
-        data_files = dataset_args.dataset_path
+    dataset_kwargs = dict(
+        path="json",
+        name=dataset_args.dataset_config_name,
+        streaming=dataset_args.dataset_streaming,
+    )
 
     if dataset_args.dataset_name is not None:
-        dataset_dict = load_dataset(dataset_args.dataset_name, data_files=data_files)
-    else:
-        dataset_dict = load_dataset("json", data_files=data_files)
+        dataset_kwargs["path"] = dataset_args.dataset_name
+        dataset_kwargs["data_files"] = None
 
+    elif len(dataset_args.dataset_path) >= 2:
+        dataset_kwargs["data_files"] = {"train": dataset_args.dataset_path[0], "test": dataset_args.dataset_path[1]}
+
+    elif len(dataset_args.dataset_path) == 0:
+        raise ValueError("\"dataset_name\" and \"dataset_path\" cannot both be empty.")
+
+    else:
+        dataset_kwargs["data_files"] = dataset_args.dataset_path
+
+    dataset_dict = load_dataset(**dataset_kwargs)
     if len(dataset_dict.keys()) == 1:
         dataset = preprocess_dataset(dataset_args, dataset_dict["train"], tokenizer)
 
@@ -239,8 +259,10 @@ def get_dataset(
 
     logging.info(f"done preprocessing")
 
-    logging.info(f"Train data size: {train_dataset.num_rows:,}")
-    logging.info(f"Test data size: {test_dataset.num_rows:,}")
+    if hasattr(train_dataset, "num_rows"):
+        logging.info(f"Train data size: {train_dataset.num_rows:,}")
+    if hasattr(test_dataset, "num_rows"):
+        logging.info(f"Test data size: {test_dataset.num_rows:,}")
     return train_dataset, test_dataset
 
 

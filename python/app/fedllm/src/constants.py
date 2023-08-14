@@ -38,6 +38,7 @@ DATASET_NAMES = [
     "databricks/databricks-dolly-15k",
     "togethercomputer/RedPajama-Data-1T",
     "togethercomputer/RedPajama-Data-1T-Sample",
+    "EleutherAI/pile",
 ]
 
 # -----------------------------------------------------------------
