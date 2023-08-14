@@ -383,16 +383,16 @@ For the Job yaml file, please review the call_gpu.yaml :
 class FedMLJobConfig(object):
     def __init__(self, job_yaml_file):
         self.job_config_dict = load_yaml_config(job_yaml_file)
-        self.account_id = self.job_config_dict["fedml_params"]["fedml_account_id"]
-        self.account_name = self.job_config_dict["fedml_params"]["fedml_account_name"]
-        self.project_name = self.job_config_dict["fedml_params"]["project_name"]
-        self.job_name = self.job_config_dict["fedml_params"]["job_name"]
+        self.account_id = self.job_config_dict["fedml_arguments"]["fedml_account_id"]
+        self.account_name = self.job_config_dict["fedml_arguments"]["fedml_account_name"]
+        self.project_name = self.job_config_dict["fedml_arguments"]["project_name"]
+        self.job_name = self.job_config_dict["fedml_arguments"]["job_name"]
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
-        self.executable_file_folder = self.job_config_dict.get("work_dir", None)
-        self.executable_commands = self.job_config_dict.get("run", "")
-        self.bootstrap = self.job_config_dict.get("setup", None)
+        self.executable_file_folder = self.job_config_dict.get("Workspace", None)
+        self.executable_commands = self.job_config_dict.get("Job", "")
+        self.bootstrap = self.job_config_dict.get("Bootstrap", None)
         self.executable_file = None
         self.executable_conf_option = ""
         self.executable_conf_file_folder = None
@@ -441,8 +441,8 @@ class FedMLJobConfig(object):
         self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
         self.executable_conf_file = str(self.executable_conf_file).replace('\\', os.sep).replace('/', os.sep)
 
-        self.minimum_num_gpus = self.job_config_dict["gpu_requirements"]["minimum_num_gpus"]
-        self.maximum_cost_per_hour = self.job_config_dict["gpu_requirements"]["maximum_cost_per_hour"]
+        self.minimum_num_gpus = self.job_config_dict["computing"]["minimum_num_gpus"]
+        self.maximum_cost_per_hour = self.job_config_dict["computing"]["maximum_cost_per_hour"]
         self.application_name = FedMLJobConfig.generate_application_name(self.job_name, self.project_name)
 
     @staticmethod
