@@ -12,7 +12,7 @@ from peft import (
     LoraConfig,
     TaskType,
 )
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from src.constants import (
@@ -30,7 +30,7 @@ from src.hf_trainer import HFTrainer
 from src.modeling_utils import get_data_collator, get_max_seq_length as _get_max_seq_length, get_vocab_size
 from src.trainer_callback import SavePeftModelCallback
 from src.typing import ModelConfigType, ModelType, TokenizerType
-from src.utils import parse_hf_args, save_config, should_process_save
+from src.utils import is_directory, is_file, parse_hf_args, save_config, should_process_save
 
 
 @dataclass
@@ -44,13 +44,7 @@ class FinetuningArguments(TrainingArguments):
 
 @dataclass
 class ModelArguments:
-    model_name: str = field(
-        default="EleutherAI/pythia-2.8b",
-        metadata={
-            "help": "model name.",
-            "choices": MODEL_NAMES
-        },
-    )
+    model_name_or_path: str = field(default="EleutherAI/pythia-70m", metadata={"help": "model name or path."})
     use_lora: bool = field(default=False, metadata={"help": "Set to `True` to enable LoRA."})
     lora_r: int = field(default=8, metadata={"help": "LoRA attention dimension (rank)."})
     lora_alpha: int = field(default=32, metadata={"help": "LoRA alpha."})
@@ -69,30 +63,47 @@ class ModelArguments:
             "help": "Authentication token for Hugging Face private models such as Llama 2.",
         },
     )
+    load_pretrained: bool = field(default=True, metadata={"help": "If `True`, load pretrained model."})
 
     def __post_init__(self) -> None:
-        if self.model_name.startswith("meta-llama/Llama-2-"):
-            if compare_versions("transformers", "<", "4.31.0"):
-                raise NotImplementedError(f"{self.model_name} requires transformers >= 4.31.0")
-
-            if self.auth_token is not None:
-                os.environ["HUGGING_FACE_HUB_TOKEN"] = str(self.auth_token)
-
-            # need to verify if already logged in
-            from huggingface_hub import HfApi
-            from huggingface_hub.utils import LocalTokenNotFoundError
-
-            try:
-                HfApi().whoami()
-            except LocalTokenNotFoundError:
-                raise LocalTokenNotFoundError(
-                    f"Token is required for {self.model_name}, but no token found. You need to provide a"
-                    f" token or be logged in to Hugging Face."
-                    f"\nTo pass a token, you could pass `--auth_token \"<your token>\"` or set environment"
-                    f" variable `HUGGING_FACE_HUB_TOKEN=\"${{your_token}}\"`."
-                    f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
-                    f" See https://huggingface.co/settings/tokens."
+        if is_file(self.model_name_or_path):
+            if self.load_pretrained:
+                raise ValueError(
+                    "\"model_name_or_path\" must be a model ID or directory path if \"load_pretrained\" is `True`."
                 )
+
+        elif not is_directory(self.model_name_or_path):
+            # if model_name_or_path is not a local file or directory
+            if self.model_name_or_path not in MODEL_NAMES:
+                model_names_str = "', '".join(MODEL_NAMES)
+
+                raise ValueError(
+                    f"\"model_name_or_path\" must be a valid file/directory path or a supported model ID ("
+                    f"choose from '{model_names_str}') but received \"{self.model_name_or_path}\"."
+                )
+
+            if self.model_name_or_path.startswith("meta-llama/Llama-2-"):
+                if compare_versions("transformers", "<", "4.31.0"):
+                    raise NotImplementedError(f"{self.model_name_or_path} requires transformers >= 4.31.0")
+
+                if self.auth_token is not None:
+                    os.environ["HUGGING_FACE_HUB_TOKEN"] = str(self.auth_token)
+
+                # need to verify if already logged in
+                from huggingface_hub import HfApi
+                from huggingface_hub.utils import LocalTokenNotFoundError
+
+                try:
+                    HfApi().whoami()
+                except LocalTokenNotFoundError:
+                    raise LocalTokenNotFoundError(
+                        f"Token is required for {self.model_name_or_path}, but no token found. You need to provide a"
+                        f" token or be logged in to Hugging Face."
+                        f"\nTo pass a token, you could pass `--auth_token \"<your token>\"` or set environment"
+                        f" variable `HUGGING_FACE_HUB_TOKEN=\"${{your_token}}\"`."
+                        f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
+                        f" See https://huggingface.co/settings/tokens."
+                    )
 
 
 @dataclass
@@ -236,7 +247,7 @@ def get_dataset(
 def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, **kwargs) -> TokenizerType:
     kwargs.setdefault("trust_remote_code", True)
 
-    tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_args.model_name, **kwargs)
+    tokenizer: TokenizerType = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **kwargs)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -250,9 +261,15 @@ def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, 
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
-    kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
 
-    model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
+    if model_args.load_pretrained:
+        kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
+
+        model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path, **kwargs)
+    else:
+        # see https://discuss.huggingface.co/t/how-to-load-model-without-pretrained-weight/34155/3
+        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **kwargs)
+        model = AutoModelForCausalLM.from_config(config)
 
     model_vocab_size = get_vocab_size(model.config)
     if tokenizer_length is not None and model_vocab_size < tokenizer_length:
@@ -301,10 +318,10 @@ def train() -> None:
     model_args, dataset_args, training_args = parse_hf_args((ModelArguments, DatasetArguments, FinetuningArguments))
 
     # prepare models
-    logging.info(f"Loading tokenizer for \"{model_args.model_name}\"")
+    logging.info(f"Loading tokenizer for \"{model_args.model_name_or_path}\"")
     tokenizer = get_tokenizer(model_args, add_special_tokens=training_args.is_instruction_finetune)
 
-    logging.info(f"Loading model for \"{model_args.model_name}\"")
+    logging.info(f"Loading model for \"{model_args.model_name_or_path}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)
 
     if dataset_args.max_seq_length is None:
