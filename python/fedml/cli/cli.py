@@ -839,18 +839,21 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                        f"or the job name {result.job_name} is duplicated.")
         else:
             if is_no_confirmation:
-                click.echo(f"Job {result.job_name} has started.")
-                click.echo(f"Please go to this web page with your account id {result.user_id} "
-                           f"to review your job details.")
-                click.echo(f"{result.job_url}")
+                click.echo("Job{}has started.".format(f" {result.job_name} " if result.job_name is not None else " "))
+                if result.job_url is not None:
+                    click.echo(f"Please go to this web page with your account id {result.user_id} "
+                               f"to review your job details.")
+                    click.echo(f"{result.job_url}")
             else:
-                click.echo(f"Job {result.job_name} pre-launch process has started. The job launch is not started yet.")
-                click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
-                           f"and confirm the launch start.")
-                click.echo(f"{result.job_url}")
+                click.echo("Job{}pre-launch process has started. The job launch is not started yet.".format(
+                    f" {result.job_name} " if result.job_name is not None else " "))
+                if result.job_url is not None:
+                    click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
+                               f"and confirm the launch start.")
+                    click.echo(f"{result.job_url}")
 
             click.echo("")
-            if len(result.gpu_matched) > 0:
+            if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
                 click.echo(f"Found matched GPU devices for you, which are as follows.")
                 for gpu_device in result.gpu_matched:
                     click.echo(f"Vendor: {gpu_device.gpu_vendor}, num: {gpu_device.gpu_num}, "
@@ -996,8 +999,9 @@ def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
             jobs_count = 0
             for job in job_list_obj.job_list:
                 jobs_count += 1
-                click.echo(f"{jobs_count}. job name {job.job_name}, job id {job.job_id}, status {job.status}, started time {job.started_time}, "
-                           f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost}.")
+                click.echo(
+                    f"{jobs_count}. job name {job.job_name}, job id {job.job_id}, status {job.status}, started time {job.started_time}, "
+                    f"ended time {job.ended_time}, duration {job.compute_duration}, cost {job.cost}.")
                 if len(job.device_infos) > 0:
                     click.echo("Devices in this job are as follows.")
                 device_count = 0
