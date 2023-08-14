@@ -164,6 +164,7 @@ fedml_arguments:
   job_name: Cheetah_HelloWorld080504
 
 # Local directory where your source code resides.
+# If your job doesn't contain any source code, it can be empty.
 Workspace: hello_world
 
 # Running entry commands which will be executed as the job entry point.
