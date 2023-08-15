@@ -21,11 +21,11 @@ fedml_arguments:
 
 # Local directory where your source code resides.
 # If your job doesn't contain any source code, it can be empty.
-Workspace: hello_world
+workspace: hello_world
 
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
-Job: | 
+job: | 
     echo "Hello, Here is the Falcon platform."
     echo "Current directory is as follows."
     pwd
@@ -33,7 +33,7 @@ Job: |
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
-Bootstrap: |
+bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
 
@@ -44,11 +44,11 @@ computing:
 
 You just need to customize the following config items. 
 
-1. `Workspace`, It is the local directory where your source code resides.
+1. `workspace`, It is the local directory where your source code resides.
 
-2. `Job`,  It is the running entry command which will be executed as the job entry point.
+2. `job`,  It is the running entry command which will be executed as the job entry point.
 
-3. `Bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
+3. `bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
 
 Then you can use the following example CLI to launch the job at the MLOps platform.
 (Replace $YourApiKey with your own account API key from open.fedml.ai)

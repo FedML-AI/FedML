@@ -490,7 +490,7 @@ class FedMLClientRunner:
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
                 if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
-            executable_commands = job_yaml.get("Job", "")
+            executable_commands = job_yaml.get("job", "")
         else:
             using_easy_mode = False
             executable_interpreter = expert_mode.get("executable_interpreter", "")
