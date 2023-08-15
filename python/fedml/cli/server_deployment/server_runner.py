@@ -810,9 +810,9 @@ class FedMLServerRunner:
                                                self.callback_client_exit_train_with_exception)
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
-        self.init_job_task()
-
         if self.run_as_edge_server_and_agent:
+            self.init_job_task()
+
             self.args.run_id = run_id
 
             server_runner = FedMLServerRunner(
@@ -830,6 +830,8 @@ class FedMLServerRunner:
             self.run_process.start()
             ServerConstants.save_run_process(run_id, self.run_process.pid)
         elif self.run_as_cloud_agent:
+            self.init_job_task()
+
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
                 run_id, self.request_json.get("cloudServerDeviceId", "0")
