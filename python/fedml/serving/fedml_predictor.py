@@ -1,43 +1,19 @@
-from abc import ABC, abstractmethod
-from fastapi import FastAPI, Request
-import yaml
 import platform
 import os
 import stat
 import logging
 import traceback
-from fedml.cli.model_deployment.device_client_constants import ClientConstants
-from fedml.cli.comm_utils import sys_utils
+from abc import ABC, abstractmethod
+from ..cli.model_deployment.device_client_constants import ClientConstants
+from ..cli.comm_utils import sys_utils
 
-class FedMLClientPredictor(ABC):
+class FedMLPredictor(ABC):
     def __init__(self):
         build_dynamic_args()
 
     @abstractmethod
     def predict(self, data):
         pass
-
-class FedMLInferenceRunner(ABC):
-    def __init__(self, client_predictor):
-        self.client_predictor = client_predictor
-    
-    def run(self):
-        api = FastAPI()
-        @api.post("/predict")
-        async def predict(request: Request):
-            input_json = await request.json()
-            response_text = self.client_predictor.predict(request = input_json)
-
-            return {"generated_text": str(response_text)}
-        
-        @api.get("/ready")
-        async def ready():
-            return {"status": "Success"}
-        
-        import uvicorn
-        # Read the port from the config
-        port = 2345
-        uvicorn.run(api, host="0.0.0.0", port=port)
 
 def build_dynamic_args():
     DEFAULT_BOOTSTRAP_FULL_DIR = os.environ.get("BOOTSTRAP_DIR", None)

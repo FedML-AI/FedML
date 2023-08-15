@@ -73,7 +73,7 @@ class ClientConstants(object):
 
     INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"
     INFERENCE_SERVER_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest"
-    INFERENCE_SERVER_CUSTOME_IMAGE = "fedml-customized-inference-backend"
+    INFERENCE_SERVER_CUSTOME_IMAGE = "fedml-default-inference-backend"
 
     INFERENCE_SERVER_STARTED_TAG = "Started HTTPService at 0.0.0.0:"
     INFERENCE_ENGINE_TYPE_ONNX = "onnx"

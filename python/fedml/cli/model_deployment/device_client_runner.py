@@ -262,11 +262,14 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config.get("inference_engine", ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON)
+        model_config_parameters = self.request_json["parameters"]
+        if "using_triton" in model_config_parameters and model_config_parameters["using_triton"] == True:
+            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
+        else:
+            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
         if self.model_is_from_open:
             model_net_url = model_config["model_net_url"]
-        model_config_parameters = self.request_json["parameters"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance

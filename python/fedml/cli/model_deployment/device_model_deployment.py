@@ -180,7 +180,20 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
                 bootstrap_src_dir = config.get('bootstrap', "")
-                data_cache_dir = config.get('data_cache_dir', "")
+                data_cache_dir_input = config.get('data_cache_dir', "")
+                logging.info(f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
+                if data_cache_dir_input != "":
+                    if data_cache_dir_input[0] == "~":
+                        src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                        dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+                    else:
+                        # check if the data_cache_dir is a relative path
+                        if data_cache_dir_input[0] != "/":
+                            raise "data_cache_dir_input has to be an absolute path or start with ~"
+                        else:
+                            src_data_cache_dir = data_cache_dir_input
+                            dst_data_cache_dir = data_cache_dir_input
+                logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
                 # Serving dir inside docker
                 dst_model_serving_dir = ClientConstants.get_model_serving_dir()
                 dst_entry = os.path.join(dst_model_serving_dir, config.get('entry_point'))
@@ -258,18 +271,18 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         new_container = client.api.create_container(
             image = inference_image_name,
             name = llm_server_container_name,
-            volumes = [data_cache_dir, src_code_dir],
+            volumes = [src_data_cache_dir, src_code_dir],
             ports = [2345],                     # port open inside the container
             entrypoint=["python3", dst_entry],
             environment = {
-                "DATA_CACHE_FOLDER": data_cache_dir,
+                "DATA_CACHE_FOLDER": dst_data_cache_dir,
                 "BOOTSTRAP_DIR": dst_bootstrap_dir,
                 "MAIN_ENTRY": dst_entry,
             },
             host_config = client.api.create_host_config(
                 binds = {
-                    data_cache_dir: {
-                        "bind": data_cache_dir,
+                    src_data_cache_dir: {
+                        "bind": dst_data_cache_dir,
                         "mode": "rw"
                     },
                     src_code_dir: {

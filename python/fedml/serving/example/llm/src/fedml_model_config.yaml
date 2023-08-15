@@ -1,4 +1,5 @@
-inference_image_name: "default_fedml_inference_image"
+inference_image_name: "fedml-default-inference-backend" #Optional, default is "fedml-default-inference-backend"
+using_triton: False #Optional, default is False
 inference_token: "my_token"
 use_gpu: False
 

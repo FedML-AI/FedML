@@ -1,14 +1,16 @@
-from fedml_lib.fedml_serve import FedMLClientPredictor     # TODO: Merge this into real fedml lib
-from fedml_lib.fedml_serve import FedMLInferenceRunner
+import os
+from fedml.serving import FedMLPredictor
+from fedml.serving import FedMLInferenceRunner
 
-# DATA_CACHE_DIR is a LOCAL folder that contains the model and config files
-# If you do not want to transfer the model and config files to MLOps
-# Then also metion DATA_CACHE_DIR in the fedml_model_config.yaml
+# DATA_CACHE_DIR is a LOCAL folder that contains the model and config files if 
+# you do NOT want to transfer the model and config files to MLOps
+# Not to also metion DATA_CACHE_DIR in the fedml_model_config.yaml
 DATA_CACHE_DIR = "~/fedml_serving/model_and_config"
+DATA_CACHE_DIR = os.path.expanduser(DATA_CACHE_DIR) # Use absolute path
 
-class Chatbot(FedMLClientPredictor):                # Inherit FedMLClientPredictor
+class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
     def __init__(self):
-        super().__init__()                          # Will excecute the bootstrap shell script
+        super().__init__()                    # Will excecute the bootstrap shell script
         from langchain import PromptTemplate, LLMChain
         from langchain.llms import HuggingFacePipeline
         import torch
@@ -67,6 +69,6 @@ class Chatbot(FedMLClientPredictor):                # Inherit FedMLClientPredict
         return {"generated_text": str(response_text)}
 
 if __name__ == "__main__":
-    chatbot_obj = Chatbot()
-    fedml_inference_runner = FedMLInferenceRunner(chatbot_obj)
+    chatbot = Chatbot()
+    fedml_inference_runner = FedMLInferenceRunner(chatbot)
     fedml_inference_runner.run()
