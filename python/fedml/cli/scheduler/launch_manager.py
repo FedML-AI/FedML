@@ -390,9 +390,9 @@ class FedMLJobConfig(object):
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
-        self.executable_file_folder = self.job_config_dict.get("Workspace", None)
-        self.executable_commands = self.job_config_dict.get("Job", "")
-        self.bootstrap = self.job_config_dict.get("Bootstrap", None)
+        self.executable_file_folder = self.job_config_dict.get("workspace", None)
+        self.executable_commands = self.job_config_dict.get("job", "")
+        self.bootstrap = self.job_config_dict.get("bootstrap", None)
         self.executable_file = None
         self.executable_conf_option = ""
         self.executable_conf_file_folder = None
