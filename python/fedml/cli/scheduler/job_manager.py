@@ -74,10 +74,11 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            if resp_data["code"] != "SUCCESS":
                 job_start_result = FedMLJobStartedModel({"job_name": real_job_name, "status": "FAILED",
                                                          "job_url": "",
-                                                         "started_time": time.time()})
+                                                         "started_time": time.time(),
+                                                         "message": resp_data["message"]})
                 return job_start_result
             job_start_result = FedMLJobStartedModel(resp_data["data"], job_name=job_name)
             # job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
@@ -171,6 +172,7 @@ class FedMLJobStartedModel(object):
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
+            self.message = job_started_json.get("message", None)
             gpu_list_json = job_started_json.get("gpu_matched", None)
             if gpu_list_json is not None:
                 for gpu_dev_json in gpu_list_json:
@@ -182,6 +184,7 @@ class FedMLJobStartedModel(object):
             self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
             self.job_url = job_started_json
             self.started_time = time.time()
+            self.message = None
 
 
 class FedMLGpuDevices(object):

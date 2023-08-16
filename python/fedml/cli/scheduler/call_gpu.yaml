@@ -31,4 +31,4 @@ bootstrap: |
 
 computing:
   minimum_num_gpus: 1            # minimum # of GPUs to provision
-  maximum_cost_per_hour: $2    # max cost per hour for your job per machine
+  maximum_cost_per_hour: $3    # max cost per hour for your job per machine

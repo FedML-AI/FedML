@@ -519,13 +519,12 @@ class FedMLServerRunner:
 
             self.stop_run_when_starting_failed()
 
-    def init_job_task(self, job_yaml=None, edge_ids=None):
-        if job_yaml is None:
-            run_id = self.request_json["runId"]
-            run_config = self.request_json["run_config"]
-            edge_ids = self.request_json["edgeids"]
-            run_params = run_config.get("parameters", {})
-            job_yaml = run_params.get("job_yaml", None)
+    def init_job_task(self):
+        run_id = self.request_json["runId"]
+        run_config = self.request_json["run_config"]
+        edge_ids = self.request_json["edgeids"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", None)
 
         if job_yaml is not None:
             self.setup_listeners_for_edge_status(run_id, edge_ids)

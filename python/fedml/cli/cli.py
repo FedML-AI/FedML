@@ -835,8 +835,11 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
         if result.job_url == "":
-            click.echo(f"Failed to launch the job. Please check if the network is available "
-                       f"or the job name {result.job_name} is duplicated.")
+            if result.message is not None:
+                click.echo(f"Failed to launch the job with response messages: {result.message}")
+            else:
+                click.echo(f"Failed to launch the job. Please check if the network is available "
+                           f"or the job name {result.job_name} is duplicated.")
         else:
             if is_no_confirmation:
                 click.echo("Job{}has started.".format(f" {result.job_name} " if result.job_name is not None else " "))
