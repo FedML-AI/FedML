@@ -863,6 +863,13 @@ class FedMLServerRunner:
             self.run_process_event.clear()
             self.run(self.run_process_event)
 
+    def simulate_as_cloud_server(self):
+        message_bytes = json.dumps(self.request_json).encode("ascii")
+        base64_bytes = base64.b64encode(message_bytes)
+        runner_cmd_encoded = base64_bytes.decode("ascii")
+
+        # fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID};
+
     def start_cloud_server_process_entry(self):
         try:
             self.start_cloud_server_process()
@@ -1095,7 +1102,9 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
             logging.error("exit_train_with_exception: send topic " + topic_exit_train)
-            self.client_mqtt_mgr.send_message(topic_exit_train, payload)
+            payload_obj = json.loads(payload)
+            payload_obj["server_id"] = self.edge_id
+            self.client_mqtt_mgr.send_message(topic_exit_train, json.dumps(payload_obj))
             self.mlops_metrics.common_broadcast_client_training_status(edge_id,
                                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 

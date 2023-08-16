@@ -184,13 +184,14 @@ class MLOpsMetrics(object):
         logging.info("client_send_exit_train_msg.")
         self.messenger.send_message_json(topic_exit_train_with_exception, message_json)
 
-    def report_client_id_status(self, run_id, edge_id, status, running_json=None, is_from_model=False):
+    def report_client_id_status(self, run_id, edge_id, status, running_json=None,
+                                is_from_model=False, server_id="0"):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for communication between client agent (FedML cli module) and client
         """
-        self.common_report_client_id_status(run_id, edge_id, status)
+        self.common_report_client_id_status(run_id, edge_id, status, server_id)
 
         self.report_client_device_status_to_web_ui(edge_id, status)
 
@@ -201,14 +202,14 @@ class MLOpsMetrics(object):
             from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
-    def common_report_client_id_status(self, run_id, edge_id, status):
+    def common_report_client_id_status(self, run_id, edge_id, status, server_id="0"):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for communication between client agent (FedML cli module) and client
         """
         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-        msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
+        msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id}
         message_json = json.dumps(msg)
         # logging.info("report_client_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -300,7 +301,7 @@ class MLOpsMetrics(object):
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         message_json = json.dumps(msg)
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
-        # logging.info("report_server_id_status. message_json = %s" % message_json)
+        logging.info("report_server_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
         self.report_server_device_status_to_web_ui(run_id, status)

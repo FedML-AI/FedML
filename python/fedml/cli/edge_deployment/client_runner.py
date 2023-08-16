@@ -91,6 +91,7 @@ class FedMLClientRunner:
         self.mlops_metrics = None
         self.client_active_list = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
+        self.server_id = None
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -344,7 +345,8 @@ class FedMLClientRunner:
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
             self.mlops_metrics.common_report_client_id_status(self.run_id, self.edge_id,
-                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                              server_id=self.server_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
@@ -475,7 +477,8 @@ class FedMLClientRunner:
             sys_utils.log_return_info(entry_file, ret_code)
 
             self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                       server_id=self.server_id)
 
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -599,7 +602,8 @@ class FedMLClientRunner:
         ClientConstants.cleanup_bootstrap_process(self.run_id)
 
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
-                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                   server_id=self.server_id)
 
         time.sleep(1)
 
@@ -813,6 +817,7 @@ class FedMLClientRunner:
             self.run_process_event = multiprocessing.Event()
         self.run_process_event.clear()
         client_runner.run_process_event = self.run_process_event
+        client_runner.server_id = request_json.get("server_id", "0")
         logging.info("start the runner process.")
         self.run_process = Process(target=client_runner.run, args=(self.run_process_event,))
         self.run_process.start()
