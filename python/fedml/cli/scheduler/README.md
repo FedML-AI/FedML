@@ -71,7 +71,7 @@ For querying the status of the job, please run the command: fedml jobs list -id 
 ## Login as the GPU supplier
 If you want to login as the role of GPU supplier and join into the FedML Falcon payment system. You just need to run the following command.
 ```
-fedml login $YourUserIdOrApiKey -g
+fedml falcon login $YourUserId -k $YourApiKey
 ```
 
 Then you may find your GPU device in the FedML Falcon platform https://open.fedml.ai/gpu-supplier/gpus/index

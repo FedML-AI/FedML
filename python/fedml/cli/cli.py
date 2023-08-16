@@ -339,6 +339,115 @@ def mlops_login(
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
+@cli.group("falcon")
+def falcon():
+    """
+    Manage devices on the Falcon platform.
+    """
+    pass
+
+
+@falcon.command("login", help="Login to the Falcon platform (open.fedml.ai)")
+@click.argument("userid", nargs=-1)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="login to which version of Falcon platform. It should be dev, test or release",
+)
+@click.option(
+    "--no_gpu_check", "-ngc", default=None, is_flag=True,
+    help="Not need to check if the GPU is available when logining as the GPU supplier.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+def falcon_login(userid, version, no_gpu_check, api_key):
+    # Check api key
+    user_api_key = api_key
+    if api_key is None or api_key == "":
+        click.echo("Please provide your API key with the option '-k $YourApiKey'.")
+        return
+
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
+    if userid is None or len(userid) <= 0:
+        click.echo("Please specify your account id, usage: fedml falcon login $your_account_id -k $your_api_key")
+        return
+    account_id = userid[0]
+    platform_url = "open.fedml.ai"
+    if version != "release":
+        platform_url = "open-{}.fedml.ai".format(version)
+
+    # Check user id.
+    if userid == "":
+        click.echo(
+            "Please provide your account id in the MLOps platform ({}).".format(
+                platform_url
+            )
+        )
+        return
+
+    # Ignore to check gpu
+    is_no_gpu_check = no_gpu_check
+    if no_gpu_check is None:
+        is_no_gpu_check = False
+
+    pip_source_dir = os.path.dirname(__file__)
+    login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
+
+    client_logout()
+    sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                    ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+    sys_utils.cleanup_all_fedml_client_learning_processes()
+    sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
+    sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
+    role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]
+
+    login_pid = sys_utils.run_subprocess_open(
+        [
+            sys_utils.get_python_program(),
+            "-W",
+            "ignore",
+            login_cmd,
+            "-t",
+            "login",
+            "-u",
+            str(account_id),
+            "-v",
+            version,
+            "-ls",
+            "127.0.0.1",
+            "-r",
+            role,
+            "-id",
+            "0",
+            "-os",
+            "",
+            "-k",
+            user_api_key,
+            "-ngc",
+            "1" if is_no_gpu_check else "0"
+        ]
+    ).pid
+    sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                 ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+
+
+@falcon.command("logout", help="Logout from the Falcon platform (open.fedml.ai)")
+def falcon_logout():
+    sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
+    client_logout()
+    sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                    ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+    sys_utils.cleanup_all_fedml_client_learning_processes()
+    sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
+    sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
+    sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
+
+    print("\nlogout successfully!\n")
+
+
 @cli.command("logout", help="Logout from MLOps platform (open.fedml.ai)")
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="logout from the FedML client.",
