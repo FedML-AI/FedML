@@ -634,7 +634,7 @@ class FedMLServerRunner:
         logging.info("Cleanup run successfully when finished.")
 
         self.mlops_metrics.broadcast_server_training_status(
-            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id
         )
 
         try:
@@ -661,7 +661,9 @@ class FedMLServerRunner:
 
         logging.info("Cleanup run successfully when starting failed.")
 
-        self.mlops_metrics.broadcast_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        self.mlops_metrics.broadcast_server_training_status(self.run_id,
+                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                                            edge_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()

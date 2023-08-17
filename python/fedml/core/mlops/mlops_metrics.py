@@ -268,7 +268,7 @@ class MLOpsMetrics(object):
         self.messenger.send_message_json(topic_name, message_json)
         self.report_server_id_status(run_id, status)
 
-    def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False):
+    def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False, edge_id=None):
         if self.messenger is None:
             return
         topic_name = "fl_run/fl_server/mlops/status"
@@ -276,7 +276,7 @@ class MLOpsMetrics(object):
             role = "normal"
         msg = {
             "run_id": run_id,
-            "edge_id": self.edge_id,
+            "edge_id": self.edge_id if edge_id is None else edge_id,
             "status": status,
             "role": role,
         }
