@@ -44,7 +44,9 @@ class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
         self.run_process_event = None
+        self.run_process_event_map = dict()
         self.run_process = None
+        self.run_process_map = dict()
         self.local_api_process = None
         self.start_request_json = None
         self.device_status = None
@@ -347,7 +349,6 @@ class FedMLClientRunner:
             self.mlops_metrics.common_report_client_id_status(self.run_id, self.edge_id,
                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                                                               server_id=self.server_id)
-            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
@@ -445,15 +446,18 @@ class FedMLClientRunner:
         if not is_fl_task:
             is_run_ok = True
         if ret_code is None or ret_code <= 0:
+            self.check_runner_stop_event()
+
             if is_run_ok:
                 if out is not None:
                     out_str = out.decode(encoding="utf-8")
                     if out_str != "":
                         logging.info("{}".format(out_str))
 
-                self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                                                                 in_run_id=run_id)
+                self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
+                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                                                           server_id=self.server_id)
+
                 sys_utils.log_return_info(entry_file, 0)
         else:
             is_run_ok = False
@@ -523,6 +527,11 @@ class FedMLClientRunner:
             )
             is_fl_task = True
         else:
+            self.check_runner_stop_event()
+
+            self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                             ClientConstants.MSG_MLOPS_SERVER_DEVICE_STATUS_RUNNING,
+                                                             in_run_id=self.run_id)
             shell_cmd_list = list()
             shell_cmd_list.append(executable_interpreter)
             if using_easy_mode:
@@ -567,7 +576,7 @@ class FedMLClientRunner:
         try:
             if self.run_process_event is not None:
                 self.run_process_event.set()
-            self.stop_run_with_killed_status()
+            self.stop_run_with_killed_status(report_status=True if self.run_process is None else False)
             # if self.run_process is not None:
             #     logging.info("Run will be stopped, waiting...")
             #     self.run_process.join()
@@ -788,7 +797,6 @@ class FedMLClientRunner:
         is_retain = request_json.get("is_retain", False)
         if is_retain:
             return
-        self.start_request_json = payload
         run_id = request_json["runId"]
 
         logging.info("cleanup and save runner information")
@@ -812,16 +820,15 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        client_runner.start_request_json = self.start_request_json
-        if self.run_process_event is None:
-            self.run_process_event = multiprocessing.Event()
-        self.run_process_event.clear()
-        client_runner.run_process_event = self.run_process_event
+        client_runner.start_request_json = payload
+        self.run_process_event_map[run_id] = multiprocessing.Event()
+        self.run_process_event_map[run_id].clear()
+        client_runner.run_process_event = self.run_process_event_map[run_id]
         client_runner.server_id = request_json.get("server_id", "0")
         logging.info("start the runner process.")
-        self.run_process = Process(target=client_runner.run, args=(self.run_process_event,))
-        self.run_process.start()
-        ClientConstants.save_run_process(run_id, self.run_process.pid)
+        self.run_process_map[run_id] = Process(target=client_runner.run, args=(self.run_process_event_map[run_id],))
+        self.run_process_map[run_id].start()
+        ClientConstants.save_run_process(run_id, self.run_process_map[run_id].pid)
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
@@ -840,12 +847,11 @@ class FedMLClientRunner:
         # logging.info("Stop run with multiprocessing...")
 
         # Stop client with multiprocessing mode
-        self.request_json = request_json
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        client_runner.run_process_event = self.run_process_event
-        client_runner.run_process = self.run_process
+        client_runner.run_process_event = self.run_process_event_map.get(run_id, None)
+        client_runner.run_process = self.run_process_map.get(run_id, None)
         client_runner.client_mqtt_mgr = self.client_mqtt_mgr
         client_runner.mlops_metrics = self.mlops_metrics
         client_runner.stop_run_entry()
