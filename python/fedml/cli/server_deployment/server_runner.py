@@ -571,14 +571,8 @@ class FedMLServerRunner:
             self.report_server_status(run_id, server_id, status)
 
     def report_server_status(self, run_id, server_id, status):
-        if self.run_as_cloud_agent:
-            prev_edge_id = self.mlops_metrics.edge_id
-            self.mlops_metrics.edge_id = server_id
-            self.mlops_metrics.report_server_training_status(run_id, status)
-            self.mlops_metrics.edge_id = prev_edge_id
-        else:
-            self.mlops_metrics.server_agent_id = self.edge_id
-            self.mlops_metrics.report_server_id_status(run_id, status)
+        self.mlops_metrics.server_agent_id = self.edge_id
+        self.mlops_metrics.report_server_id_status(run_id, status, server_id=server_id)
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -1281,6 +1275,7 @@ class FedMLServerRunner:
         run_id = request_json["run_id"]
         status = request_json["status"]
         edge_id = request_json["edge_id"]
+        server_id = request_json.get("server_id", None)
 
         if (
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
@@ -1308,7 +1303,7 @@ class FedMLServerRunner:
                     self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
                 )
                 server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-                server_runner.edge_id = edge_id
+                server_runner.edge_id = edge_id if server_id is None else server_id
                 server_runner.run_status = status
                 server_runner.client_mqtt_mgr = self.client_mqtt_mgr
                 server_runner.mlops_metrics = self.mlops_metrics
