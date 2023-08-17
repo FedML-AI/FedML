@@ -44,6 +44,15 @@ class Constants(Singleton):
     LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME = "config"
     LAUNCH_JOB_DEFAULT_CONF_NAME = "fedml_config.yaml"
 
+    GPU_BRAND_MAPPING_INDEX_NVIDIA = 0
+    GPU_BRAND_MAPPING_INDEX_AMD = 1
+    GPU_BRAND_MAPPING_INDEX_INTEL = 2
+    GPU_BRAND_MAPPING_INDEX_OTHER = 3
+    GPU_BRAND_MAPPING = {GPU_BRAND_MAPPING_INDEX_NVIDIA: "Nvidia",
+                         GPU_BRAND_MAPPING_INDEX_AMD: "AMD",
+                         GPU_BRAND_MAPPING_INDEX_INTEL: "Intel",
+                         GPU_BRAND_MAPPING_INDEX_OTHER: "Other"}
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

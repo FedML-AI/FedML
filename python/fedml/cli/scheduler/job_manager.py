@@ -95,8 +95,8 @@ class FedMLJobManager(Singleton):
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         job_list_json = {
             "platformType": platform,
-            "jobName": job_name,
-            "projectName": project_name,
+            "jobName": job_name if job_name is not None else "",
+            "projectName": project_name if project_name is not None else "",
             "userId": user_id,
             "userApiKey": user_api_key
         }
@@ -222,7 +222,10 @@ class FedMLJobModel(object):
             for gpu_dev in gpu_machines:
                 device_id = gpu_dev["deviceId"]
                 gpu_count = gpu_dev.get("gpuCount", 0)
-                brand = gpu_dev.get("brand", "")
+                brand_value = gpu_dev.get("brand", Constants.GPU_BRAND_MAPPING_INDEX_NVIDIA)
+                brand = Constants.GPU_BRAND_MAPPING.get(brand_value,
+                                                        Constants.GPU_BRAND_MAPPING[
+                                                            Constants.GPU_BRAND_MAPPING_INDEX_OTHER])
                 os_type = gpu_dev.get("osType", "")
                 os_version = gpu_dev.get("osVersion", "")
                 self.device_infos.append(f"Device Name: {device_id}, OS Type: {os_type}, OS Version: {os_version}, "
