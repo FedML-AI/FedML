@@ -371,7 +371,7 @@ class MLOpsMetrics(object):
         msg = {"edge_id": edge_id, "job_id": job_id,
                "computing_started_time": computing_started_time,
                "computing_ended_time": computing_ended_time,
-               "duration": duration, "user_id": user_id, "apk_key": api_key}
+               "duration": duration, "user_id": user_id, "api_key": api_key}
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
         # logging.info("report_job_computing_cost. message_json = %s" % message_json)
