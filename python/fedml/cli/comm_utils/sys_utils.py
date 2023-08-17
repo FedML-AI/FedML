@@ -526,6 +526,34 @@ def get_device_id_in_docker():
     product_uuid_file = "/sys/class/dmi/id/product_uuid"
 
     if os.path.exists(docker_env_file) or os.path.exists(cgroup_file):
+        is_in_docker = False
+        try:
+            with open(cgroup_file, 'r') as f:
+                while True:
+                    cgroup_line = f.readline()
+                    if len(cgroup_line) <= 0:
+                        break
+                    name = cgroup_line.find(":name=")
+                    devices = cgroup_line.find(":device:")
+                    name_docker_res = cgroup_line.find("docker")
+                    devices_docker_res = cgroup_line.find("docker")
+                    name_pod_res = cgroup_line.find("pod")
+                    devices_pod_res = cgroup_line.find("pod")
+                    if name != -1 and (name_docker_res != -1 or name_pod_res != -1):
+                        is_in_docker = True
+                        break
+                    if devices != -1 and (devices_docker_res != -1 or devices_pod_res != -1):
+                        is_in_docker = True
+                        break
+        except Exception as e:
+            pass
+
+        if os.path.exists(docker_env_file):
+            is_in_docker = True
+
+        if not is_in_docker:
+            return None
+
         try:
             with open(product_uuid_file, 'r') as f:
                 sys_device_id = f.readline().rstrip("\n").strip(" ")
