@@ -293,12 +293,14 @@ class MLOpsMetrics(object):
             from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
-    def report_server_id_status(self, run_id, status):
+    def report_server_id_status(self, run_id, status, server_id=None):
         # if not self.comm_sanity_check():
         #     return
         server_agent_id = self.server_agent_id
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
+        if server_id is not None:
+            msg["server_id"] = server_id
         message_json = json.dumps(msg)
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
         logging.info("report_server_id_status. message_json = %s" % message_json)
