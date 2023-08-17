@@ -973,7 +973,8 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                 click.echo("")
 
             click.echo(f"For querying the status of the job, please run the following command.")
-            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}")
+            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}" +
+                       "{}".format(f" -v {version}" if version == "dev" else ""))
     else:
         click.echo(f"Failed to launch the job.")
 
@@ -1061,7 +1062,7 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     "--platform",
     "-pf",
     type=str,
-    default="octopus",
+    default="falcon",
     help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
          "default is falcon).",
 )
