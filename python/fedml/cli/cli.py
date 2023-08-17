@@ -134,16 +134,6 @@ def display_server_logs():
     "--server", "-s", default=None, is_flag=True, help="login as the FedML server.",
 )
 @click.option(
-    "--gpu_supplier", "-g", default=None, is_flag=True, help="login as the FedML Cheetah GPU supplier.",
-)
-@click.option(
-    "--gpu_master_server", "-gms", default=None, is_flag=True, help="login as the FedML Cheetah GPU master server.",
-)
-@click.option(
-    "--no_gpu_check", "-ngc", default=None, is_flag=True,
-    help="Not need to check if the GPU is available when logining as the GPU supplier.",
-)
-@click.option(
     "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
@@ -180,7 +170,7 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-        userid, version, client, server, gpu_supplier, gpu_master_server, no_gpu_check,
+        userid, version, client, server,
         api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
@@ -205,23 +195,8 @@ def mlops_login(
     # Set client as default entity.
     is_client = client
     is_server = server
-    if client is None and server is None and gpu_supplier is None and gpu_master_server is None:
+    if client is None and server is None:
         is_client = True
-
-    # Check gpu supplier
-    is_gpu_supplier = gpu_supplier
-    if gpu_supplier is None:
-        is_gpu_supplier = False
-
-    # Check gpu master server
-    is_gpu_master_server = gpu_master_server
-    if gpu_master_server is None:
-        is_gpu_master_server = False
-
-    # Ignore to check gpu
-    is_no_gpu_check = no_gpu_check
-    if no_gpu_check is None:
-        is_no_gpu_check = False
 
     # Check api key
     user_api_key = api_key
@@ -233,7 +208,7 @@ def mlops_login(
     if docker is None:
         is_docker = False
 
-    if is_client is True or is_gpu_supplier is True:
+    if is_client is True:
         if is_docker:
             login_with_docker_mode(account_id, version, docker_rank)
             return
@@ -250,9 +225,6 @@ def mlops_login(
             ClientConstants.login_role_list.index(role)
         except ValueError as e:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
-
-        if is_gpu_supplier is True:
-            role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]
 
         login_pid = sys_utils.run_subprocess_open(
             [
@@ -277,25 +249,22 @@ def mlops_login(
                 "-k",
                 user_api_key,
                 "-ngc",
-                "1" if is_no_gpu_check else "0"
+                "0"
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
-    if is_server is True or is_gpu_master_server is True:
+    if is_server is True:
         # Check login mode.
-        if is_gpu_master_server is True:
-            role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_GPU_MASTER_SERVER_INDEX]
-        else:
-            try:
-                ServerConstants.login_role_list.index(role)
-            except ValueError as e:
-                click.echo(
-                    "Please specify login mode as follows ({}).".format(
-                        str(ServerConstants.login_role_list)
-                    )
+        try:
+            ServerConstants.login_role_list.index(role)
+        except ValueError as e:
+            click.echo(
+                "Please specify login mode as follows ({}).".format(
+                    str(ServerConstants.login_role_list)
                 )
-                return
+            )
+            return
 
         if is_docker:
             login_with_server_docker_mode(account_id, version, docker_rank)
@@ -456,38 +425,22 @@ def falcon_logout():
     "--server", "-s", default=None, is_flag=True, help="logout from the FedML server.",
 )
 @click.option(
-    "--gpu_supplier", "-g", default=None, is_flag=True, help="logout from the FedML Cheetah GPU supplier.",
-)
-@click.option(
-    "--gpu_master_server", "-gms", default=None, is_flag=True, help="logout from the FedML Cheetah GPU master server.",
-)
-@click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the client agent.",
 )
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def mlops_logout(client, server, gpu_supplier, gpu_master_server, docker, docker_rank):
+def mlops_logout(client, server, docker, docker_rank):
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
-    # Check gpu supplier
-    is_gpu_supplier = gpu_supplier
-    if gpu_supplier is None:
-        is_gpu_supplier = False
-
-    # Check gpu master server
-    is_gpu_master_server = gpu_master_server
-    if gpu_master_server is None:
-        is_gpu_master_server = False
-
     is_docker = docker
     if docker is None:
         is_docker = False
 
-    if is_client is True or is_gpu_supplier is True:
+    if is_client is True:
         if is_docker:
             logout_with_docker_mode(docker_rank)
             return
@@ -500,7 +453,7 @@ def mlops_logout(client, server, gpu_supplier, gpu_master_server, docker, docker
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
-    if is_server is True or is_gpu_master_server is True:
+    if is_server is True:
         if is_docker:
             logout_with_server_docker_mode(docker_rank)
             return
