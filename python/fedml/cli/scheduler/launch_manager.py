@@ -147,6 +147,25 @@ class FedMLLaunchManager(Singleton):
             launch_result.project_name = self.job_config.project_name
             launch_result.user_id = user_id
             launch_result.user_name = user_name
+            launch_result.application_name = self.job_config.application_name
+            launch_result.job_name = real_job_name
+        return launch_result
+
+    def start_job(self, platform_type, project_name, application_name,
+                  device_server, device_edges,
+                  user_name, user_id, user_api_key,
+                  job_name=None,
+                  no_confirmation=True):
+        launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
+                                                                 application_name,
+                                                                 device_server, device_edges, user_id, user_api_key,
+                                                                 job_name=job_name,
+                                                                 no_confirmation=no_confirmation)
+        if launch_result is not None:
+            launch_result.project_name = self.job_config.project_name
+            launch_result.user_id = user_id
+            launch_result.user_name = user_name
+            launch_result.application_name = self.job_config.application_name
         return launch_result
 
     def parse_job_yaml(self, yaml_file):

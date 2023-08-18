@@ -909,25 +909,72 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                     click.echo(f"Please go to this web page with your account id {result.user_id} "
                                f"to review your job details.")
                     click.echo(f"{result.job_url}")
-            else:
-                click.echo("Job{}pre-launch process has started. The job launch is not started yet.".format(
-                    f" {result.job_name} " if result.job_name is not None else " "))
-                if result.job_url is not None:
-                    click.echo(f"Please go to this web page with your account {result.user_id} to review your job "
-                               f"and confirm the launch start.")
-                    click.echo(f"{result.job_url}")
 
-            click.echo("")
-            if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                click.echo(f"Found matched GPU devices for you, which are as follows.")
-                for gpu_device in result.gpu_matched:
-                    click.echo(f"Vendor: {gpu_device.gpu_vendor}, num: {gpu_device.gpu_num}, "
-                               f"type: {gpu_device.gpu_type}, cost {gpu_device.cost}")
                 click.echo("")
+                if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
+                    click.echo(f"Found matched GPU devices for you, which are as follows.")
+                    for gpu_device in result.gpu_matched:
+                        click.echo(f"Vendor: {gpu_device.gpu_vendor}, got gpu count: {gpu_device.gpu_num}, "
+                                   f"type: {gpu_device.gpu_type}, cost {gpu_device.cost}")
+                    click.echo("")
+            else:
+                click.echo("")
+                if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
+                    click.echo(f"Found matched GPU devices for you, which are as follows.")
+                    for gpu_device in result.gpu_matched:
+                        click.echo(f"Vendor: {gpu_device.gpu_vendor}, got gpu count: {gpu_device.gpu_num}, "
+                                   f"type: {gpu_device.gpu_type}, cost {gpu_device.cost}")
+                    click.echo("")
 
-            click.echo(f"For querying the status of the job, please run the following command.")
-            click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}" +
-                       "{}".format(f" -v {version}" if version == "dev" else ""))
+                    click.echo("Job{}pre-launch process has started. But the job launch is not started yet.".format(
+                        f" {result.job_name} " if result.job_name is not None else " "))
+                    if result.job_url is not None:
+                        click.echo(f"You may go to this web page with your account {result.user_id} to review your "
+                                   f"job and confirm the launch start.")
+                        click.echo(f"{result.job_url}")
+
+                    click.echo("")
+                    if click.confirm(f"Or here you can directly confirm to launch your job on the above GPUs.\n"
+                                     f"Are you sure to launch it?", abort=False):
+                        click.echo("")
+                        result = FedMLLaunchManager.get_instance().start_job(
+                            platform, result.project_name, result.application_name,
+                            devices_server, devices_edges,
+                            result.user_name, result.user_id, api_key,
+                            job_name=result.job_name,
+                            no_confirmation=True)
+                        if result is not None:
+                            if result.job_url == "":
+                                if result.message is not None:
+                                    click.echo(f"Failed to launch the job with response messages: {result.message}")
+                            else:
+                                FedMLJobManager.get_instance().set_config_version(version)
+                                job_list_obj = FedMLJobManager.get_instance().list_job(platform, result.project_name, None,
+                                                                                       user_id, api_key,
+                                                                                       job_id=result.job_id)
+                                if job_list_obj is not None:
+                                    if len(job_list_obj.job_list) > 0:
+                                        if len(job_list_obj.job_list) > 0:
+                                            click.echo("Currently, your launch result is as follows.")
+                                        jobs_count = 0
+                                        for job in job_list_obj.job_list:
+                                            jobs_count += 1
+                                            click.echo(
+                                                f"job name {job.job_name}, job id {job.job_id}, status {job.status}, "
+                                                f"started time {job.started_time}, ended time {job.ended_time}, "
+                                                f"duration {job.compute_duration}, cost {job.cost}.")
+                        else:
+                            click.echo(f"Failed to launch the job.")
+                else:
+                    click.echo("Could not find any gpu devices for you.")
+                    click.echo(
+                        "please adjust config items: maximum_cost_per_hour and minimum_num_gpus in your job yaml file.")
+
+            if result is not None:
+                click.echo("")
+                click.echo(f"For querying the realtime status of your job, please run the following command.")
+                click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}" +
+                           "{}".format(f" -v {version}" if version == "dev" else ""))
     else:
         click.echo(f"Failed to launch the job.")
 
