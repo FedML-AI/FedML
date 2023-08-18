@@ -161,7 +161,7 @@ fedml_arguments:
   fedml_account_id: "214"
   fedml_account_name: "fedml-alex"
   project_name: Cheetah_HelloWorld
-  job_name: Cheetah_HelloWorld080504
+  job_name: Cheetah_HelloWorld
 
 # Local directory where your source code resides.
 # If your job doesn't contain any source code, it can be empty.
