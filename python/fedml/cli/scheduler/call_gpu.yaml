@@ -14,6 +14,7 @@ job: |
     echo "Hello, Here is the Falcon platform."
     echo "Current directory is as follows."
     pwd
+    # sleep 15
     echo "Current GPU information is as follows."
     nvidia-smi # Print GPU information
     echo "Download the file from http://212.183.159.230/200MB.zip ..."

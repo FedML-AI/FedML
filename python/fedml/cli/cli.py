@@ -963,6 +963,8 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
                                                 f"job name {job.job_name}, job id {job.job_id}, status {job.status}, "
                                                 f"started time {job.started_time}, ended time {job.ended_time}, "
                                                 f"duration {job.compute_duration}, cost {job.cost}.")
+                                click.echo("\nYou can track your job running details at this URL.")
+                                click.echo(f"{result.job_url}")
                         else:
                             click.echo(f"Failed to launch the job.")
                 else:
