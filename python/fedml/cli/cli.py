@@ -983,7 +983,7 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
             if result is not None:
                 click.echo("")
                 click.echo(f"For querying the realtime status of your job, please run the following command.")
-                click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id} -k {api_key}" +
+                click.echo(f"fedml jobs list -id {result.job_id} -u {result.user_id}" +
                            "{}".format(f" -v {version}" if version == "dev" else ""))
     else:
         click.echo(f"Failed to launch the job.")
@@ -1051,6 +1051,14 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     if not platform_is_valid(platform):
         return
 
+    if api_key is None or api_key == "":
+        saved_api_key = FedMLLaunchManager.get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            FedMLLaunchManager.save_api_key(api_key)
+        else:
+            api_key = saved_api_key
+
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
                                                       devices_server, devices_edges,
@@ -1061,7 +1069,7 @@ def start_job(platform, project_name, application_name, job_name, devices_server
         click.echo(f"Please go to this web page with your account id {result.user_id} to review your job details.")
         click.echo(f"{result.job_url}")
         click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -id {result.job_id} -u {user} -k {api_key}.")
+                   f"fedml jobs list -id {result.job_id} -u {user}")
     else:
         click.echo("Failed to start job, please check your network connection "
                    "and make sure be able to access the MLOps platform.")
@@ -1111,6 +1119,14 @@ def start_job(platform, project_name, application_name, job_name, devices_server
 def list_jobs(platform, project_name, job_name, job_id, user, api_key, version):
     if not platform_is_valid(platform):
         return
+
+    if api_key is None or api_key == "":
+        saved_api_key = FedMLLaunchManager.get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            FedMLLaunchManager.save_api_key(api_key)
+        else:
+            api_key = saved_api_key
 
     FedMLJobManager.get_instance().set_config_version(version)
     job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name,
