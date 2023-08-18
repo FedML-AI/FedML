@@ -12,7 +12,7 @@ class FedMLPredictor(ABC):
         build_dynamic_args()
 
     @abstractmethod
-    def predict(self, data):
+    def predict(self, *args, **kwargs):
         pass
 
 def build_dynamic_args():

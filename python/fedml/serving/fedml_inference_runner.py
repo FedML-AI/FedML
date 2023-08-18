@@ -10,7 +10,7 @@ class FedMLInferenceRunner(ABC):
         @api.post("/predict")
         async def predict(request: Request):
             input_json = await request.json()
-            response_text = self.client_predictor.predict(request = input_json)
+            response_text = self.client_predictor.predict(input_json)
 
             return {"generated_text": str(response_text)}
         
