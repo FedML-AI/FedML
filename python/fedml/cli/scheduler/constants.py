@@ -53,6 +53,11 @@ class Constants(Singleton):
                          GPU_BRAND_MAPPING_INDEX_INTEL: "Intel",
                          GPU_BRAND_MAPPING_INDEX_OTHER: "Other"}
 
+    FEDML_DIR = "fedml"
+    DATA_DIR = "data"
+    SEC_KEY_DIR = "secret"
+    SEC_KEY_FILE = "launch_secret"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")
@@ -62,6 +67,25 @@ class Constants(Singleton):
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
+
+    @staticmethod
+    def get_data_dir():
+        data_dir = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_DIR, Constants.DATA_DIR)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
+        return data_dir
+
+    @staticmethod
+    def get_secret_dir():
+        secret_dir = os.path.join(Constants.get_data_dir(), Constants.SEC_KEY_DIR)
+        if not os.path.exists(secret_dir):
+            os.makedirs(secret_dir, exist_ok=True)
+        return secret_dir
+
+    @staticmethod
+    def get_launch_secret_file():
+        secret_file = os.path.join(Constants.get_secret_dir(), Constants.SEC_KEY_FILE)
+        return secret_file
 
     @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):

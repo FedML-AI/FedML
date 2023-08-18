@@ -393,6 +393,27 @@ class FedMLLaunchManager(Singleton):
 
         return 0
 
+    @staticmethod
+    def save_api_key(api_key):
+        try:
+            os.makedirs(Constants.get_secret_dir(), exist_ok=True)
+
+            with open(Constants.get_launch_secret_file(), 'w') as secret_file_handle:
+                secret_file_handle.writelines([api_key])
+                secret_file_handle.close()
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def get_api_key():
+        try:
+            with open(Constants.get_launch_secret_file(), 'r') as secret_file_handle:
+                api_key = secret_file_handle.readline()
+                secret_file_handle.close()
+                return api_key
+        except Exception as e:
+            return ""
+
 
 '''
 For the Job yaml file, please review the call_gpu.yaml :

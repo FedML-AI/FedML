@@ -889,6 +889,14 @@ def launch_job(yaml_file, user_name, user_id, api_key, platform, job_name,
     if no_confirmation is None:
         is_no_confirmation = False
 
+    if api_key is None or api_key == "":
+        saved_api_key = FedMLLaunchManager.get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            FedMLLaunchManager.save_api_key(api_key)
+        else:
+            api_key = saved_api_key
+
     FedMLLaunchManager.get_instance().set_config_version(version)
     result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], user_name, user_id, api_key,
                                                           platform,
