@@ -23,7 +23,7 @@ workspace: hello_world
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
 job: | 
-    echo "Hello, Here is the Falcon platform."
+    echo "Hello, Here is the launch platform."
     echo "Current directory is as follows."
     pwd
     python hello_world.py
@@ -57,7 +57,7 @@ fedml launch call_gpu.yaml
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Submit your job to the Falcon platform: 100%|███████████████████████████████████████████████████████████████████████████████████████████████| 6.20k/6.20k [00:01<00:00, 3.45kB/s]
+Submit your job to the launch platform: 100%|███████████████████████████████████████████████████████████████████████████████████████████████| 6.20k/6.20k [00:01<00:00, 3.45kB/s]
 
 Found matched GPU devices for you, which are as follows.
 +----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
@@ -89,12 +89,12 @@ fedml jobs list -id 1692924497948184576
 ```
 
 ## Login as the GPU supplier
-If you want to login as the role of GPU supplier and join into the FedML Falcon payment system. You just need to run the following command.
+If you want to login as the role of GPU supplier and join into the FedML launch payment system. You just need to run the following command.
 ```
-fedml falcon login $YourUserId -k $YourApiKey
+fedml launch login $YourUserId -k $YourApiKey
 ```
 
-Then you may find your GPU device in the FedML Falcon platform https://open.fedml.ai/gpu-supplier/gpus/index
+Then you may find your GPU device in the FedML launch platform https://open.fedml.ai/gpu-supplier/gpus/index
 
 And then you may bind your FedML account to your payment account. Once your GPU device is scheduled to run any computing work load, 
 

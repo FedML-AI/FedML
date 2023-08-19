@@ -310,22 +310,22 @@ def mlops_login(
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-@cli.group("falcon")
-def falcon():
+@cli.group("launch")
+def launch():
     """
-    Manage devices on the Falcon platform.
+    Manage devices on the launch platform.
     """
     pass
 
 
-@falcon.command("login", help="Login to the Falcon platform (open.fedml.ai)")
+@launch.command("login", help="Login to the FedML® Launch platform (open.fedml.ai)")
 @click.argument("userid", nargs=-1)
 @click.option(
     "--version",
     "-v",
     type=str,
     default="release",
-    help="login to which version of Falcon platform. It should be dev, test or release",
+    help="login to which version of FedML® Launch platform. It should be dev, test or release",
 )
 @click.option(
     "--no_gpu_check", "-ngc", default=None, is_flag=True,
@@ -334,7 +334,7 @@ def falcon():
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
-def falcon_login(userid, version, no_gpu_check, api_key):
+def launch_login(userid, version, no_gpu_check, api_key):
     # Check api key
     user_api_key = api_key
     if api_key is None or api_key == "":
@@ -343,7 +343,7 @@ def falcon_login(userid, version, no_gpu_check, api_key):
 
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
-        click.echo("Please specify your account id, usage: fedml falcon login $your_account_id -k $your_api_key")
+        click.echo("Please specify your account id, usage: fedml launch login $your_account_id -k $your_api_key")
         return
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -405,8 +405,8 @@ def falcon_login(userid, version, no_gpu_check, api_key):
                                  ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-@falcon.command("logout", help="Logout from the Falcon platform (open.fedml.ai)")
-def falcon_logout():
+@launch.command("logout", help="Logout from the FedML® Launch platform (open.fedml.ai)")
+def launch_logout():
     sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
     client_logout()
     sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -840,22 +840,22 @@ def env():
     "--platform",
     "-pf",
     type=str,
-    default="falcon",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
-         "default is falcon).",
+    default="launch",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
+         "default is launch).",
 )
 @click.option(
     "--devices_server", "-ds", type=str, default="",
-    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
+    help="The server to run the launching job, for the launch platform, we do not need to set this option."
 )
 @click.option(
     "--devices_edges", "-de", type=str, default="",
     help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
-         "for the Falcon platform, we do not need to set this option."
+         "for the launch platform, we do not need to set this option."
 )
 @click.option(
     "--no_confirmation", "-nc", default=None, is_flag=True,
-    help="no confirmation after initiating launching request.",
+    help="allow the Launch platform to select compute resource without confirmation after initiating launching request.",
 )
 @click.option(
     "--version",
@@ -905,7 +905,7 @@ def launch_job(yaml_file, api_key, platform,
 
                 click.echo("")
                 if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    click.echo(f"Found matched GPU devices for you, which are as follows.")
+                    click.echo(f"Searched and matched the following GPU resource for your job:")
                     gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
                                              'Region', 'Cost', 'Selected'])
                     for gpu_device in result.gpu_matched:
@@ -918,7 +918,7 @@ def launch_job(yaml_file, api_key, platform,
             else:
                 click.echo("")
                 if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    click.echo(f"Found matched GPU devices for you, which are as follows.")
+                    click.echo(f"Searched and matched the following GPU resource for your job:")
                     gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
                                              'Region', 'Cost', 'Selected'])
                     for gpu_device in result.gpu_matched:
@@ -929,16 +929,12 @@ def launch_job(yaml_file, api_key, platform,
                     print(gpu_table)
                     click.echo("")
 
-                    click.echo("Job{}pre-launch process has started. But the job launch is not started yet.".format(
-                        f" {result.job_name} " if result.job_name is not None else " "))
                     if result.job_url is not None:
-                        click.echo(f"You may go to this web page with your account to review your "
-                                   f"job and confirm the launch start.")
+                        click.echo(f"You can also view the matched GPU resource with Web UI at: ")
                         click.echo(f"{result.job_url}")
 
                     click.echo("")
-                    if click.confirm(f"Or here you can directly confirm to launch your job on the above GPUs.\n"
-                                     f"Are you sure to launch it?", abort=False):
+                    if click.confirm(f"Are you sure to launch it?", abort=False):
                         click.echo("")
                         result = FedMLLaunchManager.get_instance().start_job(
                             platform, result.project_name, result.application_name,
@@ -956,7 +952,7 @@ def launch_job(yaml_file, api_key, platform,
                                 if job_list_obj is not None:
                                     if len(job_list_obj.job_list) > 0:
                                         if len(job_list_obj.job_list) > 0:
-                                            click.echo("Currently, your launch result is as follows.")
+                                            click.echo("Your launch result is as follows:")
                                         jobs_count = 0
                                         job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Started Time',
                                                                       'Ended Time', 'Duration', 'Cost'])
@@ -965,7 +961,7 @@ def launch_job(yaml_file, api_key, platform,
                                             job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
                                                                    job.ended_time, job.compute_duration, job.cost])
                                         print(job_list_table)
-                                click.echo("\nYou can track your job running details at this URL.")
+                                click.echo("\nYou can track your job running details at this URL:")
                                 click.echo(f"{result.job_url}")
                         else:
                             click.echo(f"Failed to launch the job.")
@@ -997,7 +993,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon."
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch."
 )
 @click.option(
     "--project_name",
@@ -1020,12 +1016,12 @@ def jobs():
 )
 @click.option(
     "--devices_server", "-ds", type=str, default="",
-    help="The server to run the launching job, for the Falcon platform, we do not need to set this option."
+    help="The server to run the launching job, for the launch platform, we do not need to set this option."
 )
 @click.option(
     "--devices_edges", "-de", type=str, default="",
     help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
-         "for the Falcon platform, we do not need to set this option."
+         "for the launch platform, we do not need to set this option."
 )
 @click.option(
     "--user", "-u", type=str, help="user id.",
@@ -1076,9 +1072,9 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     "--platform",
     "-pf",
     type=str,
-    default="falcon",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
-         "default is falcon).",
+    default="launch",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
+         "default is launch).",
 )
 @click.option(
     "--project_name",
@@ -1158,8 +1154,8 @@ def list_jobs(platform, project_name, job_name, job_id, api_key, version):
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, "
-         "default is falcon).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
+         "default is launch).",
 )
 @click.option(
     "--job_id",
