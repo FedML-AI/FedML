@@ -58,6 +58,7 @@ requirements = [
     "graphviz<0.9.0,>=0.8.1",
     "sqlalchemy",
     "onnx",
+    "prettytable",
 ]
 
 requirements_extra_mpi = [
@@ -91,7 +92,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.8a30",
+    version="0.8.8a31",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
