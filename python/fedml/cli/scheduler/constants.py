@@ -58,6 +58,9 @@ class Constants(Singleton):
     SEC_KEY_DIR = "secret"
     SEC_KEY_FILE = "launch_secret"
 
+    LAUNCH_APP_NAME_PREFIX = "FedMLLaunchApp"
+    LAUNCH_PROJECT_NAME_DEFAULT = "default"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

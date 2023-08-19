@@ -30,14 +30,13 @@ class FedMLAppManager(Singleton):
                                client_package_file, server_package_file)
 
     def update_app(self, platform, application_name, app_config,
-                   user_name, user_id, user_api_key,
-                   client_package_file=None, server_package_file=None):
+                   user_api_key, client_package_file=None, server_package_file=None):
         if client_package_file is None and server_package_file is None:
             return False
 
-        client_package_url = self.push_app_package_to_s3(application_name, client_package_file, user_id) \
+        client_package_url = self.push_app_package_to_s3(application_name, client_package_file) \
             if client_package_file is not None else None
-        server_package_url = self.push_app_package_to_s3(application_name, server_package_file, user_id) \
+        server_package_url = self.push_app_package_to_s3(application_name, server_package_file) \
             if server_package_file is not None else None
 
         result = self.update_app_api(platform, application_name, app_config,
@@ -45,7 +44,7 @@ class FedMLAppManager(Singleton):
                                      os.path.basename(client_package_file) if client_package_file is not None else None,
                                      server_package_url,
                                      os.path.basename(server_package_file) if server_package_file is not None else None,
-                                     user_name, user_id, user_api_key)
+                                     user_api_key)
         if result is None:
             return False
 
@@ -53,12 +52,11 @@ class FedMLAppManager(Singleton):
 
     def update_app_api(self, platform, application_name, app_config,
                        client_package_url, client_package_file, server_package_url, server_package_file,
-                       user_name, user_id, user_api_key):
+                       user_api_key):
         app_update_result = None
         app_update_url = ServerConstants.get_app_update_url(self.config_version)
         app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         app_update_json = {
-            "owner": user_name,
             "avatar": "https://fedml.s3.us-west-1.amazonaws.com/profile_picture2.png",
             "githubLink": "",
             "accessPermission": 1,
@@ -95,7 +93,6 @@ class FedMLAppManager(Singleton):
             ],
             "fileList": [],
             "applicationConfigList": [],
-            "userId": user_id,
             "apiKey": user_api_key
         }
 
@@ -159,12 +156,13 @@ class FedMLAppManager(Singleton):
 
         return app_update_result
 
-    def push_app_package_to_s3(self, app_name, app_package_path, user_id):
+    def push_app_package_to_s3(self, app_name, app_package_path):
         args = {"config_version": self.config_version}
         _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         s3_storage = S3Storage(s3_config)
-        app_dst_key = "{}@{}@{}".format(user_id, app_name, str(uuid.uuid4()))
-        app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key)
+        app_dst_key = "{}@{}".format(app_name, str(uuid.uuid4()))
+        app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
+                                                               "Submit your job to the Falcon platform")
         return app_storage_url
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):

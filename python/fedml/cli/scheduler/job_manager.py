@@ -24,37 +24,40 @@ class FedMLJobManager(Singleton):
             self.config_version = config_version
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_id, user_api_key, job_name=None, no_confirmation=False):
+                  user_api_key, no_confirmation=False, job_id=None):
         return self.start_job_api(platform, project_name, application_name, device_server, device_edges,
-                                  user_id, user_api_key, job_name=job_name, no_confirmation=no_confirmation)
+                                  user_api_key, no_confirmation=no_confirmation, job_id=job_id)
 
     def start_job_api(self, platform, project_name, application_name, device_server, device_edges,
-                      user_id, user_api_key, job_name=None, no_confirmation=False):
+                      user_api_key, no_confirmation=False, job_id=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-        real_job_name = job_name if job_name is not None and job_name != "" else f"FedML-CLI-Job-{str(uuid.uuid4())}"
         if device_server == "" or device_edges == "":
             device_lists = [{"account": "", "edgeIds": [], "serverId": 0}]
         else:
             device_lists = list()
             device_item = dict()
-            device_item["account"] = user_id
+            device_item["account"] = 0
             device_item["serverId"] = device_server
             device_item["edgeIds"] = str(device_edges).split(',')
             device_lists.append(device_item)
         job_start_json = {
             "platformType": platform,
+            "name": "",
             "applicationName": application_name,
             "applicationConfigId": 0,
             "devices": device_lists,
-            "name": real_job_name,
-            "projectName": project_name,
             "urls": [],
-            "userId": user_id,
             "apiKey": user_api_key,
             "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
         }
+        if project_name is not None and len(str(project_name).strip(' ')) > 0:
+            job_start_json["projectName"] = project_name
+        else:
+            job_start_json["projectName"] = ""
+        if job_id is not None:
+            job_start_json["jobId"] = job_id
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
@@ -75,21 +78,21 @@ class FedMLJobManager(Singleton):
         else:
             resp_data = response.json()
             if resp_data["code"] != "SUCCESS":
-                job_start_result = FedMLJobStartedModel({"job_name": real_job_name, "status": "FAILED",
+                job_start_result = FedMLJobStartedModel({"job_name": "", "status": "FAILED",
                                                          "job_url": "",
                                                          "started_time": time.time(),
                                                          "message": resp_data["message"]})
                 return job_start_result
-            job_start_result = FedMLJobStartedModel(resp_data["data"], job_name=job_name)
-            # job_start_result = FedMLJobStartedModel({"job_name": job_name, "status": "STARTING",
+            job_start_result = FedMLJobStartedModel(resp_data["data"])
+            # job_start_result = FedMLJobStartedModel({"status": "STARTING",
             #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})
 
         return job_start_result
 
-    def list_job(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
-        return self.list_job_api(platform, project_name, job_name, user_id, user_api_key, job_id=job_id)
+    def list_job(self, platform, project_name, job_name, user_api_key, job_id=None):
+        return self.list_job_api(platform, project_name, job_name, user_api_key, job_id=job_id)
 
-    def list_job_api(self, platform, project_name, job_name, user_id, user_api_key, job_id=None):
+    def list_job_api(self, platform, project_name, job_name, user_api_key, job_id=None):
         job_list_result = None
         jot_list_url = ServerConstants.get_job_list_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -97,7 +100,6 @@ class FedMLJobManager(Singleton):
             "platformType": platform,
             "jobName": job_name if job_name is not None else "",
             "projectName": project_name if project_name is not None else "",
-            "userId": user_id,
             "userApiKey": user_api_key
         }
         if job_id is not None and job_id != "":
@@ -130,13 +132,12 @@ class FedMLJobManager(Singleton):
     def stop_job(self, platform, job_id, user_id, user_api_key):
         return self.stop_job_api(platform, job_id, user_id, user_api_key)
 
-    def stop_job_api(self, platform, job_id, user_id, user_api_key):
+    def stop_job_api(self, platform, job_id, user_api_key):
         jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         job_stop_json = {
             "platformType": platform,
             "jobId": job_id,
-            "userId": user_id,
             "apiKey": user_api_key
         }
         args = {"config_version": self.config_version}
@@ -193,6 +194,13 @@ class FedMLGpuDevices(object):
         self.gpu_num = gpu_device_json["gpu_num"]
         self.gpu_type = gpu_device_json["gpu_type"]
         self.cost = gpu_device_json["cost"]
+        self.mem_size = 0
+        self.gpu_region = "USA-CA"
+        self.cpu_count = 4
+        self.gpu_count = 8
+        self.gpu_name = self.gpu_type
+        self.gpu_instance = self.gpu_type
+        self.gpu_provider = "FedML"
 
 
 class FedMLJobModelList(object):
@@ -216,6 +224,7 @@ class FedMLJobModel(object):
         self.compute_end_time = job_json.get("endTime", "0")
         self.compute_duration = job_json.get("spendTime", 0)
         self.cost = job_json.get("cost", 0.0)
+        self.job_url = job_json.get("jobUrl", "")
         gpu_machines = job_json.get("gpuMachines", None)
         self.device_infos = list()
         if gpu_machines is not None:
