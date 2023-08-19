@@ -157,11 +157,8 @@ At first, you need to define your job properties in the job yaml file, e.g. entr
 
 The job yaml file is as follows:
 ```
-fedml_arguments:
-  fedml_account_id: "214"
-  fedml_account_name: "fedml-alex"
-  project_name: Cheetah_HelloWorld
-  job_name: Cheetah_HelloWorld
+fedml_env:
+  project_name: 
 
 # Local directory where your source code resides.
 # If your job doesn't contain any source code, it can be empty.
@@ -199,5 +196,5 @@ Then you can use the following example CLI to launch the job at the MLOps platfo
 
 Example:
 ```
-fedml launch call_gpu.yaml -k $YourApiKey
+fedml launch call_gpu.yaml
 ```

@@ -421,14 +421,18 @@ class S3Storage:
         if retry >= 3:
             logging.error(f"Download zip failed after max retry.")
 
-    def upload_file_with_progress(self, src_local_path, dest_s3_path):
+    def upload_file_with_progress(self, src_local_path, dest_s3_path, progress_desc=None):
         """
         upload file
+        :param progress_desc:
         :param src_local_path:
         :param dest_s3_path:
         :return:
         """
         file_uploaded_url = ""
+        progress_desc_text = "Uploading Package to AWS S3"
+        if progress_desc is not None:
+            progress_desc_text = progress_desc
         try:
             with open(src_local_path, "rb") as f:
                 global aws_s3_client
@@ -436,7 +440,7 @@ class S3Storage:
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
                 f.seek(old_file_position, os.SEEK_SET)
-                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc="Uploading Package to AWS S3") as pbar:
+                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc=progress_desc_text) as pbar:
                     aws_s3_client.upload_fileobj(
                         f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
                         Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
@@ -457,14 +461,18 @@ class S3Storage:
         )
         return file_uploaded_url
 
-    def download_file_with_progress(self, path_s3, path_local):
+    def download_file_with_progress(self, path_s3, path_local, progress_desc=None):
         """
         download file
+        :param progress_desc:
         :param path_s3: s3 key
         :param path_local: local path
         :return:
         """
         retry = 0
+        progress_desc_text = "Downloading Package from AWS S3"
+        if progress_desc is not None:
+            progress_desc_text = progress_desc
         while retry < 3:
             logging.info(
                 f"Start downloading files. | path_s3: {path_s3} | path_local: {path_local}"
@@ -474,7 +482,7 @@ class S3Storage:
                 kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
                 object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
                 with tqdm.tqdm(total=object_size, unit="B", unit_scale=True,
-                               desc="Downloading Package from AWS S3") as pbar:
+                               desc=progress_desc_text) as pbar:
                     with open(path_local, 'wb') as f:
                         aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
                                                        Callback=lambda bytes_transferred: pbar.update(

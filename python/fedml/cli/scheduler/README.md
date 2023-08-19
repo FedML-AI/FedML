@@ -13,11 +13,8 @@ At first, you need to define your job properties in the job yaml file, e.g. entr
 
 The job yaml file is as follows:
 ```
-fedml_arguments:
-  fedml_account_id: "214"
-  fedml_account_name: "fedml-alex"
-  project_name: Cheetah_HelloWorld
-  job_name: Cheetah_HelloWorld
+fedml_env:
+  project_name: 
 
 # Local directory where your source code resides.
 # If your job doesn't contain any source code, it can be empty.
@@ -55,31 +52,40 @@ Then you can use the following example CLI to launch the job at the MLOps platfo
 
 Example:
 ```
-fedml launch call_gpu.yaml -k $YourApiKey
+fedml launch call_gpu.yaml
 ```
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Uploading Package to AWS S3: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1.85k/1.85k [00:00<00:00, 1.90kB/s]
+Submit your job to the Falcon platform: 100%|███████████████████████████████████████████████████████████████████████████████████████████████| 6.20k/6.20k [00:01<00:00, 3.45kB/s]
 
 Found matched GPU devices for you, which are as follows.
-Vendor: nvidia, got gpu count: 1, type: fedml_a100_node_1, cost 60.00
++----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
+| Provider |      Instance     | vCPU(s) | Memory(GB) |           GPU(s)           | Region |  Cost | Selected |
++----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
+|  FedML   | fedml_a100_node_2 |    4    |     0      | nvidia-fedml_a100_node_2:1 | USA-CA | 60.00 |          |
++----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
 
-Job symbol_parts pre-launch process has started. But the job launch is not started yet.
-You may go to this web page with your account 214 to review your job and confirm the launch start.
-https://open.fedml.ai/gpu/projects/job/confirmStartJob?projectId=1684824291914420224&jobId=1692590499845771264
+Job picasso_dog pre-launch process has started. But the job launch is not started yet.
+You may go to this web page with your account to review your job and confirm the launch start.
+https://open.fedml.ai/gpu/projects/job/confirmStartJob?projectId=1692900612607447040&projectName=default-project&jobId=1692924448354734080
 
 Or here you can directly confirm to launch your job on the above GPUs.
 Are you sure to launch it? [y/N]: y
 
 Currently, your launch result is as follows.
-job name symbol_parts, job id 1692590499845771264, status RUNNING, started time 2023-08-19T01:33:16, ended time None, duration None, cost 0.0.
++--------------+---------------------+---------+---------------------+------------+----------+------+
+|   Job Name   |        Job ID       |  Status |     Started Time    | Ended Time | Duration | Cost |
++--------------+---------------------+---------+---------------------+------------+----------+------+
+| escher_eagle | 1692924497948184576 | RUNNING | 2023-08-19T23:40:27 |    None    |   None   | 0.0  |
++--------------+---------------------+---------+---------------------+------------+----------+------+
 
 You can track your job running details at this URL.
-https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1684824291914420224&jobId=1692590499845771264
+https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&jobId=1692924497948184576
 
 For querying the realtime status of your job, please run the following command.
-fedml jobs list -id 1692590499845771264 -u 214
+fedml jobs list -id 1692924497948184576
+
 ```
 
 ## Login as the GPU supplier

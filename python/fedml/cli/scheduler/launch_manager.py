@@ -1,12 +1,16 @@
 import os
 import platform
 import shutil
+import time
+import uuid
 from os.path import expanduser
 
 import click
 from fedml.core.common.singleton import Singleton
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.cli_utils import platform_is_valid
+from fedml.core.mlops import MLOpsUtils
+
 from constants import Constants
 from app_manager import FedMLAppManager
 from job_manager import FedMLJobManager
@@ -24,9 +28,8 @@ class FedMLLaunchManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def launch_job(self, yaml_file, user_name, user_id, user_api_key, mlops_platform_type,
+    def launch_job(self, yaml_file, user_api_key, mlops_platform_type,
                    device_server, device_edges,
-                   job_name=None,
                    no_confirmation=False):
         if not os.path.exists(yaml_file):
             click.echo(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
@@ -37,21 +40,6 @@ class FedMLLaunchManager(Singleton):
 
         # Parse the job yaml file and regenerated application name if the job name is not given.
         self.parse_job_yaml(yaml_file)
-        if job_name is not None and job_name != "":
-            self.job_config.application_name = FedMLJobConfig.generate_application_name(job_name,
-                                                                                        self.job_config.project_name)
-
-        # Check the params for username and user id
-        if user_name is None or user_name == "":
-            user_name = self.job_config.account_name
-        if user_id is None or user_id == "":
-            user_id = self.job_config.account_id
-        if user_name is None or user_name == "":
-            click.echo("Username is empty. Please provide your username from open.fedml.ai")
-            return
-        if user_id is None or user_id == "":
-            click.echo("User id is empty. Please provide your user id from open.fedml.ai")
-            return
 
         # Generate source, config and bootstrap related paths.
         platform_str = mlops_platform_type
@@ -75,7 +63,8 @@ class FedMLLaunchManager(Singleton):
         if config_full_path == source_full_path:
             config_full_path = os.path.join(os.path.dirname(config_full_path), "config",
                                             self.job_config.executable_conf_file)
-            self.job_config.executable_conf_file_folder = os.path.join(self.job_config.executable_conf_file_folder, "config")
+            self.job_config.executable_conf_file_folder = os.path.join(self.job_config.executable_conf_file_folder,
+                                                                       "config")
         config_full_folder = os.path.dirname(config_full_path)
         os.makedirs(source_full_folder, exist_ok=True)
         os.makedirs(config_full_folder, exist_ok=True)
@@ -104,7 +93,8 @@ class FedMLLaunchManager(Singleton):
         if not os.path.exists(config_full_path) or self.job_config.using_easy_mode:
             os.makedirs(config_full_folder, exist_ok=True)
             with open(config_full_path, 'w') as config_file_handle:
-                config_file_handle.writelines(["environment_args:\n", f"  bootstrap: {Constants.BOOTSTRAP_FILE_NAME}\n"])
+                config_file_handle.writelines(
+                    ["environment_args:\n", f"  bootstrap: {Constants.BOOTSTRAP_FILE_NAME}\n"])
                 config_file_handle.close()
 
         # Write boostrap commands into the bootstrap file.
@@ -129,7 +119,7 @@ class FedMLLaunchManager(Singleton):
         FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
                                                                        self.job_config.application_name, configs,
-                                                                       user_name, user_id, user_api_key,
+                                                                       user_api_key,
                                                                        client_package_file=build_result_package)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
@@ -137,34 +127,24 @@ class FedMLLaunchManager(Singleton):
 
         # Start the job with the above application.
         FedMLJobManager.get_instance().set_config_version(self.config_version)
-        real_job_name = self.job_config.job_name if job_name is None or job_name == "" else job_name
         launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
                                                                  self.job_config.application_name,
-                                                                 device_server, device_edges, user_id, user_api_key,
-                                                                 job_name=real_job_name,
+                                                                 device_server, device_edges, user_api_key,
                                                                  no_confirmation=no_confirmation)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
-            launch_result.user_id = user_id
-            launch_result.user_name = user_name
             launch_result.application_name = self.job_config.application_name
-            launch_result.job_name = real_job_name
         return launch_result
 
     def start_job(self, platform_type, project_name, application_name,
                   device_server, device_edges,
-                  user_name, user_id, user_api_key,
-                  job_name=None,
-                  no_confirmation=True):
+                  user_api_key, no_confirmation=True, job_id=None):
         launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
                                                                  application_name,
-                                                                 device_server, device_edges, user_id, user_api_key,
-                                                                 job_name=job_name,
-                                                                 no_confirmation=no_confirmation)
+                                                                 device_server, device_edges, user_api_key,
+                                                                 no_confirmation=no_confirmation, job_id=job_id)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
-            launch_result.user_id = user_id
-            launch_result.user_name = user_name
             launch_result.application_name = self.job_config.application_name
         return launch_result
 
@@ -423,10 +403,8 @@ For the Job yaml file, please review the call_gpu.yaml :
 class FedMLJobConfig(object):
     def __init__(self, job_yaml_file):
         self.job_config_dict = load_yaml_config(job_yaml_file)
-        self.account_id = self.job_config_dict["fedml_arguments"]["fedml_account_id"]
-        self.account_name = self.job_config_dict["fedml_arguments"]["fedml_account_name"]
-        self.project_name = self.job_config_dict["fedml_arguments"]["project_name"]
-        self.job_name = self.job_config_dict["fedml_arguments"]["job_name"]
+        self.fedml_env = self.job_config_dict.get("fedml_env", {})
+        self.project_name = self.fedml_env.get("project_name", None)
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
@@ -477,14 +455,18 @@ class FedMLJobConfig(object):
             os.makedirs(self.executable_conf_file_folder, exist_ok=True)
             self.executable_conf_file = Constants.LAUNCH_JOB_DEFAULT_CONF_NAME
         self.executable_file_folder = str(self.executable_file_folder).replace('\\', os.sep).replace('/', os.sep)
-        self.executable_conf_file_folder = str(self.executable_conf_file_folder).replace('\\', os.sep).replace('/', os.sep)
+        self.executable_conf_file_folder = str(self.executable_conf_file_folder).replace('\\', os.sep).replace('/',
+                                                                                                               os.sep)
         self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
         self.executable_conf_file = str(self.executable_conf_file).replace('\\', os.sep).replace('/', os.sep)
 
         self.minimum_num_gpus = self.job_config_dict["computing"]["minimum_num_gpus"]
         self.maximum_cost_per_hour = self.job_config_dict["computing"]["maximum_cost_per_hour"]
-        self.application_name = FedMLJobConfig.generate_application_name(self.job_name, self.project_name)
+        self.application_name = FedMLJobConfig.generate_application_name(self.project_name)
 
     @staticmethod
-    def generate_application_name(job_name, project_name):
-        return f"{job_name}-{project_name}"
+    def generate_application_name(project_name):
+        return "{}-{}-{}-{}".format(Constants.LAUNCH_APP_NAME_PREFIX,
+                                    project_name if project_name is not None else Constants.LAUNCH_PROJECT_NAME_DEFAULT,
+                                    MLOpsUtils.get_ntp_time(),
+                                    str(uuid.uuid4()))
