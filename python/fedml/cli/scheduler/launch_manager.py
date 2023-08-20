@@ -134,7 +134,7 @@ class FedMLLaunchManager(Singleton):
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
-        print(f"launch_result = {launch_result}")
+        # print(f"launch_result = {launch_result}")
         return launch_result
 
     def start_job(self, platform_type, project_name, application_name,

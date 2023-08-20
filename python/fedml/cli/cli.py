@@ -476,7 +476,7 @@ def mlops_logout(client, server, docker, docker_rank):
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch).",
 )
 @click.option(
     "--type",
@@ -840,9 +840,9 @@ def env():
     "--platform",
     "-pf",
     type=str,
-    default="launch",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
-         "default is launch).",
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
 )
 @click.option(
     "--devices_server", "-ds", type=str, default="",
@@ -993,7 +993,7 @@ def jobs():
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch."
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch."
 )
 @click.option(
     "--project_name",
@@ -1072,9 +1072,9 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     "--platform",
     "-pf",
     type=str,
-    default="launch",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
-         "default is launch).",
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
 )
 @click.option(
     "--project_name",
@@ -1153,9 +1153,9 @@ def list_jobs(platform, project_name, job_name, job_id, api_key, version):
     "--platform",
     "-pf",
     type=str,
-    default="octopus",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, launch, "
-         "default is launch).",
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
 )
 @click.option(
     "--job_id",
