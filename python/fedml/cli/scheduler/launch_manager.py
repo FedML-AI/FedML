@@ -97,7 +97,7 @@ class FedMLLaunchManager(Singleton):
                     ["environment_args:\n", f"  bootstrap: {Constants.BOOTSTRAP_FILE_NAME}\n"])
                 config_file_handle.close()
 
-        # Write boostrap commands into the bootstrap file.
+        # Write bootstrap commands into the bootstrap file.
         configs = load_yaml_config(config_full_path)
         configs[Constants.STD_CONFIG_ENV_SECTION][Constants.STD_CONFIG_ENV_SECTION_BOOTSTRAP_KEY] = \
             Constants.BOOTSTRAP_FILE_NAME
@@ -134,6 +134,7 @@ class FedMLLaunchManager(Singleton):
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
+        print(f"launch_result = {launch_result}")
         return launch_result
 
     def start_job(self, platform_type, project_name, application_name,

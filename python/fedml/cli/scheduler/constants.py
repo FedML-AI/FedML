@@ -11,12 +11,12 @@ class Constants(Singleton):
     FEDML_PLATFORM_PARROT_STR = "parrot"
     FEDML_PLATFORM_CHEETAH_STR = "cheetah"
     FEDML_PLATFORM_BEEHIVE_STR = "beehive"
-    FEDML_PLATFORM_FALCON_STR = "falcon"
+    FEDML_PLATFORM_LAUNCH_STR = "launch"
     FEDML_PLATFORM_OCTOPUS_TYPE = 1
     FEDML_PLATFORM_PARROT_TYPE = 2
     FEDML_PLATFORM_CHEETAH_TYPE = 3
     FEDML_PLATFORM_BEEHIVE_TYPE = 4
-    FEDML_PLATFORM_FALCON_TYPE = 5
+    FEDML_PLATFORM_LAUNCH_TYPE = 5
 
     FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT = "client"
     FEDML_PACKAGE_BUILD_TARGET_TYPE_SERVER = "server"
@@ -109,7 +109,7 @@ class Constants(Singleton):
             return Constants.FEDML_PLATFORM_BEEHIVE_TYPE
         elif platform_str == Constants.FEDML_PLATFORM_CHEETAH_STR:
             return Constants.FEDML_PLATFORM_CHEETAH_TYPE
-        elif platform_str == Constants.FEDML_PLATFORM_FALCON_STR:
-            return Constants.FEDML_PLATFORM_FALCON_TYPE
+        elif platform_str == Constants.FEDML_PLATFORM_LAUNCH_STR:
+            return Constants.FEDML_PLATFORM_LAUNCH_TYPE
 
-        return Constants.FEDML_PLATFORM_FALCON_TYPE
+        return Constants.FEDML_PLATFORM_LAUNCH_TYPE
