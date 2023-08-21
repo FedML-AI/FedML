@@ -318,7 +318,7 @@ def mlops_login(
 @click.help_option("--help", "-h")
 def launch():
     """
-    Manage devices on the launch platform.
+    Manage devices on the FedML® Launch platform (open.fedml.ai).
     """
     pass
 
@@ -840,7 +840,7 @@ def env():
     collect_env()
 
 
-@launch.command("cancel", help="Cancel job at the MLOps platform",)
+@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)",)
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
@@ -865,13 +865,13 @@ def env():
     "-v",
     type=str,
     default="release",
-    help="stop a job at which version of MLOps platform. It should be dev, test or release",
+    help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
 def launch_cancel(platform, job_id, api_key, version):
     stop_jobs_core(platform, job_id, api_key, version)
 
 
-@launch.command("log", help="View the job list at the MLOps platform",)
+@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)",)
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
@@ -896,13 +896,13 @@ def launch_cancel(platform, job_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="list jobs at which version of MLOps platform. It should be dev, test or release",
+    help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
 def launch_log(platform, job_id, api_key, version):
     list_jobs_core(platform, None, None, job_id, api_key, version)
 
 
-@launch.command("queue", help="View the job queue at the MLOps platform",)
+@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)",)
 @click.help_option("--help", "-h")
 @click.argument("group_id", nargs=-1)
 def launch_queue(group_id):
@@ -910,7 +910,7 @@ def launch_queue(group_id):
 
 
 @launch.command(
-    "run", help="Launch job at the MLOps platform", context_settings={"ignore_unknown_options": True}
+    "run", help="Launch job at the FedML® Launch platform (open.fedml.ai)", context_settings={"ignore_unknown_options": True}
 )
 @click.help_option("--help", "-h")
 @click.argument("yaml_file", nargs=-1)
