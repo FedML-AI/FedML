@@ -130,8 +130,8 @@ class FedMLJobManager(Singleton):
 
         return job_list_result
 
-    def stop_job(self, platform, job_id, user_id, user_api_key):
-        return self.stop_job_api(platform, job_id, user_id, user_api_key)
+    def stop_job(self, platform, job_id, user_api_key):
+        return self.stop_job_api(platform, job_id, user_api_key)
 
     def stop_job_api(self, platform, job_id, user_api_key):
         jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
