@@ -130,8 +130,8 @@ class FedMLJobManager(Singleton):
 
         return job_list_result
 
-    def stop_job(self, platform, job_id, user_id, user_api_key):
-        return self.stop_job_api(platform, job_id, user_id, user_api_key)
+    def stop_job(self, platform, job_id, user_api_key):
+        return self.stop_job_api(platform, job_id, user_api_key)
 
     def stop_job_api(self, platform, job_id, user_api_key):
         jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
@@ -195,9 +195,9 @@ class FedMLGpuDevices(object):
         self.gpu_num = gpu_device_json["gpu_num"]
         self.gpu_type = gpu_device_json["gpu_type"]
         self.cost = gpu_device_json["cost"]
-        self.mem_size = 0
+        self.mem_size = 256
         self.gpu_region = "USA-CA"
-        self.cpu_count = 4
+        self.cpu_count = 256
         self.gpu_count = 8
         self.gpu_name = self.gpu_type
         self.gpu_instance = self.gpu_type
