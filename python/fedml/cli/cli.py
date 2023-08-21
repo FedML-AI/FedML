@@ -318,7 +318,7 @@ def mlops_login(
 @click.help_option("--help", "-h")
 def launch():
     """
-    Manage devices on the FedML® Launch platform (open.fedml.ai).
+    Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
     pass
 
