@@ -604,6 +604,22 @@ def daemon_ota_upgrade(in_args):
     do_upgrade(in_args.version, upgrade_version, show_local_console=True)
 
 
+def daemon_ota_upgrade_with_version(in_version="release"):
+    should_upgrade = False
+    fedml_is_latest_version = True
+    try:
+        fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_version)
+        should_upgrade = False if fedml_is_latest_version else True
+    except Exception as e:
+        return
+
+    if not should_upgrade:
+        return
+    upgrade_version = remote_ver
+
+    do_upgrade(in_version, upgrade_version, show_local_console=True)
+
+
 def run_cmd(command, show_local_console=False):
     process = ClientConstants.exec_console_with_script(command, should_capture_stdout=True,
                                                        should_capture_stderr=True)
