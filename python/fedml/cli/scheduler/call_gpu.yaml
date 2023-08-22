@@ -26,4 +26,7 @@ bootstrap: |
 
 computing:
   minimum_num_gpus: 1            # minimum # of GPUs to provision
-  maximum_cost_per_hour: $70   # max cost per hour for your job per machine
+  maximum_cost_per_hour: $700   # max cost per hour for your job per machine
+  framework_type: fedml         # options: fedml, deepspeed, pytorch, general
+  task_type: train              # options: serve, train, dev-environment
+  device_type: GPU              # options: GPU, CPU, hybrid
