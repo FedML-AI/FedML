@@ -6,6 +6,7 @@ import uuid
 from os.path import expanduser
 
 import click
+from fedml.cli.comm_utils.sys_utils import daemon_ota_upgrade_with_version, check_fedml_is_latest_version
 from fedml.core.common.singleton import Singleton
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.cli_utils import platform_is_valid
@@ -31,9 +32,16 @@ class FedMLLaunchManager(Singleton):
     def launch_job(self, yaml_file, user_api_key, mlops_platform_type,
                    device_server, device_edges,
                    no_confirmation=False):
+
+        is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=self.config_version)
+        if not is_latest_version:
+            daemon_ota_upgrade_with_version(in_version=self.config_version)
+            click.echo("Completed upgrading, please launch your job again.")
+            exit(-1)
+
         if not os.path.exists(yaml_file):
             click.echo(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
-            return
+            exit(-1)
 
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
@@ -113,7 +121,7 @@ class FedMLLaunchManager(Singleton):
                                                                     entry_point, config_full_folder, dest_folder, "")
         if build_result_package is None:
             click.echo("Failed to build the application package for the executable file.")
-            return None
+            exit(-1)
 
         # Create and update an application with the built packages.
         FedMLAppManager.get_instance().set_config_version(self.config_version)
@@ -123,7 +131,7 @@ class FedMLLaunchManager(Singleton):
                                                                        client_package_file=build_result_package)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
-            return None
+            exit(-1)
 
         # Start the job with the above application.
         FedMLJobManager.get_instance().set_config_version(self.config_version)
