@@ -36,6 +36,7 @@ simulator_process_list = list()
 
 
 @click.group()
+@click.help_option("--help", "-h")
 def cli():
     pass
 
@@ -314,7 +315,21 @@ def mlops_login(
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-@cli.group("launch")
+class DefaultCommandGroup(click.Group):
+
+    def __init__(self, *args, **kwargs):
+        self.default_command = kwargs.pop('default_command', None)
+        super().__init__(*args, **kwargs)
+
+    def resolve_command(self, ctx, args):
+        try:
+            return super().resolve_command(ctx, args)
+        except click.UsageError:
+            args.insert(0, self.default_command)
+            return super().resolve_command(ctx, args)
+
+
+@cli.group("launch", cls=DefaultCommandGroup, default_command='run')
 @click.help_option("--help", "-h")
 def launch():
     """
@@ -910,7 +925,8 @@ def launch_queue(group_id):
 
 
 @launch.command(
-    "run", help="Launch job at the FedML® Launch platform (open.fedml.ai)", context_settings={"ignore_unknown_options": True}
+    "run", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
+    context_settings={"ignore_unknown_options": True}
 )
 @click.help_option("--help", "-h")
 @click.argument("yaml_file", nargs=-1)
