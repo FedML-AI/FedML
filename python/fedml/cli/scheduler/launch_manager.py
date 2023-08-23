@@ -33,11 +33,14 @@ class FedMLLaunchManager(Singleton):
                    device_server, device_edges,
                    no_confirmation=False):
 
-        is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=self.config_version)
-        if not is_latest_version:
-            daemon_ota_upgrade_with_version(in_version=self.config_version)
-            click.echo("Completed upgrading, please launch your job again.")
-            exit(-1)
+        try:
+            is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=self.config_version)
+            if not is_latest_version:
+                daemon_ota_upgrade_with_version(in_version=self.config_version)
+                click.echo("Completed upgrading, please launch your job again.")
+                exit(-1)
+        except Exception as e:
+            pass
 
         if not os.path.exists(yaml_file):
             click.echo(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
