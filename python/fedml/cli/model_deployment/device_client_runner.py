@@ -807,7 +807,8 @@ class FedMLClientRunner:
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="md.on_premise_device"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+            gpu_count, gpu_vendor, cpu_count = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -822,7 +823,8 @@ class FedMLClientRunner:
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
-                            "available_mem": available_mem, "total_mem": total_mem}
+                            "available_mem": available_mem, "total_mem": total_mem,
+                            "cpu_count": cpu_count, "gpu_count": 0}
         }
         if gpu_info is not None:
             if gpu_total_mem is not None:
@@ -834,6 +836,9 @@ class FedMLClientRunner:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
                 json_params["extra_infos"]["gpu_total_mem"] = gpu_total_mem
+
+            json_params["extra_infos"]["gpu_count"] = gpu_count
+            json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
         else:
             json_params["gpu"] = "None"
 

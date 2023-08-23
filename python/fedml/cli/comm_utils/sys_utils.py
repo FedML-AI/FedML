@@ -48,6 +48,9 @@ def get_sys_runner_info():
     gpu_info = None
     gpu_available_mem = None
     gpu_total_mem = None
+    gpu_count = 0
+    gpu_vendor = None
+    cpu_count = 1
 
     import platform
     os_ver = platform.platform()
@@ -93,12 +96,17 @@ def get_sys_runner_info():
         gpu_info = str(handle)
         gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
         gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
+        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_vendor = "nvidia"
         nvidia_smi.nvmlShutdown()
     except:
         pass
 
+    cpu_count = os.cpu_count()
+
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+        gpu_count, gpu_vendor, cpu_count
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
@@ -111,6 +119,24 @@ def generate_yaml_doc(yaml_object, yaml_file, append=False):
         file.close()
     except Exception as e:
         pass
+
+
+def get_gpu_count_vendor():
+    gpu_count = 0
+    gpu_vendor = ""
+    try:
+        import nvidia_smi
+
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_vendor = "nvidia"
+        nvidia_smi.nvmlShutdown()
+    except:
+        pass
+
+    return gpu_count, gpu_vendor
 
 
 def get_running_info(cs_home_dir, cs_info_dir):
@@ -500,6 +526,34 @@ def get_device_id_in_docker():
     product_uuid_file = "/sys/class/dmi/id/product_uuid"
 
     if os.path.exists(docker_env_file) or os.path.exists(cgroup_file):
+        is_in_docker = False
+        try:
+            with open(cgroup_file, 'r') as f:
+                while True:
+                    cgroup_line = f.readline()
+                    if len(cgroup_line) <= 0:
+                        break
+                    name = cgroup_line.find(":name=")
+                    devices = cgroup_line.find(":device:")
+                    name_docker_res = cgroup_line.find("docker")
+                    devices_docker_res = cgroup_line.find("docker")
+                    name_pod_res = cgroup_line.find("pod")
+                    devices_pod_res = cgroup_line.find("pod")
+                    if name != -1 and (name_docker_res != -1 or name_pod_res != -1):
+                        is_in_docker = True
+                        break
+                    if devices != -1 and (devices_docker_res != -1 or devices_pod_res != -1):
+                        is_in_docker = True
+                        break
+        except Exception as e:
+            pass
+
+        if os.path.exists(docker_env_file):
+            is_in_docker = True
+
+        if not is_in_docker:
+            return None
+
         try:
             with open(product_uuid_file, 'r') as f:
                 sys_device_id = f.readline().rstrip("\n").strip(" ")
@@ -548,6 +602,22 @@ def daemon_ota_upgrade(in_args):
     upgrade_version = remote_ver
 
     do_upgrade(in_args.version, upgrade_version, show_local_console=True)
+
+
+def daemon_ota_upgrade_with_version(in_version="release"):
+    should_upgrade = False
+    fedml_is_latest_version = True
+    try:
+        fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_version)
+        should_upgrade = False if fedml_is_latest_version else True
+    except Exception as e:
+        return
+
+    if not should_upgrade:
+        return
+    upgrade_version = remote_ver
+
+    do_upgrade(in_version, upgrade_version, show_local_console=True)
 
 
 def run_cmd(command, show_local_console=False):

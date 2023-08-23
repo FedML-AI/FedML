@@ -8,7 +8,9 @@ import time
 import uuid
 
 import click
+import fedml
 import requests
+from fedml import constants
 from fedml.cli.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
@@ -536,6 +538,26 @@ def log_server_payload(run_id, edge_id, payload):
     topic = "fedml_{}_{}".format(run_id, edge_id)
     logging.info("log json message, topic {}, payload {}.".format(topic, payload))
     MLOpsStore.mlops_metrics.report_json_message(topic, payload)
+
+
+def log_print_start():
+    # init FedML framework
+    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_comm_backend = ""
+    args = fedml.init()
+
+    setattr(args, "using_mlops", True)
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.run_device_id)
+
+
+def log_print_end():
+    # init FedML framework
+    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_comm_backend = ""
+    args = fedml.init()
+
+    setattr(args, "using_mlops", True)
+    MLOpsRuntimeLogDaemon.get_instance(args).stop_log_processor(args.run_id, args.run_device_id)
 
 
 def log_round_info(total_rounds, round_index):

@@ -107,13 +107,14 @@ class FedMLServerRunner:
         self.server_active_list = dict()
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
+        self.runner_list = dict()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
-        data_config = run_config["data_config"]
+        data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
         is_using_local_data = 0
-        private_data_dir = data_config["privateLocalData"]
-        synthetic_data_url = data_config["syntheticDataUrl"]
+        private_data_dir = data_config.get("privateLocalData", "")
+        synthetic_data_url = data_config.get("syntheticDataUrl", "")
         edges = self.request_json["edges"]
         # if private_data_dir is not None \
         #         and len(str(private_data_dir).strip(' ')) > 0:
@@ -187,7 +188,9 @@ class FedMLServerRunner:
         packages_config = run_config["packages_config"]
 
         # Copy config file from the client
-        unzip_package_path = self.retrieve_and_unzip_package(packages_config["server"], packages_config["serverUrl"])
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
+        unzip_package_path = self.retrieve_and_unzip_package(server_package_name, server_package_url)
         self.fedml_packages_unzip_dir = unzip_package_path
         fedml_local_config_file = os.path.join(unzip_package_path, "conf", "fedml.yaml")
 
@@ -378,6 +381,7 @@ class FedMLServerRunner:
             ServerConstants.cleanup_bootstrap_process(self.run_id)
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
+                self.stop_cloud_server()
 
     def check_runner_stop_event(self):
         if self.run_process_event.is_set():
@@ -390,6 +394,10 @@ class FedMLServerRunner:
         data_config = run_config["data_config"]
         packages_config = run_config["packages_config"]
         edge_ids = self.request_json["edgeids"]
+        server_package_name = packages_config.get("server", None)
+        server_package_url = packages_config.get("serverUrl", None)
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", None)
 
         self.check_runner_stop_event()
 
@@ -400,6 +408,9 @@ class FedMLServerRunner:
         logging.info("send training request to edges...")
 
         self.send_training_request_to_edges()
+
+        if self.execute_job_task(job_yaml, edge_ids, run_id):
+            return
 
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,
@@ -456,14 +467,14 @@ class FedMLServerRunner:
         logging.info("starting the aggregation process...")
 
         python_program = get_python_program()
-        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
-            python_program, entry_fill_full_path, conf_file_full_path))
+            python_program, entry_file_full_path, conf_file_full_path))
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_fill_full_path,
+                entry_file_full_path,
                 "--cf",
                 conf_file_full_path,
                 "--rank ",
@@ -508,6 +519,60 @@ class FedMLServerRunner:
             sys_utils.log_return_info(entry_file, ret_code)
 
             self.stop_run_when_starting_failed()
+
+    def init_job_task(self):
+        run_id = self.request_json["runId"]
+        run_config = self.request_json["run_config"]
+        edge_ids = self.request_json["edgeids"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", None)
+        server_id = self.request_json["server_id"]
+
+        if job_yaml is not None:
+            self.setup_listeners_for_edge_status(run_id, edge_ids, server_id)
+
+    def execute_job_task(self, job_yaml, edge_ids, run_id):
+        if job_yaml is not None:
+            self.mlops_metrics.report_server_training_status(run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                                                             running_json=self.start_request_json)
+            return True
+
+        return False
+
+    def process_job_status(self, run_id):
+        all_edges_is_finished = True
+        any_edge_is_failed = False
+        edge_id_status_dict = self.client_agent_active_list[f"{run_id}"]
+        server_id = edge_id_status_dict["server"]
+        for edge_id, status in edge_id_status_dict.items():
+            if edge_id == "server":
+                continue
+
+            if status is None:
+                all_edges_is_finished = False
+                continue
+
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+                any_edge_is_failed = True
+                break
+
+            if status != ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+                all_edges_is_finished = False
+                break
+
+        if any_edge_is_failed:
+            status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
+            self.report_server_status(run_id, server_id, status)
+            return
+
+        if all_edges_is_finished:
+            status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
+            self.report_server_status(run_id, server_id, status)
+
+    def report_server_status(self, run_id, server_id, status):
+        self.mlops_metrics.server_agent_id = self.edge_id
+        self.mlops_metrics.report_server_id_status(run_id, status, server_id=server_id)
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -569,7 +634,7 @@ class FedMLServerRunner:
         logging.info("Cleanup run successfully when finished.")
 
         self.mlops_metrics.broadcast_server_training_status(
-            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id
         )
 
         try:
@@ -596,7 +661,9 @@ class FedMLServerRunner:
 
         logging.info("Cleanup run successfully when starting failed.")
 
-        self.mlops_metrics.broadcast_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        self.mlops_metrics.broadcast_server_training_status(self.run_id,
+                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                                            edge_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -620,10 +687,37 @@ class FedMLServerRunner:
         run_id = self.request_json["runId"]
         edge_id_list = self.request_json["edgeids"]
         logging.info("Edge ids: " + str(edge_id_list))
+
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
+
+    def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
+        self.client_agent_active_list[f"{run_id}"] = dict()
+        self.client_agent_active_list[f"{run_id}"][f"server"] = server_id
+        for edge_id in edge_ids:
+            self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            self.mqtt_mgr.add_message_listener(edge_status_topic, self.callback_edge_status)
+            self.mqtt_mgr.subscribe_msg(edge_status_topic)
+
+    def remove_listeners_for_edge_status(self, edge_ids=None):
+        if edge_ids is None:
+            edge_ids = self.request_json["edgeids"]
+
+        for edge_id in edge_ids:
+            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            self.mqtt_mgr.remove_message_listener(edge_status_topic)
+
+    def callback_edge_status(self, topic, payload):
+        payload_json = json.loads(payload)
+        run_id = payload_json.get("run_id", None)
+        edge_id = payload_json.get("edge_id", None)
+        status = payload_json.get("status", None)
+        if run_id is not None and edge_id is not None:
+            self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
+            self.process_job_status(run_id)
 
     def ota_upgrade(self, payload, request_json):
         no_upgrade = False
@@ -727,6 +821,8 @@ class FedMLServerRunner:
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
         if self.run_as_edge_server_and_agent:
+            self.init_job_task()
+
             self.args.run_id = run_id
 
             server_runner = FedMLServerRunner(
@@ -744,6 +840,8 @@ class FedMLServerRunner:
             self.run_process.start()
             ServerConstants.save_run_process(run_id, self.run_process.pid)
         elif self.run_as_cloud_agent:
+            self.init_job_task()
+
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
                 run_id, self.request_json.get("cloudServerDeviceId", "0")
@@ -775,6 +873,13 @@ class FedMLServerRunner:
                 self.run_process_event = multiprocessing.Event()
             self.run_process_event.clear()
             self.run(self.run_process_event)
+
+    def simulate_as_cloud_server(self):
+        message_bytes = json.dumps(self.request_json).encode("ascii")
+        base64_bytes = base64.b64encode(message_bytes)
+        runner_cmd_encoded = base64_bytes.decode("ascii")
+
+        # fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID};
 
     def start_cloud_server_process_entry(self):
         try:
@@ -1008,7 +1113,9 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
             logging.error("exit_train_with_exception: send topic " + topic_exit_train)
-            self.client_mqtt_mgr.send_message(topic_exit_train, payload)
+            payload_obj = json.loads(payload)
+            payload_obj["server_id"] = self.edge_id
+            self.client_mqtt_mgr.send_message(topic_exit_train, json.dumps(payload_obj))
             self.mlops_metrics.common_broadcast_client_training_status(edge_id,
                                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
@@ -1036,6 +1143,8 @@ class FedMLServerRunner:
             return
 
         # logging.info("Stop run with multiprocessing.")
+
+        self.remove_listeners_for_edge_status()
 
         # Stop server with multiprocessing mode
         stop_request_json = self.running_request_json.get(str(run_id), None)
@@ -1168,6 +1277,7 @@ class FedMLServerRunner:
         run_id = request_json["run_id"]
         status = request_json["status"]
         edge_id = request_json["edge_id"]
+        server_id = request_json.get("server_id", None)
 
         if (
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
@@ -1195,7 +1305,7 @@ class FedMLServerRunner:
                     self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
                 )
                 server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-                server_runner.edge_id = edge_id
+                server_runner.edge_id = edge_id if server_id is None else server_id
                 server_runner.run_status = status
                 server_runner.client_mqtt_mgr = self.client_mqtt_mgr
                 server_runner.mlops_metrics = self.mlops_metrics
@@ -1307,18 +1417,20 @@ class FedMLServerRunner:
 
         return device_id
 
-    def bind_account_and_device_id(self, url, account_id, device_id, os_name):
-        role = "edge_server"
-        if self.run_as_edge_server_and_agent:
+    def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role=None):
+        if role is None:
             role = "edge_server"
-        elif self.run_as_cloud_agent:
-            role = "cloud_agent"
-        elif self.run_as_cloud_server:
-            role = "cloud_server"
+            if self.run_as_edge_server_and_agent:
+                role = "edge_server"
+            elif self.run_as_cloud_agent:
+                role = "cloud_agent"
+            elif self.run_as_cloud_server:
+                role = "cloud_server"
 
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
+            gpu_count, gpu_vendor, cpu_count = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -1331,10 +1443,12 @@ class FedMLServerRunner:
             "os_ver": os_ver,
             "memory": total_mem,
             "ip": ip,
+            "api_key": api_key,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
-                            "available_mem": available_mem, "total_mem": total_mem}
+                            "available_mem": available_mem, "total_mem": total_mem,
+                            "cpu_count": cpu_count, "gpu_count": 0}
         }
         if gpu_info is not None:
             if gpu_total_mem is not None:
@@ -1346,6 +1460,9 @@ class FedMLServerRunner:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
                 json_params["extra_infos"]["gpu_total_mem"] = gpu_total_mem
+
+            json_params["extra_infos"]["gpu_count"] = gpu_count
+            json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
         else:
             json_params["gpu"] = "None"
 
@@ -1461,7 +1578,7 @@ class FedMLServerRunner:
             + str(self.unique_device_id)
             + "\n"
         )
-        
+
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE

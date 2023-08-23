@@ -232,3 +232,10 @@ android/fedmlsdk/MobileNN2/src/train/FedMLTrainer.cpp
 android/fedmlsdk/MobileNN2/src/train/FedMLTrainerSA.cpp
 
 devops/aws-account2
+python/fedml/cli/scheduler/example_job/example_entry.py
+python/fedml/cli/scheduler/example_job/config/bootstrap.sh
+python/fedml/cli/scheduler/example_job/config/fedml_config.yaml
+code-review.csv
+code-review.csv.html
+code-review.csv.md
+python/job.yaml
