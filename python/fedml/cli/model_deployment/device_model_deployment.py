@@ -5,6 +5,7 @@ import platform
 import shutil
 import time
 import traceback
+import yaml
 
 import requests
 import torch
@@ -19,6 +20,7 @@ for type_name in collections.abc.__all__:
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 import io
 
+import docker
 
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
@@ -169,19 +171,44 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         except Exception as e:
             logging.info(
                 "Cannot locate the .bin file, will read it from the fedml_model_cofig.yaml with the key [local_model_dir] ")
-            import yaml
-            local_model_location = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
-
-            with open(local_model_location, 'r') as file:
+            model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
+            with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
-                local_model_dir = config.get('local_model_dir', "")
-                inference_image_name = config.get('inference_image_name', "")
-            
-            if local_model_dir == "":
-                raise Exception("Please indicate local_model_dir in the fedml_model_config.yaml")
-            if inference_image_name == "":
-                raise Exception("Please indicate inference_image_name in the fedml_model_config.yaml")
-            
+                # Resource related
+                use_gpu = config.get('use_gpu', False)
+                inference_image_name = config.get('inference_image_name', ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)                
+                # Source code dir, bootstrap dir, data cache dir
+                src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
+                bootstrap_src_dir = config.get('bootstrap', "")
+                data_cache_dir_input = config.get('data_cache_dir', "")
+                request_input_example = config.get('request_input_example', "")
+                logging.info(f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
+                src_data_cache_dir, dst_data_cache_dir = "", ""
+                if data_cache_dir_input != "":
+                    if data_cache_dir_input[0] == "~":
+                        src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                        dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+                    else:
+                        # check if the data_cache_dir is a relative path
+                        if data_cache_dir_input[0] != "/":
+                            raise "data_cache_dir_input has to be an absolute path or start with ~"
+                        else:
+                            src_data_cache_dir = data_cache_dir_input
+                            dst_data_cache_dir = data_cache_dir_input
+                    logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                # Serving dir inside docker
+                dst_model_serving_dir = "/home/fedml/models_serving"
+                relative_entry = config.get('entry_point')
+                if bootstrap_src_dir != "":
+                    dst_bootstrap_dir = os.path.join(dst_model_serving_dir, bootstrap_src_dir)
+                else:
+                    dst_bootstrap_dir = ""
+
+            if src_code_dir == "":
+                raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
+            if relative_entry == "":
+                raise Exception("Please indicate main_entry in the fedml_model_config.yaml")
+        
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli
             input_size = model_params["input_size"]
@@ -226,35 +253,87 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     shutil.copyfile(src_model_file, dst_model_file)
 
     if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:
-        logging.info(f"local_model_dir: {local_model_dir}")
-        logging.info(f"inference_image_name: {inference_image_name}")
-        inference_server_image = inference_image_name
-        inference_http_port = 2345  # TODO: using a threading pool to manage the model
-        local_model_dir = local_model_dir
-        llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX)
-        volume_dst_loc = "code/model_and_config"
-        llm_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --gpus all --name {} -p{}:2345 " \
-                         "-v {}:/{} {}".format(sudo_prefix, llm_server_container_name,
-                                               sudo_prefix, llm_server_container_name,
-                                               sudo_prefix, llm_server_container_name,
-                                               inference_http_port,
-                                               local_model_dir,
-                                               volume_dst_loc,
-                                               inference_server_image)
-        logging.info("Run llm inference server: {}".format(llm_server_cmd))
-        llm_server = ClientConstants.exec_console_with_script(llm_server_cmd,
-                                                              should_capture_stdout=False,
-                                                              should_capture_stderr=False,
-                                                              no_sys_out_err=True)
+        client = docker.from_env()
+        llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                                    str(running_model_name) # Running model name is concat of model name and version
+
+        try:
+            exist_container_obj = client.containers.get(llm_server_container_name)
+        except docker.errors.NotFound:
+            exist_container_obj = None
+        except docker.errors.APIError:
+            raise Exception("Failed to get the container object")
+        
+        if exist_container_obj is not None:
+            client.api.remove_container(exist_container_obj.id, v=False, force=True)
+        device_requests = []
+        if use_gpu:
+            device_requests.append(
+                docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
+        logging.info("Start pulling the inference image..., may take a few minutes...")
+        client.images.pull(inference_image_name)
+        logging.info("Start creating the inference container...")
+
+        volumns = []
+        binds = {}
+        environment = {}
+
+        # Optional
+        if src_data_cache_dir != "":
+            volumns.append(src_data_cache_dir)
+            binds[src_data_cache_dir] = {
+                "bind": dst_data_cache_dir,
+                "mode": "rw"
+            }
+            environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+
+        # Default
+        volumns.append(src_code_dir)
+        binds[src_code_dir] = {
+            "bind": dst_model_serving_dir,
+            "mode": "rw"
+        }
+        environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+        environment["MAIN_ENTRY"] = relative_entry
+
+        new_container = client.api.create_container(
+            image = inference_image_name,
+            name = llm_server_container_name,
+            volumes = volumns,
+            ports = [2345],                     # port open inside the container
+            entrypoint=["python3", relative_entry],
+            environment = environment,
+            host_config = client.api.create_host_config(
+                binds = binds,
+                port_bindings = {
+                    2345: None        # randomlly open a port on the host
+                },
+                device_requests = device_requests,
+                # mem_limit = "8g",   # Could also be configured in the docker desktop setting
+            ),
+            detach = True,
+        )
+        client.api.start(container=new_container.get("Id"))
+        try:    # check port allocation
+            port_info = client.api.port(new_container.get("Id"), 2345)
+            inference_http_port = port_info[0]["HostPort"]
+            logging.info("inference_http_port: {}".format(inference_http_port))
+        except docker.errors.APIError:
+            raise Exception("Failed to get the port info")
+        
         # report the status
         log_deployment_result(end_point_id, model_id, llm_server_container_name,
-                              ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, llm_server.pid,
+                              ClientConstants.CMD_TYPE_RUN_TRITON_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="llm")
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(running_model_name, inference_engine, inference_http_port, infer_host, inference_type="llm")
+            get_model_info(running_model_name, inference_engine, inference_http_port,\
+                            infer_host, inference_type="llm", request_input_example=request_input_example)
 
         # testing
-        test_input = {"inputs": {"text": "What is a good cure for hiccups?"}}
+        if request_input_example == "":
+            test_input = {"inputs": {"text": "What is a good cure for hiccups?"}}
+        else:
+            test_input = request_input_example
         if inference_output_url != "":
             try:
                 inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
@@ -266,7 +345,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         else:
             raise Exception("Failed to get the inference output url")
         model_metadata = ret_model_metadata
-
         # metadata to report
         logging.info(model_metadata)
     elif inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
@@ -358,7 +436,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
     return input_json, output_json
 
 
-def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port,
+def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
                      inference_type=None):
     sudo_prefix = "sudo "
     sys_name = platform.system()
@@ -397,7 +475,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
 
 
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
-                          cmd_process_id, inference_model_name, inference_engine,
+                        inference_model_name, inference_engine,
                           inference_http_port, inference_type=None):
     sudo_prefix = "sudo "
     sys_name = platform.system()
@@ -432,13 +510,13 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         if deployment_count >= 5:
             break
 
-        if should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id,
+        if should_exit_logs(end_point_id, model_id, cmd_type,
                             inference_model_name, inference_engine, inference_http_port, inference_type):
             break
 
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False,
-                   inference_type=None):
+                   inference_type=None, request_input_example=""):
     local_ip = ClientConstants.get_local_ip()
     if infer_host is not None and infer_host != "127.0.0.1":
         infer_url_host = infer_host
@@ -455,15 +533,19 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
             except:
                 pass
             if not response or response.status_code != 200:
+                logging.info(f"Test if endpoint is ready: {llm_server_test_ready_url}")
                 logging.info(f"model {model_name} not yet ready")
                 time.sleep(10)
                 wait_count += 1
-                if wait_count >= 15:
+                if wait_count >= 12:
                     raise Exception("Can not get response from {}".format(llm_server_test_ready_url))
             else:
                 break
         model_metadata = {}
-        model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
+        if request_input_example != "":
+            model_metadata["inputs"] = request_input_example
+        else:
+            model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
         model_metadata["outputs"] = []
         model_metadata["type"] = "llm"
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
