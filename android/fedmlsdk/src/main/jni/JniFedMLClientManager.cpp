@@ -57,33 +57,37 @@ JNIEXPORT void JNICALL Java_ai_fedml_edge_nativemobilenn_NativeFedMLClientManage
     jobject globalCallback = env->NewGlobalRef(trainingCallback);
     globalCallbackMap[ptr] = globalCallback;
     jmethodID onProgressMethodID = getMethodIdByNameAndSig(env, trainingCallback, "onProgress","(F)V");
-    jmethodID onLossMethodID = getMethodIdByNameAndSig(env, trainingCallback, "onLoss", "(IF)V");
     jmethodID onAccuracyMethodID = getMethodIdByNameAndSig(env, trainingCallback, "onAccuracy","(IF)V");
+    jmethodID onLossMethodID = getMethodIdByNameAndSig(env, trainingCallback, "onLoss", "(IF)V");
     LOGD("NativeFedMLClientManager<%lx>.init onProgressMid=%p,onLossMid=%p,onAccuracyMid=%p", ptr,
          onProgressMethodID, onLossMethodID, onAccuracyMethodID);
+
     auto onProgressCallback = [ptr, env, onProgressMethodID](float progress) {
         jobject callback = globalCallbackMap[ptr];
         LOGD("NativeFedMLClientManager<%lx> <%p>.onProgressCallback(%f) env=%p onProgressMid=%p", ptr,
              callback, progress, env, onProgressMethodID);
         env->CallVoidMethod(callback, onProgressMethodID, (jfloat) progress);
     };
+
+    auto onAccuracyCallback = [ptr, env, onAccuracyMethodID](int epoch, float acc) {
+        jobject callback = globalCallbackMap[ptr];
+        LOGD("NativeFedMLClientManager<%lx> <%p>.onAccuracyCallback(%d, %f) env=%p onAccuracyMid=%p", ptr,
+             callback, epoch, acc, env, onAccuracyMethodID);
+        env->CallVoidMethod(callback, onAccuracyMethodID, (jint) epoch, (jfloat) acc);
+    };
+
     auto onLossCallback = [ptr, env, onLossMethodID](int epoch, float loss) {
         jobject callback = globalCallbackMap[ptr];
         LOGD("NativeFedMLClientManager<%lx> <%p>.onLossCallback(%d, %f) env=%p onLossMid=%p", ptr,
              callback, epoch, loss, env, onLossMethodID);
         env->CallVoidMethod(callback, onLossMethodID, (jint) epoch, (jfloat) loss);
     };
-    auto onAccuracyCallback = [ptr, env, onAccuracyMethodID](int epoch, float acc) {
-        jobject callback = globalCallbackMap[ptr];
-        LOGD("NativeFedMLClientManager<%lx> <%p>.onLossCallback(%d, %f) env=%p onLossMid=%p", ptr,
-             callback, epoch, acc, env, onAccuracyMethodID);
-        env->CallVoidMethod(callback, onAccuracyMethodID, (jint) epoch, (jfloat) acc);
-    };
+
     // FedMLClientManager object ptr
     auto *pFedMLClientManager = reinterpret_cast<FedMLClientManager *>(ptr);
     pFedMLClientManager->init(modelPath, dataPath, datasetType,
                               (int) trainSize, (int) testSize, (int) batchSizeNum, (double) learningRate, (int) epochNum,
-                              onProgressCallback, onLossCallback, onAccuracyCallback);
+                              onProgressCallback, onAccuracyCallback, onLossCallback);
     LOGD("NativeFedMLClientManager<%lx>.initialed", ptr);
     onProgressCallback(0.01);
     env->ReleaseStringUTFChars(modelCachePath, modelPath);

@@ -12,10 +12,6 @@ For Silo/Client 1, run the following script on the first node (NODE_RANK=0):
 ```
 bash run_client.sh 1 0
 ```
-For Silo/Client 1, run the following script on the second node (NODE_RANK=1):
-```
-bash run_client.sh 1 1
-```
 
 For Silo/Client 2, run the following script:
 ```

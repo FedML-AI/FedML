@@ -3,11 +3,13 @@ package ai.fedml.edge.service.component;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.TimeUtils;
 
 public class ProfilerEventLogger {
-    private static final String EVENT_TOPIC = "mlops/events";
+
     private static final int EVENT_TYPE_STARTED = 0;
     private static final int EVENT_TYPE_ENDED = 1;
 
@@ -29,16 +31,16 @@ public class ProfilerEventLogger {
         logEventEnd(eventName, eventValue, null);
     }
 
-    public void logEventStarted(final String eventName, final String value, final Long eventEdgeId) {
+    private void logEventStarted(final String eventName, final String value, final Long eventEdgeId) {
         final long edgeId = eventEdgeId == null ? mEdgeId : eventEdgeId;
         JSONObject jsonObject = buildEventMessage(mRunId, edgeId, EVENT_TYPE_STARTED, eventName, value);
-        edgeCommunicator.sendMessage(EVENT_TOPIC, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.EVENT, jsonObject.toString());
     }
 
-    public void logEventEnd(final String eventName, final String value, final Long eventEdgeId) {
+    private void logEventEnd(final String eventName, final String value, final Long eventEdgeId) {
         final long edgeId = eventEdgeId == null ? mEdgeId : eventEdgeId;
         JSONObject jsonObject = buildEventMessage(mRunId, edgeId, EVENT_TYPE_ENDED, eventName, value);
-        edgeCommunicator.sendMessage(EVENT_TOPIC, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.EVENT, jsonObject.toString());
     }
 
     private static JSONObject buildEventMessage(final long runId, final long edgeId, final int event_type,
@@ -55,7 +57,7 @@ public class ProfilerEventLogger {
             } else if (EVENT_TYPE_ENDED == event_type) {
                 timeKey = "ended_time";
             }
-            jsonObject.put(timeKey, System.currentTimeMillis()/1000);
+            jsonObject.put(timeKey, TimeUtils.getAccurateTime());
         } catch (JSONException e) {
             LogHelper.e(e, "buildEventMessage(%d, %s, %s)", event_type, name, value);
         }

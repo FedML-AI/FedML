@@ -40,7 +40,7 @@ class SageMoleculeNetTrainer(ClientTrainer):
         max_test_score = 0
         best_model_params = {}
         for epoch in range(args.epochs):
-            for mol_idxs, (adj_matrix, feature_matrix, label, mask) in enumerate(
+            for mol_idxs, (forest, feature_matrix, label, mask) in enumerate(
                 train_data
             ):
                 # Pass on molecules that have no labels
@@ -49,16 +49,14 @@ class SageMoleculeNetTrainer(ClientTrainer):
 
                 optimizer.zero_grad()
 
-                adj_matrix = adj_matrix.to(
-                    device=device, dtype=torch.float32, non_blocking=True
-                )
+                forest = [level.to(device=device, dtype=torch.long, non_blocking=True) for level in forest]
                 feature_matrix = feature_matrix.to(
                     device=device, dtype=torch.float32, non_blocking=True
                 )
                 label = label.to(device=device, dtype=torch.float32, non_blocking=True)
                 mask = mask.to(device=device, dtype=torch.float32, non_blocking=True)
 
-                logits = model(adj_matrix, feature_matrix)
+                logits = model(forest, feature_matrix)
                 loss = criterion(logits, label) * mask
                 loss = loss.sum() / mask.sum()
 

@@ -48,3 +48,37 @@ async def get_history_job_status(request: Request):
         responses.append(response)
 
     return responses
+
+
+@api.post('/fedml/api/v2/enableAgent')
+async def enable_agent_status(request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    FedMLClientDataInterface.get_instance().insert_agent_status_to_db(1)
+    response = {"errorCode": 0, "msg": "Successful"}
+
+    return response
+
+
+@api.post('/fedml/api/v2/disableAgent')
+async def disable_agent_status(request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    FedMLClientDataInterface.get_instance().insert_agent_status_to_db(0)
+    response = {"errorCode": 0, "msg": "Successful"}
+
+    return response
+
+
+@api.post('/fedml/api/v2/queryAgentStatus')
+async def query_agent_status(request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    enabled = FedMLClientDataInterface.get_instance().get_agent_status()
+    response = {"status": enabled}
+
+    return response
+

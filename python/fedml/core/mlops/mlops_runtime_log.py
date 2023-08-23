@@ -5,11 +5,7 @@ import os
 import sys
 import threading
 import time
-import traceback
-
-import ntplib
 import datetime
-from datetime import timezone
 from logging import handlers
 
 from fedml import mlops
@@ -61,7 +57,7 @@ class MLOpsRuntimeLog:
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
-        if args.rank == 0:
+        if args.role == "server":
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
             else:
@@ -92,7 +88,6 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = None
         sys.excepthook = MLOpsRuntimeLog.handle_exception
 
     @staticmethod
@@ -106,20 +101,37 @@ class MLOpsRuntimeLog:
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
-        format_str = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                                                  "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                                                  "message)s",
-                                       datefmt="%a, %d %b %Y %H:%M:%S")
-        if self.ntp_offset is None:
-            self.ntp_offset = MLOpsUtils.get_ntp_offset()
-        def log_ntp_time(sec, what):
-            if self.ntp_offset is not None:
-                ntp_time_seconds = time.time() + self.ntp_offset
-            else:
-                ntp_time_seconds = time.time()
-            ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
-            return ntp_time.timetuple()
-        logging.Formatter.converter = log_ntp_time
+
+        class MLOpsFormatter(logging.Formatter):
+            converter = datetime.datetime.utcfromtimestamp
+
+            def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
+                super().__init__(fmt, datefmt, style, validate)
+                self.ntp_offset = 0.0
+
+            # Here the `record` is a LogRecord object
+            def formatTime(self, record, datefmt=None):
+                log_time = record.created
+                if record.created is None:
+                    log_time = time.time()
+
+                if self.ntp_offset is None:
+                    self.ntp_offset = 0.0
+
+                log_ntp_time = int((log_time * 1000 + self.ntp_offset) / 1000.0)
+                ct = self.converter(log_ntp_time)
+                if datefmt:
+                    s = ct.strftime(datefmt)
+                else:
+                    s = ct.strftime("%a, %d %b %Y %H:%M:%S")
+                return s
+
+        format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                               "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                               "message)s",
+                                    datefmt="%a, %d %b %Y %H:%M:%S")
+        format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
+
         stdout_handle = logging.StreamHandler()
         stdout_handle.setFormatter(format_str)
         if show_stdout_log:
@@ -144,7 +156,7 @@ class MLOpsRuntimeLog:
 
     @staticmethod
     def build_log_file_path(in_args):
-        if in_args.rank == 0:
+        if in_args.role == "server":
             if hasattr(in_args, "server_id"):
                 edge_id = in_args.server_id
             else:
@@ -152,7 +164,7 @@ class MLOpsRuntimeLog:
                     edge_id = in_args.edge_id
                 else:
                     edge_id = 0
-            program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, edge_id)
+            program_prefix = "FedML-Server @device-id-{}".format(edge_id)
         else:
             if hasattr(in_args, "client_id"):
                 edge_id = in_args.client_id
@@ -173,7 +185,7 @@ class MLOpsRuntimeLog:
             program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
 
         if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir)
+            os.makedirs(in_args.log_file_dir, exist_ok=True)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
                                      + str(in_args.run_id)
                                      + "-edge-"

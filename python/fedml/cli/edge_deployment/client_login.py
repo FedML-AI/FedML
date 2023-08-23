@@ -6,28 +6,25 @@ import os
 import platform
 import subprocess
 import time
-from os.path import expanduser
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.cli.edge_deployment.client_data_interface import FedMLClientDataInterface
-from fedml.core.mlops import MLOpsProfilerEvent
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = 0
-    args.rank = 1
+    args.role = "client"
     client_ids = list()
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
-    logging.info("client ids:{}".format(args.client_id_list))
+    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    # logging.info("client ids:{}".format(args.client_id_list))
 
 
 def __login_as_client(args, userid, version):
@@ -67,6 +64,7 @@ def __login_as_client(args, userid, version):
             service_config["ml_ops_config"] = mlops_config
             service_config["docker_config"] = docker_config
             runner.agent_config = service_config
+            # click.echo("service_config = {}".format(service_config))
             log_server_url = mlops_config.get("LOG_SERVER_URL", None)
             if log_server_url is not None:
                 setattr(args, "log_server_url", log_server_url)
@@ -79,7 +77,7 @@ def __login_as_client(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[1] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -115,7 +113,7 @@ def __login_as_client(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[2] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -123,11 +121,11 @@ def __login_as_client(args, userid, version):
     setattr(args, "client_id", edge_id)
     runner.args = args
     init_logs(args, edge_id)
-    logging.info("args {}".format(args))
+    # logging.info("args {}".format(args))
 
     # Log arguments and binding results.
-    logging.info("login: unique_device_id = %s" % str(unique_device_id))
-    logging.info("login: edge_id = %s" % str(edge_id))
+    # logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
@@ -181,7 +179,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[3] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return False, edge_id, args
 
@@ -208,7 +206,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[4] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return False, edge_id, args
 
@@ -234,7 +232,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
         # Open simulator daemon process to process run status.
         simulator_daemon_cmd = os.path.join(os.path.dirname(__file__), "simulator_daemon.py")
-        simulator_daemon_process = subprocess.Popen(
+        simulator_daemon_process = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 simulator_daemon_cmd,
@@ -277,7 +275,7 @@ def login(args):
 
 
 def logout():
-    ClientConstants.cleanup_run_process()
+    ClientConstants.cleanup_run_process(None)
     sys_utils.cleanup_all_fedml_client_api_processes()
 
 
@@ -294,6 +292,7 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     args = parser.parse_args()
+    
     args.user = args.user
     if args.type == 'login':
         login(args)

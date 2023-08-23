@@ -1,31 +1,27 @@
 
 import argparse
 import json
-import logging
 import os
 import platform
-import subprocess
 import time
-from os.path import expanduser
 
 import click
-from fedml.cli.comm_utils import sys_utils
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.model_deployment.device_client_runner import FedMLClientRunner
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = 0
-    args.rank = 1
+    args.role = "client"
     client_ids = list()
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
-    logging.info("client ids:{}".format(args.client_id_list))
+    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    # logging.info("client ids:{}".format(args.client_id_list))
 
 
 def __login_as_client(args, userid, version):
@@ -132,11 +128,11 @@ def __login_as_client(args, userid, version):
     setattr(args, "client_id", edge_id)
     runner.args = args
     init_logs(args, edge_id)
-    logging.info("args {}".format(args))
+    # logging.info("args {}".format(args))
 
     # Log arguments and binding results.
-    logging.info("login: unique_device_id = %s" % str(unique_device_id))
-    logging.info("login: edge_id = %s" % str(edge_id))
+    # logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
@@ -153,7 +149,7 @@ def login(args):
 
 
 def logout():
-    ClientConstants.cleanup_run_process()
+    ClientConstants.cleanup_run_process(None)
 
 
 if __name__ == "__main__":

@@ -12,8 +12,29 @@ FedML supports Linux, MacOS, Windows, and Android.
 pip install fedml
 ```
 
+if your machine has not installed python, please install one version of the following pythons: 3.8, 3.9, 3.10.
+
+### Installing with pip on Ubuntu
+
+On Ubuntu, run the following commands to install pip3 and fedml.
+```
+sudo apt install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
+### Installing with pip on CentOS
+On CentOS, run the following commands to install pip3 and fedml.
+```
+yum –y install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
 The default machine learning engine is `PyTorch`. FedML also supports `TensorFlow`, `Jax`, and `MXNet`.
-You can install related engine as follows:
+You can install related engines as follows:
 ```
 pip install "fedml[MPI]"
 pip install "fedml[tensorflow]"
@@ -25,11 +46,11 @@ For MPI installation, it's used for local distributed simulation with MPI (https
 conda install mpi4py openmpi
 ```
 About OpenMPI library installation for MPI, the reference is as follows: [https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html](https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html,)
-For OpenMPI on MacOS, please review the following links: 
+For OpenMPI on MacOS, please review the following links:
 [https://betterprogramming.pub/integrating-open-mpi-with-clion-on-apple-m1-76b7815c27f2](https://formulae.brew.sh/formula/open-mpi)
 [https://formulae.brew.sh/formula/open-mpi](https://formulae.brew.sh/formula/open-mpi)
 
-The above commands work properly in Linux environment. 
+The above commands work properly in Linux environment.
 For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MXNet official guidance to fix related installation issues.
 
 ## Installing FedML with Anaconda
@@ -47,6 +68,20 @@ then run the command to install fedml again: pip install fedml)
 
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
+## Compatibility with HomeBrew-Installed Python On Apple Silicon Mac
+If you are using Apple Silicon MAC, we suggest using Conda to install python 3.8+ and related lib on your device.
+
+But if you have used HomeBrew to install python, and having problem with running "pip install fedml" command, in this case you need to ensure:
+
+a. Two environment path on your device need to be specify to use Conda not HomeBrew:
+
+(1)  In ~/.bash_profile and ~/.zprofile, the path to python bin file, need to be Conda python file location.
+
+(2)  In ~/.bash_profile and ~/.zprofile, the path to pip bin file, need to be Conda pip file location.
+
+b. When you encounter with C/C++ compiler issue, try:
+
+(3) conda install …
 
 ## Installing FedML from Debugging and Editable Mode
 ```
@@ -61,7 +96,7 @@ cd ./FedML/python && \
 python setup.py install
 ```
 
-If you want to run examples with tensforflow, jax or mxnet, you need to install optional dependencies:
+If you want to run examples with TensorFlow, Jax or MxNet, you need to install optional dependencies:
 ```
 git clone https://github.com/FedML-AI/FedML.git && \
 cd ./FedML/python && \
@@ -90,7 +125,13 @@ But for your own purpose, you may build your docker image to support the followi
 
 Please refer to the following commands and remember to change `LOCAL_WORKSPACE` to your own.
 
-**(1) Pull the Docker image and prepare the docker environment**
+### FedML Standard Docker Image
+
+The FedML standard docker image can support to run on CPU an GPU devices. It deviated from the Nvidia official image which is large size.
+So the FedML standard docker image will be a large image. Now it is about 17GB in size. Up to now, the FedML standard docker image can run on the Linux platform.
+If you want to run on the MacOS platform, you should use the FedML light docker image which can be running on multiple architectures, e.g. X86, ARM, etc.
+
+**(1) Pull the standard Docker image and prepare the docker environment**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 docker pull $FEDML_DOCKER_IMAGE
@@ -122,15 +163,6 @@ DOCKER_WORKSPACE=/home/fedml/fedml_source
 ddocker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
 ```
 
-if you are running on MACOS M1/M2, you may use the following command (with the option '--platform linux/amd64'):
-```
-FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
-DOCKER_WORKSPACE=/home/fedml/fedml_source
-
-docker run  --platform linux/amd64  -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
-```
-
 You should now see a prompt that looks something like,
 you may run the 'fedml login $YourUserId' to log into the MLOps platform.
 ```
@@ -145,11 +177,15 @@ root@142ffce4cdf8:/# cd $WORKSPACE
 root@142ffce4cdf8:/home/fedml/fedml_source#
 ```
 
+### FedML Light Docker Image
 
-**(3) Run light Docker with interactive mode**
+**(1) Run light Docker with interactive mode**
+
 The light docker is a smaller image about 2.3GB size. So it can pull and run more smoothly.
+The light docker just supports cpu arch. So, if you want to use the GPU, you should use the above standard Docker with gpu options.
 Each docker image needs more than 5GB memory size to run the fedml learning task.
-So, you need keep sufficient memory size for your federated learning task.
+(This is estimated with the MNist dataset, if you use other dataset, Maybe the memory size is larger or smaller than the size with the MNist dataset)
+So, you need to reserve sufficient memory size for your federated learning task.
 On MacOS, you should set memory size in the navigation path DockerDesktop -> Preference -> Resource -> Memory.
 If you want to run three docker containers simultaneously, you need to set the resource memory to not less than 15GB.
 
@@ -175,7 +211,8 @@ root@142ffce4cdf8:/# cd $WORKSPACE
 root@142ffce4cdf8:/home/fedml/fedml_source#
 ```
 
-**(4) Run light Docker with daemon mode and automatically log into the MLOps platform**
+**(2) Run light Docker with daemon mode and automatically log into the MLOps platform**
+
 You may run the light docker as the daemon mode and automatically log into the MLOps platform as the client.
 The commands ars as follows:
 
@@ -218,7 +255,7 @@ If you want to kill all fedml light containers, the command is as follows.
 docker stop `docker ps |grep fedml:light |awk -F' ' '{print $1}'`
 ```
 
-**(5) Run the interpreter in PyCharm or Visual Studio using Docker environment**
+**(4) Run the interpreter in PyCharm or Visual Studio using Docker environment**
 
 - PyCharm
 
@@ -228,7 +265,7 @@ docker stop `docker ps |grep fedml:light |awk -F' ' '{print $1}'`
 
 [https://code.visualstudio.com/docs/remote/containers](https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary)
 
-**(6) Other useful commands**
+**(4) Other useful commands**
 ```
 # docker rm $(docker ps -aq)
 docker container kill $(docker ps -q)
@@ -253,6 +290,16 @@ If you want to scale up or scal down the pods to your desired count, you may run
 ```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-client-deployment```
 
 ```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-server-deployment```
+
+## Installation with Helm Charts
+
+Also, you may use the helm charts to deploy your fedml client and server to target Kubernetes cluster.
+You just need to run the following commands with your user id at the open.fedml.ai.
+```
+kubectl create namespace fedml
+helm install --set image.repository="fedml/fedml-edge-client-server-light" --set env.fedmlAccountId="$YourUserId" --set env.role="client" fedml-client-deployment ./fedml-client-deployment-latest.tgz
+helm install --set image.repository="fedml/fedml-edge-client-server-light" --set env.fedmlAccountId="$YourUserId" --set env.role="server" fedml-server-deployment ./fedml-server-deployment-latest.tgz
+```
 
 # Q&A
 

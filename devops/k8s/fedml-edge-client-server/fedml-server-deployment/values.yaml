@@ -4,7 +4,7 @@
 
 replicaCount: 1
 
-namespace: fedml
+namespace: fedml-server
 
 image:
   repository: fedml/fedml-edge-client-server

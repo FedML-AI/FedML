@@ -66,10 +66,7 @@ def login_with_server_docker_mode(userid, version, docker_rank):
 
     # Compose the command for running the client agent docker
     fedml_server_home_dir = os.path.join(env_current_running_dir, "docker", "rank-"+str(docker_rank))
-    try:
-        os.makedirs(fedml_server_home_dir)
-    except:
-        pass
+    os.makedirs(fedml_server_home_dir, exist_ok=True)
     docker_run_cmd = "docker run --name " + fedml_docker_name + \
                      " -v " + fedml_server_home_dir + ":/home/fedml/fedml-server" + \
                      " --env ACCOUNT_ID=" + str(env_account_id) + \
@@ -97,10 +94,12 @@ def login_with_server_docker_mode(userid, version, docker_rank):
             is_deployment_ok = True
 
     if is_deployment_ok:
-        click.echo("Congratulations, you have deployed the FedML client agent successfully!")
-        click.echo("Your device id is " + env_current_device_id + ".")
-        click.echo("You may review the device in the MLOps edge device list.")
-
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your unique device ID is "
+            + str(env_current_device_id)
+            + "\n"
+        )
         logs_with_server_docker_mode(docker_rank)
     else:
         click.echo("Oops, you failed to deploy the FedML client agent.")

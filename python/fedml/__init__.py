@@ -25,7 +25,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.4a17"
+__version__ = "0.8.7"
 
 
 def init(args=None):
@@ -315,7 +315,7 @@ def init_cross_silo_hierarchical(args):
         if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
             if args.n_node_in_silo == 1 and torch.cuda.is_available():
                 gpu_count = torch.cuda.device_count()
-                # Checking if launcher is has spawned enoug processes.
+                # Checking if launcher is has spawned enough processes.
                 if gpu_count == args.n_proc_in_silo:
                     print(f"Auto assigning GPU to processes.")
                     args.gpu_id = args.proc_rank_in_silo
@@ -324,6 +324,11 @@ def init_cross_silo_hierarchical(args):
             else:
                 args.n_proc_per_node = 1
 
+    print("\nargs.rank = {}, args.n_proc_in_silo: {}".format(args.rank, args.n_proc_in_silo))
+    print("args.rank = {}, n_proc_in_silo: {}".format(args.rank, args.n_proc_in_silo))
+    print("args.rank = {}, rank_in_node: {}".format(args.rank, args.rank_in_node))
+    print("args.rank = {}, proc_rank_in_silo: {}".format(args.rank, args.proc_rank_in_silo))
+    exit()
     return args
 
 
@@ -380,6 +385,7 @@ def update_client_id_list(args):
 
 def init_cross_device(args):
     args.rank = 0  # only server runs on Python package
+    args.role = "server"
     return args
 
 

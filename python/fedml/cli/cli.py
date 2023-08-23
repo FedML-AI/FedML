@@ -94,11 +94,13 @@ def display_client_logs():
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
         home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
     )
+
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
         for log_line in log_lines:
-            click.echo(log_line)
+            click.echo(log_line, nl=False)
+    print("\nconsole log file path = {}".format(log_file))
 
 
 def display_server_logs():
@@ -113,6 +115,7 @@ def display_server_logs():
             log_lines = file_handle.readlines()
         for log_line in log_lines:
             click.echo(log_line)
+    print("\nconsole log file path = {}".format(log_file))
 
 
 @cli.command("login", help="Login to MLOps platform")
@@ -166,6 +169,7 @@ def display_server_logs():
 def mlops_login(
         userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
         click.echo("Please specify your account id, usage: fedml login $your_account_id")
         return
@@ -182,7 +186,6 @@ def mlops_login(
             )
         )
         return
-
     # click.echo("client {}, server {}".format(client, server))
     # Set client as default entity.
     is_client = client
@@ -195,26 +198,25 @@ def mlops_login(
     if docker is None:
         is_docker = False
 
-    # click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client is True:
         if is_docker:
             login_with_docker_mode(account_id, version, docker_rank)
             return
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
+
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                         ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
-
         try:
             ClientConstants.login_role_list.index(role)
         except ValueError as e:
             role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
 
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 "-W",
@@ -238,7 +240,6 @@ def mlops_login(
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
-
     if is_server is True:
         # Check login mode.
         try:
@@ -263,7 +264,7 @@ def mlops_login(
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
-        login_pid = subprocess.Popen(
+        login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
                 "-W",
@@ -339,7 +340,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
-
+    print("\nlogout successfully!\n")
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
 @click.option(
@@ -576,10 +577,7 @@ def build_mlops_package(
         base_dir=mlops_package_name,
     )
     if not os.path.exists(dist_package_dir):
-        try:
-            os.makedirs(dist_package_dir)
-        except Exception as e:
-            pass
+        os.makedirs(dist_package_dir, exist_ok=True)
     if os.path.exists(dist_package_file) and not os.path.isdir(dist_package_file):
         os.remove(dist_package_file)
     mlops_archive_zip_file = mlops_archive_name + ".zip"
@@ -670,7 +668,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
     if check_mqtt_s3_backend_server:
         pip_source_dir = os.path.dirname(__file__)
         server_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
-        backend_server_process = subprocess.Popen([
+        backend_server_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             server_diagnosis_cmd,
             "-t",
@@ -683,7 +681,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
     if check_mqtt_s3_backend_client:
         pip_source_dir = os.path.dirname(__file__)
         client_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
-        backend_client_process = subprocess.Popen([
+        backend_client_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             client_diagnosis_cmd,
             "-t",
@@ -990,7 +988,7 @@ def login_as_model_device_agent(
 )
 def logout_from_model_ops(slave, master, docker, docker_rank):
     device_login_entry.logout_from_model_ops(slave, master, docker, docker_rank)
-
+    print("\nlogout successfully!\n")
 
 @model.command("create", help="Create local model repository.")
 @click.option(

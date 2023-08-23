@@ -10,7 +10,7 @@ bash scripts/setup.sh
 MASTER_ADDR="${1:-"localhost"}"
 MASTER_PORT="${2:-12355}"
 NUM_NODES="${3:-1}"
-NUM_GPU="$(python -c "import torch; print(torch.cuda.device_count())")"
+NUM_GPU="$(python3 -c "import torch; print(torch.cuda.device_count())")"
 
 DATASET_PATHS=(
   ".data/databricks-dolly-15k.jsonl"
@@ -45,5 +45,5 @@ torchrun \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
-  --report_to "tensorboard" \
+  --do_train "True" \
   "${@:4}" # skip first 3 arguments

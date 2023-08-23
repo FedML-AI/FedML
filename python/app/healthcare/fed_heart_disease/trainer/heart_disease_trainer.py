@@ -95,6 +95,4 @@ class HeartDiseaseTrainer(ClientTrainer):
         logging.info(training_loss_list)
         logging.info("------Validation AUC ------")
         logging.info(training_auc_list)
-        # load best model weights
-        model.load_state_dict(best_model_wts)
         return model

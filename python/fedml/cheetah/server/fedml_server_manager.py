@@ -58,7 +58,8 @@ class FedMLServerManager(FedMLCommManager):
             dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
             logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
 
-            model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
+            if not getattr(self.args, "skip_log_model_net", False):
+                model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
 
             # type and shape for later configuration
             input_shape, input_type = self.aggregator.get_input_shape_type()

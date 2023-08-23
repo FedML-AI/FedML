@@ -1,7 +1,6 @@
 import argparse
 from fedml.core.security.defense.cclip_defense import CClipDefense
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from tests.security.defense.utils import create_fake_model_list
+from tests.security.defense.utils import create_fake_model_list, create_fake_global_w_local_w_MNIST
 
 
 def add_args():
@@ -18,13 +17,23 @@ def add_args():
     return args
 
 
-def test_defense():
+def test_before_aggregation():
     config = add_args()
     client_grad_list = create_fake_model_list(20)
     defense = CClipDefense(config)
-    result = defense.run(client_grad_list, base_aggregation_func=FedMLAggOperator.agg)
-    print(f"result = {result}")
+    grad_list = defense.defend_before_aggregation(client_grad_list)
+    print(f"grad_list = {grad_list}")
+
+
+def test_after_aggregation():
+    config = add_args()
+    _, global_w = create_fake_global_w_local_w_MNIST()
+    defense = CClipDefense(config)
+    defense.initial_guess = global_w
+    grad_list = defense.defend_after_aggregation(global_w)
+    print(f"result = {grad_list}")
 
 
 if __name__ == "__main__":
-    test_defense()
+    test_before_aggregation()
+    test_after_aggregation()

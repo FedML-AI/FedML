@@ -2,11 +2,9 @@ package ai.fedml.edge.request.response;
 
 import com.google.gson.annotations.SerializedName;
 
-import ai.fedml.edge.request.response.BaseResponse;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
 
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -9,8 +9,12 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
-    types: [opened, reopened]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0  ]
+
+  workflow_run:
+    workflows: [ LDP-Linux ]
+    types:
+      - completed
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -20,10 +24,10 @@ permissions: write-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   security-attack-defense-tests:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -35,25 +39,48 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted, runner-linux, devops]
+    runs-on: [self-hosted, Linux]
     timeout-minutes: 15
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
-      - uses: actions/checkout@v3
-      - name: pip install -e ./
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
         run: |
-          pip install -e ./
-          pip install sklearn
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/actions-runner/fedml-master
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/actions-runner/fedml-dev
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: sync git repo to local pip
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: attack tests
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd tests/security
           sh run_attacker_tests.sh
 
       - name: defense tests
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd tests/security
           sh run_defender_tests.sh

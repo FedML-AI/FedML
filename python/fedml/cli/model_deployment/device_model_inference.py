@@ -71,9 +71,13 @@ async def predict(request: Request):
             inference_response = send_inference_request(inference_output_url, input_list, output_list)
 
         # Calculate model metrics
-        model_metrics.calc_metrics(end_point_id, in_end_point_name,
-                                   model_id, model_name, model_version,
-                                   inference_output_url)
+        try:
+            model_metrics.calc_metrics(end_point_id, in_end_point_name,
+                                        model_id, model_name, model_version,
+                                        inference_output_url, idle_device)
+        except Exception as e:
+            print("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
+            pass
 
         logging_inference_request(input_json, inference_response)
 
@@ -140,7 +144,7 @@ def logging_inference_request(request, response):
     try:
         log_dir = ServerConstants.get_log_file_dir()
         if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+            os.makedirs(log_dir, exist_ok=True)
         inference_log_file = os.path.join(log_dir, "inference.log")
         with open(inference_log_file, "a") as f:
             f.writelines([f"request: {request}, response: {response}\n"])

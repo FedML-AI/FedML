@@ -2,7 +2,6 @@
 import argparse
 import os
 import time
-import sys
 
 from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_client_api_processes, \
     cleanup_all_fedml_client_learning_processes, cleanup_all_fedml_client_login_processes, get_python_program, \
@@ -27,9 +26,9 @@ if __name__ == "__main__":
     login_cmd = os.path.join(pip_source_dir, "client_login.py")
     while True:
         try:
-            ClientConstants.cleanup_run_process()
+            ClientConstants.cleanup_run_process(None)
             cleanup_all_fedml_client_api_processes()
-            cleanup_all_fedml_client_learning_processes()
+            cleanup_all_fedml_client_learning_processes(None)
             cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
         except Exception as e:
             pass

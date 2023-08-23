@@ -17,10 +17,8 @@ class FedMLServerManager(FedMLCommManager):
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.args.round_idx = 0
-
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
-
         self.is_initialized = False
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
@@ -29,16 +27,16 @@ class FedMLServerManager(FedMLCommManager):
         super().run()
 
     def send_init_msg(self):
-        global_model_params = self.aggregator.get_server_data()
+        global_result = self.aggregator.get_server_data()
 
-        global_model_url = None
-        global_model_key = None
+        global_result_url = None
+        global_result_key = None
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
-            global_model_url, global_model_key = self.send_message_init_config(
-                client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
-                global_model_url, global_model_key
+            global_result_url, global_result_key = self.send_message_init_config(
+                client_id, global_result, self.data_silo_index_list[client_idx_in_this_round],
+                global_result_url, global_result_key
             )
             client_idx_in_this_round += 1
 
@@ -70,26 +68,22 @@ class FedMLServerManager(FedMLCommManager):
             mlops.log_round_info(self.round_num, -1)
 
             # check client status in case that some clients start earlier than the server
-            client_idx_in_this_round = 0
+            client_idx_this_round = 0
             for client_id in self.client_id_list_in_this_round:
                 try:
-                    self.send_message_check_client_status(
-                        client_id, self.data_silo_index_list[client_idx_in_this_round],
-                    )
+                    self.send_message_check_client_status(client_id, self.data_silo_index_list[client_idx_this_round])
                     logging.info("Connection ready for client" + str(client_id))
                 except Exception as e:
                     logging.info("Connection not ready for client" + str(client_id))
-                client_idx_in_this_round += 1
+                client_idx_this_round += 1
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
-
             logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
-
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_online_mapping.get(str(client_id), False):
@@ -108,12 +102,11 @@ class FedMLServerManager(FedMLCommManager):
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
-
-        model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
+        local_results = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
         self.aggregator.add_local_trained_result(
-            self.client_real_ids.index(sender_id), model_params, local_sample_number
+            self.client_real_ids.index(sender_id), local_results, local_sample_number
         )
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
@@ -121,12 +114,10 @@ class FedMLServerManager(FedMLCommManager):
             mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
             mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
             tick = time.time()
-            global_model_params, model_list = self.aggregator.aggregate()
+            global_result, _ = self.aggregator.aggregate()
 
             logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
-
             MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
-
             mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
 
             # send round info to the MQTT backend
@@ -145,28 +136,25 @@ class FedMLServerManager(FedMLCommManager):
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
             client_idx_in_this_round = 0
-            global_model_url = None
-            global_model_key = None
-            # todo: add cases when no need to send global model with clients
+            global_result_url = None
+            global_result_key = None
             for receiver_id in self.client_id_list_in_this_round:
                 client_index = self.data_silo_index_list[client_idx_in_this_round]
-                global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                    receiver_id, global_model_params, client_index, global_model_url,
-                    global_model_key
+                global_result_url, global_result_key = self.send_message_sync_model_to_client(
+                    receiver_id, global_result, client_index, global_result_url, global_result_key
                 )
                 client_idx_in_this_round += 1
 
             self.args.round_idx += 1
-            mlops.log_aggregated_model_info(
-                self.args.round_idx, model_url=global_model_url,
-                )
-
-            logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
+            mlops.log_aggregated_model_info(self.args.round_idx, model_url=global_result_url)
+            logging.info("\n\n==========end {}-th round analyzing===========\n".format(self.args.round_idx))
             mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
             if self.args.round_idx == self.round_num:
-                logging.info("=============training is finished. Cleanup...============")
+                logging.info("=============analyzing is finished. Cleanup...============")
                 self.cleanup()
+        if self.aggregator.get_init_msg() is not None:
+            self.aggregator.set_init_msg(init_msg=None)
 
     def cleanup(self):
         client_idx_in_this_round = 0
@@ -187,6 +175,8 @@ class FedMLServerManager(FedMLCommManager):
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
+        if self.aggregator.get_init_msg() is not None:
+            message.add_params(MyMessage.MSG_INIT_MSG_TO_CLIENTS, self.aggregator.get_init_msg())
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")

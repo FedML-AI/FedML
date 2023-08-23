@@ -20,6 +20,5 @@ class FACrossSiloClient:
             client_analyzer,
         )
 
-
     def run(self):
         pass

@@ -1,0 +1,103 @@
+# This is a basic workflow to help you get started with Actions
+
+name: ML-Engines-Linux-MXNet
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
+  pull_request:
+    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
+
+  workflow_run:
+    workflows: [ ML-Engines-Linux-JAX ]
+    types:
+      - completed
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  mxnet-ml-engines-test:
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        arch: [ X64 ]
+        python-version: [ '3.8' ]
+        client-index: [ '0', '1', '2' ]
+    #        exclude:
+    #          - os: macos-latest
+    #            python-version: '3.8'
+    #          - os: windows-latest
+    #            python-version: '3.6'
+    runs-on: [ self-hosted, Linux ]
+    timeout-minutes: 15
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
+        run: |
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/actions-runner/fedml-master
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/actions-runner/fedml-dev
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: sync git repo to local pip
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
+          pip install mxnet==2.0.0b1
+
+      - name: server - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          cd python
+          cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
+          bash run_server.sh $run_id
+        if: ${{ matrix.client-index == '0' }}
+
+      - name: client 1 - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          cd python
+          cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
+          bash run_client.sh 1 $run_id
+        if: ${{ matrix.client-index == '1' }}
+
+      - name: client 2 - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          cd python
+          cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
+          bash run_client.sh 2 $run_id
+        if: ${{ matrix.client-index == '2' }}

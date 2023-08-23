@@ -9,8 +9,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
-    types: [opened, reopened]
+    branches: [ master2,  test/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -35,31 +34,53 @@ jobs:
         continue-on-error: true
         run: |
           wmic.exe /interactive:off process where "name='python.exe'" call terminate
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
-        with:
-          path: fedml-devops
-          clean: true
-      - name: pip install -e ./
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
         run: |
-          pip install -e ./
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/actions-runner/fedml-master
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/actions-runner/fedml-dev
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: sync git repo to local pip
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[tensorflow]'
 
       - name: server - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           python tf_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '0' }}
 
       - name: client 1 - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 1 --role client --run_id tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 2 --role client --run_id tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
@@ -76,38 +97,60 @@ jobs:
         os: [ windows-2019 ]
         arch: [ X64 ]
         python-version: [ '3.8' ]
-    runs-on: [ self-hosted, runner-windows, devops ]
+    runs-on: [ self-hosted, runner-windows ]
     timeout-minutes: 15
     steps:
       - name: cleanup running processes
         continue-on-error: true
         run: |
           wmic.exe /interactive:off process where "name='python.exe'" call terminate
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
-        with:
-          path: fedml-devops
-          clean: true
-      - name: pip install -e ./
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
         run: |
-          pip install -e ./
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/actions-runner/fedml-master
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/actions-runner/fedml-dev
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: sync git repo to local pip
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[jax]'
 
       - name: server - jax - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example
           python tf_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id jax-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '0' }}
 
       - name: client 1 - jax - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 1 --role client --run_id jax-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '1' }}
 
       - name: client 2 - jax - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 2 --role client --run_id jax-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
@@ -124,38 +167,60 @@ jobs:
         os: [ windows-2019 ]
         arch: [ X64 ]
         python-version: [ '3.8' ]
-    runs-on: [ self-hosted, runner-windows, devops ]
+    runs-on: [ self-hosted, runner-windows ]
     timeout-minutes: 15
     steps:
       - name: cleanup running processes
         continue-on-error: true
         run: |
           wmic.exe /interactive:off process where "name='python.exe'" call terminate
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
-        with:
-          path: fedml-devops
-          clean: true
-      - name: pip install -e ./
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
         run: |
-          pip install -e ./
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/actions-runner/fedml-master
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/actions-runner/fedml-dev
+            cd $path
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: sync git repo to local pip
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[mxnet]'
 
       - name: server - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
           python tf_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '0' }}
 
       - name: client 1 - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 1 --role client --run_id mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '1' }}
 
       - name: client 2 - mxnet - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
           python3 tf_client.py --cf config/fedml_config.yaml --rank 2 --role client --run_id mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}

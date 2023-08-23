@@ -6,9 +6,9 @@ import time
 
 import click
 from fedml.cli.comm_utils import sys_utils
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
 from fedml.cli.server_deployment.server_constants import ServerConstants
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
@@ -61,7 +61,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[5] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -98,7 +98,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[6] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)
@@ -107,8 +107,8 @@ def __login_as_edge_server_and_agent(args, userid, version):
     init_logs(edge_id)
 
     # Log arguments and binding results.
-    logging.info("login: unique_device_id = %s" % str(unique_device_id))
-    logging.info("login: server_id = %s" % str(edge_id))
+    # logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    # logging.info("login: server_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
@@ -164,7 +164,7 @@ def __login_as_cloud_agent(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[7] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -193,7 +193,7 @@ def __login_as_cloud_agent(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[8] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)
@@ -260,7 +260,7 @@ def __login_as_cloud_server(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[9] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -288,7 +288,7 @@ def __login_as_cloud_server(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[10] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)
@@ -302,9 +302,12 @@ def __login_as_cloud_server(args, userid, version):
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Echo results
-    logging.info("Congratulations, you have logged into the FedML MLOps platform successfully!")
-    logging.info("Your server unique device id is " + str(unique_device_id))
-
+    print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+    print(
+        "Your unique device ID is "
+        + str(unique_device_id)
+        + "\n"
+    )
     # Start the FedML server
     runner.callback_start_train(payload=args.runner_cmd)
 
@@ -313,11 +316,11 @@ def init_logs(edge_id):
     # Init runtime logs
     args.log_file_dir = ServerConstants.get_log_file_dir()
     args.run_id = 0
-    args.rank = 0
+    args.role = "server"
     args.edge_id = edge_id
     setattr(args, "using_mlops", True)
     setattr(args, "server_agent_id", edge_id)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
 
 
 def login(args):
@@ -330,7 +333,7 @@ def login(args):
 
 
 def logout():
-    ServerConstants.cleanup_run_process()
+    ServerConstants.cleanup_run_process(None)
     sys_utils.cleanup_all_fedml_server_api_processes()
 
 

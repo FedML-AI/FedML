@@ -21,6 +21,8 @@ class FASimulatorSingleProcess:
         self.train_data_local_dict = train_data_local_dict
         self.local_analyzer = create_local_analyzer(args)
         self.aggregator = create_global_analyzer(args, train_data_num)
+        if self.aggregator.get_init_msg() is not None:
+            self.local_analyzer.set_init_msg(self.aggregator.get_init_msg())
         self._setup_clients(
             local_datasize_dict, train_data_local_dict, self.local_analyzer,
         )
@@ -67,6 +69,7 @@ class FASimulatorSingleProcess:
                     self.train_data_local_dict[client_idx],
                     local_sample_num[client_idx]
                 )
+
                 client_submission = client.local_analyze(w_global=self.aggregator.get_server_data())
                 client_submission_list.append((client.get_sample_number(), client_submission))
             result = self.aggregator.aggregate(client_submission_list)

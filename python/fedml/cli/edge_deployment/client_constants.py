@@ -68,27 +68,37 @@ class ClientConstants(object):
     def get_fedml_home_dir():
         home_dir = expanduser("~")
         fedml_home_dir = os.path.join(home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        if not os.path.exists(fedml_home_dir):
+            os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
 
     @staticmethod
     def get_log_file_dir():
         log_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs")
+        if not os.path.exists(log_file_dir):
+            os.makedirs(log_file_dir, exist_ok=True)
         return log_file_dir
 
     @staticmethod
     def get_data_dir():
         data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "data")
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
         return data_dir
 
     @staticmethod
     def get_package_download_dir():
         package_download_dir = os.path.join(ClientConstants.get_fedml_home_dir(),
                                             ClientConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
+        if not os.path.exists(package_download_dir):
+            os.makedirs(package_download_dir, exist_ok=True)
         return package_download_dir
 
     @staticmethod
     def get_package_unzip_dir():
         package_unzip_dir = ClientConstants.get_package_download_dir()
+        if not os.path.exists(package_unzip_dir):
+            os.makedirs(package_unzip_dir, exist_ok=True)
         return package_unzip_dir
 
     @staticmethod
@@ -96,26 +106,38 @@ class ClientConstants(object):
         package_file_no_extension = str(package_name).split('.')[0]
         package_run_dir = os.path.join(ClientConstants.get_package_unzip_dir(),
                                        package_file_no_extension)
+        if not os.path.exists(package_run_dir):
+            os.makedirs(package_run_dir, exist_ok=True)
         return package_run_dir
 
     @staticmethod
     def get_model_cache_dir():
         model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
+        if not os.path.exists(model_cache_dir):
+            os.makedirs(model_cache_dir, exist_ok=True)
         return model_cache_dir
 
     @staticmethod
     def get_database_dir():
         database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
+        if not os.path.exists(database_dir):
+            os.makedirs(database_dir, exist_ok=True)
         return database_dir
 
     @staticmethod
-    def cleanup_run_process():
+    def cleanup_run_process(run_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
             process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-sub-process.id")
+                                           "runner-sub-process-v2.id")
+            if not os.path.exists(process_id_file):
+                return
             process_info = load_yaml_config(process_id_file)
-            process_id = process_info.get('process_id', None)
+            if run_id is None:
+                for run_id_key, process_id_value in process_info.items():
+                    ClientConstants.cleanup_run_process(run_id_key)
+                return
+            process_id = process_info.get(str(run_id), None)
             if process_id is not None:
                 try:
                     process = psutil.Process(process_id)
@@ -132,32 +154,41 @@ class ClientConstants(object):
                             os.kill(process.pid, signal.SIGKILL)
                 except Exception as e:
                     pass
-            yaml_object = {}
-            yaml_object['process_id'] = -1
-            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+
+                process_info.pop(str(run_id))
+                ClientConstants.generate_yaml_doc(process_info, process_id_file)
         except Exception as e:
             pass
 
     @staticmethod
-    def save_run_process(process_id):
+    def save_run_process(run_id, process_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
             process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-sub-process.id")
-            yaml_object = {}
-            yaml_object['process_id'] = process_id
-            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+                                           "runner-sub-process-v2.id")
+            if os.path.exists(process_id_file):
+                process_info = load_yaml_config(process_id_file)
+            else:
+                process_info = dict()
+            process_info[str(run_id)] = process_id
+            ClientConstants.generate_yaml_doc(process_info, process_id_file)
         except Exception as e:
             pass
 
     @staticmethod
-    def cleanup_learning_process():
+    def cleanup_learning_process(run_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
             process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-learning-process.id")
+                                           "runner-learning-process-v2.id")
+            if not os.path.exists(process_id_file):
+                return
             process_info = load_yaml_config(process_id_file)
-            process_id = process_info.get('process_id', None)
+            if run_id is None:
+                for run_id_key, process_id_value in process_info.items():
+                    ClientConstants.cleanup_learning_process(run_id_key)
+                return
+            process_id = process_info.get(str(run_id), None)
             if process_id is not None:
                 try:
                     process = psutil.Process(process_id)
@@ -165,44 +196,92 @@ class ClientConstants(object):
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
+                            os.kill(sub_process.pid, signal.SIGTERM)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
-            yaml_object = {}
-            yaml_object['process_id'] = -1
-            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+
+                process_info.pop(str(run_id))
+                ClientConstants.generate_yaml_doc(process_info, process_id_file)
         except Exception as e:
             pass
 
     @staticmethod
-    def save_learning_process(learning_id):
+    def save_learning_process(run_id, learning_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
             process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-learning-process.id")
-            yaml_object = {}
-            yaml_object['process_id'] = learning_id
-            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+                                           "runner-learning-process-v2.id")
+            if os.path.exists(process_id_file):
+                process_info = load_yaml_config(process_id_file)
+            else:
+                process_info = dict()
+            process_info[str(run_id)] = learning_id
+            ClientConstants.generate_yaml_doc(process_info, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def cleanup_bootstrap_process(run_id):
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-bootstrap-process-v2.id")
+            if not os.path.exists(process_id_file):
+                return
+            process_info = load_yaml_config(process_id_file)
+            if run_id is None:
+                for run_id_key, process_id_value in process_info.items():
+                    ClientConstants.cleanup_bootstrap_process(run_id_key)
+                return
+            process_id = process_info.get(str(run_id), None)
+            if process_id is not None:
+                try:
+                    process = psutil.Process(process_id)
+                    for sub_process in process.children():
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                        else:
+                            os.kill(sub_process.pid, signal.SIGTERM)
+
+                    if process is not None:
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGTERM)
+                except Exception as e:
+                    pass
+
+                process_info.pop(str(run_id))
+                ClientConstants.generate_yaml_doc(process_info, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def save_bootstrap_process(run_id, process_id):
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-bootstrap-process-v2.id")
+            if os.path.exists(process_id_file):
+                process_info = load_yaml_config(process_id_file)
+            else:
+                process_info = dict()
+            process_info[str(run_id)] = process_id
+            ClientConstants.generate_yaml_doc(process_info, process_id_file)
         except Exception as e:
             pass
 
     @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
         local_pkg_data_dir = ClientConstants.get_data_dir()
-        try:
-            os.makedirs(local_pkg_data_dir)
-        except Exception as e:
-            pass
-        try:
-            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
-        except Exception as e:
-            pass
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
 
         runner_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
                                         "runner_infos.yaml")
@@ -215,14 +294,8 @@ class ClientConstants(object):
     @staticmethod
     def save_training_infos(edge_id, training_status):
         local_pkg_data_dir = ClientConstants.get_data_dir()
-        try:
-            os.makedirs(local_pkg_data_dir)
-        except Exception as e:
-            pass
-        try:
-            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
-        except Exception as e:
-            pass
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
 
         training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
                                           "training_infos.yaml")
@@ -277,9 +350,11 @@ class ClientConstants(object):
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
         if platform.system() == 'Windows':
-            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
+            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
         else:
-            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
+            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag,
+                                              preexec_fn=os.setsid)
 
         return script_process
 
@@ -288,7 +363,12 @@ class ClientConstants(object):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
-        script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag)
+        if platform.system() == 'Windows':
+            script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag,
+                                              preexec_fn=os.setsid)
 
         return script_process
 
@@ -298,7 +378,12 @@ class ClientConstants(object):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
-        script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag)
+        if platform.system() == 'Windows':
+            script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag,
+                                              preexec_fn=os.setsid)
 
         return script_process
 

@@ -115,7 +115,7 @@ class FedMLClientDataInterface(Singleton):
 
     def open_job_db(self):
         if not os.path.exists(ClientConstants.get_database_dir()):
-            os.makedirs(ClientConstants.get_database_dir())
+            os.makedirs(ClientConstants.get_database_dir(), exist_ok=True)
         job_db_path = os.path.join(ClientConstants.get_database_dir(), "jobs.db")
         self.db_connection = sqlite3.connect(job_db_path)
 
@@ -154,6 +154,31 @@ class FedMLClientDataInterface(Singleton):
         current_cursor = self.db_connection.cursor()
         try:
             current_cursor.execute('''DROP TABLE IF EXISTS jobs;''')
+            self.db_connection.commit()
+        except Exception as e:
+            logging.info("Process compatibility on the local db.")
+        self.db_connection.close()
+
+    def create_agent_status_table(self):
+        self.handle_database_compatibility()
+
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            current_cursor.execute('''CREATE TABLE IF NOT EXISTS agent_status
+                   (edge_id INT NOT NULL,
+                   enabled INT,
+                   updated_time TEXT);''')
+            self.db_connection.commit()
+        except Exception as e:
+            pass
+        self.db_connection.close()
+
+    def drop_agent_status_table(self):
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            current_cursor.execute('''DROP TABLE IF EXISTS agent_status;''')
             self.db_connection.commit()
         except Exception as e:
             logging.info("Process compatibility on the local db.")
@@ -317,6 +342,62 @@ class FedMLClientDataInterface(Singleton):
             logging.info("Process compatibility on the local db.")
 
         self.close_job_db()
+
+    def get_agent_status(self, edge_id=0):
+        self.open_job_db()
+        enabled = 1
+        current_cursor = self.db_connection.cursor()
+        try:
+            results = current_cursor.execute("SELECT *  from agent_status where edge_id={};".format(edge_id))
+            for row in results:
+                out_edge_id = row[0]
+                enabled = row[1] > 0
+                update_time = row[2]
+                break
+        except Exception as e:
+            pass
+
+        self.db_connection.close()
+        return enabled
+
+    def insert_agent_status_to_db(self, agent_status, edge_id=0):
+        self.create_agent_status_table()
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        query_results = current_cursor.execute("SELECT * from agent_status where edge_id={};".format(edge_id))
+        for row in query_results:
+            self.db_connection.close()
+            self.update_agent_status_to_db(agent_status, edge_id)
+            return
+
+        try:
+            current_cursor.execute("INSERT INTO agent_status (\
+                edge_id, enabled, \
+                updated_time) \
+                VALUES (?, ?, ?)",
+                                   (edge_id, agent_status,
+                                    str(time.time())))
+        except Exception as e:
+            logging.info("Process agent status insertion {}.".format(traceback.format_exc()))
+        self.db_connection.commit()
+        self.db_connection.close()
+
+    def update_agent_status_to_db(self, agent_status, edge_id=0):
+        self.create_agent_status_table()
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            update_statement = "UPDATE agent_status set {} {} {} where edge_id={}".format(
+                f"edge_id={edge_id}",
+                f",enabled={agent_status}",
+                ",updated_time='" + str(time.time()) + "'",
+                edge_id)
+            current_cursor.execute(update_statement)
+            self.db_connection.commit()
+        except Exception as e:
+            logging.info("update agent status exception {}".format(traceback.format_exc()))
+            pass
+        self.db_connection.close()
 
 
 class FedMLClientJobModel(object):

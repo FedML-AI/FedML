@@ -15,7 +15,7 @@
 
 namespace MNN {
 namespace Train {
-class MNN_PUBLIC MnistDataset : public Dataset {
+class MNN_PUBLIC MnistDataset: public Dataset {
 public:
     enum Mode { TRAIN, TEST };
 

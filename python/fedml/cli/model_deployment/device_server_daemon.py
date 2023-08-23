@@ -2,7 +2,6 @@
 import argparse
 import os
 import time
-import sys
 
 from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_server_api_processes, \
     cleanup_all_fedml_server_learning_processes, cleanup_all_fedml_server_login_processes, get_python_program, \
@@ -32,7 +31,7 @@ if __name__ == "__main__":
     login_cmd = os.path.join(pip_source_dir, "device_server_login.py")
     while True:
         try:
-            ServerConstants.cleanup_run_process()
+            ServerConstants.cleanup_run_process(None)
             cleanup_all_fedml_server_api_processes(is_model_device=True)
             cleanup_all_fedml_server_learning_processes()
             cleanup_all_fedml_server_login_processes("device_server_login.py", clean_process_group=False)

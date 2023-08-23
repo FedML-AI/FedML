@@ -36,19 +36,14 @@
 -keep public class * extends android.app.backup.BackupAgent
 -keep public class * extends android.preference.Preference
 -keep public class * extends android.app.Fragment
--dontwarn android.annotation
 -keepattributes *Annotation*
 # ==================okhttp start===================
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn javax.annotation.**
 -dontwarn org.conscrypt.**
-# A resource is loaded with a relative path so the package of this class must be preserved.
--keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 # Animal Sniffer compileOnly dependency to ensure APIs are compatible with older versions of Java.
 -dontwarn org.codehaus.mojo.animal_sniffer.*
-# OkHttp platform used only on JVM and when Conscrypt dependency is available.
--dontwarn okhttp3.internal.platform.ConscryptPlatform
 # ==================okhttp end=====================
 
 # ==================retrofit2 start===================
@@ -58,8 +53,6 @@
 -keepclassmembernames,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
-# Ignore annotation used for build tooling.
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
 # ==================retrofit2 end=====================
 
@@ -76,15 +69,14 @@
 -keep class ai.fedml.edge.request.**{*;}
 -keep class ai.fedml.edge.request.parameter.**{*;}
 -keep class ai.fedml.edge.request.response.**{*;}
--keep interface ai.fedml.edge.request.UserManagerService{*;}
 -keep class ai.fedml.edge.nativemnn.**{*;}
 -keep class ai.fedml.edge.utils.**{*;}
 # ==================gson end=====================
 
 -keep interface ai.fedml.edge.FedEdgeApi{*;}
--keep interface ai.fedml.edge.OnAccuracyLossListener{*;}
 -keep interface ai.fedml.edge.OnTrainingStatusListener{*;}
 -keep interface ai.fedml.edge.OnTrainProgressListener{*;}
+-keep interface ai.fedml.edge.nativemobilenn.TrainingCallback{*;}
 -keep class ai.fedml.edge.FedEdgeManager {
     public *;
 }

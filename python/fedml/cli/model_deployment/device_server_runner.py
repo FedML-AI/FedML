@@ -3,7 +3,6 @@ import json
 import logging
 import multiprocessing
 import platform
-import random
 import sys
 
 from multiprocessing import Process
@@ -19,7 +18,6 @@ import uuid
 import zipfile
 from os import listdir
 
-import click
 import requests
 import torch
 
@@ -41,6 +39,7 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 from ...serving.fedml_server import FedMLModelServingServer
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 
 class RunnerError(BaseException):
@@ -98,18 +97,19 @@ class FedMLServerRunner:
         self.slave_deployment_results_mapping = {}
 
         self.model_runner_mapping = dict()
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
     def unzip_file(self, zip_file, unzip_file_path):
-        result = False
+        unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
-                result = True
+                unziped_file_name = zipf.namelist()[0]
 
-        return result
+        return unziped_file_name
 
     def package_download_progress(self, count, blksize, filesize):
         self.check_runner_stop_event()
@@ -130,11 +130,11 @@ class FedMLServerRunner:
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ServerConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path)
+            os.makedirs(local_package_path, exist_ok=True)
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress) # do not rename
         unzip_package_path = ServerConstants.get_model_dir()
         self.fedml_packages_base_dir = unzip_package_path
         try:
@@ -145,7 +145,7 @@ class FedMLServerRunner:
             pass
         logging.info("local_package_file {}, unzip_package_path {}".format(
             local_package_file, unzip_package_path))
-        self.unzip_file(local_package_file, unzip_package_path)
+        package_name = self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         return unzip_package_path
 
@@ -155,7 +155,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Copy config file from the client
@@ -171,6 +171,12 @@ class FedMLServerRunner:
 
         return unzip_package_path, package_conf_object
 
+    def get_usr_indicated_token(self, request_json) -> str:
+        usr_indicated_token = ""
+        if "parameters" in request_json and "inference_token" in request_json["parameters"]:
+            usr_indicated_token = request_json["parameters"]["inference_token"]
+        return usr_indicated_token
+    
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
 
@@ -180,6 +186,8 @@ class FedMLServerRunner:
 
         self.run_process_event = process_event
         try:
+            MLOpsUtils.set_ntp_offset(self.ntp_offset)
+
             self.setup_client_mqtt_mgr()
 
             self.run_impl()
@@ -189,12 +197,24 @@ class FedMLServerRunner:
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
                                                              is_from_model=True)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.error("Runner exits with exceptions.")
+            self.mlops_metrics.report_server_training_status(self.run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                                             is_from_model=True)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
+            time.sleep(3)
             sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.stop_sys_perf()
+            time.sleep(3)
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
 
@@ -213,7 +233,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         model_is_from_open = model_config["is_from_open"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
@@ -376,7 +396,7 @@ class FedMLServerRunner:
         )
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -398,7 +418,7 @@ class FedMLServerRunner:
                                                             is_from_model=True)
 
         try:
-            self.mlops_metrics.set_sys_reporting_status(False)
+            self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
             pass
 
@@ -498,29 +518,36 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
-
-            for input_item in model_inputs:
-                ret_item = input_item
-                shape = ret_item["shape"]
-                data_type = ret_item["datatype"]
-                if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
-                    for i in range(len(shape)):
-                        if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
-                            shape[i] = 1
-                    ret_item["data"] = torch.randint(0, 1, shape).tolist()
-                else:
-                    for i in range(len(shape)):
-                        if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
-                            shape[i] = 1
-                    ret_item["data"] = torch.zeros(shape).tolist()
-                ret_inputs.append(ret_item)
-
-            payload_json["input_json"] = {"end_point_name": end_point_name,
-                                          "model_name": model_name,
-                                          "token": str(token),
-                                          "inputs": ret_inputs,
-                                          "outputs": model_metadata["outputs"]}
-            payload_json["output_json"] = model_metadata["outputs"]
+            if "type" in model_metadata and model_metadata["type"] == "llm":
+                payload_json["input_json"] = {"end_point_name": end_point_name,
+                                            "model_name": model_name,
+                                            "token": str(token),
+                                            "inputs": model_inputs,
+                                            "outputs": []}
+                payload_json["output_json"] = model_metadata["outputs"]
+            else:
+                for input_item in model_inputs:
+                    ret_item = input_item
+                    shape = ret_item["shape"]
+                    data_type = ret_item["datatype"]
+                    if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
+                        for i in range(len(shape)):
+                            if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                                shape[i] = 1
+                        ret_item["data"] = torch.randint(0, 1, shape).tolist()
+                    else:
+                        for i in range(len(shape)):
+                            if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                                shape[i] = 1
+                        ret_item["data"] = torch.zeros(shape).tolist()
+                    ret_inputs.append(ret_item)
+                
+                payload_json["input_json"] = {"end_point_name": end_point_name,
+                                            "model_name": model_name,
+                                            "token": str(token),
+                                            "inputs": ret_inputs,
+                                            "outputs": model_metadata["outputs"]}
+                payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, end_point_name,
                                       model_name, model_version,
@@ -677,6 +704,11 @@ class FedMLServerRunner:
         topic: model_ops/model_device/start_deployment/model-agent-device-id
         payload: {"timestamp": 1671440005119, "end_point_id": 4325, "token": "FCpWU", "state": "STARTING","user_id": "105", "user_name": "alex.liang2", "device_ids": [693], "device_objs": [{"device_id": "0xT3630FW2YM@MacOS.Edge.Device", "os_type": "MacOS", "id": 693, "ip": "1.1.1.1", "memory": 1024, "cpu": "1.7", "gpu": "Nvidia", "extra_infos":{}}], "model_config": {"model_name": "image-model", "model_id": 111, "model_version": "v1", 'is_from_open": 0, "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip", "instance_scale_min": 1, "instance_scale_max": 3, "inference_engine": "onnx"}, "parameters": {"hidden_size": 128, "hidden_act": "gelu", "initializer_range": 0.02, "vocab_size": 30522, "hidden_dropout_prob": 0.1, "num_attention_heads": 2, "type_vocab_size": 2, "max_position_embeddings": 512, "num_hidden_layers": 2, "intermediate_size": 512, "attention_probs_dropout_prob": 0.1}}
         """
+        try:
+            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+        except Exception as e:
+            pass
+
         logging.info("callback_start_deployment {}".format(payload))
 
         # get deployment params
@@ -695,7 +727,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Start log processor for current run
@@ -718,6 +750,10 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(run_id, end_point_name, json.dumps(device_objs))
+        usr_indicated_token = self.get_usr_indicated_token(request_json)
+        if usr_indicated_token != "":
+            logging.info(f"Change Token from{token} to {usr_indicated_token}")
+            token = usr_indicated_token
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, end_point_name, model_name, token)
 
@@ -760,7 +796,7 @@ class FedMLServerRunner:
             self.model_runner_mapping[run_id] = server_runner
             server_process = Process(target=server_runner.run, args=(self.run_process_event,))
             server_process.start()
-            ServerConstants.save_run_process(server_process.pid)
+            ServerConstants.save_run_process(run_id, server_process.pid)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE3 = "StartRunner"
             self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -842,6 +878,8 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id,
                                      model_msg_object.end_point_name, False)
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            delete_end_point(model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)                                     
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
@@ -945,11 +983,11 @@ class FedMLServerRunner:
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
 
-        logging.info(
-            "server agent config: {},{}".format(
-                self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
-            )
-        )
+        # logging.info(
+        #     "server agent config: {},{}".format(
+        #         self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
+        #     )
+        # )
 
         self.client_mqtt_mgr = MqttManager(
             self.agent_config["mqtt_config"]["BROKER_HOST"],
@@ -1014,8 +1052,8 @@ class FedMLServerRunner:
     def exit_run_with_exception(self):
         logging.info("Exit run successfully.")
 
-        ServerConstants.cleanup_learning_process()
-        ServerConstants.cleanup_run_process()
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_run_process(self.run_id)
 
         self.mlops_metrics.report_server_id_status(self.run_id,
                                                    ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
@@ -1188,7 +1226,7 @@ class FedMLServerRunner:
                 if device_id is None:
                     device_id = hex(uuid.getnode())
             else:
-                device_id = subprocess.Popen(
+                device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
                 )
                 device_id = hex(device_id)
@@ -1352,9 +1390,14 @@ class FedMLServerRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        click.echo("")
-        click.echo("Congratulations, you have logged into the FedML ModelOps platform successfully!")
-        click.echo("Your server unique device id is " + str(self.unique_device_id))
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+            + str(self.unique_device_id)
+            + "\n"
+        )
+
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
@@ -1445,9 +1488,8 @@ class FedMLServerRunner:
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
-        self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=False)
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args, is_client=False)
+        self.mlops_metrics.report_sys_perf(self.args)
 
         self.recover_start_deployment_msg_after_upgrading()
 

@@ -15,18 +15,22 @@ class FAAggregator(object):
         server_aggregator,
     ):
         self.aggregator = server_aggregator
-
         self.args = args
         self.all_train_data_num = all_train_data_num
         self.train_data_local_dict = train_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
-
         self.client_num = client_num
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
+
+    def get_init_msg(self):
+        return self.aggregator.get_init_msg()
+
+    def set_init_msg(self, init_msg):
+        self.aggregator.set_init_msg(init_msg)
 
     def get_server_data(self):
         return self.aggregator.get_server_data()
@@ -52,25 +56,20 @@ class FAAggregator(object):
     def aggregate(self):
         start_time = time.time()
 
-        model_list = []
+        local_result_list = []
         for idx in range(self.client_num):
-            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-        # model_list is the list after outlier removal
-        Context().add(Context.KEY_CLIENT_MODEL_LIST, model_list)
-
-        averaged_params = self.aggregator.aggregate(model_list)
-
-        self.set_server_data(averaged_params)
+            local_result_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+        Context().add(Context.KEY_CLIENT_MODEL_LIST, local_result_list)
+        global_result = self.aggregator.aggregate(local_result_list)
+        self.set_server_data(global_result)
 
         end_time = time.time()
-        logging.info(f"aggregation result = {averaged_params}")
+        logging.info(f"aggregation result = {global_result}")
         logging.info("aggregate time cost: %d" % (end_time - start_time))
-        return averaged_params, model_list
-
+        return global_result, local_result_list
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
-
         Args:
             round_idx: round index, starting from 0
             client_num_in_total: this is equal to the users in a synthetic data,

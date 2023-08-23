@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # https://doc.fedml.ai/mlops/api.html
-fedml login 299
+fedml login 1606

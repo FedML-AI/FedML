@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 import subprocess
@@ -13,10 +14,8 @@ if __name__ == '__main__':
     os.chdir(Path(__file__).parent)
 
     torch_distributed_default_port = int(os.getenv("TORCH_DISTRIBUTED_DEFAULT_PORT", 29500))
-
     args, *_ = parser.parse_known_args()
-
-    # TODO: parse RANK
+    master_port = torch_distributed_default_port + args.rank
 
     """
         process = ClientConstants.exec_console_with_shell_script_list(
@@ -38,13 +37,17 @@ if __name__ == '__main__':
             "bash",
             "scripts/run_fedml.sh",
             "\"\"",  # master address
-            f"{torch_distributed_default_port + args.rank}",  # master port
+            f"{master_port}",  # master port
             "\"\"",  # number of nodes
             "main_fedllm.py",  # main program
             *sys.argv[1:],
         ]),
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         shell=True
     )
-    print(result)
+
+    logging.info(result.stdout)
+    logging.error(result.stderr)
+
+    exit(result.returncode)
