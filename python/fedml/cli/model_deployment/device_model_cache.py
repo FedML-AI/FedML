@@ -201,7 +201,13 @@ class FedMLModelCache(object):
         
     def delete_end_point(self, end_point_name, model_name, model_version):
         self.redis_connection.delete(self.get_deployment_status_key(end_point_name, model_name))
-        # TODO: Delete related KV Pair        
+        # TODO: Delete related KV Pair      
+        # print("Will Delete the realated redis keys permanently")
+        # self.redis_connection.delete(self.get_deployment_result_key(end_point_name, model_name))
+        # self.redis_connection.delete(self.get_deployment_status_key(end_point_name, model_name))
+        # self.redis_connection.delete(self.get_monitor_metrics_key(end_point_name, model_name, model_version))
+        # self.redis_connection.delete(self.get_deployment_token_key(end_point_name, model_name))
+        # self.redis_connection.delete(self.get_round_robin_prev_device(end_point_name, model_name, model_version))
 
     def get_end_point_activation(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
