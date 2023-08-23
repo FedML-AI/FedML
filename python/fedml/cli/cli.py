@@ -10,6 +10,7 @@ import click
 import fedml
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.cli.scheduler.constants import Constants
 from fedml.cli.server_deployment.server_constants import ServerConstants
 from fedml.cli.edge_deployment.client_login import logout as client_logout
 from fedml.cli.env.collect_env import collect_env
@@ -991,6 +992,22 @@ def launch_job(yaml_file, api_key, platform, group,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
         FedMLLaunchManager.save_api_key(api_key)
+        if result.status == Constants.JOB_START_STATUS_INVALID:
+            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file to make sure the syntax is valid, e.g. "
+                       f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
+            return
+        elif result.status == Constants.JOB_START_STATUS_BLOCKED:
+            click.echo("\nBecause the value of maximum_cost_per_hour is too low,"
+                       "we can not find exactly matched machines for your job. \n"
+                       "But here we still present machines closest to your expected price as below.")
+        elif result.status == Constants.JOB_START_STATUS_QUEUED:
+            click.echo("\nWe can not find exactly matched machines for your job. "
+                       "But your job will be put into the waiting queue. \n"
+                       "When properly machines are released, your job will be scheduled to run automatically.")
+            if click.confirm("Do you want to cancel your job from the waiting queue?", abort=True):
+                stop_jobs_core(platform, result.job_id, api_key, version)
+            return
+
         if result.job_url == "":
             if result.message is not None:
                 click.echo(f"Failed to launch the job with response messages: {result.message}")
@@ -1005,9 +1022,9 @@ def launch_job(yaml_file, api_key, platform, group,
                                f"to review your job details.")
                     click.echo(f"{result.job_url}")
 
-                click.echo("")
                 if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    click.echo(f"Searched and matched the following GPU resource for your job:")
+                    if result.status != Constants.JOB_START_STATUS_BLOCKED:
+                        click.echo(f"\nSearched and matched the following GPU resource for your job:")
                     gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
                                              'Region', 'Cost', 'Selected'])
                     for gpu_device in result.gpu_matched:
@@ -1018,9 +1035,9 @@ def launch_job(yaml_file, api_key, platform, group,
                     print(gpu_table)
                     click.echo("")
             else:
-                click.echo("")
                 if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    click.echo(f"Searched and matched the following GPU resource for your job:")
+                    if result.status != Constants.JOB_START_STATUS_BLOCKED:
+                        click.echo(f"\nSearched and matched the following GPU resource for your job:")
                     gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
                                              'Region', 'Cost', 'Selected'])
                     for gpu_device in result.gpu_matched:
