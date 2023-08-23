@@ -181,7 +181,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
                 bootstrap_src_dir = config.get('bootstrap', "")
                 data_cache_dir_input = config.get('data_cache_dir', "")
+                request_input_example = config.get('request_input_example', "")
                 logging.info(f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
+                src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
                         src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
@@ -193,10 +195,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                         else:
                             src_data_cache_dir = data_cache_dir_input
                             dst_data_cache_dir = data_cache_dir_input
-                logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                    logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
                 # Serving dir inside docker
-                dst_model_serving_dir = ClientConstants.get_model_serving_dir()
-                dst_entry = os.path.join(dst_model_serving_dir, config.get('entry_point'))
+                dst_model_serving_dir = "/home/fedml/models_serving"
+                relative_entry = config.get('entry_point')
                 if bootstrap_src_dir != "":
                     dst_bootstrap_dir = os.path.join(dst_model_serving_dir, bootstrap_src_dir)
                 else:
@@ -204,7 +206,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
             if src_code_dir == "":
                 raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
-            if dst_entry == "":
+            if relative_entry == "":
                 raise Exception("Please indicate main_entry in the fedml_model_config.yaml")
         
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
@@ -268,28 +270,41 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         if use_gpu:
             device_requests.append(
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
+        logging.info("Start pulling the inference image..., may take a few minutes...")
+        client.images.pull(inference_image_name)
+        logging.info("Start creating the inference container...")
+
+        volumns = []
+        binds = {}
+        environment = {}
+
+        # Optional
+        if src_data_cache_dir != "":
+            volumns.append(src_data_cache_dir)
+            binds[src_data_cache_dir] = {
+                "bind": dst_data_cache_dir,
+                "mode": "rw"
+            }
+            environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+
+        # Default
+        volumns.append(src_code_dir)
+        binds[src_code_dir] = {
+            "bind": dst_model_serving_dir,
+            "mode": "rw"
+        }
+        environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+        environment["MAIN_ENTRY"] = relative_entry
+
         new_container = client.api.create_container(
             image = inference_image_name,
             name = llm_server_container_name,
-            volumes = [src_data_cache_dir, src_code_dir],
+            volumes = volumns,
             ports = [2345],                     # port open inside the container
-            entrypoint=["python3", dst_entry],
-            environment = {
-                "DATA_CACHE_FOLDER": dst_data_cache_dir,
-                "BOOTSTRAP_DIR": dst_bootstrap_dir,
-                "MAIN_ENTRY": dst_entry,
-            },
+            entrypoint=["python3", relative_entry],
+            environment = environment,
             host_config = client.api.create_host_config(
-                binds = {
-                    src_data_cache_dir: {
-                        "bind": dst_data_cache_dir,
-                        "mode": "rw"
-                    },
-                    src_code_dir: {
-                        "bind": dst_model_serving_dir,
-                        "mode": "rw"
-                    }
-                },
+                binds = binds,
                 port_bindings = {
                     2345: None        # randomlly open a port on the host
                 },
@@ -311,10 +326,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                               ClientConstants.CMD_TYPE_RUN_TRITON_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="llm")
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(running_model_name, inference_engine, inference_http_port, infer_host, inference_type="llm")
+            get_model_info(running_model_name, inference_engine, inference_http_port,\
+                            infer_host, inference_type="llm", request_input_example=request_input_example)
 
         # testing
-        test_input = {"inputs": {"text": "What is a good cure for hiccups?"}}
+        if request_input_example == "":
+            test_input = {"inputs": {"text": "What is a good cure for hiccups?"}}
+        else:
+            test_input = request_input_example
         if inference_output_url != "":
             try:
                 inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
@@ -497,7 +516,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False,
-                   inference_type=None):
+                   inference_type=None, request_input_example=""):
     local_ip = ClientConstants.get_local_ip()
     if infer_host is not None and infer_host != "127.0.0.1":
         infer_url_host = infer_host
@@ -523,7 +542,10 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
             else:
                 break
         model_metadata = {}
-        model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
+        if request_input_example != "":
+            model_metadata["inputs"] = request_input_example
+        else:
+            model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
         model_metadata["outputs"] = []
         model_metadata["type"] = "llm"
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
