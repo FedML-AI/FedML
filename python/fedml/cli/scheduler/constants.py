@@ -61,6 +61,10 @@ class Constants(Singleton):
     LAUNCH_APP_NAME_PREFIX = "FedMLLaunchApp"
     LAUNCH_PROJECT_NAME_DEFAULT = "default"
 
+    JOB_START_STATUS_INVALID = "INVALID"
+    JOB_START_STATUS_BLOCKED = "BLOCKED"
+    JOB_START_STATUS_QUEUED = "QUEUED"
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

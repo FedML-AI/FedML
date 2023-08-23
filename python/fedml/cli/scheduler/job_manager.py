@@ -78,12 +78,6 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] != "SUCCESS":
-                job_start_result = FedMLJobStartedModel({"job_name": "", "status": "FAILED",
-                                                         "job_url": "",
-                                                         "started_time": time.time(),
-                                                         "message": resp_data["message"]})
-                return job_start_result
             job_start_result = FedMLJobStartedModel(resp_data["data"])
             # job_start_result = FedMLJobStartedModel({"status": "STARTING",
             #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})

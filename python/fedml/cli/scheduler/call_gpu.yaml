@@ -24,6 +24,11 @@ bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
 
+#framework_type: fedml         # options: fedml, deepspeed, pytorch, general
+#task_type: train              # options: serve, train, dev-environment
+
 computing:
   minimum_num_gpus: 1            # minimum # of GPUs to provision
-  maximum_cost_per_hour: $70   # max cost per hour for your job per machine
+  maximum_cost_per_hour: $2   # max cost per hour for your job per machine
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: GPU              # options: GPU, CPU, hybrid
