@@ -993,7 +993,8 @@ def launch_job(yaml_file, api_key, platform, group,
     if result is not None:
         FedMLLaunchManager.save_api_key(api_key)
         if result.status == Constants.JOB_START_STATUS_INVALID:
-            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file to make sure the syntax is valid, e.g. "
+            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file "
+                       f"to make sure the syntax is valid, e.g. "
                        f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
             return
         elif result.status == Constants.JOB_START_STATUS_BLOCKED:
@@ -1001,12 +1002,12 @@ def launch_job(yaml_file, api_key, platform, group,
                        "we can not find exactly matched machines for your job. \n"
                        "But here we still present machines closest to your expected price as below.")
         elif result.status == Constants.JOB_START_STATUS_QUEUED:
-            click.echo("\nWe can not find exactly matched machines for your job. "
-                       "But your job will be put into the waiting queue. \n"
-                       "When properly machines are released, your job will be scheduled to run automatically.")
-            if click.confirm("Do you want to cancel your job from the waiting queue?", abort=True):
+            click.echo("\nCurrently, there are no machines for your job. "
+                       "But we will still keep your job in the waiting list,"
+                       "which will be scheduled automatically when any machine is available.")
+            if click.confirm("Do you want to cancel your job from the waiting list?", abort=True):
                 stop_jobs_core(platform, result.job_id, api_key, version)
-            return
+                return
 
         if result.job_url == "":
             if result.message is not None:

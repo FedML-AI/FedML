@@ -51,6 +51,7 @@ def get_sys_runner_info():
     gpu_count = 0
     gpu_vendor = None
     cpu_count = 1
+    gpu_device_name = None
 
     import platform
     os_ver = platform.platform()
@@ -99,6 +100,8 @@ def get_sys_runner_info():
         gpu_count = nvidia_smi.nvmlDeviceGetCount()
         gpu_vendor = "nvidia"
         nvidia_smi.nvmlShutdown()
+
+        gpu_device_name = torch.cuda.get_device_name(0)
     except:
         pass
 
@@ -106,7 +109,7 @@ def get_sys_runner_info():
 
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
         cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
-        gpu_count, gpu_vendor, cpu_count
+        gpu_count, gpu_vendor, cpu_count, gpu_device_name
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
