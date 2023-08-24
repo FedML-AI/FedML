@@ -135,6 +135,16 @@ def get_available_gpu_id_list(limit=1):
     return gpu_available_list
 
 
+def get_host_name():
+    host_name = None
+    try:
+        import platform
+        host_name = platform.uname()[1]
+    except Exception as e:
+        pass
+    return host_name
+
+
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
     try:
         open_mode = "w"
