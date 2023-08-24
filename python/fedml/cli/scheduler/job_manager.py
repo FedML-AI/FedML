@@ -195,7 +195,7 @@ class FedMLGpuDevices(object):
         self.gpu_count = gpu_device_json["got_gpu_count"]
         self.gpu_name = gpu_device_json["gpu_name"]
         self.gpu_instance = self.gpu_name
-        self.gpu_provider = "FedML"
+        self.gpu_provider = gpu_device_json["gpu_provider"]
 
 
 class FedMLJobModelList(object):
