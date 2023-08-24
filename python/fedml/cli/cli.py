@@ -1031,7 +1031,7 @@ def launch_job(yaml_file, api_key, platform, group,
                     for gpu_device in result.gpu_matched:
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
-                                           f"{gpu_device.gpu_vendor}-{gpu_device.gpu_type}:{gpu_device.gpu_num}",
+                                           f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
                                            gpu_device.gpu_region, gpu_device.cost, ""])
                     print(gpu_table)
                     click.echo("")
@@ -1044,7 +1044,7 @@ def launch_job(yaml_file, api_key, platform, group,
                     for gpu_device in result.gpu_matched:
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
-                                           f"{gpu_device.gpu_vendor}-{gpu_device.gpu_type}:{gpu_device.gpu_num}",
+                                           f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
                                            gpu_device.gpu_region, gpu_device.cost, ""])
                     print(gpu_table)
                     click.echo("")
