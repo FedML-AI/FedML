@@ -1254,6 +1254,7 @@ class FedMLServerRunner:
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
             gpu_count, gpu_vendor, cpu_count, gpu_device_name = get_sys_runner_info()
+        host_name = sys_utils.get_host_name()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -1267,9 +1268,9 @@ class FedMLServerRunner:
             "ip": ip,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
-                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "mpi_installed": mpi_installed, "cpu_usage": cpu_usage,
                             "available_mem": available_mem, "total_mem": total_mem,
-                            "cpu_count": cpu_count, "gpu_count": 0}
+                            "cpu_count": cpu_count, "gpu_count": 0, "host_name": host_name}
         }
         if gpu_count > 0:
             if gpu_total_mem is not None:
