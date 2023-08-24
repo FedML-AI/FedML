@@ -161,7 +161,8 @@ pipeline {
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
                 sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
-                sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+                // sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+                sh 'docker pull $REGISTRY_DOCKER_HUB/fedml/fedml-device-image:base'
 
                 sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
 
