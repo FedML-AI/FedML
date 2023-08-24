@@ -1042,7 +1042,7 @@ class FedMLClientRunner:
                             "available_mem": available_mem, "total_mem": total_mem,
                             "cpu_count": cpu_count, "gpu_count": 0}
         }
-        if gpu_info is not None:
+        if gpu_count > 0:
             if gpu_total_mem is not None:
                 json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
             else:
@@ -1056,6 +1056,13 @@ class FedMLClientRunner:
             json_params["extra_infos"]["gpu_count"] = gpu_count
             json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
             json_params["extra_infos"]["gpu_device_name"] = gpu_device_name
+
+            gpu_available_id_list = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+            gpu_available_count = len(gpu_available_id_list) if gpu_available_id_list is not None else 0
+            gpu_list = sys_utils.get_gpu_list()
+            json_params["extra_infos"]["gpu_available_count"] = gpu_available_count
+            json_params["extra_infos"]["gpu_available_id_list"] = gpu_available_id_list
+            json_params["extra_infos"]["gpu_list"] = gpu_list
         else:
             json_params["gpu"] = "None"
 

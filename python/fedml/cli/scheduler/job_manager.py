@@ -186,15 +186,15 @@ class FedMLJobStartedModel(object):
 class FedMLGpuDevices(object):
     def __init__(self, gpu_device_json):
         self.gpu_vendor = gpu_device_json["gpu_vendor"]
-        self.gpu_num = gpu_device_json["gpu_num"]
+        self.gpu_num = gpu_device_json["total_gpu_count"]
         self.gpu_type = gpu_device_json["gpu_type"]
         self.cost = gpu_device_json["cost"]
-        self.mem_size = 256
-        self.gpu_region = "USA-CA"
-        self.cpu_count = 256
-        self.gpu_count = 8
-        self.gpu_name = self.gpu_type
-        self.gpu_instance = self.gpu_type
+        self.mem_size = gpu_device_json["gpu_mem"]
+        self.gpu_region = gpu_device_json["gpu_region"]
+        self.cpu_count = gpu_device_json["cpu_count"]
+        self.gpu_count = gpu_device_json["got_gpu_count"]
+        self.gpu_name = gpu_device_json["gpu_name"]
+        self.gpu_instance = self.gpu_name
         self.gpu_provider = "FedML"
 
 
@@ -234,6 +234,5 @@ class FedMLJobModel(object):
                 os_version = gpu_dev.get("osVersion", "")
                 self.device_infos.append(f"Device Name: {device_id}, OS Type: {os_type}, OS Version: {os_version}, "
                                          f"Brand: {brand}, gpu count: {gpu_count}")
-
     def parse(self, job_json):
         pass

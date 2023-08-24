@@ -16,6 +16,8 @@ import fedml
 from packaging import version
 import sys
 import subprocess
+import GPUtil
+
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 
@@ -94,7 +96,6 @@ def get_sys_runner_info():
         nvidia_smi.nvmlInit()
         handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
         info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_info = str(handle)
         gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
         gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
         gpu_count = nvidia_smi.nvmlDeviceGetCount()
@@ -102,6 +103,7 @@ def get_sys_runner_info():
         nvidia_smi.nvmlShutdown()
 
         gpu_device_name = torch.cuda.get_device_name(0)
+        gpu_info = gpu_device_name
     except:
         pass
 
@@ -110,6 +112,27 @@ def get_sys_runner_info():
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
         cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
         gpu_count, gpu_vendor, cpu_count, gpu_device_name
+
+
+# GPU list: [GPU(ID, uuid, load, memoryTotal, memoryUsed, memoryFree, driver,
+# gpu_name, serial, display_mode, display_active, temp_gpu)]
+def get_gpu_list():
+    gpu_list = GPUtil.getGPUs()
+    ret_gpu_list = list()
+    for gpu in gpu_list:
+        ret_gpu_item = {"ID": gpu.id, "uuid": gpu.uuid, "load": gpu.load,
+                        "memoryTotal": gpu.memoryTotal, "memoryUsed": gpu.memoryUsed,
+                        "memoryFree": gpu.memoryFree, "driver": gpu.driver,
+                        "gpu_name": gpu.gpu_name, "serial": gpu.serial,
+                        "display_mode": gpu.display_mode, "display_active": gpu.display_active,
+                        "temp_gpu": gpu.temp_gpu}
+        ret_gpu_list.append(ret_gpu_item)
+    return ret_gpu_list
+
+
+def get_available_gpu_id_list(limit=1):
+    gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.95, maxMemory=0.95)
+    return gpu_available_list
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
