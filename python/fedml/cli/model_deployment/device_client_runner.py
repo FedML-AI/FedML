@@ -823,7 +823,7 @@ class FedMLClientRunner:
             "ip": ip,
             "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
                             "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
-                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "mpi_installed": mpi_installed, "cpu_usage": cpu_usage,
                             "available_mem": available_mem, "total_mem": total_mem,
                             "cpu_count": cpu_count, "gpu_count": 0, "host_name": host_name}
         }
