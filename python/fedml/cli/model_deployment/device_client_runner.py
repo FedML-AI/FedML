@@ -808,7 +808,7 @@ class FedMLClientRunner:
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
-            gpu_count, gpu_vendor, cpu_count = get_sys_runner_info()
+            gpu_count, gpu_vendor, cpu_count, gpu_device_name = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -839,6 +839,7 @@ class FedMLClientRunner:
 
             json_params["extra_infos"]["gpu_count"] = gpu_count
             json_params["extra_infos"]["gpu_vendor"] = gpu_vendor
+            json_params["extra_infos"]["gpu_device_name"] = gpu_device_name
         else:
             json_params["gpu"] = "None"
 

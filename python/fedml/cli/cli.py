@@ -993,7 +993,8 @@ def launch_job(yaml_file, api_key, platform, group,
     if result is not None:
         FedMLLaunchManager.save_api_key(api_key)
         if result.status == Constants.JOB_START_STATUS_INVALID:
-            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file to make sure the syntax is valid, e.g. "
+            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file "
+                       f"to make sure the syntax is valid, e.g. "
                        f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
             return
         elif result.status == Constants.JOB_START_STATUS_BLOCKED:
@@ -1006,7 +1007,7 @@ def launch_job(yaml_file, api_key, platform, group,
                        "which will be scheduled automatically when any machine is available.")
             if click.confirm("Do you want to cancel your job from the waiting list?", abort=True):
                 stop_jobs_core(platform, result.job_id, api_key, version)
-            return
+                return
 
         if result.job_url == "":
             if result.message is not None:
