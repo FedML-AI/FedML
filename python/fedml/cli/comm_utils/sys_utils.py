@@ -115,7 +115,7 @@ def get_sys_runner_info():
 
 
 # GPU list: [GPU(ID, uuid, load, memoryTotal, memoryUsed, memoryFree, driver,
-# gpu_name, serial, display_mode, display_active, temp_gpu)]
+# gpu_name, serial, display_mode, display_active, temperature)]
 def get_gpu_list():
     gpu_list = GPUtil.getGPUs()
     ret_gpu_list = list()
@@ -123,9 +123,9 @@ def get_gpu_list():
         ret_gpu_item = {"ID": gpu.id, "uuid": gpu.uuid, "load": gpu.load,
                         "memoryTotal": gpu.memoryTotal, "memoryUsed": gpu.memoryUsed,
                         "memoryFree": gpu.memoryFree, "driver": gpu.driver,
-                        "gpu_name": gpu.gpu_name, "serial": gpu.serial,
+                        "gpu_name": gpu.name, "serial": gpu.serial,
                         "display_mode": gpu.display_mode, "display_active": gpu.display_active,
-                        "temp_gpu": gpu.temp_gpu}
+                        "temperature": gpu.temperature}
         ret_gpu_list.append(ret_gpu_item)
     return ret_gpu_list
 
