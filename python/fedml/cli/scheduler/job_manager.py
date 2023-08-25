@@ -223,6 +223,9 @@ class FedMLJobModel(object):
         self.compute_start_time = job_json.get("createTime", "0")
         self.compute_end_time = job_json.get("endTime", "0")
         self.compute_duration = job_json.get("spendTime", 0)
+        if self.compute_duration is not None and self.compute_duration != 'None':
+            self.compute_duration = self.compute_duration / Constants.TIME_PER_HOUR_TO_MS
+            self.compute_duration = round(self.compute_duration, 4)
         self.cost = job_json.get("cost", 0.0)
         self.job_url = job_json.get("jobUrl", "")
         gpu_machines = job_json.get("gpuMachines", None)

@@ -776,6 +776,20 @@ class FedMLClientRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic, payload):
+        # Get training params
+        request_json = json.loads(payload)
+        is_retain = request_json.get("is_retain", False)
+        if is_retain:
+            return
+        run_id = request_json["runId"]
+
+        # Start log processor for current run
+        self.args.run_id = run_id
+        self.args.edge_id = self.edge_id
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+        logging.info("start the log processor")
+
         try:
             _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
         except Exception as e:
@@ -795,33 +809,20 @@ class FedMLClientRunner:
             self.mlops_metrics.report_client_training_status(self.edge_id,
                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                                                              in_run_id=run_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             return
 
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )
 
-        # Get training params
-        request_json = json.loads(payload)
-        is_retain = request_json.get("is_retain", False)
-        if is_retain:
-            return
-        run_id = request_json["runId"]
-
-        logging.info("cleanup and save runner information")
-
         # Terminate previous process about starting or stopping run command
+        logging.info("cleanup and save runner information")
         server_agent_id = request_json["cloud_agent_id"]
         ClientConstants.cleanup_run_process(run_id)
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
-        # Start log processor for current run
-        self.args.run_id = run_id
-        self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-        logging.info("start the log processor")
-        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
-
+        # OTA upgrade
         self.ota_upgrade(payload, request_json)
 
         # Start server with multiprocessing mode
