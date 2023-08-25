@@ -1003,7 +1003,7 @@ def launch_job(yaml_file, api_key, platform, group,
                 return
             else:
                 click.confirm("You have confirmed to keep your job in the waiting list.")
-                return 
+                return
 
         if result.job_url == "":
             if result.message is not None:
