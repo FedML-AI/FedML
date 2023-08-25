@@ -65,6 +65,8 @@ class Constants(Singleton):
     JOB_START_STATUS_BLOCKED = "BLOCKED"
     JOB_START_STATUS_QUEUED = "QUEUED"
 
+    TIME_PER_HOUR_TO_MS = 3600000.0
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")
