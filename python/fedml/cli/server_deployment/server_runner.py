@@ -797,12 +797,11 @@ class FedMLServerRunner:
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-                run_id, self.request_json.get("cloudServerDeviceId", "0")
+                run_id, request_json.get("cloudServerDeviceId", "0")
             )
         elif self.run_as_cloud_server:
-            self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
-            self.start_request_json = json.dumps(self.request_json)
-            run_id = self.request_json["runId"]
+            self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
+            run_id = request_json["runId"]
 
             # Start log processor for current run
             self.args.run_id = run_id
@@ -868,9 +867,9 @@ class FedMLServerRunner:
             self.run_process.start()
             ServerConstants.save_run_process(run_id, self.run_process.pid)
         elif self.run_as_cloud_server:
-            self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
-            self.start_request_json = json.dumps(self.request_json)
-            run_id = self.request_json["runId"]
+            self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
+            self.start_request_json = json.dumps(request_json)
+            run_id = request_json["runId"]
 
             # Init local database
             FedMLServerDataInterface.get_instance().create_job_table()
@@ -881,11 +880,6 @@ class FedMLServerRunner:
                 self.run_process_event = multiprocessing.Event()
             self.run_process_event.clear()
             self.run(self.run_process_event)
-
-    def simulate_as_cloud_server(self):
-        message_bytes = json.dumps(self.request_json).encode("ascii")
-        base64_bytes = base64.b64encode(message_bytes)
-        runner_cmd_encoded = base64_bytes.decode("ascii")
 
     def start_cloud_server_process_entry(self):
         try:
