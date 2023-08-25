@@ -49,7 +49,9 @@ class FedMLServerRunner:
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.run_process_event = None
+        self.run_process_event_map = dict()
         self.run_process = None
+        self.run_process_map = dict()
         self.start_request_json = None
         self.server_docker_image = None
         self.cloud_server_name = None
@@ -524,13 +526,13 @@ class FedMLServerRunner:
 
             self.stop_run_when_starting_failed()
 
-    def init_job_task(self):
-        run_id = self.request_json["runId"]
-        run_config = self.request_json["run_config"]
-        edge_ids = self.request_json["edgeids"]
+    def init_job_task(self, request_json):
+        run_id = request_json["runId"]
+        run_config = request_json["run_config"]
+        edge_ids = request_json["edgeids"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", None)
-        server_id = self.request_json["server_id"]
+        server_id = request_json["server_id"]
 
         if job_yaml is not None:
             self.setup_listeners_for_edge_status(run_id, edge_ids, server_id)
@@ -575,8 +577,8 @@ class FedMLServerRunner:
             self.report_server_status(run_id, server_id, status)
 
     def report_server_status(self, run_id, server_id, status):
-        self.mlops_metrics.server_agent_id = self.edge_id
-        self.mlops_metrics.report_server_id_status(run_id, status, server_id=server_id)
+        self.mlops_metrics.report_server_id_status(run_id, status, edge_id=self.edge_id,
+                                                   server_id=server_id, server_agent_id=self.edge_id)
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -834,7 +836,7 @@ class FedMLServerRunner:
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
         if self.run_as_edge_server_and_agent:
-            self.init_job_task()
+            self.init_job_task(request_json)
 
             self.args.run_id = run_id
 
@@ -844,28 +846,27 @@ class FedMLServerRunner:
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
             server_runner.start_request_json = self.start_request_json
-            if self.run_process_event is None:
-                self.run_process_event = multiprocessing.Event()
-            self.run_process_event.clear()
-            server_runner.run_process_event = self.run_process_event
+            self.run_process_event_map[run_id] = multiprocessing.Event()
+            self.run_process_event_map[run_id].clear()
+            server_runner.run_process_event = self.run_process_event_map[run_id]
             logging.info("start the runner process.")
-            self.run_process = Process(target=server_runner.run, args=(self.run_process_event,))
-            self.run_process.start()
-            ServerConstants.save_run_process(run_id, self.run_process.pid)
+            self.run_process_map[run_id] = Process(target=server_runner.run, args=(self.run_process_event_map[run_id],))
+            self.run_process_map[run_id].start()
+            ServerConstants.save_run_process(run_id, self.run_process_map[run_id].pid)
         elif self.run_as_cloud_agent:
-            self.init_job_task()
+            self.init_job_task(request_json)
 
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             server_runner.start_request_json = self.start_request_json
-            if self.run_process_event is None:
-                self.run_process_event = multiprocessing.Event()
-            server_runner.run_process_event = self.run_process_event
-            self.run_process = Process(target=server_runner.start_cloud_server_process_entry)
-            self.run_process.start()
-            ServerConstants.save_run_process(run_id, self.run_process.pid)
+            self.run_process_event_map[run_id] = multiprocessing.Event()
+            self.run_process_event_map[run_id].clear()
+            server_runner.run_process_event = self.run_process_event_map[run_id]
+            self.run_process_map[run_id] = Process(target=server_runner.start_cloud_server_process_entry)
+            self.run_process_map[run_id].start()
+            ServerConstants.save_run_process(run_id, self.run_process_map[run_id].pid)
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(request_json)
@@ -1156,8 +1157,8 @@ class FedMLServerRunner:
                 edge_id=self.edge_id
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-            server_runner.run_process = self.run_process
-            server_runner.run_process_event = self.run_process_event
+            server_runner.run_process_event = self.run_process_event_map.get(run_id, None)
+            server_runner.run_process = self.run_process_map.get(run_id, None)
             server_runner.client_mqtt_mgr = self.client_mqtt_mgr
             server_runner.mlops_metrics = self.mlops_metrics
             server_runner.stop_run_entry()
@@ -1170,8 +1171,8 @@ class FedMLServerRunner:
                 edge_id=server_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-            server_runner.run_process = self.run_process
-            server_runner.run_process_event = self.run_process_event
+            server_runner.run_process_event = self.run_process_event_map.get(run_id, None)
+            server_runner.run_process = self.run_process_map.get(run_id, None)
             Process(target=server_runner.stop_cloud_server_process_entry).start()
 
             # Stop log processor for current run
