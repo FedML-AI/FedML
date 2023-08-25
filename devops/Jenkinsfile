@@ -271,6 +271,9 @@ pipeline {
 
                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV $REGISTRY_DOCKER_HUB/fedml/fedml-device-image:dev'
                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/fedml-device-image:dev'
+
+                sh 'docker tag  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_DEV'
+                sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_DEV'
               }
 
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
