@@ -138,14 +138,16 @@ class FedMLServerRunner:
             "LOG_SERVER_URL"
         ]
 
-    def unzip_file(self, zip_file, unzip_file_path):
-        result = False
+    def unzip_file(self, zip_file, unzip_file_path) -> str:
+        unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
-                result = True
+                unziped_file_name = zipf.namelist()[0]
+        else:
+            raise Exception("Invalid zip file {}".format(zip_file))
 
-        return result
+        return unziped_file_name
 
     def package_download_progress(self, count, blksize, filesize):
         self.check_runner_stop_event()
@@ -166,23 +168,25 @@ class FedMLServerRunner:
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ServerConstants.get_package_download_dir()
         os.makedirs(local_package_path, exist_ok=True)
-        local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
+        filename, filename_without_extension, file_extension = ServerConstants.get_filename_and_extension(package_url)
+        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
-        unzip_package_path = ServerConstants.get_package_unzip_dir(self.run_id, package_url)
-        self.fedml_packages_base_dir = unzip_package_path
+        unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
+                                          f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
-            shutil.rmtree(
-                ServerConstants.get_package_run_dir(self.run_id, package_url, package_name), ignore_errors=True
-            )
+            shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
             pass
+
+        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
+        unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
+
         logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
-            local_package_file, unzip_package_path, ClientConstants.get_package_run_dir(package_name)))
-        self.unzip_file(local_package_file, unzip_package_path)
-        unzip_package_path = ServerConstants.get_package_run_dir(self.run_id, package_url, package_name)
-        return unzip_package_path
+            local_package_file, unzip_package_path, unzip_package_full_path))
+
+        return unzip_package_full_path
 
     def update_local_fedml_config(self, run_id, run_config):
         packages_config = run_config["packages_config"]
@@ -878,8 +882,6 @@ class FedMLServerRunner:
         message_bytes = json.dumps(self.request_json).encode("ascii")
         base64_bytes = base64.b64encode(message_bytes)
         runner_cmd_encoded = base64_bytes.decode("ascii")
-
-        # fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID};
 
     def start_cloud_server_process_entry(self):
         try:

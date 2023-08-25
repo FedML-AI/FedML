@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 from os.path import expanduser
+from urllib.parse import urlparse, unquote
 
 import psutil
 import yaml
@@ -436,3 +437,11 @@ class ServerConstants(object):
             return False
 
         return True
+
+    @staticmethod
+    def get_filename_and_extension(url):
+        parsed_url = urlparse(unquote(url))
+        path = parsed_url.path
+        filename = os.path.basename(path)
+        filename_without_extension, file_extension = os.path.splitext(filename)
+        return filename, filename_without_extension, file_extension

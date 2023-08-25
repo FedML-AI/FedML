@@ -56,6 +56,11 @@ class FedMLJobManager(Singleton):
             job_start_json["projectName"] = project_name
         else:
             job_start_json["projectName"] = ""
+
+        if platform == "octopus":
+            job_start_json["projectName"] = "Cheetah_HelloWorld"
+            job_start_json["name"] = str(uuid.uuid4())
+
         if job_id is not None:
             job_start_json["jobId"] = job_id
         args = {"config_version": self.config_version}
