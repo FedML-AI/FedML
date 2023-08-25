@@ -774,39 +774,49 @@ class FedMLServerRunner:
         except Exception as e:
             pass
 
-        logging.info("callback_start_train payload: {}".format(payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
-
         # get training params
         if self.run_as_cloud_server:
             message_bytes = payload.encode("ascii")
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
-            logging.info("decoded payload: {}".format(payload))
 
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
             return
 
+        # Process the log
         run_id = request_json["runId"]
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
-            logging.info("start the log processor.")
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
             MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+            logging.info("start the log processor.")
+        elif self.run_as_cloud_agent:
+            # Start log processor for current run
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+                run_id, self.request_json.get("cloudServerDeviceId", "0")
+            )
+        elif self.run_as_cloud_server:
+            self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
+            self.start_request_json = json.dumps(self.request_json)
+            run_id = self.request_json["runId"]
+
+            # Start log processor for current run
+            self.args.run_id = run_id
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        logging.info("callback_start_train payload: {}".format(payload))
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
 
         if not self.run_as_cloud_agent and not self.run_as_cloud_server:
             self.ota_upgrade(payload, request_json)
 
         self.start_request_json = payload
-
-        logging.info("save runner information")
-
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
@@ -846,11 +856,6 @@ class FedMLServerRunner:
         elif self.run_as_cloud_agent:
             self.init_job_task()
 
-            # Start log processor for current run
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-                run_id, self.request_json.get("cloudServerDeviceId", "0")
-            )
-
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
@@ -872,7 +877,6 @@ class FedMLServerRunner:
 
             # Start log processor for current run
             self.args.run_id = run_id
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
             self.run_process_event.clear()

@@ -709,8 +709,6 @@ class FedMLServerRunner:
         except Exception as e:
             pass
 
-        logging.info("callback_start_deployment {}".format(payload))
-
         # get deployment params
         request_json = json.loads(payload)
         run_id = request_json["end_point_id"]
@@ -737,6 +735,8 @@ class FedMLServerRunner:
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        logging.info("callback_start_deployment {}".format(payload))
 
         self.ota_upgrade(payload, request_json)
 
