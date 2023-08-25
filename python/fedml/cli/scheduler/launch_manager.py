@@ -472,8 +472,9 @@ class FedMLJobConfig(object):
         self.executable_file = str(self.executable_file).replace('\\', os.sep).replace('/', os.sep)
         self.executable_conf_file = str(self.executable_conf_file).replace('\\', os.sep).replace('/', os.sep)
 
-        self.minimum_num_gpus = self.job_config_dict["computing"]["minimum_num_gpus"]
-        self.maximum_cost_per_hour = self.job_config_dict["computing"]["maximum_cost_per_hour"]
+        computing_obj = self.job_config_dict.get("computing", {})
+        self.minimum_num_gpus = computing_obj.get("minimum_num_gpus", 0)
+        self.maximum_cost_per_hour = computing_obj.get("maximum_cost_per_hour", "$0")
         self.application_name = FedMLJobConfig.generate_application_name(self.project_name)
 
     @staticmethod

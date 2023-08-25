@@ -79,7 +79,7 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_start_url, headers=job_api_headers, json=job_start_json)
         if response.status_code != 200:
-            # print(f"response.status_code = {response.status_code}")
+            print(f"Launch job with response.status_code = {response.status_code}")
             pass
         else:
             resp_data = response.json()

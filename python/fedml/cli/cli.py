@@ -998,9 +998,12 @@ def launch_job(yaml_file, api_key, platform, group,
             click.echo("\nCurrently, there are no machines for your job. "
                        "But we will still keep your job in the waiting list,"
                        "which will be scheduled automatically when any machine is available.")
-            if click.confirm("Do you want to cancel your job from the waiting list?", abort=True):
+            if click.confirm("Do you want to cancel your job from the waiting list?", abort=False):
                 stop_jobs_core(platform, result.job_id, api_key, version)
                 return
+            else:
+                click.confirm("You have confirmed to keep your job in the waiting list.")
+                return 
 
         if result.job_url == "":
             if result.message is not None:
