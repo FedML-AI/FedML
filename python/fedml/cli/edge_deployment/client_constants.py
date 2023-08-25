@@ -7,6 +7,7 @@ import sys
 import urllib
 import zipfile
 from os.path import expanduser
+from urllib.parse import urlparse, unquote
 
 import psutil
 import yaml
@@ -467,6 +468,14 @@ class ClientConstants(object):
         ClientConstants.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         return unzip_package_path
+
+    @staticmethod
+    def get_filename_and_extension(url):
+        parsed_url = urlparse(unquote(url))
+        path = parsed_url.path
+        filename = os.path.basename(path)
+        filename_without_extension, file_extension = os.path.splitext(filename)
+        return filename, filename_without_extension, file_extension
 
 
 if __name__ == "__main__":

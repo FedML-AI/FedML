@@ -850,6 +850,9 @@ class FedMLClientRunner:
             json_params["extra_infos"]["gpu_list"] = gpu_list
         else:
             json_params["gpu"] = "None"
+            json_params["extra_infos"]["gpu_available_count"] = 0
+            json_params["extra_infos"]["gpu_available_id_list"] = []
+            json_params["extra_infos"]["gpu_list"] = []
 
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:

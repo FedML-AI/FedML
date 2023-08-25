@@ -350,18 +350,16 @@ def launch():
     help="login to which version of FedML® Launch platform. It should be dev, test or release",
 )
 @click.option(
-    "--no_gpu_check", "-ngc", default=None, is_flag=True,
-    help="Not need to check if the GPU is available when logining as the GPU supplier.",
-)
-@click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
-def launch_login(userid, version, no_gpu_check, api_key):
+def launch_login(userid, version, api_key):
     # Check api key
-    user_api_key = api_key
     if api_key is None or api_key == "":
-        click.echo("Please provide your API key with the option '-k $YourApiKey'.")
-        return
+        saved_api_key = FedMLLaunchManager.get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        else:
+            api_key = saved_api_key
 
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
@@ -380,11 +378,6 @@ def launch_login(userid, version, no_gpu_check, api_key):
             )
         )
         return
-
-    # Ignore to check gpu
-    is_no_gpu_check = no_gpu_check
-    if no_gpu_check is None:
-        is_no_gpu_check = False
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
@@ -418,9 +411,9 @@ def launch_login(userid, version, no_gpu_check, api_key):
             "-os",
             "",
             "-k",
-            user_api_key,
+            api_key,
             "-ngc",
-            "1" if is_no_gpu_check else "0"
+            "1"
         ]
     ).pid
     sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -1005,8 +998,11 @@ def launch_job(yaml_file, api_key, platform, group,
             click.echo("\nCurrently, there are no machines for your job. "
                        "But we will still keep your job in the waiting list,"
                        "which will be scheduled automatically when any machine is available.")
-            if click.confirm("Do you want to cancel your job from the waiting list?", abort=True):
+            if click.confirm("Do you want to cancel your job from the waiting list?", abort=False):
                 stop_jobs_core(platform, result.job_id, api_key, version)
+                return
+            else:
+                click.confirm("You have confirmed to keep your job in the waiting list.")
                 return
 
         if result.job_url == "":

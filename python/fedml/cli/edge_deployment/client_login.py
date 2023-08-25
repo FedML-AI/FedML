@@ -308,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
-    parser.add_argument("--no_gpu_check", "-ngc", type=int, default=0)
+    parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
     args = parser.parse_args()
     
     args.user = args.user

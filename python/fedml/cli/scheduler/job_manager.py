@@ -56,6 +56,11 @@ class FedMLJobManager(Singleton):
             job_start_json["projectName"] = project_name
         else:
             job_start_json["projectName"] = ""
+
+        if platform == "octopus":
+            job_start_json["projectName"] = "Cheetah_HelloWorld"
+            job_start_json["name"] = str(uuid.uuid4())
+
         if job_id is not None:
             job_start_json["jobId"] = job_id
         args = {"config_version": self.config_version}
@@ -74,7 +79,7 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_start_url, headers=job_api_headers, json=job_start_json)
         if response.status_code != 200:
-            # print(f"response.status_code = {response.status_code}")
+            print(f"Launch job with response.status_code = {response.status_code}")
             pass
         else:
             resp_data = response.json()
