@@ -1070,13 +1070,13 @@ def launch_job(yaml_file, api_key, platform, group,
                                         if len(job_list_obj.job_list) > 0:
                                             click.echo("Your launch result is as follows:")
                                         jobs_count = 0
-                                        job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Started Time',
-                                                                      'Ended Time', 'Duration', 'Cost'])
+                                        job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
+                                                                      'Spend Time', 'Cost'])
                                         for job in job_list_obj.job_list:
                                             jobs_count += 1
                                             job_list_table.add_row(
                                                 [job.job_name, job.job_id, job.status, job.started_time,
-                                                 job.ended_time, job.compute_duration, job.cost])
+                                                 job.compute_duration, job.cost])
                                         print(job_list_table)
                                 click.echo("\nYou can track your job running details at this URL:")
                                 click.echo(f"{result.job_url}")
@@ -1245,8 +1245,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
         if len(job_list_obj.job_list) > 0:
             if len(job_list_obj.job_list) > 0:
                 click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Started Time',
-                                          'Ended Time', 'Duration', 'Cost'])
+            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created', 'Spend Time', 'Cost'])
             jobs_count = 0
             for job in job_list_obj.job_list:
                 jobs_count += 1
@@ -1257,7 +1256,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
                     device_list += f"({device_count}). {device_info_item} "
 
                 job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                        job.ended_time, job.compute_duration, job.cost])
+                                       job.compute_duration, job.cost])
 
             print(job_list_table)
         else:

@@ -1,3 +1,4 @@
+import datetime
 import os
 from os.path import expanduser
 
@@ -119,3 +120,19 @@ class Constants(Singleton):
             return Constants.FEDML_PLATFORM_LAUNCH_TYPE
 
         return Constants.FEDML_PLATFORM_LAUNCH_TYPE
+
+    @staticmethod
+    def format_time_trimmed_tz(date_time_tz):
+        try:
+            formatted_time = datetime.datetime.strptime(date_time_tz, "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+            return formatted_time
+        except Exception as e:
+            pass
+
+        try:
+            formatted_time = datetime.datetime.strptime(date_time_tz, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d "
+                                                                                                     "%H:%M:%S")
+            return formatted_time
+        except Exception as e:
+            return date_time_tz
+

@@ -217,11 +217,11 @@ class FedMLJobModel(object):
         self.job_id = job_json["id"]
         self.job_name = job_json["name"]
         self.status = job_json["status"]
-        self.started_time = job_json.get("createTime", "0")
-        self.ended_time = job_json.get("endTime", "0")
+        self.started_time = Constants.format_time_trimmed_tz(job_json.get("createTime", "0"))
+        self.ended_time = Constants.format_time_trimmed_tz(job_json.get("endTime", "0"))
         self.running_time = job_json.get("spendTime", 0)
-        self.compute_start_time = job_json.get("createTime", "0")
-        self.compute_end_time = job_json.get("endTime", "0")
+        self.compute_start_time = self.started_time
+        self.compute_end_time = self.ended_time
         self.compute_duration = job_json.get("spendTime", 0)
         if self.compute_duration is not None and self.compute_duration != 'None':
             self.compute_duration = self.compute_duration / Constants.TIME_PER_HOUR_TO_MS
@@ -242,5 +242,6 @@ class FedMLJobModel(object):
                 os_version = gpu_dev.get("osVersion", "")
                 self.device_infos.append(f"Device Name: {device_id}, OS Type: {os_type}, OS Version: {os_version}, "
                                          f"Brand: {brand}, gpu count: {gpu_count}")
+
     def parse(self, job_json):
         pass
