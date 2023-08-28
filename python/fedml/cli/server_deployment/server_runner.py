@@ -37,6 +37,7 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from ..comm_utils import sys_utils
 from .server_data_interface import FedMLServerDataInterface
 from ...core.mlops.mlops_utils import MLOpsUtils
+from ..scheduler.constants import Constants
 
 
 class RunnerError(BaseException):
@@ -267,22 +268,28 @@ class FedMLServerRunner:
             fedml_conf_object = parameters_object
 
         package_dynamic_args = package_conf_object["dynamic_args"]
-        fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
-        fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
-        fedml_conf_object["common_args"]["using_mlops"] = True
-        fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
-        fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
-        fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["server_id"] = self.edge_id
-        fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("cloud_agent_id", self.edge_id)
-        fedml_conf_object["train_args"]["group_server_id_list"] = self.request_json.get("group_server_id_list", list())
-        fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
+        if fedml_conf_object.get("comm_args", None) is not None:
+            fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
+            fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
+            fedml_conf_object["common_args"]["using_mlops"] = True
+        if fedml_conf_object.get("train_args", None) is not None:
+            fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
+            fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
+            fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
+            fedml_conf_object["train_args"]["server_id"] = self.edge_id
+            fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("cloud_agent_id", self.edge_id)
+            fedml_conf_object["train_args"]["group_server_id_list"] = self.request_json.get("group_server_id_list",
+                                                                                            list())
+            if hasattr(self.args, "local_server") and self.args.local_server is not None:
+                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("device_args", None) is not None:
+            fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
-        fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
-        fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
-        if hasattr(self.args, "local_server") and self.args.local_server is not None:
-            fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
+        if fedml_conf_object.get("tracking_args", None) is not None:
+            fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
+            fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
+
         bootstrap_script_path = None
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
@@ -398,12 +405,7 @@ class FedMLServerRunner:
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
         data_config = run_config["data_config"]
-        packages_config = run_config["packages_config"]
         edge_ids = self.request_json["edgeids"]
-        server_package_name = packages_config.get("server", None)
-        server_package_url = packages_config.get("serverUrl", None)
-        run_params = run_config.get("parameters", {})
-        job_yaml = run_params.get("job_yaml", None)
 
         self.check_runner_stop_event()
 
@@ -415,7 +417,7 @@ class FedMLServerRunner:
 
         self.send_training_request_to_edges()
 
-        if self.execute_job_task(job_yaml, edge_ids, run_id):
+        if not self.should_continue_run_job(run_id):
             return
 
         # report server running status
@@ -472,35 +474,27 @@ class FedMLServerRunner:
 
         logging.info("starting the aggregation process...")
 
-        python_program = get_python_program()
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
-            python_program, entry_file_full_path, conf_file_full_path))
-        process = ServerConstants.exec_console_with_shell_script_list(
-            [
-                python_program,
-                entry_file_full_path,
-                "--cf",
-                conf_file_full_path,
-                "--rank ",
-                "0",
-                "--role",
-                "server"
-            ],
-            should_capture_stdout=False,
-            should_capture_stderr=True
-        )
+        process, is_launch_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, run_id)
         logging.info("waiting the aggregation process to aggregate models...")
         ServerConstants.save_learning_process(run_id, process.pid)
+
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
+        if is_launch_task:
+            is_run_ok = True
         if ret_code is None or ret_code <= 0:
+            self.check_runner_stop_event()
+
             if is_run_ok:
                 if out is not None:
                     out_str = out.decode(encoding="utf-8")
                     if out_str != "":
                         logging.info("{}".format(out_str))
+
+                self.mlops_metrics.report_server_training_status(run_id,
+                                                                 ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
                 sys_utils.log_return_info(entry_file, 0)
         else:
@@ -537,14 +531,89 @@ class FedMLServerRunner:
         if job_yaml is not None:
             self.setup_listeners_for_edge_status(run_id, edge_ids, server_id)
 
-    def execute_job_task(self, job_yaml, edge_ids, run_id):
-        if job_yaml is not None:
+    def should_continue_run_job(self, run_id):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        job_yaml_default_none = run_params.get("job_yaml", None)
+        framework_type = job_yaml.get("framework_type", None)
+        if job_yaml_default_none is not None:
+            if framework_type is None or framework_type != Constants.JOB_FRAMEWORK_TYPE_FEDML:
+                self.mlops_metrics.report_server_training_status(run_id,
+                                                                 ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                                                                 running_json=self.start_request_json)
+                return False
+
+        return True
+
+    def execute_job_task(self, entry_file_full_path, conf_file_full_path, run_id):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        job_yaml_default_none = run_params.get("job_yaml", None)
+        using_easy_mode = True
+        expert_mode = job_yaml.get("expert_mode", None)
+        framework_type = job_yaml.get("framework_type", None)
+        if expert_mode is None:
+            executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
+                if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
+            executable_commands = job_yaml.get("job", "")
+        else:
+            using_easy_mode = False
+            executable_interpreter = expert_mode.get("executable_interpreter", "")
+            executable_file = expert_mode.get("executable_file", "")
+            executable_conf_option = expert_mode.get("executable_conf_option", "")
+            executable_conf_file = expert_mode.get("executable_conf_file", "")
+            executable_args = expert_mode.get("executable_args", "")
+
+        if job_yaml_default_none is None:
+            python_program = get_python_program()
+            logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
+                python_program, entry_file_full_path, conf_file_full_path))
+            process = ServerConstants.exec_console_with_shell_script_list(
+                [
+                    python_program,
+                    entry_file_full_path,
+                    "--cf",
+                    conf_file_full_path,
+                    "--rank ",
+                    "0",
+                    "--role",
+                    "server"
+                ],
+                should_capture_stdout=False,
+                should_capture_stderr=True
+            )
+            is_launch_task = False
+        else:
+            self.check_runner_stop_event()
+
             self.mlops_metrics.report_server_training_status(run_id,
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
                                                              running_json=self.start_request_json)
-            return True
 
-        return False
+            shell_cmd_list = list()
+            shell_cmd_list.append(executable_interpreter)
+            if using_easy_mode:
+                shell_cmd_list.append(entry_file_full_path)
+            else:
+                if executable_file != "":
+                    shell_cmd_list.append(entry_file_full_path)
+                if executable_conf_file != "" and executable_conf_option != "":
+                    shell_cmd_list.append(executable_conf_option)
+                    shell_cmd_list.append(conf_file_full_path)
+                shell_cmd_list.append(executable_args)
+                shell_cmd_list.append(f"--run_id {self.run_id}")
+                shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+                shell_cmd_list.append("--using_mlops True")
+            logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
+            process = ServerConstants.exec_console_with_shell_script_list(
+                shell_cmd_list,
+                should_capture_stdout=True,
+                should_capture_stderr=True
+            )
+            is_launch_task = True
+        return process, is_launch_task
 
     def process_job_status(self, run_id):
         all_edges_is_finished = True

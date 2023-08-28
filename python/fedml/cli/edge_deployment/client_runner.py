@@ -442,7 +442,7 @@ class FedMLClientRunner:
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         computing_started_time = MLOpsUtils.get_ntp_time()
-        process, is_fl_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
+        process, is_launch_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         logging.info("waiting the learning process to train models...")
         ClientConstants.save_learning_process(run_id, process.pid)
 
@@ -452,7 +452,7 @@ class FedMLClientRunner:
                                                           computing_started_time, computing_ended_time,
                                                           self.args.user, self.args.api_key)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
-        if not is_fl_task:
+        if is_launch_task:
             is_run_ok = True
         if ret_code is None or ret_code <= 0:
             self.check_runner_stop_event()
@@ -534,7 +534,7 @@ class FedMLClientRunner:
                 should_capture_stdout=False,
                 should_capture_stderr=True
             )
-            is_fl_task = True
+            is_launch_task = False
         else:
             self.check_runner_stop_event()
 
@@ -561,8 +561,8 @@ class FedMLClientRunner:
                 should_capture_stdout=True,
                 should_capture_stderr=True
             )
-            is_fl_task = False
-        return process, is_fl_task
+            is_launch_task = True
+        return process, is_launch_task
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id

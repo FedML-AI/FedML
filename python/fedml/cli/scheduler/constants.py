@@ -40,8 +40,9 @@ class Constants(Singleton):
     MLOPS_CLIENT_STATUS_DONE = "Done"
     MLOPS_CLIENT_STATUS_STOPPED = "Stopped"
 
-    LAUNCH_JOB_DEFAULT_FOLDER_NAME = "example_job"
-    LAUNCH_JOB_DEFAULT_ENTRY_NAME = "example_entry.sh"
+    LAUNCH_JOB_DEFAULT_FOLDER_NAME = "fedml_job_pack"
+    LAUNCH_JOB_DEFAULT_ENTRY_NAME = "fedml_job_entry_pack.sh"
+    LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = "fedml_server_job_entry_pack.sh"
     LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME = "config"
     LAUNCH_JOB_DEFAULT_CONF_NAME = "fedml_config.yaml"
 
@@ -67,6 +68,21 @@ class Constants(Singleton):
     JOB_START_STATUS_QUEUED = "QUEUED"
 
     TIME_PER_HOUR_TO_MS = 3600000.0
+
+    JOB_FRAMEWORK_TYPE_FEDML = "fedml"
+    JOB_FRAMEWORK_TYPE_DEEPSPEED = "deepspeed"
+    JOB_FRAMEWORK_TYPE_PYTORCH = "pytorch"
+    JOB_FRAMEWORK_TYPE_TENSORFLOW = "tensorflow"
+    JOB_FRAMEWORK_TYPE_MXNET = "mxnet"
+    JOB_FRAMEWORK_TYPE_GENERAL = "general"
+
+    JOB_TASK_TYPE_TRAIN = "train"
+    JOB_TASK_TYPE_SERVE = "serve"
+    JOB_TASK_TYPE_DEV_ENV = "dev-environment"
+
+    JOB_DEVICE_TYPE_CPU = "CPU"
+    JOB_DEVICE_TYPE_GPU = "GPU"
+    JOB_DEVICE_TYPE_HYBRID = "hybrid"
 
     @staticmethod
     def get_fedml_home_dir(is_client=True):
