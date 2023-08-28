@@ -1071,7 +1071,7 @@ def launch_job(yaml_file, api_key, platform, group,
                                             click.echo("Your launch result is as follows:")
                                         jobs_count = 0
                                         job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
-                                                                      'Spend Time', 'Cost'])
+                                                                      'Spend Time(hour)', 'Cost'])
                                         for job in job_list_obj.job_list:
                                             jobs_count += 1
                                             job_list_table.add_row(
@@ -1245,7 +1245,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
         if len(job_list_obj.job_list) > 0:
             if len(job_list_obj.job_list) > 0:
                 click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created', 'Spend Time', 'Cost'])
+            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created', 'Spend Time(hour)', 'Cost'])
             jobs_count = 0
             for job in job_list_obj.job_list:
                 jobs_count += 1

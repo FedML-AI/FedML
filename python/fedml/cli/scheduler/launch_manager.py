@@ -59,9 +59,13 @@ class FedMLLaunchManager(Singleton):
         shell_interpreter = self.job_config.executable_interpreter
         if os.path.exists(self.job_config.executable_file_folder):
             source_full_path = os.path.join(self.job_config.executable_file_folder, self.job_config.executable_file)
+            server_source_full_path = os.path.join(self.job_config.executable_file_folder,
+                                                   self.job_config.server_executable_file)
         else:
             source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file_folder,
                                             self.job_config.executable_file)
+            server_source_full_path = os.path.join(self.job_config.base_dir, self.job_config.executable_file_folder,
+                                                   self.job_config.server_executable_file)
         source_full_folder = os.path.dirname(source_full_path)
         source_folder = os.path.dirname(self.job_config.executable_file)
         entry_point = os.path.basename(self.job_config.executable_file)
@@ -101,6 +105,13 @@ class FedMLLaunchManager(Singleton):
                 if self.job_config.using_easy_mode:
                     source_file_handle.writelines(self.job_config.executable_commands)
                 source_file_handle.close()
+        if not os.path.exists(server_source_full_path) or self.job_config.using_easy_mode:
+            if self.job_config.server_job is not None:
+                os.makedirs(source_full_folder, exist_ok=True)
+                with open(server_source_full_path, 'w') as server_source_file_handle:
+                    if self.job_config.using_easy_mode:
+                        server_source_file_handle.writelines(self.job_config.server_job)
+                    server_source_file_handle.close()
         if not os.path.exists(config_full_path) or self.job_config.using_easy_mode:
             os.makedirs(config_full_folder, exist_ok=True)
             with open(config_full_path, 'w') as config_file_handle:
@@ -118,20 +129,35 @@ class FedMLLaunchManager(Singleton):
             bootstrap_file_handle.close()
         configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = self.job_config.job_config_dict
 
-        # Build the client or server package.
-        build_result_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
+        # Build the client package.
+        build_client_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
                                                                     source_full_folder,
                                                                     entry_point, config_full_folder, dest_folder, "")
-        if build_result_package is None:
-            click.echo("Failed to build the application package for the executable file.")
+        if build_client_package is None:
+            click.echo("Failed to build the application package for the client executable file.")
             exit(-1)
+
+        # Build the server package.
+        if self.job_config.server_job is not None:
+            client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_SERVER
+            server_entry_point = os.path.basename(self.job_config.server_executable_file)
+            build_server_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
+                                                                        source_full_folder,
+                                                                        server_entry_point, config_full_folder,
+                                                                        dest_folder, "")
+            if build_server_package is None:
+                click.echo("Failed to build the application package for the server executable file.")
+                exit(-1)
+        else:
+            build_server_package = None
 
         # Create and update an application with the built packages.
         FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
                                                                        self.job_config.application_name, configs,
                                                                        user_api_key,
-                                                                       client_package_file=build_result_package)
+                                                                       client_package_file=build_client_package,
+                                                                       server_package_file=build_server_package)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
             exit(-1)
@@ -424,10 +450,12 @@ class FedMLJobConfig(object):
         self.executable_commands = self.job_config_dict.get("job", "")
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
         self.executable_file = None
+        self.server_executable_file = None
         self.executable_conf_option = ""
         self.executable_conf_file_folder = None
         self.executable_conf_file = None
         self.executable_args = None
+        self.server_job = self.job_config_dict.get("server_job", None)
         expert_mode = self.job_config_dict.get("expert_mode", None)
         if expert_mode is not None:
             self.using_easy_mode = False
@@ -455,6 +483,8 @@ class FedMLJobConfig(object):
                     self.executable_file_folder = os.path.join(self.base_dir, self.executable_file_folder)
             os.makedirs(self.executable_file_folder, exist_ok=True)
             self.executable_file = Constants.LAUNCH_JOB_DEFAULT_ENTRY_NAME
+
+        self.server_executable_file = Constants.LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME
 
         if self.executable_conf_file is None or self.executable_conf_file == "":
             if self.executable_conf_file_folder is None:

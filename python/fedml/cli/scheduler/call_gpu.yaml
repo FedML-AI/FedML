@@ -18,10 +18,17 @@ job: |
     # echo "Training the vision transformer model using PyTorch..."
     # python vision_transformer.py --epochs 1
 
+# Running entry commands on the server side which will be executed as the job entry point.
+# Support multiple lines, which can not be empty.
+#server_job: |
+#    echo "Hello, Here is the server job."
+#    echo "Current directory is as follows."
+#    pwd
+
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
-  pip install -r requirements.txt
+  # pip install -r requirements.txt
   echo "Bootstrap finished."
 
 #framework_type: fedml         # options: fedml, deepspeed, pytorch, general
@@ -29,6 +36,6 @@ bootstrap: |
 
 computing:
   minimum_num_gpus: 1            # minimum # of GPUs to provision
-  maximum_cost_per_hour: $2   # max cost per hour for your job per machine
+  maximum_cost_per_hour: $3000   # max cost per hour for your job per machine
   #allow_cross_cloud_resources: true # true, false
-  #device_type: GPU              # options: GPU, CPU, hybrid
+  #device_type: CPU              # options: GPU, CPU, hybrid
