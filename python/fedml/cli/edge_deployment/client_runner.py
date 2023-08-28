@@ -555,7 +555,7 @@ class FedMLClientRunner:
                 shell_cmd_list.append(f"--run_id {self.run_id}")
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
-            logging.info("Run the client: {}".format(shell_cmd_list))
+            logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
             process = ClientConstants.exec_console_with_shell_script_list(
                 shell_cmd_list,
                 should_capture_stdout=True,
