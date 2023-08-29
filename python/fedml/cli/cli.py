@@ -992,6 +992,12 @@ def launch_job(yaml_file, api_key, platform, group,
             else:
                 click.echo("You have confirmed to keep your job in the waiting list.")
                 return
+        elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+            click.echo("Please bind your credit card before launching the job.")
+            return
+        elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+            click.echo("Failed to query credit card binding status. Please try again later.")
+            return
 
         if result.job_url == "":
             if result.message is not None:
