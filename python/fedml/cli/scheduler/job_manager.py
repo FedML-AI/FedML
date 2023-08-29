@@ -164,6 +164,46 @@ class FedMLJobManager(Singleton):
 
         return True
 
+    def get_job_logs(self, job_id, page_num, page_size, user_api_key):
+        return self.get_job_logs_api(job_id, page_num, page_size, user_api_key)
+
+    def get_job_logs_api(self, job_id, page_num, page_size,user_api_key):
+        job_log_list_result = None
+        jot_logs_url = ServerConstants.get_job_logs_url(self.config_version)
+        job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        job_logs_json = {
+            "apiKey": user_api_key,
+            "edgeId": "-1",
+            "pageNum": page_num,
+            "pageSize": page_size,
+            "runId": job_id,
+            "timeZone": Constants.get_current_time_zone()
+        }
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    jot_logs_url, verify=True, headers=job_api_headers, json=job_logs_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    jot_logs_url, verify=True, headers=job_api_headers, json=job_logs_json
+                )
+        else:
+            response = requests.post(jot_logs_url, headers=job_api_headers, json=job_logs_json)
+        if response.status_code != 200:
+            pass
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                return None
+            job_log_list_result = FedMLJobLogModelList(resp_data["data"])
+
+        return job_log_list_result
+
 
 class FedMLJobStartedModel(object):
     def __init__(self, job_started_json, job_name=None):
@@ -247,3 +287,23 @@ class FedMLJobModel(object):
 
     def parse(self, job_json):
         pass
+
+
+class FedMLJobLogModelList(object):
+    def __init__(self, job_log_list_json):
+        self.log_full_url = job_log_list_json.get("log_full_url", None)
+        log_devices_json = job_log_list_json.get("devices", [])
+        self.log_devices = list()
+        for log_dev in log_devices_json:
+            self.log_devices.append(FedMLJobLogDeviceModel(log_dev))
+        self.total_num = job_log_list_json.get("total_num", 0)
+        self.total_pages = job_log_list_json.get("total_pages", 0)
+        self.current_page = job_log_list_json.get("current_page", 0)
+        self.log_lines = job_log_list_json.get("logs", [])
+
+
+class FedMLJobLogDeviceModel(object):
+    def __init__(self, jog_log_device_json):
+        self.log_url = jog_log_device_json.get("log_url", None)
+        self.device_name = jog_log_device_json.get("name", None)
+        self.device_id = jog_log_device_json.get("id", None)

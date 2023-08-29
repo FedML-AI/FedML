@@ -896,7 +896,36 @@ def launch_cancel(job_id, platform, api_key, version):
     help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
 def launch_log(job_id, platform, api_key, version):
+    # Show job info
     list_jobs_core(platform, None, None, job_id[0], api_key, version)
+
+    # Get job logs
+    FedMLJobManager.get_instance().set_config_version(version)
+    job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
+
+    # Show job log summary info
+    log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
+    log_head_table.add_row([job_id[0], job_logs.total_num, job_logs.log_full_url])
+    click.echo("\nLogs summary info is as follows.")
+    print(log_head_table)
+
+    # Show job logs URL for each device
+    log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
+    for log_device in job_logs.log_devices:
+        log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
+    click.echo("\nLogs URL for each device is as follows.")
+    print(log_device_table)
+
+    # Show job log lines
+    click.echo("\nAll logs is as follows.")
+    for log_line in job_logs.log_lines:
+        click.echo(str(log_line).rstrip('\n'))
+
+    for page_count in range(2, job_logs.total_pages+1):
+        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
+                                                               Constants.JOB_LOG_PAGE_SIZE, api_key)
+        for log_line in job_logs.log_lines:
+            click.echo(str(log_line).rstrip('\n'))
 
 
 @launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
@@ -1022,7 +1051,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, chr(8730)])
+                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
                     print(gpu_table)
                     click.echo("")
             else:
@@ -1035,7 +1064,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, chr(8730)])
+                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
                     print(gpu_table)
                     click.echo("")
 

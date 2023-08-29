@@ -86,6 +86,10 @@ class Constants(Singleton):
     JOB_DEVICE_TYPE_GPU = "GPU"
     JOB_DEVICE_TYPE_HYBRID = "hybrid"
 
+    CHECK_MARK_STRING = chr(8730)
+
+    JOB_LOG_PAGE_SIZE = 100
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")
@@ -154,3 +158,8 @@ class Constants(Singleton):
         except Exception as e:
             return date_time_tz
 
+    @staticmethod
+    def get_current_time_zone():
+        import tzlocal
+        tz_info = tzlocal.get_localzone()
+        return str(tz_info)
