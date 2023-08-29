@@ -487,7 +487,10 @@ class FedMLClientRunner:
                 if err_str != "":
                     logging.error("{}".format(err_str))
 
-            sys_utils.log_return_info(entry_file, ret_code)
+            if is_launch_task:
+                sys_utils.log_return_info(f"job {run_id}", ret_code)
+            else:
+                sys_utils.log_return_info(entry_file, ret_code)
 
             self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
