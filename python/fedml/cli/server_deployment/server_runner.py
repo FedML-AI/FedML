@@ -495,8 +495,11 @@ class FedMLServerRunner:
 
                 self.mlops_metrics.report_server_training_status(run_id,
                                                                  ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
-
-                sys_utils.log_return_info(entry_file, 0)
+                
+                if is_launch_task:
+                    sys_utils.log_return_info(f"job {run_id}", 0)
+                else:
+                    sys_utils.log_return_info(entry_file, 0)
         else:
             is_run_ok = False
 
