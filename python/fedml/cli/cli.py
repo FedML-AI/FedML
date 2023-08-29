@@ -849,7 +849,7 @@ def env():
     collect_env()
 
 
-@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("job_id", nargs=-1)
 @click.option(
@@ -874,7 +874,7 @@ def launch_cancel(job_id, platform, api_key, version):
     stop_jobs_core(platform, job_id[0], api_key, version)
 
 
-@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("job_id", nargs=-1)
 @click.option(
@@ -899,7 +899,7 @@ def launch_log(job_id, platform, api_key, version):
     list_jobs_core(platform, None, None, job_id[0], api_key, version)
 
 
-@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("group_id", nargs=-1)
 def launch_queue(group_id):
@@ -1016,7 +1016,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, ""])
+                                           gpu_device.gpu_region, gpu_device.cost, chr(8730)])
                     print(gpu_table)
                     click.echo("")
             else:
@@ -1029,7 +1029,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, ""])
+                                           gpu_device.gpu_region, gpu_device.cost, chr(8730)])
                     print(gpu_table)
                     click.echo("")
 
@@ -1244,7 +1244,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
                     device_list += f"({device_count}). {device_info_item} "
 
                 job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                       job.compute_duration, job.cost])
+                                        job.compute_duration, job.cost])
 
             print(job_list_table)
         else:

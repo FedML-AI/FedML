@@ -190,17 +190,19 @@ class FedMLJobStartedModel(object):
 
 class FedMLGpuDevices(object):
     def __init__(self, gpu_device_json):
-        self.gpu_vendor = gpu_device_json["gpu_vendor"]
-        self.gpu_num = gpu_device_json["total_gpu_count"]
-        self.gpu_type = gpu_device_json["gpu_type"]
-        self.cost = gpu_device_json["cost"]
-        self.mem_size = gpu_device_json["gpu_mem"]
-        self.gpu_region = gpu_device_json["gpu_region"]
-        self.cpu_count = gpu_device_json["cpu_count"]
-        self.gpu_count = gpu_device_json["got_gpu_count"]
-        self.gpu_name = gpu_device_json["gpu_name"]
+        self.gpu_vendor = gpu_device_json.get("gpu_vendor", None)
+        self.gpu_num = gpu_device_json.get("total_gpu_count", None)
+        self.gpu_type = gpu_device_json.get("gpu_type", None)
+        self.cost = gpu_device_json.get("cost", None)
+        self.mem_size = gpu_device_json.get("gpu_mem", None)
+        self.gpu_region = gpu_device_json.get("gpu_region", "DEFAULT")
+        self.gpu_region = "DEFAULT" if self.gpu_region is None or self.gpu_region == "" else self.gpu_region
+        self.cpu_count = gpu_device_json.get("cpu_count", None)
+        self.cpu_count = None if self.cpu_count is not None and int(self.cpu_count) <= 0 else self.cpu_count
+        self.gpu_count = gpu_device_json.get("got_gpu_count", None)
+        self.gpu_name = gpu_device_json.get("gpu_name", None)
         self.gpu_instance = self.gpu_name
-        self.gpu_provider = gpu_device_json["gpu_provider"]
+        self.gpu_provider = gpu_device_json.get("gpu_provider", None)
 
 
 class FedMLJobModelList(object):
