@@ -146,7 +146,8 @@ class FedMLAppManager(Singleton):
         else:
             response = requests.post(app_update_url, headers=app_update_api_headers, json=app_update_json)
         if response.status_code != 200:
-            print(f"Update application with response.status_code = {response.status_code}")
+            print(f"Update application with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             pass
         else:
             resp_data = response.json()
