@@ -66,6 +66,8 @@ class Constants(Singleton):
     JOB_START_STATUS_INVALID = "INVALID"
     JOB_START_STATUS_BLOCKED = "BLOCKED"
     JOB_START_STATUS_QUEUED = "QUEUED"
+    JOB_START_STATUS_BIND_CREDIT_CARD_FIRST = "BIND_CREDIT_CARD_FIRST"
+    JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED = "QUERY_CREDIT_CARD_BINDING_STATUS_FAILED"
 
     TIME_PER_HOUR_TO_MS = 3600000.0
 
@@ -83,6 +85,10 @@ class Constants(Singleton):
     JOB_DEVICE_TYPE_CPU = "CPU"
     JOB_DEVICE_TYPE_GPU = "GPU"
     JOB_DEVICE_TYPE_HYBRID = "hybrid"
+
+    CHECK_MARK_STRING = chr(8730)
+
+    JOB_LOG_PAGE_SIZE = 100
 
     @staticmethod
     def get_fedml_home_dir(is_client=True):
@@ -152,3 +158,8 @@ class Constants(Singleton):
         except Exception as e:
             return date_time_tz
 
+    @staticmethod
+    def get_current_time_zone():
+        import tzlocal
+        tz_info = tzlocal.get_localzone()
+        return str(tz_info)

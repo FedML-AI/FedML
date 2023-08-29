@@ -849,8 +849,9 @@ def env():
     collect_env()
 
 
-@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
+@click.argument("job_id", nargs=-1)
 @click.option(
     "--platform",
     "-pf",
@@ -858,13 +859,6 @@ def env():
     default="falcon",
     help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
-)
-@click.option(
-    "--job_id",
-    "-id",
-    type=str,
-    default="",
-    help="Job id at the MLOps platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -876,12 +870,13 @@ def env():
     default="release",
     help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_cancel(platform, job_id, api_key, version):
-    stop_jobs_core(platform, job_id, api_key, version)
+def launch_cancel(job_id, platform, api_key, version):
+    stop_jobs_core(platform, job_id[0], api_key, version)
 
 
-@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
+@click.argument("job_id", nargs=-1)
 @click.option(
     "--platform",
     "-pf",
@@ -889,13 +884,6 @@ def launch_cancel(platform, job_id, api_key, version):
     default="falcon",
     help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
-)
-@click.option(
-    "--job_id",
-    "-id",
-    type=str,
-    default="",
-    help="Job id at the MLOps platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -907,11 +895,40 @@ def launch_cancel(platform, job_id, api_key, version):
     default="release",
     help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
-def launch_log(platform, job_id, api_key, version):
-    list_jobs_core(platform, None, None, job_id, api_key, version)
+def launch_log(job_id, platform, api_key, version):
+    # Show job info
+    list_jobs_core(platform, None, None, job_id[0], api_key, version)
+
+    # Get job logs
+    FedMLJobManager.get_instance().set_config_version(version)
+    job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
+
+    # Show job log summary info
+    log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
+    log_head_table.add_row([job_id[0], job_logs.total_num, job_logs.log_full_url])
+    click.echo("\nLogs summary info is as follows.")
+    print(log_head_table)
+
+    # Show job logs URL for each device
+    log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
+    for log_device in job_logs.log_devices:
+        log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
+    click.echo("\nLogs URL for each device is as follows.")
+    print(log_device_table)
+
+    # Show job log lines
+    click.echo("\nAll logs is as follows.")
+    for log_line in job_logs.log_lines:
+        click.echo(str(log_line).rstrip('\n'))
+
+    for page_count in range(2, job_logs.total_pages+1):
+        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
+                                                               Constants.JOB_LOG_PAGE_SIZE, api_key)
+        for log_line in job_logs.log_lines:
+            click.echo(str(log_line).rstrip('\n'))
 
 
-@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)",)
+@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("group_id", nargs=-1)
 def launch_queue(group_id):
@@ -1004,6 +1021,12 @@ def launch_job(yaml_file, api_key, platform, group,
             else:
                 click.echo("You have confirmed to keep your job in the waiting list.")
                 return
+        elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+            click.echo("Please bind your credit card before launching the job.")
+            return
+        elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+            click.echo("Failed to query credit card binding status. Please try again later.")
+            return
 
         if result.job_url == "":
             if result.message is not None:
@@ -1028,7 +1051,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, ""])
+                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
                     print(gpu_table)
                     click.echo("")
             else:
@@ -1041,7 +1064,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
                                            gpu_device.mem_size,
                                            f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, ""])
+                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
                     print(gpu_table)
                     click.echo("")
 
@@ -1090,7 +1113,7 @@ def launch_job(yaml_file, api_key, platform, group,
             if result is not None:
                 click.echo("")
                 click.echo(f"For querying the realtime status of your job, please run the following command.")
-                click.echo(f"fedml launch log -id {result.job_id}" +
+                click.echo(f"fedml launch log {result.job_id}" +
                            "{}".format(f" -v {version}" if version == "dev" else ""))
     else:
         click.echo(f"Failed to launch the job.")
@@ -1256,7 +1279,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
                     device_list += f"({device_count}). {device_info_item} "
 
                 job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                       job.compute_duration, job.cost])
+                                        job.compute_duration, job.cost])
 
             print(job_list_table)
         else:
