@@ -1,0 +1,2 @@
+
+echo "Test script."

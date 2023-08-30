@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 import fedml
-from .cli.env.collect_env import collect_env
+from .computing.scheduler.env.collect_env import collect_env
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -25,7 +25,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a55"
+__version__ = "0.8.8a56"
 
 
 def init(args=None):

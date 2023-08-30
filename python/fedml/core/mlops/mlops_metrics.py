@@ -8,8 +8,8 @@ import uuid
 
 import multiprocess as multiprocessing
 
-from ...cli.edge_deployment.client_constants import ClientConstants
-from ...cli.server_deployment.server_constants import ServerConstants
+from ...computing.scheduler.slave.client_constants import ClientConstants
+from ...computing.scheduler.master.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
@@ -102,10 +102,10 @@ class MLOpsMetrics(object):
         self.report_client_device_status_to_web_ui(edge_id, status)
 
         if is_from_model:
-            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
         else:
-            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def report_client_device_status_to_web_ui(self, edge_id, status):
@@ -156,10 +156,10 @@ class MLOpsMetrics(object):
 
         self.report_client_device_status_to_web_ui(edge_id, status)
         if is_from_model:
-            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
         else:
-            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
     def common_broadcast_client_training_status(self, edge_id, status):
@@ -196,10 +196,10 @@ class MLOpsMetrics(object):
         self.report_client_device_status_to_web_ui(edge_id, status)
 
         if is_from_model:
-            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
         else:
-            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def common_report_client_id_status(self, run_id, edge_id, status, server_id="0"):
@@ -222,10 +222,10 @@ class MLOpsMetrics(object):
         self.report_server_device_status_to_web_ui(run_id, status, role)
 
         if is_from_model:
-            from ...cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
+            from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
         else:
-            from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
+            from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
     def report_server_device_status_to_web_ui(self, run_id, status, role=None):
@@ -287,10 +287,10 @@ class MLOpsMetrics(object):
         self.report_server_device_status_to_web_ui(run_id, status, role)
 
         if is_from_model:
-            from ...cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
+            from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
         else:
-            from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
+            from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
     def report_server_id_status(self, run_id, status, edge_id=None, server_id=None, server_agent_id=None):
