@@ -131,7 +131,7 @@ def get_gpu_list():
 
 
 def get_available_gpu_id_list(limit=1):
-    gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.95, maxMemory=0.95)
+    gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
 
 
