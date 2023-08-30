@@ -83,9 +83,7 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            job_start_result = FedMLJobStartedModel(resp_data["data"])
-            # job_start_result = FedMLJobStartedModel({"status": "STARTING",
-            #                                         "job_url": "https://open.fedml.ai", "started_time": time.time()})
+            job_start_result = FedMLJobStartedModel(resp_data["data"], response=resp_data)
 
         return job_start_result
 
@@ -206,7 +204,7 @@ class FedMLJobManager(Singleton):
 
 
 class FedMLJobStartedModel(object):
-    def __init__(self, job_started_json, job_name=None):
+    def __init__(self, job_started_json, job_name=None, response=None):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
@@ -222,10 +220,10 @@ class FedMLJobStartedModel(object):
         else:
             self.job_id = "0"
             self.job_name = job_name
-            self.status = Constants.MLOPS_CLIENT_STATUS_NOT_STARTED
+            self.status = response.get("code")
             self.job_url = job_started_json
             self.started_time = time.time()
-            self.message = None
+            self.message = response.get("message")
 
 
 class FedMLGpuDevices(object):
