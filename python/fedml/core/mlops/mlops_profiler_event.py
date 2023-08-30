@@ -3,7 +3,6 @@ import logging
 import threading
 import time
 
-import wandb
 from .mlops_utils import MLOpsUtils
 
 
@@ -69,6 +68,7 @@ class MLOpsProfilerEvent:
     @classmethod
     def log_to_wandb(cls, metric):
         if cls._enable_wandb:
+            import wandb
             wandb.log(metric)
 
     def log_event_started(self, event_name, event_value=None, event_edge_id=None):

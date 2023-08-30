@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 import fedml
-from .cli.env.collect_env import collect_env
+from .computing.scheduler.env.collect_env import collect_env
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,

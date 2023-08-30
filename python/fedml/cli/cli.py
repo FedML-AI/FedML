@@ -1,34 +1,31 @@
 import os
-import pickle
 import json
 import shutil
-import subprocess
 from os.path import expanduser
 
 import click
 
 import fedml
 
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.scheduler.constants import Constants
-from fedml.cli.server_deployment.server_constants import ServerConstants
-from fedml.cli.edge_deployment.client_login import logout as client_logout
-from fedml.cli.env.collect_env import collect_env
-from fedml.cli.server_deployment.server_login import logout as server_logout
-from fedml.cli.edge_deployment.docker_login import login_with_docker_mode
-from fedml.cli.edge_deployment.docker_login import logout_with_docker_mode
-from fedml.cli.edge_deployment.docker_login import logs_with_docker_mode
-from fedml.cli.server_deployment.docker_login import login_with_server_docker_mode
-from fedml.cli.server_deployment.docker_login import logout_with_server_docker_mode
-from fedml.cli.server_deployment.docker_login import logs_with_server_docker_mode
-from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
-from fedml.cli.comm_utils import sys_utils
-from fedml.cli.model_deployment import device_login_entry
-from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
-from fedml.cli.scheduler.job_manager import FedMLJobManager
-from fedml.cli.cli_utils import platform_is_valid
-from fedml.cli.scheduler.app_manager import FedMLAppManager
-from fedml.cli.scheduler.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.master.server_constants import ServerConstants
+from fedml.computing.scheduler.slave.client_login import logout as client_logout
+from fedml.computing.scheduler.env.collect_env import collect_env
+from fedml.computing.scheduler.master.server_login import logout as server_logout
+from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
+from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
+from fedml.computing.scheduler.slave.docker_login import logs_with_docker_mode
+from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
+from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
+from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
+from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
+from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.model_scheduler import device_login_entry
+from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
+from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
+from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
+from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 
 from prettytable import PrettyTable
 
@@ -221,7 +218,8 @@ def mlops_login(
             login_with_docker_mode(account_id, version, docker_rank)
             return
         pip_source_dir = os.path.dirname(__file__)
-        login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
+        pip_source_dir = os.path.dirname(pip_source_dir)
+        login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_daemon.py")
 
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -279,7 +277,8 @@ def mlops_login(
             return
 
         pip_source_dir = os.path.dirname(__file__)
-        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_daemon.py")
+        pip_source_dir = os.path.dirname(pip_source_dir)
+        login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "master", "server_daemon.py")
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                         ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
@@ -380,7 +379,8 @@ def launch_login(userid, version, api_key):
         return
 
     pip_source_dir = os.path.dirname(__file__)
-    login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
+    pip_source_dir = os.path.dirname(pip_source_dir)
+    login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_daemon.py")
 
     client_logout()
     sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -572,7 +572,8 @@ def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_
 
     ignore_list = "{},{}".format(ignore, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
-    pip_build_path = os.path.join(pip_source_dir, "build-package")
+    pip_source_dir = os.path.dirname(pip_source_dir)
+    pip_build_path = os.path.join(pip_source_dir, "computing", "scheduler", "build-package")
     build_dir_ignore = "__pycache__,*.pyc,*.git"
     build_dir_ignore_list = tuple(build_dir_ignore.split(','))
     shutil.copytree(pip_build_path, mlops_build_path,
@@ -814,7 +815,8 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
     sys_utils.cleanup_all_fedml_client_diagnosis_processes()
     if check_mqtt_s3_backend_server:
         pip_source_dir = os.path.dirname(__file__)
-        server_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
+        pip_source_dir = os.path.dirname(pip_source_dir)
+        server_diagnosis_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_diagnosis.py")
         backend_server_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             server_diagnosis_cmd,
@@ -827,7 +829,8 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
     if check_mqtt_s3_backend_client:
         pip_source_dir = os.path.dirname(__file__)
-        client_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
+        pip_source_dir = os.path.dirname(pip_source_dir)
+        client_diagnosis_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_diagnosis.py")
         backend_client_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
             client_diagnosis_cmd,

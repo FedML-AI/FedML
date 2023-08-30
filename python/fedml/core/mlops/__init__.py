@@ -11,14 +11,14 @@ import click
 import fedml
 import requests
 from fedml import constants
-from fedml.cli.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
-from ...cli.edge_deployment.client_constants import ClientConstants
-from ...cli.edge_deployment.client_runner import FedMLClientRunner
-from ...cli.server_deployment.server_runner import FedMLServerRunner
+from ...computing.scheduler.slave.client_constants import ClientConstants
+from ...computing.scheduler.slave.client_runner import FedMLClientRunner
+from ...computing.scheduler.master.server_runner import FedMLServerRunner
 from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
-from ...cli.server_deployment.server_constants import ServerConstants
+from ...computing.scheduler.master.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 from ..distributed.communication.s3.remote_storage import S3Storage
@@ -30,7 +30,7 @@ from .mlops_status import MLOpsStatus
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
-from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from .mlops_utils import MLOpsUtils
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"

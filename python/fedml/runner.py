@@ -115,43 +115,6 @@ class FedMLRunner:
             raise Exception("no such setting")
         return runner
 
-    def _init_cross_silo_runner(
-            self, args, device, dataset, model, client_trainer=None, server_aggregator=None
-    ):
-        if args.scenario == "horizontal":
-            if args.role == "client":
-                from .cross_silo import Client
-
-                runner = Client(
-                    args, device, dataset, model, client_trainer
-                )
-            elif args.role == "server":
-                from .cross_silo import Server
-
-                runner = Server(
-                    args, device, dataset, model, server_aggregator
-                )
-            else:
-                raise Exception("no such role")
-        elif args.scenario == "hierarchical":
-            if args.role == "client":
-                from .cross_silo import Client
-
-                runner = Client(
-                    args, device, dataset, model, client_trainer
-                )
-            elif args.role == "server":
-                from .cross_silo import Server
-
-                runner = Server(
-                    args, device, dataset, model, server_aggregator
-                )
-            else:
-                raise Exception("no such role")
-        else:
-            raise Exception("no such setting")
-        return runner
-
     def _init_cheetah_runner(
             self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):

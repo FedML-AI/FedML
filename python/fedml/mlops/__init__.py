@@ -105,8 +105,8 @@ def log_print_cleanup():
     mlops.log_print_end()
 
 
-from ..cli.edge_deployment.client_constants import ClientConstants
-from ..cli.server_deployment.server_constants import ServerConstants
+from ..computing.scheduler.slave.client_constants import ClientConstants
+from ..computing.scheduler.master.server_constants import ServerConstants
 
 __all__ = [
     "ClientConstants",

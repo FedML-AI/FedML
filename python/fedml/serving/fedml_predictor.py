@@ -4,8 +4,8 @@ import stat
 import logging
 import traceback
 from abc import ABC, abstractmethod
-from ..cli.model_deployment.device_client_constants import ClientConstants
-from ..cli.comm_utils import sys_utils
+from ..computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from ..computing.scheduler.comm_utils import sys_utils
 
 class FedMLPredictor(ABC):
     def __init__(self):

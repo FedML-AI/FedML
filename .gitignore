@@ -239,3 +239,6 @@ code-review.csv
 code-review.csv.html
 code-review.csv.md
 python/job.yaml
+python/app/fedllm/bootstrap.sh
+python/app/fedllm/example_entry.sh
+python/app/fedllm/config/fedml_config.yaml
