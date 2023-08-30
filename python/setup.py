@@ -95,7 +95,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.8a56",
+    version="0.8.8a57",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -130,14 +130,14 @@ setup(
             [
                 "fedml/config/simulation_sp/fedml_config.yaml",
                 "fedml/config/simulaton_mpi/fedml_config.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-server/server-package/conf/fedml.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
-                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pv.yaml",
-                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pvc.yaml",
-                "fedml/cli/server_deployment/templates/fedml-server-deployment.yaml",
-                "fedml/cli/server_deployment/templates/fedml-server-svc.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-server/server-package/conf/fedml.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-aggregator-data-pv.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-aggregator-data-pvc.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-server-deployment.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-server-svc.yaml",
                 "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
