@@ -292,6 +292,7 @@ class FedMLJobModel(object):
 class FedMLJobLogModelList(object):
     def __init__(self, job_log_list_json):
         self.log_full_url = job_log_list_json.get("log_full_url", None)
+        self.log_full_url = None if self.log_full_url is not None and self.log_full_url == "" else self.log_full_url
         log_devices_json = job_log_list_json.get("devices", [])
         self.log_devices = list()
         for log_dev in log_devices_json:
@@ -305,5 +306,6 @@ class FedMLJobLogModelList(object):
 class FedMLJobLogDeviceModel(object):
     def __init__(self, jog_log_device_json):
         self.log_url = jog_log_device_json.get("log_url", None)
+        self.log_url = None if self.log_url is not None and self.log_url == "" else self.log_url
         self.device_name = jog_log_device_json.get("name", None)
         self.device_id = jog_log_device_json.get("id", None)

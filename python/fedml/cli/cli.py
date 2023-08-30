@@ -910,22 +910,24 @@ def launch_log(job_id, platform, api_key, version):
     print(log_head_table)
 
     # Show job logs URL for each device
-    log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
-    for log_device in job_logs.log_devices:
-        log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
-    click.echo("\nLogs URL for each device is as follows.")
-    print(log_device_table)
+    if len(job_logs.log_devices) > 0:
+        log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
+        for log_device in job_logs.log_devices:
+            log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
+        click.echo("\nLogs URL for each device is as follows.")
+        print(log_device_table)
 
     # Show job log lines
-    click.echo("\nAll logs is as follows.")
-    for log_line in job_logs.log_lines:
-        click.echo(str(log_line).rstrip('\n'))
-
-    for page_count in range(2, job_logs.total_pages+1):
-        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
-                                                               Constants.JOB_LOG_PAGE_SIZE, api_key)
+    if len(job_logs.log_lines):
+        click.echo("\nAll logs is as follows.")
         for log_line in job_logs.log_lines:
             click.echo(str(log_line).rstrip('\n'))
+
+        for page_count in range(2, job_logs.total_pages+1):
+            job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
+                                                                   Constants.JOB_LOG_PAGE_SIZE, api_key)
+            for log_line in job_logs.log_lines:
+                click.echo(str(log_line).rstrip('\n'))
 
 
 @launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
@@ -1105,6 +1107,9 @@ def launch_job(yaml_file, api_key, platform, group,
                                 click.echo(f"{result.job_url}")
                         else:
                             click.echo(f"Failed to launch the job.")
+                    else:
+                        stop_jobs_core(platform, result.job_id, api_key, version, show_hint_texts=False)
+                        return
                 else:
                     click.echo("Could not find any gpu devices for you.")
                     click.echo(
@@ -1320,17 +1325,19 @@ def stop_jobs(platform, job_id, api_key, version):
     stop_jobs_core(platform, job_id, api_key, version)
 
 
-def stop_jobs_core(platform, job_id, api_key, version):
+def stop_jobs_core(platform, job_id, api_key, version, show_hint_texts=True):
     if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
     is_stopped = FedMLJobManager.get_instance().stop_job(platform, job_id, api_key)
-    if is_stopped:
-        click.echo("Job has been stopped.")
-    else:
-        click.echo("Failed to stop the job, please check your network connection "
-                   "and make sure be able to access the MLOps platform.")
+    if show_hint_texts:
+        if is_stopped:
+            click.echo("Job has been stopped.")
+        else:
+            click.echo("Failed to stop the job, please check your network connection "
+                       "and make sure be able to access the MLOps platform.")
+    return is_stopped
 
 
 @cli.group("model")
