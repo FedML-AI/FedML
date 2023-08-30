@@ -1111,9 +1111,8 @@ def launch_job(yaml_file, api_key, platform, group,
                         stop_jobs_core(platform, result.job_id, api_key, version, show_hint_texts=False)
                         return
                 else:
-                    click.echo("Could not find any gpu devices for you.")
-                    click.echo(
-                        "please adjust config items: maximum_cost_per_hour and minimum_num_gpus in your job yaml file.")
+                    click.echo(f"Failed to launch job, code={result.status}, message=\"{result.message}\".")
+                    return
 
             if result is not None:
                 click.echo("")
