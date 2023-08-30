@@ -204,3 +204,9 @@ class FedMLRunner:
 
     def run(self):
         self.runner.run()
+
+    def set_model_params(self, global_model):
+        self.runner.set_model_params(global_model)
+
+    def get_model_params(self):
+        return self.runner.set_model_params()
