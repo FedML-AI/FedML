@@ -60,7 +60,8 @@ requirements = [
     "onnx",
     "docker==6.1.3",
     "prettytable",
-    "GPUtil"
+    "GPUtil",
+    "tzlocal"
 ]
 
 requirements_extra_mpi = [
@@ -94,7 +95,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.8a52",
+    version="0.8.8a53",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
