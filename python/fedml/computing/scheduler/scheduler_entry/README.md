@@ -37,6 +37,18 @@ bootstrap: |
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
+  allow_cross_cloud_resources: false # true, false
+  device_type: GPU              # options: GPU, CPU, hybrid
+  
+framework_type: fedml         # options: fedml, deepspeed, pytorch, general
+task_type: train              # options: serve, train, dev-environment
+
+# Running entry commands on the server side which will be executed as the job entry point.
+# Support multiple lines, which can not be empty.
+server_job: |
+    echo "Hello, Here is the server job."
+    echo "Current directory is as follows."
+    pwd
 ```
 
 You just need to customize the following config items. 
@@ -57,35 +69,32 @@ fedml launch call_gpu.yaml
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Submit your job to the launch platform: 100%|███████████████████████████████████████████████████████████████████████████████████████████████| 6.20k/6.20k [00:01<00:00, 3.45kB/s]
+Submitting your job to FedML® Launch platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
 
-Found matched GPU devices for you, which are as follows.
-+----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
-| Provider |      Instance     | vCPU(s) | Memory(GB) |           GPU(s)           | Region |  Cost | Selected |
-+----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
-|  FedML   | fedml_a100_node_2 |    4    |     0      | nvidia-fedml_a100_node_2:1 | USA-CA | 60.00 |          |
-+----------+-------------------+---------+------------+----------------------------+--------+-------+----------+
+Searched and matched the following GPU resource for your job:
++-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+
+|  Provider |      Instance     | vCPU(s) | Memory(GB) |          GPU(s)         |  Region |  Cost | Selected |
++-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+
+| FedML Inc | fedml_a100_node_2 |   256   |   2003.9   | NVIDIA A100-SXM4-80GB:8 | DEFAULT | 40.00 |    √     |
++-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+
 
-Job picasso_dog pre-launch process has started. But the job launch is not started yet.
-You may go to this web page with your account to review your job and confirm the launch start.
-https://open.fedml.ai/gpu/projects/job/confirmStartJob?projectId=1692900612607447040&projectName=default-project&jobId=1692924448354734080
+You can also view the matched GPU resource with Web UI at: 
+https://open.fedml.ai/gpu/projects/job/confirmStartJob?projectId=1692900612607447040&projectName=default-project&jobId=1696947481910317056
 
-Or here you can directly confirm to launch your job on the above GPUs.
 Are you sure to launch it? [y/N]: y
 
-Currently, your launch result is as follows.
-+--------------+---------------------+---------+---------------------+------------+----------+------+
-|   Job Name   |        Job ID       |  Status |     Started Time    | Ended Time | Duration | Cost |
-+--------------+---------------------+---------+---------------------+------------+----------+------+
-| escher_eagle | 1692924497948184576 | RUNNING | 2023-08-19T23:40:27 |    None    |   None   | 0.0  |
-+--------------+---------------------+---------+---------------------+------------+----------+------+
+Your launch result is as follows:
++------------+---------------------+---------+---------------------+------------------+------+
+|  Job Name  |        Job ID       |  Status |       Created       | Spend Time(hour) | Cost |
++------------+---------------------+---------+---------------------+------------------+------+
+| munch_clam | 1696947481910317056 | RUNNING | 2023-08-31 02:06:22 |       None       | 0.0  |
++------------+---------------------+---------+---------------------+------------------+------+
 
-You can track your job running details at this URL.
-https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&jobId=1692924497948184576
+You can track your job running details at this URL:
+https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&jobId=1696947481910317056
 
 For querying the realtime status of your job, please run the following command.
-fedml jobs list -id 1692924497948184576
-
+fedml launch log 1696947481910317056
 ```
 
 ## Login as the GPU supplier
