@@ -1114,7 +1114,7 @@ def launch_job(yaml_file, api_key, platform, group,
                         stop_jobs_core(platform, result.job_id, api_key, version, show_hint_texts=False)
                         return
                 else:
-                    click.echo(f"Failed to launch job, code={result.status}, message=\"{result.message}\".")
+                    click.echo(f"Result of launching job: code={result.status}, message=\"{result.message}\".")
                     return
 
             if result is not None:

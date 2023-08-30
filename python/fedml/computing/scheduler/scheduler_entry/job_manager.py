@@ -58,7 +58,10 @@ class FedMLJobManager(Singleton):
             job_start_json["projectName"] = ""
 
         if platform == "octopus":
-            job_start_json["projectName"] = "Cheetah_HelloWorld"
+            if project_name is not None and len(str(project_name).strip(' ')) > 0:
+                job_start_json["projectName"] = project_name
+            else:
+                job_start_json["projectName"] = "Cheetah_HelloWorld"
             job_start_json["name"] = str(uuid.uuid4())
 
         if job_id is not None:
