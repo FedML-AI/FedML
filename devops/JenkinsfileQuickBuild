@@ -313,6 +313,8 @@ pipeline {
                     credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl create secret docker-registry open-ecr-secret --docker-server=public.ecr.aws --docker-username=AWS --docker-password=$(/usr/local/bin/aws ecr-public get-login-password --region us-east-1) --namespace=fedml-devops-aggregator-dev'
+
                     sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_DEV deployment/fedml-cloud-server'
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME'
@@ -379,6 +381,8 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl create secret docker-registry open-ecr-secret --docker-server=public.ecr.aws --docker-username=AWS --docker-password=$(/usr/local/bin/aws ecr-public get-login-password --region us-east-1) --namespace=fedml-devops-aggregator-release'
+
                     sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
