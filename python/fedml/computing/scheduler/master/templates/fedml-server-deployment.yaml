@@ -14,7 +14,7 @@ spec:
         app: fedml-aggregator
     spec:
       imagePullSecrets:
-        - name: secret-$FEDML_REGISTRY_SECRET_SUFFIX
+        - name: open-ecr-secret
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
