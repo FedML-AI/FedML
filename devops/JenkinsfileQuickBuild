@@ -161,13 +161,21 @@ pipeline {
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
                 sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
-                // sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
-                sh 'docker pull $REGISTRY_DOCKER_HUB/fedml/fedml-device-image:base'
-                sh 'docker tag $REGISTRY_DOCKER_HUB/fedml/fedml-device-image:base public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+                withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_DEV" ,)]) {
+                    withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_DEV" ,)]) {
+                        sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                        sh 'unzip -o awscliv2.zip'
+                        sh './aws/install'
+                        sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                        sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_DEV'
 
-                sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
+                        sh 'docker pull $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:base'
 
-                sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
+                        sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
+
+                        sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
+                    }
+                }
             }
           }
         }
@@ -205,13 +213,23 @@ pipeline {
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
               sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
-              sh './devops/scripts/build-fedml-docker.sh'
+              // sh './devops/scripts/build-fedml-docker.sh'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
+              withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
+                withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
+                    sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                    sh 'unzip -o awscliv2.zip'
+                    sh './aws/install'
+                    sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                    sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
+                    sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:base .'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
+                    sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
+
+                    sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
+                }
+              }
             }
           }
         }
@@ -289,22 +307,13 @@ pipeline {
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
 
-                    // sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
+                    sh 'docker push $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:base'
+
+                    sh 'docker push $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
+
+                    sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
                  }
               }
-
-              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
-                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
-
-                 sh 'docker push  $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:base'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
-
-                 sh 'docker tag  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
-              }
-            }
           }
         }
 
