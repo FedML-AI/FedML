@@ -304,6 +304,7 @@ pipeline {
                     sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
                  }
               }
+           }
           }
         }
 
