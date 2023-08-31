@@ -175,7 +175,7 @@ pipeline {
 
                         sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
                     }
-                }
+               }
             }
           }
         }
@@ -247,21 +247,11 @@ pipeline {
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_DEV'
+
+                    sh 'docker push $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
+                    sh 'docker push $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
                  }
               }
-
-              // sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
-              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
-                sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
-
-                sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
-                sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
-
-                sh 'docker tag  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_DEV'
-                sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_DEV'
-              }
-
-              // sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
             }
           }
         }
@@ -296,7 +286,7 @@ pipeline {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
-                sh './devops/scripts/push-fedml-docker.sh'
+                // sh './devops/scripts/push-fedml-docker.sh'
               }
 
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
@@ -314,6 +304,7 @@ pipeline {
                     sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
                  }
               }
+           }
           }
         }
 
