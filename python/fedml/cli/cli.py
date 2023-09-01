@@ -360,18 +360,6 @@ def launch_login(userid, version, api_key):
         else:
             api_key = saved_api_key
 
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
-
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
         click.echo("Please specify your account id, usage: fedml launch login $your_account_id -k $your_api_key")
