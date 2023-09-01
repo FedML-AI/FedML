@@ -107,7 +107,7 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
-    init_logs(edge_id)
+    init_logs(args, edge_id)
 
     # Log arguments and binding results.
     # logging.info("login: unique_device_id = %s" % str(unique_device_id))
@@ -202,7 +202,7 @@ def __login_as_cloud_agent(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
-    init_logs(edge_id)
+    init_logs(args, edge_id)
     logging.info("args {}".format(args))
 
     # Log arguments and binding results.
@@ -297,7 +297,7 @@ def __login_as_cloud_server(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
-    init_logs(edge_id)
+    init_logs(args, edge_id)
 
     # Log arguments and binding results.
     logging.info("login: unique_device_id = %s" % str(unique_device_id))
@@ -315,7 +315,7 @@ def __login_as_cloud_server(args, userid, version):
     runner.callback_start_train(payload=args.runner_cmd)
 
 
-def init_logs(edge_id):
+def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = ServerConstants.get_log_file_dir()
     args.run_id = 0
