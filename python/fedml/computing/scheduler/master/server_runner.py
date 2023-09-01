@@ -111,6 +111,7 @@ class FedMLServerRunner:
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
+        self.enable_simulation_cloud_agent = False
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -624,8 +625,8 @@ class FedMLServerRunner:
     def process_job_status(self, run_id):
         all_edges_is_finished = True
         any_edge_is_failed = False
-        edge_id_status_dict = self.client_agent_active_list[f"{run_id}"]
-        server_id = edge_id_status_dict["server"]
+        edge_id_status_dict = self.client_agent_active_list.get(f"{run_id}", {})
+        server_id = edge_id_status_dict.get("server", 0)
         for edge_id, status in edge_id_status_dict.items():
             if edge_id == "server":
                 continue
@@ -799,7 +800,7 @@ class FedMLServerRunner:
         if run_id is not None and edge_id is not None:
             active_item_dict = self.client_agent_active_list.get(f"{run_id}", None)
             if active_item_dict is None:
-                self.client_agent_active_list[f"{run_id}"] = dict()
+                return
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
             self.process_job_status(run_id)
 
@@ -867,7 +868,7 @@ class FedMLServerRunner:
 
         # Process the log
         run_id = request_json["runId"]
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             # Start log processor for current run
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
@@ -906,14 +907,14 @@ class FedMLServerRunner:
         logging.info("subscribe the client exception message.")
 
         # Setup MQTT message listener for run exception
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + \
                                                      "/client_exit_train_with_exception"
             self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
                                                self.callback_client_exit_train_with_exception)
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             self.init_job_task(request_json)
 
             self.args.run_id = run_id
@@ -1229,7 +1230,7 @@ class FedMLServerRunner:
         stop_request_json = self.running_request_json.get(str(run_id), None)
         if stop_request_json is None:
             stop_request_json = request_json
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
                 edge_id=self.edge_id
@@ -1366,7 +1367,7 @@ class FedMLServerRunner:
             stop_request_json = self.running_request_json.get(str(run_id), None)
             if stop_request_json is None:
                 stop_request_json = request_json
-            if self.run_as_edge_server_and_agent:
+            if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
                 server_runner = FedMLServerRunner(
                     self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
                 )
