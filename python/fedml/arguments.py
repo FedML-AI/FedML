@@ -58,7 +58,17 @@ def add_args():
     # default arguments
     parser.add_argument("--role", type=str, default="client")
 
+    # default arguments
+    parser.add_argument("--run_device_id", type=str, default="0")
+
+    # default arguments
+    parser.add_argument("--using_mlops", type=bool, default=False)
+
     args, unknown = parser.parse_known_args()
+
+    if args.run_device_id != "0":
+        setattr(args, "edge_id", args.run_device_id)
+
     return args
 
 
@@ -77,11 +87,14 @@ class Arguments:
             for arg_key, arg_val in cmd_args_dict.items():
                 setattr(self, arg_key, arg_val)
     def load_yaml_config(self, yaml_path):
-        with open(yaml_path, "r") as stream:
-            try:
-                return yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                raise ValueError("Yaml error - check yaml file")
+        try:
+            with open(yaml_path, "r") as stream:
+                try:
+                    return yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    raise ValueError("Yaml error - check yaml file")
+        except Exception as e:
+            return None
 
     def get_default_yaml_config(self, cmd_args, training_type=None, comm_backend=None):
         if cmd_args.yaml_config_file == "":
@@ -129,7 +142,8 @@ class Arguments:
         configuration = self.load_yaml_config(cmd_args.yaml_config_file)
 
         # Override class attributes from current yaml config
-        self.set_attr_from_config(configuration)
+        if configuration is not None:
+            self.set_attr_from_config(configuration)
 
         if cmd_args.yaml_config_file == "":
             path_current_file = path.abspath(path.dirname(__file__))
@@ -187,7 +201,7 @@ def load_arguments(training_type=None, comm_backend=None):
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
 
-    if not hasattr(args, "worker_num"):
+    if not hasattr(args, "worker_num") and hasattr(args, "client_num_per_round"):
         args.worker_num = args.client_num_per_round
         
     # os.path.expanduser() method in Python is used

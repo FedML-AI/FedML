@@ -1,0 +1,16 @@
+entry_config: 
+  entry_file: fedml/torch_client.py
+  conf_file: config/fedml_config.yaml
+dynamic_args:
+  rank: ${FEDSYS.CLIENT_INDEX}
+  run_id: ${FEDSYS.RUN_ID}
+  data_cache_dir: /fedml/fedml-package/fedml/data
+  mqtt_config_path: /fedml/fedml_config/mqtt_config.yaml
+  s3_config_path: /fedml/fedml_config/s3_config.yaml
+  log_file_dir: /fedml/fedml-package/fedml/data
+  log_server_url: ${FEDSYS.LOG_SERVER_URL}
+  client_id_list: ${FEDSYS.CLIENT_ID_LIST}
+  client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}
+  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}
+  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}
+  client_num_in_total: ${FEDSYS.CLIENT_NUM}

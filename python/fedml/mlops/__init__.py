@@ -97,8 +97,16 @@ def log_server_payload(run_id, edge_id, payload):
     mlops.log_server_payload(run_id, edge_id, payload)
 
 
-from ..cli.edge_deployment.client_constants import ClientConstants
-from ..cli.server_deployment.server_constants import ServerConstants
+def log_print_init():
+    mlops.log_print_start()
+
+
+def log_print_cleanup():
+    mlops.log_print_end()
+
+
+from ..computing.scheduler.slave.client_constants import ClientConstants
+from ..computing.scheduler.master.server_constants import ServerConstants
 
 __all__ = [
     "ClientConstants",
