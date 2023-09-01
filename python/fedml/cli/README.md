@@ -161,6 +161,7 @@ fedml_env:
   project_name: 
 
 # Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
 workspace: hello_world
 
