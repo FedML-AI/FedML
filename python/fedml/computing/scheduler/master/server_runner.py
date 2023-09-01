@@ -797,6 +797,9 @@ class FedMLServerRunner:
         edge_id = payload_json.get("edge_id", None)
         status = payload_json.get("status", None)
         if run_id is not None and edge_id is not None:
+            active_item_dict = self.client_agent_active_list.get(f"{run_id}", None)
+            if active_item_dict is None:
+                self.client_agent_active_list[f"{run_id}"] = dict()
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
             self.process_job_status(run_id)
 
