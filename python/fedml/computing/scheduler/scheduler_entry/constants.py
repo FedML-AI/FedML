@@ -160,6 +160,10 @@ class Constants(Singleton):
 
     @staticmethod
     def get_current_time_zone():
-        import tzlocal
-        tz_info = tzlocal.get_localzone()
+        tz_info = "Etc/UTC"
+        try:
+            import tzlocal
+            tz_info = tzlocal.get_localzone()
+        except Exception as e:
+            pass
         return str(tz_info)
