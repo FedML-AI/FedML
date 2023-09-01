@@ -360,6 +360,18 @@ def launch_login(userid, version, api_key):
         else:
             api_key = saved_api_key
 
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        click.echo("Your API Key is not correct. Please input again.")
+        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+        if not is_valid_heartbeat:
+            click.echo("Your API Key is not correct. Please check and try again.")
+            return
+    if is_valid_heartbeat:
+        FedMLLaunchManager.save_api_key(api_key)
+
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
         click.echo("Please specify your account id, usage: fedml launch login $your_account_id -k $your_api_key")
@@ -1001,12 +1013,23 @@ def launch_job(yaml_file, api_key, platform, group,
             api_key = saved_api_key
 
     FedMLLaunchManager.get_instance().set_config_version(version)
+    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        click.echo("Your API Key is not correct. Please input again.")
+        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+        if not is_valid_heartbeat:
+            click.echo("Your API Key is not correct. Please check and try again.")
+            return
+    if is_valid_heartbeat:
+        FedMLLaunchManager.save_api_key(api_key)
+
+    FedMLLaunchManager.get_instance().set_config_version(version)
     result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], api_key,
                                                           platform,
                                                           devices_server, devices_edges,
                                                           no_confirmation=is_no_confirmation)
     if result is not None:
-        FedMLLaunchManager.save_api_key(api_key)
         if result.status == Constants.JOB_START_STATUS_INVALID:
             click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file "
                        f"to make sure the syntax is valid, e.g. "
@@ -1196,13 +1219,24 @@ def start_job(platform, project_name, application_name, job_name, devices_server
         else:
             api_key = saved_api_key
 
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        click.echo("Your API Key is not correct. Please input again.")
+        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+        if not is_valid_heartbeat:
+            click.echo("Your API Key is not correct. Please check and try again.")
+            return
+    if is_valid_heartbeat:
+        FedMLLaunchManager.save_api_key(api_key)
+
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
                                                       devices_server, devices_edges,
                                                       user, api_key,
                                                       job_name=job_name, need_confirmation=False)
     if result:
-        FedMLLaunchManager.save_api_key(api_key)
         click.echo(f"Job {result.job_name} has started.")
         click.echo(f"Please go to this web page with your account id {result.user_id} to review your job details.")
         click.echo(f"{result.job_url}")
@@ -1267,11 +1301,22 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
         else:
             api_key = saved_api_key
 
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        click.echo("Your API Key is not correct. Please input again.")
+        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+        if not is_valid_heartbeat:
+            click.echo("Your API Key is not correct. Please check and try again.")
+            return
+    if is_valid_heartbeat:
+        FedMLLaunchManager.save_api_key(api_key)
+
     FedMLJobManager.get_instance().set_config_version(version)
     job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name,
                                                            api_key, job_id=job_id)
     if job_list_obj is not None:
-        FedMLLaunchManager.save_api_key(api_key)
         if len(job_list_obj.job_list) > 0:
             if len(job_list_obj.job_list) > 0:
                 click.echo("Found the following matched jobs.")

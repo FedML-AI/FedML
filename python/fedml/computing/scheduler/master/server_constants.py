@@ -157,6 +157,12 @@ class ServerConstants(object):
         return app_url
 
     @staticmethod
+    def get_heartbeat_url(config_version="release"):
+        heartbeat_url = "{}/fedmlOpsServer/api/v1/cli/heartBeat".format(
+            ServerConstants.get_mlops_url(config_version))
+        return heartbeat_url
+
+    @staticmethod
     def cleanup_run_process(run_id):
         try:
             local_pkg_data_dir = ServerConstants.get_data_dir()
