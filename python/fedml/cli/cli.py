@@ -365,9 +365,12 @@ def launch_login(userid, version, api_key):
     if not is_valid_heartbeat:
         click.echo("Your API Key is not correct. Please input again.")
         api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please check and try again.")
             return
+    if is_valid_heartbeat:
+        FedMLLaunchManager.save_api_key(api_key)
 
     print("\n Welcome to FedML.ai! \n Start to login the current device to the MLOps (https://open.fedml.ai)...\n")
     if userid is None or len(userid) <= 0:
@@ -1014,6 +1017,7 @@ def launch_job(yaml_file, api_key, platform, group,
     if not is_valid_heartbeat:
         click.echo("Your API Key is not correct. Please input again.")
         api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please check and try again.")
             return
@@ -1220,6 +1224,7 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     if not is_valid_heartbeat:
         click.echo("Your API Key is not correct. Please input again.")
         api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please check and try again.")
             return
@@ -1301,6 +1306,7 @@ def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
     if not is_valid_heartbeat:
         click.echo("Your API Key is not correct. Please input again.")
         api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please check and try again.")
             return
