@@ -102,6 +102,22 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
 def partition_data_by_sample_size(
     args, path, client_number, uniform=True, compact=True
 ):
+    """
+    Partition dataset into multiple clients based on sample size.
+
+    Args:
+        args (list): Arguments.
+        path (str): Path to the dataset.
+        client_number (int): Number of clients to partition the dataset into.
+        uniform (bool, optional): If True, create uniform partitions. If False, create non-uniform partitions.
+        compact (bool, optional): Whether to use compact representation.
+
+    Returns:
+        tuple: A tuple containing global_data_dict and partition_dicts.
+
+        global_data_dict (dict): A dictionary containing global datasets (train, val, test).
+        partition_dicts (list): A list of dictionaries containing partitioned datasets for each client.
+    """
     (
         train_adj_matrices,
         train_feature_matrices,
