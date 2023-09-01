@@ -134,7 +134,7 @@ class FedMLJobManager(Singleton):
         return self.stop_job_api(platform, job_id, user_api_key)
 
     def stop_job_api(self, platform, job_id, user_api_key):
-        jot_stop_url = ServerConstants.get_job_stop_url(self.config_version)
+        job_stop_url = ServerConstants.get_job_stop_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         job_stop_json = {
             "platformType": platform,
@@ -147,15 +147,15 @@ class FedMLJobManager(Singleton):
             try:
                 requests.session().verify = cert_path
                 response = requests.post(
-                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                    job_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
                 )
             except requests.exceptions.SSLError as err:
                 MLOpsConfigs.install_root_ca_file()
                 response = requests.post(
-                    jot_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
+                    job_stop_url, verify=True, headers=job_api_headers, json=job_stop_json
                 )
         else:
-            response = requests.post(jot_stop_url, headers=job_api_headers, json=job_stop_json)
+            response = requests.post(job_stop_url, headers=job_api_headers, json=job_stop_json)
         if response.status_code != 200:
             return False
         else:
@@ -204,6 +204,43 @@ class FedMLJobManager(Singleton):
             job_log_list_result = FedMLJobLogModelList(resp_data["data"])
 
         return job_log_list_result
+
+    def check_heartbeat(self, api_key):
+        heartbeat_result = None
+        heartbeat_url = ServerConstants.get_heartbeat_url(self.config_version)
+        heartbeat_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        heartbeat_json = {
+            "apiKey": api_key
+        }
+
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    heartbeat_url, verify=True, headers=heartbeat_api_headers, json=heartbeat_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    heartbeat_url, verify=True, headers=heartbeat_api_headers, json=heartbeat_json
+                )
+        else:
+            response = requests.post(heartbeat_url, headers=heartbeat_api_headers, json=heartbeat_json)
+        if response.status_code != 200:
+            print(f"Check heartbeat with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            pass
+        else:
+            resp_data = response.json()
+            code = resp_data.get("code", "")
+            message = resp_data.get("message", "")
+            data = resp_data.get("data", False)
+            if code == "SUCCESS" and data is True:
+                return True
+
+        return False
 
 
 class FedMLJobStartedModel(object):
