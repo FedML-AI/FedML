@@ -201,6 +201,15 @@ def load_arguments(training_type=None, comm_backend=None):
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
 
+    current_version = os.getenv("FEDML_CURRENT_VERSION")
+    if current_version is not None and current_version != "":
+        setattr(args, "version", current_version)
+        setattr(args, "config_version", current_version)
+
+    using_mlops = os.getenv("FEDML_USING_MLOPS")
+    if using_mlops is not None:
+        setattr(args, "using_mlops", using_mlops)
+
     if not hasattr(args, "worker_num") and hasattr(args, "client_num_per_round"):
         args.worker_num = args.client_num_per_round
         

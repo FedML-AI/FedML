@@ -25,10 +25,10 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a64"
+__version__ = "0.8.8a65"
 
 
-def init(args=None, check_env=True):
+def init(args=None, check_env=True, should_init_logs=True):
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
@@ -105,7 +105,7 @@ def init(args=None, check_env=True):
 
     update_client_id_list(args)
 
-    mlops.init(args)
+    mlops.init(args, should_init_logs=should_init_logs)
 
     if hasattr(args, "rank") and hasattr(args, "worker_num"):
         if hasattr(args, "process_id") and args.process_id is not None:
