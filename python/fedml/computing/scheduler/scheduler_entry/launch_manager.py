@@ -436,6 +436,10 @@ class FedMLLaunchManager(Singleton):
         except Exception as e:
             return ""
 
+    def show_resource_type(self):
+        FedMLJobManager.get_instance().set_config_version(self.config_version)
+        return FedMLJobManager.get_instance().show_resource_type()
+
 
 '''
 For the Job yaml file, please review the call_gpu.yaml :

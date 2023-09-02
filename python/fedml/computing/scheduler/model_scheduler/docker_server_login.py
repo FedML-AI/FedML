@@ -3,6 +3,8 @@ import os
 import platform
 
 import click
+from fedml.computing.scheduler.comm_utils import sys_utils
+
 from .device_server_constants import ServerConstants
 from .device_server_runner import FedMLServerRunner
 
@@ -83,11 +85,11 @@ def login_with_server_docker_mode(userid, version, docker_rank):
     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(docker_ps_process)
     is_deployment_ok = False
     if out is not None:
-        out_str = out.decode(encoding="utf-8")
+        out_str = sys_utils.decode_our_err_result(out)
         if str(out_str).find(fedml_docker_name) != -1 and str(out_str).find("Up") != -1:
             is_deployment_ok = True
     if err is not None:
-        err_str = err.decode(encoding="utf-8")
+        err_str = sys_utils.decode_our_err_result(err)
         if str(err_str).find(fedml_docker_name) != -1 and str(err_str).find("Up") != -1:
             is_deployment_ok = True
 
@@ -118,7 +120,7 @@ def logs_with_server_docker_mode(docker_rank):
                                                                            should_capture_stdout_err=True)
     _, out_id, err_id = ServerConstants.get_console_pipe_out_err_results(docker_name_proc)
     if out_id is not None:
-        out_id_str = out_id.decode(encoding="utf-8")
+        out_id_str = sys_utils.decode_our_err_result(out_id)
         docker_logs_cmd = 'docker logs -f {}'.format(out_id_str)
         os.system(docker_logs_cmd)
 

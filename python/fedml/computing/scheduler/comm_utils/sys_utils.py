@@ -781,6 +781,14 @@ def run_subprocess_open(shell_script_list):
     return script_process
 
 
+def decode_our_err_result(out_err):
+    try:
+        result_str = out_err.decode(encoding="utf-8")
+        return result_str
+    except Exception as e:
+        return out_err
+
+
 if __name__ == '__main__':
     fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
     print("FedML is latest version: {}, local version {}, remote version {}".format(

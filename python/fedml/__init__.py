@@ -25,15 +25,16 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a63"
+__version__ = "0.8.8a64"
 
 
-def init(args=None):
+def init(args=None, check_env=True):
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
     """Initialize FedML Engine."""
-    collect_env(args)
+    if check_env:
+        collect_env(args)
 
     if hasattr(args, "training_type"):
         fedml._global_training_type = args.training_type

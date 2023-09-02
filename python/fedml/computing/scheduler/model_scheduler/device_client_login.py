@@ -106,7 +106,7 @@ def __login_as_client(args, userid, version):
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, user_name, extra_url = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name
             )
             if edge_id > 0:

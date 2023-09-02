@@ -206,7 +206,6 @@ class FedMLJobManager(Singleton):
         return job_log_list_result
 
     def check_heartbeat(self, api_key):
-        heartbeat_result = None
         heartbeat_url = ServerConstants.get_heartbeat_url(self.config_version)
         heartbeat_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         heartbeat_json = {
@@ -241,6 +240,38 @@ class FedMLJobManager(Singleton):
                 return True
 
         return False
+
+    def show_resource_type(self):
+        resource_url = ServerConstants.get_resource_url(self.config_version)
+        args = {"config_version": self.config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.get(
+                    resource_url, verify=True)
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.get(
+                    resource_url, verify=True)
+        else:
+            response = requests.post(resource_url)
+        if response.status_code != 200:
+            print(f"Get resource type with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            pass
+        else:
+            resp_data = response.json()
+            code = resp_data.get("code", "")
+            message = resp_data.get("message", "")
+            data = resp_data.get("data", None)
+            if code == "SUCCESS" and data is not None:
+                return data
+
+        return None
+
+
+
 
 
 class FedMLJobStartedModel(object):

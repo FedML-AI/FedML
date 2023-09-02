@@ -14,6 +14,8 @@ import tritonclient.http as http_client
 
 import collections.abc
 
+from fedml.computing.scheduler.comm_utils import sys_utils
+
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
 
@@ -91,7 +93,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                                                        should_capture_stderr=True)
             ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
             if out is not None:
-                out_str = out.decode(encoding="utf-8")
+                out_str = sys_utils.decode_our_err_result(out)
                 if str(out_str) != "":
                     triton_server_is_running = True
 
@@ -454,7 +456,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
                                                                      should_capture_stderr=True)
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(docker_ps_process)
         if out is not None:
-            out_str = out.decode(encoding="utf-8")
+            out_str = sys_utils.decode_our_err_result(out)
             if str(out_str).find(convert_model_container_name) == -1:
                 return True
             else:
@@ -494,13 +496,13 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                                                                     should_capture_stderr=True)
             ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(logs_process)
             if out is not None:
-                out_str = out.decode(encoding="utf-8")
+                out_str = sys_utils.decode_our_err_result(out)
                 added_logs = str(out_str).replace(last_out_logs, "")
                 if len(added_logs) > 0:
                     logging.info("{}".format(added_logs))
                 last_out_logs = out_str
             elif err is not None:
-                err_str = err.decode(encoding="utf-8")
+                err_str = sys_utils.decode_our_err_result(err)
                 added_logs = str(err_str).replace(last_err_logs, "")
                 if len(added_logs) > 0:
                     logging.info("{}".format(added_logs))

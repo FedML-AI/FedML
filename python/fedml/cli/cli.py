@@ -54,6 +54,28 @@ def mlops_status():
     )
 
 
+@cli.command("show-resource-type", help="Show resource type at the FedML® Launch platform (open.fedml.ai)")
+@click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="show resource type at which version of MLOps platform. It should be dev, test or release",
+)
+def launch_show_resource_type(version):
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
+    if resource_type_list is not None and len(resource_type_list) > 0:
+        click.echo("All available resource type is as follows.")
+        resource_table = PrettyTable(['Resource Type Name'])
+        for type_item in resource_type_list:
+            resource_table.add_row([type_item])
+        print(resource_table)
+    else:
+        click.echo("No available resource type.")
+
+
 @cli.command("logs", help="Display fedml logs.")
 @click.help_option("--help", "-h")
 @click.option(
