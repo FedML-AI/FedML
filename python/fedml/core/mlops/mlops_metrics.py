@@ -510,6 +510,25 @@ class MLOpsMetrics(object):
 
         return False
 
+    def report_artifact_info(self, job_id, edge_id, artifact_name, artifact_type,
+                             artifact_local_path, artifact_url,
+                             artifact_ext_info, artifact_desc,
+                             timestamp):
+        topic_name = "launch_device/mlops/artifacts"
+        artifact_info_json = {
+            "job_id": job_id,
+            "edge_id": edge_id,
+            "artifact_name": artifact_name,
+            "artifact_local_path": artifact_local_path,
+            "artifact_url": artifact_url,
+            "artifact_type": artifact_type,
+            "artifact_desc": artifact_desc,
+            "artifact_ext_info": artifact_ext_info,
+            "timestamp": timestamp
+        }
+        message_json = json.dumps(artifact_info_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

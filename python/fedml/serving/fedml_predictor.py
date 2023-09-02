@@ -55,7 +55,7 @@ def build_dynamic_args():
                 
                 if ret_code is None or ret_code <= 0:
                     if out is not None:
-                        out_str = out.decode(encoding="utf-8")
+                        out_str = sys_utils.decode_our_err_result(out)
                         if out_str != "":
                             logging.info("{}".format(out_str))
 
@@ -64,7 +64,7 @@ def build_dynamic_args():
                     is_bootstrap_run_ok = True
                 else:
                     if err is not None:
-                        err_str = err.decode(encoding="utf-8")
+                        err_str = sys_utils.decode_our_err_result(err)
                         if err_str != "":
                             logging.error("{}".format(err_str))
 

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import platform
+import shutil
 import subprocess
 import threading
 import time
@@ -544,7 +545,7 @@ def log_print_start():
     # init FedML framework
     fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
     fedml._global_comm_backend = ""
-    args = fedml.init()
+    args = fedml.init(check_env=False)
 
     setattr(args, "using_mlops", True)
     MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.run_device_id)
@@ -554,10 +555,74 @@ def log_print_end():
     # init FedML framework
     fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
     fedml._global_comm_backend = ""
-    args = fedml.init()
+    args = fedml.init(check_env=False)
 
     setattr(args, "using_mlops", True)
     MLOpsRuntimeLogDaemon.get_instance(args).stop_log_processor(args.run_id, args.run_device_id)
+
+
+def get_fedml_args():
+    # init FedML framework
+    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_comm_backend = ""
+    fedml_args = fedml.init(check_env=False)
+    return fedml_args
+
+
+def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
+    args = {"config_version": version}
+    _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    s3_storage = S3Storage(s3_config)
+    artifact_dst_key = f"{artifact.artifact_name}_{artifact.artifact_type_name}"
+    artifact_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "artifacts")
+    artifact_archive_name = os.path.join(artifact_dir, artifact_dst_key)
+    os.makedirs(artifact_archive_name, exist_ok=True)
+
+    for artifact_item in artifact.artifact_files:
+        artifact_base_name = os.path.basename(artifact_item)
+        shutil.copyfile(artifact_item, os.path.join(artifact_archive_name, artifact_base_name))
+
+    for artifact_item in artifact.artifact_dirs:
+        artifact_base_name = os.path.basename(artifact_item)
+        dst_dir = os.path.join(artifact_archive_name, artifact_base_name)
+        if os.path.exists(dst_dir):
+            shutil.rmtree(dst_dir, ignore_errors=True)
+        shutil.copytree(artifact_item, os.path.join(artifact_archive_name, artifact_base_name),
+                        ignore_dangling_symlinks=True)
+
+    shutil.make_archive(
+        artifact_archive_name,
+        "zip",
+        root_dir=artifact_dir,
+        base_dir=artifact_dst_key,
+    )
+    artifact_archive_zip_file = artifact_archive_name + ".zip"
+    artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
+                                                                "Submitting your artifact to FedML® Launch platform")
+    return artifact_archive_zip_file, artifact_storage_url
+
+
+def log_artifact(artifact: fedml.mlops.Artifact, version=None):
+    fedml_args = get_fedml_args()
+
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
+                                                                          version=version if version is not None else
+                                                                          fedml_args.config_version)
+
+    setup_log_mqtt_mgr()
+    job_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    timestamp = MLOpsUtils.get_ntp_time()
+    MLOpsStore.mlops_metrics.report_artifact_info(job_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+                                                  artifact_archive_zip_file, artifact_storage_url,
+                                                  artifact.ext_info, artifact.artifact_desc,
+                                                  timestamp)
+
+
+def log_model(model_name, model_file_path, version=None):
+    model_artifact = fedml.mlops.Artifact(name=model_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_MODEL)
+    model_artifact.add_file(model_file_path)
+    log_artifact(model_artifact, version=version)
 
 
 def log_round_info(total_rounds, round_index):

@@ -870,12 +870,25 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
-        status_code = response.json().get("code")
-        if status_code == "SUCCESS":
-            edge_id = response.json().get("data").get("id")
+        if response.status_code != 200:
+            print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            pass
         else:
-            return 0
-        return edge_id
+            # print("url = {}, response = {}".format(url, response))
+            status_code = response.json().get("code")
+            if status_code == "SUCCESS":
+                edge_id = response.json().get("data").get("id")
+                user_name = response.json().get("data").get("userName", None)
+                extra_url = response.json().get("data").get("url", None)
+                if edge_id is None or edge_id <= 0:
+                    print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                          f"response.content: {response.content}")
+            else:
+                print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return 0, None, None
+        return edge_id, user_name, extra_url
 
     def fetch_configs(self):
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()

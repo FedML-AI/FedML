@@ -1,5 +1,8 @@
 import logging
+import os
 import traceback
+
+import fedml
 
 from ..core import mlops
 
@@ -103,6 +106,56 @@ def log_print_init():
 
 def log_print_cleanup():
     mlops.log_print_end()
+
+
+
+ARTIFACT_TYPE_GENERAL = 1  # general file
+ARTIFACT_TYPE_MODEL = 2  # model file
+ARTIFACT_TYPE_DATASET = 3  # dataset file
+ARTIFACT_TYPE_SOURCE = 4  # source code
+ARTIFACT_TYPE_LOG = 5  # log file
+
+ARTIFACT_TYPE_NAME_GENERAL = "general"  # general file
+ARTIFACT_TYPE_NAME_MODEL = "model"  # model file
+ARTIFACT_TYPE_NAME_DATASET = "dataset"  # dataset file
+ARTIFACT_TYPE_NAME_SOURCE = "source code"  # source code
+ARTIFACT_TYPE_NAME__LOG = "log"  # log file
+
+artifact_type_map = {ARTIFACT_TYPE_NAME_GENERAL: ARTIFACT_TYPE_GENERAL,
+                     ARTIFACT_TYPE_NAME_MODEL: ARTIFACT_TYPE_MODEL,
+                     ARTIFACT_TYPE_NAME_DATASET: ARTIFACT_TYPE_DATASET,
+                     ARTIFACT_TYPE_NAME_SOURCE: ARTIFACT_TYPE_SOURCE,
+                     ARTIFACT_TYPE_NAME__LOG: ARTIFACT_TYPE_LOG}
+
+
+class Artifact:
+    def __init__(self, name="", type=ARTIFACT_TYPE_NAME_GENERAL):
+        self.artifact_name = name
+        self.artifact_type_name = type
+        self.artifact_type = artifact_type_map[type]
+        self.artifact_desc = ""
+        self.artifact_files = list()
+        self.artifact_dirs = list()
+        self.ext_info = dict()
+
+    def add_file(self, file_path):
+        if os.path.exists(file_path):
+            self.artifact_files.append(file_path)
+
+    def add_dir(self, dir_path):
+        if os.path.exists(dir_path):
+            self.artifact_dirs.append(dir_path)
+
+    def set_ext_info(self, ext_info_dict):
+        self.ext_info = ext_info_dict
+
+
+def log_artifact(artifact: Artifact, version=None):
+    mlops.log_artifact(artifact, version=version)
+
+
+def log_model(model_name, model_file_path, version=None):
+    mlops.log_model(model_name, model_file_path, version=version)
 
 
 from ..computing.scheduler.slave.client_constants import ClientConstants

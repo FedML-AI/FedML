@@ -13,8 +13,6 @@ spec:
       labels:
         app: fedml-aggregator
     spec:
-      imagePullSecrets:
-        - name: open-ecr-secret
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
