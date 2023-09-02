@@ -11,8 +11,8 @@ def pre_setup(args):
     mlops.pre_setup(args)
 
 
-def init(args):
-    mlops.init(args)
+def init(args, should_init_logs=True):
+    mlops.init(args, should_init_logs=should_init_logs)
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):

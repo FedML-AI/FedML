@@ -391,7 +391,8 @@ class FedMLModelCards(Singleton):
         _, s3_config = ModelOpsConfigs.get_instance(args).fetch_configs(self.config_version)
         s3_storage = S3Storage(s3_config)
         model_dst_key = "{}@{}@{}".format(user_id, model_name, str(uuid.uuid4()))
-        model_storage_url = s3_storage.upload_file_with_progress(model_zip_path, model_dst_key)
+        model_storage_url = s3_storage.upload_file_with_progress(model_zip_path, model_dst_key,
+                                                                 out_progress_to_err=False)
         return model_storage_url
 
     def pull_model_from_s3(self, model_storage_url, model_name):

@@ -80,13 +80,14 @@ def pre_setup(args):
     MLOpsStore.mlops_args = args
 
 
-def init(args):
+def init(args, should_init_logs=True):
     MLOpsStore.mlops_args = args
     if not mlops_parrot_enabled(args):
         if not hasattr(args, "config_version"):
             args.config_version = "release"
         fetch_config(args, args.config_version)
-        MLOpsRuntimeLog.get_instance(args).init_logs()
+        if should_init_logs:
+            MLOpsRuntimeLog.get_instance(args).init_logs()
         return
     else:
         if hasattr(args, "simulator_daemon"):
@@ -114,7 +115,8 @@ def init(args):
     MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, args.config_version)
     if not MLOpsStore.mlops_bind_result:
         setattr(args, "using_mlops", False)
-        MLOpsRuntimeLog.get_instance(args).init_logs()
+        if should_init_logs:
+            MLOpsRuntimeLog.get_instance(args).init_logs()
         return
 
     # Init project and run
@@ -129,7 +131,8 @@ def init(args):
         return
 
     # Init runtime logs
-    init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
+    if should_init_logs:
+        init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
     logging.info("mlops.init args {}".format(MLOpsStore.mlops_args))
 
     # Save current process id
@@ -542,30 +545,25 @@ def log_server_payload(run_id, edge_id, payload):
 
 
 def log_print_start():
-    # init FedML framework
-    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
-    fedml._global_comm_backend = ""
-    args = fedml.init(check_env=False)
+    fedml_args = get_fedml_args()
 
-    setattr(args, "using_mlops", True)
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.run_device_id)
+    setattr(fedml_args, "using_mlops", True)
+    MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(fedml_args.run_id, fedml_args.run_device_id)
 
 
 def log_print_end():
-    # init FedML framework
-    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
-    fedml._global_comm_backend = ""
-    args = fedml.init(check_env=False)
+    fedml_args = get_fedml_args()
 
-    setattr(args, "using_mlops", True)
-    MLOpsRuntimeLogDaemon.get_instance(args).stop_log_processor(args.run_id, args.run_device_id)
+    setattr(fedml_args, "using_mlops", True)
+    MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(fedml_args.run_id, fedml_args.run_device_id)
 
 
 def get_fedml_args():
     # init FedML framework
     fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
     fedml._global_comm_backend = ""
-    fedml_args = fedml.init(check_env=False)
+    fedml_args = fedml.init(check_env=False, should_init_logs=False)
+    print(f"current version {fedml_args.version}, {fedml_args.config_version}")
     return fedml_args
 
 
@@ -597,8 +595,13 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
         base_dir=artifact_dst_key,
     )
     artifact_archive_zip_file = artifact_archive_name + ".zip"
-    artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
-                                                                "Submitting your artifact to FedML® Launch platform")
+    try:
+        artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
+                                                                    out_progress_to_err=False,
+                                                                    progress_desc="Submitting your artifact to "
+                                                                                  "FedML® Launch platform")
+    except Exception as e:
+        pass
     return artifact_archive_zip_file, artifact_storage_url
 
 
