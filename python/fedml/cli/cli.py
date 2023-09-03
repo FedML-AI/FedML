@@ -1050,10 +1050,8 @@ def launch_job(yaml_file, api_key, platform, group,
                        "we can not find exactly matched machines for your job. \n"
                        "But here we still present machines closest to your expected price as below.")
         elif result.status == Constants.JOB_START_STATUS_QUEUED:
-            click.echo("\nCurrently, there are no machines for your job. "
-                       "But we will still keep your job in the waiting list,"
-                       "which will be scheduled automatically when any machine is available.")
-            if click.confirm("Do you want to cancel your job from the waiting list?", abort=False):
+            click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
+            if click.confirm("Do you want to join the queue?", abort=False):
                 stop_jobs_core(platform, result.job_id, api_key, version)
                 return
             else:
