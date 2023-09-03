@@ -1746,6 +1746,10 @@ class FedMLServerRunner:
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
+        self.mlops_metrics.stop_sys_perf()
+        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
+        self.mlops_metrics.report_sys_perf(self.args)
+
         self.recover_start_train_msg_after_upgrading()
 
     def start_agent_mqtt_loop(self):
