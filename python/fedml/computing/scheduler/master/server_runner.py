@@ -613,12 +613,14 @@ class FedMLServerRunner:
                     entry_commands.extend(entry_file_handle.readlines())
                     entry_file_handle.close()
 
-                entry_commands.insert(0, f"export FEDML_CURRENT_EDGE_ID={self.edge_id}\n")
-                entry_commands.insert(0, f"export FEDML_CURRENT_JOB_ID={self.run_id}\n")
+                export_cmd = "set" if platform.system() == "Windows" else "export"
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={self.edge_id}\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_JOB_ID={self.run_id}\n")
                 if assigned_gpu_ids is not None and assigned_gpu_ids != "":
-                    entry_commands.insert(0, f"export CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
-                entry_commands.insert(0, "FEDML_CURRENT_VERSION", self.version)
-                entry_commands.insert(0, "FEDML_USING_MLOPS", True)
+                    entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}")
+                entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true")
+
                 with open(entry_file_full_path, 'w') as entry_file_handle:
                     entry_file_handle.writelines(entry_commands)
                     entry_file_handle.close()
