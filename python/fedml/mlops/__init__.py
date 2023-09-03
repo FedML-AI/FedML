@@ -119,13 +119,13 @@ ARTIFACT_TYPE_NAME_GENERAL = "general"  # general file
 ARTIFACT_TYPE_NAME_MODEL = "model"  # model file
 ARTIFACT_TYPE_NAME_DATASET = "dataset"  # dataset file
 ARTIFACT_TYPE_NAME_SOURCE = "source code"  # source code
-ARTIFACT_TYPE_NAME__LOG = "log"  # log file
+ARTIFACT_TYPE_NAME_LOG = "log"  # log file
 
 artifact_type_map = {ARTIFACT_TYPE_NAME_GENERAL: ARTIFACT_TYPE_GENERAL,
                      ARTIFACT_TYPE_NAME_MODEL: ARTIFACT_TYPE_MODEL,
                      ARTIFACT_TYPE_NAME_DATASET: ARTIFACT_TYPE_DATASET,
                      ARTIFACT_TYPE_NAME_SOURCE: ARTIFACT_TYPE_SOURCE,
-                     ARTIFACT_TYPE_NAME__LOG: ARTIFACT_TYPE_LOG}
+                     ARTIFACT_TYPE_NAME_LOG: ARTIFACT_TYPE_LOG}
 
 
 class Artifact:
