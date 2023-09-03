@@ -795,9 +795,8 @@ def get_sys_realtime_stats():
     free_disk_size = psutil.disk_usage("/").free
     cup_utilization = psutil.cpu_percent()
     cpu_cores = psutil.cpu_count()
-    gpu_list = get_gpu_list()
-    gpu_cores_total = len(gpu_list) if gpu_list is not None else 0
-    gpu_available_ids = get_available_gpu_id_list()
+    gpu_cores_total, _ = get_gpu_count_vendor()
+    gpu_available_ids = get_available_gpu_id_list(limit=gpu_cores_total)
     gpu_cores_available = len(gpu_available_ids) if gpu_available_ids is not None else 0
     net = psutil.net_io_counters()
     sent_bytes = net.bytes_sent
