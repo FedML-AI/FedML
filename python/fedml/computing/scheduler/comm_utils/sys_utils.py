@@ -18,9 +18,7 @@ import sys
 import subprocess
 import GPUtil
 
-
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-
 
 FETAL_ERROR_START_CODE = 128
 
@@ -787,6 +785,25 @@ def decode_our_err_result(out_err):
         return result_str
     except Exception as e:
         return out_err
+
+
+def get_sys_realtime_stats():
+    sys_mem = psutil.virtual_memory()
+    total_mem = sys_mem.total
+    free_mem = sys_mem.available
+    total_disk_size = psutil.disk_usage("/").total
+    free_disk_size = psutil.disk_usage("/").free
+    cup_utilization = psutil.cpu_percent()
+    cpu_cores = psutil.cpu_count()
+    gpu_list = get_gpu_list()
+    gpu_cores_total = len(gpu_list) if gpu_list is not None else 0
+    gpu_available_ids = get_available_gpu_id_list()
+    gpu_cores_available = len(gpu_available_ids) if gpu_available_ids is not None else 0
+    net = psutil.net_io_counters()
+    sent_bytes = net.bytes_sent
+    recv_bytes = net.bytes_recv
+    return total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
+        gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids
 
 
 if __name__ == '__main__':

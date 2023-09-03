@@ -5,6 +5,7 @@ import time
 
 class MLOpsUtils:
     _ntp_offset = None
+    BYTES_TO_GB = 1 / (1024 * 1024 * 1024)
 
     @staticmethod
     def calc_ntp_from_config(mlops_config):
