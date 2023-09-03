@@ -1052,10 +1052,10 @@ def launch_job(yaml_file, api_key, platform, group,
         elif result.status == Constants.JOB_START_STATUS_QUEUED:
             click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
             if click.confirm("Do you want to join the queue?", abort=False):
-                stop_jobs_core(platform, result.job_id, api_key, version)
+                click.echo("You have confirmed to keep your job in the waiting list.")
                 return
             else:
-                click.echo("You have confirmed to keep your job in the waiting list.")
+                stop_jobs_core(platform, result.job_id, api_key, version)
                 return
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
             click.echo("Please bind your credit card before launching the job.")
