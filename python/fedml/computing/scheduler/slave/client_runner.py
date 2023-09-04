@@ -441,12 +441,12 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        logging.info("starting the learning process...")
+        logging.info("starting the user process...")
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         computing_started_time = MLOpsUtils.get_ntp_time()
-        logging.info("waiting the learning process to train models...")
+        logging.info("waiting the user process to finish...")
         process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         ClientConstants.save_learning_process(run_id, process.pid)
 

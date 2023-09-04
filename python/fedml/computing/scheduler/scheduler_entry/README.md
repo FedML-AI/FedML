@@ -39,7 +39,11 @@ bootstrap: |
 
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
-  maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
+
+  # max cost per hour of all machines for your job. 
+  # E.g., if your job are assigned 2 x A100 nodes (8 GPUs), each GPU cost $1/GPU/Hour, "maximum_cost_per_hour" = 16 * $1 = $16
+  maximum_cost_per_hour: $1.75
+  
   allow_cross_cloud_resources: false # true, false
   device_type: GPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
