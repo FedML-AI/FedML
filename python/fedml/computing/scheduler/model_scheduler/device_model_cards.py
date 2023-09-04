@@ -30,6 +30,42 @@ class FedMLModelCards(Singleton):
     @staticmethod
     def get_instance():
         return FedMLModelCards()
+    
+    def serve_model(self, src_folder, yaml_file):
+        parms_dict = self.parse_lanuch_yaml(yaml_file)
+        self.copy_launch_yaml_to_src_folder(src_folder, yaml_file)
+        model_name = parms_dict["model_name"]
+        user_id = parms_dict["user_id"]
+        user_api_key = parms_dict["user_api_key"]
+        device_type = parms_dict.get("device_type", "md.on_premise_device")
+        master_device_id = parms_dict.get("master_device_id", None)
+        worker_device_ids = parms_dict.get("worker_device_ids", None)
+        additional_parms_dict = parms_dict.get("default_parms_dict", {})
+        use_local_deployment = parms_dict.get("default_use_local", False)
+        local_server = parms_dict.get("local_server", "127.0.0.1")
+        mlops_version = parms_dict.get("mlops_version", "release")
+        assert master_device_id is not None and worker_device_ids is not None
+        devices = master_device_id + worker_device_ids
+        
+        self.set_config_version(mlops_version)
+        self.delete_model(model_name)
+        self.create_model(model_name)
+        self.add_model_files(model_name, src_folder)    # TODO: Mount other params to container
+        self.build_model(model_name)
+        self.push_model(model_name, user_id, user_api_key)
+        res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
+                           additional_parms_dict, use_local_deployment, local_server)
+        if not res:
+            print("Failed to deploy model")
+            return False
+        
+    def parse_lanuch_yaml(self, yaml_file):
+        with open(yaml_file, 'r') as f:
+            launch_params = yaml.safe_load(f)
+        return launch_params
+    
+    def copy_launch_yaml_to_src_folder(self, src_folder, yaml_file):
+        shutil.copy(yaml_file, os.path.join(src_folder, "fedml_model_config.yaml"))
 
     def set_config_version(self, config_version):
         if config_version is not None:
@@ -416,6 +452,8 @@ class FedMLModelCards(Singleton):
         model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        if type(devices) is list:
+            devices = "[" + ",".join([str(device) for device in devices]) + "]"
         model_deployment_json = {
             "edgeId": devices,
             "endpointName": "EndPoint-{}".format(str(uuid.uuid4())),

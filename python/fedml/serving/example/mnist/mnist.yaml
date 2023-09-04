@@ -1,3 +1,9 @@
+user_id:
+user_api_key:
+master_device_id:
+worker_device_ids:
+
+model_name: mnist
 inference_image_name: "fedml/fedml-default-inference-backend" #Optional, default
 using_triton: False #Optional, default is False
 inference_token: "my_token"

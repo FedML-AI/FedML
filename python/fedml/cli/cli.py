@@ -1402,6 +1402,16 @@ def model():
     """
     pass
 
+@model.command("serve", help="Deploy model to the ModelOps platform (open.fedml.ai)")
+@click.help_option("--help", "-h")
+@click.option(
+    "--source_folder", "-sf", type=str, default="", help="source folder.",
+)
+@click.option(
+    "--config_file", "-cf", type=str,  default = "", help="serving config file (.yaml).",
+)
+def serve_model(source_folder, config_file):
+    FedMLModelCards.get_instance().serve_model(source_folder, config_file)
 
 @model.group("device")
 def device():
