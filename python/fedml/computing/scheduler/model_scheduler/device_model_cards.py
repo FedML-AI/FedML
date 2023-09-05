@@ -35,11 +35,11 @@ class FedMLModelCards(Singleton):
         parms_dict = self.parse_lanuch_yaml(yaml_file)
         self.copy_launch_yaml_to_src_folder(src_folder, yaml_file)
         model_name = parms_dict["model_name"]
-        user_id = parms_dict["user_id"]
-        user_api_key = parms_dict["user_api_key"]
+        user_id = parms_dict["user_id"] # TODO: Abandon this, just use api key
+        user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
         device_type = parms_dict.get("device_type", "md.on_premise_device")
-        master_device_id = parms_dict.get("master_device_id", None)
-        worker_device_ids = parms_dict.get("worker_device_ids", None)
+        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", None))
+        worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_SLAVE_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_SLAVE_DEVICE_IDS", None))
         additional_parms_dict = parms_dict.get("default_parms_dict", {})
         use_local_deployment = parms_dict.get("default_use_local", False)
         local_server = parms_dict.get("local_server", "127.0.0.1")
@@ -47,9 +47,12 @@ class FedMLModelCards(Singleton):
         assert master_device_id is not None and worker_device_ids is not None
         assert type(worker_device_ids) in [str, list, int] and type(master_device_id) in [str, int, list]
         if type(worker_device_ids) is not list:
-            worker_device_ids = [worker_device_ids]
+            if type(worker_device_ids) is int:
+                worker_device_ids = [worker_device_ids]
+            else:
+                worker_device_ids = worker_device_ids.split(",")
         if type(master_device_id) is not list:
-            master_device_id = [master_device_id]
+            master_device_id = [str(master_device_id)]
         devices = master_device_id + worker_device_ids
         
         self.set_config_version(mlops_version)
