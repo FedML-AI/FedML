@@ -5,8 +5,8 @@ from .stats_impl import WandbSystemStats
 
 
 class SysStats:
-    def __init__(self):
-        settings = SettingsStatic(d={"_stats_pid": os.getpid()})
+    def __init__(self, process_id=None):
+        settings = SettingsStatic(d={"_stats_pid": os.getpid() if process_id is None else process_id})
         self.sys_stats_impl = WandbSystemStats(settings=settings, interface=None)
         self.gpu_time_spent_accessing_memory = 0.0
         self.gpu_power_usage = 0.0

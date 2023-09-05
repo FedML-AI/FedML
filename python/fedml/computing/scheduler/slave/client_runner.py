@@ -441,12 +441,12 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        logging.info("starting the learning process...")
+        logging.info("starting the user process...")
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         computing_started_time = MLOpsUtils.get_ntp_time()
-        logging.info("waiting the learning process to train models...")
+        logging.info("waiting the user process to finish...")
         process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
         ClientConstants.save_learning_process(run_id, process.pid)
 
@@ -534,20 +534,26 @@ class FedMLClientRunner:
             logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
                 python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
 
-            process = ClientConstants.exec_console_with_shell_script_list(
-                [
-                    python_program,
-                    entry_file_full_path,
-                    "--cf",
-                    conf_file_full_path,
-                    "--rank",
-                    str(dynamic_args_config.get("rank", 1)),
-                    "--role",
-                    "client"
-                ],
-                should_capture_stdout=False,
-                should_capture_stderr=True
-            )
+            # process = ClientConstants.exec_console_with_shell_script_list(
+            #     [
+            #         python_program,
+            #         entry_file_full_path,
+            #         "--cf",
+            #         conf_file_full_path,
+            #         "--rank",
+            #         str(dynamic_args_config.get("rank", 1)),
+            #         "--role",
+            #         "client"
+            #     ],
+            #     should_capture_stdout=False,
+            #     should_capture_stderr=True
+            # )
+            rank = str(dynamic_args_config.get("rank", 1))
+            entry_command = f"{python_program} {entry_file_full_path} --cf " \
+                            f"{conf_file_full_path} --rank {rank} --role client"
+            shell_cmd_list = [entry_command]
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -586,9 +592,14 @@ class FedMLClientRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  callback=self.start_job_perf)
             is_launch_task = True
+
         return process, is_launch_task, error_list
+
+    def start_job_perf(self, job_pid):
+        self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -1275,9 +1286,8 @@ class FedMLClientRunner:
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
-        self.mlops_metrics.stop_sys_perf()
-        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args)
+        self.mlops_metrics.stop_device_realtime_perf()
+        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_train_msg_after_upgrading()
 

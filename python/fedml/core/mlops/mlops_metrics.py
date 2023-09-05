@@ -1,25 +1,16 @@
-import argparse
+
 import json
 import logging
-import os
 import time
-import traceback
-import uuid
-
-import multiprocess as multiprocessing
-from fedml.computing.scheduler.comm_utils import sys_utils
 
 from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...computing.scheduler.master.server_constants import ServerConstants
-from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
-from ...core.mlops.system_stats import SysStats
-from .mlops_utils import MLOpsUtils
+from .mlops_job_perfs import MLOpsJobPerfStats
+from .mlops_device_perfs import MLOpsDevicePerfStats
 
 
 class MLOpsMetrics(object):
-    FEDML_SYS_PERF_RUNNING_FILE_NAME = "sys_perf.id"
-
     def __new__(cls, *args, **kw):
         if not hasattr(cls, "_instance"):
             orig = super(MLOpsMetrics, cls)
@@ -31,16 +22,16 @@ class MLOpsMetrics(object):
         pass
 
     def init(self):
-        self.sys_stats_process = None
         self.messenger = None
         self.args = None
         self.run_id = None
         self.edge_id = None
         self.server_agent_id = None
-        self.sys_performances = None
-        self.sys_perf_event = None
         self.current_device_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE
         self.current_run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
+        self.fl_job_perf = MLOpsJobPerfStats()
+        self.job_perfs = MLOpsJobPerfStats()
+        self.device_perfs = MLOpsDevicePerfStats()
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -52,12 +43,6 @@ class MLOpsMetrics(object):
                     self.edge_id = args.server_id
                 else:
                     self.edge_id = 0
-
-                self.sys_perf_running_file = os.path.join(
-                    ServerConstants.get_data_dir(),
-                    ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
-                )
             else:
                 if hasattr(args, "client_id"):
                     self.edge_id = args.client_id
@@ -69,12 +54,6 @@ class MLOpsMetrics(object):
                         self.edge_id = 0
                 else:
                     self.edge_id = 0
-
-                self.sys_perf_running_file = os.path.join(
-                    ClientConstants.get_data_dir(),
-                    ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
-                )
 
             if hasattr(args, "server_agent_id"):
                 self.server_agent_id = args.server_agent_id
@@ -379,69 +358,6 @@ class MLOpsMetrics(object):
         self.messenger.send_message_json(topic_name, message_json)
         # logging.info("report_job_computing_cost. message_json = %s" % message_json)
 
-    def report_system_metric(self, metric_json=None):
-        # if not self.comm_sanity_check():
-        #     return
-        topic_name = "fl_client/mlops/system_performance"
-        if metric_json is None:
-            if self.sys_performances is None:
-                self.sys_performances = SysStats()
-            if self.sys_performances is None:
-                return
-
-            self.sys_performances.produce_info()
-
-            current_time_ms = MLOpsUtils.get_ntp_time()
-            if current_time_ms is None:
-                current_time = int(time.time() * 1000)
-            else:
-                current_time = int(current_time_ms)
-
-            metric_json = {
-                "run_id": self.run_id,
-                "edge_id": self.edge_id,
-                "cpu_utilization": round(
-                    self.sys_performances.get_cpu_utilization(), 4
-                ),
-                "SystemMemoryUtilization": round(
-                    self.sys_performances.get_system_memory_utilization(), 4
-                ),
-                "process_memory_in_use": round(
-                    self.sys_performances.get_process_memory_in_use(), 4
-                ),
-                "process_memory_in_use_size": round(
-                    self.sys_performances.get_process_memory_in_use_size(), 4
-                ),
-                "process_memory_available": round(
-                    self.sys_performances.get_process_memory_available(), 4
-                ),
-                "process_cpu_threads_in_use": round(
-                    self.sys_performances.get_process_cpu_threads_in_use(), 4
-                ),
-                "disk_utilization": round(
-                    self.sys_performances.get_disk_utilization(), 4
-                ),
-                "network_traffic": round(
-                    self.sys_performances.get_network_traffic(), 4
-                ),
-                "gpu_utilization": round(
-                    self.sys_performances.get_gpu_utilization(), 4
-                ),
-                "gpu_temp": round(self.sys_performances.get_gpu_temp(), 4),
-                "gpu_time_spent_accessing_memory": round(
-                    self.sys_performances.get_gpu_time_spent_accessing_memory(), 4
-                ),
-                "gpu_memory_allocated": round(
-                    self.sys_performances.get_gpu_memory_allocated(), 4
-                ),
-                "gpu_power_usage": round(
-                    self.sys_performances.get_gpu_power_usage(), 4
-                ),
-                "timestamp": int(current_time)
-            }
-        message_json = json.dumps(metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
-
     def report_logs_updated(self, run_id):
         # if not self.comm_sanity_check():
         #     return
@@ -450,67 +366,6 @@ class MLOpsMetrics(object):
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
-
-    def stop_sys_perf(self):
-        if self.sys_perf_event is not None:
-            self.sys_perf_event.set()
-
-    def setup_sys_perf_process(self, sys_args):
-        self.stop_sys_perf()
-
-        self.args = sys_args
-        if self.sys_perf_event is None:
-            self.sys_perf_event = multiprocessing.Event()
-        self.sys_perf_event.clear()
-
-        self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances,
-                                                         args=(self.sys_perf_event,))
-        self.sys_stats_process.start()
-
-    @staticmethod
-    def report_sys_perf(sys_args):
-        metrics = MLOpsMetrics()
-        metrics.setup_sys_perf_process(sys_args)
-
-    def report_sys_performances(self, sys_event):
-        self.sys_perf_event = sys_event
-        self.set_messenger(None, self.args)
-        mqtt_mgr = MqttManager(
-            self.args.mqtt_config_path["BROKER_HOST"],
-            self.args.mqtt_config_path["BROKER_PORT"],
-            self.args.mqtt_config_path["MQTT_USER"],
-            self.args.mqtt_config_path["MQTT_PWD"],
-            180,
-            "FedML_Metrics_SysPerf_{}_{}_{}".format(str(self.args.device_id), str(self.edge_id), str(uuid.uuid4()))
-        )
-
-        self.set_messenger(mqtt_mgr, self.args)
-        mqtt_mgr.connect()
-        mqtt_mgr.loop_start()
-
-        # Notify MLOps with system information.
-        while not self.should_stop_sys_perf():
-            try:
-                self.report_system_metric()
-                self.report_gpu_device_info(self.edge_id)
-            except Exception as e:
-                logging.debug("exception when reporting system pref: {}.".format(traceback.format_exc()))
-                pass
-
-            time.sleep(10)
-
-        logging.info("System metrics process is about to exit.")
-        mqtt_mgr.loop_stop()
-        mqtt_mgr.disconnect()
-
-    def report_json_message(self, topic, payload):
-        self.messenger.send_message_json(topic, payload)
-
-    def should_stop_sys_perf(self):
-        if self.sys_perf_event is not None and self.sys_perf_event.is_set():
-            return True
-
-        return False
 
     def report_artifact_info(self, job_id, edge_id, artifact_name, artifact_type,
                              artifact_local_path, artifact_url,
@@ -531,25 +386,29 @@ class MLOpsMetrics(object):
         message_json = json.dumps(artifact_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_gpu_device_info(self, edge_id):
-        total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
-            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+    def report_sys_perf(self, sys_args, mqtt_config):
+        setattr(sys_args, "mqtt_config_path", mqtt_config)
+        self.fl_job_perf.report_job_stats(sys_args)
 
-        topic_name = "ml_client/mlops/gpu_device_info"
-        artifact_info_json = {
-            "edgeId": edge_id,
-            "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
-            "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
-            "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-            "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-            "cpuUtilization": round(cup_utilization, 2),
-            "cpuCores": cpu_cores,
-            "gpuCoresTotal": gpu_cores_total,
-            "gpuCoresAvailable": gpu_cores_available,
-            "gpu_available_ids": gpu_available_ids,
-            "networkTraffic": sent_bytes + recv_bytes,
-            "updateTime": int(MLOpsUtils.get_ntp_time())
-        }
-        message_json = json.dumps(artifact_info_json)
-        self.messenger.send_message_json(topic_name, message_json)
+    def stop_sys_perf(self):
+        self.fl_job_perf.stop_job_stats()
+
+    def report_job_perf(self, sys_args, mqtt_config, job_process_id):
+        setattr(sys_args, "mqtt_config_path", mqtt_config)
+        run_id = getattr(sys_args, "run_id", 0)
+        self.job_perfs.add_job(run_id, job_process_id)
+        self.job_perfs.report_job_stats(sys_args)
+
+    def stop_job_perf(self):
+        self.job_perfs.stop_job_stats()
+
+    def report_device_realtime_perf(self, sys_args, mqtt_config):
+        setattr(sys_args, "mqtt_config_path", mqtt_config)
+        self.device_perfs.report_device_realtime_stats(sys_args)
+
+    def stop_device_realtime_perf(self):
+        self.device_perfs.stop_device_realtime_stats()
+
+    def report_json_message(self, topic, payload):
+        self.messenger.send_message_json(topic, payload)
 

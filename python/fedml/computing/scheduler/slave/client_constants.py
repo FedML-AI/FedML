@@ -399,24 +399,29 @@ class ClientConstants(object):
         return script_process
 
     @staticmethod
-    def execute_commands_with_live_logs(cmds, join='&&'):
+    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True, callback=None):
         error_list = list()
         with subprocess.Popen(join.join(cmds),
                               shell=True,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE) as sp:
-            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
-                for line in sp.stdout:
-                    line_str = line.decode()
-                    stdout.write(line)
-                    stdout.flush()
-                    logging.info(line_str)
+            if callback is not None:
+                callback(sp.pid)
+
+            if should_write_log_file:
+                with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
+                    for line in sp.stdout:
+                        line_str = line.decode()
+                        stdout.write(line)
+                        stdout.flush()
+                        logging.info(line_str)
             with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
                 for line in sp.stderr:
                     line_str = line.decode()
-                    stderr.write(line)
-                    stderr.flush()
-                    logging.error(line_str)
+                    if should_write_log_file:
+                        stderr.write(line)
+                        stderr.flush()
+                        logging.error(line_str)
                     error_list.append(line_str)
             return sp, error_list
         return None, error_list
