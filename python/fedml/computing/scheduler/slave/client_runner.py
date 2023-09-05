@@ -1,4 +1,3 @@
-
 import json
 import logging
 import multiprocessing
@@ -96,6 +95,7 @@ class FedMLClientRunner:
         self.client_active_list = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.server_id = None
+        self.computing_started_time = 0
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -363,6 +363,11 @@ class FedMLClientRunner:
                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                                                               server_id=self.server_id)
         finally:
+            if self.mlops_metrics is not None:
+                computing_ended_time = MLOpsUtils.get_ntp_time()
+                self.mlops_metrics.report_edge_job_computing_cost(self.run_id, self.edge_id,
+                                                                  self.computing_started_time, computing_ended_time,
+                                                                  self.args.user, self.args.api_key)
             logging.info("Release resources.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
@@ -382,6 +387,11 @@ class FedMLClientRunner:
         run_config = self.request_json["run_config"]
         data_config = run_config.get("data_config", {})
         packages_config = run_config["packages_config"]
+
+        self.computing_started_time = MLOpsUtils.get_ntp_time()
+        self.mlops_metrics.report_edge_job_computing_cost(run_id, self.edge_id,
+                                                          self.computing_started_time, 0,
+                                                          self.args.user, self.args.api_key)
 
         self.check_runner_stop_event()
 
@@ -445,16 +455,12 @@ class FedMLClientRunner:
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        computing_started_time = MLOpsUtils.get_ntp_time()
         logging.info("waiting the user process to finish...")
-        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
+        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path,
+                                                                    dynamic_args_config)
         ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-        computing_ended_time = MLOpsUtils.get_ntp_time()
-        self.mlops_metrics.report_edge_job_computing_cost(run_id, self.edge_id,
-                                                          computing_started_time, computing_ended_time,
-                                                          self.args.user, self.args.api_key)
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
