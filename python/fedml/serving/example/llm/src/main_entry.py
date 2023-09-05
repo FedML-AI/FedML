@@ -1,6 +1,15 @@
 import os
 from fedml.serving import FedMLPredictor
 from fedml.serving import FedMLInferenceRunner
+from langchain import PromptTemplate, LLMChain
+from langchain.llms import HuggingFacePipeline
+import torch
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextGenerationPipeline,
+)
 
 # DATA_CACHE_DIR is a LOCAL folder that contains the model and config files if 
 # you do NOT want to transfer the model and config files to MLOps
@@ -10,17 +19,7 @@ DATA_CACHE_DIR = os.path.expanduser(DATA_CACHE_DIR) # Use absolute path
 
 class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
     def __init__(self):
-        super().__init__()                    # Will excecute the bootstrap shell script
-        from langchain import PromptTemplate, LLMChain
-        from langchain.llms import HuggingFacePipeline
-        import torch
-        from transformers import (
-            AutoConfig,
-            AutoModelForCausalLM,
-            AutoTokenizer,
-            TextGenerationPipeline,
-        )
-
+        super().__init__()
         PROMPT_FOR_GENERATION_FORMAT = f""""Below is an instruction that describes a task. Write a response that appropriately completes the request."
 
         ### Instruction:

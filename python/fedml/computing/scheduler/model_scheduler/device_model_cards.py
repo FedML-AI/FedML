@@ -45,6 +45,11 @@ class FedMLModelCards(Singleton):
         local_server = parms_dict.get("local_server", "127.0.0.1")
         mlops_version = parms_dict.get("mlops_version", "release")
         assert master_device_id is not None and worker_device_ids is not None
+        assert type(worker_device_ids) in [str, list, int] and type(master_device_id) in [str, int, list]
+        if type(worker_device_ids) is not list:
+            worker_device_ids = [worker_device_ids]
+        if type(master_device_id) is not list:
+            master_device_id = [master_device_id]
         devices = master_device_id + worker_device_ids
         
         self.set_config_version(mlops_version)

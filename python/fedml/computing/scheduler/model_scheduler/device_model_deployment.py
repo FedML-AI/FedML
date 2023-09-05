@@ -274,6 +274,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             device_requests.append(
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
         logging.info("Start pulling the inference image..., may take a few minutes...")
+        # TODO:only pull if the image is not in the local
         client.images.pull(inference_image_name)
         logging.info("Start creating the inference container...")
 
@@ -304,7 +305,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             name = llm_server_container_name,
             volumes = volumns,
             ports = [2345],                     # port open inside the container
-            entrypoint=["python3", relative_entry],
+            # entrypoint=["python3", relative_entry],
             environment = environment,
             host_config = client.api.create_host_config(
                 binds = binds,
