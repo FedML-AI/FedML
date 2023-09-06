@@ -1,6 +1,7 @@
 
 import json
 import logging
+import os
 import time
 
 from ...computing.scheduler.slave.client_constants import ClientConstants
@@ -388,6 +389,8 @@ class MLOpsMetrics(object):
 
     def report_sys_perf(self, sys_args, mqtt_config):
         setattr(sys_args, "mqtt_config_path", mqtt_config)
+        run_id = getattr(sys_args, "run_id", 0)
+        self.fl_job_perf.add_job(run_id, os.getpid())
         self.fl_job_perf.report_job_stats(sys_args)
 
     def stop_sys_perf(self):
