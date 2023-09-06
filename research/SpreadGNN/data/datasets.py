@@ -13,12 +13,21 @@ import torch.utils.data as data
 # From GTTF, need to cite once paper is officially accepted to ICLR 2021
 class CompactAdjacency:
     def __init__(self, adj, precomputed=None, subset=None):
-        """Constructs CompactAdjacency.
+        """
+        Constructs a CompactAdjacency object.
 
         Args:
-          adj: scipy sparse matrix containing full adjacency.
-          precomputed: If given, must be a tuple (compact_adj, degrees).
-            In this case, adj must be None. If supplied, subset will be ignored.
+            adj: scipy sparse matrix containing the full adjacency.
+            precomputed: If given, must be a tuple (compact_adj, degrees).
+                In this case, adj must be None. If supplied, subset will be ignored.
+            subset: Optional set of node indices to consider in the adjacency matrix.
+
+        Note:
+            This constructor initializes a CompactAdjacency object based on the provided arguments.
+            If 'precomputed' is provided, 'adj' and 'subset' will be ignored.
+
+        Raises:
+            ValueError: If both 'adj' and 'precomputed' are set.
         """
         if adj is None:
             return
@@ -114,6 +123,25 @@ class MoleculesDataset(data.Dataset):
         fanouts=[2, 2],
         split="train",
     ):
+        """
+        Constructs a dataset for molecules with adjacency matrices, feature matrices, and labels.
+
+        Args:
+            adj_matrices (list): A list of adjacency matrices.
+            feature_matrices (list): A list of feature matrices.
+            labels (list): A list of labels.
+            path (str): The path to the directory containing data files.
+            compact (bool, optional): Whether to use compact adjacency matrices. Defaults to True.
+            fanouts (list, optional): A list of fanout values for each adjacency matrix. Defaults to [2, 2].
+            split (str, optional): The dataset split ('train', 'val', or 'test'). Defaults to 'train'.
+
+        Note:
+            This constructor initializes a MoleculesDataset object based on the provided arguments.
+            If 'compact' is set to True, it uses compact adjacency matrices.
+
+        Raises:
+            None
+        """
         if compact:
             # filename = path + '/train_comp_adjs.pkl'
             # if split == 'val':
@@ -143,6 +171,19 @@ class MoleculesDataset(data.Dataset):
         self.fanouts = [fanouts] * len(adj_matrices)
 
     def __getitem__(self, index):
+        """
+        Retrieves an item from the dataset.
+
+        Args:
+            index (int): The index of the item to retrieve.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - adj_matrix: The adjacency matrix.
+                - feature_matrix: The feature matrix.
+                - label: The label.
+                - fanouts: The list of fanout values.
+        """
         return (
             self.adj_matrices[index],
             self.feature_matrices[index],
@@ -151,4 +192,13 @@ class MoleculesDataset(data.Dataset):
         )
 
     def __len__(self):
+        """
+        Returns the total number of items in the dataset.
+
+        Args:
+            None
+
+        Returns:
+            int: The number of items in the dataset.
+        """
         return len(self.adj_matrices)
