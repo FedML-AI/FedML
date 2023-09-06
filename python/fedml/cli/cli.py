@@ -68,9 +68,9 @@ def launch_show_resource_type(version):
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
         click.echo("All available resource type is as follows.")
-        resource_table = PrettyTable(['Resource Type Name'])
+        resource_table = PrettyTable(['Resource Type', 'GPU Type'])
         for type_item in resource_type_list:
-            resource_table.add_row([type_item])
+            resource_table.add_row([type_item[0], type_item[1]])
         print(resource_table)
     else:
         click.echo("No available resource type.")
@@ -1045,24 +1045,8 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     if not platform_is_valid(platform):
         return
 
-    if api_key is None or api_key == "":
-        saved_api_key = FedMLLaunchManager.get_api_key()
-        if saved_api_key is None or saved_api_key == "":
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        else:
-            api_key = saved_api_key
-
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
+    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+        return
 
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
@@ -1091,18 +1075,6 @@ def start_job(platform, project_name, application_name, job_name, devices_server
          "default is falcon).",
 )
 @click.option(
-    "--project_name",
-    "-prj",
-    type=str,
-    help="The project name at the MLOps platform.",
-)
-@click.option(
-    "--job_name",
-    "-n",
-    type=str,
-    help="Job name at the MLOps platform.",
-)
-@click.option(
     "--job_id",
     "-id",
     type=str,
@@ -1119,60 +1091,15 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     default="release",
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
-def list_jobs(platform, project_name, job_name, job_id, api_key, version):
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    FedMLLaunchManager.get_instance().list_jobs(job_id)
-
-
-def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
+def list_jobs(platform, job_id, api_key, version):
     if not platform_is_valid(platform):
         return
 
-    if api_key is None or api_key == "":
-        saved_api_key = FedMLLaunchManager.get_api_key()
-        if saved_api_key is None or saved_api_key == "":
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        else:
-            api_key = saved_api_key
+    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+        return
 
     FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
-
-    FedMLJobManager.get_instance().set_config_version(version)
-    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name,
-                                                           api_key, job_id=job_id)
-    if job_list_obj is not None:
-        if len(job_list_obj.job_list) > 0:
-            if len(job_list_obj.job_list) > 0:
-                click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created', 'Spend Time(hour)', 'Cost'])
-            jobs_count = 0
-            for job in job_list_obj.job_list:
-                jobs_count += 1
-                device_count = 0
-                device_list = ""
-                for device_info_item in job.device_infos:
-                    device_count += 1
-                    device_list += f"({device_count}). {device_info_item} "
-
-                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                        job.compute_duration, job.cost])
-
-            print(job_list_table)
-        else:
-            click.echo("Not found any jobs.")
-    else:
-        click.echo("Failed to list jobs, please check your network connection "
-                   "and make sure be able to access the MLOps platform.")
+    FedMLLaunchManager.get_instance().list_jobs(job_id)
 
 
 @jobs.command("stop", help="Stop a job from the MLOps platform.")
