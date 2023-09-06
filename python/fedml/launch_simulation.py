@@ -7,8 +7,12 @@ from .constants import (
 
 
 def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
+    """
+    Run a simulation of the FedML Parrot.
 
-    """FedML Parrot"""
+    Args:
+        backend (str): The communication backend to use for the simulation. Defaults to FEDML_SIMULATION_TYPE_SP.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_SIMULATION
     fedml._global_comm_backend = backend
 
