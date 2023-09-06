@@ -1274,10 +1274,10 @@ class FedMLServerRunner:
         }
         if gpu_count > 0:
             if gpu_total_mem is not None:
-                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+                json_params["gpu"] = gpu_info if gpu_info is not None else "" + ", Total GPU Memory: " + gpu_total_mem
             else:
-                json_params["gpu"] = gpu_info
-            json_params["extra_infos"]["gpu_info"] = gpu_info
+                json_params["gpu"] = gpu_info if gpu_info is not None else ""
+            json_params["extra_infos"]["gpu_info"] = gpu_info if gpu_info is not None else ""
             if gpu_available_mem is not None:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
