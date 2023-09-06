@@ -12,14 +12,45 @@ from fedml.core import ClientTrainer
 
 
 class SageMoleculeNetTrainer(ClientTrainer):
+    """
+    Trainer for the MoleculeNet model. This trainer handles training and testing the model on client devices.
+
+    Args:
+        model (nn.Module): The MoleculeNet model to be trained.
+        test_data (list): The test data used for evaluating model performance.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            dict: The model parameters.
+        """
+
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (dict): The model parameters to be set.
+        """
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data (list): The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Additional training arguments.
+
+        Returns:
+            Tuple[float, dict]: A tuple containing the minimum test score and the best model parameters.
+        """
         model = self.model
 
         model.to(device)
@@ -87,6 +118,17 @@ class SageMoleculeNetTrainer(ClientTrainer):
         return max_test_score, best_model_params
 
     def test(self, test_data, device, args):
+        """
+        Test the model.
+
+        Args:
+            test_data (list): The test data.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            Tuple[float, model]: A tuple containing the test score and the model used for testing.
+        """
         logging.info("----------test--------")
         model = self.model
         model.eval()
@@ -138,6 +180,18 @@ class SageMoleculeNetTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Test the model on the server using data from client devices.
+
+        Args:
+            train_data_local_dict (dict): A dictionary of training data from client devices.
+            test_data_local_dict (dict): A dictionary of test data from client devices.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            bool: True if the testing is successful.
+        """
         logging.info("----------test_on_the_server--------")
 
         model_list, score_list = [], []

@@ -5,6 +5,17 @@ from sklearn.preprocessing import StandardScaler
 
 
 def np_uniform_sample_next(compact_adj, tree, fanout):
+    """
+    Uniformly sample next neighbors for a given compact adjacency matrix and traversal tree.
+
+    Args:
+        compact_adj (CompactAdjacency): The compact adjacency matrix.
+        tree (list): The traversal tree.
+        fanout (int): The number of neighbors to sample for each node.
+
+    Returns:
+        np.ndarray: An array containing the sampled neighbor indices.
+    """
     last_level = tree[-1]  # [batch, f^depth]
     batch_lengths = compact_adj.degrees[last_level]
     nodes = np.repeat(last_level, fanout, axis=1)
@@ -27,6 +38,21 @@ def np_uniform_sample_next(compact_adj, tree, fanout):
 def np_traverse(
     compact_adj, seed_nodes, fanouts=(1,), sample_fn=np_uniform_sample_next
 ):
+    """
+    Traverse a compact adjacency matrix.
+
+    Args:
+        compact_adj (CompactAdjacency): The compact adjacency matrix.
+        seed_nodes (np.ndarray): An array of seed node indices.
+        fanouts (tuple): A tuple of fanout values.
+        sample_fn (function): A function for sampling neighbors.
+
+    Returns:
+        list: A list containing the traversal tree.
+
+    Raises:
+        ValueError: If the input seed_nodes format is incorrect.
+    """
     if not isinstance(seed_nodes, np.ndarray):
         raise ValueError("Seed must a numpy array")
 
@@ -53,6 +79,18 @@ def np_traverse(
 
 class WalkForestCollator(object):
     def __init__(self, normalize_features=False):
+        """
+        Collate function for walking forest-based data.
+
+        Args:
+            molecule (tuple): A tuple containing the molecular data.
+
+        Returns:
+            tuple: A tuple containing collated data.
+
+        Raises:
+            None
+        """
         self.normalize_features = normalize_features
 
     def __call__(self, molecule):
@@ -88,6 +126,18 @@ class WalkForestCollator(object):
 
 
 class DefaultCollator(object):
+    """
+    Default collate function for data.
+
+    Args:
+        molecule (tuple): A tuple containing the molecular data
+        
+    Args:
+        molecule (tuple): A tuple containing the molecular data.
+
+    Returns:
+        tuple: A tuple containing collated data.
+    """
     def __init__(self, normalize_features=True, normalize_adj=True):
         self.normalize_features = normalize_features
         self.normalize_adj = normalize_adj

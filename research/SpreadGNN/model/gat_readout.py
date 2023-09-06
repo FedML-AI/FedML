@@ -7,6 +7,22 @@ class GraphAttentionLayer(nn.Module):
     """
     Simple GAT layer, similar to https://arxiv.org/abs/1710.10903
     """
+    """
+    A single Graph Attention Layer (GAT) module.
+
+    Args:
+        in_features (int): The number of input features.
+        out_features (int): The number of output features.
+        dropout (float): Dropout probability for attention coefficients.
+        alpha (float): LeakyReLU slope parameter.
+        concat (bool): Whether to concatenate the multi-head results or not.
+
+    Attributes:
+        W (nn.Parameter): Learnable weight matrix.
+        a (nn.Parameter): Learnable attention parameter matrix.
+        leakyrelu (nn.LeakyReLU): LeakyReLU activation with slope alpha.
+
+    """ 
 
     def __init__(self, in_features, out_features, dropout, alpha, concat=True):
         super(GraphAttentionLayer, self).__init__()
@@ -24,6 +40,17 @@ class GraphAttentionLayer(nn.Module):
         self.leakyrelu = nn.LeakyReLU(self.alpha)
 
     def forward(self, h, adj):
+        """
+        Forward pass for the GAT layer.
+
+        Args:
+            h (torch.Tensor): Input feature tensor.
+            adj (torch.Tensor): Adjacency matrix.
+
+        Returns:
+            torch.Tensor: Output feature tensor.
+
+        """
         Wh = torch.mm(
             h, self.W
         )  # h.shape: (N, in_features), Wh.shape: (N, out_features)
@@ -52,6 +79,13 @@ class GraphAttentionLayer(nn.Module):
         return all_combinations_matrix.view(N, N, 2 * self.out_features)
 
     def __repr__(self):
+        """
+        String representation of the GAT layer.
+
+        Returns:
+            str: A string representing the layer.
+
+        """
         return (
             self.__class__.__name__
             + " ("
@@ -63,6 +97,23 @@ class GraphAttentionLayer(nn.Module):
 
 
 class GAT(nn.Module):
+    """
+    Graph Attention Network (GAT) model for node classification.
+
+    Args:
+        feat_dim (int): Number of input features.
+        hidden_dim1 (int): Number of hidden units in the first GAT layer.
+        hidden_dim2 (int): Number of hidden units in the second GAT layer.
+        dropout (float): Dropout probability for attention coefficients.
+        alpha (float): LeakyReLU slope parameter.
+        nheads (int): Number of attention heads.
+
+    Attributes:
+        dropout (float): Dropout probability.
+        attentions (nn.ModuleList): List of GAT layers with multiple heads.
+        out_att (GraphAttentionLayer): Final GAT layer.
+
+    """ 
     def __init__(self, feat_dim, hidden_dim1, hidden_dim2, dropout, alpha, nheads):
         """Dense version of GAT."""
         super(GAT, self).__init__()
@@ -85,6 +136,17 @@ class GAT(nn.Module):
         )
 
     def forward(self, x, adj):
+        """
+        Forward pass for the GAT model.
+
+        Args:
+            x (torch.Tensor): Input feature tensor.
+            adj (torch.Tensor): Adjacency matrix.
+
+        Returns:
+            torch.Tensor: Node embeddings.
+
+        """
         x = F.dropout(x, self.dropout, training=self.training)
         x = torch.cat([att(x, adj) for att in self.attentions], dim=1)
         x = F.dropout(x, self.dropout, training=self.training)
@@ -95,7 +157,25 @@ class GAT(nn.Module):
 
 class Readout(nn.Module):
     """
-    This module learns a single graph level representation for a molecule given GNN generated node embeddings
+    This module learns a single graph-level representation for a molecule given GNN-generated node embeddings.
+
+    Args:
+        attr_dim (int): Dimension of node attributes.
+        embedding_dim (int): Dimension of node embeddings.
+        hidden_dim (int): Dimension of the hidden layer.
+        output_dim (int): Dimension of the output layer.
+        num_cats (int): Number of categories for classification.
+
+    Attributes:
+        attr_dim (int): Dimension of node attributes.
+        hidden_dim (int): Dimension of the hidden layer.
+        output_dim (int): Dimension of the output layer.
+        num_cats (int): Number of categories for classification.
+        layer1 (nn.Linear): First linear layer.
+        layer2 (nn.Linear): Second linear layer.
+        output (nn.Linear): Output layer.
+        act (nn.ReLU): ReLU activation function.
+
     """
 
     def __init__(self, attr_dim, embedding_dim, hidden_dim, output_dim, num_cats):
@@ -111,6 +191,17 @@ class Readout(nn.Module):
         self.act = nn.ReLU()
 
     def forward(self, node_features, node_embeddings):
+        """
+        Forward pass for the Readout module.
+
+        Args:
+            node_features (torch.Tensor): Node attributes.
+            node_embeddings (torch.Tensor): Node embeddings.
+
+        Returns:
+            torch.Tensor: Logits for multilabel classification.
+
+        """
         combined_rep = torch.cat(
             (node_features, node_embeddings), dim=1
         )  # Concat initial node attributed with embeddings from sage
@@ -128,7 +219,23 @@ class Readout(nn.Module):
 
 class GatMoleculeNet(nn.Module):
     """
-    Network that consolidates GAT + Readout into a single nn.Module
+    Neural network that combines GAT (Graph Attention Network) and Readout into a single module for molecular data.
+
+    Args:
+        feat_dim (int): Dimension of input node features.
+        gat_hidden_dim1 (int): Dimension of the hidden layer in the GAT model.
+        node_embedding_dim (int): Dimension of node embeddings.
+        gat_dropout (float): Dropout probability for GAT layers.
+        gat_alpha (float): LeakyReLU slope parameter for GAT.
+        gat_nheads (int): Number of attention heads in GAT.
+        readout_hidden_dim (int): Dimension of the hidden layer in the Readout module.
+        graph_embedding_dim (int): Dimension of the graph-level embedding.
+        num_categories (int): Number of categories for classification.
+
+    Attributes:
+        gat (GAT): GAT (Graph Attention Network) module.
+        readout (Readout): Readout module for graph-level representation.
+
     """
 
     def __init__(
