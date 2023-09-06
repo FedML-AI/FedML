@@ -332,7 +332,8 @@ class FedMLServerRunner:
                     shell_cmd_list.append(bootstrap_scripts)
                     process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
                     ClientConstants.save_bootstrap_process(run_id, process.pid)
-                    ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+
+                    ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
                             is_bootstrap_run_ok = False
@@ -419,15 +420,15 @@ class FedMLServerRunner:
 
         logging.info("send training request to edges...")
 
-        self.send_training_request_to_edges()
-
-        if not self.should_continue_run_job(run_id):
-            return
-
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
+
+        self.send_training_request_to_edges()
+
+        if not self.should_continue_run_job(run_id):
+            return
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -484,7 +485,7 @@ class FedMLServerRunner:
         logging.info("waiting the aggregation process to aggregate models...")
         ServerConstants.save_learning_process(run_id, process.pid)
 
-        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+        ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
