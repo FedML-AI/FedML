@@ -7,6 +7,7 @@ import traceback
 import uuid
 
 import multiprocess as multiprocessing
+from fedml.computing.scheduler.comm_utils import sys_utils
 
 from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...computing.scheduler.master.server_constants import ServerConstants
@@ -491,6 +492,7 @@ class MLOpsMetrics(object):
         while not self.should_stop_sys_perf():
             try:
                 self.report_system_metric()
+                self.report_gpu_device_info(self.edge_id)
             except Exception as e:
                 logging.debug("exception when reporting system pref: {}.".format(traceback.format_exc()))
                 pass
@@ -510,30 +512,44 @@ class MLOpsMetrics(object):
 
         return False
 
+    def report_artifact_info(self, job_id, edge_id, artifact_name, artifact_type,
+                             artifact_local_path, artifact_url,
+                             artifact_ext_info, artifact_desc,
+                             timestamp):
+        topic_name = "launch_device/mlops/artifacts"
+        artifact_info_json = {
+            "job_id": job_id,
+            "edge_id": edge_id,
+            "artifact_name": artifact_name,
+            "artifact_local_path": artifact_local_path,
+            "artifact_url": artifact_url,
+            "artifact_type": artifact_type,
+            "artifact_desc": artifact_desc,
+            "artifact_ext_info": artifact_ext_info,
+            "timestamp": timestamp
+        }
+        message_json = json.dumps(artifact_info_json)
+        self.messenger.send_message_json(topic_name, message_json)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument("--run_id", "-r", help="run id")
-    parser.add_argument("--client_id", "-c", help="client id")
-    parser.add_argument("--server_id", "-s", help="server id")
-    args = parser.parse_args()
-    mqtt_config = dict()
-    mqtt_config["BROKER_HOST"] = "127.0.0.1"
-    mqtt_config["BROKER_PORT"] = 1883
-    mqtt_config["MQTT_USER"] = "admin"
-    mqtt_config["MQTT_PWD"] = "sdfdf"
-    setattr(args, "mqtt_config_path", mqtt_config)
-    if args.client_id is not None:
-        setattr(args, "rank", 1)
-    else:
-        setattr(args, "rank", 0)
+    def report_gpu_device_info(self, edge_id):
+        total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
+            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
 
-    MLOpsMetrics.report_sys_perf(args)
-    while True:
-        time.sleep(5)
-        sys_metrics = MLOpsMetrics()
-        sys_metrics.stop_sys_perf()
-        break
-    pass
+        topic_name = "ml_client/mlops/gpu_device_info"
+        artifact_info_json = {
+            "edgeId": edge_id,
+            "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+            "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+            "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+            "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+            "cpuUtilization": round(cup_utilization, 2),
+            "cpuCores": cpu_cores,
+            "gpuCoresTotal": gpu_cores_total,
+            "gpuCoresAvailable": gpu_cores_available,
+            "gpu_available_ids": gpu_available_ids,
+            "networkTraffic": sent_bytes + recv_bytes,
+            "updateTime": int(MLOpsUtils.get_ntp_time())
+        }
+        message_json = json.dumps(artifact_info_json)
+        self.messenger.send_message_json(topic_name, message_json)
+

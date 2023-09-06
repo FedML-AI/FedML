@@ -422,6 +422,10 @@ class FedMLLaunchManager(Singleton):
         except Exception as e:
             pass
 
+    def check_heartbeat(self, api_key):
+        FedMLJobManager.get_instance().set_config_version(self.config_version)
+        return FedMLJobManager.get_instance().check_heartbeat(api_key)
+
     @staticmethod
     def get_api_key():
         try:
@@ -431,6 +435,10 @@ class FedMLLaunchManager(Singleton):
                 return api_key
         except Exception as e:
             return ""
+
+    def show_resource_type(self):
+        FedMLJobManager.get_instance().set_config_version(self.config_version)
+        return FedMLJobManager.get_instance().show_resource_type()
 
 
 '''
