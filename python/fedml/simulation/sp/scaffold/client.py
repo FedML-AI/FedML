@@ -6,6 +6,18 @@ class Client:
     def __init__(
         self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model_trainer,
     ):
+        """
+        Initialize a client for federated learning.
+
+        Args:
+            client_idx (int): The index of the client.
+            local_training_data (torch.utils.data.DataLoader): The DataLoader for local training data.
+            local_test_data (torch.utils.data.DataLoader): The DataLoader for local test data.
+            local_sample_number (int): The number of local training samples.
+            args: The arguments for the client.
+            device (torch.device): The device to perform computations on.
+            model_trainer: The model trainer used for training.
+        """
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
@@ -20,6 +32,15 @@ class Client:
 
 
     def update_local_dataset(self, client_idx, local_training_data, local_test_data, local_sample_number):
+        """
+        Update the local dataset for the client.
+
+        Args:
+            client_idx (int): The index of the client.
+            local_training_data (torch.utils.data.DataLoader): The DataLoader for local training data.
+            local_test_data (torch.utils.data.DataLoader): The DataLoader for local test data.
+            local_sample_number (int): The number of local training samples.
+        """
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
@@ -27,9 +48,25 @@ class Client:
         self.model_trainer.set_id(client_idx)
 
     def get_sample_number(self):
+        """
+        Get the number of local training samples.
+
+        Returns:
+            int: The number of local training samples.
+        """
         return self.local_sample_number
 
     def train(self, w_global, c_model_global_param):
+        """
+        Perform local training for the client.
+
+        Args:
+            w_global: The global model parameters.
+            c_model_global_param: The global model parameters of the central model.
+
+        Returns:
+            tuple: A tuple containing weights_delta and c_delta_para.
+        """
 
         c_model_global_param = deepcopy(c_model_global_param)
         c_model_local_param = self.c_model_local.state_dict()
@@ -56,6 +93,15 @@ class Client:
         return weights_delta, c_delta_para
 
     def local_test(self, b_use_test_dataset):
+        """
+        Perform local testing on the client's dataset.
+
+        Args:
+            b_use_test_dataset (bool): If True, use the test dataset; if False, use the training dataset.
+
+        Returns:
+            dict: A dictionary containing test metrics.
+        """
         if b_use_test_dataset:
             test_data = self.local_test_data
         else:

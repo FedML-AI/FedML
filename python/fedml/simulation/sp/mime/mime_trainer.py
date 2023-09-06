@@ -18,7 +18,20 @@ from .client import Client
 
 
 class MimeTrainer(object):
+    """
+    Trainer for the Mime model on federated learning.
+    """
     def __init__(self, dataset, model, device, args):
+        """
+        Initialize the MimeTrainer.
+
+        Args:
+            dataset: A list containing dataset information.
+            model: The Mime model.
+            device: The target device for training.
+            args: Training arguments.
+        """
+
         self.device = device
         self.args = args
         [
@@ -58,6 +71,15 @@ class MimeTrainer(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up client instances for federated learning.
+
+        Args:
+            train_data_local_num_dict: Dictionary containing local training data numbers for each client.
+            train_data_local_dict: Dictionary containing local training data for each client.
+            test_data_local_dict: Dictionary containing local test data for each client.
+            model_trainer: Model trainer for client instances.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -73,11 +95,10 @@ class MimeTrainer(object):
         logging.info("############setup_clients (END)#############")
 
 
-
-
-
-
     def train(self):
+        """
+        Perform federated training using the Mime model.
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -142,6 +163,17 @@ class MimeTrainer(object):
         mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Perform client sampling for each communication round.
+
+        Args:
+            round_idx: Index of the communication round.
+            client_num_in_total: Total number of clients.
+            client_num_per_round: Number of clients per round.
+
+        Returns:
+            List: List of selected client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -152,6 +184,12 @@ class MimeTrainer(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set by sampling a subset of the test data.
+
+        Args:
+            num_samples (int): The number of samples to include in the validation set. Default is 10,000.
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -160,6 +198,9 @@ class MimeTrainer(object):
 
 
     def _instanciate_opt(self):
+        """
+        Initialize the optimizer for the MimeTrainer.
+        """
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
             # self.model_global.parameters(), lr=self.args.server_lr
             self.model_trainer.model.parameters(),
@@ -173,11 +214,26 @@ class MimeTrainer(object):
 
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate the local model weights to obtain global model weights.
+
+        Args:
+            w_locals: List of local model weights.
+
+        Returns:
+            avg_params: Aggregated global model weights.
+        """
         avg_params = FedMLAggOperator.agg(self.args, w_locals)
         return avg_params
 
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients.
+
+        Args:
+            round_idx: Index of the communication round.
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -253,6 +309,12 @@ class MimeTrainer(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on the validation set.
+
+        Args:
+            round_idx: Index of the communication round.
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
