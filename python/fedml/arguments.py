@@ -34,6 +34,12 @@ from .constants import (
 
 
 def add_args():
+    """
+    Create and parse command line arguments for FedML.
+
+    Returns:
+        argparse.Namespace: A namespace containing the parsed arguments.
+    """
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
         "--yaml_config_file",
@@ -76,6 +82,15 @@ class Arguments:
     """Argument class which contains all arguments from yaml config and constructs additional arguments"""
 
     def __init__(self, cmd_args, training_type=None, comm_backend=None, override_cmd_args=True):
+        """
+        Initialize the Arguments class.
+
+        Args:
+            cmd_args (argparse.Namespace): Command line arguments.
+            training_type (str, optional): The training platform type. Defaults to None.
+            comm_backend (str, optional): The communication backend type. Defaults to None.
+            override_cmd_args (bool, optional): Whether to override command line arguments. Defaults to True.
+        """
         # set the command line arguments
         cmd_args_dict = cmd_args.__dict__
         for arg_key, arg_val in cmd_args_dict.items():
@@ -87,6 +102,16 @@ class Arguments:
             for arg_key, arg_val in cmd_args_dict.items():
                 setattr(self, arg_key, arg_val)
     def load_yaml_config(self, yaml_path):
+        """
+        Load a YAML configuration file.
+
+        Args:
+            yaml_path (str): Path to the YAML configuration file.
+
+        Returns:
+            dict: Loaded configuration as a dictionary.
+        """
+
         try:
             with open(yaml_path, "r") as stream:
                 try:
@@ -97,6 +122,14 @@ class Arguments:
             return None
 
     def get_default_yaml_config(self, cmd_args, training_type=None, comm_backend=None):
+        """
+        Set default YAML configuration based on training type and communication backend.
+
+        Args:
+            cmd_args (argparse.Namespace): Command line arguments.
+            training_type (str, optional): The training platform type. Defaults to None.
+            comm_backend (str, optional): The communication backend type. Defaults to None.
+        """
         if cmd_args.yaml_config_file == "":
             path_current_file = path.abspath(path.dirname(__file__))
             if (
@@ -191,12 +224,28 @@ class Arguments:
         return configuration
 
     def set_attr_from_config(self, configuration):
+        """
+        Set class attributes from a configuration dictionary.
+
+        Args:
+            configuration (dict): Configuration dictionary.
+        """
         for _, param_family in configuration.items():
             for key, val in param_family.items():
                 setattr(self, key, val)
 
 
 def load_arguments(training_type=None, comm_backend=None):
+    """
+    Load arguments from command line and YAML config file.
+
+    Args:
+        training_type (str, optional): The training platform type. Defaults to None.
+        comm_backend (str, optional): The communication backend type. Defaults to None.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     cmd_args = add_args()
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
