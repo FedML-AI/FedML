@@ -6,24 +6,39 @@ import uuid
 from os.path import expanduser
 
 import click
+import fedml
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, check_fedml_is_latest_version
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.core.mlops import MLOpsUtils
+from prettytable import PrettyTable
 
-from constants import Constants
-from app_manager import FedMLAppManager
-from job_manager import FedMLJobManager
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
+from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
+from fedml.api.constants import ApiConstants
 
 
-class FedMLLaunchManager(Singleton):
+class FedMLLaunchManager(object):
+    def __new__(cls, *args, **kw):
+        if not hasattr(cls, "_instance"):
+            orig = super(FedMLLaunchManager, cls)
+            cls._instance = orig.__new__(cls, *args, **kw)
+            cls._instance.init()
+        return cls._instance
+
     def __init__(self):
         pass
 
     @staticmethod
     def get_instance():
         return FedMLLaunchManager()
+
+    def init(self):
+        self.matched_results_map = dict()
+        self.platform_type = SchedulerConstants.PLATFORM_TYPE_FALCON
 
     def set_config_version(self, config_version):
         if config_version is not None:
@@ -439,6 +454,269 @@ class FedMLLaunchManager(Singleton):
     def show_resource_type(self):
         FedMLJobManager.get_instance().set_config_version(self.config_version)
         return FedMLJobManager.get_instance().show_resource_type()
+
+    def check_api_key(self, api_key=None, version="release"):
+        if api_key is None or api_key == "":
+            saved_api_key = FedMLLaunchManager.get_api_key()
+            if saved_api_key is None or saved_api_key == "":
+                api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            else:
+                api_key = saved_api_key
+
+        FedMLLaunchManager.get_instance().set_config_version(version)
+        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+        if not is_valid_heartbeat:
+            click.echo("Your API Key is not correct. Please input again.")
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
+            if not is_valid_heartbeat:
+                click.echo("Your API Key is not correct. Please check and try again.")
+
+        if is_valid_heartbeat:
+            FedMLLaunchManager.save_api_key(api_key)
+            return True
+
+        return False
+
+    def fedml_login(self, api_key=None, version="release"):
+        """
+        init the launch environment
+        :param api_key: API Key from MLOPs
+        :param version: dev, test, release
+        :return int: error code (0 means successful), str: error message
+        """
+        self.set_config_version(version)
+        api_key_is_valid = self.check_api_key(api_key=api_key, version=version)
+        if api_key_is_valid:
+            return 0, "Login successfully"
+
+        return -1, "Login failed"
+
+    def check_match_result(self, result, yaml_file):
+        if result.status == Constants.JOB_START_STATUS_INVALID:
+            click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
+                       f"to make sure the syntax is valid, e.g. "
+                       f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
+            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+        elif result.status == Constants.JOB_START_STATUS_BLOCKED:
+            click.echo("\nBecause the value of maximum_cost_per_hour is too low,"
+                       "we can not find exactly matched machines for your job. \n"
+                       "But here we still present machines closest to your expected price as below.")
+            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+        elif result.status == Constants.JOB_START_STATUS_QUEUED:
+            click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
+            if click.confirm("Do you want to join the queue?", abort=False):
+                click.echo("You have confirmed to keep your job in the waiting list.")
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
+            else:
+                FedMLJobManager.get_instance().set_config_version(self.config_version)
+                FedMLJobManager.get_instance().stop_job(self.platform_type, result.job_id,
+                                                        FedMLLaunchManager.get_api_key())
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
+        elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+            click.echo("Please bind your credit card before launching the job.")
+            return ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST
+        elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+            click.echo("Failed to query credit card binding status. Please try again later.")
+            return ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED
+
+        if result.job_url == "":
+            if result.message is not None:
+                click.echo(f"Failed to launch the job with response messages: {result.message}")
+            else:
+                click.echo(f"Failed to launch the job. Please check if the network is available.")
+            return ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR
+
+        return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+
+    def show_matched_resource(self, result):
+        gpu_matched = getattr(result, "gpu_matched", None)
+        if gpu_matched is not None and len(gpu_matched) > 0:
+            click.echo(f"\nSearched and matched the following GPU resource for your job:")
+            gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
+                                     'Region', 'Cost', 'Selected'])
+            for gpu_device in gpu_matched:
+                gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
+                                   gpu_device.mem_size,
+                                   f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
+                                   gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
+            print(gpu_table)
+            click.echo("")
+
+            click.echo(f"You can also view the matched GPU resource with Web UI at: ")
+            click.echo(f"{result.job_url}")
+
+            return gpu_matched
+
+        return None
+
+    # inputs: yaml file
+    # return: resource_id, error_code (0 means successful), error_message,
+    def api_match_resources(self, yaml_file):
+        """
+        launch a job
+        :param yaml_file: full path of your job yaml file
+        :returns: str: resource id, int: error code (0 means successful), str: error message
+        """
+        api_key = FedMLLaunchManager.get_api_key()
+
+        result = FedMLLaunchManager.get_instance().launch_job(yaml_file, api_key,
+                                                              self.platform_type,
+                                                              "", "")
+        if result is not None:
+            checked_result = self.check_match_result(result, yaml_file[0])
+            if checked_result != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
+                return None, ApiConstants.ERROR_CODE[checked_result], checked_result
+
+            gpu_matched = self.show_matched_resource(result)
+            if gpu_matched is None:
+                return None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES],\
+                    ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES
+
+            self.matched_results_map[result.job_id] = result
+
+            return result.job_id, 0, ""
+
+        return None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED],\
+            ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED
+
+    # inputs: yaml file, resource id
+    # return: job_id, error_code (0 means successful), error_message,
+    def api_launch_job(self, yaml_file, resource_id=None, prompt=True):
+        # Check if resource is available
+        result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
+        if result is None:
+            resource_id, _, _ = self.api_match_resources(yaml_file)
+            result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
+            if result is None:
+                return None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES], \
+                    ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES
+
+        # Confirm to launch job
+        if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
+            FedMLJobManager.get_instance().set_config_version(self.config_version)
+            FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
+                                                    FedMLLaunchManager.get_api_key())
+            return None, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
+                ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
+
+        # Get the API key
+        api_key = FedMLLaunchManager.get_api_key()
+
+        # Start the job
+        result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
+                                                             result.application_name,
+                                                             "", "", api_key,
+                                                             no_confirmation=True, job_id=result.job_id)
+        if result is None:
+            return None, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
+                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
+
+        if result.job_url == "":
+            if result.message is not None:
+                click.echo(f"Failed to launch the job with response messages: {result.message}")
+            return None, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
+                ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR
+
+        # List the job status
+        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, result.project_name,
+                                                               None, api_key, job_id=result.job_id)
+        if job_list_obj is not None and len(job_list_obj.job_list) > 0:
+            click.echo("")
+            click.echo("Your launch result is as follows:")
+            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
+                                          'Spend Time(hour)', 'Cost'])
+            jobs_count = 0
+            for job in job_list_obj.job_list:
+                jobs_count += 1
+                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
+                                        job.compute_duration, job.cost])
+            print(job_list_table)
+        else:
+            click.echo("")
+
+        # Show the job url
+        click.echo("\nYou can track your job running details at this URL:")
+        click.echo(f"{result.job_url}")
+
+        # Show querying infos for getting job logs
+        click.echo("")
+        click.echo(f"For querying the realtime status of your job, please run the following command.")
+        click.echo(f"fedml launch log {result.job_id}" +
+                   "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
+
+        return result.job_id, 0, ""
+
+    def list_jobs(self, job_id):
+        job_status = None
+        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, None, None,
+                                                               FedMLLaunchManager.get_api_key(), job_id=job_id)
+        if job_list_obj is not None and len(job_list_obj.job_list) > 0:
+            click.echo("Found the following matched jobs.")
+            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status',
+                                          'Created', 'Spend Time(hour)', 'Cost'])
+            jobs_count = 0
+            for job in job_list_obj.job_list:
+                jobs_count += 1
+                job_status = job.status
+                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
+                                        job.compute_duration, job.cost])
+
+            print(job_list_table)
+        else:
+            click.echo("Not found any jobs")
+
+        return job_status
+
+    # input: job id, page num, page size
+    # return job status, total_log_nums, total_log_pages, log list
+    def api_launch_log(self, job_id, page_num, page_size, need_all_logs=False):
+        # Get the API key
+        api_key = FedMLLaunchManager.get_api_key()
+
+        # Show job info
+        FedMLJobManager.get_instance().set_config_version(self.config_version)
+        job_status = self.list_jobs(job_id)
+        if job_status is None:
+            return None, 0, 0, None
+
+        # Get job logs
+        if not need_all_logs:
+            job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_num, page_size, api_key)
+            return job_status, job_logs.total_num, job_logs.total_pages, job_logs.log_lines
+
+        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
+
+        # Show job log summary info
+        log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
+        log_head_table.add_row([job_id[0], job_logs.total_num, job_logs.log_full_url])
+        click.echo("\nLogs summary info is as follows.")
+        print(log_head_table)
+
+        # Show job logs URL for each device
+        if len(job_logs.log_devices) > 0:
+            log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
+            for log_device in job_logs.log_devices:
+                log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
+            click.echo("\nLogs URL for each device is as follows.")
+            print(log_device_table)
+
+        # Show job log lines
+        log_line_list = list()
+        if len(job_logs.log_lines):
+            click.echo("\nAll logs is as follows.")
+            for log_line in job_logs.log_lines:
+                log_line_list.append(log_line)
+                click.echo(str(log_line).rstrip('\n'))
+
+            for page_count in range(2, job_logs.total_pages+1):
+                job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
+                                                                       Constants.JOB_LOG_PAGE_SIZE, api_key)
+                for log_line in job_logs.log_lines:
+                    log_line_list.append(log_line)
+                    click.echo(str(log_line).rstrip('\n'))
+
+        return job_status, job_logs.total_num, job_logs.total_pages, log_line_list
 
 
 '''

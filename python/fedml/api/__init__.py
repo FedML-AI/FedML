@@ -17,16 +17,17 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
+from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 
 
-def fedml_login(api_key, version="release"):
+def fedml_login(api_key=None, version="release"):
     """
     init the launch environment
     :param api_key: API Key from MLOPs
     :param version: dev, test, release
     :return int: error code (0 means successful), str: error message
     """
-    return 0, ""
+    return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
 
 
 # inputs: yaml file
@@ -37,7 +38,7 @@ def match_resources(yaml_file):
     :param yaml_file: full path of your job yaml file
     :returns: str: resource id, int: error code (0 means successful), str: error message
     """
-    return "0", 0, ""
+    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file)
 
 
 # inputs: yaml file, resource id
@@ -50,7 +51,7 @@ def launch_job(yaml_file, resource_id=None):
            we will match resources based on your job yaml, and then automatically launch the job using matched resources
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return "0", 0, ""
+    return FedMLLaunchManager.get_instance().api_launch_job(yaml_file, resource_id=resource_id, prompt=False)
 
 
 # input: job id, page num, page size
@@ -63,6 +64,6 @@ def launch_log(job_id, page_num, page_size):
     :param page_size: request page size for logs
     :returns: str: job status, int: total log num, int: total log pages, list: log list
     """
-    return "FINISHED", 100, 10, []
+    return FedMLLaunchManager.get_instance().api_launch_log(job_id, page_num, page_size)
 
 
