@@ -317,7 +317,7 @@ class FedMLClientRunner:
                     shell_cmd_list.append(bootstrap_scripts)
                     process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
                     ClientConstants.save_bootstrap_process(run_id, process.pid)
-                    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+                    ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
                             is_bootstrap_run_ok = False
@@ -460,7 +460,7 @@ class FedMLClientRunner:
                                                                     dynamic_args_config)
         ClientConstants.save_learning_process(run_id, process.pid)
 
-        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+        ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
