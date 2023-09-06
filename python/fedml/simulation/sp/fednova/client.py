@@ -16,6 +16,17 @@ class Client:
         args,
         device,
     ):
+        """
+        Initialize a client instance.
+
+        Args:
+            client_idx (int): The index of the client.
+            local_training_data: The local training data for this client.
+            local_test_data: The local test data for this client.
+            local_sample_number: The number of samples in the local training data.
+            args: Command-line arguments.
+            device: The device (e.g., "cpu" or "cuda") on which to perform computations.
+        """
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
@@ -39,15 +50,42 @@ class Client:
     def update_local_dataset(
         self, client_idx, local_training_data, local_test_data, local_sample_number
     ):
+        """
+        Update the local datasets for the client.
+
+        Args:
+            client_idx (int): The index of the client.
+            local_training_data: The new local training data.
+            local_test_data: The new local test data.
+            local_sample_number: The number of samples in the new local training data.
+        """
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
         self.local_sample_number = local_sample_number
 
     def get_sample_number(self):
+        """
+        Get the number of samples in the local training data.
+
+        Returns:
+            int: The number of samples in the local training data.
+        """
         return self.local_sample_number
 
     def get_local_norm_grad(self, opt, cur_params, init_params, weight=0):
+        """
+        Calculate the local normalized gradient.
+
+        Args:
+            opt: The FedNova optimizer.
+            cur_params: The current parameters of the model.
+            init_params: The initial parameters of the model.
+            weight (float): Weight factor for the gradient calculation.
+
+        Returns:
+            dict: A dictionary containing the local normalized gradients.
+        """
         if weight == 0:
             weight = opt.ratio
         grad_dict = {}
@@ -59,12 +97,27 @@ class Client:
         return grad_dict
 
     def get_local_tau_eff(self, opt):
+        """
+        Calculate the local effective tau.
+
+        Args:
+            opt: The FedNova optimizer.
+
+        Returns:
+            float: The local effective tau.
+        """
         if opt.mu != 0:
             return opt.local_steps * opt.ratio
         else:
             return opt.local_normalizing_vec * opt.ratio
 
     def reset_fednova_optimizer(self, opt):
+        """
+        Reset the FedNova optimizer state for the client.
+
+        Args:
+            opt: The FedNova optimizer.
+        """
         opt.local_counter = 0
         opt.local_normalizing_vec = 0
         opt.local_steps = 0
@@ -77,6 +130,16 @@ class Client:
                     param_state["momentum_buffer"].zero_()
 
     def train(self, net, ratio):
+        """
+        Train the model on the local training data.
+
+        Args:
+            net: The neural network model.
+            ratio: The ratio used in training.
+
+        Returns:
+            tuple: A tuple containing the loss, gradients, and effective tau.
+        """
         net.train()
         # train and update
         init_params = copy.deepcopy(net.state_dict())
@@ -120,6 +183,16 @@ class Client:
         return sum(epoch_loss) / len(epoch_loss), norm_grad, tau_eff
 
     def local_test(self, model_global, b_use_test_dataset=False):
+        """
+        Evaluate the performance of the global model on the local test or training dataset.
+
+        Args:
+            model_global: The global model to evaluate.
+            b_use_test_dataset (bool): Whether to use the local test dataset. If False, uses the local training dataset.
+
+        Returns:
+            dict: A dictionary containing evaluation metrics, including accuracy, loss, precision, recall, and total samples.
+        """
         model_global.eval()
         model_global.to(self.device)
         metrics = {

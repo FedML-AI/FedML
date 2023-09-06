@@ -10,6 +10,15 @@ from .client import Client
 
 class FedNovaTrainer(object):
     def __init__(self, dataset, model, device, args):
+        """
+        Initialize the FedNovaTrainer.
+
+        Args:
+            dataset (tuple): A tuple containing dataset information.
+            model (torch.nn.Module): The global model to be trained.
+            device (torch.device): The target device for model training.
+            args (argparse.Namespace): Command-line arguments.
+        """
         self.device = device
         self.args = args
         [
@@ -41,6 +50,17 @@ class FedNovaTrainer(object):
     def setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict
     ):
+        """
+        Set up client instances for federated training.
+
+        Args:
+            train_data_local_num_dict (dict): Dictionary containing local training data sizes.
+            train_data_local_dict (dict): Dictionary containing local training data.
+            test_data_local_dict (dict): Dictionary containing local test data.
+
+        Returns:
+            None
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -55,6 +75,17 @@ class FedNovaTrainer(object):
         logging.info("############setup_clients (END)#############")
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Perform client sampling for federated training.
+
+        Args:
+            round_idx (int): The current communication round index.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to sample in each round.
+
+        Returns:
+            list: List of client indexes selected for the current round.
+        """ 
         if client_num_in_total == client_num_per_round:
             client_indexes = [
                 client_index for client_index in range(client_num_in_total)
@@ -71,6 +102,12 @@ class FedNovaTrainer(object):
         return client_indexes
 
     def train(self):
+        """
+        Perform federated training using FedNova optimizer.
+
+        Returns:
+            None
+        """
         for round_idx in range(self.args.comm_round):
             logging.info("################Communication round : {}".format(round_idx))
 
@@ -134,6 +171,18 @@ class FedNovaTrainer(object):
                 self.local_test_on_all_clients(self.model_global, round_idx)
 
     def aggregate(self, params, norm_grads, tau_effs, tau_eff=0):
+        """
+        Aggregate local gradients and update global model parameters.
+
+        Args:
+            params (dict): Dictionary containing global model parameters.
+            norm_grads (list of dict): List of dictionaries containing normalized local gradients.
+            tau_effs (list): List of effective tau values for each client.
+            tau_eff (float): Effective tau value (optional).
+
+        Returns:
+            dict: Updated global model parameters.
+        """
         # get tau_eff
         if tau_eff == 0:
             tau_eff = sum(tau_effs)
@@ -164,6 +213,16 @@ class FedNovaTrainer(object):
         return params
 
     def local_test_on_all_clients(self, model_global, round_idx):
+        """
+        Perform local testing on all clients and log results.
+
+        Args:
+            model (torch.nn.Module): The global model for testing.
+            round_idx (int): The current communication round index.
+
+        Returns:
+            None
+        """
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
         train_metrics = {
             "num_samples": [],

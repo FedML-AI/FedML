@@ -94,10 +94,15 @@ class FedNova(Optimizer):
             group.setdefault("nesterov", False)
 
     def step(self, closure=None):
-        """Performs a single optimization step.
-        Arguments:
+        """
+        Performs a single optimization step.
+
+        Args:
             closure (callable, optional): A closure that reevaluates the model
                 and returns the loss.
+
+        Returns:
+            loss: The loss after the optimization step.
         """
 
         loss = None
@@ -169,6 +174,16 @@ class FedNova(Optimizer):
         return loss
 
     def average(self, weight=0, tau_eff=0):
+        """
+        Averages accumulated local gradients across clients.
+
+        Args:
+            weight (float, optional): Weight factor for averaging (default: 0).
+            tau_eff (float, optional): Effective tau value (default: 0).
+
+        Returns:
+            None
+        """
         if weight == 0:
             weight = self.ratio
         if tau_eff == 0:
