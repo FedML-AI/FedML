@@ -5,6 +5,20 @@ from ..fedavg.fedavg_api import FedAvgAPI
 
 
 class Group(FedAvgAPI):
+    """
+    Represents a group of clients in a federated learning setting.
+
+    Args:
+        idx (int): Index of the group.
+        total_client_indexes (list): List of client indexes in the group.
+        train_data_local_dict: Dictionary containing local training data for each client.
+        test_data_local_dict: Dictionary containing local test data for each client.
+        train_data_local_num_dict: Dictionary containing the number of local training samples for each client.
+        args: Arguments for group configuration.
+        device: Device (e.g., 'cuda' or 'cpu') to perform computations.
+        model: The shared model used by clients in the group.
+        model_trainer: Trainer for the shared model.
+    """
     def __init__(
         self,
         idx,
@@ -35,12 +49,32 @@ class Group(FedAvgAPI):
             )
 
     def get_sample_number(self, sampled_client_indexes):
+        """
+        Calculate the total number of training samples in the group.
+
+        Args:
+            sampled_client_indexes (list): List of sampled client indexes.
+
+        Returns:
+            int: Total number of training samples in the group.
+        """
         self.group_sample_number = 0
         for client_idx in sampled_client_indexes:
             self.group_sample_number += self.train_data_local_num_dict[client_idx]
         return self.group_sample_number
 
     def train(self, global_round_idx, w, sampled_client_indexes):
+        """
+        Train the group of clients using federated learning.
+
+        Args:
+            global_round_idx (int): Global round index.
+            w: Model weights to initialize training.
+            sampled_client_indexes (list): List of sampled client indexes.
+
+        Returns:
+            list: A list of tuples containing global epoch and aggregated model weights.
+        """
         sampled_client_list = [self.client_dict[client_idx] for client_idx in sampled_client_indexes]
         w_group = w
         w_group_list = []

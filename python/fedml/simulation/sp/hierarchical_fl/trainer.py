@@ -8,6 +8,15 @@ from ..fedavg.fedavg_api import FedAvgAPI
 
 
 class HierarchicalTrainer(FedAvgAPI):
+    """
+    Represents a hierarchical federated learning trainer.
+
+    Args:
+        train_data_local_num_dict: Dictionary containing the number of local training samples for each client.
+        train_data_local_dict: Dictionary containing local training data for each client.
+        test_data_local_dict: Dictionary containing local test data for each client.
+        model_trainer: Trainer for the shared model.
+    """
     def _setup_clients(
             self,
             train_data_local_num_dict,
@@ -15,6 +24,15 @@ class HierarchicalTrainer(FedAvgAPI):
             test_data_local_dict,
             model_trainer,
     ):
+        """
+        Set up client groups and maintain a dummy client for testing.
+
+        Args:
+            train_data_local_num_dict: Dictionary containing the number of local training samples for each client.
+            train_data_local_dict: Dictionary containing local training data for each client.
+            test_data_local_dict: Dictionary containing local test data for each client.
+            model_trainer: Trainer for the shared model.
+        """
         logging.info("############setup_clients (START)#############")
         if self.args.group_method == "random":
             self.group_indexes = np.random.randint(
@@ -61,6 +79,17 @@ class HierarchicalTrainer(FedAvgAPI):
     def _client_sampling(
             self, global_round_idx, client_num_in_total, client_num_per_round
     ):
+        """
+        Sample clients for training in a hierarchical manner.
+
+        Args:
+            global_round_idx (int): Global round index.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to sample per round.
+
+        Returns:
+            dict: Dictionary mapping group indexes to sampled client indexes.
+        """
         sampled_client_indexes = super()._client_sampling(
             global_round_idx, client_num_in_total, client_num_per_round
         )
@@ -76,6 +105,11 @@ class HierarchicalTrainer(FedAvgAPI):
         return group_to_client_indexes
 
     def train(self):
+        """
+        Train the hierarchical federated learning model.
+
+        This method manages global communication rounds and client sampling.
+        """
         w_global = self.model.state_dict()
         for global_round_idx in range(self.args.comm_round):
             logging.info(
