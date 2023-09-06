@@ -1,4 +1,4 @@
-
+import logging
 import os
 import platform
 import signal
@@ -9,6 +9,8 @@ from urllib.parse import urlparse, unquote
 
 import psutil
 import yaml
+from fedml.computing.scheduler.comm_utils import sys_utils
+
 from ..comm_utils.yaml_utils import load_yaml_config
 
 
@@ -155,6 +157,18 @@ class ServerConstants(object):
         app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationFromCli".format(
             ServerConstants.get_mlops_url(config_version))
         return app_url
+
+    @staticmethod
+    def get_heartbeat_url(config_version="release"):
+        heartbeat_url = "{}/fedmlOpsServer/api/v1/cli/heartBeat".format(
+            ServerConstants.get_mlops_url(config_version))
+        return heartbeat_url
+
+    @staticmethod
+    def get_resource_url(config_version="release"):
+        resource_url = "{}/fedmlOpsServer/api/v1/cli/resourceType".format(
+            ServerConstants.get_mlops_url(config_version))
+        return resource_url
 
     @staticmethod
     def cleanup_run_process(run_id):
@@ -395,6 +409,29 @@ class ServerConstants(object):
                                               preexec_fn=os.setsid)
 
         return script_process
+
+    @staticmethod
+    def execute_commands_with_live_logs(cmds, join='&&'):
+        error_list = list()
+        with subprocess.Popen(join.join(cmds),
+                              shell=True,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as sp:
+            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
+                for line in sp.stdout:
+                    line_str = line.decode()
+                    stdout.write(line)
+                    stdout.flush()
+                    logging.info(line_str)
+            with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
+                for line in sp.stderr:
+                    line_str = line.decode()
+                    stderr.write(line)
+                    stderr.flush()
+                    logging.error(line_str)
+                    error_list.append(line_str)
+            return sp, error_list
+        return None, error_list
 
     @staticmethod
     def get_console_pipe_out_err_results(script_process):

@@ -164,7 +164,9 @@ class FedMLAppManager(Singleton):
         s3_storage = S3Storage(s3_config)
         app_dst_key = "{}@{}".format(app_name, str(uuid.uuid4()))
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
-                                                               "Submitting your job to FedML® Launch platform")
+                                                               out_progress_to_err=False,
+                                                               progress_desc="Submitting your job to "
+                                                                             "FedML® Launch platform")
         return app_storage_url
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):

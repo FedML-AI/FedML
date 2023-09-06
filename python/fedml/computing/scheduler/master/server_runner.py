@@ -111,6 +111,7 @@ class FedMLServerRunner:
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
+        self.enable_simulation_cloud_agent = False
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -327,23 +328,26 @@ class FedMLServerRunner:
                                                                  os.path.basename(bootstrap_script_file))
                     bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
                     logging.info("Bootstrap scripts are being executed...")
-                    process = ServerConstants.exec_console_with_script(bootstrap_scripts,
-                                                                       should_capture_stdout=True,
-                                                                       should_capture_stderr=True)
-                    ServerConstants.save_bootstrap_process(run_id, process.pid)
+                    shell_cmd_list = list()
+                    shell_cmd_list.append(bootstrap_scripts)
+                    process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
+                    ClientConstants.save_bootstrap_process(run_id, process.pid)
                     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
                     if ret_code is None or ret_code <= 0:
-                        if out is not None:
-                            out_str = out.decode(encoding="utf-8")
-                            if out_str != "":
-                                logging.info("{}".format(out_str))
+                        if error_list is not None and len(error_list) > 0:
+                            is_bootstrap_run_ok = False
+                        else:
+                            if out is not None:
+                                out_str = sys_utils.decode_our_err_result(out)
+                                if out_str != "":
+                                    logging.info("{}".format(out_str))
 
-                        sys_utils.log_return_info(bootstrap_script_file, 0)
+                            sys_utils.log_return_info(bootstrap_script_file, 0)
 
-                        is_bootstrap_run_ok = True
+                            is_bootstrap_run_ok = True
                     else:
                         if err is not None:
-                            err_str = err.decode(encoding="utf-8")
+                            err_str = sys_utils.decode_our_err_result(err)
                             if err_str != "":
                                 logging.error("{}".format(err_str))
 
@@ -476,7 +480,7 @@ class FedMLServerRunner:
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        process, is_launch_task = self.execute_job_task(entry_file_full_path, conf_file_full_path, run_id)
+        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, run_id)
         logging.info("waiting the aggregation process to aggregate models...")
         ServerConstants.save_learning_process(run_id, process.pid)
 
@@ -484,12 +488,14 @@ class FedMLServerRunner:
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
+        if error_list is not None and len(error_list) > 0:
+            is_run_ok = False
         if ret_code is None or ret_code <= 0:
             self.check_runner_stop_event()
 
             if is_run_ok:
                 if out is not None:
-                    out_str = out.decode(encoding="utf-8")
+                    out_str = sys_utils.decode_our_err_result(out)
                     if out_str != "":
                         logging.info("{}".format(out_str))
 
@@ -515,7 +521,7 @@ class FedMLServerRunner:
             logging.error("failed to run the aggregation process...")
 
             if err is not None:
-                err_str = err.decode(encoding="utf-8")
+                err_str = sys_utils.decode_our_err_result(err)
                 if err_str != "":
                     logging.error("{}".format(err_str))
 
@@ -557,9 +563,11 @@ class FedMLServerRunner:
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
+        assigned_gpu_ids = run_params.get("gpu_ids", None)
         using_easy_mode = True
         expert_mode = job_yaml.get("expert_mode", None)
         framework_type = job_yaml.get("framework_type", None)
+        error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
                 if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
@@ -599,10 +607,26 @@ class FedMLServerRunner:
                                                              running_json=self.start_request_json)
 
             shell_cmd_list = list()
-            shell_cmd_list.append(executable_interpreter)
             if using_easy_mode:
-                shell_cmd_list.append(entry_file_full_path)
+                entry_commands = list()
+                with open(entry_file_full_path, 'r') as entry_file_handle:
+                    entry_commands.extend(entry_file_handle.readlines())
+                    entry_file_handle.close()
+
+                export_cmd = "set" if platform.system() == "Windows" else "export"
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={self.edge_id}\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_JOB_ID={self.run_id}\n")
+                if assigned_gpu_ids is not None and assigned_gpu_ids != "":
+                    entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
+
+                with open(entry_file_full_path, 'w') as entry_file_handle:
+                    entry_file_handle.writelines(entry_commands)
+                    entry_file_handle.close()
+                shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
             else:
+                shell_cmd_list.append(executable_interpreter)
                 if executable_file != "":
                     shell_cmd_list.append(entry_file_full_path)
                 if executable_conf_file != "" and executable_conf_option != "":
@@ -613,19 +637,15 @@ class FedMLServerRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
-            process = ServerConstants.exec_console_with_shell_script_list(
-                shell_cmd_list,
-                should_capture_stdout=True,
-                should_capture_stderr=True
-            )
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
             is_launch_task = True
-        return process, is_launch_task
+        return process, is_launch_task, error_list
 
     def process_job_status(self, run_id):
         all_edges_is_finished = True
         any_edge_is_failed = False
-        edge_id_status_dict = self.client_agent_active_list[f"{run_id}"]
-        server_id = edge_id_status_dict["server"]
+        edge_id_status_dict = self.client_agent_active_list.get(f"{run_id}", {})
+        server_id = edge_id_status_dict.get("server", 0)
         for edge_id, status in edge_id_status_dict.items():
             if edge_id == "server":
                 continue
@@ -797,6 +817,9 @@ class FedMLServerRunner:
         edge_id = payload_json.get("edge_id", None)
         status = payload_json.get("status", None)
         if run_id is not None and edge_id is not None:
+            active_item_dict = self.client_agent_active_list.get(f"{run_id}", None)
+            if active_item_dict is None:
+                return
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
             self.process_job_status(run_id)
 
@@ -864,7 +887,7 @@ class FedMLServerRunner:
 
         # Process the log
         run_id = request_json["runId"]
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             # Start log processor for current run
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
@@ -903,14 +926,14 @@ class FedMLServerRunner:
         logging.info("subscribe the client exception message.")
 
         # Setup MQTT message listener for run exception
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + \
                                                      "/client_exit_train_with_exception"
             self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
                                                self.callback_client_exit_train_with_exception)
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             self.init_job_task(request_json)
 
             self.args.run_id = run_id
@@ -1226,7 +1249,7 @@ class FedMLServerRunner:
         stop_request_json = self.running_request_json.get(str(run_id), None)
         if stop_request_json is None:
             stop_request_json = request_json
-        if self.run_as_edge_server_and_agent:
+        if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
                 edge_id=self.edge_id
@@ -1363,7 +1386,7 @@ class FedMLServerRunner:
             stop_request_json = self.running_request_json.get(str(run_id), None)
             if stop_request_json is None:
                 stop_request_json = request_json
-            if self.run_as_edge_server_and_agent:
+            if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
                 server_runner = FedMLServerRunner(
                     self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
                 )
@@ -1570,12 +1593,25 @@ class FedMLServerRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
-        status_code = response.json().get("code")
-        if status_code == "SUCCESS":
-            edge_id = response.json().get("data").get("id")
+        if response.status_code != 200:
+            print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            pass
         else:
-            return 0
-        return edge_id
+            # print("url = {}, response = {}".format(url, response))
+            status_code = response.json().get("code")
+            if status_code == "SUCCESS":
+                edge_id = response.json().get("data").get("id")
+                user_name = response.json().get("data").get("userName", None)
+                extra_url = response.json().get("data").get("url", None)
+                if edge_id is None or edge_id <= 0:
+                    print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                          f"response.content: {response.content}")
+            else:
+                print(f"Binding to MLOps with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return 0, None, None
+        return edge_id, user_name, extra_url
 
     def fetch_configs(self):
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
@@ -1709,6 +1745,10 @@ class FedMLServerRunner:
         )
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+
+        self.mlops_metrics.stop_sys_perf()
+        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
+        self.mlops_metrics.report_sys_perf(self.args)
 
         self.recover_start_train_msg_after_upgrading()
 

@@ -17,10 +17,13 @@ fedml_env:
   project_name: 
 
 # Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
 workspace: hello_world
 
 # Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
 # Support multiple lines, which can not be empty.
 job: | 
     echo "Hello, Here is the launch platform."
@@ -39,6 +42,7 @@ computing:
   maximum_cost_per_hour: $1.75    # max cost per hour for your job per machine
   allow_cross_cloud_resources: false # true, false
   device_type: GPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   
 framework_type: fedml         # options: fedml, deepspeed, pytorch, general
 task_type: train              # options: serve, train, dev-environment
