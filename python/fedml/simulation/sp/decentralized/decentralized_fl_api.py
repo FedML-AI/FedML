@@ -9,6 +9,17 @@ from .topology_manager import TopologyManager
 
 
 def cal_regret(client_list, client_number, t):
+    """
+    Calculate the average regret across all clients.
+
+    Args:
+        client_list (list): List of client objects.
+        client_number (int): Total number of clients.
+        t (int): Current iteration.
+
+    Returns:
+        float: Average regret across all clients.
+    """
     regret = 0
     for client in client_list:
         regret += np.sum(client.get_regret())
@@ -20,6 +31,20 @@ def cal_regret(client_list, client_number, t):
 def FedML_decentralized_fl(
     client_number, client_id_list, streaming_data, model, model_cache, args
 ):
+    """
+    Run decentralized federated learning with the specified configuration.
+
+    Args:
+        client_number (int): Total number of clients.
+        client_id_list (list): List of client IDs.
+        streaming_data (list): List of streaming data for each client.
+        model: The federated learning model.
+        model_cache: Model cache for each client.
+        args: Additional arguments for configuration.
+
+    Returns:
+        None
+    """
     iteration_number_T = args.iteration_number
     lr_rate = args.learning_rate
     batch_size = args.batch_size

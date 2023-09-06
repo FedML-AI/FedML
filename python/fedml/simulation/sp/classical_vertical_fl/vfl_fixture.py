@@ -6,6 +6,20 @@ from .vfl import VerticalMultiplePartyLogisticRegressionFederatedLearning
 
 
 def compute_correct_prediction(*, y_targets, y_prob_preds, threshold=0.5):
+    """
+    Compute correct predictions and counts based on probability predictions and threshold.
+
+    Args:
+        y_targets (array-like): True labels.
+        y_prob_preds (array-like): Predicted probabilities.
+        threshold (float, optional): Threshold for binary classification. Defaults to 0.5.
+
+    Returns:
+        Tuple:
+            - y_hat_lbls (numpy.ndarray): Predicted labels (0 or 1).
+            - [pred_pos_count, pred_neg_count, correct_count] (list): Counts of predicted positive,
+              predicted negative, and correct predictions.
+    """
     y_hat_lbls = []
     pred_pos_count = 0
     pred_neg_count = 0
@@ -25,12 +39,31 @@ def compute_correct_prediction(*, y_targets, y_prob_preds, threshold=0.5):
 
 
 class FederatedLearningFixture(object):
+    """
+    Fixture for performing federated learning with a specified model.
+    """
     def __init__(
         self, federated_learning: VerticalMultiplePartyLogisticRegressionFederatedLearning,
     ):
+        """
+        Initialize a Federated Learning Fixture.
+
+        Args:
+            federated_learning (VerticalMultiplePartyLogisticRegressionFederatedLearning):
+                The federated learning instance to be used.
+        """
         self.federated_learning = federated_learning
 
     def fit(self, train_data, test_data, epochs=50, batch_size=-1):
+        """
+        Fit the federated learning model on the provided data.
+
+        Args:
+            train_data (dict): Training data containing X and Y for each party.
+            test_data (dict): Testing data containing X and Y for each party.
+            epochs (int, optional): Number of training epochs. Defaults to 50.
+            batch_size (int, optional): Batch size for training. Defaults to -1 (no batching).
+        """
 
         main_party_id = self.federated_learning.get_main_party_id()
         Xa_train = train_data[main_party_id]["X"]

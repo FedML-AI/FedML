@@ -12,6 +12,33 @@ from .client import Client
 
 
 class FedAvgAPI(object):
+    """
+    Federated Averaging API for federated learning.
+
+    Args:
+        args (object): Arguments for configuration.
+        device (str): The device (e.g., 'cpu' or 'cuda') for model training.
+        dataset (tuple): A tuple containing dataset information.
+
+    Attributes:
+        device (str): The device (e.g., 'cpu' or 'cuda') for model training.
+        args (object): Arguments for configuration.
+        train_global: Global training dataset.
+        test_global: Global test dataset.
+        val_global: Global validation dataset.
+        train_data_num_in_total (int): Total number of training samples.
+        test_data_num_in_total (int): Total number of test samples.
+        client_list (list): List of client instances.
+        train_data_local_num_dict (dict): Dictionary mapping client index to the number of local training samples.
+        train_data_local_dict (dict): Dictionary mapping client index to local training data.
+        test_data_local_dict (dict): Dictionary mapping client index to local test data.
+        model_trainer: Model trainer for federated learning.
+        model: The federated model.
+
+    Methods:
+        train(): Train the federated model using federated averaging.
+
+    """
     def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
@@ -49,6 +76,7 @@ class FedAvgAPI(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """Setup client instances."""
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -125,6 +153,7 @@ class FedAvgAPI(object):
         mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """Sample clients for communication round."""
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -135,6 +164,7 @@ class FedAvgAPI(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """Generate a validation dataset."""
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -142,6 +172,7 @@ class FedAvgAPI(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """Aggregate local model weights."""
         training_num = 0
         for idx in range(len(w_locals)):
             (sample_num, averaged_params) = w_locals[idx]
@@ -160,10 +191,14 @@ class FedAvgAPI(object):
 
     def _aggregate_noniid_avg(self, w_locals):
         """
-        The old aggregate method will impact the model performance when it comes to Non-IID setting
+        Aggregate local model weights using non-IID average method.
+
         Args:
-            w_locals:
+            w_locals (list): List of tuples containing (sample_num, local_weights).
+
         Returns:
+            dict: Averaged model parameters.
+
         """
         (_, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
@@ -174,6 +209,16 @@ class FedAvgAPI(object):
         return averaged_params
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Aggregate local model weights using non-IID average method.
+
+        Args:
+            w_locals (list): List of tuples containing (sample_num, local_weights).
+
+        Returns:
+            dict: Averaged model parameters.
+
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -235,7 +280,13 @@ class FedAvgAPI(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on all clients and log the results.
 
+        Args:
+            round_idx (int): The current communication round index.
+
+        """
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
         if self.val_global is None:

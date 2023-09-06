@@ -11,6 +11,12 @@ def sigmoid(x):
 
 class VFLGuestModel(object):
     def __init__(self, local_model):
+        """
+        Initialize a VFL guest model.
+
+        Args:
+            local_model (torch.nn.Module): Local machine learning model.
+        """
         super(VFLGuestModel, self).__init__()
         self.localModel = local_model
         self.feature_dim = local_model.get_output_dim()
@@ -24,14 +30,29 @@ class VFLGuestModel(object):
         self.y = None
 
     def set_dense_model(self, dense_model):
+        """
+        Set the dense model for the guest model.
+
+        Args:
+            dense_model: New dense model to set.
+        """ 
         self.dense_model = dense_model
 
     def set_batch(self, X, y, global_step):
+        """
+        Set the batch data and global step for training.
+
+        Args:
+            X: Input data for training.
+            y: Target labels for training.
+            global_step: Current global step in training.
+        """
         self.X = X
         self.y = y
         self.current_global_step = global_step
 
     def _fit(self, X, y):
+        
         self.temp_K_Z = self.localModel.forward(X)
         self.K_U = self.dense_model.forward(self.temp_K_Z)
 
@@ -39,6 +60,16 @@ class VFLGuestModel(object):
         self._update_models(X, y)
 
     def predict(self, X, component_list):
+        """
+        Predict using the guest model.
+
+        Args:
+            X: Input data for prediction.
+            component_list: List of components to consider in the prediction.
+
+        Returns:
+            Predicted values.
+        """
         temp_K_Z = self.localModel.forward(X)
         U = self.dense_model.forward(temp_K_Z)
         for comp in component_list:
@@ -46,6 +77,12 @@ class VFLGuestModel(object):
         return sigmoid(np.sum(U, axis=1))
 
     def receive_components(self, component_list):
+        """
+        Receive and store components from other parties.
+
+        Args:
+            component_list: List of components to receive and store.
+        """
         for party_component in component_list:
             self.parties_grad_component_list.append(party_component)
 
@@ -67,6 +104,12 @@ class VFLGuestModel(object):
         self.loss = class_loss.item()
 
     def send_gradients(self):
+        """
+        Send gradients to other parties.
+
+        Returns:
+            Gradients to send.
+        """
         return self.top_grads
 
     def _update_models(self, X, y):
@@ -74,6 +117,12 @@ class VFLGuestModel(object):
         self.localModel.backward(X, back_grad)
 
     def get_loss(self):
+        """
+        Get the loss value of the guest model.
+
+        Returns:
+            Loss value.
+        """
         return self.loss
 
 

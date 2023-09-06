@@ -20,6 +20,23 @@ class ClientPushsum(object):
         b_symmetric,
         time_varying,
     ):
+        """
+        Initialize a ClientPushsum instance.
+
+        Args:
+            model: The client's model.
+            model_cache: Cache for the model parameters.
+            client_id (int): Identifier for the client.
+            streaming_data: Streaming data for training.
+            topology_manager: Topology manager for network topology.
+            iteration_number (int): Number of iterations.
+            learning_rate (float): Learning rate for optimization.
+            batch_size (int): Batch size for training.
+            weight_decay (float): Weight decay for optimization.
+            latency (float): Latency in communication.
+            b_symmetric (bool): Whether the topology is symmetric.
+            time_varying (bool): Whether the topology is time-varying.
+        """
         # logging.info("streaming_data = %s" % streaming_data)
 
         # Since we use logistic regression, the model size is small.
@@ -60,6 +77,12 @@ class ClientPushsum(object):
         self.neighbors_topo_weight_dict = dict()
 
     def train_local(self, iteration_id):
+        """
+        Train the client's model using local data for a specific iteration.
+
+        Args:
+            iteration_id (int): The iteration index.
+        """
         self.optimizer.zero_grad()
         train_x = torch.from_numpy(self.streaming_data[iteration_id]["x"])
         train_y = torch.FloatTensor([self.streaming_data[iteration_id]["y"]])
@@ -70,6 +93,12 @@ class ClientPushsum(object):
         self.loss_in_each_iteration.append(loss)
 
     def train(self, iteration_id):
+        """
+        Train the client's model using data for a specific iteration.
+
+        Args:
+            iteration_id (int): The iteration index.
+        """
         self.optimizer.zero_grad()
 
         if iteration_id >= self.iteration_number:
@@ -105,10 +134,22 @@ class ClientPushsum(object):
         self.loss_in_each_iteration.append(loss)
 
     def get_regret(self):
+        """
+        Get the regret (loss) for each iteration.
+
+        Returns:
+            list: A list containing the loss for each iteration.
+        """
         return self.loss_in_each_iteration
 
     # simulation
     def send_local_gradient_to_neighbor(self, client_list):
+        """
+        Send local gradients to neighboring clients for simulation.
+
+        Args:
+            client_list (list): List of client objects representing neighbors.
+        """
         for index in range(len(self.topology)):
             if self.topology[index] != 0 and index != self.id:
                 client = client_list[index]
@@ -120,11 +161,23 @@ class ClientPushsum(object):
                 )
 
     def receive_neighbor_gradients(self, client_id, model_x, topo_weight, omega):
+        """
+        Receive gradients from a neighboring client for simulation.
+
+        Args:
+            client_id (int): The identifier of the neighboring client.
+            model_x: Model parameters from the neighboring client.
+            topo_weight (float): Topology weight associated with the neighboring client.
+            omega (float): Omega value for push-sum.
+        """
         self.neighbors_weight_dict[client_id] = model_x
         self.neighbors_topo_weight_dict[client_id] = topo_weight
         self.neighbors_omega_dict[client_id] = omega
 
     def update_local_parameters(self):
+        """
+        Update local model parameters and omega based on received gradients.
+        """
         # update x_{t+1/2}
         for x_paras in self.model_x.parameters():
             x_paras.data.mul_(self.topology[self.id])

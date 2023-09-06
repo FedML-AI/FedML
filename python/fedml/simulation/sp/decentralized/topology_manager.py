@@ -3,6 +3,29 @@ import numpy as np
 
 
 class TopologyManager:
+    """
+    Manages the network topology for decentralized federated learning.
+
+    Args:
+        n (int): Total number of clients.
+        b_symmetric (bool): Flag indicating symmetric or asymmetric topology.
+        undirected_neighbor_num (int): Number of undirected neighbors for symmetric topology.
+        out_directed_neighbor (int): Number of outgoing directed neighbors for asymmetric topology.
+
+    Attributes:
+        n (int): Total number of clients.
+        b_symmetric (bool): Flag indicating symmetric or asymmetric topology.
+        undirected_neighbor_num (int): Number of undirected neighbors for symmetric topology.
+        out_directed_neighbor (int): Number of outgoing directed neighbors for asymmetric topology.
+        topology_symmetric (list): Symmetric topology information.
+        topology_asymmetric (list): Asymmetric topology information.
+        b_fully_connected (bool): Flag indicating if the topology is fully connected.
+
+    Methods:
+        generate_topology(): Generates the network topology.
+        get_symmetric_neighbor_list(client_idx): Gets symmetric neighbors for a client.
+        get_asymmetric_neighbor_list(client_idx): Gets asymmetric neighbors for a client.
+    """
     def __init__(
         self, n, b_symmetric, undirected_neighbor_num=5, out_directed_neighbor=5
     ):
@@ -17,6 +40,9 @@ class TopologyManager:
             self.b_fully_connected = True
 
     def generate_topology(self):
+        """
+        Generates the network topology based on configuration.
+        """
         if self.b_fully_connected:
             self.__fully_connected()
             return
@@ -27,16 +53,37 @@ class TopologyManager:
             self.__randomly_pick_neighbors_asymmetric()
 
     def get_symmetric_neighbor_list(self, client_idx):
+        """
+        Gets the symmetric neighbor list for a client.
+
+        Args:
+            client_idx (int): Index of the client.
+
+        Returns:
+            list: List of symmetric neighbors for the specified client.
+        """
         if client_idx >= self.n:
             return []
         return self.topology_symmetric[client_idx]
 
     def get_asymmetric_neighbor_list(self, client_idx):
+        """
+        Gets the asymmetric neighbor list for a client.
+
+        Args:
+            client_idx (int): Index of the client.
+
+        Returns:
+            list: List of asymmetric neighbors for the specified client.
+        """
         if client_idx >= self.n:
             return []
         return self.topology_asymmetric[client_idx]
 
     def __randomly_pick_neighbors_symmetric(self):
+        """
+        Generates symmetric topology with randomly added links for each node.
+        """
         # first generate a ring topology
         topology_ring = np.array(
             nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32
@@ -74,6 +121,9 @@ class TopologyManager:
         self.topology_symmetric = topology_symmetric
 
     def __randomly_pick_neighbors_asymmetric(self):
+        """
+        Generates asymmetric topology with randomly added links for each node.
+        """
         # randomly add some links for each node (symmetric)
         k = self.undirected_neighbor_num
         # print("neighbors = " + str(k))
@@ -134,6 +184,9 @@ class TopologyManager:
         self.topology_asymmetric = topology_ring
 
     def __fully_connected(self):
+        """
+        Generates fully connected symmetric topology.
+        """
         topology_fully_connected = np.array(
             nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, self.n - 1, 0)),
             dtype=np.float32,
