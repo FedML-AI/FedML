@@ -492,7 +492,7 @@ class FedMLLaunchManager(object):
 
         return -1, "Login failed"
 
-    def check_match_result(self, result, yaml_file):
+    def check_match_result(self, result, yaml_file, prompt=True):
         if result.status == Constants.JOB_START_STATUS_INVALID:
             click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
                        f"to make sure the syntax is valid, e.g. "
@@ -505,6 +505,8 @@ class FedMLLaunchManager(object):
             return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
         elif result.status == Constants.JOB_START_STATUS_QUEUED:
             click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
+            if not prompt:
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
             if click.confirm("Do you want to join the queue?", abort=False):
                 click.echo("You have confirmed to keep your job in the waiting list.")
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
@@ -512,7 +514,7 @@ class FedMLLaunchManager(object):
                 FedMLJobManager.get_instance().set_config_version(self.config_version)
                 FedMLJobManager.get_instance().stop_job(self.platform_type, result.job_id,
                                                         FedMLLaunchManager.get_api_key())
-                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
             click.echo("Please bind your credit card before launching the job.")
             return ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST
@@ -552,9 +554,10 @@ class FedMLLaunchManager(object):
 
     # inputs: yaml file
     # return: resource_id, error_code (0 means successful), error_message,
-    def api_match_resources(self, yaml_file):
+    def api_match_resources(self, yaml_file, prompt=True):
         """
         launch a job
+        :param prompt:
         :param yaml_file: full path of your job yaml file
         :returns: str: resource id, int: error code (0 means successful), str: error message
         """
@@ -564,7 +567,7 @@ class FedMLLaunchManager(object):
                                                               self.platform_type,
                                                               "", "")
         if result is not None:
-            checked_result = self.check_match_result(result, yaml_file[0])
+            checked_result = self.check_match_result(result, yaml_file, prompt=prompt)
             if checked_result != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
                 return None, ApiConstants.ERROR_CODE[checked_result], checked_result
 
@@ -689,7 +692,7 @@ class FedMLLaunchManager(object):
 
         # Show job log summary info
         log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
-        log_head_table.add_row([job_id[0], job_logs.total_num, job_logs.log_full_url])
+        log_head_table.add_row([job_id, job_logs.total_num, job_logs.log_full_url])
         click.echo("\nLogs summary info is as follows.")
         print(log_head_table)
 
@@ -710,7 +713,7 @@ class FedMLLaunchManager(object):
                 click.echo(str(log_line).rstrip('\n'))
 
             for page_count in range(2, job_logs.total_pages+1):
-                job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
+                job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_count,
                                                                        Constants.JOB_LOG_PAGE_SIZE, api_key)
                 for log_line in job_logs.log_lines:
                     log_line_list.append(log_line)

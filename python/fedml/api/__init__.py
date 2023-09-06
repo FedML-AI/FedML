@@ -38,7 +38,7 @@ def match_resources(yaml_file):
     :param yaml_file: full path of your job yaml file
     :returns: str: resource id, int: error code (0 means successful), str: error message
     """
-    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file)
+    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, prompt=False)
 
 
 # inputs: yaml file, resource id

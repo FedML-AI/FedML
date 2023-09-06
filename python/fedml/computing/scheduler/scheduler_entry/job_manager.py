@@ -266,7 +266,12 @@ class FedMLJobManager(Singleton):
             message = resp_data.get("message", "")
             data = resp_data.get("data", None)
             if code == "SUCCESS" and data is not None:
-                return data
+                resource_list = list()
+                for resource_item in data:
+                    gpu_type = resource_item.get("gpuType", None)
+                    resource_type = resource_item.get("resourceType", None)
+                    resource_list.append((resource_type, gpu_type))
+                return resource_list
 
         return None
 
