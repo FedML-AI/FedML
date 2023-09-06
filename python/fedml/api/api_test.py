@@ -4,7 +4,10 @@ import time
 import fedml
 
 # Login
-fedml.api.fedml_login(version="dev")
+error_code, error_msg = fedml.api.fedml_login(version="dev")
+if error_code != 0:
+    print("API Key is invalid!")
+    exit(1)
 
 # Yaml file
 cur_dir = os.path.dirname(__file__)
