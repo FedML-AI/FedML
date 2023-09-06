@@ -25,7 +25,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a71"
+__version__ = "0.8.8a75"
 
 
 def init(args=None, check_env=True, should_init_logs=True):
@@ -386,7 +386,8 @@ def update_client_id_list(args):
                     print("------------------client client_id_list = {}-------------------".format(args.client_id_list))
             else:
                 print(
-                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
+                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != "
+                    "FEDML_TRAINING_PLATFORM_CROSS_SILO"
                 )
         else:
             print("args.client_id_list is not None")
@@ -431,6 +432,8 @@ from .core.common.ml_engine_backend import MLEngineBackend
 
 from .runner import FedMLRunner
 
+from fedml import api
+
 __all__ = [
     "MLEngineBackend",
     "device",
@@ -448,4 +451,5 @@ __all__ = [
     "run_model_serving_client",
     "run_model_serving_server",
     "run_mnn_server",
+    "api"
 ]

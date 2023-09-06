@@ -518,7 +518,9 @@ def log_sys_perf(sys_args=None):
     if sys_args is not None:
         MLOpsStore.mlops_args = sys_args
 
-    MLOpsMetrics.report_sys_perf(MLOpsStore.mlops_args)
+    sys_metrics = MLOpsMetrics()
+    sys_metrics.report_sys_perf(MLOpsStore.mlops_args,
+                                MLOpsStore.mlops_log_agent_config["mqtt_config"])
 
 
 def stop_sys_perf():
@@ -626,6 +628,24 @@ def log_model(model_name, model_file_path, version=None):
     model_artifact = fedml.mlops.Artifact(name=model_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_MODEL)
     model_artifact.add_file(model_file_path)
     log_artifact(model_artifact, version=version)
+
+
+def log_metric(metrics):
+    fedml_args = get_fedml_args()
+
+    metrics_obj = dict()
+    for k, v in metrics.items():
+        metrics_obj[k] = v
+    metrics_obj["run_id"] = str(MLOpsStore.mlops_run_id)
+    metrics_obj["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
+
+    logging.info("metrics to be uploaded {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
+
+    setup_log_mqtt_mgr()
+    MLOpsStore.mlops_log_metrics_lock.acquire()
+    MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
+    MLOpsStore.mlops_log_metrics.clear()
+    MLOpsStore.mlops_log_metrics_lock.release()
 
 
 def log_round_info(total_rounds, round_index):

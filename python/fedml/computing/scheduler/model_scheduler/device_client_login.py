@@ -4,8 +4,11 @@ import json
 import os
 import platform
 import time
+import traceback
 
 import click
+
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_runner import FedMLClientRunner
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 
@@ -66,6 +69,8 @@ def __login_as_client(args, userid, version):
                 setattr(runner.args, "log_server_url", log_server_url)
             break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_1, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             config_try_count += 1
             time.sleep(3)
             continue
@@ -113,6 +118,8 @@ def __login_as_client(args, userid, version):
                 runner.edge_id = edge_id
                 break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             register_try_count += 1
             time.sleep(3)
             continue
