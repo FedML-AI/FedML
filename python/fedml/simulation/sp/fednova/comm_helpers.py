@@ -7,16 +7,21 @@ FedNova Optimizer comm_helper implementation cited from https://github.com/JYWa/
 
 def flatten_tensors(tensors):
     """
+    Flatten a list of dense tensors into a contiguous 1D buffer.
+
     Reference: https://github.com/facebookresearch/stochastic_gradient_push
-    Flatten dense tensors into a contiguous 1D buffer. Assume tensors are of
-    same dense type.
+    This function takes a list of dense tensors and flattens them into a single
+    contiguous 1D buffer. It assumes that all input tensors are of the same dense type.
+
     Since inputs are dense, the resulting tensor will be a concatenated 1D
     buffer. Element-wise operation on this buffer will be equivalent to
     operating individually.
-    Arguments:
-        tensors (Iterable[Tensor]): dense tensors to flatten.
+
+    Args:
+        tensors (Iterable[Tensor]): The list of dense tensors to flatten.
+
     Returns:
-        A 1D buffer containing input tensors.
+        Tensor: A 1D buffer containing the flattened input tensors.
     """
     if len(tensors) == 1:
         return tensors[0].view(-1).clone()
@@ -27,15 +32,19 @@ def flatten_tensors(tensors):
 def unflatten_tensors(flat, tensors):
     """
     Reference: https://github.com/facebookresearch/stochastic_gradient_push
-    View a flat buffer using the sizes of tensors. Assume that tensors are of
-    same dense type, and that flat is given by flatten_dense_tensors.
-    Arguments:
-        flat (Tensor): flattened dense tensors to unflatten.
-        tensors (Iterable[Tensor]): dense tensors whose sizes will be used to
-            unflatten flat.
+    Unflatten a flat buffer into a list of tensors using their original sizes.
+
+    This function takes a flat buffer and unflattens it into a list of tensors using
+    the sizes of the original tensors. It assumes that all input tensors are of the
+    same dense type and that the flat buffer was generated using `flatten_tensors`.
+
+    Args:
+        flat (Tensor): The flattened dense tensors to unflatten.
+        tensors (Iterable[Tensor]): The dense tensors whose sizes will be used to
+            unflatten the flat buffer.
+
     Returns:
-        Unflattened dense tensors with sizes same as tensors and values from
-        flat.
+        tuple: Unflattened dense tensors with sizes same as `tensors` and values from `flat`.
     """
     outputs = []
     offset = 0
@@ -48,13 +57,18 @@ def unflatten_tensors(flat, tensors):
 
 def communicate(tensors, communication_op):
     """
+    Communicate a list of tensors using a specified communication operation.
+
     Reference: https://github.com/facebookresearch/stochastic_gradient_push
-    Communicate a list of tensors.
-    Arguments:
-        tensors (Iterable[Tensor]): list of tensors.
-        communication_op: a method or partial object which takes a tensor as
-            input and communicates it. It can be a partial object around
-            something like torch.distributed.all_reduce.
+    This function takes a list of tensors and communicates them using a specified
+    communication operation. It assumes that the communication_op can handle the
+    provided tensors appropriately, such as performing an all-reduce operation.
+
+    Args:
+        tensors (Iterable[Tensor]): List of tensors to be communicated.
+        communication_op: A method or partial object which takes a tensor as input
+            and communicates it. It can be a partial object around something like
+            `torch.distributed.all_reduce`.
     """
     flat_tensor = flatten_tensors(tensors)
     communication_op(tensor=flat_tensor)

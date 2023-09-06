@@ -15,6 +15,16 @@ from .client import Client
 
 
 class FedProxTrainer(object):
+    """
+    Federated Proximal Trainer for a federated learning model.
+
+    Args:
+        dataset (list): A list containing various dataset components.
+        model (nn.Module): The federated learning model.
+        device (torch.device): Device for training (e.g., "cpu" or "cuda").
+        args (argparse.Namespace): Command-line arguments.
+    """
+
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
@@ -51,6 +61,15 @@ class FedProxTrainer(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up federated clients.
+
+        Args:
+            train_data_local_num_dict (dict): Number of local training samples for each client.
+            train_data_local_dict (dict): Local training datasets for clients.
+            test_data_local_dict (dict): Local test datasets for clients.
+            model_trainer (ModelTrainer): Trainer for the client's model.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -66,6 +85,14 @@ class FedProxTrainer(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Train the federated model using federated learning.
+
+        This method performs federated learning by aggregating client updates.
+
+        Returns:
+            None
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -126,6 +153,17 @@ class FedProxTrainer(object):
         mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Sample a subset of clients for communication in a round.
+
+        Args:
+            round_idx (int): Index of the communication round.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to sample per round.
+
+        Returns:
+            list: List of sampled client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -136,6 +174,12 @@ class FedProxTrainer(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation dataset from the test dataset.
+
+        Args:
+            num_samples (int): Number of samples to include in the validation set (default is 10,000).
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -143,11 +187,26 @@ class FedProxTrainer(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate local model weights from multiple clients.
+
+        Args:
+            w_locals (list): List of local model weights.
+
+        Returns:
+            dict: Averaged global model weights.
+        """
         avg_params = FedMLAggOperator.agg(self.args, w_locals)
         return avg_params
 
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients in the federation.
+
+        Args:
+            round_idx (int): Index of the communication round.
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -209,6 +268,12 @@ class FedProxTrainer(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on all clients on validation set.
+
+        Args:
+            round_idx (int): Index of the communication round.
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 

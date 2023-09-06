@@ -12,6 +12,15 @@ from .client import Client
 
 class FedAvgAPI(object):
     def __init__(self, args, device, dataset, model):
+        """
+        Initialize the FedAvgAPI.
+
+        Args:
+            args (object): Arguments object containing configuration settings.
+            device (object): Device on which to perform computations.
+            dataset (list): List containing dataset information.
+            model (object): Machine learning model.
+        """
         self.device = device
         self.args = args
         [
@@ -46,6 +55,15 @@ class FedAvgAPI(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up the clients for federated training.
+
+        Args:
+            train_data_local_num_dict (dict): Dictionary containing the number of local training samples for each client.
+            train_data_local_dict (dict): Dictionary containing local training data for each client.
+            test_data_local_dict (dict): Dictionary containing local test data for each client.
+            model_trainer (object): Model trainer object.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -60,6 +78,9 @@ class FedAvgAPI(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Perform federated training using the FedAvg algorithm.
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         for round_idx in range(self.args.comm_round):
@@ -108,6 +129,17 @@ class FedAvgAPI(object):
                     self._local_test_on_all_clients(round_idx)
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Sample a subset of clients for federated training.
+
+        Args:
+            round_idx (int): Index of the communication round.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to select for the current round.
+
+        Returns:
+            list: List of selected client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -118,6 +150,16 @@ class FedAvgAPI(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set by randomly sampling from the global test dataset.
+
+        Args:
+            num_samples (int, optional): Number of samples to include in the validation set. Default is 10,000.
+
+        Note:
+            This function samples `num_samples` from the global test dataset and stores it as the validation set (`self.val_global`).
+
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -125,6 +167,16 @@ class FedAvgAPI(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate local model parameters weighted by the number of samples.
+
+        Args:
+            w_locals (list): List of tuples, where each tuple contains the number of local samples and local model parameters.
+
+        Returns:
+            dict: Averaged global model parameters.
+
+        """
         training_num = 0
         for idx in range(len(w_locals)):
             (sample_num, averaged_params) = w_locals[idx]
@@ -143,10 +195,17 @@ class FedAvgAPI(object):
 
     def _aggregate_noniid_avg(self, w_locals):
         """
-        The old aggregate method will impact the model performance when it comes to Non-IID setting
+        Aggregate local model parameters using a simple average, suitable for Non-IID settings.
+
         Args:
-            w_locals:
+            w_locals (list): List of tuples, where each tuple contains the number of local samples and local model parameters.
+
         Returns:
+            dict: Averaged global model parameters.
+
+        Note:
+            In Non-IID settings, where the data distribution among clients is not identical, a simple average of local model parameters may be used for aggregation. This method averages the model parameters across clients for each parameter independently.
+
         """
         (_, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
@@ -157,6 +216,16 @@ class FedAvgAPI(object):
         return averaged_params
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients and log the results.
+
+        Args:
+            round_idx (int): The current communication round index.
+
+        Note:
+            This function iterates over all clients and performs testing on both training and test datasets. It then logs the training and test accuracy along with losses.
+
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -212,6 +281,13 @@ class FedAvgAPI(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on the validation set and log the results.
+
+        Args:
+            round_idx (int): The current communication round index.
+
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 

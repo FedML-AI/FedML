@@ -5,8 +5,12 @@ import torch
 
 
 class OptRepo:
-    """Collects and provides information about the subclasses of torch.optim.Optimizer."""
+    """
+    Collects and provides information about the subclasses of torch.optim.Optimizer.
 
+    This class allows you to retrieve optimizer classes by name and obtain information about supported optimizers.
+    """
+    
     repo = {x.__name__.lower(): x for x in torch.optim.Optimizer.__subclasses__()}
 
     @classmethod
