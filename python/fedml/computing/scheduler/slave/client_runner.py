@@ -612,6 +612,12 @@ class FedMLClientRunner:
         self.mlops_metrics.edge_id = edge_id
         self.mlops_metrics.broadcast_client_training_status(edge_id, status)
 
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+            self.mlops_metrics.common_report_client_id_status(self.run_id, edge_id,
+                                                              status,
+                                                              server_id=self.server_id)
+
     def stop_run(self):
         logging.info("Stop run successfully.")
 
