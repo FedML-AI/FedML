@@ -86,7 +86,13 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            job_start_result = FedMLJobStartedModel(resp_data["data"], response=resp_data)
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
+                print(f"Launch job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+            job_start_result = FedMLJobStartedModel(data, response=resp_data)
 
         return job_start_result
 
@@ -126,11 +132,17 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
                 print(f"List job with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return None
-            job_list_result = FedMLJobModelList(resp_data["data"])
+            job_list_json = data.get("jobList", None)
+            if job_list_json is None:
+                return None
+
+            job_list_result = FedMLJobModelList(data)
 
         return job_list_result
 
@@ -166,7 +178,9 @@ class FedMLJobManager(Singleton):
             return False
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
                 print(f"Stop job with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return False
@@ -209,11 +223,14 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
                 print(f"Get job logs with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return None
-            job_log_list_result = FedMLJobLogModelList(resp_data["data"])
+
+            job_log_list_result = FedMLJobLogModelList(data)
 
         return job_log_list_result
 
@@ -333,7 +350,7 @@ class FedMLGpuDevices(object):
 
 class FedMLJobModelList(object):
     def __init__(self, job_list_json):
-        job_list_data = job_list_json["jobList"]
+        job_list_data = job_list_json.get("jobList", [])
         self.job_list = list()
         for job_obj_json in job_list_data:
             job_obj = FedMLJobModel(job_obj_json)
