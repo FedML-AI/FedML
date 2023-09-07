@@ -686,9 +686,13 @@ class FedMLLaunchManager(object):
         # Get job logs
         if not need_all_logs:
             job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_num, page_size, api_key)
+            if job_logs is None:
+                return job_status, 0, 0, None
             return job_status, job_logs.total_num, job_logs.total_pages, job_logs.log_lines
 
         job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
+        if job_logs is None:
+            return job_status, 0, 0, None
 
         # Show job log summary info
         log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
