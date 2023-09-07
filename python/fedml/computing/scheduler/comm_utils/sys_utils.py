@@ -620,6 +620,23 @@ def check_fedml_is_latest_version(configuration_env="release"):
         return True, local_fedml_version, fedml_version_list[0]
 
     return False, local_fedml_version, fedml_version_list[0]
+    # if configuration_env != "release":
+    #     if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
+    #         return True, local_fedml_version, fedml_version_list[0]
+    #
+    #     return False, local_fedml_version, fedml_version_list[0]
+    # else:
+    #     local_fedml_ver_info = version.parse(local_fedml_version)
+    #     for remote_ver_item in fedml_version_list:
+    #         remote_fedml_ver_info = version.parse(remote_ver_item)
+    #         if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
+    #                 remote_fedml_ver_info.is_devrelease:
+    #             continue
+    #
+    #         if local_fedml_ver_info < remote_fedml_ver_info:
+    #             return False, local_fedml_version, remote_ver_item
+    #         else:
+    #             return True, local_fedml_version, fedml_version_list[0]
 
 
 def daemon_ota_upgrade(in_args):
@@ -806,7 +823,7 @@ def get_sys_realtime_stats():
 
 
 if __name__ == '__main__':
-    fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
+    fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("release")
     print("FedML is latest version: {}, local version {}, remote version {}".format(
         fedml_is_latest_version, local_ver, remote_ver))
-    do_upgrade("release", remote_ver)
+    # do_upgrade("release", remote_ver)

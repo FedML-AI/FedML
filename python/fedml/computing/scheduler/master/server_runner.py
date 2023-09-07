@@ -741,7 +741,7 @@ class FedMLServerRunner:
 
         self.set_all_devices_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
-    def cleanup_run_when_finished(self):
+    def cleanup_run_when_finished(self, should_send_server_id_status=True):
         if self.run_as_cloud_agent:
             self.stop_cloud_server()
 
@@ -751,9 +751,10 @@ class FedMLServerRunner:
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id
         )
 
-        self.mlops_metrics.report_server_id_status(self.run_id,
-                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                   edge_id=self.edge_id)
+        if should_send_server_id_status:
+            self.mlops_metrics.report_server_id_status(self.run_id,
+                                                       ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+                                                       edge_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -773,7 +774,7 @@ class FedMLServerRunner:
         except Exception as e:
             pass
 
-    def cleanup_run_when_starting_failed(self):
+    def cleanup_run_when_starting_failed(self, should_send_server_id_status=True):
         if self.run_as_cloud_agent:
             self.stop_cloud_server()
 
@@ -783,8 +784,9 @@ class FedMLServerRunner:
                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
                                                             edge_id=self.edge_id)
 
-        self.mlops_metrics.report_server_id_status(self.run_id,
-                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        if should_send_server_id_status:
+            self.mlops_metrics.report_server_id_status(self.run_id,
+                                                       ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -844,33 +846,30 @@ class FedMLServerRunner:
             self.process_job_status(run_id)
 
     def ota_upgrade(self, payload, request_json):
-        no_upgrade = False
-        upgrade_version = None
         run_id = request_json["runId"]
+        force_ota = False
+        ota_version = None
 
         try:
             run_config = request_json.get("run_config", None)
             parameters = run_config.get("parameters", None)
             common_args = parameters.get("common_args", None)
-            no_upgrade = common_args.get("no_upgrade", False)
-            upgrade_version = common_args.get("upgrade_version", None)
+            force_ota = common_args.get("force_ota", False)
+            ota_version = common_args.get("ota_version", None)
         except Exception as e:
             pass
 
-        should_upgrade = True
-        if upgrade_version is None or upgrade_version == "latest":
+        if force_ota and ota_version is not None:
+            should_upgrade = True
+            upgrade_version = ota_version
+        else:
             try:
-                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                    check_fedml_is_latest_version(self.version)
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
                 return
 
-            if fedml_is_latest_version:
-                should_upgrade = False
+            should_upgrade = False if fedml_is_latest_version else True
             upgrade_version = remote_ver
-
-        if no_upgrade:
-            should_upgrade = False
 
         if should_upgrade:
             job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
@@ -1440,10 +1439,10 @@ class FedMLServerRunner:
     def cleanup_client_with_status(self):
         if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
             logging.info("received to finished status.")
-            self.cleanup_run_when_finished()
+            self.cleanup_run_when_finished(should_send_server_id_status=False)
         elif self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
             logging.info("received to failed status.")
-            self.cleanup_run_when_starting_failed()
+            self.cleanup_run_when_starting_failed(should_send_server_id_status=False)
 
     def callback_report_current_status(self, topic, payload):
         logging.info(
