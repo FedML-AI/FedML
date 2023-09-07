@@ -5,7 +5,11 @@ from .constants import FEDML_TRAINING_PLATFORM_CROSS_SILO
 
 
 def run_cross_silo_server():
-    """FedML Octopus"""
+    """
+    Run the server for the FedML Octopus platform using Cross-Silo training.
+
+    This function initializes the server, loads data, and starts training for the Cross-Silo Octopus platform.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
@@ -26,7 +30,11 @@ def run_cross_silo_server():
 
 
 def run_cross_silo_client():
-    """FedML Octopus"""
+    """
+    Run a client for the FedML Octopus platform using Cross-Silo training.
+
+    This function initializes a client, loads data, and starts training for the Cross-Silo Octopus platform.
+    """
     global _global_training_type
     _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 

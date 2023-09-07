@@ -32,7 +32,17 @@ def init(args=None, check_env=True, should_init_logs=True):
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
-    """Initialize FedML Engine."""
+    """
+    Initialize the FedML Engine.
+
+    Args:
+        args (argparse.Namespace, optional): Command-line arguments. Defaults to None.
+        check_env (bool, optional): Whether to check the environment. Defaults to True.
+        should_init_logs (bool, optional): Whether to initialize logs. Defaults to True.
+
+    Returns:
+        argparse.Namespace: Updated command-line arguments.
+    """
     if check_env:
         collect_env(args)
 
@@ -120,6 +130,12 @@ def init(args=None, check_env=True, should_init_logs=True):
 
 
 def print_args(args):
+    """
+    Print the arguments to the log, excluding sensitive paths.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+    """
     mqtt_config_path = None
     s3_config_path = None
     args_copy = args
@@ -138,7 +154,9 @@ def print_args(args):
 
 def update_client_specific_args(args):
     """
-        data_silo_config is used for reading specific configuration for each client
+    Update client-specific arguments based on data_silo_config.
+
+    data_silo_config is used for reading specific configuration for each client
         Example: In fedml_config.yaml, we have the following configuration
         client_specific_args: 
             data_silo_config: 
@@ -149,6 +167,9 @@ def update_client_specific_args(args):
                     fedml_config/data_silo_4_config.yaml,
                 ]
             data_silo_1_config.yaml contains some client client speicifc arguments.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
     """
     if (
         hasattr(args, "data_silo_config")
@@ -166,7 +187,17 @@ def update_client_specific_args(args):
 
 
 def init_simulation_mpi(args):
+    
     from mpi4py import MPI
+    """
+    Initialize MPI-based simulation.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        argparse.Namespace: Updated command-line arguments.
+    """
 
     comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
@@ -183,14 +214,35 @@ def init_simulation_mpi(args):
 
 
 def init_simulation_sp(args):
+    """
+    Initialize single-process simulation.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        argparse.Namespace: Updated command-line arguments.
+    """
     return args
 
 
 def init_simulation_nccl(args):
+    """
+    Initialize NCCL-based simulation.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+    """
     return
 
 
 def manage_profiling_args(args):
+    """
+    Manage profiling-related arguments and configurations.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+    """
     if not hasattr(args, "sys_perf_profiling"):
         args.sys_perf_profiling = True
     if not hasattr(args, "sys_perf_profiling"):
@@ -236,6 +288,12 @@ def manage_profiling_args(args):
 
 
 def manage_cuda_rpc_args(args):
+    """
+    Manage CUDA RPC-related arguments and configurations.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+    """
 
     if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
         args.enable_cuda_rpc = False
@@ -264,6 +322,12 @@ def manage_cuda_rpc_args(args):
 
 
 def manage_mpi_args(args):
+    """
+    Manage MPI-related arguments and configurations.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+    """
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
 
@@ -282,6 +346,15 @@ def manage_mpi_args(args):
         args.comm = None
 
 def init_cross_silo_horizontal(args):
+    """
+    Initialize the cross-silo training for the horizontal scenario.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        args (argparse.Namespace): Updated command-line arguments.
+    """
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_mpi_args(args)
@@ -291,6 +364,15 @@ def init_cross_silo_horizontal(args):
 
 
 def init_cross_silo_hierarchical(args):
+    """
+    Initialize the cross-silo training for the hierarchical scenario.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        args (argparse.Namespace): Updated command-line arguments.
+    """
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
 
@@ -344,6 +426,15 @@ def init_cross_silo_hierarchical(args):
 
 
 def init_cheetah(args):
+    """
+    Initialize the CheetaH training scenario.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        args (argparse.Namespace): Updated command-line arguments.
+    """
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_mpi_args(args)
@@ -353,6 +444,15 @@ def init_cheetah(args):
 
 
 def init_model_serving(args):
+    """
+    Initialize the model serving scenario.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        args (argparse.Namespace): Updated command-line arguments.
+    """
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_cuda_rpc_args(args)
@@ -361,10 +461,12 @@ def init_model_serving(args):
 
 
 def update_client_id_list(args):
-
     """
-        generate args.client_id_list for CLI mode where args.client_id_list is set to None
-        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
+    Generate args.client_id_list for the CLI mode where args.client_id_list is set to None.
+    In MLOps mode, args.client_id_list will be set to a real-time client id list selected by the UI (not starting from 1).
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
     """
     if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
         if not hasattr(args, "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
@@ -396,12 +498,24 @@ def update_client_id_list(args):
 
 
 def init_cross_device(args):
+    """
+    Initialize the cross-device training scenario.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        args (argparse.Namespace): Updated command-line arguments.
+    """
     args.rank = 0  # only server runs on Python package
     args.role = "server"
     return args
 
 
 def run_distributed():
+    """
+    Placeholder function for running distributed training.
+    """
     pass
 
 

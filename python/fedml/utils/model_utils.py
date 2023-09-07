@@ -9,7 +9,13 @@ import torch.nn as nn
 
 def get_weights(state):
     """
-    Returns list of weights from state_dict
+    Returns a list of weights from a state_dict.
+
+    Args:
+        state (dict or None): A PyTorch state_dict or None.
+
+    Returns:
+        list or None: A list of tensor weights or None if the state is None.
     """
     if state is not None:
         return list(state.values())
@@ -18,6 +24,12 @@ def get_weights(state):
 
 
 def clear_optim_buffer(optimizer):
+    """
+    Clears the optimizer's momentum buffers for each parameter.
+
+    Args:
+        optimizer: A PyTorch optimizer.
+    """
     for group in optimizer.param_groups:
         for p in group["params"]:
             param_state = optimizer.state[p]
@@ -30,6 +42,13 @@ def clear_optim_buffer(optimizer):
 
 
 def optimizer_to(optim, device):
+    """
+    Moves the optimizer's state and associated tensors to the specified device.
+
+    Args:
+        optim (torch.optim.Optimizer): A PyTorch optimizer.
+        device (torch.device): The target device (e.g., 'cuda' or 'cpu').
+    """
     for param in optim.state.values():
         # Not sure there are any global tensors in the state dict
         if isinstance(param, torch.Tensor):
@@ -45,6 +64,16 @@ def optimizer_to(optim, device):
 
 
 def move_to_cpu(model, optimizer):
+    """
+    Moves a PyTorch model and its associated optimizer to the CPU device.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model.
+        optimizer (torch.optim.Optimizer): The optimizer associated with the model.
+
+    Returns:
+        torch.nn.Module: The model after moving it to the CPU.
+    """
     if str(next(model.parameters()).device) == "cpu":
         pass
     else:
@@ -56,6 +85,17 @@ def move_to_cpu(model, optimizer):
 
 
 def move_to_gpu(model, optimizer, device):
+    """
+    Moves a PyTorch model and its associated optimizer to the specified GPU device.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model.
+        optimizer (torch.optim.Optimizer): The optimizer associated with the model.
+        device (str or torch.device): The target GPU device, e.g., 'cuda:0'.
+
+    Returns:
+        torch.nn.Module: The model after moving it to the GPU.
+    """
     if str(next(model.parameters()).device) == "cpu":
         model = model.to(device)
     else:
@@ -72,9 +112,15 @@ def move_to_gpu(model, optimizer, device):
 
 def get_named_data(model, mode="MODEL", use_cuda=True):
     """
-        getting the whole model and getting the gradients can be conducted
-        by using different methods for reducing the communication.
-        `model` choices: ['MODEL', 'GRAD', 'MODEL+GRAD'] 
+    Get various components of a PyTorch model based on the specified mode.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model.
+        mode (str): Mode for extracting components ('MODEL', 'GRAD', or 'MODEL+GRAD').
+        use_cuda (bool): Whether to use CUDA (GPU) for extraction.
+
+    Returns:
+        dict: A dictionary containing the requested components.
     """
     if mode == "MODEL":
         own_state = model.cpu().state_dict()
@@ -113,6 +159,17 @@ def get_named_data(model, mode="MODEL", use_cuda=True):
 
 
 def get_bn_params(prefix, module, use_cuda=True):
+    """
+    Get batch normalization parameters with the specified prefix.
+
+    Args:
+        prefix (str): Prefix for parameter names.
+        module (nn.BatchNorm2d): Batch normalization module.
+        use_cuda (bool): Whether to use CUDA (GPU) for extraction.
+
+    Returns:
+        dict: A dictionary containing batch normalization parameters.
+    """
     bn_params = {}
     if use_cuda:
         bn_params[f"{prefix}.weight"] = module.weight
@@ -130,6 +187,16 @@ def get_bn_params(prefix, module, use_cuda=True):
 
 
 def get_all_bn_params(model, use_cuda=True):
+    """
+    Get all batch normalization parameters from a PyTorch model.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model.
+        use_cuda (bool): Whether to use CUDA (GPU) for extraction.
+
+    Returns:
+        dict: A dictionary containing all batch normalization parameters.
+    """
     all_bn_params = {}
     for module_name, module in model.named_modules():
         #     print(f"key:{key}, module, {module}")
@@ -146,6 +213,12 @@ def get_all_bn_params(model, use_cuda=True):
 
 
 def check_bn_status(bn_module):
+    """
+    Print and log batch normalization parameters and status.
+
+    Args:
+        bn_module (nn.BatchNorm2d): Batch normalization module.
+    """
     logging.info(f"weight: {bn_module.weight[:10].mean()}")
     logging.info(f"bias: {bn_module.bias[:10].mean()}")
     logging.info(f"running_mean: {bn_module.running_mean[:10].mean()}")
@@ -159,10 +232,15 @@ def check_bn_status(bn_module):
 
 def average_named_params(named_params_list, average_weights_dict_list, inplace=True):
     """
-        This is a weighted average operation.
-        average_weights_dict_list: includes weights with respect to clients. Same for each param.
-        inplace:  Whether change the first client's model inplace.
-        Note: This function also can be used to average gradients.
+    Average named parameters based on a list of parameters and their associated weights.
+
+    Args:
+        named_params_list (list): List of named parameters to be averaged.
+        average_weights_dict_list (list): List of weights for each set of named parameters.
+        inplace (bool): Whether to modify the first set of parameters in-place.
+
+    Returns:
+        dict: Averaged named parameters.
     """
     # logging.info("################aggregate: %d" % len(named_params_list))
 
@@ -219,6 +297,15 @@ def average_named_params(named_params_list, average_weights_dict_list, inplace=T
 
 
 def get_average_weight(sample_num_list):
+    """
+    Calculate average weights based on a list of sample numbers.
+
+    Args:
+        sample_num_list (list): List of sample numbers.
+
+    Returns:
+        list: List of average weights.
+    """
     # balance_sample_number_list = []
     average_weights_dict_list = []
     sum = 0
@@ -239,6 +326,16 @@ def get_average_weight(sample_num_list):
 
 
 def check_device(data_src, device=None):
+    """
+    Ensure data is on the specified device.
+
+    Args:
+        data_src: Data to be moved to the device.
+        device (str): Device to move the data to (e.g., 'cpu' or 'cuda').
+
+    Returns:
+        Data on the specified device.
+    """
     if device is not None:
         if data_src.device is not device:
             return data_src.to(device)
@@ -252,7 +349,16 @@ def check_device(data_src, device=None):
 
 
 def get_diff_weights(weights1, weights2):
-    """ Produce a direction from 'weights1' to 'weights2'."""
+    """
+    Calculate the difference between two sets of weights.
+
+    Args:
+        weights1: First set of weights.
+        weights2: Second set of weights.
+
+    Returns:
+        Difference between the two sets of weights.
+    """
     if isinstance(weights1, list) and isinstance(weights2, list):
         return [w2 - w1 for (w1, w2) in zip(weights1, weights2)]
     elif isinstance(weights1, torch.Tensor) and isinstance(weights2, torch.Tensor):
@@ -263,7 +369,14 @@ def get_diff_weights(weights1, weights2):
 
 def get_name_params_difference(named_parameters1, named_parameters2):
     """
-        return named_parameters2 - named_parameters1
+    Calculate the difference between two sets of named parameters.
+
+    Args:
+        named_parameters1 (dict): First set of named parameters.
+        named_parameters2 (dict): Second set of named parameters.
+
+    Returns:
+        dict: Dictionary containing the differences between common named parameters.
     """
     common_names = list(set(named_parameters1.keys()).intersection(set(named_parameters2.keys())))
     named_diff_parameters = {}
