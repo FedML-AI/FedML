@@ -35,7 +35,7 @@ class FedMLModelCards(Singleton):
         parms_dict = self.parse_lanuch_yaml(yaml_file)
         self.copy_launch_yaml_to_src_folder(src_folder, yaml_file)
         model_name = parms_dict["model_name"]
-        user_id = parms_dict["user_id"] # TODO: Abandon this, just use api key
+        user_id = parms_dict.get("FEDML_USER_ID", os.environ.get("FEDML_USER_ID", None))
         user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
         device_type = parms_dict.get("device_type", "md.on_premise_device")
         master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", None))
