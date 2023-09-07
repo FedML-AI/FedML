@@ -17,9 +17,57 @@ class BaseServer:
     Used to manage and aggregate results from local aggregators.
     We hope users does not need to modify this code.
     """
+    """
+    Used to manage and aggregate results from local aggregators.
+
+    Attributes:
+        device (str): The device associated with this server.
+        args: Command-line arguments.
+        trainer: The trainer used for training.
+        train_global: Global training data.
+        test_global: Global test data.
+        val_global: Global validation data.
+        train_data_num_in_total (int): The total number of training data points.
+        test_data_num_in_total (int): The total number of test data points.
+        train_data_local_num_dict: A dictionary containing local training data counts.
+        train_data_local_dict: A dictionary containing local training data.
+        test_data_local_dict: A dictionary containing local test data.
+        comm: Communication object.
+        rank (int): The rank of this server.
+        worker_number (int): The total number of workers (devices).
+        device_number (int): The total number of devices excluding the server.
+        groups (dict): A dictionary of communication groups.
+        client_runtime_history (dict): A history of client runtimes.
+
+    Methods:
+        client_sampling(round_idx, client_num_in_total, client_num_per_round):
+            Randomly sample clients for communication in a federated round.
+
+        simulate_all_tasks(server_params, client_indexes):
+            Simulate tasks for all selected clients and create localAggregatorToServerParams.
+
+        workload_estimate(client_indexes, mode="simulate"):
+            Estimate the workload of clients in a federated round.
+
+        memory_estimate(client_indexes, mode="simulate"):
+            Estimate the memory usage of clients in a federated round.
+    """
 
     # def __init__(self, args, trainer, device, dataset, comm=None, rank=0, size=0, backend="NCCL"):
     def __init__(self, args, rank, worker_number, comm, device, dataset, model, trainer):
+        """
+        Initialize the BaseServer object.
+
+        Args:
+            args: Command-line arguments.
+            rank (int): The rank of this server.
+            worker_number (int): The total number of workers (devices).
+            comm: Communication object.
+            device (str): The device associated with this server.
+            dataset: Dataset information.
+            model: The model used for federated learning.
+            trainer: The trainer used for training.
+        """
         self.device = device
         self.args = args
         self.trainer = trainer
@@ -56,6 +104,17 @@ class BaseServer:
         self.client_runtime_history = {}
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly sample clients for communication in a federated round.
+
+        Args:
+            round_idx (int): The index of the federated round.
+            client_num_in_total (int): The total number of clients in the dataset.
+            client_num_per_round (int): The number of clients to be sampled in each round.
+
+        Returns:
+            list: A list of client indexes sampled for communication.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -66,6 +125,16 @@ class BaseServer:
         return client_indexes
 
     def simulate_all_tasks(self, server_params, client_indexes):
+        """
+        Simulate tasks for all selected clients and create localAggregatorToServerParams.
+
+        Args:
+            server_params: Server parameters.
+            client_indexes (list): List of client indexes selected for communication.
+
+        Returns:
+            LocalAggregatorToServerParams: Parameters to be communicated to the local aggregators.
+        """
         localAggregatorToServerParams = LocalAggregatorToServerParams(None)
         # model_update = [torch.zeros_like(v) for v in get_weights(self.trainer.get_model_params())]
         # localAggregatorToServerParams.add_reduce_param(name="model_params",
@@ -81,6 +150,16 @@ class BaseServer:
         return localAggregatorToServerParams
 
     def workload_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the workload of clients in a federated round.
+
+        Args:
+            client_indexes (list): List of client indexes.
+            mode (str, optional): The mode for workload estimation (default is "simulate").
+
+        Returns:
+            list: A list of estimated client workloads.
+        """
         if mode == "simulate":
             client_samples = [self.train_data_local_num_dict[client_index] for client_index in client_indexes]
             workload = client_samples
@@ -91,6 +170,16 @@ class BaseServer:
         return workload
 
     def memory_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the memory usage of clients in a federated round.
+
+        Args:
+            client_indexes (list): List of client indexes.
+            mode (str, optional): The mode for memory estimation (default is "simulate").
+
+        Returns:
+            np.ndarray: An array representing the estimated memory usage for each client.
+        """
         if mode == "simulate":
             memory = np.ones(self.device_number)
         elif mode == "real":
@@ -100,6 +189,15 @@ class BaseServer:
         return memory
 
     def resource_estimate(self, mode="simulate"):
+        """
+        Estimate the resource usage of clients in a federated round.
+
+        Args:
+            mode (str, optional): The mode for resource estimation (default is "simulate").
+
+        Returns:
+            np.ndarray: An array representing the estimated resource usage for each client.
+        """
         if mode == "simulate":
             resource = np.ones(self.device_number)
         elif mode == "real":
@@ -109,6 +207,19 @@ class BaseServer:
         return resource
 
     def client_schedule(self, round_idx, client_num_in_total, client_num_per_round, server_params, mode="simulate"):
+        """
+        Schedule clients for communication in a federated round.
+
+        Args:
+            round_idx (int): The index of the federated round.
+            client_num_in_total (int): The total number of clients in the dataset.
+            client_num_per_round (int): The number of clients to be scheduled in each round.
+            server_params: Server parameters.
+            mode (str, optional): The mode for scheduling (default is "simulate").
+
+        Returns:
+            tuple: A tuple containing the selected client indexes and their schedule for communication.
+        """ 
         # scheduler(workloads, constraints, memory)
         client_indexes = self.client_sampling(round_idx, client_num_in_total, client_num_per_round)
         # workload = self.workload_estimate(client_indexes, mode)
@@ -129,6 +240,15 @@ class BaseServer:
         return client_indexes, client_schedule
 
     def get_average_weight(self, client_indexes):
+        """
+        Calculate the average weight for each client based on their training data size.
+
+        Args:
+            client_indexes (list): List of client indexes.
+
+        Returns:
+            dict: A dictionary mapping client indexes to their average weights.
+        """
         average_weight_dict = {}
         training_num = 0
         for client_index in client_indexes:
@@ -139,6 +259,13 @@ class BaseServer:
         return average_weight_dict
 
     def encode_average_weight_dict(self, server_params, average_weight_dict):
+        """
+        Encode the average weight dictionary into server parameters.
+
+        Args:
+            server_params: Server parameters.
+            average_weight_dict (dict): A dictionary mapping client indexes to their average weights.
+        """
         server_params.add_broadcast_param(
             name="average_weight_dict_keys", param=torch.tensor(list(average_weight_dict.keys()))
         )
@@ -147,12 +274,49 @@ class BaseServer:
         )
 
     def decode_average_weight_dict(self, server_params):
+        """
+        Decode the average weight dictionary received from the server.
+
+        This method is used to decode the average weight dictionary that was previously encoded and broadcasted
+        by the server. The average weight dictionary represents the weights assigned to each client based on
+        their training data size.
+
+        Args:
+            server_params (ServerToClientParams): The server parameters containing the average weight dictionary.
+
+        Returns:
+            dict: The decoded average weight dictionary.
+        """
         pass
 
     def record_client_runtime(self, client_runtimes):
+        """
+        Record the runtime of each client during a training round.
+
+        This method is used to record the runtime of each client during a training round. The client runtimes are
+        typically collected and communicated by the local aggregators.
+
+        Args:
+            client_runtimes (list): A list of client runtimes for each client.
+
+        Returns:
+            None
+        """
         pass
 
     def train(self):
+        """
+        Train the federated learning model using the server-client communication protocol.
+
+        This method implements the federated learning training process by coordinating communication
+        between the server and clients for multiple rounds of training.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         server_params = ServerToClientParams()
         server_params.add_broadcast_param(name="broadcastTest", param=torch.tensor([1, 2, 3]))
         server_params.broadcast()
@@ -198,6 +362,18 @@ class BaseServer:
             self.test_on_server_for_all_clients(round)
 
     def test_on_server_for_all_clients(self, round_idx):
+        """
+        Perform testing on the server for all clients after a certain number of rounds.
+
+        This method tests the federated learning model on both the training and test datasets
+        for all clients on the server side.
+
+        Args:
+            round_idx (int): The current round index.
+
+        Returns:
+            None
+        """
         if self.trainer.test_on_the_server(
             self.train_data_local_dict, self.test_data_local_dict, self.device, self.args,
         ):
