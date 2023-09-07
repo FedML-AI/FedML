@@ -642,6 +642,8 @@ def log_metric(metrics):
     logging.info("metrics to be uploaded {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
 
     setup_log_mqtt_mgr()
+    if MLOpsStore.mlops_log_metrics_lock is None:
+        MLOpsStore.mlops_log_metrics_lock = threading.Lock()
     MLOpsStore.mlops_log_metrics_lock.acquire()
     MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
     MLOpsStore.mlops_log_metrics.clear()
