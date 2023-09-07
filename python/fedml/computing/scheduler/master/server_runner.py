@@ -645,7 +645,8 @@ class FedMLServerRunner:
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
             process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf)
+                                                                                  callback=self.start_job_perf,
+                                                                                  error_processor=self.job_error_processor)
             is_launch_task = True
 
         return process, is_launch_task, error_list
@@ -653,6 +654,8 @@ class FedMLServerRunner:
     def start_job_perf(self, job_pid):
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
+    def job_error_processor(self, error_str):
+        raise Exception(f"Error occurs when running the job... {error_str}")
 
     def process_job_status(self, run_id):
         all_edges_is_finished = True
