@@ -250,9 +250,6 @@ class FedMLJobManager(Singleton):
             data = resp_data.get("data", False)
             if code == "SUCCESS" and data is True:
                 return True
-            else:
-                print(f"Check heartbeat with with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
 
         return False
 
