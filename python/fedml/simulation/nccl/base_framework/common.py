@@ -11,8 +11,14 @@ import torch.distributed as dist
 
 def get_weights(state):
     """
-    Returns list of weights from state_dict
-    """
+    Returns a list of weights from the state dictionary.
+
+    Args:
+        state (dict): The state dictionary containing model parameters.
+
+    Returns:
+        list or None: A list of model weights or None if the state is None.
+    """"
     if state is not None:
         return list(state.values())
     else:
@@ -20,12 +26,25 @@ def get_weights(state):
 
 
 def set_model_params_with_list(model, new_model_params):
+    """
+    Set the model parameters with a list of new parameters.
+
+    Args:
+        model: The model whose parameters will be updated.
+        new_model_params (list): A list of new model parameters.
+    """
     for model_param, model_update_param in zip(model.parameters(), new_model_params):
         print(f"model_param.shape: {model_param.shape}, model_update_param.shape: {model_update_param.shape}")
         # model_param.data = model_update_param
 
 
 def clear_optim_buffer(optimizer):
+    """
+    Clear the optimization buffer for momentum.
+
+    Args:
+        optimizer: The optimizer whose buffer will be cleared.
+    """
     for group in optimizer.param_groups:
         for p in group["params"]:
             param_state = optimizer.state[p]
@@ -38,6 +57,13 @@ def clear_optim_buffer(optimizer):
 
 
 def optimizer_to(optim, device):
+    """
+    Move optimizer parameters to the specified device.
+
+    Args:
+        optim: The optimizer whose parameters will be moved.
+        device (str): The target device (e.g., 'cpu' or 'cuda').
+    """
     for param in optim.state.values():
         # Not sure there are any global tensors in the state dict
         if isinstance(param, torch.Tensor):
@@ -53,6 +79,16 @@ def optimizer_to(optim, device):
 
 
 def move_to_cpu(model, optimizer):
+    """
+    Move the model and optimizer to the CPU.
+
+    Args:
+        model: The model to be moved.
+        optimizer: The optimizer to be moved.
+
+    Returns:
+        model: The model on the CPU.
+    """
     if str(next(model.parameters()).device) == "cpu":
         pass
     else:
@@ -64,6 +100,17 @@ def move_to_cpu(model, optimizer):
 
 
 def move_to_gpu(model, optimizer, device):
+    """
+    Move the model and optimizer to the specified GPU device.
+
+    Args:
+        model: The model to be moved.
+        optimizer: The optimizer to be moved.
+        device (str): The target GPU device (e.g., 'cuda').
+
+    Returns:
+        model: The model on the specified GPU device.
+    """
     if str(next(model.parameters()).device) == "cpu":
         model = model.to(device)
     else:
@@ -104,6 +151,16 @@ class CommState:
 
 
 def init_ddp(args):
+    """
+    Initialize Distributed Data Parallel (DDP) for training.
+
+    Args:
+        args: The arguments containing DDP configuration.
+
+    Returns:
+        global_rank (int): The global rank of the current process.
+        world_size (int): The total number of processes in the world.
+    """ 
     # use InfiniBand
     os.environ["NCCL_DEBUG"] = "INFO"
     os.environ["NCCL_SOCKET_IFNAME"] = "lo"
@@ -127,6 +184,15 @@ def init_ddp(args):
 
 
 def FedML_NCCL_Similulation_init(args):
+    """
+    Initialize NCCL-based simulation environment.
+
+    Args:
+        args: The arguments containing simulation configuration.
+
+    Returns:
+        args (object): The updated arguments.
+    """
     # dist.init_process_group(
     #     init_method='tcp://10.1.1.20:23456',
     #     rank=args.rank,
@@ -157,27 +223,74 @@ def FedML_NCCL_Similulation_init(args):
 
 
 def get_rank():
+    """
+    Get the rank of the current process in the distributed environment.
+
+    Returns:
+        int: The rank of the current process.
+    """
     return dist.get_rank()
 
-
 def get_server_rank():
+    """
+    Get the rank of the server process in the distributed environment.
+
+    Returns:
+        int: The rank of the server process.
+    """
     return CommState.server_rank
 
-
 def get_world_size():
+    """
+    Get the total number of processes in the distributed environment.
+
+    Returns:
+        int: The total number of processes.
+    """
     return dist.get_world_size()
 
-
 def get_worker_number():
+    """
+    Get the number of worker processes (excluding the server) in the distributed environment.
+
+    Returns:
+        int: The number of worker processes.
+    """
     return CommState.device_size
 
 
 def new_group(ranks):
+    """
+    Create a new process group with the specified ranks.
+
+    Args:
+        ranks (list): A list of ranks to include in the new group.
+
+    Returns:
+        dist.ProcessGroup: The new process group.
+    """
     return dist.new_group(ranks=ranks)
     # dist.new_group(ranks=None, timeout=datetime.timedelta(seconds=1800), backend=None, pg_options=None)
 
 
 def fedml_nccl_send_to_server(tensor, src=0, group=None):
+    """
+    Send a tensor from a device (GPU) to the server process.
+
+    Args:
+        tensor (torch.Tensor): The tensor to send.
+        src (int): The source rank of the sending process.
+        group (dist.ProcessGroup, optional): The process group to use for communication.
+
+    Note:
+        This function is used to send tensors from a device (GPU) to the server during communication.
+
+    Example:
+        ```python
+        fedml_nccl_send_to_server(my_tensor, src=1, group=my_group)
+        ```
+
+    """
     is_cuda = tensor.is_cuda
     # if not is_cuda:
     #     logging.info("Warning: Tensor is not on GPU!!!")
@@ -186,6 +299,22 @@ def fedml_nccl_send_to_server(tensor, src=0, group=None):
 
 
 def fedml_nccl_broadcast(tensor, src):
+    """
+    Broadcast a tensor from the server process to all devices (GPUs).
+
+    Args:
+        tensor (torch.Tensor): The tensor to broadcast.
+        src (int): The source rank of the broadcasting process.
+
+    Note:
+        This function is used to broadcast tensors from the server to all devices during communication.
+
+    Example:
+        ```python
+        fedml_nccl_broadcast(my_tensor, src=0)
+        ```
+
+    """
     is_cuda = tensor.is_cuda
     # if not is_cuda:
     #     logging.info("Warning: Tensor is not on GPU!!!")
@@ -195,7 +324,21 @@ def fedml_nccl_broadcast(tensor, src):
 
 def fedml_nccl_reduce(tensor, dst, op: ReduceOp = ReduceOp.SUM):
     """
-    :param op:  Currently only supports SUM and MEAN reduction ops
+    Reduce a tensor across processes with the specified reduction operation.
+
+    Args:
+        tensor (torch.Tensor): The tensor to reduce.
+        dst (int): The destination rank for the reduced tensor.
+        op (ReduceOp): The reduction operation (SUM or MEAN). Currently only supports SUM and MEAN reduction ops
+
+    Note:
+        This function is used to perform reduction operations (SUM or MEAN) on tensors across processes.
+
+    Example:
+        ```python
+        fedml_nccl_reduce(my_tensor, dst=0, op=ReduceOp.SUM)
+        ```
+
     """
     is_cuda = tensor.is_cuda
     # if not is_cuda:
@@ -216,10 +359,38 @@ def fedml_nccl_reduce(tensor, dst, op: ReduceOp = ReduceOp.SUM):
 
 
 def fedml_nccl_barrier():
+    """
+    Synchronize all processes in the distributed environment.
+
+    Note:
+        This function is used to ensure that all processes reach a barrier and synchronize their execution.
+
+    Example:
+        ```python
+        fedml_nccl_barrier()
+        ```
+
+    """
     dist.barrier()
 
 
 def broadcast_model_state(state_dict, src):
+    """
+    Broadcast the model's state dictionary from the server process to all devices (GPUs).
+
+    Args:
+        state_dict (dict): The model's state dictionary to broadcast.
+        src (int): The source rank of the broadcasting process.
+
+    Note:
+        This function is used to broadcast the model's state dictionary from the server to all devices during communication.
+
+    Example:
+        ```python
+        broadcast_model_state(my_state_dict, src=0)
+        ```
+
+    """
     # for name, param in state_dict.items():
     #     logging.info(f"name:{name}, param.shape: {param.shape}")
     for param in state_dict.values():
