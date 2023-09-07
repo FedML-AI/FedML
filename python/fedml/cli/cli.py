@@ -896,6 +896,12 @@ def env():
     help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
 def launch_cancel(job_id, platform, api_key, version):
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
+    api_key = FedMLLaunchManager.get_api_key()
     stop_jobs_core(platform, job_id[0], api_key, version)
 
 
@@ -921,7 +927,11 @@ def launch_cancel(job_id, platform, api_key, version):
     help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
 def launch_log(job_id, platform, api_key, version):
-    FedMLLaunchManager.get_instance().set_config_version(version)
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
     FedMLLaunchManager.get_instance().api_launch_log(job_id[0], 0, 0, need_all_logs=True)
 
 
