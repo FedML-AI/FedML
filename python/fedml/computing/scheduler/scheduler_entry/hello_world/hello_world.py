@@ -1,3 +1,5 @@
+import time
+
 import fedml
 
 if __name__ == "__main__":
@@ -23,3 +25,11 @@ if __name__ == "__main__":
     artifact.add_file("./requirements.txt")
     artifact.add_dir("./config")
     fedml.mlops.log_artifact(artifact)
+
+    acc = 0.1
+    loss = 2.0
+    for iter_count in range(20):
+        acc += 0.01
+        loss -= 0.02
+        fedml.mlops.log_metric({"acc": acc, "loss": loss})
+        time.sleep(1)
