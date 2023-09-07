@@ -706,7 +706,7 @@ class FedMLClientRunner:
 
         self.reset_devices_status(self.edge_id,
                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                                  send_client_id_status=False)
+                                  should_send_client_id_status=False)
 
         time.sleep(2)
 
