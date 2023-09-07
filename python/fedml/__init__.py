@@ -22,6 +22,56 @@ from .constants import (
 )
 from .core.common.ml_engine_backend import MLEngineBackend
 
+from fedml import device
+from fedml import data
+from fedml import model
+from fedml import mlops
+
+from .arguments import load_arguments
+
+from .launch_simulation import run_simulation
+
+from .launch_cross_silo_horizontal import run_cross_silo_server
+from .launch_cross_silo_horizontal import run_cross_silo_client
+
+from .launch_cross_silo_hi import run_hierarchical_cross_silo_server
+from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
+
+from .launch_cheeath import run_cheetah_server
+from .launch_cheeath import run_cheetah_client
+
+from .launch_serving import run_model_serving_client
+from .launch_serving import run_model_serving_server
+
+from .launch_cross_device import run_mnn_server
+
+from .core.common.ml_engine_backend import MLEngineBackend
+
+from .runner import FedMLRunner
+
+from fedml import api
+
+__all__ = [
+    "MLEngineBackend",
+    "device",
+    "data",
+    "model",
+    "mlops",
+    "FedMLRunner",
+    "run_simulation",
+    "run_cross_silo_server",
+    "run_cross_silo_client",
+    "run_hierarchical_cross_silo_server",
+    "run_hierarchical_cross_silo_client",
+    "run_cheetah_server",
+    "run_cheetah_client",
+    "run_model_serving_client",
+    "run_model_serving_server",
+    "run_mnn_server",
+    "api"
+]
+
+
 _global_training_type = None
 _global_comm_backend = None
 
@@ -517,53 +567,3 @@ def run_distributed():
     Placeholder function for running distributed training.
     """
     pass
-
-
-from fedml import device
-from fedml import data
-from fedml import model
-from fedml import mlops
-
-from .arguments import load_arguments
-
-from .launch_simulation import run_simulation
-
-from .launch_cross_silo_horizontal import run_cross_silo_server
-from .launch_cross_silo_horizontal import run_cross_silo_client
-
-from .launch_cross_silo_hi import run_hierarchical_cross_silo_server
-from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
-
-from .launch_cheeath import run_cheetah_server
-from .launch_cheeath import run_cheetah_client
-
-from .launch_serving import run_model_serving_client
-from .launch_serving import run_model_serving_server
-
-from .launch_cross_device import run_mnn_server
-
-from .core.common.ml_engine_backend import MLEngineBackend
-
-from .runner import FedMLRunner
-
-from fedml import api
-
-__all__ = [
-    "MLEngineBackend",
-    "device",
-    "data",
-    "model",
-    "mlops",
-    "FedMLRunner",
-    "run_simulation",
-    "run_cross_silo_server",
-    "run_cross_silo_client",
-    "run_hierarchical_cross_silo_server",
-    "run_hierarchical_cross_silo_client",
-    "run_cheetah_server",
-    "run_cheetah_client",
-    "run_model_serving_client",
-    "run_model_serving_server",
-    "run_mnn_server",
-    "api"
-]
