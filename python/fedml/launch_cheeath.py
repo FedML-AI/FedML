@@ -5,7 +5,11 @@ from .constants import FEDML_TRAINING_PLATFORM_CHEETAH
 
 
 def run_cheetah_server():
-    """FedML Cheetah"""
+    """
+    Run the server for the FedML Cheetah platform.
+
+    This function initializes the server, loads data, and starts training using the Cheetah server.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_CHEETAH
 
     args = fedml.init()
@@ -26,7 +30,11 @@ def run_cheetah_server():
 
 
 def run_cheetah_client():
-    """FedML Cheetah"""
+    """
+    Run a client for the FedML Cheetah platform.
+
+    This function initializes a client, loads data, and starts training using the Cheetah client.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_CHEETAH
 
     args = fedml.init()

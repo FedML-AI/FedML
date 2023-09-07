@@ -1,5 +1,6 @@
 import logging
 
+#define log levels
 log_levels = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -12,16 +13,16 @@ log_levels = {
 class LoggerCreator:
     @staticmethod
     def create_logger(name=None, level=logging.INFO, args=None):
-        """create a logger
+        """
+        Create and configure a logger.
 
         Args:
-            name (str): name of the logger
-            level: level of logger
+            name (str): The name of the logger.
+            level: The logging level for the logger.
 
-        Raises:
-            ValueError is name is None
+        Returns:
+            logger: An instance of the logger.
         """
-
         if name is None:
             raise ValueError("name for logger cannot be None")
 

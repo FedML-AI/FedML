@@ -5,7 +5,11 @@ from .constants import FEDML_TRAINING_PLATFORM_SERVING
 
 
 def run_model_serving_server():
-    """FedML Model Serving"""
+    """
+    Run the server for the FedML Model Serving platform.
+
+    This function initializes the server, loads data, and starts serving the model for the Model Serving platform.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_SERVING
 
     args = fedml.init()
@@ -26,7 +30,11 @@ def run_model_serving_server():
 
 
 def run_model_serving_client():
-    """FedML Model Serving"""
+    """
+    Run a client for the FedML Model Serving platform.
+
+    This function initializes a client, loads data, and starts serving the model for the Model Serving platform.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_SERVING
 
     args = fedml.init()
