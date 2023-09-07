@@ -4,7 +4,19 @@ import torch.optim as optim
 
 
 class SplitNN_client:
+    """
+    SplitNNClient class represents a client in a Split Learning setup.
+
+    Args:
+        args (dict): Dictionary containing client-specific configuration.
+    """
     def __init__(self, args):
+        """
+        Initialize a SplitNNClient instance.
+
+        Args:
+            args (dict): Dictionary containing client-specific configuration.
+        """
         self.client_idx = args['client_index']
         self.comm = args["comm"]
         self.model = args["model"]
@@ -26,6 +38,12 @@ class SplitNN_client:
         self.device = args["device"]
 
     def forward_pass(self):
+        """
+        Perform a forward pass through the model.
+
+        Returns:
+            tuple: Tuple containing model activations (outputs) and labels.
+        """
         logging.info("forward_pass")
         inputs, labels = next(self.dataloader)
         inputs, labels = inputs.to(self.device), labels.to(self.device)
@@ -40,16 +58,28 @@ class SplitNN_client:
         return self.acts, labels
 
     def backward_pass(self, grads):
+        """
+        Perform a backward pass and update model parameters.
+
+        Args:
+            grads: Gradients used for the backward pass.
+        """
         logging.info("backward_pass")
         self.acts.backward(grads)
         self.optimizer.step()
 
     def eval_mode(self):
+        """
+        Switch the model to evaluation mode and prepare the test data loader.
+        """ 
         logging.info("eval_mode")
         self.dataloader = iter(self.testloader)
         self.model.eval()
 
     def train_mode(self):
+        """
+        Switch the model to training mode and prepare the training data loader.
+        """
         logging.info("train_mode")
         self.dataloader = iter(self.trainloader)
         self.model.train()

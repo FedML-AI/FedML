@@ -10,6 +10,21 @@ from .server_manager import SplitNNServerManager
 def SplitNN_distributed(
     process_id, worker_number, device, comm, model, dataset, args,
 ):
+    """
+    Initialize and distribute a Split Neural Network for training.
+
+    Args:
+        process_id (int): The ID of the current process.
+        worker_number (int): Total number of worker processes.
+        device: The computing device (e.g., GPU) for training.
+        comm: Communication backend for distributed training.
+        model: The neural network model to be trained.
+        dataset: Dataset information including data splits.
+        args: Additional training configuration arguments.
+
+    Returns:
+        None
+    """
     [
         train_data_num,
         local_data_num,
@@ -47,6 +62,20 @@ def SplitNN_distributed(
 
 
 def init_server(comm, server_model, process_id, worker_number, device, args):
+    """
+    Initialize and run the server-side component of Split Neural Network training.
+
+    Args:
+        comm: Communication backend for distributed training.
+        server_model: The server-side portion of the neural network model.
+        process_id (int): The ID of the current process.
+        worker_number (int): Total number of worker processes.
+        device: The computing device (e.g., GPU) for training.
+        args: Additional training configuration arguments.
+
+    Returns:
+       none
+    """
     arg_dict = {
         "comm": comm,
         "model": server_model,
@@ -63,6 +92,24 @@ def init_server(comm, server_model, process_id, worker_number, device, args):
 def init_client(
     comm, client_model, worker_number, train_data_local, test_data_local, process_id, server_rank, epochs, device, args,
 ):
+    """
+    Initialize and run the client-side component of Split Neural Network training.
+
+    Args:
+        comm: Communication backend for distributed training.
+        client_model: The client-side portion of the neural network model.
+        worker_number (int): Total number of worker processes.
+        train_data_local: Local training data for the client.
+        test_data_local: Local testing data for the client.
+        process_id (int): The ID of the current process.
+        server_rank (int): The rank of the server process.
+        epochs: Number of training epochs for the client.
+        device: The computing device (e.g., GPU) for training.
+        args: Additional training configuration arguments.
+
+    Returns:
+        None
+    """
     client_ID = process_id - 1
     arg_dict = {
         "client_index": client_ID,
