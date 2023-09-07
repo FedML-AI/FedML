@@ -121,10 +121,14 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_list_url, headers=job_api_headers, json=job_list_json)
         if response.status_code != 200:
+            print(f"List job with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             pass
         else:
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
+                print(f"List job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return None
             job_list_result = FedMLJobModelList(resp_data["data"])
 
@@ -157,10 +161,14 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(job_stop_url, headers=job_api_headers, json=job_stop_json)
         if response.status_code != 200:
+            print(f"Stop job with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             return False
         else:
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
+                print(f"Stop job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return False
 
         return True
@@ -196,10 +204,14 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_logs_url, headers=job_api_headers, json=job_logs_json)
         if response.status_code != 200:
+            print(f"Get job logs with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             pass
         else:
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
+                print(f"Get job logs with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return None
             job_log_list_result = FedMLJobLogModelList(resp_data["data"])
 
@@ -238,6 +250,9 @@ class FedMLJobManager(Singleton):
             data = resp_data.get("data", False)
             if code == "SUCCESS" and data is True:
                 return True
+            else:
+                print(f"Check heartbeat with with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
 
         return False
 
@@ -272,11 +287,11 @@ class FedMLJobManager(Singleton):
                     resource_type = resource_item.get("resourceType", None)
                     resource_list.append((resource_type, gpu_type))
                 return resource_list
+            else:
+                print(f"Get resource type with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
 
         return None
-
-
-
 
 
 class FedMLJobStartedModel(object):
