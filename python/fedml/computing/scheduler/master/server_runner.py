@@ -751,6 +751,10 @@ class FedMLServerRunner:
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id
         )
 
+        self.mlops_metrics.report_server_id_status(self.run_id,
+                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+                                                   edge_id=self.edge_id)
+
         try:
             self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
@@ -778,6 +782,9 @@ class FedMLServerRunner:
         self.mlops_metrics.broadcast_server_training_status(self.run_id,
                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
                                                             edge_id=self.edge_id)
+
+        self.mlops_metrics.report_server_id_status(self.run_id,
+                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         try:
             self.mlops_metrics.stop_sys_perf()
