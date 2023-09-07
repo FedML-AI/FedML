@@ -8,6 +8,49 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 
 
 class AsyncFedAVGServerManager(FedMLCommManager):
+    """
+    Manager for the asynchronous Federated Averaging server in a federated learning system.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments and configurations for the server.
+        aggregator: An instance of the aggregator responsible for aggregating client updates.
+        comm: The communication object for inter-process communication.
+        rank (int): The rank of the server process.
+        size (int): The total number of processes.
+        backend (str): The communication backend (e.g., "MPI").
+        is_preprocessed (bool): Indicates whether the data is preprocessed.
+        preprocessed_client_lists (list): A list of preprocessed client data.
+
+    Attributes:
+        args (argparse.Namespace): Command-line arguments and configurations for the server.
+        aggregator: An instance of the aggregator responsible for aggregating client updates.
+        round_num (int): The total number of communication rounds.
+        round_idx (int): The current round index.
+        is_preprocessed (bool): Indicates whether the data is preprocessed.
+        preprocessed_client_lists (list): A list of preprocessed client data.
+        client_round_dict (dict): A dictionary to track the round index for each client.
+
+    Methods:
+        run():
+            Start the server and begin the federated learning process.
+
+        send_init_msg():
+            Send initialization messages to client processes to start communication.
+
+        register_message_receive_handlers():
+            Register message handlers for receiving client updates.
+
+        handle_message_receive_model_from_client(msg_params):
+            Handle the received client update message, record client runtime information,
+            aggregate the updates, and perform testing.
+
+        send_message_init_config(receive_id, global_model_params, client_index):
+            Send initialization configuration messages to clients.
+
+        send_message_sync_model_to_client(receive_id, global_model_params, client_index):
+            Send synchronized model updates to clients.
+
+    """
     def __init__(
         self,
         args,
@@ -32,10 +75,22 @@ class AsyncFedAVGServerManager(FedMLCommManager):
 
 
     def run(self):
+        """
+        Start the server and begin the federated learning process.
+
+        Returns:
+            None
+        """
         super().run()
 
 
     def send_init_msg(self):
+        """
+        Send initialization messages to client processes to start communication.
+
+        Returns:
+            None
+        """
         # sampling clients
         # client_indexes = self.aggregator.client_sampling(
         #     self.round_idx,
@@ -54,12 +109,28 @@ class AsyncFedAVGServerManager(FedMLCommManager):
 
 
     def register_message_receive_handlers(self):
+        """
+        Register message handlers for receiving client updates.
+
+        Returns:
+            None
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
         )
 
     def handle_message_receive_model_from_client(self, msg_params):
+        """
+        Handle the received client update message, record client runtime information,
+        aggregate the updates, and perform testing.
+
+        Args:
+            msg_params (dict): Message parameters containing client update information.
+
+        Returns:
+            None
+        """
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -107,6 +178,17 @@ class AsyncFedAVGServerManager(FedMLCommManager):
 
     def send_message_init_config(self, receive_id, global_model_params, 
                                 client_index):
+        """
+        Send initialization configuration messages to clients.
+
+        Args:
+            receive_id (int): The ID of the receiving client.
+            global_model_params (dict): Global model parameters to be sent to clients.
+            client_index (list): List of client indexes for the current communication round.
+
+        Returns:
+            None
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
@@ -117,6 +199,17 @@ class AsyncFedAVGServerManager(FedMLCommManager):
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, 
                                 client_index):
+        """
+        Send synchronized model updates to clients.
+
+        Args:
+            receive_id (int): The ID of the receiving client.
+            global_model_params (dict): Global model parameters to be sent to clients.
+            client_index (list): List of client indexes for the current communication round.
+
+        Returns:
+            None
+        """
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
