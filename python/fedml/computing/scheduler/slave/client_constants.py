@@ -425,8 +425,9 @@ class ClientConstants(object):
                         logging.error(line_str)
                     error_list.append(line_str)
 
-                if error_processor is not None:
+                if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
+
             return sp, error_list
         return None, error_list
 

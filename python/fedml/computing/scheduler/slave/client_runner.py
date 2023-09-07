@@ -609,9 +609,6 @@ class FedMLClientRunner:
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_str):
-        # self.mlops_metrics.common_report_client_id_status(self.run_id, self.edge_id,
-        #                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-        #                                                   server_id=self.server_id)
         raise Exception(f"Error occurs when running the job... {error_str}")
 
     def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
