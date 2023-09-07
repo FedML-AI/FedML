@@ -942,32 +942,11 @@ def launch_queue(group_id):
     "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="falcon",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
-         "default is falcon).",
-)
-@click.option(
     "--group",
     "-g",
     type=str,
     default="",
     help="The queue group id on which your job will be scheduled.",
-)
-@click.option(
-    "--devices_server", "-ds", type=str, default="",
-    help="The server to run the launching job, for the launch platform, we do not need to set this option."
-)
-@click.option(
-    "--devices_edges", "-de", type=str, default="",
-    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
-         "for the launch platform, we do not need to set this option."
-)
-@click.option(
-    "--no_confirmation", "-nc", default=None, is_flag=True,
-    help="allow the Launch platform to select compute resource without confirmation after initiating launching request.",
 )
 @click.option(
     "--version",
@@ -976,8 +955,12 @@ def launch_queue(group_id):
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, api_key, platform, group,
-               devices_server, devices_edges, no_confirmation, version):
+def launch_job(yaml_file, api_key, group, version):
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
     FedMLLaunchManager.get_instance().set_config_version(version)
     FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
@@ -1045,7 +1028,9 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     if not platform_is_valid(platform):
         return
 
-    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
@@ -1095,7 +1080,9 @@ def list_jobs(platform, job_id, api_key, version):
     if not platform_is_valid(platform):
         return
 
-    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
         return
 
     FedMLLaunchManager.get_instance().set_config_version(version)
