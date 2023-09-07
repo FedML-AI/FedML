@@ -158,6 +158,10 @@ def log_model(model_name, model_file_path, version=None):
     mlops.log_model(model_name, model_file_path, version=version)
 
 
+def log_metric(metrics):
+    mlops.log_metric(metrics)
+
+
 from ..computing.scheduler.slave.client_constants import ClientConstants
 from ..computing.scheduler.master.server_constants import ServerConstants
 

@@ -68,9 +68,9 @@ def launch_show_resource_type(version):
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
         click.echo("All available resource type is as follows.")
-        resource_table = PrettyTable(['Resource Type Name'])
+        resource_table = PrettyTable(['Resource Type', 'GPU Type'])
         for type_item in resource_type_list:
-            resource_table.add_row([type_item])
+            resource_table.add_row([type_item[0], type_item[1]])
         print(resource_table)
     else:
         click.echo("No available resource type.")
@@ -921,38 +921,8 @@ def launch_cancel(job_id, platform, api_key, version):
     help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
 def launch_log(job_id, platform, api_key, version):
-    # Show job info
-    list_jobs_core(platform, None, None, job_id[0], api_key, version)
-
-    # Get job logs
-    FedMLJobManager.get_instance().set_config_version(version)
-    job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
-
-    # Show job log summary info
-    log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
-    log_head_table.add_row([job_id[0], job_logs.total_num, job_logs.log_full_url])
-    click.echo("\nLogs summary info is as follows.")
-    print(log_head_table)
-
-    # Show job logs URL for each device
-    if len(job_logs.log_devices) > 0:
-        log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
-        for log_device in job_logs.log_devices:
-            log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
-        click.echo("\nLogs URL for each device is as follows.")
-        print(log_device_table)
-
-    # Show job log lines
-    if len(job_logs.log_lines):
-        click.echo("\nAll logs is as follows.")
-        for log_line in job_logs.log_lines:
-            click.echo(str(log_line).rstrip('\n'))
-
-        for page_count in range(2, job_logs.total_pages+1):
-            job_logs = FedMLJobManager.get_instance().get_job_logs(job_id[0], page_count,
-                                                                   Constants.JOB_LOG_PAGE_SIZE, api_key)
-            for log_line in job_logs.log_lines:
-                click.echo(str(log_line).rstrip('\n'))
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    FedMLLaunchManager.get_instance().api_launch_log(job_id[0], 0, 0, need_all_logs=True)
 
 
 @launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
@@ -1008,153 +978,8 @@ def launch_queue(group_id):
 )
 def launch_job(yaml_file, api_key, platform, group,
                devices_server, devices_edges, no_confirmation, version):
-    if not platform_is_valid(platform):
-        return
-
-    is_no_confirmation = no_confirmation
-    if no_confirmation is None:
-        is_no_confirmation = False
-
-    if api_key is None or api_key == "":
-        saved_api_key = FedMLLaunchManager.get_api_key()
-        if saved_api_key is None or saved_api_key == "":
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        else:
-            api_key = saved_api_key
-
     FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
-
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    result = FedMLLaunchManager.get_instance().launch_job(yaml_file[0], api_key,
-                                                          platform,
-                                                          devices_server, devices_edges,
-                                                          no_confirmation=is_no_confirmation)
-    if result is not None:
-        if result.status == Constants.JOB_START_STATUS_INVALID:
-            click.echo(f"\nPlease check your {os.path.basename(yaml_file[0])} file "
-                       f"to make sure the syntax is valid, e.g. "
-                       f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
-            return
-        elif result.status == Constants.JOB_START_STATUS_BLOCKED:
-            click.echo("\nBecause the value of maximum_cost_per_hour is too low,"
-                       "we can not find exactly matched machines for your job. \n"
-                       "But here we still present machines closest to your expected price as below.")
-        elif result.status == Constants.JOB_START_STATUS_QUEUED:
-            click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
-            if click.confirm("Do you want to join the queue?", abort=False):
-                click.echo("You have confirmed to keep your job in the waiting list.")
-                return
-            else:
-                stop_jobs_core(platform, result.job_id, api_key, version)
-                return
-        elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
-            click.echo("Please bind your credit card before launching the job.")
-            return
-        elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
-            click.echo("Failed to query credit card binding status. Please try again later.")
-            return
-
-        if result.job_url == "":
-            if result.message is not None:
-                click.echo(f"Failed to launch the job with response messages: {result.message}")
-            else:
-                click.echo(f"Failed to launch the job. Please check if the network is available "
-                           f"or the job name {result.job_name} is duplicated.")
-        else:
-            if is_no_confirmation:
-                click.echo("Job{}has started.".format(f" {result.job_name} " if result.job_name is not None else " "))
-                if result.job_url is not None:
-                    click.echo(f"Please go to this web page with your account "
-                               f"to review your job details.")
-                    click.echo(f"{result.job_url}")
-
-                if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    if result.status != Constants.JOB_START_STATUS_BLOCKED:
-                        click.echo(f"\nSearched and matched the following GPU resource for your job:")
-                    gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
-                                             'Region', 'Cost', 'Selected'])
-                    for gpu_device in result.gpu_matched:
-                        gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
-                                           gpu_device.mem_size,
-                                           f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
-                    print(gpu_table)
-                    click.echo("")
-            else:
-                if hasattr(result, "gpu_matched") and result.gpu_matched is not None and len(result.gpu_matched) > 0:
-                    if result.status != Constants.JOB_START_STATUS_BLOCKED:
-                        click.echo(f"\nSearched and matched the following GPU resource for your job:")
-                    gpu_table = PrettyTable(['Provider', 'Instance', 'vCPU(s)', 'Memory(GB)', 'GPU(s)',
-                                             'Region', 'Cost', 'Selected'])
-                    for gpu_device in result.gpu_matched:
-                        gpu_table.add_row([gpu_device.gpu_provider, gpu_device.gpu_instance, gpu_device.cpu_count,
-                                           gpu_device.mem_size,
-                                           f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
-                                           gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
-                    print(gpu_table)
-                    click.echo("")
-
-                    if result.job_url is not None:
-                        click.echo(f"You can also view the matched GPU resource with Web UI at: ")
-                        click.echo(f"{result.job_url}")
-
-                    click.echo("")
-                    if click.confirm(f"Are you sure to launch it?", abort=False):
-                        click.echo("")
-                        result = FedMLLaunchManager.get_instance().start_job(
-                            platform, result.project_name, result.application_name,
-                            devices_server, devices_edges, api_key,
-                            no_confirmation=True, job_id=result.job_id)
-                        if result is not None:
-                            if result.job_url == "":
-                                if result.message is not None:
-                                    click.echo(f"Failed to launch the job with response messages: {result.message}")
-                            else:
-                                FedMLJobManager.get_instance().set_config_version(version)
-                                job_list_obj = FedMLJobManager.get_instance().list_job(platform, result.project_name,
-                                                                                       None, api_key,
-                                                                                       job_id=result.job_id)
-                                if job_list_obj is not None:
-                                    if len(job_list_obj.job_list) > 0:
-                                        if len(job_list_obj.job_list) > 0:
-                                            click.echo("Your launch result is as follows:")
-                                        jobs_count = 0
-                                        job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
-                                                                      'Spend Time(hour)', 'Cost'])
-                                        for job in job_list_obj.job_list:
-                                            jobs_count += 1
-                                            job_list_table.add_row(
-                                                [job.job_name, job.job_id, job.status, job.started_time,
-                                                 job.compute_duration, job.cost])
-                                        print(job_list_table)
-                                click.echo("\nYou can track your job running details at this URL:")
-                                click.echo(f"{result.job_url}")
-                        else:
-                            click.echo(f"Failed to launch the job.")
-                    else:
-                        stop_jobs_core(platform, result.job_id, api_key, version, show_hint_texts=False)
-                        return
-                else:
-                    click.echo(f"Result of launching job: code={result.status}, message=\"{result.message}\".")
-                    return
-
-            if result is not None:
-                click.echo("")
-                click.echo(f"For querying the realtime status of your job, please run the following command.")
-                click.echo(f"fedml launch log {result.job_id}" +
-                           "{}".format(f" -v {version}" if version == "dev" else ""))
-    else:
-        click.echo(f"Failed to launch the job.")
+    FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
 @cli.group("jobs")
@@ -1220,24 +1045,8 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     if not platform_is_valid(platform):
         return
 
-    if api_key is None or api_key == "":
-        saved_api_key = FedMLLaunchManager.get_api_key()
-        if saved_api_key is None or saved_api_key == "":
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        else:
-            api_key = saved_api_key
-
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
+    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+        return
 
     FedMLJobManager.get_instance().set_config_version(version)
     result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
@@ -1266,18 +1075,6 @@ def start_job(platform, project_name, application_name, job_name, devices_server
          "default is falcon).",
 )
 @click.option(
-    "--project_name",
-    "-prj",
-    type=str,
-    help="The project name at the MLOps platform.",
-)
-@click.option(
-    "--job_name",
-    "-n",
-    type=str,
-    help="Job name at the MLOps platform.",
-)
-@click.option(
     "--job_id",
     "-id",
     type=str,
@@ -1294,59 +1091,15 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     default="release",
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
-def list_jobs(platform, project_name, job_name, job_id, api_key, version):
-    list_jobs_core(platform, project_name, job_name, job_id, api_key, version)
-
-
-def list_jobs_core(platform, project_name, job_name, job_id, api_key, version):
+def list_jobs(platform, job_id, api_key, version):
     if not platform_is_valid(platform):
         return
 
-    if api_key is None or api_key == "":
-        saved_api_key = FedMLLaunchManager.get_api_key()
-        if saved_api_key is None or saved_api_key == "":
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        else:
-            api_key = saved_api_key
+    if not FedMLLaunchManager.get_instance().check_api_key(api_key=api_key, version=version):
+        return
 
     FedMLLaunchManager.get_instance().set_config_version(version)
-    is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-    if not is_valid_heartbeat:
-        click.echo("Your API Key is not correct. Please input again.")
-        api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
-        is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-        if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please check and try again.")
-            return
-    if is_valid_heartbeat:
-        FedMLLaunchManager.save_api_key(api_key)
-
-    FedMLJobManager.get_instance().set_config_version(version)
-    job_list_obj = FedMLJobManager.get_instance().list_job(platform, project_name, job_name,
-                                                           api_key, job_id=job_id)
-    if job_list_obj is not None:
-        if len(job_list_obj.job_list) > 0:
-            if len(job_list_obj.job_list) > 0:
-                click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created', 'Spend Time(hour)', 'Cost'])
-            jobs_count = 0
-            for job in job_list_obj.job_list:
-                jobs_count += 1
-                device_count = 0
-                device_list = ""
-                for device_info_item in job.device_infos:
-                    device_count += 1
-                    device_list += f"({device_count}). {device_info_item} "
-
-                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                        job.compute_duration, job.cost])
-
-            print(job_list_table)
-        else:
-            click.echo("Not found any jobs.")
-    else:
-        click.echo("Failed to list jobs, please check your network connection "
-                   "and make sure be able to access the MLOps platform.")
+    FedMLLaunchManager.get_instance().list_jobs(job_id)
 
 
 @jobs.command("stop", help="Stop a job from the MLOps platform.")

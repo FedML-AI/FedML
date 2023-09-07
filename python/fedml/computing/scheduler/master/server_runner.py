@@ -332,7 +332,8 @@ class FedMLServerRunner:
                     shell_cmd_list.append(bootstrap_scripts)
                     process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
                     ClientConstants.save_bootstrap_process(run_id, process.pid)
-                    ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+
+                    ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
                             is_bootstrap_run_ok = False
@@ -419,15 +420,15 @@ class FedMLServerRunner:
 
         logging.info("send training request to edges...")
 
-        self.send_training_request_to_edges()
-
-        if not self.should_continue_run_job(run_id):
-            return
-
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
+
+        self.send_training_request_to_edges()
+
+        if not self.should_continue_run_job(run_id):
+            return
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -484,7 +485,7 @@ class FedMLServerRunner:
         logging.info("waiting the aggregation process to aggregate models...")
         ServerConstants.save_learning_process(run_id, process.pid)
 
-        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+        ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
@@ -584,20 +585,26 @@ class FedMLServerRunner:
             python_program = get_python_program()
             logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
                 python_program, entry_file_full_path, conf_file_full_path))
-            process = ServerConstants.exec_console_with_shell_script_list(
-                [
-                    python_program,
-                    entry_file_full_path,
-                    "--cf",
-                    conf_file_full_path,
-                    "--rank ",
-                    "0",
-                    "--role",
-                    "server"
-                ],
-                should_capture_stdout=False,
-                should_capture_stderr=True
-            )
+            # process = ServerConstants.exec_console_with_shell_script_list(
+            #     [
+            #         python_program,
+            #         entry_file_full_path,
+            #         "--cf",
+            #         conf_file_full_path,
+            #         "--rank ",
+            #         "0",
+            #         "--role",
+            #         "server"
+            #     ],
+            #     should_capture_stdout=False,
+            #     should_capture_stderr=True
+            # )
+
+            entry_command = f"{python_program} {entry_file_full_path} --cf " \
+                            f"{conf_file_full_path} --rank 0 --role server"
+            shell_cmd_list = [entry_command]
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -637,9 +644,15 @@ class FedMLServerRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
+            process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  callback=self.start_job_perf)
             is_launch_task = True
+
         return process, is_launch_task, error_list
+
+    def start_job_perf(self, job_pid):
+        self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
+
 
     def process_job_status(self, run_id):
         all_edges_is_finished = True
@@ -1552,10 +1565,10 @@ class FedMLServerRunner:
         }
         if gpu_count > 0:
             if gpu_total_mem is not None:
-                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+                json_params["gpu"] = gpu_info if gpu_info is not None else "" + ", Total GPU Memory: " + gpu_total_mem
             else:
-                json_params["gpu"] = gpu_info
-            json_params["extra_infos"]["gpu_info"] = gpu_info
+                json_params["gpu"] = gpu_info if gpu_info is not None else ""
+            json_params["extra_infos"]["gpu_info"] = gpu_info if gpu_info is not None else ""
             if gpu_available_mem is not None:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
@@ -1746,9 +1759,8 @@ class FedMLServerRunner:
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
-        self.mlops_metrics.stop_sys_perf()
-        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args)
+        self.mlops_metrics.stop_device_realtime_perf()
+        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_train_msg_after_upgrading()
 
