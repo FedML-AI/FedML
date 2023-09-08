@@ -412,13 +412,13 @@ class ClientConstants(object):
             if should_write_log_file:
                 with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
                     for line in sp.stdout:
-                        line_str = line.decode()
+                        line_str = sys_utils.decode_byte_str(line)
                         stdout.write(line)
                         stdout.flush()
                         logging.info(line_str)
             with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
                 for line in sp.stderr:
-                    line_str = line.decode()
+                    line_str = sys_utils.decode_byte_str(line)
                     if should_write_log_file:
                         stderr.write(line)
                         stderr.flush()
