@@ -1405,13 +1405,16 @@ def model():
 @model.command("serve", help="Deploy model to the ModelOps platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.option(
-    "--source_folder", "-sf", type=str, default="", help="source folder.",
+    "--name", "-n", type=str, help="[Required] Model Cards.",
 )
 @click.option(
-    "--config_file", "-cf", type=str,  default = "", help="serving config file (.yaml).",
+    "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
-def serve_model(source_folder, config_file):
-    FedMLModelCards.get_instance().serve_model(source_folder, config_file)
+def serve_model(local, name):
+    if local:
+        FedMLModelCards.get_instance().local_serve_model(name)
+    else:
+        FedMLModelCards.get_instance().serve_model(name)
 
 @model.group("device")
 def device():
@@ -1513,12 +1516,22 @@ def logout_from_model_ops(slave, master, docker, docker_rank):
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def create_model(name):
-    if FedMLModelCards.get_instance().create_model(name):
-        click.echo("Create model {} successfully.".format(name))
+@click.option(
+    "--config_file", "-cf", default = None,type=str, help="Model config file (.yaml)",
+)
+def create_model(name, config_file):
+    if config_file is None:
+        # Just create a model folder
+        if FedMLModelCards.get_instance().create_model(name):
+            click.echo("Create model {} successfully.".format(name))
+        else:
+            click.echo("Failed to create model {}.".format(name))
     else:
-        click.echo("Failed to create model {}.".format(name))
-
+        # Adding related workspace codes to the model folder
+        if FedMLModelCards.get_instance().create_model_use_config(name, config_file):
+            click.echo("Create model {} using config successfully.".format(name))
+        else:
+            click.echo("Failed to create model {} using config file {}.".format(name, config_file))
 
 @model.command("delete", help="Delete local model repository.")
 @click.help_option("--help", "-h")

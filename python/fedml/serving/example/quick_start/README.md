@@ -1,15 +1,13 @@
 ## Create Model
 ```sh
-#FedML/python/fedml/serving/example/mnist/
-fedml model create --name mnist --config_file mnist.yaml
+#FedML/python/fedml/serving/example/quick_start/
+fedml model create --name llm --config_file llm.yaml
 ```
 ## Option 1: Deploy locally
 ```sh
-fedml model serve --name mnist --local
+fedml model serve --name llm --local
 #INFO:     Uvicorn running on http://0.0.0.0:2345 (Press CTRL+C to quit)
-curl -XPOST localhost:2345/predict -d '{"arr":[$DATA]}'
-#For $DATA, please check the request_input_example, it is a 28*28=784 float array
-#Output:{"generated_text":"tensor([0.2333, 0.5296, 0.4350, 0.4537, 0.5424, 0.4583, 0.4803, 0.2862, 0.5507,\n        0.8683], grad_fn=<SigmoidBackward0>)"}
+curl -XPOST localhost:2345/predict -d '{"text": "Hello"}'
 ```
 ## Option 2: On-premsie Deploy
 Device Login
@@ -28,6 +26,6 @@ export FEDML_MODEL_SERVE_MASTER_DEVICE_ID=YOUR_MASTER_DEVICE_ID
 export FEDML_MODEL_SERVE_WORKER_DEVICE_IDS=YOUR_WORKER_DEVICE_IDS
 #If more than one worker, use comma to separate, e.g. 1,2,3
 ```sh
-fedml model serve --name mnist
+fedml model serve --name llm
 #Check the progress on fedml mlops UI
 ```

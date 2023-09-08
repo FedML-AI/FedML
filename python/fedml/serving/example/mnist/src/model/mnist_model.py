@@ -8,4 +8,3 @@ class LogisticRegression(torch.nn.Module):
         import torch
         outputs = torch.sigmoid(self.linear(x))
         return outputs
-

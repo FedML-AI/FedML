@@ -1,1 +1,0 @@
-fedml model serve --source_folder ./src --config_file mnist.yaml
