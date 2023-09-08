@@ -15,7 +15,6 @@ from ..comm_utils.yaml_utils import load_yaml_config
 
 
 class ServerConstants(object):
-    load_yaml_config
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
     MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
