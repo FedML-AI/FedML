@@ -5,6 +5,7 @@ import signal
 import uuid
 from os.path import expanduser
 
+import chardet
 import psutil
 import yaml
 
@@ -678,7 +679,7 @@ def run_cmd(command, show_local_console=False):
     if ret_code is None or ret_code <= 0:
         if out is not None:
             try:
-                out_str = out.decode(encoding="utf-8")
+                out_str = decode_byte_str(out)
             except:
                 logging.info("utf-8 could not decode the output msg")
                 out_str = ""
@@ -693,7 +694,7 @@ def run_cmd(command, show_local_console=False):
     else:
         if err is not None:
             try:
-                err_str = err.decode(encoding="utf-8")
+                err_str = decode_byte_str(err)
             except:
                 logging.info("utf-8 could not decode the err msg")
                 err_str = ""
@@ -798,7 +799,7 @@ def run_subprocess_open(shell_script_list):
 
 def decode_our_err_result(out_err):
     try:
-        result_str = out_err.decode(encoding="utf-8")
+        result_str = decode_byte_str(out_err)
         return result_str
     except Exception as e:
         return out_err
@@ -820,6 +821,16 @@ def get_sys_realtime_stats():
     recv_bytes = net.bytes_recv
     return total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
         gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids
+
+
+def decode_byte_str(bytes_str):
+    encoding = dict()
+    try:
+        encoding = chardet.detect(bytes_str)
+    except Exception as e:
+        pass
+    decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
+    return decoded_str
 
 
 if __name__ == '__main__':
