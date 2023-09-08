@@ -657,32 +657,29 @@ class FedMLServerRunner:
             self.client_mqtt_mgr.send_message_json(topic_delete_deployment, payload)
 
     def ota_upgrade(self, payload, request_json):
-        no_upgrade = False
-        upgrade_version = None
         run_id = request_json["end_point_id"]
+        force_ota = False
+        ota_version = None
 
         try:
             parameters = request_json.get("parameters", None)
             common_args = parameters.get("common_args", None)
-            no_upgrade = common_args.get("no_upgrade", False)
-            upgrade_version = common_args.get("upgrade_version", None)
+            force_ota = common_args.get("force_ota", False)
+            ota_version = common_args.get("ota_version", None)
         except Exception as e:
             pass
 
-        should_upgrade = True
-        if upgrade_version is None or upgrade_version == "latest":
+        if force_ota and ota_version is not None:
+            should_upgrade = True
+            upgrade_version = ota_version
+        else:
             try:
-                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                    check_fedml_is_latest_version(self.version)
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
                 return
 
-            if fedml_is_latest_version:
-                should_upgrade = False
+            should_upgrade = False if fedml_is_latest_version else True
             upgrade_version = remote_ver
-
-        if no_upgrade:
-            should_upgrade = False
 
         if should_upgrade:
             job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)

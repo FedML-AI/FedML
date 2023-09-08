@@ -636,12 +636,18 @@ def log_metric(metrics):
     metrics_obj = dict()
     for k, v in metrics.items():
         metrics_obj[k] = v
-    metrics_obj["run_id"] = str(MLOpsStore.mlops_run_id)
+
+    job_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+
+    metrics_obj["run_id"] = str(job_id)
     metrics_obj["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
 
-    logging.info("metrics to be uploaded {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
+    logging.info(f"metrics to be uploaded {metrics_obj}")
 
     setup_log_mqtt_mgr()
+    if MLOpsStore.mlops_log_metrics_lock is None:
+        MLOpsStore.mlops_log_metrics_lock = threading.Lock()
     MLOpsStore.mlops_log_metrics_lock.acquire()
     MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
     MLOpsStore.mlops_log_metrics.clear()

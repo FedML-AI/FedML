@@ -39,6 +39,8 @@ class FedMLLaunchManager(object):
     def init(self):
         self.matched_results_map = dict()
         self.platform_type = SchedulerConstants.PLATFORM_TYPE_FALCON
+        self.device_server = ""
+        self.device_edges = ""
 
     def set_config_version(self, config_version):
         if config_version is not None:
@@ -565,7 +567,7 @@ class FedMLLaunchManager(object):
 
         result = FedMLLaunchManager.get_instance().launch_job(yaml_file, api_key,
                                                               self.platform_type,
-                                                              "", "")
+                                                              self.device_server, self.device_edges)
         if result is not None:
             checked_result = self.check_match_result(result, yaml_file, prompt=prompt)
             if checked_result != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
@@ -609,7 +611,7 @@ class FedMLLaunchManager(object):
         # Start the job
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
                                                              result.application_name,
-                                                             "", "", api_key,
+                                                             self.device_server, self.device_edges, api_key,
                                                              no_confirmation=True, job_id=result.job_id)
         if result is None:
             return None, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \

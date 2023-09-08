@@ -6,3 +6,4 @@ class SchedulerConstants:
                                     "run `fedml logout` to logout."
 
     PLATFORM_TYPE_FALCON = "falcon"
+    PLATFORM_TYPE_OCTOPUS = "octopus"

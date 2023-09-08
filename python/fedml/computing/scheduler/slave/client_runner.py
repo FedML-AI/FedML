@@ -599,7 +599,8 @@ class FedMLClientRunner:
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
             process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf)
+                                                                                  callback=self.start_job_perf,
+                                                                                  error_processor=self.job_error_processor)
             is_launch_task = True
 
         return process, is_launch_task, error_list
@@ -607,10 +608,20 @@ class FedMLClientRunner:
     def start_job_perf(self, job_pid):
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
-    def reset_devices_status(self, edge_id, status):
+    def job_error_processor(self, error_str):
+        raise Exception(f"Error occurs when running the job... {error_str}")
+
+    def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
         self.mlops_metrics.broadcast_client_training_status(edge_id, status)
+
+        if should_send_client_id_status:
+            if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                self.mlops_metrics.common_report_client_id_status(self.run_id, edge_id,
+                                                                  status,
+                                                                  server_id=self.server_id)
 
     def stop_run(self):
         logging.info("Stop run successfully.")
@@ -668,10 +679,12 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-    def cleanup_run_when_starting_failed(self):
+    def cleanup_run_when_starting_failed(self, should_send_client_id_status=True):
         logging.error("Cleanup run successfully when starting failed.")
 
-        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+        self.reset_devices_status(self.edge_id,
+                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                  should_send_client_id_status=should_send_client_id_status)
 
         time.sleep(2)
 
@@ -691,7 +704,9 @@ class FedMLClientRunner:
     def cleanup_run_when_finished(self):
         logging.info("Cleanup run successfully when finished.")
 
-        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        self.reset_devices_status(self.edge_id,
+                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                                  should_send_client_id_status=False)
 
         time.sleep(2)
 
@@ -773,33 +788,30 @@ class FedMLClientRunner:
             pass
 
     def ota_upgrade(self, payload, request_json):
-        no_upgrade = False
-        upgrade_version = None
         run_id = request_json["runId"]
+        force_ota = False
+        ota_version = None
 
         try:
             run_config = request_json.get("run_config", None)
             parameters = run_config.get("parameters", None)
             common_args = parameters.get("common_args", None)
-            no_upgrade = common_args.get("no_upgrade", False)
-            upgrade_version = common_args.get("upgrade_version", None)
+            force_ota = common_args.get("force_ota", False)
+            ota_version = common_args.get("ota_version", None)
         except Exception as e:
             pass
 
-        should_upgrade = True
-        if upgrade_version is None or upgrade_version == "latest":
+        if force_ota and ota_version is not None:
+            should_upgrade = True
+            upgrade_version = ota_version
+        else:
             try:
-                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                    check_fedml_is_latest_version(self.version)
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
                 return
 
-            if fedml_is_latest_version:
-                should_upgrade = False
+            should_upgrade = False if fedml_is_latest_version else True
             upgrade_version = remote_ver
-
-        if no_upgrade:
-            should_upgrade = False
 
         if should_upgrade:
             FedMLClientDataInterface.get_instance(). \
@@ -946,7 +958,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
             logging.error("received to failed status from the server agent")
-            self.cleanup_run_when_starting_failed()
+            self.cleanup_run_when_starting_failed(should_send_client_id_status=False)
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))

@@ -411,7 +411,8 @@ class ServerConstants(object):
         return script_process
 
     @staticmethod
-    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True, callback=None):
+    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
+                                        callback=None, error_processor=None):
         error_list = list()
         with subprocess.Popen(join.join(cmds),
                               shell=True,
@@ -435,6 +436,10 @@ class ServerConstants(object):
                         stderr.flush()
                         logging.error(line_str)
                     error_list.append(line_str)
+
+                if error_processor is not None and len(error_list) > 0:
+                    error_processor(error_list)
+
             return sp, error_list
         return None, error_list
 
