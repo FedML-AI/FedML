@@ -6,13 +6,65 @@ import logging
 
 
 class MyModelTrainer(ClientTrainer):
+    """
+    Custom model trainer for federated learning clients.
+
+    Args:
+        model (nn.Module): The PyTorch model to be trained.
+        id (int): The identifier of the client.
+    
+    Attributes:
+        model (nn.Module): The PyTorch model being trained.
+        id (int): The identifier of the client.
+
+    Methods:
+        get_model_params():
+            Get the model parameters as a dictionary.
+
+        set_model_params(model_parameters):
+            Set the model parameters using a dictionary.
+
+        train(train_data, device, args, lr=None):
+            Train the model on the provided training data.
+
+        test(test_data, device, args):
+            Evaluate the model on the provided test data.
+
+        test_on_the_server(train_data_local_dict, test_data_local_dict, device, args=None):
+            Perform testing on the server (not implemented in this class).
+
+    """
     def get_model_params(self):
+        """
+        Get the model parameters as a dictionary.
+
+        Returns:
+            dict: A dictionary containing the model's state dictionary.
+
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters using a dictionary.
+
+        Args:
+            model_parameters (dict): A dictionary containing the model's state dictionary.
+
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args, lr=None):
+        """
+        Train the model on the provided training data.
+
+        Args:
+            train_data (DataLoader): The DataLoader containing the training data.
+            device (str): The device (e.g., "cpu" or "cuda") for training.
+            args (Namespace): Command-line arguments and configuration.
+            lr (float, optional): The learning rate. Defaults to None.
+
+        """
         model = self.model
 
         model.to(device)
@@ -66,6 +118,18 @@ class MyModelTrainer(ClientTrainer):
             )
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on the provided test data.
+
+        Args:
+            test_data (DataLoader): The DataLoader containing the test data.
+            device (str): The device (e.g., "cpu" or "cuda") for testing.
+            args (Namespace): Command-line arguments and configuration.
+
+        Returns:
+            dict: A dictionary containing test metrics, including correct predictions, loss, and total samples.
+
+        """
         model = self.model
 
         model.to(device)
@@ -93,4 +157,17 @@ class MyModelTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Perform testing on the server (not implemented in this class).
+
+        Args:
+            train_data_local_dict (dict): A dictionary containing local training datasets.
+            test_data_local_dict (dict): A dictionary containing local testing datasets.
+            device (str): The device (e.g., "cpu" or "cuda") for testing.
+            args (Namespace, optional): Command-line arguments and configuration. Defaults to None.
+
+        Returns:
+            bool: Always returns False as this method is not implemented in this class.
+
+        """
         return False

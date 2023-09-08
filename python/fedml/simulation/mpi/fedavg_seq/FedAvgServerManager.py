@@ -10,6 +10,19 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 
 
 class FedAVGServerManager(FedMLCommManager):
+    """
+    Class responsible for managing the server in the FedAVG federated learning system.
+
+    Args:
+        args (Namespace): Command-line arguments and configuration.
+        aggregator (object): An instance of the aggregator used for federated learning.
+        comm (object, optional): The communication backend (e.g., MPI). Defaults to None.
+        rank (int, optional): The rank of the server process. Defaults to 0.
+        size (int, optional): The total number of processes. Defaults to 0.
+        backend (str, optional): The backend used for communication. Defaults to "MPI".
+        is_preprocessed (bool, optional): Indicates whether client lists are preprocessed. Defaults to False.
+        preprocessed_client_lists (list, optional): Preprocessed client lists. Defaults to None.
+    """
     def __init__(
         self,
         args,
@@ -30,9 +43,19 @@ class FedAVGServerManager(FedMLCommManager):
         self.preprocessed_client_lists = preprocessed_client_lists
 
     def run(self):
+        """
+        Run the server manager to coordinate federated learning.
+
+        This method runs the server manager to coordinate the federated learning process.
+        """
         super().run()
 
     def send_init_msg(self):
+        """
+        Send the initialization message to clients.
+
+        This method sends an initialization message to client processes to begin federated learning.
+        """
         # sampling clients
         self.previous_time = time.time()
         client_indexes = self.aggregator.client_sampling(
@@ -48,11 +71,24 @@ class FedAVGServerManager(FedMLCommManager):
             self.send_message_init_config(process_id, global_model_params, average_weight_dict, client_schedule)
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers.
+
+        This method registers message receive handlers for processing incoming messages.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.handle_message_receive_model_from_client,
         )
 
     def handle_message_receive_model_from_client(self, msg_params):
+        """
+        Handle the received model update from a client.
+
+        Args:
+            msg_params (dict): The parameters of the received message.
+
+        This method handles the model update received from a client during federated learning.
+        """
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         # local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -112,6 +148,17 @@ class FedAVGServerManager(FedMLCommManager):
                 )
 
     def send_message_init_config(self, receive_id, global_model_params, average_weight_dict, client_schedule):
+        """
+        Send the initialization configuration message to a client.
+
+        Args:
+            receive_id (int): The ID of the receiving client.
+            global_model_params (dict): Global model parameters.
+            average_weight_dict (dict): Average weight dictionary for clients.
+            client_schedule (list): The schedule of clients for the current round.
+
+        This method sends an initialization configuration message to a client process.
+        """
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         # message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
@@ -120,6 +167,17 @@ class FedAVGServerManager(FedMLCommManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, average_weight_dict, client_schedule):
+        """
+        Send the model synchronization message to a client.
+
+        Args:
+            receive_id (int): The ID of the receiving client.
+            global_model_params (dict): Global model parameters.
+            average_weight_dict (dict): Average weight dictionary for clients.
+            client_schedule (list): The schedule of clients for the current round.
+
+        This method sends a model synchronization message to a client process.
+        """
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
