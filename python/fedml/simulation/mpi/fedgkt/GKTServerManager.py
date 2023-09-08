@@ -5,13 +5,51 @@ import logging
 
 
 class GKTServerMananger(FedMLCommManager):
-    def __init__(self, args, server_trainer, comm=None, rank=0, size=0, backend="MPI"):
-        super().__init__(args, comm, rank, size, backend)
+    """
+    Manager class for the server in the Global Knowledge Transfer (GKT) framework.
 
+    This class handles communication and coordination between the server and clients in the GKT framework.
+
+    Args:
+        args: Additional arguments and settings.
+        server_trainer: The server trainer responsible for aggregating client updates.
+        comm: MPI communication object.
+        rank (int): Rank of the server process.
+        size (int): Total number of processes.
+        backend (str): Backend used for communication.
+
+    Attributes:
+        server_trainer: The server trainer instance.
+        round_num: The total number of communication rounds.
+        args: Additional arguments and settings.
+        count: A counter used for tracking communication rounds.
+
+    Methods:
+        run(): Start the server manager to handle communication with clients.
+        register_message_receive_handlers(): Register message handlers for message types.
+        handle_message_receive_feature_and_logits_from_client(msg_params): Handle client messages containing feature maps, logits, and labels.
+        send_message_init_config(receive_id, global_model_params): Send an initialization message to a client.
+        send_message_sync_model_to_client(receive_id, global_logits): Send a synchronization message with global logits to a client.
+    """
+    def __init__(self, args, server_trainer, comm=None, rank=0, size=0, backend="MPI"):
+        """
+        Initialize the GKT (Global Knowledge Transfer) server manager.
+
+        Args:
+            args: Additional arguments and settings.
+            server_trainer: The server trainer.
+            comm: MPI communication object.
+            rank (int): Rank of the server process.
+            size (int): Total number of processes.
+            backend (str): Backend used for communication.
+
+        Returns:
+            None
+        """
+        super().__init__(args, comm, rank, size, backend)
         self.server_trainer = server_trainer
         self.round_num = args.comm_round
         self.args.round_idx = 0
-
         self.count = 0
 
     def run(self):
@@ -27,6 +65,15 @@ class GKTServerMananger(FedMLCommManager):
         )
 
     def handle_message_receive_feature_and_logits_from_client(self, msg_params):
+        """
+        Handle the message received from a client containing feature maps, logits, and labels.
+
+        Args:
+            msg_params: Parameters received in the message.
+
+        Returns:
+            None
+        """
         logging.info("handle_message_receive_feature_and_logits_from_client")
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         extracted_feature_dict = msg_params.get(MyMessage.MSG_ARG_KEY_FEATURE)
@@ -48,7 +95,7 @@ class GKTServerMananger(FedMLCommManager):
         if b_all_received:
             self.server_trainer.train(self.args.round_idx)
 
-            # start the next round
+            # Start the next round
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 self.finish()
@@ -59,6 +106,16 @@ class GKTServerMananger(FedMLCommManager):
                 self.send_message_sync_model_to_client(receiver_id, global_logits)
 
     def send_message_init_config(self, receive_id, global_model_params):
+        """
+        Send an initialization message to a client.
+
+        Args:
+            receive_id: ID of the client to receive the message.
+            global_model_params: Global model parameters.
+
+        Returns:
+            None
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
@@ -66,6 +123,16 @@ class GKTServerMananger(FedMLCommManager):
         logging.info("send_message_init_config. Receive_id: " + str(receive_id))
 
     def send_message_sync_model_to_client(self, receive_id, global_logits):
+        """
+        Send a synchronization message with global logits to a client.
+
+        Args:
+            receive_id: ID of the client to receive the message.
+            global_logits: Global logits.
+
+        Returns:
+            None
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_TO_CLIENT, self.get_sender_id(), receive_id
         )
