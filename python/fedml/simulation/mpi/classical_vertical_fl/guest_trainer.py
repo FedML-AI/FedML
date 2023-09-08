@@ -8,6 +8,43 @@ from torch import optim, nn
 
 
 class GuestTrainer(object):
+    """
+    Class representing the trainer for a guest in a distributed system.
+
+    This class handles training and gradient aggregation for the guest.
+
+    Attributes:
+        client_num: The number of clients in the system.
+        device: The device (e.g., CPU or GPU) used for training.
+        X_train: The training data features.
+        y_train: The training data labels.
+        X_test: The test data features.
+        y_test: The test data labels.
+        model_feature_extractor: The feature extractor model.
+        model_classifier: The classifier model.
+        args: Arguments for the trainer.
+
+    Methods:
+        get_batch_num():
+            Get the number of batches for training.
+        add_client_local_result(index, host_train_logits, host_test_logits):
+            Add client local results to the trainer.
+        check_whether_all_receive():
+            Check if all client local results have been received.
+        train(round_idx):
+            Perform training for a round and return gradients to hosts.
+        _bp_classifier(x, grads):
+            Backpropagate gradients through the classifier.
+        _bp_feature_extractor(x, grads):
+            Backpropagate gradients through the feature extractor.
+        _test(round_idx):
+            Perform testing and calculate evaluation metrics.
+        _sigmoid(x):
+            Compute the sigmoid function.
+        _compute_correct_prediction(y_targets, y_prob_preds, threshold):
+            Compute correct predictions and evaluation statistics.
+
+    """
     def __init__(
         self,
         client_num,
@@ -72,15 +109,38 @@ class GuestTrainer(object):
         self.loss_list = list()
 
     def get_batch_num(self):
+        """
+        Get the number of batches for training.
+
+        Returns:
+            int: The number of batches.
+        """
         return self.n_batches
 
     def add_client_local_result(self, index, host_train_logits, host_test_logits):
+        """
+        Add client local results to the trainer.
+
+        Args:
+            index: The index of the client.
+            host_train_logits: Logits from the client's local training data.
+            host_test_logits: Logits from the client's local test data.
+
+        Returns:
+            None
+        """
         # logging.info("add_client_local_result. index = %d" % index)
         self.host_local_train_logits_list[index] = host_train_logits
         self.host_local_test_logits_list[index] = host_test_logits
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check if all client local results have been received.
+
+        Returns:
+            bool: True if all results have been received, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -89,6 +149,15 @@ class GuestTrainer(object):
         return True
 
     def train(self, round_idx):
+        """
+        Perform training for a round and return gradients to hosts.
+
+        Args:
+            round_idx: The index of the training round.
+
+        Returns:
+            ndarray: Gradients to hosts.
+        """
         batch_x = self.X_train[
             self.batch_idx * self.batch_size : self.batch_idx * self.batch_size
             + self.batch_size
@@ -137,6 +206,17 @@ class GuestTrainer(object):
         return gradients_to_hosts
 
     def _bp_classifier(self, x, grads):
+        """
+        Backpropagate gradients through the classifier.
+
+        Args:
+            x: Input data.
+            grads: Gradients to be backpropagated.
+
+        Returns:
+            ndarray: Gradients of the input data.
+        """
+
         x = x.clone().detach().requires_grad_(True)
         output = self.model_classifier(x)
         output.backward(gradient=grads)
@@ -146,12 +226,31 @@ class GuestTrainer(object):
         return x_grad
 
     def _bp_feature_extractor(self, x, grads):
+        """
+        Backpropagate gradients through the feature extractor.
+
+        Args:
+            x: Input data.
+            grads: Gradients to be backpropagated.
+
+        Returns:
+            None
+        """
         output = self.model_feature_extractor(x)
         output.backward(gradient=grads)
         self.optimizer_fe.step()
         self.optimizer_fe.zero_grad()
 
     def _test(self, round_idx):
+        """
+        Perform testing and calculate evaluation metrics.
+
+        Args:
+            round_idx: The index of the training round.
+
+        Returns:
+            None
+        """
         X_test = torch.tensor(self.X_test).float().to(self.device)
         y_test = self.y_test
 
@@ -183,9 +282,30 @@ class GuestTrainer(object):
         )
 
     def _sigmoid(self, x):
+        """
+        Compute the sigmoid function.
+
+        Args:
+            x: Input data.
+
+        Returns:
+            ndarray: Sigmoid values.
+        """
         return 1.0 / (1.0 + np.exp(-x))
 
     def _compute_correct_prediction(self, y_targets, y_prob_preds, threshold=0.5):
+        """
+        Compute correct predictions and evaluation statistics.
+
+        Args:
+            y_targets: True labels.
+            y_prob_preds: Predicted probabilities.
+            threshold: Threshold for classification.
+
+        Returns:
+            ndarray: Predicted labels.
+            list: Statistics (positive predictions, negative predictions, correct predictions).
+        """
         y_hat_lbls = []
         pred_pos_count = 0
         pred_neg_count = 0
