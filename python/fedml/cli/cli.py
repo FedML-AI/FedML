@@ -20,16 +20,13 @@ from fedml.computing.scheduler.master.docker_login import logout_with_server_doc
 from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 from fedml.computing.scheduler.comm_utils import sys_utils
-from fedml.computing.scheduler.model_scheduler import device_login_entry
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
-from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.model_scheduler import device_login_entry
+from fedml.cli import cli_utils
 
 from prettytable import PrettyTable
-
-FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
-simulator_process_list = list()
 
 
 @click.group()
@@ -40,13 +37,13 @@ def cli():
 
 @cli.command("version", help="Display fedml version.")
 @click.help_option("--help", "-h")
-def mlops_version():
+def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
 @cli.command("status", help="Display fedml client training status.")
 @click.help_option("--help", "-h")
-def mlops_status():
+def fedml_status():
     training_infos = ClientConstants.get_training_infos()
     click.echo(
         "Client training status: " + str(training_infos["training_status"]).upper()
@@ -62,7 +59,7 @@ def mlops_status():
     default="release",
     help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_show_resource_type(version):
+def fedml_launch_show_resource_type(version):
     FedMLLaunchManager.get_instance().set_config_version(version)
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
@@ -89,7 +86,7 @@ def launch_show_resource_type(version):
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
-def mlops_logs(client, server, docker, docker_rank):
+def fedml_logs(client, server, docker, docker_rank):
     is_client = client
     is_server = server
     if client is None and server is None:
@@ -103,56 +100,25 @@ def mlops_logs(client, server, docker, docker_rank):
         if is_docker:
             logs_with_docker_mode(docker_rank)
             return
-        display_client_logs()
+        cli_utils.display_client_logs()
 
     if is_server:
         if is_docker:
             logs_with_server_docker_mode(docker_rank)
             return
-        display_server_logs()
-
-
-def display_client_logs():
-    run_id, edge_id = sys_utils.get_running_info(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                                 ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-    home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
-        home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
-    )
-
-    if os.path.exists(log_file):
-        with open(log_file) as file_handle:
-            log_lines = file_handle.readlines()
-        for log_line in log_lines:
-            click.echo(log_line, nl=False)
-    print("\nconsole log file path = {}".format(log_file))
-
-
-def display_server_logs():
-    run_id, edge_id = sys_utils.get_running_info(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                                 ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-    home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
-        home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
-    )
-    if os.path.exists(log_file):
-        with open(log_file) as file_handle:
-            log_lines = file_handle.readlines()
-        for log_line in log_lines:
-            click.echo(log_line)
-    print("\nconsole log file path = {}".format(log_file))
+        cli_utils.display_server_logs()
 
 
 @cli.group("device")
 @click.help_option("--help", "-h")
-def device():
+def fedml_device():
     """
     Manage devices on the FedML® Launch platform (open.fedml.ai).
     """
     pass
 
 
-@device.command("bind", help="Bind to the FedML® Launch platform (open.fedml.ai)")
+@fedml_device.command("bind", help="Bind to the FedML® Launch platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.argument("userid", nargs=-1)
 @click.option(
@@ -205,7 +171,7 @@ def device():
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
-def device_bind(
+def fedml_device_bind(
         userid, version, client, server,
         api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
@@ -261,6 +227,11 @@ def device_bind(
     if docker is None:
         is_docker = False
 
+    infer_host = "127.0.0.1"
+    redis_addr = "local"
+    redis_port = "6379"
+    redis_password = "fedml_default"
+
     if is_client is True:
         if is_docker:
             login_with_docker_mode(account_id, version, docker_rank)
@@ -304,6 +275,13 @@ def device_bind(
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+
+        device_login_entry.login_as_model_device_agent(userid, False, True, False,
+                                                       infer_host, version, local_server,
+                                                       runner_cmd, device_id, os_name,
+                                                       docker, docker_rank,
+                                                       redis_addr, redis_port, redis_password)
+
     if is_server is True:
         if is_docker:
             login_with_server_docker_mode(account_id, version, docker_rank)
@@ -347,8 +325,14 @@ def device_bind(
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
+        device_login_entry.login_as_model_device_agent(userid, False, True, True,
+                                                       infer_host, version, local_server,
+                                                       runner_cmd, device_id, os_name,
+                                                       docker, docker_rank,
+                                                       redis_addr, redis_port, redis_password)
 
-@device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
+
+@fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="unbind from the FedML client.",
@@ -362,7 +346,7 @@ def device_bind(
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def device_unbind(client, server, docker, docker_rank):
+def fedml_device_unbind(client, server, docker, docker_rank):
     is_client = client
     is_server = server
     if client is None and server is None:
@@ -385,6 +369,8 @@ def device_unbind(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
+        device_login_entry.logout_from_model_ops(True, False, docker, docker_rank)
+
     if is_server is True:
         if is_docker:
             logout_with_server_docker_mode(docker_rank)
@@ -397,6 +383,9 @@ def device_unbind(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
+
+        device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
+
     print("\nlogout successfully!\n")
 
 
@@ -443,7 +432,7 @@ def device_unbind(client, server, docker, docker_rank):
     default="",
     help="the ignore list for copying files, the format is as follows: *.model,__pycache__,*.data*, ",
 )
-def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
+def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
     click.echo("Argument for type: " + type)
     click.echo("Argument for source folder: " + source_folder)
     click.echo("Argument for entry point: " + entry_point)
@@ -483,7 +472,7 @@ def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_
     except Exception as e:
         pass
 
-    ignore_list = "{},{}".format(ignore, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
+    ignore_list = "{},{}".format(ignore, cli_utils.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
     pip_source_dir = os.path.dirname(pip_source_dir)
     pip_build_path = os.path.join(pip_source_dir, "computing", "scheduler", "build-package")
@@ -493,7 +482,7 @@ def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_
                     ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*build_dir_ignore_list))
 
     if type == "client":
-        result = build_mlops_package(
+        result = cli_utils.build_mlops_package(
             ignore_list,
             source_folder,
             entry_point,
@@ -514,7 +503,7 @@ def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_
               "learning run."
         )
     elif type == "server":
-        result = build_mlops_package(
+        result = cli_utils.build_mlops_package(
             ignore_list,
             source_folder,
             entry_point,
@@ -535,118 +524,6 @@ def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_
             + " to start your federated "
               "learning run."
         )
-
-
-def build_mlops_package(
-        ignore,
-        source_folder,
-        entry_point,
-        config_folder,
-        dest_folder,
-        mlops_build_path,
-        mlops_package_parent_dir,
-        mlops_package_name,
-        rank,
-):
-    if not os.path.exists(source_folder):
-        click.echo("source folder is not exist: " + source_folder)
-        return -1
-
-    if not os.path.exists(os.path.join(source_folder, entry_point)):
-        click.echo(
-            "entry file: "
-            + entry_point
-            + " is not exist in the source folder: "
-            + source_folder
-        )
-        return -1
-
-    if not os.path.exists(config_folder):
-        click.echo("config folder is not exist: " + source_folder)
-        return -1
-
-    mlops_src = source_folder
-    mlops_src_entry = entry_point
-    mlops_conf = config_folder
-    cur_dir = mlops_build_path
-    mlops_package_base_dir = os.path.join(
-        cur_dir, "mlops-core", mlops_package_parent_dir
-    )
-    package_dir = os.path.join(mlops_package_base_dir, mlops_package_name)
-    fedml_dir = os.path.join(package_dir, "fedml")
-    mlops_dest = fedml_dir
-    mlops_dest_conf = os.path.join(fedml_dir, "config")
-    mlops_pkg_conf = os.path.join(package_dir, "conf", "fedml.yaml")
-    mlops_dest_entry = os.path.join("fedml", mlops_src_entry)
-    mlops_package_file_name = mlops_package_name + ".zip"
-    dist_package_dir = os.path.join(dest_folder, "dist-packages")
-    dist_package_file = os.path.join(dist_package_dir, mlops_package_file_name)
-    ignore_list = tuple(ignore.split(','))
-
-    shutil.rmtree(mlops_dest_conf, ignore_errors=True)
-    shutil.rmtree(mlops_dest, ignore_errors=True)
-    try:
-        shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy,
-                        ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
-    except Exception as e:
-        pass
-    try:
-        shutil.copytree(mlops_conf, mlops_dest_conf, copy_function=shutil.copy,
-                        ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
-    except Exception as e:
-        pass
-    try:
-        os.remove(os.path.join(mlops_dest_conf, "mqtt_config.yaml"))
-        os.remove(os.path.join(mlops_dest_conf, "s3_config.yaml"))
-    except Exception as e:
-        pass
-
-    mlops_pkg_conf_file = open(mlops_pkg_conf, mode="w")
-    mlops_pkg_conf_file.writelines(
-        [
-            "entry_config: \n",
-            "  entry_file: " + mlops_dest_entry + "\n",
-            "  conf_file: config/fedml_config.yaml\n",
-            "dynamic_args:\n",
-            "  rank: " + rank + "\n",
-            "  run_id: ${FEDSYS.RUN_ID}\n",
-            # "  data_cache_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}\n",
-            # "  data_cache_dir: /fedml/fedml-package/fedml/data\n",
-            "  mqtt_config_path: /fedml/fedml_config/mqtt_config.yaml\n",
-            "  s3_config_path: /fedml/fedml_config/s3_config.yaml\n",
-            "  log_file_dir: /fedml/fedml-package/fedml/data\n",
-            "  log_server_url: ${FEDSYS.LOG_SERVER_URL}\n",
-            "  client_id_list: ${FEDSYS.CLIENT_ID_LIST}\n",
-            "  client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}\n",
-            "  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}\n",
-            "  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}\n",
-            "  client_num_in_total: ${FEDSYS.CLIENT_NUM}\n",
-        ]
-    )
-    mlops_pkg_conf_file.flush()
-    mlops_pkg_conf_file.close()
-
-    local_mlops_package = os.path.join(mlops_package_base_dir, mlops_package_file_name)
-    if os.path.exists(local_mlops_package):
-        os.remove(os.path.join(mlops_package_base_dir, mlops_package_file_name))
-    mlops_archive_name = os.path.join(mlops_package_base_dir, mlops_package_name)
-    shutil.make_archive(
-        mlops_archive_name,
-        "zip",
-        root_dir=mlops_package_base_dir,
-        base_dir=mlops_package_name,
-    )
-    if not os.path.exists(dist_package_dir):
-        os.makedirs(dist_package_dir, exist_ok=True)
-    if os.path.exists(dist_package_file) and not os.path.isdir(dist_package_file):
-        os.remove(dist_package_file)
-    mlops_archive_zip_file = mlops_archive_name + ".zip"
-    if os.path.exists(mlops_archive_zip_file):
-        shutil.move(mlops_archive_zip_file, dist_package_file)
-
-    shutil.rmtree(mlops_build_path, ignore_errors=True)
-
-    return 0
 
 
 @cli.command("diagnosis", help="Diagnosis for open.fedml.ai, AWS S3 service and MQTT service")
@@ -676,7 +553,7 @@ def build_mlops_package(
 @click.option(
     "--mqtt_s3_backend_run_id", "-rid", type=str, default="fedml_diag_9988", help="mqtt+s3 run id.",
 )
-def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client,
+def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client,
                     mqtt_s3_backend_run_id):
     check_open = open
     check_s3 = s3
@@ -761,34 +638,20 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
          "Python version, etc.",
 )
 @click.help_option("--help", "-h")
-def env():
+def fedml_env():
     collect_env()
 
 
-class DefaultCommandGroup(click.Group):
-
-    def __init__(self, *args, **kwargs):
-        self.default_command = kwargs.pop('default_command', None)
-        super().__init__(*args, **kwargs)
-
-    def resolve_command(self, ctx, args):
-        try:
-            return super().resolve_command(ctx, args)
-        except click.UsageError:
-            args.insert(0, self.default_command)
-            return super().resolve_command(ctx, args)
-
-
-@cli.group("launch", cls=DefaultCommandGroup, default_command='run')
+@cli.group("launch", cls=cli_utils.DefaultCommandGroup, default_command='run')
 @click.help_option("--help", "-h")
-def launch():
+def fedml_launch():
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
     pass
 
 
-@launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
+@fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("job_id", nargs=-1)
 @click.option(
@@ -809,17 +672,17 @@ def launch():
     default="release",
     help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_cancel(job_id, platform, api_key, version):
+def fedml_launch_cancel(job_id, platform, api_key, version):
     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
     if error_code != 0:
         click.echo("Please check if your API key is valid.")
         return
 
     api_key = FedMLLaunchManager.get_api_key()
-    stop_jobs_core(platform, job_id[0], api_key, version)
+    cli_utils.stop_job_wrapper(platform, job_id[0], api_key, version)
 
 
-@launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)", )
+@fedml_launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("job_id", nargs=-1)
 @click.option(
@@ -840,7 +703,7 @@ def launch_cancel(job_id, platform, api_key, version):
     default="release",
     help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
 )
-def launch_log(job_id, platform, api_key, version):
+def fedml_launch_log(job_id, platform, api_key, version):
     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
     if error_code != 0:
         click.echo("Please check if your API key is valid.")
@@ -849,14 +712,14 @@ def launch_log(job_id, platform, api_key, version):
     FedMLLaunchManager.get_instance().api_launch_log(job_id[0], 0, 0, need_all_logs=True)
 
 
-@launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
+@fedml_launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("group_id", nargs=-1)
-def launch_queue(group_id):
+def fedml_launch_queue(group_id):
     pass
 
 
-@launch.command(
+@fedml_launch.command(
     "run", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
     context_settings={"ignore_unknown_options": True}
 )
@@ -879,7 +742,7 @@ def launch_queue(group_id):
     default="release",
     help="launch job to which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_job(yaml_file, api_key, group, version):
+def fedml_launch_run(yaml_file, api_key, group, version):
     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
     if error_code != 0:
         click.echo("Please check if your API key is valid.")
@@ -889,304 +752,40 @@ def launch_job(yaml_file, api_key, group, version):
     FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
-@cli.group("jobs")
-def jobs():
-    """
-    Manage jobs on the FedML® Launch platform.
-    """
-    pass
-
-
-@jobs.command("start", help="Start a job at the FedML® Launch platform.")
-@click.help_option("--help", "-h")
-@click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="octopus",
-    help="The platform name at the FedML® Launch platform (options: octopus, parrot, spider, beehive, falcon, launch."
-)
-@click.option(
-    "--project_name",
-    "-prj",
-    type=str,
-    help="The project name at the FedML® Launch platform.",
-)
-@click.option(
-    "--application_name",
-    "-app",
-    type=str,
-    help="Application name in the My Application list at the FedML® Launch platform.",
-)
-@click.option(
-    "--job_name",
-    "-jn",
-    type=str,
-    default="",
-    help="The job name at the FedML® Launch platform.",
-)
-@click.option(
-    "--devices_server", "-ds", type=str, default="",
-    help="The server to run the launching job, for the launch platform, we do not need to set this option."
-)
-@click.option(
-    "--devices_edges", "-de", type=str, default="",
-    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
-         "for the launch platform, we do not need to set this option."
-)
-@click.option(
-    "--user", "-u", type=str, help="user id.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="start job at which version of FedML® Launch platform. It should be dev, test or release",
-)
-def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key,
-              version):
-    if not platform_is_valid(platform):
-        return
-
-    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
-    if error_code != 0:
-        click.echo("Please check if your API key is valid.")
-        return
-
-    FedMLJobManager.get_instance().set_config_version(version)
-    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
-                                                      devices_server, devices_edges,
-                                                      user, api_key,
-                                                      job_name=job_name, need_confirmation=False)
-    if result:
-        click.echo(f"Job {result.job_name} has started.")
-        click.echo(f"Please go to this web page with your account id {result.user_id} to review your job details.")
-        click.echo(f"{result.job_url}")
-        click.echo(f"For querying the status of the job, please run the command: "
-                   f"fedml jobs list -id {result.job_id}")
-    else:
-        click.echo("Failed to start job, please check your network connection "
-                   "and make sure be able to access the FedML® Launch platform.")
-
-
-@jobs.command("list", help="List jobs from the FedML® Launch platform.")
-@click.help_option("--help", "-h")
-@click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="falcon",
-    help="The platform name at the FedML® Launch platform (options: octopus, parrot, spider, beehive, falcon, launch, "
-         "default is falcon).",
-)
-@click.option(
-    "--job_id",
-    "-id",
-    type=str,
-    default="",
-    help="Job id at the FedML® Launch platform.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="list jobs at which version of FedML® Launch platform. It should be dev, test or release",
-)
-def list_jobs(platform, job_id, api_key, version):
-    if not platform_is_valid(platform):
-        return
-
-    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
-    if error_code != 0:
-        click.echo("Please check if your API key is valid.")
-        return
-
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    FedMLLaunchManager.get_instance().list_jobs(job_id)
-
-
-@jobs.command("stop", help="Stop a job from the FedML® Launch platform.")
-@click.help_option("--help", "-h")
-@click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="falcon",
-    help="The platform name at the FedML® Launch platform (options: octopus, parrot, spider, beehive, falcon, launch, "
-         "default is falcon).",
-)
-@click.option(
-    "--job_id",
-    "-id",
-    type=str,
-    default="",
-    help="Job id at the FedML® Launch platform.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
-)
-def stop_jobs(platform, job_id, api_key, version):
-    stop_jobs_core(platform, job_id, api_key, version)
-
-
-def stop_jobs_core(platform, job_id, api_key, version, show_hint_texts=True):
-    if not platform_is_valid(platform):
-        return
-
-    FedMLJobManager.get_instance().set_config_version(version)
-    is_stopped = FedMLJobManager.get_instance().stop_job(platform, job_id, api_key)
-    if show_hint_texts:
-        if is_stopped:
-            click.echo("Job has been stopped.")
-        else:
-            click.echo("Failed to stop the job, please check your network connection "
-                       "and make sure be able to access the FedML® Launch platform.")
-    return is_stopped
-
-
 @cli.group("model")
-def model():
+@click.help_option("--help", "-h")
+def fedml_model():
     """
     Deploy and infer models.
     """
     pass
 
 
-@model.group("device")
-def device():
-    """
-    Manage computing device.
-    """
-    pass
-
-
-@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (open.fedml.ai).")
-@click.help_option("--help", "-h")
-@click.argument("userid", nargs=-1)
-@click.option(
-    "--cloud", "-c", default=None, is_flag=True, help="login as fedml cloud device.",
-)
-@click.option(
-    "--on_premise", "-p", default=None, is_flag=True, help="login as on-premise device.",
-)
-@click.option(
-    "--master", "-m", default=None, is_flag=True, help="login as master device in the federated inference cluster.",
-)
-@click.option(
-    "--infer_host", "-ih", type=str, default="127.0.0.1",
-    help="used this ip address or domain name as inference host.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="login to which version of ModelOps platform. It should be dev, test or release",
-)
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-@click.option(
-    "--runner_cmd",
-    "-rc",
-    type=str,
-    default="{}",
-    help="runner commands (options: request json for starting deployment, stopping deployment).",
-)
-@click.option(
-    "--device_id", "-id", type=str, default="0", help="device id.",
-)
-@click.option(
-    "--os_name", "-os", type=str, default="", help="os name.",
-)
-@click.option(
-    "--docker", "-d", default=None, is_flag=True, help="login with docker mode at the model device agent.",
-)
-@click.option(
-    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
-)
-@click.option(
-    "--redis_addr", "-ra", default="local", help="redis addr for caching inference information in the master device.",
-)
-@click.option(
-    "--redis_port", "-rp", default="6379", help="redis port for caching inference information in the master device.",
-)
-@click.option(
-    "--redis_password", "-rpw", default="fedml_default",
-    help="redis password for caching inference information in the master device.",
-)
-def login_as_model_device_agent(
-        userid, cloud, on_premise, master, infer_host, version, local_server,
-        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
-):
-    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server,
-                                                   runner_cmd, device_id, os_name, docker, docker_rank,
-                                                   redis_addr, redis_port, redis_password)
-
-
-@device.command("logout", help="Logout from the ModelOps platform (open.fedml.ai)")
-@click.help_option("--help", "-h")
-@click.option(
-    "--slave", "-s", default=None, is_flag=True, help="logout from slave device.",
-)
-@click.option(
-    "--master", "-m", default=None, is_flag=True, help="logout from master device.",
-)
-@click.option(
-    "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the model device agent.",
-)
-@click.option(
-    "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
-)
-def logout_from_model_ops(slave, master, docker, docker_rank):
-    device_login_entry.logout_from_model_ops(slave, master, docker, docker_rank)
-    print("\nlogout successfully!\n")
-
-
-@model.command("create", help="Create local model repository.")
+@fedml_model.command("create", help="Create local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def create_model(name):
+def fedml_model_create(name):
     if FedMLModelCards.get_instance().create_model(name):
         click.echo("Create model {} successfully.".format(name))
     else:
         click.echo("Failed to create model {}.".format(name))
 
 
-@model.command("delete", help="Delete local model repository.")
+@fedml_model.command("delete", help="Delete local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def delete_model(name):
+def fedml_model_delete(name):
     if FedMLModelCards.get_instance().delete_model(name):
         click.echo("Delete model {} successfully.".format(name))
     else:
         click.echo("Failed to delete model {}.".format(name))
 
 
-@model.command("add", help="Add file to local model repository.")
+@fedml_model.command("add", help="Add file to local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1194,14 +793,14 @@ def delete_model(name):
 @click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
-def add_model_files(name, path):
+def fedml_model_add(name, path):
     if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:
         click.echo("Failed to add file to model {}.".format(name))
 
 
-@model.command("remove", help="Remove file from local model repository.")
+@fedml_model.command("remove", help="Remove file from local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1209,19 +808,19 @@ def add_model_files(name, path):
 @click.option(
     "--file", "-f", type=str, help="file name for specific model.",
 )
-def remove_model_files(name, file):
+def fedml_model_remove(name, file):
     if FedMLModelCards.get_instance().remove_model_files(name, file):
         click.echo("Remove file from model {} successfully.".format(name))
     else:
         click.echo("Failed to remove file from model {}.".format(name))
 
 
-@model.command("list", help="List model in the local model repository.")
+@fedml_model.command("list", help="List model in the local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def list_models(name):
+def fedml_model_list(name):
     models = FedMLModelCards.get_instance().list_models(name)
     if len(models) <= 0:
         click.echo("Model list is empty.")
@@ -1231,7 +830,7 @@ def list_models(name):
         click.echo("List model {} successfully.".format(name))
 
 
-@model.command("list-remote", help="List models in the remote model repository.")
+@fedml_model.command("list-remote", help="List models in the remote model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1256,7 +855,7 @@ def list_models(name):
     default="127.0.0.1",
     help="local server address.",
 )
-def list_remote_models(name, user, api_key, version, local_server):
+def fedml_model_list_remote(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1273,12 +872,12 @@ def list_remote_models(name, user, api_key, version, local_server):
         click.echo("List model {} successfully.".format(name))
 
 
-@model.command("package", help="Build local model repository as zip model package.")
+@fedml_model.command("package", help="Build local model repository as zip model package.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def package_model(name):
+def fedml_model_package(name):
     model_zip = FedMLModelCards.get_instance().build_model(name)
     if model_zip != "":
         click.echo("Build model package {} successfully".format(name))
@@ -1287,7 +886,7 @@ def package_model(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-@model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
+@fedml_model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1318,7 +917,7 @@ def package_model(name):
     default="127.0.0.1",
     help="local server address.",
 )
-def push_model(name, model_storage_url, model_net_url, user, api_key, version, local_server):
+def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1339,7 +938,7 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version, l
             click.echo("Failed to push model {}.".format(name))
 
 
-@model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
+@fedml_model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1364,7 +963,7 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version, l
     default="127.0.0.1",
     help="local server address.",
 )
-def pull_model(name, user, api_key, version, local_server):
+def fedml_model_pull(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1375,7 +974,7 @@ def pull_model(name, user, api_key, version, local_server):
         click.echo("Failed to pull model {}.".format(name))
 
 
-@model.command("deploy",
+@fedml_model.command("deploy",
                help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
 @click.help_option("--help", "-h")
 @click.option(
@@ -1417,7 +1016,7 @@ def pull_model(name, user, api_key, version, local_server):
     "--use_local_deployment", "-ld", default=None, is_flag=True,
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
-def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version,
+def fedml_model_deploy(name, on_premise, cloud, devices, user, api_key, params, version,
                  local_server, use_local_deployment):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
@@ -1452,20 +1051,20 @@ def deploy_model(name, on_premise, cloud, devices, user, api_key, params, versio
         click.echo("Failed to deploy model {}.".format(name))
 
 
-@model.group("inference")
-def inference():
+@fedml_model.group("inference")
+def fedml_model_inference():
     """
     Inference models.
     """
     pass
 
 
-@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
+@fedml_model_inference.command("query", help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def query_model_infer(name):
+def fedml_model_inference_query(name):
     inference_output_url, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
     if inference_output_url != "":
         click.echo("Query model {} successfully.".format(name))
@@ -1476,7 +1075,7 @@ def query_model_infer(name):
         click.echo("Failed to query model {}.".format(name))
 
 
-@inference.command("run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
+@fedml_model_inference.command("run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1484,7 +1083,7 @@ def query_model_infer(name):
 @click.option(
     "--data", "-d", type=str, help="input data for model inference.",
 )
-def run_model_infer(name, data):
+def fedml_model_inference_run(name, data):
     infer_out_json = FedMLModelCards.get_instance().inference_model(name, data)
     if infer_out_json != "":
         click.echo("Inference model {} successfully.".format(name))

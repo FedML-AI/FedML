@@ -58,18 +58,18 @@ class ServerConstants(object):
     LOGIN_MODE_CLOUD_AGENT_INDEX = 1
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
     LOGIN_MODE_GPU_MASTER_SERVER_INDEX = 3
-    LOGIN_MODE_MODEL_MASTER_INDEX = 4
-    login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server", "model_master"]
+
+    login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server"]
+
     login_index_role_map = {LOGIN_MODE_LOCAL_INDEX: login_role_list[LOGIN_MODE_LOCAL_INDEX],
                             LOGIN_MODE_CLOUD_AGENT_INDEX: login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX],
                             LOGIN_MODE_CLOUD_SERVER_INDEX: login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX],
-                            LOGIN_MODE_GPU_MASTER_SERVER_INDEX: login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX],
-                            LOGIN_MODE_MODEL_MASTER_INDEX: login_role_list[LOGIN_MODE_MODEL_MASTER_INDEX]}
+                            LOGIN_MODE_GPU_MASTER_SERVER_INDEX: login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]}
+
     login_role_index_map = {login_role_list[LOGIN_MODE_LOCAL_INDEX]: LOGIN_MODE_LOCAL_INDEX,
                             login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX]: LOGIN_MODE_CLOUD_AGENT_INDEX,
                             login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]: LOGIN_MODE_CLOUD_SERVER_INDEX,
-                            login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX,
-                            login_role_list[LOGIN_MODE_MODEL_MASTER_INDEX]: LOGIN_MODE_MODEL_MASTER_INDEX}
+                            login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX}
 
     @staticmethod
     def get_fedml_home_dir():
