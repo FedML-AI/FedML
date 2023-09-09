@@ -27,6 +27,16 @@ from fedml.device import get_device_type
 class CrossSiloLauncher:
     @staticmethod
     def launch_dist_trainers(torch_client_filename, inputs):
+        """
+        Launch distributed trainers based on the specified scenario.
+
+        Args:
+            torch_client_filename (str): The filename of the torch client script to be launched.
+            inputs (List[str]): List of input arguments to be passed to the torch client script.
+
+        Returns:
+            None
+        """
         # this is only used by the client (DDP or single process), so there is no need to specify the backend.
         args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_SILO)
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
@@ -38,12 +48,34 @@ class CrossSiloLauncher:
 
     @staticmethod
     def _run_cross_silo_horizontal(args, torch_client_filename, inputs):
+        """
+        Run distributed training in a horizontal federated learning scenario.
+
+        Args:
+            args: Arguments and configuration for the client.
+            torch_client_filename (str): The filename of the torch client script to be launched.
+            inputs (List[str]): List of input arguments to be passed to the torch client script.
+
+        Returns:
+            None
+        """
         python_path = subprocess.run(["which", "python"], capture_output=True, text=True).stdout.strip()
         process_arguments = [python_path, torch_client_filename] + inputs
         subprocess.run(process_arguments)
 
     @staticmethod
     def _run_cross_silo_hierarchical(args, torch_client_filename, inputs):
+        """
+        Run distributed training in a hierarchical federated learning scenario.
+
+        Args:
+            args: Arguments and configuration for the client.
+            torch_client_filename (str): The filename of the torch client script to be launched.
+            inputs (List[str]): List of input arguments to be passed to the torch client script.
+
+        Returns:
+            None
+        """
         def get_torchrun_arguments(node_rank):
             torchrun_path = subprocess.run(["which", "torchrun"], capture_output=True, text=True).stdout.strip()
 

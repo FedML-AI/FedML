@@ -8,20 +8,60 @@ from ..computing.scheduler.model_scheduler.device_client_constants import Client
 from ..computing.scheduler.comm_utils import sys_utils
 
 class FedMLPredictor(ABC):
+    """
+    Abstract base class for federated machine learning predictors.
+
+    Subclasses should implement the `predict` method for making predictions.
+
+    Attributes:
+        None
+
+    Methods:
+        predict(*args, **kwargs): Abstract method for making predictions.
+    """
+
     def __init__(self):
+        """
+        Initializes the FedMLPredictor.
+
+        This constructor can be extended by subclasses as needed.
+        """
         build_dynamic_args()
 
     @abstractmethod
     def predict(self, *args, **kwargs):
+        """
+        Abstract method for making predictions.
+
+        Subclasses should implement this method to define the prediction logic.
+
+        Args:
+            *args: Variable-length arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            None
+        """
         pass
 
 def build_dynamic_args():
+    """
+    Builds dynamic arguments based on environment variables.
+
+    This function checks for environment variables related to a bootstrap script and executes it if found.
+
+    Args:
+        None
+
+    Returns:
+        bool: True if the bootstrap script runs successfully, False otherwise.
+    """
     DEFAULT_BOOTSTRAP_FULL_DIR = os.environ.get("BOOTSTRAP_DIR", None)
     if DEFAULT_BOOTSTRAP_FULL_DIR is None or DEFAULT_BOOTSTRAP_FULL_DIR == "":
         return
 
     print("DEFAULT_BOOTSTRAP_FULL_DIR: {}".format(DEFAULT_BOOTSTRAP_FULL_DIR))
-        
+
     DEFAULT_BOOTSTRAP_SCRIPT_DIR = os.path.dirname(DEFAULT_BOOTSTRAP_FULL_DIR)
     DEFAULT_BOOTSTRAP_SCRIPT_PATH = os.path.dirname(DEFAULT_BOOTSTRAP_FULL_DIR)
     DEFAULT_BOOTSTRAP_SCRIPT_FILE = os.path.basename(DEFAULT_BOOTSTRAP_FULL_DIR)
@@ -47,12 +87,12 @@ def build_dynamic_args():
                     bootstrap_scripts = "cd {}; sh {}".format(bootstrap_script_dir, # Use sh over ./ to avoid permission denied error
                                                                 os.path.basename(bootstrap_script_file))
                 bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
-                
+
                 process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout=True,
                                                                     should_capture_stderr=True)
                 # ClientConstants.save_bootstrap_process(run_id, process.pid)
                 ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-                
+
                 if ret_code is None or ret_code <= 0:
                     if out is not None:
                         out_str = sys_utils.decode_our_err_result(out)

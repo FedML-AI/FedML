@@ -17,6 +17,24 @@ from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow, RNN_FedSh
 
 
 def create(args, output_dim):
+    """
+    Create a deep learning model based on the provided arguments and dataset.
+
+    Args:
+        args (Namespace): Command-line arguments containing model and dataset information.
+        output_dim (int): Dimension of the model's output.
+
+    Returns:
+        torch.nn.Module or Tuple[torch.nn.Module, torch.nn.Module] or None: The created model(s).
+
+    Raises:
+        Exception: If the specified model or dataset is not supported.
+
+    Example:
+        >>> import argparse
+        >>> args = argparse.Namespace(model="cnn", dataset="mnist")
+        >>> model = create(args, 10)
+    """
     global model
     model_name = args.model
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))

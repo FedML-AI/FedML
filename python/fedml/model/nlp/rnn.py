@@ -3,17 +3,20 @@ import torch.nn as nn
 
 
 class RNN_OriginalFedAvg(nn.Module):
-    """Creates a RNN model using LSTM layers for Shakespeare language models (next character prediction task).
+    """
+    Creates a RNN model using LSTM layers for Shakespeare language models (next character prediction task).
     This replicates the model structure in the paper:
     Communication-Efficient Learning of Deep Networks from Decentralized Data
-      H. Brendan McMahan, Eider Moore, Daniel Ramage, Seth Hampson, Blaise Agueray Arcas. AISTATS 2017.
-      https://arxiv.org/abs/1602.05629
+    H. Brendan McMahan, Eider Moore, Daniel Ramage, Seth Hampson, Blaise Agueray Arcas. AISTATS 2017.
+    https://arxiv.org/abs/1602.05629
     This is also recommended model by "Adaptive Federated Optimization. ICML 2020" (https://arxiv.org/pdf/2003.00295.pdf)
+    
     Args:
-      vocab_size: the size of the vocabulary, used as a dimension in the input embedding.
-      sequence_length: the length of input sequences.
+        embedding_dim: The dimension of word embeddings. Default is 8.
+        vocab_size: The size of the vocabulary, used as a dimension in the input embedding. Default is 90.
+        hidden_size: The size of the hidden state in the LSTM layers. Default is 256.
     Returns:
-      An uncompiled `torch.nn.Module`.
+        An uncompiled `torch.nn.Module`.
     """
 
     def __init__(self, embedding_dim=8, vocab_size=90, hidden_size=256):
@@ -30,6 +33,14 @@ class RNN_OriginalFedAvg(nn.Module):
         self.fc = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, input_seq):
+        """
+        Forward pass of the model.
+
+        Args:
+            input_seq: Input sequence of character indices.
+        Returns:
+            output: Model predictions.
+        """
         embeds = self.embeddings(input_seq)
         # Note that the order of mini-batch is random so there is no hidden relationship among batches.
         # So we do not input the previous batch's hidden state,
@@ -45,6 +56,20 @@ class RNN_OriginalFedAvg(nn.Module):
 
 
 class RNN_FedShakespeare(nn.Module):
+    """
+    RNN model for Shakespeare language modeling (next character prediction task).
+
+    This class defines an RNN model for predicting the next character in a sequence of text,
+    specifically tailored for the "fed_shakespeare" task.
+
+    Args:
+        embedding_dim (int): Dimension of the character embeddings.
+        vocab_size (int): Size of the vocabulary (number of unique characters).
+        hidden_size (int): Size of the hidden state of the LSTM layers.
+
+    Returns:
+        torch.Tensor: The model's output predictions.
+    """
     def __init__(self, embedding_dim=8, vocab_size=90, hidden_size=256):
         super(RNN_FedShakespeare, self).__init__()
         self.embeddings = nn.Embedding(
@@ -59,6 +84,14 @@ class RNN_FedShakespeare(nn.Module):
         self.fc = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, input_seq):
+        """
+        Forward pass of the model.
+
+        Args:
+            input_seq: Input sequence of character indices.
+        Returns:
+            output: Model predictions.
+        """
         embeds = self.embeddings(input_seq)
         # Note that the order of mini-batch is random so there is no hidden relationship among batches.
         # So we do not input the previous batch's hidden state,
@@ -74,15 +107,22 @@ class RNN_FedShakespeare(nn.Module):
 
 
 class RNN_StackOverFlow(nn.Module):
-    """Creates a RNN model using LSTM layers for StackOverFlow (next word prediction task).
-    This replicates the model structure in the paper:
+    """
+    RNN model for StackOverflow language modeling (next word prediction task).
+
+    This class defines an RNN model for predicting the next word in a sequence of text, specifically tailored
+    for the "stackoverflow_nwp" task.
     "Adaptive Federated Optimization. ICML 2020" (https://arxiv.org/pdf/2003.00295.pdf)
-    Table 9
+
     Args:
-      vocab_size: the size of the vocabulary, used as a dimension in the input embedding.
-      sequence_length: the length of input sequences.
+        vocab_size (int): Size of the vocabulary (number of unique words).
+        num_oov_buckets (int): Number of out-of-vocabulary (OOV) buckets.
+        embedding_size (int): Dimension of the word embeddings.
+        latent_size (int): Size of the LSTM hidden state.
+        num_layers (int): Number of LSTM layers.
+
     Returns:
-      An uncompiled `torch.nn.Module`.
+        torch.Tensor: The model's output predictions.
     """
 
     def __init__(
@@ -107,6 +147,16 @@ class RNN_StackOverFlow(nn.Module):
         self.fc2 = nn.Linear(embedding_size, extended_vocab_size)
 
     def forward(self, input_seq, hidden_state=None):
+        """
+        Forward pass of the model.
+
+        Args:
+            input_seq (torch.Tensor): Input sequence of word indices.
+            hidden_state (tuple): Initial hidden state of the LSTM.
+
+        Returns:
+            torch.Tensor: Model predictions.
+        """
         embeds = self.word_embeddings(input_seq)
         lstm_out, hidden_state = self.lstm(embeds, hidden_state)
         fc1_output = self.fc1(lstm_out[:, :])
