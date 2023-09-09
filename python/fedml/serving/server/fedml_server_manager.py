@@ -249,6 +249,7 @@ class FedMLServerManager(FedMLCommManager):
         Returns:
             None
         """
+        
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
