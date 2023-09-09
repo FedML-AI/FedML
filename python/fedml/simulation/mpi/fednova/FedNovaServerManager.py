@@ -8,6 +8,28 @@ from ....core.distributed.communication.message import Message
 
 
 class FedNovaServerManager(FedMLCommManager):
+    """
+    Manager for the server-side of the FedNova federated learning process.
+
+    Methods:
+        __init__: Initialize the FedNovaServerManager.
+        run: Start the server manager.
+        send_init_msg: Send initialization messages to clients.
+        register_message_receive_handlers: Register message receive handlers for handling incoming messages.
+        handle_message_receive_model_from_client: Handle the received model from a client.
+        send_message_init_config: Send initialization configuration message to a client.
+        send_message_sync_model_to_client: Send model synchronization message to a client.
+
+    Parameters:
+        args: Command-line arguments.
+        aggregator: Server aggregator responsible for aggregating client updates.
+        comm: Communication backend for distributed training.
+        rank (int): Rank of the server process.
+        size (int): Total number of processes.
+        backend (str): Communication backend (e.g., "MPI").
+        is_preprocessed (bool): Indicates whether clients have been preprocessed.
+        preprocessed_client_lists (list): Lists of preprocessed clients for each round.
+    """
     def __init__(
         self,
         args,
@@ -19,6 +41,19 @@ class FedNovaServerManager(FedMLCommManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
+        """
+        Initialize the FedNovaServerManager.
+
+        Args:
+            args: Command-line arguments.
+            aggregator: Server aggregator responsible for aggregating client updates.
+            comm: Communication backend for distributed training.
+            rank (int): Rank of the server process.
+            size (int): Total number of processes.
+            backend (str): Communication backend (e.g., "MPI").
+            is_preprocessed (bool): Indicates whether clients have been preprocessed.
+            preprocessed_client_lists (list): Lists of preprocessed clients for each round.
+        """
         super().__init__(args, comm, rank, size, backend)
         self.args = args
         self.aggregator = aggregator
@@ -28,12 +63,18 @@ class FedNovaServerManager(FedMLCommManager):
         self.preprocessed_client_lists = preprocessed_client_lists
 
     def run(self):
+        """
+        Start the server manager.
+        """
         super().run()
 
 
 
 
     def send_init_msg(self):
+        """
+        Send initialization messages to clients.
+        """
         # sampling clients
         client_indexes = self.aggregator.client_sampling(
             self.round_idx,
@@ -53,12 +94,18 @@ class FedNovaServerManager(FedMLCommManager):
             )
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for handling incoming messages.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
         )
 
     def handle_message_receive_model_from_client(self, msg_params):
+        """
+        Handle the received model from a client.
+        """
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         # local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -112,8 +159,18 @@ class FedNovaServerManager(FedMLCommManager):
                     average_weight_dict, client_schedule
                 )
 
-    def send_message_init_config(self, receive_id, global_model_params, 
-                                average_weight_dict, client_schedule):
+    def send_message_init_config(
+            self, receive_id, global_model_params, average_weight_dict, client_schedule
+        ):
+        """
+        Send initialization configuration message to a client.
+
+        Args:
+            receive_id: Receiver's process ID.
+            global_model_params: Global model parameters.
+            average_weight_dict: Dictionary of average weights for clients.
+            client_schedule: Schedule of clients for the current round.
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
@@ -123,8 +180,22 @@ class FedNovaServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE, client_schedule)
         self.send_message(message)
 
-    def send_message_sync_model_to_client(self, receive_id, global_model_params, 
-                                average_weight_dict, client_schedule):
+    def send_message_sync_model_to_client(
+            self, 
+            receive_id, 
+            global_model_params, 
+            average_weight_dict, 
+            client_schedule
+        ):
+        """
+        Send model synchronization message to a client.
+
+        Args:
+            receive_id: Receiver's process ID.
+            global_model_params: Global model parameters.
+            average_weight_dict: Dictionary of average weights for clients.
+            client_schedule: Schedule of clients for the current round.
+        """
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,

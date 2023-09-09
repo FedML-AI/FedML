@@ -1,17 +1,29 @@
 import logging
 from typing import List, Union
-
 import torch
 
-
 class OptRepo:
-    """Collects and provides information about the subclasses of torch.optim.Optimizer."""
+    """Collects and provides information about the subclasses of torch.optim.Optimizer.
+
+    This class allows you to access and retrieve information about different PyTorch
+    optimizer classes.
+
+    Attributes:
+        repo (dict): A dictionary containing optimizer class names as keys and the
+            corresponding optimizer classes as values.
+
+    Methods:
+        get_opt_names(): Returns a list of supported optimizer names.
+        name2cls(name: str): Returns the optimizer class based on its name.
+        supported_parameters(opt: Union[str, torch.optim.Optimizer]): Returns a list of
+            __init__ function parameters of an optimizer.
+    """
 
     repo = {x.__name__.lower(): x for x in torch.optim.Optimizer.__subclasses__()}
 
     @classmethod
     def get_opt_names(cls) -> List[str]:
-        """Returns a list of supported optimizers.
+        """Returns a list of supported optimizer names.
 
         Returns:
             List[str]: Names of optimizers.
@@ -29,6 +41,9 @@ class OptRepo:
 
         Returns:
             torch.optim.Optimizer: The class corresponding to the name.
+
+        Raises:
+            KeyError: If the provided optimizer name is invalid.
         """
         try:
             return cls.repo[name.lower()]
@@ -39,7 +54,7 @@ class OptRepo:
 
     @classmethod
     def supported_parameters(cls, opt: Union[str, torch.optim.Optimizer]) -> List[str]:
-        """Returns a lost of __init__ function parametrs of an optimizer.
+        """Returns a list of __init__ function parameters of an optimizer.
 
         Args:
             opt (Union[str, torch.optim.Optimizer]): The name or class of the optimizer.
