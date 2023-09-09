@@ -11,6 +11,20 @@ from ....ml.trainer.fednova_trainer import FedNovaModelTrainer
 def FedML_FedNova_distributed(
     args, process_id, worker_number, comm, device, dataset, model, client_trainer=None, server_aggregator=None
 ):
+    """
+    Initialize and run the FedNova distributed training process.
+
+    Args:
+        args: Command-line arguments.
+        process_id (int): ID of the current process.
+        worker_number (int): Total number of worker processes.
+        comm: Communication backend for distributed training.
+        device: PyTorch device (CPU or GPU) to run computations.
+        dataset: Dataset information including data loaders and other data-related details.
+        model: The model used for training.
+        client_trainer: Client-specific trainer (if applicable).
+        server_aggregator: Server aggregator for model updates (if provided).
+    """
     [
         train_data_num,
         test_data_num,
@@ -72,6 +86,25 @@ def init_server(
     train_data_local_num_dict,
     server_aggregator,
 ):
+    """
+    Initialize the server for FedNova federated learning.
+
+    Args:
+        args: Command-line arguments.
+        device: PyTorch device (CPU or GPU) to run computations.
+        comm: Communication backend for distributed training.
+        rank (int): Rank of the current process.
+        size (int): Total number of processes.
+        model: The model used for training.
+        train_data_num: Total number of training samples.
+        train_data_global: Global training dataset.
+        test_data_global: Global test dataset.
+        train_data_local_dict: Dictionary of local training datasets for clients.
+        test_data_local_dict: Dictionary of local test datasets for clients.
+        train_data_local_num_dict: Dictionary of the number of local training samples for clients.
+        server_aggregator: Server aggregator for model updates.
+    """
+
     if server_aggregator is None:
         server_aggregator = create_server_aggregator(model, args)
     server_aggregator.set_id(-1)
@@ -111,6 +144,22 @@ def init_client(
     test_data_local_dict,
     client_trainer=None,
 ):
+    """
+    Initialize a client for FedNova federated learning.
+
+    Args:
+        args: Command-line arguments.
+        device: PyTorch device (CPU or GPU) to run computations.
+        comm: Communication backend for distributed training.
+        process_id (int): ID of the current client process.
+        size (int): Total number of processes.
+        model: The model used for training.
+        train_data_num: Total number of training samples.
+        train_data_local_num_dict: Dictionary of the number of local training samples for clients.
+        train_data_local_dict: Dictionary of local training datasets for clients.
+        test_data_local_dict: Dictionary of local test datasets for clients.
+        client_trainer: Client-specific trainer (if applicable).
+    """
     client_index = process_id - 1
     if client_trainer is None:
         # client_trainer = create_model_trainer(model, args)

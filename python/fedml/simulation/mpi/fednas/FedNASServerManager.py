@@ -8,6 +8,17 @@ from ....core.distributed.communication.message import Message
 
 
 class FedNASServerManager(FedMLCommManager):
+    """
+    Manager class for the server in the Federated NAS (Neural Architecture Search) distributed training.
+
+    Args:
+        args: Command-line arguments and configurations.
+        comm: The MPI communicator.
+        rank: The process rank of the current worker.
+        size: The total number of workers.
+        aggregator: The aggregator for collecting client updates.
+    """
+
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
 
@@ -17,6 +28,9 @@ class FedNASServerManager(FedMLCommManager):
         self.aggregator = aggregator
 
     def run(self):
+        """
+        Start the server manager.
+        """
         global_model = self.aggregator.get_model()
         global_model_params = global_model.state_dict()
         global_arch_params = None
@@ -29,6 +43,9 @@ class FedNASServerManager(FedMLCommManager):
         super().run()
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for different message types.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.__handle_msg_server_receive_model_from_client_opt_send,
@@ -37,6 +54,14 @@ class FedNASServerManager(FedMLCommManager):
     def __send_initial_config_to_client(
             self, process_id, global_model_params, global_arch_params
     ):
+        """
+        Send the initial configuration to a client.
+
+        Args:
+            process_id: The ID of the target client.
+            global_model_params: The global model parameters.
+            global_arch_params: The global architecture parameters (only in the search stage).
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), process_id
         )
@@ -46,6 +71,12 @@ class FedNASServerManager(FedMLCommManager):
         self.send_message(message)
 
     def __handle_msg_server_receive_model_from_client_opt_send(self, msg_params):
+        """
+        Handle the received model message from a client and optionally send updated models to clients.
+
+        Args:
+            msg_params (dict): The message parameters containing model and architecture information.
+        """
         process_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         arch_params = msg_params.get(MyMessage.MSG_ARG_KEY_ARCH_PARAMS)
@@ -69,15 +100,15 @@ class FedNASServerManager(FedMLCommManager):
             else:
                 global_model_params = self.aggregator.aggregate()
                 global_arch_params = []
-            self.aggregator.infer(self.args.round_idx)  # for NAS, it cost 151 seconds
+            self.aggregator.infer(self.args.round_idx)  # For NAS, it takes approximately 151 seconds
             self.aggregator.statistics(self.args.round_idx)
             if self.args.stage == "search":
                 self.aggregator.record_model_global_architecture(self.args.round_idx)
 
-            # free all teh GPU memory cache
+            # Free all GPU memory cache
             torch.cuda.empty_cache()
 
-            # start the next round
+            # Start the next round
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 self.finish()
@@ -91,6 +122,14 @@ class FedNASServerManager(FedMLCommManager):
     def __send_model_to_client_message(
             self, process_id, global_model_params, global_arch_params
     ):
+        """
+        Send the updated model to a client.
+
+        Args:
+            process_id: The ID of the target client.
+            global_model_params: The updated global model parameters.
+            global_arch_params: The updated global architecture parameters (only in the search stage).
+        """
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, 0, process_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, global_arch_params)

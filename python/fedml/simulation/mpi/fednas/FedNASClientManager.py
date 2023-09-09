@@ -7,6 +7,17 @@ from ....core.distributed.communication.message import Message
 
 
 class FedNASClientManager(FedMLCommManager):
+    """
+    Manager class for the client in the Federated NAS (Neural Architecture Search) distributed training.
+
+    Args:
+        args: Command-line arguments and configurations.
+        comm: The MPI communicator.
+        rank: The process rank of the current worker.
+        size: The total number of workers.
+        trainer: The client trainer instance.
+    """
+
     def __init__(self, args, comm, rank, size, trainer):
         super().__init__(args, comm, rank, size)
 
@@ -15,9 +26,15 @@ class FedNASClientManager(FedMLCommManager):
         self.args.round_idx = 0
 
     def run(self):
+        """
+        Start the client manager.
+        """
         super().run()
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for different message types.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.__handle_msg_client_receive_config
         )
@@ -27,6 +44,12 @@ class FedNASClientManager(FedMLCommManager):
         )
 
     def __handle_msg_client_receive_config(self, msg_params):
+        """
+        Handle the received configuration message from the server.
+
+        Args:
+            msg_params (dict): The message parameters containing model and architecture information.
+        """
         logging.info("__handle_msg_client_receive_config")
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         arch_params = msg_params.get(MyMessage.MSG_ARG_KEY_ARCH_PARAMS)
@@ -35,10 +58,16 @@ class FedNASClientManager(FedMLCommManager):
             self.trainer.update_arch(arch_params)
 
         self.args.round_idx = 0
-        # start to train
+        # Start training
         self.__train()
 
     def __handle_msg_client_receive_model_from_server(self, msg_params):
+        """
+        Handle the received model message from the server.
+
+        Args:
+            msg_params (dict): The message parameters containing model and architecture information.
+        """
         process_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         arch_params = msg_params.get(MyMessage.MSG_ARG_KEY_ARCH_PARAMS)
@@ -54,6 +83,9 @@ class FedNASClientManager(FedMLCommManager):
             self.finish()
 
     def __train(self):
+        """
+        Perform the local training for the client.
+        """
         logging.info("#######training########### round_id = %d" % self.args.round_idx)
         start_time = time.time()
         if self.args.stage == "search":
@@ -68,7 +100,7 @@ class FedNASClientManager(FedMLCommManager):
             weights, local_sample_num, train_acc, train_loss = self.trainer.train()
             alphas = []
         train_finished_time = time.time()
-        # for one epoch, the local searching time cost is: 75s (based on RTX2080Ti)
+        # For one epoch, the local searching time cost is approximately 75s (based on RTX2080Ti)
         logging.info(
             "local searching time cost: %d" % (train_finished_time - start_time)
         )
@@ -77,7 +109,7 @@ class FedNASClientManager(FedMLCommManager):
             weights, alphas, local_sample_num, train_acc, train_loss
         )
         communication_finished_time = time.time()
-        # for one epoch, the local communication time cost is: < 1s (based o n RTX2080Ti)
+        # For one epoch, the local communication time cost is less than 1s (based on RTX2080Ti)
         logging.info(
             "local communication time cost: %d"
             % (communication_finished_time - train_finished_time)
@@ -86,6 +118,16 @@ class FedNASClientManager(FedMLCommManager):
     def __send_msg_fedavg_send_model_to_server(
         self, weights, alphas, local_sample_num, valid_acc, valid_loss
     ):
+        """
+        Send the model updates and training results to the server.
+
+        Args:
+            weights: The updated model weights.
+            alphas: The updated architecture parameters (only in the search stage).
+            local_sample_num: The number of local training samples.
+            valid_acc: The local training accuracy.
+            valid_loss: The local training loss.
+        """
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.rank, 0)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)

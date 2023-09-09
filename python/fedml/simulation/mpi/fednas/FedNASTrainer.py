@@ -8,6 +8,44 @@ from ....model.cv.darts.architect import Architect
 
 
 class FedNASTrainer(object):
+    """
+    Federated NAS Trainer for local model training and inference.
+
+    This class is responsible for performing local training and inference on client devices during federated NAS.
+
+    Args:
+        client_index (int): Index of the client within the federated system.
+        train_data_local_dict (dict): Dictionary containing local training datasets for each client.
+        test_data_local_dict (dict): Dictionary containing local test/validation datasets for each client.
+        train_data_local_num (int): Number of training samples on the local client.
+        train_data_num (int): Total number of training samples across all clients.
+        model (nn.Module): The neural network model to be trained.
+        device: The computing device (e.g., GPU) to perform training and inference.
+        args: Additional configuration and hyperparameters for training and inference.
+
+    Methods:
+        update_model(weights):
+            Update the model's weights with global model weights.
+
+        update_arch(alphas):
+            Update the model's architecture with global architecture parameters.
+
+        search():
+            Perform local architecture search and training.
+
+        train():
+            Perform local training.
+
+        local_train(train_queue, valid_queue, model, criterion, optimizer):
+            Perform local training on a batch of data.
+
+        local_infer(valid_queue, model, criterion):
+            Perform local inference on a batch of data.
+
+        infer():
+            Perform inference using the trained model.
+
+    """
     def __init__(
             self,
             client_index,
@@ -33,16 +71,39 @@ class FedNASTrainer(object):
         self.test_local = test_data_local_dict[client_index]
 
     def update_model(self, weights):
+        """
+        Update the model with new weights.
+
+        Args:
+            weights (dict): The model weights to update.
+        """
         logging.info("update_model. client_index = %d" % self.client_index)
         self.model.load_state_dict(weights)
 
     def update_arch(self, alphas):
+        """
+        Update the model architecture parameters (only used in the search stage).
+
+        Args:
+            alphas (list): The architecture parameters to update.
+        """
         logging.info("update_arch. client_index = %d" % self.client_index)
         for a_g, model_arch in zip(alphas, self.model.arch_parameters()):
             model_arch.data.copy_(a_g.data)
 
     # local search
     def search(self):
+        """
+        Perform local neural architecture search.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - weights (dict): The updated model weights.
+                - alphas (list): The updated architecture parameters (only in the search stage).
+                - local_sample_number (int): The number of local training samples.
+                - local_avg_train_acc (float): The average training accuracy.
+                - local_avg_train_loss (float): The average training loss.
+        """
         self.model.to(self.device)
         self.model.train()
 
@@ -108,6 +169,22 @@ class FedNASTrainer(object):
     def local_search(
             self, train_queue, valid_queue, model, architect, criterion, optimizer
     ):
+        """
+        Perform local neural architecture search.
+
+        Args:
+            train_queue (DataLoader): DataLoader for the training dataset.
+            valid_queue (DataLoader): DataLoader for the validation dataset.
+            model (nn.Module): The neural network model.
+            architect (Architect): The architect responsible for architecture search.
+            criterion: The loss criterion for optimization.
+            optimizer: The optimizer for weight updates.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - top1_accuracy (float): Top-1 accuracy achieved during local search.
+                - loss (float): Average loss during local search.
+        """
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
@@ -168,6 +245,16 @@ class FedNASTrainer(object):
         return top1.avg / 100.0, objs.avg / 100.0, loss
 
     def train(self):
+        """
+        Perform local training.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - weights (dict): The updated model weights.
+                - local_sample_number (int): The number of local training samples.
+                - local_avg_train_acc (float): The average training accuracy.
+                - local_avg_train_loss (float): The average training loss.
+        """
         self.model.to(self.device)
         self.model.train()
 
@@ -213,6 +300,21 @@ class FedNASTrainer(object):
         )
 
     def local_train(self, train_queue, valid_queue, model, criterion, optimizer):
+        """
+        Perform local training.
+
+        Args:
+            train_queue (DataLoader): DataLoader for the training dataset.
+            valid_queue (DataLoader): DataLoader for the validation dataset.
+            model (nn.Module): The neural network model.
+            criterion: The loss criterion for optimization.
+            optimizer: The optimizer for weight updates.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - top1_accuracy (float): Top-1 accuracy achieved during local training.
+                - loss (float): Average loss during local training.
+        """
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
@@ -249,6 +351,19 @@ class FedNASTrainer(object):
         return top1.avg, objs.avg, loss
 
     def local_infer(self, valid_queue, model, criterion):
+        """
+        Perform local inference.
+
+        Args:
+            valid_queue (DataLoader): DataLoader for the validation dataset.
+            model (nn.Module): The neural network model.
+            criterion: The loss criterion for evaluation.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - top1_accuracy (float): Top-1 accuracy achieved during local inference.
+                - loss (float): Average loss during local inference.
+        """
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
@@ -281,6 +396,14 @@ class FedNASTrainer(object):
 
     # after searching, infer() function is used to infer the searched architecture
     def infer(self):
+        """
+        Perform inference using the trained model.
+
+        Returns:
+            tuple: A tuple containing the following elements:
+                - test_accuracy (float): Test accuracy achieved using the trained model.
+                - test_loss (float): Test loss using the trained model.
+        """
         self.model.to(self.device)
         self.model.eval()
 

@@ -15,6 +15,42 @@ from ....core.schedule.runtime_estimate import t_sample_fit
 
 
 class FedOptAggregator(object):
+    """Aggregator for Federated Optimization.
+
+    This class manages the aggregation of model updates from client devices in a federated optimization setting.
+
+    Args:
+        train_global: The global training dataset.
+        test_global: The global testing dataset.
+        all_train_data_num: The total number of training samples across all clients.
+        train_data_local_dict: A dictionary mapping client indices to their local training datasets.
+        test_data_local_dict: A dictionary mapping client indices to their local testing datasets.
+        train_data_local_num_dict: A dictionary mapping client indices to the number of samples in their local training datasets.
+        worker_num: The number of worker (client) devices.
+        device: The device (CPU or GPU) to use for model aggregation.
+        args: An argparse.Namespace object containing various configuration options.
+        server_aggregator: An optional ServerAggregator object used for model aggregation.
+
+    Attributes:
+        aggregator: The server aggregator for model aggregation.
+        args: An argparse.Namespace object containing various configuration options.
+        train_global: The global training dataset.
+        test_global: The global testing dataset.
+        val_global: A subset of the testing dataset used for validation.
+        all_train_data_num: The total number of training samples across all clients.
+        train_data_local_dict: A dictionary mapping client indices to their local training datasets.
+        test_data_local_dict: A dictionary mapping client indices to their local testing datasets.
+        train_data_local_num_dict: A dictionary mapping client indices to the number of samples in their local training datasets.
+        worker_num: The number of worker (client) devices.
+        device: The device (CPU or GPU) to use for model aggregation.
+        model_dict: A dictionary mapping client indices to their local model updates.
+        sample_num_dict: A dictionary mapping client indices to the number of samples used for their local updates.
+        flag_client_model_uploaded_dict: A dictionary tracking whether each client has uploaded its local model update.
+        opt: The server optimizer used for model aggregation.
+        runtime_history: A dictionary to track the runtime history of clients.
+        runtime_avg: A dictionary to track the average runtime of clients.
+    """
+
     def __init__(
         self,
         train_global,
@@ -28,6 +64,11 @@ class FedOptAggregator(object):
         args,
         server_aggregator,
     ):
+        """Instantiate the server optimizer based on configuration options.
+
+        Returns:
+            torch.optim.Optimizer: The server optimizer.
+        """
         self.aggregator = server_aggregator
 
         self.args = args
@@ -59,6 +100,12 @@ class FedOptAggregator(object):
 
 
     def _instantiate_opt(self):
+        """
+        Instantiate the server optimizer based on configuration options.
+
+        Returns:
+            torch.optim.Optimizer: The server optimizer.
+        """
         return OptRepo.name2cls(self.args.server_optimizer)(
             filter(lambda p: p.requires_grad, self.get_model_params()),
             lr=self.args.server_lr,
@@ -66,23 +113,55 @@ class FedOptAggregator(object):
         )
 
     def get_model_params(self):
+        """
+        Get the model parameters in the form of a generator.
+
+        Returns:
+            generator: A generator of model parameters.
+        """
         # return model parameters in type of generator
         return self.aggregator.model.parameters()
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters as an ordered dictionary.
+
+        Returns:
+            collections.OrderedDict: The global model parameters.
+        """
+
         # return model parameters in type of ordered_dict
         return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters based on a provided dictionary.
+
+        Args:
+            model_parameters (dict): A dictionary containing global model parameters.
+        """
         self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params):
+        """
+        Add the local trained model update for a client.
+
+        Args:
+            index (int): The index of the client.
+            model_params (dict): The model parameters of the local trained model.
+        """
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         # self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check whether all clients have uploaded their local model updates.
+
+        Returns:
+            bool: True if all clients have uploaded their updates, False otherwise.
+        """
         for idx in range(self.worker_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -93,6 +172,16 @@ class FedOptAggregator(object):
 
 
     def workload_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the workload for selected clients.
+
+        Args:
+            client_indexes (list): The indices of selected clients.
+            mode (str): The mode for workload estimation ("simulate" or "real").
+
+        Returns:
+            list: Workload estimates for the selected clients.
+        """
         if mode == "simulate":
             client_samples = [
                 self.train_data_local_num_dict[client_index]
@@ -106,6 +195,16 @@ class FedOptAggregator(object):
         return workload
 
     def memory_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the memory requirements for selected clients.
+
+        Args:
+            client_indexes (list): The indices of selected clients.
+            mode (str): The mode for memory estimation ("simulate" or "real").
+
+        Returns:
+            numpy.ndarray: Memory estimates for the selected clients.
+        """
         if mode == "simulate":
             memory = np.ones(self.worker_num)
         elif mode == "real":
@@ -115,6 +214,15 @@ class FedOptAggregator(object):
         return memory
 
     def resource_estimate(self, mode="simulate"):
+        """
+        Estimate the resource requirements for clients.
+
+        Args:
+            mode (str): The mode for resource estimation ("simulate" or "real").
+
+        Returns:
+            numpy.ndarray: Resource estimates for clients.
+        """
         if mode == "simulate":
             resource = np.ones(self.worker_num)
         elif mode == "real":
@@ -124,6 +232,13 @@ class FedOptAggregator(object):
         return resource
 
     def record_client_runtime(self, worker_id, client_runtimes):
+        """
+        Record the runtime of clients.
+
+        Args:
+            worker_id (int): The ID of the worker (client).
+            client_runtimes (dict): A dictionary mapping client IDs to their runtimes.
+        """
         for client_id, runtime in client_runtimes.items():
             self.runtime_history[worker_id][client_id].append(runtime)
         if hasattr(self.args, "runtime_est_mode"):
@@ -140,6 +255,15 @@ class FedOptAggregator(object):
 
 
     def generate_client_schedule(self, round_idx, client_indexes):
+        """Generate a schedule of clients for training.
+
+        Args:
+            round_idx (int): The current communication round index.
+            client_indexes (list): The indices of selected clients.
+
+        Returns:
+            list: A schedule of clients for training.
+        """
         # self.runtime_history = {}
         # for i in range(self.worker_num):
         #     self.runtime_history[i] = {}
@@ -195,6 +319,14 @@ class FedOptAggregator(object):
 
 
     def get_average_weight(self, client_indexes):
+        """Calculate the average weight for selected clients.
+
+        Args:
+            client_indexes (list): The indices of selected clients.
+
+        Returns:
+            dict: A dictionary mapping client indices to their average weights.
+        """
         average_weight_dict = {}
         training_num = 0
         for client_index in client_indexes:
@@ -208,6 +340,12 @@ class FedOptAggregator(object):
 
 
     def aggregate(self):
+        """
+        Aggregate the model updates from clients.
+
+        Returns:
+            collections.OrderedDict: The aggregated global model parameters.
+        """
         start_time = time.time()
         model_list = []
         training_num = 0
@@ -246,6 +384,12 @@ class FedOptAggregator(object):
         return self.get_global_model_params()
 
     def set_model_global_grads(self, new_state):
+        """
+        Set the global model gradients based on a provided dictionary.
+
+        Args:
+            new_state (dict): A dictionary containing the new global model gradients.
+        """
         new_model = copy.deepcopy(self.aggregator.model)
         new_model.load_state_dict(new_state)
         with torch.no_grad():
@@ -260,6 +404,16 @@ class FedOptAggregator(object):
         self.set_global_model_params(new_model_state_dict)
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """Randomly sample a subset of clients for a communication round.
+
+        Args:
+            round_idx (int): The current communication round index.
+            client_num_in_total (int): The total number of clients.
+            client_num_per_round (int): The number of clients to sample for the round.
+
+        Returns:
+            list: A list of indices representing the selected clients for the round.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -270,6 +424,14 @@ class FedOptAggregator(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """Generate a subset of the testing dataset for validation.
+
+        Args:
+            num_samples (int): The number of samples to include in the validation set.
+
+        Returns:
+            torch.utils.data.DataLoader: A DataLoader containing the validation subset.
+        """
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
             sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
@@ -280,6 +442,11 @@ class FedOptAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        """Test the global model on all clients.
+
+        Args:
+            round_idx (int): The current communication round index.
+        """
         if (
             round_idx % self.args.frequency_of_the_test == 0
             or round_idx == self.args.comm_round - 1
