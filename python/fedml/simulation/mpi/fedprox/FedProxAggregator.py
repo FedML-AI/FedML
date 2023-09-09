@@ -10,6 +10,10 @@ from .utils import transform_list_to_tensor
 
 
 class FedProxAggregator(object):
+    """
+    Aggregator for Federated Proximal training.
+    """
+
     def __init__(
         self,
         train_global,
@@ -23,39 +27,78 @@ class FedProxAggregator(object):
         args,
         server_aggregator,
     ):
-        self.aggregator = server_aggregator
+        """
+        Initialize the FedProxAggregator.
 
+        Args:
+            train_global (object): Global training data.
+            test_global (object): Global testing data.
+            all_train_data_num (int): Number of training data samples.
+            train_data_local_dict (dict): Dictionary of local training data.
+            test_data_local_dict (dict): Dictionary of local testing data.
+            train_data_local_num_dict (dict): Dictionary of local training data sizes.
+            worker_num (int): Number of workers.
+            device (object): Device for computation.
+            args (object): Arguments for configuration.
+            server_aggregator (object): Server aggregator for aggregation.
+        """
+        self.aggregator = server_aggregator
         self.args = args
         self.train_global = train_global
         self.test_global = test_global
         self.val_global = self._generate_validation_set()
         self.all_train_data_num = all_train_data_num
-
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
-
         self.worker_num = worker_num
         self.device = device
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
+
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters.
+
+        Returns:
+            dict: Global model parameters.
+        """
         return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters.
+
+        Args:
+            model_parameters (dict): Global model parameters.
+        """
         self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
+        """
+        Add local trained model results to the aggregator.
+
+        Args:
+            index (int): Index of the client.
+            model_params (dict): Local model parameters.
+            sample_num (int): Number of local samples.
+        """
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check if all clients have uploaded their models.
+
+        Returns:
+            bool: True if all models have been received, False otherwise.
+        """
         for idx in range(self.worker_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -64,6 +107,12 @@ class FedProxAggregator(object):
         return True
 
     def aggregate(self):
+        """
+        Aggregate local models from clients and calculate the global model.
+
+        Returns:
+            dict: Averaged global model parameters.
+        """
         start_time = time.time()
         model_list = []
         training_num = 0
@@ -74,7 +123,6 @@ class FedProxAggregator(object):
 
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
-        # logging.info("################aggregate: %d" % len(model_list))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -85,7 +133,7 @@ class FedProxAggregator(object):
                 else:
                     averaged_params[k] += local_model_params[k] * w
 
-        # update the global model which is cached at the server side
+        # Update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
@@ -93,16 +141,36 @@ class FedProxAggregator(object):
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly select clients for participation in each round of training.
+
+        Args:
+            round_idx (int): Current training round index.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to select per round.
+
+        Returns:
+            list: List of client indexes selected for the current training round.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(round_idx)  # Ensure consistent client selection for each round
             client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set for testing.
+
+        Args:
+            num_samples (int): Number of samples in the validation set.
+
+        Returns:
+            object: Validation dataset.
+        """
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
             sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
@@ -113,6 +181,12 @@ class FedProxAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        """
+        Perform testing on the server for all clients.
+
+        Args:
+            round_idx (int): Current training round index.
+        """
         if self.aggregator.test_all(self.train_data_local_dict, self.test_data_local_dict, self.device, self.args,):
             return
 
@@ -122,7 +196,7 @@ class FedProxAggregator(object):
             train_tot_corrects = []
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
-                # train data
+                # Train data
                 metrics = self.aggregator.test(self.train_data_local_dict[client_idx], self.device, self.args)
                 train_tot_correct, train_num_sample, train_loss = (
                     metrics["test_correct"],
@@ -135,12 +209,13 @@ class FedProxAggregator(object):
 
                 """
                 Note: CI environment is CPU-based computing. 
-                The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
+                The training speed for RNN training is too slow in this setting, 
+                so we only test a client to make sure there is no programming error.
                 """
                 if self.args.ci == 1:
                     break
 
-            # test on training dataset
+            # Test on training dataset
             train_acc = sum(train_tot_corrects) / sum(train_num_samples)
             train_loss = sum(train_losses) / sum(train_num_samples)
             # wandb.log({"Train/Acc": train_acc, "round": round_idx})
@@ -148,7 +223,7 @@ class FedProxAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            # test data
+            # Test data
             test_num_samples = []
             test_tot_corrects = []
             test_losses = []
@@ -167,7 +242,7 @@ class FedProxAggregator(object):
             test_num_samples.append(copy.deepcopy(test_num_sample))
             test_losses.append(copy.deepcopy(test_loss))
 
-            # test on test dataset
+            # Test on test dataset
             test_acc = sum(test_tot_corrects) / sum(test_num_samples)
             test_loss = sum(test_losses) / sum(test_num_samples)
             # wandb.log({"Test/Acc": test_acc, "round": round_idx})
