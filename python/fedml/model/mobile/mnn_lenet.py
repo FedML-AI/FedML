@@ -5,7 +5,17 @@ F = MNN.expr
 
 
 class Lenet5(nn.Module):
-    """construct a lenet 5 model"""
+    """
+    LeNet-5 convolutional neural network model.
+
+    This class defines the LeNet-5 architecture for image classification.
+
+    Args:
+        None
+
+    Returns:
+        torch.Tensor: Model predictions.
+    """
 
     def __init__(self):
         super(Lenet5, self).__init__()
@@ -15,6 +25,15 @@ class Lenet5(nn.Module):
         self.fc2 = nn.linear(500, 10)
 
     def forward(self, x):
+        """
+        Forward pass of the LeNet-5 model.
+
+        Args:
+            x (torch.Tensor): Input image tensor.
+
+        Returns:
+            torch.Tensor: Model predictions.
+        """
         x = F.relu(self.conv1(x))
         x = F.max_pool(x, [2, 2], [2, 2])
         x = F.relu(self.conv2(x))

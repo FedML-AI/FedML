@@ -18,6 +18,25 @@ __all__ = [
 
 
 class VGG(nn.Module):
+    """
+    VGG model implementation.
+
+    Args:
+        features (nn.Module): The feature extractor module.
+        num_classes (int): Number of output classes.
+        init_weights (bool): Whether to initialize the model weights.
+
+    Attributes:
+        features (nn.Module): The feature extractor module.
+        avgpool (nn.AdaptiveAvgPool2d): Adaptive average pooling layer.
+        classifier (nn.Sequential): Classifier module.
+
+    Methods:
+        forward(x): Forward pass of the VGG model.
+        _initialize_weights(): Initialize model weights.
+
+    """
+
     def __init__(
         self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True
     ) -> None:
@@ -37,6 +56,16 @@ class VGG(nn.Module):
             self._initialize_weights()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the VGG model.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+
+        """
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
@@ -44,6 +73,10 @@ class VGG(nn.Module):
         return x
 
     def _initialize_weights(self) -> None:
+        """
+        Initialize model weights.
+
+        """
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
@@ -58,19 +91,34 @@ class VGG(nn.Module):
 
 
 def make_layers(cfg, batch_norm=False):
+    """
+    Create a list of layers for a VGG network based on the provided configuration.
+
+    Args:
+        cfg (list): List of layer configurations where each element represents
+                    the number of filters or "M" for max-pooling.
+        batch_norm (bool): If True, apply batch normalization after convolution.
+
+    Returns:
+        nn.Sequential: A sequential container of layers.
+
+    """
     layers = []
-    in_channels = 3
+    in_channels = 3  # Input channel for RGB images
     for v in cfg:
         if v == "M":
+            # Max-pooling layer
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             v = int(v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
+                # Add convolution, batch normalization, and ReLU activation
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
+                # Add convolution and ReLU activation
                 layers += [conv2d, nn.ReLU(inplace=True)]
-            in_channels = v
+            in_channels = v  # Update the input channels for the next layer
     return nn.Sequential(*layers)
 
 

@@ -1,30 +1,29 @@
 class MyMessage(object):
     """
-    message type definition
+    Defines message types and their associated constants for communication between server and clients.
     """
 
-    # connection info
+    # Connection Info
     MSG_TYPE_CONNECTION_IS_READY = 0
 
-    # server to client
+    # Server to Client Messages
     MSG_TYPE_S2C_INIT_CONFIG = 1
     MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT = 2
     MSG_TYPE_S2C_CHECK_CLIENT_STATUS = 6
     MSG_TYPE_S2C_FINISH = 7
 
-    # client to server
+    # Client to Server Messages
     MSG_TYPE_C2S_SEND_MODEL_TO_SERVER = 3
     MSG_TYPE_C2S_SEND_STATS_TO_SERVER = 4
     MSG_TYPE_C2S_CLIENT_STATUS = 5
     MSG_TYPE_C2S_FINISHED = 8
 
+    # Message Argument Keys
     MSG_ARG_KEY_TYPE = "msg_type"
     MSG_ARG_KEY_SENDER = "sender"
     MSG_ARG_KEY_RECEIVER = "receiver"
 
-    """
-        message payload keywords definition
-    """
+    # Message Payload Keywords
     MSG_ARG_KEY_NUM_SAMPLES = "num_samples"
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
@@ -41,14 +40,12 @@ class MyMessage(object):
 
     MSG_ARG_KEY_CLIENT_STATUS = "client_status"
     MSG_ARG_KEY_CLIENT_OS = "client_os"
-
+    
     MSG_ARG_KEY_EVENT_NAME = "event_name"
     MSG_ARG_KEY_EVENT_VALUE = "event_value"
     MSG_ARG_KEY_EVENT_MSG = "event_msg"
 
-    """
-        MLOps related message 
-    """
+    # MLOps Related Messages
     # Client Status
     MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE"
     MSG_MLOPS_CLIENT_STATUS_UPGRADING = "UPGRADING"

@@ -7,6 +7,17 @@ import torch.distributed as dist
 
 class ProcessGroupManager:
     def __init__(self, rank, world_size, master_address, master_port, only_gpu):
+        """
+        Initialize a process group manager for distributed training.
+
+        Args:
+            rank (int): The rank of the current process.
+            world_size (int): The total number of processes in the group.
+            master_address (str): The address of the master process.
+            master_port (int): The port for communication with the master process.
+            only_gpu (bool): Whether to use NCCL backend for GPU communication.
+
+        """
         logging.info("Start process group")
         logging.info(
             "rank: %d, world_size: %d, master_address: %s, master_port: %s"
@@ -31,7 +42,18 @@ class ProcessGroupManager:
         logging.info("Initiated")
 
     def cleanup(self):
+        """
+        Cleanup the process group.
+
+        """
         dist.destroy_process_group()
 
     def get_process_group(self):
+        """
+        Get the messaging process group.
+
+        Returns:
+            torch.distributed.ProcessGroup: The process group for communication.
+
+        """
         return self.messaging_pg
