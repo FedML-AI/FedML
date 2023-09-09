@@ -7,6 +7,20 @@ from ....core.distributed.communication.message import Message
 
 
 class FedProxServerManager(FedMLCommManager):
+    """
+    Server manager for Federated Proximal training.
+
+    Args:
+        args (object): Arguments for configuration.
+        aggregator (object): Aggregator for model updates.
+        comm (object): Communication object.
+        rank (int): Rank of the server.
+        size (int): Total number of participants.
+        backend (str): Backend for communication (default: "MPI").
+        is_preprocessed (bool): Flag indicating if data is preprocessed (default: False).
+        preprocessed_client_lists (list): Preprocessed client lists (default: None).
+    """
+
     def __init__(
         self,
         args,
@@ -30,7 +44,13 @@ class FedProxServerManager(FedMLCommManager):
         super().run()
 
     def send_init_msg(self):
-        # sampling clients
+        """
+        Send initialization messages to clients.
+
+        Initializes the communication with clients by sending initial model parameters
+        and client indexes.
+        """
+        # Sampling clients
         client_indexes = self.aggregator.client_sampling(
             self.args.round_idx,
             self.args.client_num_in_total,
@@ -44,12 +64,30 @@ class FedProxServerManager(FedMLCommManager):
             )
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for the server manager.
+
+        This method registers the message receive handler for receiving model updates from clients.
+
+        Message Types:
+        - MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER
+
+        Message Handler:
+        - self.handle_message_receive_model_from_client
+
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
         )
 
     def handle_message_receive_model_from_client(self, msg_params):
+        """
+        Handle received model updates from clients.
+
+        Args:
+            msg_params (dict): Message parameters.
+        """
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -63,7 +101,7 @@ class FedProxServerManager(FedMLCommManager):
             global_model_params = self.aggregator.aggregate()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
-            # start the next round
+            # Start the next round
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 post_complete_message_to_sweep_process(self.args)
@@ -72,12 +110,12 @@ class FedProxServerManager(FedMLCommManager):
                 return
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
-                    # sampling has already been done in data preprocessor
+                    # Sampling has already been done in data preprocessor
                     client_indexes = [self.args.round_idx] * self.args.client_num_per_round
                 else:
                     client_indexes = self.preprocessed_client_lists[self.args.round_idx]
             else:
-                # sampling clients
+                # Sampling clients
                 client_indexes = self.aggregator.client_sampling(
                     self.args.round_idx,
                     self.args.client_num_in_total,
@@ -93,6 +131,14 @@ class FedProxServerManager(FedMLCommManager):
                 )
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
+        """
+        Send initialization configuration message to a client.
+
+        Args:
+            receive_id (int): Receiver ID.
+            global_model_params (object): Global model parameters.
+            client_index (int): Index of the client.
+        """
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
@@ -103,6 +149,14 @@ class FedProxServerManager(FedMLCommManager):
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
     ):
+        """
+        Send model synchronization message to a client.
+
+        Args:
+            receive_id (int): Receiver ID.
+            global_model_params (object): Global model parameters.
+            client_index (int): Index of the client.
+        """
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,

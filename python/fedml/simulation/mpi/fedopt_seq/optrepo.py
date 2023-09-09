@@ -1,3 +1,4 @@
+import torch
 import logging
 from typing import List, Union
 
@@ -72,4 +73,4 @@ class OptRepo:
         """
         Updates the optimizer repository with the latest subclasses.
         """
-        cls.repo = {x.__name__: x for x in torch.optim.Optimizer.__subclasses__()}
+        cls.repo = {x.__name__.lower(): x for x in torch.optim.Optimizer.__subclasses__()}
