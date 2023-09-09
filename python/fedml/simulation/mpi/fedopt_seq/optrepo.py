@@ -6,13 +6,16 @@ import torch
 from typing import List, Union
 
 class OptRepo:
-    """Collects and provides information about the subclasses of torch.optim.Optimizer."""
+    """
+    Collects and provides information about the subclasses of torch.optim.Optimizer.
+    """
 
     repo = {x.__name__.lower(): x for x in torch.optim.Optimizer.__subclasses__()}
 
     @classmethod
     def get_opt_names(cls) -> List[str]:
-        """Returns a list of supported optimizers.
+        """
+        Returns a list of supported optimizers.
 
         Returns:
             List[str]: Names of optimizers.
@@ -23,7 +26,8 @@ class OptRepo:
 
     @classmethod
     def name2cls(cls, name: str) -> torch.optim.Optimizer:
-        """Returns the optimizer class belonging to the name.
+        """
+        Returns the optimizer class belonging to the name.
 
         Args:
             name (str): Name of the optimizer.
@@ -43,7 +47,8 @@ class OptRepo:
 
     @classmethod
     def supported_parameters(cls, opt: Union[str, torch.optim.Optimizer]) -> List[str]:
-        """Returns a list of __init__ function parameters of an optimizer.
+        """
+        Returns a list of __init__ function parameters of an optimizer.
 
         Args:
             opt (Union[str, torch.optim.Optimizer]): The name or class of the optimizer.
@@ -64,5 +69,7 @@ class OptRepo:
 
     @classmethod
     def _update_repo(cls):
-        """Updates the optimizer repository with the latest subclasses."""
+        """
+        Updates the optimizer repository with the latest subclasses.
+        """
         cls.repo = {x.__name__: x for x in torch.optim.Optimizer.__subclasses__()}
