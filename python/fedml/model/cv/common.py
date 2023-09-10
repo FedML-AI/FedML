@@ -37,60 +37,190 @@ def round_channels(channels,
     -------
     int
         Weighted number of channels.
+
+    Examples:
+    --------
+    >>> channels = 64
+    >>> rounded_channels = round_channels(channels)
+    >>> print(rounded_channels)
+    64
+
+    >>> channels = 57
+    >>> rounded_channels = round_channels(channels)
+    >>> print(rounded_channels)
+    56
     """
     rounded_channels = max(int(channels + divisor / 2.0) //
                            divisor * divisor, divisor)
     if float(rounded_channels) < 0.9 * channels:
         rounded_channels += divisor
-    return rounded_channels
+    return rounded_channel
 
 
 class Identity(nn.Module):
     """
     Identity block.
+
+    This block represents the identity function, which means it does not perform any
+    operations on the input and simply returns it unchanged. It is commonly used in
+    residual neural networks (ResNets) to create skip connections.
+
+    Attributes:
+        None
+
+    Methods:
+        forward(x): Performs a forward pass of the identity block.
+        __repr__(): Returns a string representation of the Identity block.
+
+    Examples:
+        >>> identity_block = Identity()
+        >>> x = torch.randn(1, 64, 32, 32)
+        >>> output = identity_block(x)
+        >>> assert torch.allclose(x, output)  # The output should be the same as the input.
+
     """
 
     def __init__(self):
         super(Identity, self).__init__()
 
     def forward(self, x):
+        """
+        Forward pass of the identity block.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The input tensor unchanged.
+        """
         return x
 
     def __repr__(self):
+        """
+        String representation of the Identity block.
+
+        Returns:
+            str: A string representing the Identity block.
+        """
         return '{name}()'.format(name=self.__class__.__name__)
 
 
 class BreakBlock(nn.Module):
     """
-    Break coonnection block for hourglass.
+    Break connection block for hourglass network.
+
+    This block serves as a break in the network's connections. It takes an input and returns None.
+    It is commonly used in hourglass-style networks to create skips in the network flow.
+
+    Attributes:
+    ----------
+    None
+
+    Methods:
+    -------
+    forward(x):
+        Forward pass through the block.
+    
+    __repr__():
+        Returns a string representation of the block.
     """
 
     def __init__(self):
         super(BreakBlock, self).__init__()
 
     def forward(self, x):
+        """
+        Forward pass through the block.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        None
+            The block returns None, effectively breaking the connection.
+        """
         return None
 
     def __repr__(self):
+        """
+        Returns a string representation of the block.
+
+        Returns:
+        -------
+        str
+            A string representation of the block, indicating its name.
+        """
         return '{name}()'.format(name=self.__class__.__name__)
+
 
 
 class Swish(nn.Module):
     """
     Swish activation function from 'Searching for Activation Functions,' https://arxiv.org/abs/1710.05941.
+
+    This activation function is defined as Swish(x) = x * sigmoid(x).
+
+    Attributes:
+    ----------
+    None
+
+    Methods:
+    -------
+    forward(x):
+        Forward pass through the Swish activation function.
     """
 
     def forward(self, x):
+        """
+        Forward pass through the Swish activation function.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor after applying the Swish activation function.
+        """
         return x * torch.sigmoid(x)
 
 
 class HSigmoid(nn.Module):
     """
-    Approximated sigmoid function, so-called hard-version of sigmoid from 'Searching for MobileNetV3,'
+    Approximated sigmoid function, the hard version of sigmoid, from 'Searching for MobileNetV3,'
     https://arxiv.org/abs/1905.02244.
+
+    This activation function is defined as HSigmoid(x) = relu6(x + 3.0) / 6.0.
+
+    Attributes:
+    ----------
+    None
+
+    Methods:
+    -------
+    forward(x):
+        Forward pass through the HSigmoid activation function.
     """
 
     def forward(self, x):
+        """
+        Forward pass through the HSigmoid activation function.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor after applying the HSigmoid activation function.
+        """
         return F.relu6(x + 3.0, inplace=True) / 6.0
 
 
@@ -98,10 +228,22 @@ class HSwish(nn.Module):
     """
     H-Swish activation function from 'Searching for MobileNetV3,' https://arxiv.org/abs/1905.02244.
 
+    This activation function is defined as HSwish(x) = x * relu6(x + 3.0) / 6.0.
+
     Parameters:
     ----------
+    inplace : bool, optional (default=False)
+        Whether to use the inplace version of the module.
+
+    Attributes:
+    ----------
     inplace : bool
-        Whether to use inplace version of the module.
+        Indicates whether the inplace version is used.
+
+    Methods:
+    -------
+    forward(x):
+        Forward pass through the H-Swish activation function.
     """
 
     def __init__(self, inplace=False):
@@ -109,24 +251,42 @@ class HSwish(nn.Module):
         self.inplace = inplace
 
     def forward(self, x):
+        """
+        Forward pass through the H-Swish activation function.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor after applying the H-Swish activation function.
+        """
         return x * F.relu6(x + 3.0, inplace=self.inplace) / 6.0
 
 
 def get_activation_layer(activation):
     """
-    Create activation layer from string/function.
+    Create an activation layer from a string/function.
 
     Parameters:
     ----------
-    activation : function, or str, or nn.Module
-        Activation function or name of activation function.
+    activation : function, str, or nn.Module
+        Activation function or name of the activation function.
 
     Returns:
     -------
     nn.Module
         Activation layer.
+
+    Raises:
+    -------
+    NotImplementedError:
+        If the specified activation function is not supported.
     """
-    assert (activation is not None)
+    assert activation is not None
     if isfunction(activation):
         return activation()
     elif isinstance(activation, str):
@@ -145,9 +305,9 @@ def get_activation_layer(activation):
         elif activation == "identity":
             return Identity()
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("Unsupported activation function: {}".format(activation))
     else:
-        assert (isinstance(activation, nn.Module))
+        assert isinstance(activation, nn.Module)
         return activation
 
 
@@ -165,6 +325,21 @@ class SelectableDense(nn.Module):
         Whether the layer uses a bias vector.
     num_options : int, default 1
         Number of selectable options.
+
+    Attributes:
+    ----------
+    in_features : int
+        Number of input features.
+    out_features : int
+        Number of output features.
+    use_bias : bool
+        Whether the layer uses a bias vector.
+    num_options : int
+        Number of selectable options.
+    weight : torch.nn.Parameter
+        Learnable weight parameter.
+    bias : torch.nn.Parameter
+        Learnable bias parameter (if use_bias=True).
     """
 
     def __init__(self,
@@ -185,6 +360,21 @@ class SelectableDense(nn.Module):
             self.register_parameter("bias", None)
 
     def forward(self, x, indices):
+        """
+        Forward pass through the SelectableDense layer.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+        indices : torch.Tensor
+            Tensor containing the indices of the selected options.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor after applying the SelectableDense layer.
+        """
         weight = torch.index_select(self.weight, dim=0, index=indices)
         x = x.unsqueeze(-1)
         x = weight.bmm(x)
@@ -195,6 +385,14 @@ class SelectableDense(nn.Module):
         return x
 
     def extra_repr(self):
+        """
+        Extra representation of the SelectableDense layer.
+
+        Returns:
+        -------
+        str
+            String representation of the layer's attributes.
+        """
         return "in_features={}, out_features={}, bias={}, num_options={}".format(
             self.in_features, self.out_features, self.use_bias, self.num_options)
 
@@ -242,6 +440,19 @@ class DenseBlock(nn.Module):
             self.activ = get_activation_layer(activation)
 
     def forward(self, x):
+        """
+        Forward pass of the dense block.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor.
+        """
         x = self.fc(x)
         if self.use_bn:
             x = self.bn(x)
@@ -313,6 +524,19 @@ class ConvBlock1d(nn.Module):
             self.activ = get_activation_layer(activation)
 
     def forward(self, x):
+        """
+        Forward pass of the 1D convolution block.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor.
+        """
         x = self.conv(x)
         if self.use_bn:
             x = self.bn(x)
@@ -341,6 +565,11 @@ def conv1x1(in_channels,
         Number of groups.
     bias : bool, default False
         Whether the layer uses a bias vector.
+    
+    Returns:
+    -------
+    nn.Conv2d
+        1x1 convolutional layer.
     """
     return nn.Conv2d(
         in_channels=in_channels,
@@ -377,6 +606,11 @@ def conv3x3(in_channels,
         Number of groups.
     bias : bool, default False
         Whether the layer uses a bias vector.
+    
+    Returns:
+    -------
+    nn.Conv2d
+        3x3 convolutional layer.
     """
     return nn.Conv2d(
         in_channels=in_channels,
@@ -409,6 +643,11 @@ def depthwise_conv3x3(channels,
         Dilation value for convolution layer.
     bias : bool, default False
         Whether the layer uses a bias vector.
+    
+    Returns:
+    -------
+    nn.Conv2d
+        Depthwise 3x3 convolutional layer.
     """
     return nn.Conv2d(
         in_channels=channels,
@@ -449,6 +688,15 @@ class ConvBlock(nn.Module):
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Examples:
+    --------
+    An example of using the ConvBlock:
+
+    >>> import torch
+    >>> x = torch.randn(1, 3, 64, 64)  # Input tensor with shape (batch_size, channels, height, width)
+    >>> conv_block = ConvBlock(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1)
+    >>> output = conv_block(x)  # Forward pass through the ConvBlock
     """
 
     def __init__(self,
@@ -489,6 +737,19 @@ class ConvBlock(nn.Module):
             self.activ = get_activation_layer(activation)
 
     def forward(self, x):
+        """
+        Forward pass of the ConvBlock.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (batch_size, in_channels, height, width).
+
+        Returns:
+        -------
+        torch.Tensor
+            Output tensor after applying convolution, batch normalization, and activation.
+        """
         if self.use_pad:
             x = self.pad(x)
         x = self.conv(x)
@@ -531,6 +792,11 @@ def conv1x1_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        1x1 Convolutional Block.
     """
     return ConvBlock(
         in_channels=in_channels,
@@ -580,6 +846,11 @@ def conv3x3_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        3x3 Convolutional Block.
     """
     return ConvBlock(
         in_channels=in_channels,
@@ -593,7 +864,6 @@ def conv3x3_block(in_channels,
         use_bn=use_bn,
         bn_eps=bn_eps,
         activation=activation)
-
 
 def conv5x5_block(in_channels,
                   out_channels,
@@ -630,6 +900,11 @@ def conv5x5_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        5x5 Convolutional Block.
     """
     return ConvBlock(
         in_channels=in_channels,
@@ -664,7 +939,7 @@ def conv7x7_block(in_channels,
         Number of input channels.
     out_channels : int
         Number of output channels.
-    padding : int, or tuple/list of 2 int, or tuple/list of 4 int, default 1
+    stride : int or tuple/list of 2 int, default 1
         Strides of the convolution.
     padding : int or tuple/list of 2 int, default 3
         Padding value for convolution layer.
@@ -680,6 +955,11 @@ def conv7x7_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        7x7 Convolutional Block.
     """
     return ConvBlock(
         in_channels=in_channels,
@@ -730,6 +1010,11 @@ def dwconv_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        Depthwise Convolutional Block.
     """
     return ConvBlock(
         in_channels=in_channels,
@@ -774,6 +1059,11 @@ def dwconv3x3_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        3x3 Depthwise Convolutional Block.
     """
     return dwconv_block(
         in_channels=in_channels,
@@ -816,6 +1106,11 @@ def dwconv5x5_block(in_channels,
         Small float added to variance in Batch norm.
     activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function or name of activation function.
+
+    Returns:
+    -------
+    nn.Module
+        5x5 Depthwise Convolutional Block.
     """
     return dwconv_block(
         in_channels=in_channels,
@@ -827,6 +1122,7 @@ def dwconv5x5_block(in_channels,
         bias=bias,
         bn_eps=bn_eps,
         activation=activation)
+
 
 
 class DwsConvBlock(nn.Module):
@@ -859,6 +1155,11 @@ class DwsConvBlock(nn.Module):
         Activation function after the depthwise convolution block.
     pw_activation : function or str or None, default nn.ReLU(inplace=True)
         Activation function after the pointwise convolution block.
+
+    Returns:
+    ----------
+    torch.Tensor
+        The output tensor after applying depthwise separable convolution block.
     """
 
     def __init__(self,
@@ -895,6 +1196,19 @@ class DwsConvBlock(nn.Module):
             activation=pw_activation)
 
     def forward(self, x):
+        """
+        Forward pass of the depthwise separable convolution block.
+
+        Parameters:
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns:
+        ----------
+        torch.Tensor
+            The output tensor after applying depthwise separable convolution block.
+        """
         x = self.dw_conv(x)
         x = self.pw_conv(x)
         return x

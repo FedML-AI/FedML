@@ -17,7 +17,8 @@ __all__ = ["ResNet", "resnet110"]
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    """3x3 convolution with padding.
+    """
+    3x3 convolution with padding.
     
     Args:
         in_planes (int): Number of input channels.
@@ -42,7 +43,8 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 
 def conv1x1(in_planes, out_planes, stride=1):
-    """1x1 convolution.
+    """
+    1x1 convolution.
     
     Args:
         in_planes (int): Number of input channels.
@@ -56,7 +58,9 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 
 class BasicBlock(nn.Module):
-    """Basic residual block used in ResNet architectures."""
+    """
+    Basic residual block used in ResNet architectures.
+    """
     
     expansion = 1
 
@@ -71,7 +75,8 @@ class BasicBlock(nn.Module):
         dilation=1,
         norm_layer=None,
     ):
-        """Initialize a BasicBlock instance.
+        """
+        Initialize a BasicBlock instance.
         
         Args:
             inplanes (int): Number of input channels.
@@ -103,7 +108,8 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        """Forward pass through the BasicBlock.
+        """
+        Forward pass through the BasicBlock.
         
         Args:
             x (torch.Tensor): Input tensor.
