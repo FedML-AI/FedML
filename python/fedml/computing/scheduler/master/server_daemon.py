@@ -7,7 +7,7 @@ from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_ser
     cleanup_all_fedml_server_learning_processes,cleanup_all_fedml_server_login_processes, get_python_program, \
     daemon_ota_upgrade
 from fedml.computing.scheduler.master.server_constants import ServerConstants
-
+from fedml.computing.scheduler.model_scheduler import device_login_entry
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -33,6 +33,7 @@ if __name__ == "__main__":
             cleanup_all_fedml_server_api_processes()
             cleanup_all_fedml_server_learning_processes(None)
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
+            device_login_entry.logout_from_model_ops(False, True, None, 0)
         except Exception as e:
             pass
 

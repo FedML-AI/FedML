@@ -38,6 +38,7 @@ from ..comm_utils import sys_utils
 from .server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..scheduler_entry.constants import Constants
+from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 
 
 class RunnerError(BaseException):
@@ -112,6 +113,8 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
         self.enable_simulation_cloud_agent = False
+
+        self.model_device_server = None
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -1773,6 +1776,12 @@ class FedMLServerRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
+        if self.model_device_server is None:
+            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            self.model_device_server.start()
+
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
         try:
@@ -1785,6 +1794,10 @@ class FedMLServerRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
+
+            if self.model_device_server is not None:
+                self.model_device_server.stop()
+
             time.sleep(5)
             sys_utils.cleanup_all_fedml_server_login_processes(
                 ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)

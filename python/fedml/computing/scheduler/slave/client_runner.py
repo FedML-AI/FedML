@@ -34,6 +34,8 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .client_data_interface import FedMLClientDataInterface
 from ..comm_utils import sys_utils
 from ....core.mlops.mlops_utils import MLOpsUtils
+from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
+from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 
 
 class RunnerError(Exception):
@@ -44,6 +46,8 @@ class RunnerError(Exception):
 class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+        self.model_device_server = None
+        self.model_device_client = None
         self.run_process_event = None
         self.run_process_event_map = dict()
         self.run_process = None
@@ -1309,6 +1313,18 @@ class FedMLClientRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
+        if self.model_device_client is None:
+            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            self.model_device_client.start()
+
+        if self.model_device_server is None:
+            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            self.model_device_server.start()
+
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
         try:
@@ -1321,6 +1337,13 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
+
+            if self.model_device_server is not None:
+                self.model_device_server.stop()
+
+            if self.model_device_client is not None:
+                self.model_device_client.stop()
+
             time.sleep(5)
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)

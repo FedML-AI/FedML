@@ -276,12 +276,6 @@ def fedml_device_bind(
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
-        device_login_entry.login_as_model_device_agent(userid, False, True, False,
-                                                       infer_host, version, local_server,
-                                                       runner_cmd, device_id, os_name,
-                                                       docker, docker_rank,
-                                                       redis_addr, redis_port, redis_password)
-
     if is_server is True:
         if is_docker:
             login_with_server_docker_mode(account_id, version, docker_rank)
@@ -325,12 +319,6 @@ def fedml_device_bind(
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
-        device_login_entry.login_as_model_device_agent(userid, False, True, True,
-                                                       infer_host, version, local_server,
-                                                       runner_cmd, device_id, os_name,
-                                                       docker, docker_rank,
-                                                       redis_addr, redis_port, redis_password)
-
 
 @fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
@@ -369,7 +357,7 @@ def fedml_device_unbind(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
-        device_login_entry.logout_from_model_ops(True, False, docker, docker_rank)
+        device_login_entry.logout_from_model_ops(True, True, docker, docker_rank)
 
     if is_server is True:
         if is_docker:

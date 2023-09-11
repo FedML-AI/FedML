@@ -369,6 +369,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                 if is_model_device:
                     if str(cmd).find("model_scheduler.device_server_api:api") != -1:
                         find_api_process = True
+
+                    if str(cmd).find("model_scheduler.device_model_inference:api") != -1:
+                        find_api_process = True
                 else:
                     if str(cmd).find("master.server_api:api") != -1:
                         find_api_process = True

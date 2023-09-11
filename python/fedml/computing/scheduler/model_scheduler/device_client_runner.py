@@ -37,7 +37,7 @@ from ....core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
-from ....serving.fedml_client import FedMLModelServingClient
+#from ....serving.fedml_client import FedMLModelServingClient
 from ....core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -235,16 +235,17 @@ class FedMLClientRunner:
             raise RunnerError("Runner stopped")
 
     def inference_run(self):
-        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
-            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
-
-        inference_client = FedMLModelServingClient(self.args,
-                                                   end_point_name,
-                                                   model_name,
-                                                   model_version,
-                                                   inference_request=self.request_json)
-        inference_client.run()
+        # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+        #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+        #     inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        #
+        # inference_client = FedMLModelServingClient(self.args,
+        #                                            end_point_name,
+        #                                            model_name,
+        #                                            model_version,
+        #                                            inference_request=self.request_json)
+        # inference_client.run()
+        pass
 
     def run_impl(self):
         run_id = self.request_json["end_point_id"]
@@ -1024,7 +1025,13 @@ class FedMLClientRunner:
 
         self.recover_start_deployment_msg_after_upgrading()
 
-    def start_agent_mqtt_loop(self):
+    def stop_agent(self):
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+        self.mqtt_mgr.loop_stop()
+        self.mqtt_mgr.disconnect()
+
+    def start_agent_mqtt_loop(self, should_exit_sys=False):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
@@ -1036,7 +1043,8 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
-            time.sleep(5)
-            sys_utils.cleanup_all_fedml_client_login_processes(
-                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            if should_exit_sys:
+                time.sleep(5)
+                sys_utils.cleanup_all_fedml_client_login_processes(
+                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+                sys.exit(1)
