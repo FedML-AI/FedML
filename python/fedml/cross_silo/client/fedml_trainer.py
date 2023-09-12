@@ -101,3 +101,6 @@ class FedMLTrainer(object):
             test_loss,
             test_num_sample,
         )
+
+    def partition_model(self, model_params, server_num)->list:
+        return self.trainer.partition_model(model_params, server_num)

@@ -57,8 +57,9 @@ class FedMLAggregator(object):
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
 
-        # for dictionary model_params, we let the user level code to control the device
-        if type(model_params) is not dict:
+        # (1) For dictionary model_params, we let the user level code to control the device
+        # (2) In the multi-server mode, the model_params could be None. We do not need to move the model_params to device
+        if type(model_params) is not dict and model_params is not None:
             model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.model_dict[index] = model_params

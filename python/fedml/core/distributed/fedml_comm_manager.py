@@ -73,6 +73,8 @@ class FedMLCommManager(Observer):
             self.com_manager.stop_receive_message()
         elif self.backend == "MQTT_S3":
             self.com_manager.stop_receive_message()
+        elif self.backend == "MQTT_S3_MULTI_SERVER":
+            self.com_manager.stop_receive_message()
         elif self.backend == "MQTT_S3_MNN":
             self.com_manager.stop_receive_message()
         elif self.backend == "GRPC":
@@ -140,6 +142,21 @@ class FedMLCommManager(Observer):
             mqtt_config, s3_config = self.get_training_mqtt_s3_config()
 
             self.com_manager = MqttS3MultiClientsCommManager(
+                mqtt_config,
+                s3_config,
+                topic=str(self.args.run_id),
+                client_rank=self.rank,
+                client_num=self.size,
+                args=self.args,
+            )
+        elif self.backend == "MQTT_S3_MULTI_SERVER":
+            if self.args.role == "server":
+                self.rank = self.args.server_id # In this case, the servers are not only using rank 0
+            logging.info(f"Your rank is: {self.rank}")
+            from .communication.mqtt_s3.mqtt_s3_multi_servers_clients_comm_manager import MqttS3MultiServersClientsCommManager
+            mqtt_config, s3_config = self.get_training_mqtt_s3_config()
+
+            self.com_manager = MqttS3MultiServersClientsCommManager(
                 mqtt_config,
                 s3_config,
                 topic=str(self.args.run_id),

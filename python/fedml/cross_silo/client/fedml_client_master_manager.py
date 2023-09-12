@@ -39,6 +39,12 @@ class ClientMasterManager(FedMLCommManager):
         self.has_sent_online_msg = False
         self.is_inited = False
 
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            # The order of server matters because the partition of model is based on it.
+            self.server_num = len(self.args.group_server_id_list)
+            self.server_online_mapping = [False for _ in range(self.server_num)]
+            self.model_partitons_from_server = [ -1 for _ in range(self.server_num)]
+
         if self.use_customized_hierarchical:
             trainer_class_name = self.trainer_dist_adapter.trainer.trainer.__class__.__name__
 
@@ -85,15 +91,27 @@ class ClientMasterManager(FedMLCommManager):
     def handle_message_connection_ready(self, msg_params):
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
-            self.send_client_status(0)
+            # Send online status to multiple servers.
+            if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+                for server_id in self.args.group_server_id_list:
+                    self.send_client_status(server_id)
+            else:
+                self.send_client_status(0)
 
             mlops.log_sys_perf(self.args)
 
     def handle_message_check_status(self, msg_params):
-        self.send_client_status(0)
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            # Send back the online status to the checking server.
+            self.send_client_status(msg_params.get_sender_id())
+        else:
+            self.send_client_status(0)
 
     def handle_message_init(self, msg_params):
         if self.is_inited:
+            return
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            self.handle_multi_server_init(msg_params)
             return
 
         self.is_inited = True
@@ -121,6 +139,9 @@ class ClientMasterManager(FedMLCommManager):
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            self.handle_receive_model_from_multi_server(msg_params)
+            return
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
@@ -148,7 +169,11 @@ class ClientMasterManager(FedMLCommManager):
         self.cleanup()
 
     def cleanup(self):
-        self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            for server_id in self.args.group_server_id_list:
+                self.send_client_status(server_id, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+        else:
+            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
         if self.is_main_process():
             mlops.log_training_finished_status()
         self.finish()
@@ -188,6 +213,52 @@ class ClientMasterManager(FedMLCommManager):
 
     def report_training_status(self, status):
         mlops.log_training_status(status)
+
+    def handle_multi_server_init(self, msg_params):
+        server_index = self.args.group_server_id_list.index(msg_params.get_sender_id())
+        self.server_online_mapping[server_index] = True
+        logging.info("self.server_online_mapping = {}".format(self.server_online_mapping))
+        for index, server_id in enumerate(self.args.group_server_id_list):
+            if not self.server_online_mapping[index]:
+                logging.info(f"Did not receive init message from server {server_id}")
+                return
+        logging.info(f"All servers are online. Start training: {self.server_online_mapping}")
+        self.is_inited = True
+        
+        self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
+        self.round_idx = 0
+        
+        # This update will only be exceuted once.
+        self.trainer_dist_adapter.update_dataset(int(msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)))
+        
+        # Improtant: In the init round, we do NOT pass model from server to client.
+        # self.trainer_dist_adapter.update_model(global_model_params)
+
+        self.__train()  # The first round of training. Inside it, we finally pass model partitons to servers.
+        self.round_idx += 1
+    
+    def handle_receive_model_from_multi_server(self, msg_params):
+        model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
+        server_index = self.args.group_server_id_list.index(msg_params.get_sender_id())
+        self.model_partitons_from_server[server_index] = model_params
+        for index, server_id in enumerate(self.args.group_server_id_list):
+            if self.model_partitons_from_server[index] == -1:
+                logging.info(f"Did not receive model from server {server_id}")
+                return
+        logging.info(f"All servers have sent their model. Start next round training...")
+        self.trainer_dist_adapter.update_model(self.model_partitons_from_server)
+        if self.round_idx < self.num_rounds:
+            self.__train()
+            self.round_idx += 1
+            for index, server_id in enumerate(self.args.group_server_id_list):
+                self.model_partitons_from_server[index] = -1 # Reset the model partitons from servers.
+        else:
+            mlops.stop_sys_perf()
+            for server_id in self.args.group_server_id_list:
+                self.send_client_status(server_id, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+            if self.is_main_process():
+                mlops.log_training_finished_status()
+            self.finish()
 
     def sync_process_group(
             self,
@@ -234,7 +305,18 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
-        self.send_model_to_server(0, weights, local_sample_num)
+        if hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None:
+            # Send back the model to the servers.
+            logging.info("partition begin")
+            weights_partiton = self.trainer_dist_adapter.partition_model(weights, self.server_num)   # -> list
+            logging.info("weights_partiton length = {}".format(len(weights_partiton)))
+            assert len(weights_partiton) == len(self.args.group_server_id_list)
+            index = 0
+            for server_id in self.args.group_server_id_list:
+                self.send_model_to_server(server_id, weights_partiton[index], local_sample_num)
+                index += 1
+        else:
+            self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
         super().run()

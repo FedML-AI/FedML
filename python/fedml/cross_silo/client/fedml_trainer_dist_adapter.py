@@ -77,6 +77,13 @@ class TrainerDistAdapter:
         weights, local_sample_num = self.trainer.train(round_idx)
         return weights, local_sample_num
 
+    def partition_model(self, model_params, server_num)->list:
+        '''
+        E.g. [model_partition_1, None, model_partition_3, ...]
+        '''
+        patitoned_model_params = self.trainer.partition_model(model_params, server_num)
+        return patitoned_model_params
+
     def update_model(self, model_params):
         self.trainer.update_model(model_params)
 

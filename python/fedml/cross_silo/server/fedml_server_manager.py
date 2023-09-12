@@ -187,7 +187,10 @@ class FedMLServerManager(FedMLCommManager):
             if self.is_main_process():
                 MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
-            self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+            if not (hasattr(self.args, "group_server_id_list") and self.args.group_server_id_list is not None):
+                # We only do the test in single server mode.
+                # For multi-server mode, each server only has a subset of models.
+                self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
             self.aggregator.assess_contribution()
 

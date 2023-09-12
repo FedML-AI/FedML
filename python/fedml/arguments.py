@@ -63,6 +63,10 @@ def add_args():
 
     # default arguments
     parser.add_argument("--using_mlops", type=bool, default=False)
+    
+    # multi-server
+    parser.add_argument("--server_id", type=int, default=0)
+    parser.add_argument("--group_server_id_list", type= lambda s: [int(server_id) for server_id in s.split(',')], default=None)
 
     args, unknown = parser.parse_known_args()
 
