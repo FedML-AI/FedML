@@ -1,7 +1,7 @@
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
-workspace: hello_world
+workspace: serve_mnist
 
 # Running entry commands which will be executed as the job entry point.
 # If an error occurs, you should exit with a non-zero code, e.g. exit 1.
@@ -40,11 +40,13 @@ bootstrap: |
   echo "Bootstrap finished."
 
 #framework_type: fedml         # options: fedml, deepspeed, pytorch, general
-#task_type: train              # options: serve, train, dev-environment
+task_type: serve              # options: serve, train, dev-environment
+serving_args:
+  model_name: serve_mnist
 
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
-  #device_type: CPU              # options: GPU, CPU, hybrid
+  device_type: CPU              # options: GPU, CPU, hybrid
   #resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
