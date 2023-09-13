@@ -619,7 +619,7 @@ class FedMLLaunchManager(object):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file, prompt=prompt)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
                 return resource_id, project_id, error_code, error_msg
@@ -629,8 +629,7 @@ class FedMLLaunchManager(object):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
                                                     FedMLLaunchManager.get_api_key())
-            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
-                ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
+            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
         # Get the API key
