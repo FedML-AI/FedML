@@ -39,6 +39,8 @@ from .server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..scheduler_entry.constants import Constants
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
+from ..model_scheduler.device_model_cards import FedMLModelCards
+from ..model_scheduler import device_client_constants
 
 
 class RunnerError(BaseException):
@@ -115,6 +117,8 @@ class FedMLServerRunner:
         self.enable_simulation_cloud_agent = False
 
         self.model_device_server = None
+        self.run_model_device_ids = dict()
+        self.run_edge_ids = dict()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -408,6 +412,20 @@ class FedMLServerRunner:
         if self.run_process_event.is_set():
             logging.info("Received stopping event.")
             raise RunnerError("Runner stopped")
+
+    def process_model_serving(self, serving_devices):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
+        if task_type == Constants.JOB_TASK_TYPE_SERVE:
+            serving_args = run_params.get("serving_args", {})
+            model_name = serving_args.get("model_name", None)
+            model_storage_url = serving_args.get("model_storage_url", None)
+            device_type = device_client_constants.ClientConstants.login_role_list[
+                device_client_constants.ClientConstants.LOGIN_MODE_ON_PREMISE_INDEX]
+            FedMLModelCards.get_instance().deploy_model(model_name, device_type, serving_devices, self.args.user,
+                                                        self.args.api_key, None)
 
     def run_impl(self):
         run_id = self.request_json["runId"]
@@ -817,10 +835,17 @@ class FedMLServerRunner:
         edge_id_list = self.request_json["edgeids"]
         logging.info("Edge ids: " + str(edge_id_list))
 
+        self.run_edge_ids[run_id] = edge_id_list
+
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
+
+            topic_get_model_device_id = "server/client/get_model_device_id/" + str(edge_id)
+            payload = {"server_id": self.edge_id}
+            logging.info("start_train: send topic " + topic_get_model_device_id + " to client...")
+            self.client_mqtt_mgr.send_message(topic_get_model_device_id, json.dumps(payload))
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
         self.client_agent_active_list[f"{run_id}"] = dict()
@@ -1485,6 +1510,39 @@ class FedMLServerRunner:
         elif cmd == ServerConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")
 
+    def callback_response_model_device_id(self, topic, payload):
+        payload_jsonn = json.loads(payload)
+        run_id = payload_jsonn.get("run_id", 0)
+        master_device_id = payload_jsonn.get("master_device_id", 0)
+        slave_device_id = payload_jsonn.get("slave_device_id", 0)
+        if self.run_model_device_ids.get(run_id, None) is None:
+            self.run_model_device_ids[run_id] = list()
+        self.run_model_device_ids[run_id].append({"master_device_id": master_device_id,
+                                                  "slave_device_id": slave_device_id})
+        model_device_ids = self.run_model_device_ids.get(run_id, None)
+        if model_device_ids is None:
+            return
+
+        if len(model_device_ids) != len(self.run_edge_ids.get(run_id, list())):
+            return
+
+        device_master_ids = list()
+        device_slave_ids = list()
+        for device_ids in model_device_ids:
+            model_master_id = device_ids.get("master_device_id")
+            model_slave_id = device_ids.get("slave_device_id")
+            device_master_ids.append(model_master_id)
+            device_slave_ids.append(model_slave_id)
+
+        if len(device_master_ids) <= 0:
+            return
+
+        serving_devices = list()
+        serving_devices.append(model_master_id[0])
+        device_slave_ids.pop(0)
+        serving_devices.extend(device_slave_ids)
+        self.process_model_serving(serving_devices)
+
     @staticmethod
     def get_device_id():
         device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
@@ -1709,6 +1767,10 @@ class FedMLServerRunner:
         topic_exit_train_with_exception = "flserver_agent/" + str(server_agent_id) + "/exit_train_with_exception"
         self.mqtt_mgr.add_message_listener(topic_exit_train_with_exception, self.callback_exit_train_with_exception)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_response_model_device_id = "client/server/response_model_device_id/" + str(self.edge_id)
+        self.mqtt_mgr.add_message_listener(topic_response_model_device_id, self.callback_response_model_device_id)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1716,6 +1778,7 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
+        mqtt_client_object.subscribe(topic_response_model_device_id, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()

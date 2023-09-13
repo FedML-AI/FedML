@@ -1025,6 +1025,16 @@ class FedMLClientRunner:
         elif cmd == ClientConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")
 
+    def callback_report_model_device_id(self, topic, payload):
+        payload_json = json.loads(payload)
+        server_id = payload_json.get("server_id", 0)
+        response_topic = f"client/server/response_model_device_id/{server_id}"
+        if self.mlops_metrics is not None and self.model_device_client is not None and \
+                self.model_device_server is not None:
+            response_payload = {"slave_device_id": self.model_device_client.edge_id,
+                                "master_device_id": self.model_device_server.edge_id}
+            self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
+
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
         ClientConstants.save_training_infos(edge_id, training_status)
@@ -1241,6 +1251,10 @@ class FedMLClientRunner:
         topic_ota_msg = "mlops/flclient_agent_" + str(self.edge_id) + "/ota"
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_client_ota_msg)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_get_model_device_id = "server/client/get_model_device_id/" + str(self.edge_id)
+        self.mqtt_mgr.add_message_listener(topic_get_model_device_id, self.callback_report_model_device_id)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1248,6 +1262,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+        mqtt_client_object.subscribe(topic_get_model_device_id, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()

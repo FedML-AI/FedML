@@ -3,12 +3,14 @@ import os
 import uuid
 
 import requests
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 
 
 class FedMLAppManager(Singleton):
@@ -184,3 +186,54 @@ class FedMLAppManager(Singleton):
             return local_app_package
 
         return ""
+
+    def build_model(self, model_name, workspace_dir):
+        FedMLModelCards.get_instance().set_config_version(self.config_version)
+        FedMLModelCards.get_instance().delete_model(model_name)
+        if not FedMLModelCards.get_instance().create_model(model_name):
+            return Constants.ERROR_CODE_MODEL_CREATE_FAILED, None
+
+        if not FedMLModelCards.get_instance().add_model_files(model_name, workspace_dir):
+            return Constants.ERROR_CODE_MODEL_ADD_FILES_FAILED, None
+
+        model_zip_path = FedMLModelCards.get_instance().build_model(model_name)
+        if model_zip_path is None or model_zip_path == "":
+            return Constants.ERROR_CODE_MODEL_BUILD_FAILED, None
+
+        return 0, model_zip_path
+
+    def push_model_to_s3(self, model_name, model_zip_path):
+        FedMLModelCards.get_instance().set_config_version(self.config_version)
+        return FedMLModelCards.get_instance().push_model_to_s3(model_name, model_zip_path,
+                                                               "FedMLLaunchServe",
+                                                               progress_desc="Submitting your job to "
+                                                                             "FedML® Launch platform")
+
+    def update_model(self, model_name, workspace, model_yaml, api_key):
+        FedMLModelCards.get_instance().set_config_version(self.config_version)
+
+        error_code, model_zip_path = self.build_model(model_name, workspace)
+        if error_code != 0:
+            return None
+
+        model_storage_url = self.push_model_to_s3(model_name, model_zip_path)
+        if model_storage_url == "":
+            return None
+
+        upload_result = FedMLModelCards.get_instance().upload_model_api(model_name, model_yaml, model_storage_url,
+                                                                        None, 214, api_key,
+                                                                        is_from_open=False,
+                                                                        local_server=None)
+        if upload_result is None:
+            return None
+
+        result = FedMLModelUploadResult(model_name, model_storage_url)
+
+        return result
+
+
+class FedMLModelUploadResult(object):
+    def __init__(self, model_name, model_storage_url):
+        self.model_name = model_name
+        self.model_storage_url = model_storage_url
+
