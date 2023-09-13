@@ -591,11 +591,10 @@ class FedMLLaunchManager(object):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, _, _, _ = self.api_match_resources(yaml_file)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
-                return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES], \
-                    ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES
+                return resource_id, project_id, error_code, error_msg
 
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
