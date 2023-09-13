@@ -72,7 +72,7 @@ Then you can use the following example CLI to launch the job at the MLOps platfo
 
 Example:
 ```
-fedml launch call_gpu.yaml
+fedml launch hello_job.yaml
 ```
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
