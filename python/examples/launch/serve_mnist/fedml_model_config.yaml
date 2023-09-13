@@ -8,7 +8,7 @@ entry_point: "mnist_serve_main.py"
 config_folder: "./fedml_model_config.yaml"
 
 ### This absolute direction is for local model files
-### This folder will NOT be upload to MLOps,
+### This folder will NOT be uploaded to MLOps,
 ### the inference server (Docker) will mount from local directory
 data_cache_dir: ""
 
