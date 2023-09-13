@@ -7,13 +7,55 @@ import logging
 
 
 class ScaffoldModelTrainer(ClientTrainer):
+    """
+    A scaffold model trainer that implements training and testing methods.
+
+    Args:
+        ClientTrainer: The base class for client trainers.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        id (int): The identifier of the client.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        train(train_data, device, args, c_model_global_params, c_model_local_params): Train the model.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
+
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args, c_model_global_params, c_model_local_params):
+        """
+        Train the model.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+            c_model_global_params (dict): Global model parameters.
+            c_model_local_params (dict): Local model parameters.
+
+        Returns:
+            int: The number of training iterations.
+        """
         model = self.model
 
         model.to(device)
@@ -63,7 +105,8 @@ class ScaffoldModelTrainer(ClientTrainer):
                     # logging.debug(f"c_model_global[name].device : {c_model_global[name].device}, \
                     #     c_model_global_params[name].device : {c_model_local_params[name].device}")
                     param.data = param.data - current_lr * \
-                        check_device((c_model_global_params[name] - c_model_local_params[name]), param.data.device)
+                        check_device(
+                            (c_model_global_params[name] - c_model_local_params[name]), param.data.device)
                 iteration_cnt += 1
                 batch_loss.append(loss.item())
             if len(batch_loss) == 0:
@@ -77,8 +120,18 @@ class ScaffoldModelTrainer(ClientTrainer):
             )
         return iteration_cnt
 
-
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy and test loss.
+        """
         model = self.model
 
         model.to(device)

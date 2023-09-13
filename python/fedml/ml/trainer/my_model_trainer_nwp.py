@@ -8,20 +8,58 @@ from ...core.alg_frame.client_trainer import ClientTrainer
 
 
 class ModelTrainerNWP(ClientTrainer):
+    """
+    A custom model trainer for Next Word Prediction (NWP) tasks.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        train(train_data, device, args): Train the model.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
         model = self.model
 
         model.to(device)
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss(ignore_index=0).to(device)  # pylint: disable=E1102
+        criterion = nn.CrossEntropyLoss(ignore_index=0).to(
+            device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -34,7 +72,7 @@ class ModelTrainerNWP(ClientTrainer):
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
- 
+
         epoch_loss = []
         for epoch in range(args.epochs):
             # begin_time = time.time()
@@ -66,6 +104,17 @@ class ModelTrainerNWP(ClientTrainer):
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy, test loss, and the total number of test samples.
+        """
         model = self.model
 
         model.to(device)
