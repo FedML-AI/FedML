@@ -4,7 +4,7 @@ import time
 
 import certifi
 import requests
-from fedml.core.mlops import MLOpsUtils
+from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
 class Singleton(object):

@@ -15,7 +15,6 @@ from ..comm_utils.yaml_utils import load_yaml_config
 
 
 class ServerConstants(object):
-    load_yaml_config
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
     MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
@@ -59,7 +58,18 @@ class ServerConstants(object):
     LOGIN_MODE_CLOUD_AGENT_INDEX = 1
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
     LOGIN_MODE_GPU_MASTER_SERVER_INDEX = 3
+
     login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server"]
+
+    login_index_role_map = {LOGIN_MODE_LOCAL_INDEX: login_role_list[LOGIN_MODE_LOCAL_INDEX],
+                            LOGIN_MODE_CLOUD_AGENT_INDEX: login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX],
+                            LOGIN_MODE_CLOUD_SERVER_INDEX: login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX],
+                            LOGIN_MODE_GPU_MASTER_SERVER_INDEX: login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]}
+
+    login_role_index_map = {login_role_list[LOGIN_MODE_LOCAL_INDEX]: LOGIN_MODE_LOCAL_INDEX,
+                            login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX]: LOGIN_MODE_CLOUD_AGENT_INDEX,
+                            login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]: LOGIN_MODE_CLOUD_SERVER_INDEX,
+                            login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX}
 
     @staticmethod
     def get_fedml_home_dir():

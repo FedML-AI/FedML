@@ -326,6 +326,7 @@ class FedMLJobStartedModel(object):
         else:
             self.job_id = "0"
             self.job_name = job_name
+            self.project_id = ""
             self.status = response.get("code")
             self.job_url = job_started_json
             self.started_time = time.time()
