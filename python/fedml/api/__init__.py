@@ -7,9 +7,9 @@ Usages:
     job_yaml_file = "/home/fedml/train.yaml"
     login_ret = fedml.api.fedml_login(api_key)
     if login_ret == 0:
-        resource_id, error_code, error_msg = fedml.api.match_resources(job_yaml_file)
+        resource_id, project_id, error_code, error_msg = fedml.api.match_resources(job_yaml_file)
         if error_code == 0:
-            job_id, error_code, error_msg = fedml.api.launch_job(job_yaml_file, resource_id=resource_id)
+            job_id, project_id, error_code, error_msg = fedml.api.launch_job(job_yaml_file, resource_id=resource_id)
             if error_code == 0:
                 page_num = 1
                 page_size = 100

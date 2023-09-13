@@ -313,6 +313,7 @@ class FedMLJobStartedModel(object):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
+            self.project_id = job_started_json.get("project_id", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
