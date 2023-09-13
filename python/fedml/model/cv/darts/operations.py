@@ -35,6 +35,25 @@ OPS = {
 
 
 class ReLUConvBN(nn.Module):
+    """
+    A composite module that applies ReLU activation, followed by a 2D convolution, and then batch normalization.
+
+    Args:
+        C_in (int): Number of input channels.
+        C_out (int): Number of output channels.
+        kernel_size (int): Size of the convolution kernel.
+        stride (int): Stride of the convolution operation.
+        padding (int): Padding for the convolution operation.
+        affine (bool): Whether to apply affine transformation in batch normalization.
+
+    Input:
+        - Input tensor of shape (batch_size, C_in, height, width).
+
+    Output:
+        - Output tensor of shape (batch_size, C_out, new_height, new_width).
+
+    """
+
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
         super(ReLUConvBN, self).__init__()
         self.op = nn.Sequential(
@@ -50,6 +69,26 @@ class ReLUConvBN(nn.Module):
 
 
 class DilConv(nn.Module):
+    """
+    A composite module that applies dilated convolution followed by batch normalization.
+
+    Args:
+        C_in (int): Number of input channels.
+        C_out (int): Number of output channels.
+        kernel_size (int): Size of the convolution kernel.
+        stride (int): Stride of the convolution operation.
+        padding (int): Padding for the convolution operation.
+        dilation (int): Dilation factor for the convolution operation.
+        affine (bool): Whether to apply affine transformation in batch normalization.
+
+    Input:
+        - Input tensor of shape (batch_size, C_in, height, width).
+
+    Output:
+        - Output tensor of shape (batch_size, C_out, new_height, new_width).
+
+    """
+
     def __init__(
         self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True
     ):
@@ -75,6 +114,25 @@ class DilConv(nn.Module):
 
 
 class SepConv(nn.Module):
+    """
+    A composite module that applies separable convolution followed by batch normalization.
+
+    Args:
+        C_in (int): Number of input channels.
+        C_out (int): Number of output channels.
+        kernel_size (int): Size of the convolution kernel.
+        stride (int): Stride of the convolution operation.
+        padding (int): Padding for the convolution operation.
+        affine (bool): Whether to apply affine transformation in batch normalization.
+
+    Input:
+        - Input tensor of shape (batch_size, C_in, height, width).
+
+    Output:
+        - Output tensor of shape (batch_size, C_out, new_height, new_width).
+
+    """
+
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
         super(SepConv, self).__init__()
         self.op = nn.Sequential(
@@ -108,7 +166,19 @@ class SepConv(nn.Module):
         return self.op(x)
 
 
+
 class Identity(nn.Module):
+    """
+    A module that represents the identity operation (no change).
+
+    Input:
+        - Input tensor of any shape.
+
+    Output:
+        - Output tensor with the same shape as the input.
+
+    """
+
     def __init__(self):
         super(Identity, self).__init__()
 
@@ -117,6 +187,20 @@ class Identity(nn.Module):
 
 
 class Zero(nn.Module):
+    """
+    A module that represents the zero operation (sets the tensor to zero).
+
+    Args:
+        stride (int): Stride for selecting elements in the tensor.
+
+    Input:
+        - Input tensor of any shape.
+
+    Output:
+        - Output tensor with the same shape as the input, but with selected elements set to zero.
+
+    """
+
     def __init__(self, stride):
         super(Zero, self).__init__()
         self.stride = stride
@@ -128,6 +212,22 @@ class Zero(nn.Module):
 
 
 class FactorizedReduce(nn.Module):
+    """
+    A module that applies factorized reduction to reduce spatial dimensions.
+
+    Args:
+        C_in (int): Number of input channels.
+        C_out (int): Number of output channels.
+        affine (bool): Whether to apply affine transformation in batch normalization.
+
+    Input:
+        - Input tensor of shape (batch_size, C_in, height, width).
+
+    Output:
+        - Output tensor of shape (batch_size, C_out, new_height, new_width).
+
+    """
+
     def __init__(self, C_in, C_out, affine=True):
         super(FactorizedReduce, self).__init__()
         assert C_out % 2 == 0

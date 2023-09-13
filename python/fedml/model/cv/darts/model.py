@@ -6,9 +6,29 @@ from .utils import drop_path
 
 
 class Cell(nn.Module):
+    """
+    Cell in a neural architecture described by a genotype.
+
+    Args:
+        genotype (Genotype): Genotype describing the cell's architecture.
+        C_prev_prev (int): Number of input channels from two steps back.
+        C_prev (int): Number of input channels from the previous step.
+        C (int): Number of output channels.
+        reduction (bool): Whether the cell is a reduction cell.
+        reduction_prev (bool): Whether the previous cell was a reduction cell.
+
+    Input:
+        - s0 (Tensor): Input tensor from two steps back, shape (batch_size, C_prev_prev, H, W).
+        - s1 (Tensor): Input tensor from the previous step, shape (batch_size, C_prev, H, W).
+        - drop_prob (float): Dropout probability for drop path regularization during training.
+
+    Output:
+        - Output tensor of the cell, shape (batch_size, C, H, W).
+
+    """
+
     def __init__(self, genotype, C_prev_prev, C_prev, C, reduction, reduction_prev):
         super(Cell, self).__init__()
-        print(C_prev_prev, C_prev, C)
 
         if reduction_prev:
             self.preprocess0 = FactorizedReduce(C_prev_prev, C)
@@ -25,6 +45,17 @@ class Cell(nn.Module):
         self._compile(C, op_names, indices, concat, reduction)
 
     def _compile(self, C, op_names, indices, concat, reduction):
+        """
+        Compiles the operations for the cell based on the given genotype.
+
+        Args:
+            C (int): Number of output channels for the cell.
+            op_names (list of str): Names of the operations for each edge in the cell.
+            indices (list of int): Indices of the operations for each edge in the cell.
+            concat (list of int): Concatenation points for the cell.
+            reduction (bool): Whether the cell is a reduction cell.
+
+        """
         assert len(op_names) == len(indices)
         self._steps = len(op_names) // 2
         self._concat = concat
@@ -38,6 +69,18 @@ class Cell(nn.Module):
         self._indices = indices
 
     def forward(self, s0, s1, drop_prob):
+        """
+        Forward pass through the cell.
+
+        Args:
+            s0 (Tensor): Input tensor from two steps back, shape (batch_size, C_prev_prev, H, W).
+            s1 (Tensor): Input tensor from the previous step, shape (batch_size, C_prev, H, W).
+            drop_prob (float): Dropout probability for drop path regularization during training.
+
+        Returns:
+            Tensor: Output tensor of the cell, shape (batch_size, C, H, W).
+
+        """
         s0 = self.preprocess0(s0)
         s1 = self.preprocess1(s1)
 
@@ -59,15 +102,40 @@ class Cell(nn.Module):
         return torch.cat([states[i] for i in self._concat], dim=1)
 
 
+
 class AuxiliaryHeadCIFAR(nn.Module):
+    """
+    Auxiliary head for CIFAR classification in the DARTS model.
+
+    Args:
+        C (int): Number of input channels.
+        num_classes (int): Number of classes for classification.
+
+    Input:
+        - Input tensor of shape (batch_size, C, 8, 8), assuming an input size of 8x8.
+
+    Output:
+        - Output tensor of shape (batch_size, num_classes), representing class scores.
+
+    Architecture:
+        - ReLU activation
+        - Average pooling with 5x5 kernel and stride 3 (resulting in an image size of 2x2)
+        - 1x1 convolution with 128 output channels
+        - Batch normalization
+        - ReLU activation
+        - 2x2 convolution with 768 output channels
+        - Batch normalization
+        - ReLU activation
+        - Linear layer with num_classes output units for classification.
+
+    """
+
     def __init__(self, C, num_classes):
-        """assuming input size 8x8"""
+        
         super(AuxiliaryHeadCIFAR, self).__init__()
         self.features = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.AvgPool2d(
-                5, stride=3, padding=0, count_include_pad=False
-            ),  # image size = 2 x 2
+            nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False),
             nn.Conv2d(C, 128, 1, bias=False),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
@@ -108,6 +176,32 @@ class AuxiliaryHeadImageNet(nn.Module):
 
 
 class NetworkCIFAR(nn.Module):
+    """
+    DARTS network architecture for CIFAR dataset.
+
+    Args:
+        C (int): Initial number of channels.
+        num_classes (int): Number of classes for classification.
+        layers (int): Number of layers.
+        auxiliary (bool): Whether to use auxiliary heads.
+        genotype (Genotype): Genotype specifying the cell structure.
+
+    Input:
+        - Input tensor of shape (batch_size, 3, 32, 32), where 3 is for RGB channels.
+
+    Output:
+        - Main network output tensor of shape (batch_size, num_classes).
+        - Auxiliary head output tensor if auxiliary is True and during training.
+
+    Architecture:
+        - Stem: Initial convolution layer followed by batch normalization.
+        - Cells: Stack of cells with specified genotype.
+        - Auxiliary Head: Optional auxiliary head for training stability.
+        - Global Pooling: Adaptive average pooling to 1x1 size.
+        - Classifier: Linear layer for classification.
+
+    """
+
     def __init__(self, C, num_classes, layers, auxiliary, genotype):
         super(NetworkCIFAR, self).__init__()
         self._layers = layers
@@ -158,6 +252,25 @@ class NetworkCIFAR(nn.Module):
 
 
 class NetworkImageNet(nn.Module):
+    """
+    Network architecture for ImageNet dataset.
+
+    Args:
+        C (int): Initial number of channels.
+        num_classes (int): Number of classes for classification.
+        layers (int): Number of layers.
+        auxiliary (bool): Whether to include an auxiliary head.
+        genotype (Genotype): Genotype specifying the cell structure.
+
+    Input:
+        - Input tensor of shape (batch_size, 3, height, width).
+
+    Output:
+        - Main classifier logits tensor of shape (batch_size, num_classes).
+        - Auxiliary classifier logits tensor if auxiliary is True, otherwise None.
+
+    """
+
     def __init__(self, C, num_classes, layers, auxiliary, genotype):
         super(NetworkImageNet, self).__init__()
         self._layers = layers

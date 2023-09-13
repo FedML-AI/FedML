@@ -11,6 +11,64 @@ def _concat(xs):
 
 
 class Architect(object):
+    """
+    The Architect class is responsible for architecture optimization in neural architecture search (NAS).
+    It adapts the architecture of a neural network to improve its performance on a specific task using gradient-based methods.
+
+    Attributes:
+        network_momentum (float): The momentum term for the network weights.
+        network_weight_decay (float): The weight decay term for the network weights.
+        model (nn.Module): The neural network model for which the architecture is optimized.
+        criterion (nn.Module): The loss criterion used for training.
+        optimizer (torch.optim.Optimizer): The optimizer for architecture parameters.
+        device (torch.device): The device on which the operations are performed.
+        is_multi_gpu (bool): Flag indicating if the model is trained on multiple GPUs.
+
+    Args:
+        model (nn.Module): The neural network model being optimized.
+        criterion (nn.Module): The loss criterion for training.
+        args (object): A configuration object containing hyperparameters.
+        device (torch.device): The device (e.g., 'cuda' or 'cpu') on which to perform computations.
+
+    Methods:
+        step(input_train, target_train, input_valid, target_valid, eta, network_optimizer, unrolled):
+            Perform a single step of architecture optimization.
+
+        step_v2(input_train, target_train, input_valid, target_valid, lambda_train_regularizer, lambda_valid_regularizer):
+            Perform a single step of architecture optimization with custom regularization terms.
+
+        step_single_level(input_train, target_train):
+            Perform a single step of architecture optimization for a single level.
+
+        step_wa(input_train, target_train, input_valid, target_valid, lambda_regularizer):
+            Perform a single step of architecture optimization with weight adaptation.
+
+        step_AOS(input_train, target_train, input_valid, target_valid):
+            Perform a single step of architecture optimization using the AOS method.
+
+        _backward_step(input_valid, target_valid):
+            Perform the backward step during optimization.
+
+        _backward_step_unrolled(input_train, target_train, input_valid, target_valid, eta, network_optimizer):
+            Perform the unrolled backward step during optimization.
+
+        _construct_model_from_theta(theta):
+            Construct a new model using architecture parameters.
+
+        _hessian_vector_product(vector, input, target, r=1e-2):
+            Compute the product of the Hessian matrix and a vector.
+
+        _compute_unrolled_model(input, target, eta, network_optimizer):
+            Compute the unrolled model with updated weights.
+
+    Example:
+        # Create an Architect instance
+        architect = Architect(model, criterion, args, device)
+
+        # Perform architecture optimization
+        architect.step(input_train, target_train, input_valid, target_valid, eta, network_optimizer, unrolled=True)
+    """
+    
     def __init__(self, model, criterion, args, device):
         self.network_momentum = args.momentum
         self.network_weight_decay = args.weight_decay
@@ -34,6 +92,18 @@ class Architect(object):
     # W_j = V_j + W_jx  x
     # https://www.youtube.com/watch?v=k8fTYJPd3_I
     def _compute_unrolled_model(self, input, target, eta, network_optimizer):
+        """
+        Compute the unrolled model with respect to the architecture parameters.
+
+        Args:
+            input: Input data.
+            target: Target data.
+            eta (float): Learning rate.
+            network_optimizer: The network optimizer.
+
+        Returns:
+            unrolled_model: The unrolled model.
+        """
         logits = self.model(input)
         loss = self.criterion(logits, target)   # pylint: disable=E1102
 
@@ -65,6 +135,18 @@ class Architect(object):
         network_optimizer,
         unrolled,
     ):
+        """
+        Perform one optimization step for architecture search.
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            eta (float): Learning rate.
+            network_optimizer: The network optimizer.
+            unrolled (bool): Whether to compute an unrolled model.
+        """
         self.optimizer.zero_grad()
         if unrolled:
             # logging.info("first order")
@@ -91,6 +173,17 @@ class Architect(object):
         lambda_train_regularizer,
         lambda_valid_regularizer,
     ):
+        """
+        Perform one optimization step for architecture search (variant 2).
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            lambda_train_regularizer (float): Regularization weight for training.
+            lambda_valid_regularizer (float): Regularization weight for validation.
+        """
         self.optimizer.zero_grad()
 
         # grads_alpha_with_train_dataset
@@ -143,6 +236,13 @@ class Architect(object):
 
     # ours
     def step_single_level(self, input_train, target_train):
+        """
+        Perform one optimization step for architecture search (single level).
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+        """
         self.optimizer.zero_grad()
 
         # grads_alpha_with_train_dataset
@@ -174,6 +274,16 @@ class Architect(object):
     def step_wa(
         self, input_train, target_train, input_valid, target_valid, lambda_regularizer
     ):
+        """
+        Perform one optimization step for architecture search (weighted average).
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            lambda_regularizer (float): Regularization weight.
+        """
         self.optimizer.zero_grad()
 
         # grads_alpha_with_train_dataset
@@ -220,6 +330,15 @@ class Architect(object):
         self.optimizer.step()
 
     def step_AOS(self, input_train, target_train, input_valid, target_valid):
+        """
+        Perform one optimization step for architecture search (AOS).
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+        """
         self.optimizer.zero_grad()
         output_search = self.model(input_valid)
         arch_loss = self.criterion(output_search, target_valid)  # pylint: disable=E1102
@@ -227,6 +346,13 @@ class Architect(object):
         self.optimizer.step()
 
     def _backward_step(self, input_valid, target_valid):
+        """
+        Perform a backward step for the architecture optimization.
+
+        Args:
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+        """
         logits = self.model(input_valid)
         loss = self.criterion(logits, target_valid)  # pylint: disable=E1102
 
@@ -241,6 +367,17 @@ class Architect(object):
         eta,
         network_optimizer,
     ):
+        """
+        Perform a backward step for the architecture optimization with unrolled training.
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            eta: Learning rate for unrolled training.
+            network_optimizer: The optimizer for the network weights.
+        """
         # calculate w' in equation (7):
         # approximate w(*) by adapting w using only a single training step and enable momentum.
         unrolled_model = self._compute_unrolled_model(
@@ -277,6 +414,15 @@ class Architect(object):
                 v.grad.data.copy_(g.data)
 
     def _construct_model_from_theta(self, theta):
+        """
+        Construct a new model from the given theta.
+
+        Args:
+            theta: A flattened parameter tensor.
+
+        Returns:
+            model_new: A new model constructed using the provided theta.
+        """
         model_new = self.model.new()
         model_dict = self.model.state_dict()
 
@@ -311,6 +457,18 @@ class Architect(object):
         return model_new.to(self.device)
 
     def _hessian_vector_product(self, vector, input, target, r=1e-2):
+        """
+        Calculate the Hessian-vector product.
+
+        Args:
+            vector: A list of gradient vectors.
+            input: Input data.
+            target: Target data.
+            r: Regularization term.
+
+        Returns:
+            List of Hessian-vector products.
+        """
         # vector is (gradient of w' on validation dataset)
         R = r / _concat(vector).norm()
         parameters = (
@@ -374,6 +532,19 @@ class Architect(object):
         lambda_train_regularizer,
         lambda_valid_regularizer,
     ):
+        """
+        Perform a step for architecture optimization using the second-order method.
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            eta: Learning rate for unrolled training.
+            network_optimizer: The optimizer for the network weights.
+            lambda_train_regularizer: Regularization term for training dataset.
+            lambda_valid_regularizer: Regularization term for validation dataset.
+        """
         self.optimizer.zero_grad()
 
         # approximate w(*) by adapting w using only a single training step and enable momentum.
@@ -465,6 +636,20 @@ class Architect(object):
         lambda_train_regularizer,
         lambda_valid_regularizer,
     ):
+        """
+        Perform a step for architecture optimization using the second-order method with modifications.
+
+        Args:
+            input_train: Training input data.
+            target_train: Training target data.
+            input_valid: Validation input data.
+            target_valid: Validation target data.
+            eta: Learning rate for unrolled training.
+            network_optimizer: The optimizer for the network weights.
+            lambda_train_regularizer: Regularization term for training dataset.
+            lambda_valid_regularizer: Regularization term for validation dataset.
+        """
+         
         self.optimizer.zero_grad()
 
         # approximate w(*) by adapting w using only a single training step and enable momentum.

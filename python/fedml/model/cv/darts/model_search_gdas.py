@@ -8,6 +8,17 @@ from .operations import OPS, FactorizedReduce, ReLUConvBN
 
 class MixedOp(nn.Module):
     def __init__(self, C, stride):
+        """
+        Initialize a MixedOp module.
+
+        Args:
+            C (int): The number of input channels.
+            stride (int): The stride for the operation.
+
+        Note:
+            PRIMITIVES: a list of operation primitives.
+            OPS: a dictionary mapping operation primitives to corresponding operation classes.
+        """
         super(MixedOp, self).__init__()
         self._ops = nn.ModuleList()
         for primitive in PRIMITIVES:
@@ -17,6 +28,17 @@ class MixedOp(nn.Module):
             self._ops.append(op)
 
     def forward(self, x, weights, cpu_weights):
+        """
+        Perform a forward pass through the MixedOp module.
+
+        Args:
+            x (Tensor): Input tensor.
+            weights (Tensor): Weights for the operations.
+            cpu_weights (list): Weights converted to CPU.
+
+        Returns:
+            Tensor: Output tensor after applying the mixed operations.
+        """
         clist = []
         for j, cpu_weight in enumerate(cpu_weights):
             if abs(cpu_weight) > 1e-10:
@@ -31,6 +53,18 @@ class Cell(nn.Module):
     def __init__(
         self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev
     ):
+        """
+        Initialize a Cell module.
+
+        Args:
+            steps (int): The number of steps in the cell.
+            multiplier (int): Multiplier for the number of output channels.
+            C_prev_prev (int): Number of input channels from two steps back.
+            C_prev (int): Number of input channels from the previous step.
+            C (int): Number of output channels for the cell.
+            reduction (bool): Whether it's a reduction cell.
+            reduction_prev (bool): Whether the previous cell was a reduction cell.
+        """
         super(Cell, self).__init__()
         self.reduction = reduction
 
@@ -51,6 +85,17 @@ class Cell(nn.Module):
                 self._ops.append(op)
 
     def forward(self, s0, s1, weights):
+        """
+        Perform a forward pass through the Cell module.
+
+        Args:
+            s0 (Tensor): Input tensor from two steps back.
+            s1 (Tensor): Input tensor from the previous step.
+            weights (Tensor): Weights for the operations.
+
+        Returns:
+            Tensor: Output tensor after applying the cell operations.
+        """
         s0 = self.preprocess0(s0)
         s1 = self.preprocess1(s1)
 
@@ -64,7 +109,7 @@ class Cell(nn.Module):
             )
             offset += len(states)
             states.append(s)
-        # logging.info(states)
+
         return torch.cat(states[-self._multiplier :], dim=1)
 
 
@@ -80,6 +125,19 @@ class Network_GumbelSoftmax(nn.Module):
         multiplier=4,
         stem_multiplier=3,
     ):
+        """
+        Initialize a Network_GumbelSoftmax model.
+
+        Args:
+            C (int): Number of initial channels.
+            num_classes (int): Number of output classes.
+            layers (int): Number of layers.
+            criterion: Loss criterion.
+            device: The device to run the model on.
+            steps (int): Number of steps in each cell.
+            multiplier (int): Multiplier for the number of output channels.
+            stem_multiplier (int): Multiplier for the number of initial channels in the stem.
+        """
         super(Network_GumbelSoftmax, self).__init__()
         self._C = C
         self._num_classes = num_classes
@@ -89,7 +147,7 @@ class Network_GumbelSoftmax(nn.Module):
         self._multiplier = multiplier
         self.device = device
 
-        C_curr = stem_multiplier * C  # 3*16
+        C_curr = stem_multiplier * C
         self.stem = nn.Sequential(
             nn.Conv2d(3, C_curr, 3, padding=1, bias=False), nn.BatchNorm2d(C_curr)
         )
@@ -98,7 +156,7 @@ class Network_GumbelSoftmax(nn.Module):
         self.cells = nn.ModuleList()
         reduction_prev = False
 
-        # for layers = 8, when layer_i = 2, 5, the cell is reduction cell.
+
         for i in range(layers):
             if i in [layers // 3, 2 * layers // 3]:
                 C_curr *= 2
@@ -166,6 +224,14 @@ class Network_GumbelSoftmax(nn.Module):
         return self._arch_parameters
 
     def genotype(self):
+        """
+        Get the architecture genotype of the model.
+
+        Returns:
+            Genotype: The architecture genotype.
+            cnn_structure_count_normal (int): Count of CNN structures in normal cells.
+            cnn_structure_count_reduce (int): Count of CNN structures in reduction cells.
+        """
         def _isCNNStructure(k_best):
             return k_best >= 4
 
