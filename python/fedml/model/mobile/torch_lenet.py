@@ -29,7 +29,7 @@ class LeNet(nn.Module):
             - Activation: ReLU
             - Max Pooling: 2x2
         - Fully Connected Layer 1:
-            - Input: 800 neurons (flattened 50x4x4 from previous layer)
+            - Input: 800 neurons (flattened 50x4x4 from the previous layer)
             - Output: 500 neurons
             - Activation: ReLU
             - Dropout: 50% dropout rate
@@ -37,6 +37,16 @@ class LeNet(nn.Module):
             - Input: 500 neurons
             - Output: 10 neurons (class probabilities)
             - Activation: Softmax
+
+    Note:
+        - LeNet-5 is a classic convolutional neural network architecture designed for image classification tasks.
+        - This implementation follows the original LeNet-5 architecture.
+
+    Example:
+        To create an instance of the LeNet model:
+        >>> model = LeNet()
+        >>> input_tensor = torch.randn(1, 1, 32, 32)  # Example input tensor
+        >>> output = model(input_tensor)  # Forward pass to obtain class probabilities
 
     """
 

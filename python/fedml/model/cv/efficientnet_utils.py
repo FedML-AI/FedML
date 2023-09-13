@@ -76,6 +76,15 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 # An ordinary implementation of Swish function
 class Swish(nn.Module):
     def forward(self, x):
+        """
+        Applies the Swish activation function to the input tensor.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after applying the Swish activation.
+        """
         return x * torch.sigmoid(x)
 
 
@@ -83,12 +92,32 @@ class Swish(nn.Module):
 class SwishImplementation(torch.autograd.Function):
     @staticmethod
     def forward(ctx, i):
+        """
+        Forward pass for the memory-efficient Swish function.
+
+        Args:
+            ctx: Context object to save tensors for backward pass.
+            i (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after applying the memory-efficient Swish activation.
+        """
         result = i * torch.sigmoid(i)
         ctx.save_for_backward(i)
         return result
 
     @staticmethod
     def backward(ctx, grad_output):
+        """
+        Backward pass for the memory-efficient Swish function.
+
+        Args:
+            ctx: Context object containing saved tensors from forward pass.
+            grad_output (torch.Tensor): Gradient of the loss with respect to the output.
+
+        Returns:
+            torch.Tensor: Gradient of the loss with respect to the input tensor.
+        """
         i = ctx.saved_tensors[0]
         sigmoid_i = torch.sigmoid(i)
         return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
@@ -96,17 +125,33 @@ class SwishImplementation(torch.autograd.Function):
 
 class MemoryEfficientSwish(nn.Module):
     def forward(self, x):
+        """
+        Applies the memory-efficient Swish activation function to the input tensor.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after applying the memory-efficient Swish activation.
+        """
+
         return SwishImplementation.apply(x)
 
 
 def round_filters(filters, global_params):
-    """Calculate and round number of filters based on width multiplier.
-       Use width_coefficient, depth_divisor and min_depth of global_params.
+    """
+    Calculate and round the number of filters based on the width multiplier.
+
     Args:
-        filters (int): Filters number to be calculated.
-        global_params (namedtuple): Global params of the model.
+        filters (int): Number of filters to be calculated.
+        global_params (namedtuple): Global parameters of the model.
+
     Returns:
-        new_filters: New filters number after calculating.
+        int: New number of filters after rounding.
+
+    Example:
+        # Calculate and round filters based on width multiplier and global parameters.
+        new_filters = round_filters(64, global_params)
     """
     multiplier = global_params.width_coefficient
     if not multiplier:
@@ -126,13 +171,19 @@ def round_filters(filters, global_params):
 
 
 def round_repeats(repeats, global_params):
-    """Calculate module's repeat number of a block based on depth multiplier.
-       Use depth_coefficient of global_params.
+    """
+    Calculate module's repeat number of a block based on the depth multiplier.
+
     Args:
-        repeats (int): num_repeat to be calculated.
-        global_params (namedtuple): Global params of the model.
+        repeats (int): Number of repeats to be calculated.
+        global_params (namedtuple): Global parameters of the model.
+
     Returns:
-        new repeat: New repeat number after calculating.
+        int: New number of repeats after calculation.
+
+    Example:
+        # Calculate repeats based on depth multiplier and global parameters.
+        new_repeats = round_repeats(5, global_params)
     """
     multiplier = global_params.depth_coefficient
     if not multiplier:
@@ -142,13 +193,20 @@ def round_repeats(repeats, global_params):
 
 
 def drop_connect(inputs, p, training):
-    """Drop connect.
+    """
+    Apply drop connect to the input tensor.
+
     Args:
-        input (tensor: BCWH): Input of this structure.
-        p (float: 0.0~1.0): Probability of drop connection.
-        training (bool): The running mode.
+        inputs (torch.Tensor): Input tensor to which drop connect will be applied.
+        p (float): Probability of drop connection (0.0 <= p <= 1.0).
+        training (bool): The running mode (True for training, False for inference).
+
     Returns:
-        output: Output after drop connection.
+        torch.Tensor: Output tensor after applying drop connect.
+
+    Example:
+        # Apply drop connect with a probability of 0.5 during training.
+        output = drop_connect(inputs, 0.5, training=True)
     """
     assert 0 <= p <= 1, "p must be in range of [0,1]"
 
@@ -170,11 +228,22 @@ def drop_connect(inputs, p, training):
 
 
 def get_width_and_height_from_size(x):
-    """Obtain height and width from x.
+    """
+    Obtain height and width from a size value.
+
     Args:
-        x (int, tuple or list): Data size.
+        x (int, tuple, or list): Data size.
+
     Returns:
-        size: A tuple or list (H,W).
+        tuple: A tuple (height, width).
+    
+    Raises:
+        TypeError: If the input is not an int, tuple, or list.
+
+    Example:
+        # Get height and width from an integer size.
+        size = get_width_and_height_from_size(32)
+        # Result: (32, 32)
     """
     if isinstance(x, int):
         return x, x
@@ -185,13 +254,20 @@ def get_width_and_height_from_size(x):
 
 
 def calculate_output_image_size(input_image_size, stride):
-    """Calculates the output image size when using Conv2dSamePadding with a stride.
-       Necessary for static padding. Thanks to mannatsingh for pointing this out.
+    """
+    Calculate the output image size when using Conv2dSamePadding with a given stride.
+
     Args:
-        input_image_size (int, tuple or list): Size of input image.
-        stride (int, tuple or list): Conv2d operation's stride.
+        input_image_size (int, tuple, or list): Size of the input image.
+        stride (int, tuple, or list): Conv2d operation's stride.
+
     Returns:
-        output_image_size: A list [H,W].
+        list: A list [height, width] representing the output image size.
+
+    Example:
+        # Calculate the output size for an input image of size 128x128 with a stride of 2.
+        output_size = calculate_output_image_size((128, 128), 2)
+        # Result: [64, 64]
     """
     if input_image_size is None:
         return None
@@ -209,12 +285,18 @@ def calculate_output_image_size(input_image_size, stride):
 
 
 def get_same_padding_conv2d(image_size=None):
-    """Chooses static padding if you have specified an image size, and dynamic padding otherwise.
-       Static padding is necessary for ONNX exporting of models.
+    """
+    Choose dynamic padding if no image size is specified, otherwise choose static padding.
+
     Args:
         image_size (int or tuple): Size of the image.
+
     Returns:
-        Conv2dDynamicSamePadding or Conv2dStaticSamePadding.
+        Conv2dDynamicSamePadding or Conv2dStaticSamePadding: The appropriate Conv2d class.
+
+    Example:
+        # Get the Conv2d class with dynamic padding based on image size.
+        conv2d_class = get_same_padding_conv2d((128, 128))
     """
     if image_size is None:
         return Conv2dDynamicSamePadding
@@ -223,8 +305,9 @@ def get_same_padding_conv2d(image_size=None):
 
 
 class Conv2dDynamicSamePadding(nn.Conv2d):
-    """2D Convolutions like TensorFlow, for a dynamic image size.
-    The padding is operated in forward function by calculating dynamically.
+    """
+    2D Convolution with dynamic padding based on the input image size.
+    The padding is calculated dynamically during the forward pass.
     """
 
     # Tips for 'SAME' mode padding.
@@ -279,8 +362,23 @@ class Conv2dDynamicSamePadding(nn.Conv2d):
 
 
 class Conv2dStaticSamePadding(nn.Conv2d):
-    """2D Convolutions like TensorFlow's 'SAME' mode, with the given input image size.
-    The padding mudule is calculated in construction function, then used in forward.
+    """
+    2D Convolutions with static padding similar to TensorFlow's 'SAME' mode,
+    using the provided input image size for padding calculation.
+    
+    This module calculates the padding during construction and applies it during the forward pass.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int or tuple): Size of the convolutional kernel.
+        stride (int or tuple, optional): Stride of the convolution. Default is 1.
+        image_size (int or tuple, optional): Size of the input image. Must be provided for padding calculation.
+        **kwargs: Additional arguments for nn.Conv2d.
+
+    Example:
+        # Create a Conv2dStaticSamePadding layer with an input image size of 128x128.
+        conv_layer = Conv2dStaticSamePadding(in_channels=3, out_channels=64, kernel_size=3, image_size=(128, 128))
     """
 
     # With the same calculation as Conv2dDynamicSamePadding
@@ -327,12 +425,15 @@ class Conv2dStaticSamePadding(nn.Conv2d):
 
 
 def get_same_padding_maxPool2d(image_size=None):
-    """Chooses static padding if you have specified an image size, and dynamic padding otherwise.
-       Static padding is necessary for ONNX exporting of models.
+    """
+    Chooses static padding if you have specified an image size, and dynamic padding otherwise.
+    Static padding is necessary for ONNX exporting of models.
+
     Args:
-        image_size (int or tuple): Size of the image.
+        image_size (int or tuple, optional): Size of the image. If provided, static padding will be used.
+
     Returns:
-        MaxPool2dDynamicSamePadding or MaxPool2dStaticSamePadding.
+        MaxPool2dDynamicSamePadding or MaxPool2dStaticSamePadding: A MaxPooling layer with the chosen padding.
     """
     if image_size is None:
         return MaxPool2dDynamicSamePadding
@@ -341,8 +442,21 @@ def get_same_padding_maxPool2d(image_size=None):
 
 
 class MaxPool2dDynamicSamePadding(nn.MaxPool2d):
-    """2D MaxPooling like TensorFlow's 'SAME' mode, with a dynamic image size.
-    The padding is operated in forward function by calculating dynamically.
+    """
+    2D MaxPooling with dynamic padding, similar to TensorFlow's 'SAME' mode, for a dynamic image size.
+    The padding is calculated dynamically during the forward pass.
+
+    Args:
+        kernel_size (int or tuple): Size of the max-pooling kernel.
+        stride (int or tuple): Stride of the max-pooling operation.
+        padding (int or tuple, optional): Padding to be added. Default is 0.
+        dilation (int or tuple, optional): Dilation rate. Default is 1.
+        return_indices (bool, optional): Whether to return the indices. Default is False.
+        ceil_mode (bool, optional): Whether to use 'ceil' mode for output size. Default is False.
+
+    Example:
+        # Create a MaxPool2dDynamicSamePadding layer.
+        maxpool_layer = MaxPool2dDynamicSamePadding(kernel_size=3, stride=2)
     """
 
     def __init__(
@@ -390,8 +504,19 @@ class MaxPool2dDynamicSamePadding(nn.MaxPool2d):
 
 
 class MaxPool2dStaticSamePadding(nn.MaxPool2d):
-    """2D MaxPooling like TensorFlow's 'SAME' mode, with the given input image size.
-    The padding mudule is calculated in construction function, then used in forward.
+    """
+    2D MaxPooling like TensorFlow's 'SAME' mode, with the given input image size.
+    The padding module is calculated during construction and then applied in the forward pass.
+
+    Args:
+        kernel_size (int or tuple): Size of the max-pooling kernel.
+        stride (int or tuple): Stride of the max-pooling operation.
+        image_size (int or tuple): Size of the input image. Required to calculate static padding.
+        **kwargs: Additional keyword arguments for MaxPool2d.
+
+    Example:
+        # Create a MaxPool2dStaticSamePadding layer with a specified image size.
+        maxpool_layer = MaxPool2dStaticSamePadding(kernel_size=3, stride=2, image_size=(224, 224))
     """
 
     def __init__(self, kernel_size, stride, image_size=None, **kwargs):
@@ -448,16 +573,22 @@ class MaxPool2dStaticSamePadding(nn.MaxPool2d):
 
 
 class BlockDecoder(object):
-    """Block Decoder for readability,
-    straight from the official TensorFlow repository.
+    """
+    Block Decoder for readability, straight from the official TensorFlow repository.
+
+    This class provides methods to decode and encode block configurations represented as strings.
+    These strings define the arguments of each block in a neural network architecture.
     """
 
     @staticmethod
     def _decode_block_string(block_string):
-        """Get a block through a string notation of arguments.
+        """
+        Get a block through a string notation of arguments.
+
         Args:
             block_string (str): A string notation of arguments.
                                 Examples: 'r1_k3_s11_e1_i32_o16_se0.25_noskip'.
+
         Returns:
             BlockArgs: The namedtuple defined at the top of this file.
         """
@@ -489,9 +620,12 @@ class BlockDecoder(object):
 
     @staticmethod
     def _encode_block_string(block):
-        """Encode a block to a string.
+        """
+        Encode a block to a string.
+
         Args:
             block (namedtuple): A BlockArgs type argument.
+
         Returns:
             block_string: A String form of BlockArgs.
         """
@@ -511,9 +645,12 @@ class BlockDecoder(object):
 
     @staticmethod
     def decode(string_list):
-        """Decode a list of string notations to specify blocks inside the network.
+        """
+        Decode a list of string notations to specify blocks inside the network.
+
         Args:
             string_list (list[str]): A list of strings, each string is a notation of block.
+
         Returns:
             blocks_args: A list of BlockArgs namedtuples of block args.
         """
@@ -525,12 +662,16 @@ class BlockDecoder(object):
 
     @staticmethod
     def encode(blocks_args):
-        """Encode a list of BlockArgs to a list of strings.
+        """
+        Encode a list of BlockArgs to a list of strings.
+
         Args:
             blocks_args (list[namedtuples]): A list of BlockArgs namedtuples of block args.
+
         Returns:
             block_strings: A list of strings, each string is a notation of block.
         """
+
         block_strings = []
         for block in blocks_args:
             block_strings.append(BlockDecoder._encode_block_string(block))
@@ -538,9 +679,12 @@ class BlockDecoder(object):
 
 
 def efficientnet_params(model_name):
-    """Map EfficientNet model name to parameter coefficients.
+    """
+    Map EfficientNet model name to parameter coefficients.
+
     Args:
         model_name (str): Model name to be queried.
+
     Returns:
         params_dict[model_name]: A (width,depth,res,dropout) tuple.
     """
@@ -569,7 +713,9 @@ def efficientnet(
     num_classes=1000,
     include_top=True,
 ):
-    """Create BlockArgs and GlobalParams for efficientnet model.
+    """
+    Create BlockArgs and GlobalParams for the EfficientNet model.
+
     Args:
         width_coefficient (float)
         depth_coefficient (float)
@@ -577,7 +723,8 @@ def efficientnet(
         dropout_rate (float)
         drop_connect_rate (float)
         num_classes (int)
-        Meaning as the name suggests.
+        include_top (bool)
+
     Returns:
         blocks_args, global_params.
     """
@@ -613,10 +760,13 @@ def efficientnet(
 
 
 def get_model_params(model_name, override_params):
-    """Get the block args and global params for a given model name.
+    """
+    Get the block args and global params for a given model name.
+
     Args:
         model_name (str): Model's name.
         override_params (dict): A dict to modify global_params.
+
     Returns:
         blocks_args, global_params
     """
@@ -669,16 +819,17 @@ url_map_advprop = {
 def load_pretrained_weights(
     model, model_name, weights_path=None, load_fc=True, advprop=False
 ):
-    """Loads pretrained weights from weights path or download using url.
+    """
+    Loads pretrained weights from weights path or download using URL.
+
     Args:
-        model (Module): The whole model of efficientnet.
-        model_name (str): Model name of efficientnet.
-        weights_path (None or str):
-            str: path to pretrained weights file on the local disk.
-            None: use pretrained weights downloaded from the Internet.
-        load_fc (bool): Whether to load pretrained weights for fc layer at the end of the model.
-        advprop (bool): Whether to load pretrained weights
-                        trained with advprop (valid when weights_path is None).
+        model (Module): The whole model of EfficientNet.
+        model_name (str): Model name of EfficientNet.
+        weights_path (str or None):
+            - str: Path to pretrained weights file on the local disk.
+            - None: Use pretrained weights downloaded from the Internet.
+        load_fc (bool): Whether to load pretrained weights for the fully connected (fc) layer at the end of the model.
+        advprop (bool): Whether to load pretrained weights trained with advprop (valid when weights_path is None).
     """
     if isinstance(weights_path, str):
         state_dict = torch.load(weights_path)

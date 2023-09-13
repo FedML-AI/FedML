@@ -48,7 +48,30 @@ class Lenet5(nn.Module):
 
 
 def create_mnn_lenet5_model(mnn_file_path):
+    """
+    Create and save a LeNet-5 model in the MNN format.
+
+    Args:
+        mnn_file_path (str): The path to save the MNN model file.
+
+    Note:
+        This function assumes you have a LeNet-5 model class defined in a 'lenet5' module.
+        The LeNet-5 model class should have a 'forward' method that takes an input tensor and returns predictions.
+
+    Example:
+        To create and save a LeNet-5 model to 'lenet5.mnn':
+        >>> create_mnn_lenet5_model('lenet5.mnn')
+
+    """
+    # Create an instance of the LeNet-5 model
     net = Lenet5()
+
+    # Define an input tensor with the desired shape (1 batch, 1 channel, 28x28)
     input_var = MNN.expr.placeholder([1, 1, 28, 28], MNN.expr.NCHW)
+
+    # Perform a forward pass to generate predictions
     predicts = net.forward(input_var)
+
+    # Save the model to the specified file path
     F.save([predicts], mnn_file_path)
+    

@@ -17,7 +17,24 @@ __all__ = ["ResNet"]
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    """3x3 convolution with padding"""
+    """
+    3x3 convolution with padding.
+
+    Args:
+        in_planes (int): Number of input channels.
+        out_planes (int): Number of output channels.
+        stride (int, optional): Stride for the convolution. Default is 1.
+        groups (int, optional): Number of groups for grouped convolution. Default is 1.
+        dilation (int, optional): Dilation rate for the convolution. Default is 1.
+
+    Returns:
+        nn.Conv2d: A 3x3 convolutional layer.
+
+    Example:
+        # Create a 3x3 convolution with 64 input channels, 128 output channels, and a stride of 2.
+        conv_layer = conv3x3(64, 128, stride=2)
+    """
+
     return nn.Conv2d(
         in_planes,
         out_planes,
@@ -31,11 +48,47 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 
 def conv1x1(in_planes, out_planes, stride=1):
-    """1x1 convolution"""
+    """
+    1x1 convolution.
+
+    Args:
+        in_planes (int): Number of input channels.
+        out_planes (int): Number of output channels.
+        stride (int, optional): Stride for the convolution. Default is 1.
+
+    Returns:
+        nn.Conv2d: A 1x1 convolutional layer.
+
+    Example:
+        # Create a 1x1 convolution with 64 input channels and 128 output channels.
+        conv_layer = conv1x1(64, 128)
+    """
+
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 class BasicBlock(nn.Module):
+    """
+    Basic building block for a ResNet.
+
+    Args:
+        inplanes (int): Number of input channels.
+        planes (int): Number of output channels.
+        stride (int, optional): Stride for the convolution. Default is 1.
+        downsample (nn.Module, optional): Downsample layer for shortcut connection. Default is None.
+        groups (int, optional): Number of groups for grouped convolution. Default is 1.
+        base_width (int, optional): Base width for width calculation. Default is 64.
+        dilation (int, optional): Dilation rate for the convolution. Default is 1.
+        norm_layer (nn.Module, optional): Normalization layer. Default is None.
+
+    Attributes:
+        expansion (int): Expansion factor for the number of output channels.
+
+    Example:
+        # Create a BasicBlock with 64 input channels and 128 output channels.
+        block = BasicBlock(64, 128)
+    """
+
     expansion = 1
 
     def __init__(
@@ -58,6 +111,19 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
+        """
+        Forward pass of the BasicBlock.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+
+        Example:
+            # Forward pass through a BasicBlock.
+            output = block(input_tensor)
+        """
         identity = x
 
         out = self.conv1(x)
@@ -77,6 +143,27 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    """
+    Bottleneck building block for a ResNet.
+
+    Args:
+        inplanes (int): Number of input channels.
+        planes (int): Number of output channels.
+        stride (int, optional): Stride for the convolution. Default is 1.
+        downsample (nn.Module, optional): Downsample layer for shortcut connection. Default is None.
+        groups (int, optional): Number of groups for grouped convolution. Default is 1.
+        base_width (int, optional): Base width for width calculation. Default is 64.
+        dilation (int, optional): Dilation rate for the convolution. Default is 1.
+        norm_layer (nn.Module, optional): Normalization layer. Default is None.
+
+    Attributes:
+        expansion (int): Expansion factor for the number of output channels.
+
+    Example:
+        # Create a Bottleneck with 64 input channels and 128 output channels.
+        bottleneck = Bottleneck(64, 128)
+    """
+
     expansion = 4
 
     def __init__(
@@ -98,6 +185,19 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, x):
+        """
+        Forward pass of the Bottleneck.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+
+        Example:
+            # Forward pass through a Bottleneck block.
+            output = bottleneck(input_tensor)
+        """
         identity = x
 
         out = self.conv1(x)
@@ -133,6 +233,42 @@ class ResNet(nn.Module):
         norm_layer=None,
         KD=False,
     ):
+        """
+        ResNet model implementation.
+
+        Args:
+            block (nn.Module): The type of block to use in the network (e.g., BasicBlock or Bottleneck).
+            layers (list of int): Number of blocks in each layer of the network.
+            num_classes (int): Number of output classes. Default is 10.
+            zero_init_residual (bool): Whether to zero-init the last BN in each residual branch. Default is False.
+            groups (int): Number of groups for grouped convolution. Default is 1.
+            width_per_group (int): Number of channels per group for grouped convolution. Default is 64.
+            replace_stride_with_dilation (list of bool): List indicating whether to replace 2x2 stride with dilation.
+            norm_layer (nn.Module): Normalization layer. Default is None.
+            KD (bool): Whether to enable knowledge distillation. Default is False.
+
+        Attributes:
+            block (nn.Module): The type of block used in the network.
+            layers (list of int): Number of blocks in each layer of the network.
+            num_classes (int): Number of output classes.
+            zero_init_residual (bool): Whether to zero-init the last BN in each residual branch.
+            groups (int): Number of groups for grouped convolution.
+            base_width (int): Base width for width calculation.
+            dilation (int): Dilation rate for the convolution.
+            conv1 (nn.Conv2d): The initial convolutional layer.
+            bn1 (nn.BatchNorm2d): Batch normalization layer after the initial convolution.
+            relu (nn.ReLU): ReLU activation function.
+            layer1 (nn.Sequential): The first layer of the network.
+            layer2 (nn.Sequential): The second layer of the network.
+            layer3 (nn.Sequential): The third layer of the network.
+            avgpool (nn.AdaptiveAvgPool2d): Adaptive average pooling layer.
+            fc (nn.Linear): Fully connected layer for classification.
+            KD (bool): Whether knowledge distillation is enabled.
+
+        Example:
+            # Create a ResNet-18 model with 10 output classes.
+            resnet = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=10)
+        """
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -179,6 +315,19 @@ class ResNet(nn.Module):
                     nn.init.constant_(m.bn2.weight, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
+        """
+        Helper function to create a layer of blocks.
+
+        Args:
+            block (nn.Module): The type of block to use.
+            planes (int): Number of output channels for the layer.
+            blocks (int): Number of blocks in the layer.
+            stride (int, optional): Stride for the convolution. Default is 1.
+            dilate (bool, optional): Whether to use dilation. Default is False.
+
+        Returns:
+            nn.Sequential: A sequential container of blocks.
+        """
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
@@ -212,6 +361,19 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        """
+        Forward pass of the ResNet model.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+
+        Example:
+            # Forward pass through a ResNet model.
+            output = resnet(input_tensor)
+        """
         # x = self.conv1(x)
         # x = self.bn1(x)
         # x = self.relu(x)  # B x 16 x 32 x 32
@@ -230,8 +392,20 @@ def resnet56_server(c, pretrained=False, path=None, **kwargs):
     """
     Constructs a ResNet-110 model.
 
+    This function creates a ResNet-110 model for server-side applications with the specified number of output classes.
+
     Args:
+        c (int): Number of output classes.
         pretrained (bool): If True, returns a model pre-trained.
+        path (str, optional): Path to a pre-trained model checkpoint. Default is None.
+        **kwargs: Additional keyword arguments to pass to the ResNet model constructor.
+
+    Returns:
+        nn.Module: A ResNet-110 model.
+
+    Example:
+        # Create a ResNet-110 model with 10 output classes.
+        model = resnet56_server(10)
     """
     logging.info("path = " + str(path))
     model = ResNet(Bottleneck, [6, 6, 6], num_classes=c, **kwargs)

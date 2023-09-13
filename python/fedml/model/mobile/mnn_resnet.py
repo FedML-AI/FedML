@@ -173,7 +173,29 @@ class Resnet20(nn.Module):
 
 
 def create_mnn_resnet20_model(mnn_file_path):
+    """
+    Create and save a ResNet-20 model in the MNN format.
+
+    Args:
+        mnn_file_path (str): The path to save the MNN model file.
+
+    Note:
+        This function assumes you have a ResNet-20 model class defined in a 'resnet20' module.
+        The ResNet-20 model class should have a 'forward' method that takes an input tensor and returns predictions.
+
+    Example:
+        To create and save a ResNet-20 model to 'resnet20.mnn':
+        >>> create_mnn_resnet20_model('resnet20.mnn')
+
+    """
+    # Create an instance of the ResNet-20 model
     net = Resnet20()
+
+    # Define an input tensor with the desired shape (1 batch, 3 channels, 32x32)
     input_var = MNN.expr.placeholder([1, 3, 32, 32], MNN.expr.NCHW)
+
+    # Perform a forward pass to generate predictions
     predicts = net.forward(input_var)
+
+    # Save the model to the specified file path
     F.save([predicts], mnn_file_path)

@@ -184,6 +184,19 @@ def main():
 
 
 def train(train_queue, model, criterion, optimizer):
+    """
+    Perform training on the training dataset.
+
+    Args:
+        train_queue (DataLoader): DataLoader for the training dataset.
+        model (nn.Module): The neural network model.
+        criterion (nn.Module): The loss function.
+        optimizer (Optimizer): The optimizer for updating model parameters.
+
+    Returns:
+        float: Top-1 accuracy on the training dataset.
+        float: Average loss on the training dataset.
+    """
     global is_multi_gpu
     objs = utils.AvgrageMeter()
     top1 = utils.AvgrageMeter()
@@ -221,6 +234,18 @@ def train(train_queue, model, criterion, optimizer):
 
 
 def infer(valid_queue, model, criterion):
+    """
+    Perform inference on the validation dataset using the trained model.
+
+    Args:
+        valid_queue (DataLoader): DataLoader for the validation dataset.
+        model (nn.Module): The trained neural network model.
+        criterion (nn.Module): The loss function used for validation.
+
+    Returns:
+        float: Top-1 accuracy on the validation dataset.
+        float: Average loss on the validation dataset.
+    """
     global is_multi_gpu
 
     objs = utils.AvgrageMeter()
