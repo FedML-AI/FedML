@@ -591,7 +591,7 @@ class FedMLLaunchManager(object):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file, prompt=prompt)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
                 return resource_id, project_id, error_code, error_msg
