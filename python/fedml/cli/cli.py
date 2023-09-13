@@ -641,17 +641,17 @@ def fedml_launch_run(yaml_file, api_key, group, version):
     FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
-@fedml_launch.group("jobs")
+@fedml_launch.group("utils")
 @click.help_option("--help", "-h")
-def fedml_jobs():
+def fedml_launch_utils():
     """
-    Manage jobs on the MLOps platform.
+    Manage launch related utils on the MLOps platform.
     """
     pass
 
 
-@fedml_jobs.command(
-    "octopus", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
+@fedml_launch_utils.command(
+    "launch-octopus", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
     context_settings={"ignore_unknown_options": True}
 )
 @click.help_option("--help", "-h")
@@ -682,7 +682,7 @@ def fedml_jobs():
     default="release",
     help="launch job to which version of MLOps platform. It should be dev, test or release",
 )
-def launch_octopus(yaml_file, api_key, group, devices_server, devices_edges, version):
+def fedml_launch_utils_launch_octopus(yaml_file, api_key, group, devices_server, devices_edges, version):
     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
     if error_code != 0:
         click.echo("Please check if your API key is valid.")
@@ -695,7 +695,7 @@ def launch_octopus(yaml_file, api_key, group, devices_server, devices_edges, ver
     FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
-@fedml_jobs.command("start", help="Start a job at the MLOps platform.")
+@fedml_launch_utils.command("start-job", help="Start a job at the MLOps platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
@@ -745,7 +745,7 @@ def launch_octopus(yaml_file, api_key, group, devices_server, devices_edges, ver
     default="release",
     help="start job at which version of MLOps platform. It should be dev, test or release",
 )
-def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key,
+def fedml_launch_utils_start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key,
               version):
     if not platform_is_valid(platform):
         return
@@ -771,7 +771,7 @@ def start_job(platform, project_name, application_name, job_name, devices_server
                    "and make sure be able to access the MLOps platform.")
 
 
-@fedml_jobs.command("list", help="List jobs from the MLOps platform.")
+@fedml_launch_utils.command("list-job", help="List jobs from the MLOps platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
@@ -798,7 +798,7 @@ def start_job(platform, project_name, application_name, job_name, devices_server
     default="release",
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
-def list_jobs(platform, job_id, api_key, version):
+def fedml_launch_utils_list_jobs(platform, job_id, api_key, version):
     if not platform_is_valid(platform):
         return
 
@@ -811,7 +811,7 @@ def list_jobs(platform, job_id, api_key, version):
     FedMLLaunchManager.get_instance().list_jobs(job_id)
 
 
-@fedml_launch.command("stop", help="Stop a job from the MLOps platform.")
+@fedml_launch_utils.command("stop-job", help="Stop a job from the MLOps platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
@@ -838,7 +838,7 @@ def list_jobs(platform, job_id, api_key, version):
     default="release",
     help="stop a job at which version of MLOps platform. It should be dev, test or release",
 )
-def stop_jobs(platform, job_id, api_key, version):
+def fedml_launch_utils_stop_job(platform, job_id, api_key, version):
     cli_utils.stop_job_wrapper(platform, job_id, api_key, version)
 
 

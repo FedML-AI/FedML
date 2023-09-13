@@ -76,9 +76,12 @@ class FedMLLaunchManager(object):
         if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
             if self.job_config.serving_model_name is None:
                 FedMLAppManager.get_instance().set_config_version(self.config_version)
+                if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
+                    click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace.")
+                    exit(-1)
+
                 model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,
                                                                                   self.job_config.workspace,
-                                                                                  self.job_config.job_config_dict,
                                                                                   user_api_key)
                 if model_update_result is None:
                     click.echo("Failed to upload the model package to MLOps.")
@@ -626,7 +629,7 @@ class FedMLLaunchManager(object):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
                                                     FedMLLaunchManager.get_api_key())
-            return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[
+            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 

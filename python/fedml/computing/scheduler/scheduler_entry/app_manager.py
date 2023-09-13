@@ -3,6 +3,9 @@ import os
 import uuid
 
 import requests
+
+from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
+from fedml.computing.scheduler.model_scheduler import device_client_constants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 from fedml.core.common.singleton import Singleton
@@ -209,7 +212,20 @@ class FedMLAppManager(Singleton):
                                                                progress_desc="Submitting your job to "
                                                                              "FedML® Launch platform")
 
-    def update_model(self, model_name, workspace, model_yaml, api_key):
+    def check_model_package(self, workspace):
+        model_config_file = os.path.join(
+            workspace, device_client_constants.ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        if not os.path.exists(model_config_file):
+            return False
+
+        try:
+            model_yaml = load_yaml_config(model_config_file)
+        except Exception as e:
+            return False
+
+        return True
+
+    def update_model(self, model_name, workspace, api_key):
         FedMLModelCards.get_instance().set_config_version(self.config_version)
 
         error_code, model_zip_path = self.build_model(model_name, workspace)
@@ -219,6 +235,13 @@ class FedMLAppManager(Singleton):
         model_storage_url = self.push_model_to_s3(model_name, model_zip_path)
         if model_storage_url == "":
             return None
+
+        model_dir = os.path.join(device_client_constants.ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(model_dir):
+            return None
+        model_config_file = os.path.join(
+            model_dir, device_client_constants.ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        model_yaml = load_yaml_config(model_config_file)
 
         upload_result = FedMLModelCards.get_instance().upload_model_api(model_name, model_yaml, model_storage_url,
                                                                         None, 214, api_key,

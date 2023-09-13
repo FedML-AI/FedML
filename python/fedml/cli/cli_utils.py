@@ -5,7 +5,6 @@ from os.path import expanduser
 import click
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
-from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler import device_login_entry
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
