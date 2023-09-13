@@ -601,7 +601,7 @@ class FedMLLaunchManager(object):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
                                                     FedMLLaunchManager.get_api_key())
-            return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
+            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
         # Get the API key
