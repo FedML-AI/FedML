@@ -6,24 +6,20 @@ from os.path import expanduser
 import click
 
 import fedml
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
 
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-from fedml.computing.scheduler.master.server_constants import ServerConstants
-from fedml.computing.scheduler.slave.client_login import logout as client_logout
+
 from fedml.computing.scheduler.env.collect_env import collect_env
-from fedml.computing.scheduler.master.server_login import logout as server_logout
-from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
-from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
-from fedml.computing.scheduler.slave.docker_login import logs_with_docker_mode
-from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
-from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
-from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
+
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
-from fedml.computing.scheduler.model_scheduler import device_login_entry
+from fedml.computing.scheduler.slave.docker_login import logs_with_docker_mode
+from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
 from fedml.cli import cli_utils
 
 from prettytable import PrettyTable
@@ -109,6 +105,87 @@ def fedml_logs(client, server, docker, docker_rank):
         cli_utils.display_server_logs()
 
 
+@cli.command("login", help="Bind to the FedML® Launch platform (open.fedml.ai)")
+@click.help_option("--help", "-h")
+@click.argument("userid", nargs=-1)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="bind to which version of FedML® Launch platform. It should be dev, test or release",
+)
+@click.option(
+    "--client", "-c", default=None, is_flag=True, help="bind as the FedML client.",
+)
+@click.option(
+    "--server", "-s", default=None, is_flag=True, help="bind as the FedML server.",
+)
+@click.option(
+    "--api_key", "-k", type=str, default="", help="user api key.",
+)
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+@click.option(
+    "--role",
+    "-r",
+    type=str,
+    default="",
+    help="run as the role (options: client, edge_simulator, gpu_supplier, "
+         "edge_server, cloud_agent, cloud_server, gpu_master_server.",
+)
+@click.option(
+    "--runner_cmd",
+    "-rc",
+    type=str,
+    default="{}",
+    help="runner commands (options: request json for start run, stop run).",
+)
+@click.option(
+    "--device_id", "-id", type=str, default="0", help="device id.",
+)
+@click.option(
+    "--os_name", "-os", type=str, default="", help="os name.",
+)
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="bind with docker mode at the client agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
+)
+def fedml_login(userid, version, client, server,
+                api_key, local_server, role, runner_cmd, device_id, os_name,
+                docker, docker_rank):
+    cli_utils.fedml_device_bind_wrapper(
+        userid, version, client, server,
+        api_key, local_server, role, runner_cmd, device_id, os_name,
+        docker, docker_rank
+    )
+
+
+@cli.command("logout", help="unbind from the FedML® Launch platform (open.fedml.ai)")
+@click.help_option("--help", "-h")
+@click.option(
+    "--client", "-c", default=None, is_flag=True, help="unbind from the FedML client.",
+)
+@click.option(
+    "--server", "-s", default=None, is_flag=True, help="unbind from the FedML server.",
+)
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="unbind from docker mode at the client agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
+)
+def fedml_logout(client, server, docker, docker_rank):
+    cli_utils.fedml_device_unbind_wrapper(client, server, docker, docker_rank)
+
+
 @cli.group("device")
 @click.help_option("--help", "-h")
 def fedml_device():
@@ -176,148 +253,11 @@ def fedml_device_bind(
         api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform "
-          "(https://open.fedml.ai)...\n")
-    if userid is None or len(userid) <= 0:
-        click.echo("Please specify your account id or API key, usage: fedml login $your_account_id_or_api_key")
-        return
-    account_id = userid[0]
-    platform_url = "open.fedml.ai"
-    if version != "release":
-        platform_url = "open-{}.fedml.ai".format(version)
-
-    # Check user id.
-    if userid == "":
-        click.echo(
-            "Please provide your account id or API key in the FedML® Launch platform ({}).".format(
-                platform_url
-            )
-        )
-        return
-
-    # Set client as default entity.
-    is_client = client
-    is_server = server
-    if client is None and server is None:
-        is_client = True
-
-    # Check if -c, -s, -l are mutually exclusive
-    role_count = (1 if is_client else 0) + (1 if is_server else 0)
-    if role_count > 1:
-        click.echo("Please make sure you don't specify multiple options between -c, -s.")
-        return
-
-    # Set the role
-    if is_client:
-        default_role = ClientConstants.login_index_role_map[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
-        role_index = ClientConstants.login_role_index_map.get(role, ClientConstants.LOGIN_MODE_CLIEN_INDEX)
-        role = ClientConstants.login_index_role_map.get(role_index, default_role)
-    elif is_server:
-        default_role = ServerConstants.login_index_role_map[ServerConstants.LOGIN_MODE_LOCAL_INDEX]
-        role_index = ServerConstants.login_role_index_map.get(role, ServerConstants.LOGIN_MODE_LOCAL_INDEX)
-        role = ServerConstants.login_index_role_map.get(role_index, default_role)
-
-    # Check api key
-    user_api_key = api_key
-    if api_key is None:
-        user_api_key = "NONE"
-
-    # Check docker mode.
-    is_docker = docker
-    if docker is None:
-        is_docker = False
-
-    infer_host = "127.0.0.1"
-    redis_addr = "local"
-    redis_port = "6379"
-    redis_password = "fedml_default"
-
-    if is_client is True:
-        if is_docker:
-            login_with_docker_mode(account_id, version, docker_rank)
-            return
-        pip_source_dir = os.path.dirname(__file__)
-        pip_source_dir = os.path.dirname(pip_source_dir)
-        login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_daemon.py")
-
-        client_logout()
-        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                        ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_client_learning_processes()
-        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
-        sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
-
-        login_pid = sys_utils.run_subprocess_open(
-            [
-                sys_utils.get_python_program(),
-                "-W",
-                "ignore",
-                login_cmd,
-                "-t",
-                "login",
-                "-u",
-                str(account_id),
-                "-v",
-                version,
-                "-ls",
-                local_server,
-                "-r",
-                role,
-                "-id",
-                device_id,
-                "-os",
-                os_name,
-                "-k",
-                user_api_key,
-                "-ngc",
-                "1"
-            ]
-        ).pid
-        sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                     ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
-
-    if is_server is True:
-        if is_docker:
-            login_with_server_docker_mode(account_id, version, docker_rank)
-            return
-
-        pip_source_dir = os.path.dirname(__file__)
-        pip_source_dir = os.path.dirname(pip_source_dir)
-        login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "master", "server_daemon.py")
-        server_logout()
-        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                        ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_server_learning_processes()
-        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
-        sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
-        login_pid = sys_utils.run_subprocess_open(
-            [
-                sys_utils.get_python_program(),
-                "-W",
-                "ignore",
-                login_cmd,
-                "-t",
-                "login",
-                "-u",
-                str(account_id),
-                "-v",
-                version,
-                "-ls",
-                local_server,
-                "-r",
-                role,
-                "-rc",
-                runner_cmd,
-                "-id",
-                device_id,
-                "-os",
-                os_name,
-                "-k",
-                user_api_key
-            ]
-        ).pid
-        sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                     ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+    cli_utils.fedml_device_bind_wrapper(
+        userid, version, client, server,
+        api_key, local_server, role, runner_cmd, device_id, os_name,
+        docker, docker_rank
+    )
 
 
 @fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
@@ -335,46 +275,7 @@ def fedml_device_bind(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
 def fedml_device_unbind(client, server, docker, docker_rank):
-    is_client = client
-    is_server = server
-    if client is None and server is None:
-        is_client = True
-
-    is_docker = docker
-    if docker is None:
-        is_docker = False
-
-    if is_client is True:
-        if is_docker:
-            logout_with_docker_mode(docker_rank)
-            return
-        sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
-        client_logout()
-        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                        ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_client_learning_processes()
-        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
-        sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
-        sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
-
-        device_login_entry.logout_from_model_ops(True, True, docker, docker_rank)
-
-    if is_server is True:
-        if is_docker:
-            logout_with_server_docker_mode(docker_rank)
-            return
-        sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
-        server_logout()
-        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
-                                        ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_server_learning_processes()
-        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
-        sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
-        sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
-
-        device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
-
-    print("\nlogout successfully!\n")
+    cli_utils.fedml_device_unbind_wrapper(client, server, docker, docker_rank)
 
 
 @cli.command("build", help="Build packages for the FedML® Launch platform (open.fedml.ai)")
@@ -740,6 +641,207 @@ def fedml_launch_run(yaml_file, api_key, group, version):
     FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
+@fedml_launch.group("jobs")
+@click.help_option("--help", "-h")
+def fedml_jobs():
+    """
+    Manage jobs on the MLOps platform.
+    """
+    pass
+
+
+@fedml_jobs.command(
+    "octopus", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
+    context_settings={"ignore_unknown_options": True}
+)
+@click.help_option("--help", "-h")
+@click.argument("yaml_file", nargs=-1)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--group",
+    "-g",
+    type=str,
+    default="",
+    help="The queue group id on which your job will be scheduled.",
+)
+@click.option(
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the launch platform, we do not need to set this option."
+)
+@click.option(
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the launch platform, we do not need to set this option."
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="launch job to which version of MLOps platform. It should be dev, test or release",
+)
+def launch_octopus(yaml_file, api_key, group, devices_server, devices_edges, version):
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    FedMLLaunchManager.get_instance().platform_type = SchedulerConstants.PLATFORM_TYPE_OCTOPUS
+    FedMLLaunchManager.get_instance().device_server = devices_server
+    FedMLLaunchManager.get_instance().device_edges = devices_edges
+    FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
+
+
+@fedml_jobs.command("start", help="Start a job at the MLOps platform.")
+@click.help_option("--help", "-h")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch."
+)
+@click.option(
+    "--project_name",
+    "-prj",
+    type=str,
+    help="The project name at the MLOps platform.",
+)
+@click.option(
+    "--application_name",
+    "-app",
+    type=str,
+    help="Application name in the My Application list at the MLOps platform.",
+)
+@click.option(
+    "--job_name",
+    "-jn",
+    type=str,
+    default="",
+    help="The job name at the MLOps platform.",
+)
+@click.option(
+    "--devices_server", "-ds", type=str, default="",
+    help="The server to run the launching job, for the launch platform, we do not need to set this option."
+)
+@click.option(
+    "--devices_edges", "-de", type=str, default="",
+    help="The edge devices to run the launching job. Seperated with ',', e.g. 705,704. "
+         "for the launch platform, we do not need to set this option."
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="start job at which version of MLOps platform. It should be dev, test or release",
+)
+def start_job(platform, project_name, application_name, job_name, devices_server, devices_edges, user, api_key,
+              version):
+    if not platform_is_valid(platform):
+        return
+
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
+    FedMLJobManager.get_instance().set_config_version(version)
+    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
+                                                      devices_server, devices_edges,
+                                                      user, api_key,
+                                                      job_name=job_name, need_confirmation=False)
+    if result:
+        click.echo(f"Job {result.job_name} has started.")
+        click.echo(f"Please go to this web page with your account id {result.user_id} to review your job details.")
+        click.echo(f"{result.job_url}")
+        click.echo(f"For querying the status of the job, please run the command: "
+                   f"fedml jobs list -id {result.job_id}")
+    else:
+        click.echo("Failed to start job, please check your network connection "
+                   "and make sure be able to access the MLOps platform.")
+
+
+@fedml_jobs.command("list", help="List jobs from the MLOps platform.")
+@click.help_option("--help", "-h")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
+)
+@click.option(
+    "--job_id",
+    "-id",
+    type=str,
+    default="",
+    help="Job id at the MLOps platform.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="list jobs at which version of MLOps platform. It should be dev, test or release",
+)
+def list_jobs(platform, job_id, api_key, version):
+    if not platform_is_valid(platform):
+        return
+
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
+
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    FedMLLaunchManager.get_instance().list_jobs(job_id)
+
+
+@fedml_launch.command("stop", help="Stop a job from the MLOps platform.")
+@click.help_option("--help", "-h")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="falcon",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
+)
+@click.option(
+    "--job_id",
+    "-id",
+    type=str,
+    default="",
+    help="Job id at the MLOps platform.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="stop a job at which version of MLOps platform. It should be dev, test or release",
+)
+def stop_jobs(platform, job_id, api_key, version):
+    cli_utils.stop_job_wrapper(platform, job_id, api_key, version)
+
+
 @cli.group("model")
 @click.help_option("--help", "-h")
 def fedml_model():
@@ -963,7 +1065,7 @@ def fedml_model_pull(name, user, api_key, version, local_server):
 
 
 @fedml_model.command("deploy",
-               help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
+                     help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1005,7 +1107,7 @@ def fedml_model_pull(name, user, api_key, version, local_server):
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
 def fedml_model_deploy(name, on_premise, cloud, devices, user, api_key, params, version,
-                 local_server, use_local_deployment):
+                       local_server, use_local_deployment):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1047,7 +1149,8 @@ def fedml_model_inference():
     pass
 
 
-@fedml_model_inference.command("query", help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
+@fedml_model_inference.command("query",
+                               help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -1063,7 +1166,8 @@ def fedml_model_inference_query(name):
         click.echo("Failed to query model {}.".format(name))
 
 
-@fedml_model_inference.command("run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
+@fedml_model_inference.command("run",
+                               help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",

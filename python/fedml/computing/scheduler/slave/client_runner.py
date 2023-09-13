@@ -1028,11 +1028,13 @@ class FedMLClientRunner:
     def callback_report_model_device_id(self, topic, payload):
         payload_json = json.loads(payload)
         server_id = payload_json.get("server_id", 0)
+        run_id = payload_json.get("run_id", 0)
         response_topic = f"client/server/response_model_device_id/{server_id}"
         if self.mlops_metrics is not None and self.model_device_client is not None and \
                 self.model_device_server is not None:
-            response_payload = {"slave_device_id": self.model_device_client.edge_id,
-                                "master_device_id": self.model_device_server.edge_id}
+            response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
+                                "master_device_id": self.model_device_server.get_edge_id(),
+                                "run_id": run_id}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def save_training_status(self, edge_id, training_status):

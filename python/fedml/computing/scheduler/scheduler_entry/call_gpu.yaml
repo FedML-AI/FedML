@@ -13,7 +13,7 @@ job: |
     echo "Hello, Here is the launch platform."
     echo "Current directory is as follows."
     pwd
-    python3 hello_world.py
+    #python3 hello_world.py
     #sleep 20
     #exit 1
     #echo "Current GPU information is as follows."
@@ -41,8 +41,8 @@ bootstrap: |
 
 #framework_type: fedml         # options: fedml, deepspeed, pytorch, general
 task_type: serve              # options: serve, train, dev-environment
-serving_args:
-  model_name: serve_mnist
+#serving_args:
+#  model_name: serve_mnist
 
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision

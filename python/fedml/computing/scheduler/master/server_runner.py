@@ -424,8 +424,10 @@ class FedMLServerRunner:
             model_storage_url = serving_args.get("model_storage_url", None)
             device_type = device_client_constants.ClientConstants.login_role_list[
                 device_client_constants.ClientConstants.LOGIN_MODE_ON_PREMISE_INDEX]
-            FedMLModelCards.get_instance().deploy_model(model_name, device_type, serving_devices, self.args.user,
-                                                        self.args.api_key, None)
+            FedMLModelCards.get_instance().set_config_version(self.version)
+            FedMLModelCards.get_instance().deploy_model(
+                model_name, device_type, json.dumps(serving_devices),
+                self.args.user, self.args.api_key, None)
 
     def run_impl(self):
         run_id = self.request_json["runId"]
@@ -835,15 +837,13 @@ class FedMLServerRunner:
         edge_id_list = self.request_json["edgeids"]
         logging.info("Edge ids: " + str(edge_id_list))
 
-        self.run_edge_ids[run_id] = edge_id_list
-
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
             topic_get_model_device_id = "server/client/get_model_device_id/" + str(edge_id)
-            payload = {"server_id": self.edge_id}
+            payload = {"server_id": self.edge_id, "run_id": run_id}
             logging.info("start_train: send topic " + topic_get_model_device_id + " to client...")
             self.client_mqtt_mgr.send_message(topic_get_model_device_id, json.dumps(payload))
 
@@ -972,6 +972,8 @@ class FedMLServerRunner:
         # Start server with multiprocessing mode
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
+        edge_id_list = request_json.get("edgeids", list())
+        self.run_edge_ids[run_id] = edge_id_list
 
         logging.info("subscribe the client exception message.")
 
@@ -1538,8 +1540,9 @@ class FedMLServerRunner:
             return
 
         serving_devices = list()
-        serving_devices.append(model_master_id[0])
-        device_slave_ids.pop(0)
+        serving_devices.append(device_master_ids[0])
+        if len(device_slave_ids) > 1:
+            device_slave_ids.pop(0)
         serving_devices.extend(device_slave_ids)
         self.process_model_serving(serving_devices)
 
@@ -1839,11 +1842,11 @@ class FedMLServerRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
-        if self.model_device_server is None:
-            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            self.model_device_server.start()
+        # if self.model_device_server is None:
+        #     self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+        #                                                             self.args.os_name, self.args.is_from_docker,
+        #                                                             self.agent_config)
+        #     self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

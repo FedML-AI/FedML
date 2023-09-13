@@ -84,8 +84,8 @@ class FedMLLaunchManager(object):
                     click.echo("Failed to upload the model package to MLOps.")
                     exit(-1)
             else:
-                model_update_result = FedMLAppManager.FedMLModelUploadResult(self.job_config.serving_model_name,
-                                                                             self.job_config.serving_model_s3_url)
+                model_update_result = FedMLModelUploadResult(self.job_config.serving_model_name,
+                                                             self.job_config.serving_model_s3_url)
             self.parse_job_yaml(yaml_file, should_use_default_workspace=True)
 
         # Generate source, config and bootstrap related paths.
@@ -599,14 +599,15 @@ class FedMLLaunchManager(object):
 
             gpu_matched = self.show_matched_resource(result)
             if gpu_matched is None:
-                return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES],\
+                return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
+                    ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES], \
                     ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES
 
             self.matched_results_map[result.job_id] = result
 
             return result.job_id, result.project_id, 0, "Successfully"
 
-        return None, None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED],\
+        return None, None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED], \
             ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED
 
     # inputs: yaml file, resource id
@@ -615,18 +616,18 @@ class FedMLLaunchManager(object):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, _, _, _ = self.api_match_resources(yaml_file)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
-                return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES], \
-                    ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES
+                return resource_id, project_id, error_code, error_msg
 
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
                                                     FedMLLaunchManager.get_api_key())
-            return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
+            return result.job_id, result.prject_id, ApiConstants.ERROR_CODE[
+                ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
         # Get the API key

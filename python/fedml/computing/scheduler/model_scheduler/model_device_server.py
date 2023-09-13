@@ -30,13 +30,18 @@ class FedMLModelDeviceServerRunner:
         self.redis_addr = "local"
         self.redis_port = "6379"
         self.redis_password = "fedml_default"
+        self.agent_runner = None
+
+    def get_edge_id(self):
+        return self.edge_id
 
     def start(self):
-        agent_runner = FedMLModelDeviceServerRunner(self.args, self.current_device_id, self.os_name,
-                                                    self.is_from_docker, self.service_config)
+        self.agent_runner = FedMLModelDeviceServerRunner(self.args, self.current_device_id, self.os_name,
+                                                         self.is_from_docker, self.service_config)
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
-        self.agent_process = Process(target=agent_runner.run_entry, args=(self.agent_process_event,))
+        self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))
+        self.edge_id = self.bind_device()
         self.agent_process.start()
 
     def run_entry(self, process_event):
@@ -138,6 +143,7 @@ class FedMLModelDeviceServerRunner:
         self.real_server_runner.redis_password = self.redis_password
         self.init_logs_param(edge_id)
         self.real_server_runner.args = self.args
+        self.real_server_runner.run_as_edge_server_and_agent = True
 
         return edge_id
 
