@@ -5,13 +5,51 @@ from ...core.alg_frame.client_trainer import ClientTrainer
 
 
 class ModelTrainerTAGPred(ClientTrainer):
+    """
+    A custom model trainer for TAG prediction tasks.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        train(train_data, device, args): Train the model.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
+
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
         model = self.model
 
         model.to(device)
@@ -56,6 +94,17 @@ class ModelTrainerTAGPred(ClientTrainer):
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy, test loss, precision, and recall (if applicable).
+        """
         model = self.model
 
         model.to(device)
@@ -85,7 +134,8 @@ class ModelTrainerTAGPred(ClientTrainer):
                 loss = criterion(pred, target)  # pylint: disable=E1102
 
                 predicted = (pred > 0.5).int()
-                correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
+                correct = predicted.eq(target).sum(
+                    axis=-1).eq(target.size(1)).sum()
                 true_positive = ((target * predicted) > 0.1).int().sum(axis=-1)
                 precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
                 recall = true_positive / (target.sum(axis=-1) + 1e-13)

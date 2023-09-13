@@ -13,6 +13,19 @@ import logging
 
 
 def clip_norm(tensors, device, max_norm=1.0, norm_type=2.):
+    """
+    Clip the gradients of a list of tensors to have a maximum norm.
+
+    Args:
+        tensors (list of torch.Tensor): The list of tensors whose gradients need to be clipped.
+        device (torch.device): The device (CPU or GPU) on which the tensors are located.
+        max_norm (float): The maximum norm value for gradient clipping.
+        norm_type (float): The type of norm to use for computing the gradient norm.
+
+    Returns:
+        float: The total gradient norm after clipping.
+
+    """
     total_norm = torch.norm(torch.stack(
         [torch.norm(p.detach(), norm_type).to(device) for p in tensors]), norm_type)
     clip_coef = max_norm / (total_norm + 1e-6)
@@ -23,14 +36,55 @@ def clip_norm(tensors, device, max_norm=1.0, norm_type=2.):
 
 
 class MimeModelTrainer(ClientTrainer):
+    """
+    A custom model trainer for Mime-based federated learning.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        accumulate_data_grad(train_data, device, args): Accumulate the gradients of the local data.
+        train(train_data, device, args, grad_global, global_named_states): Train the model with Mime-based federated learning.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
 
     def accumulate_data_grad(self, train_data, device, args):
+        """
+        Accumulate the gradients of the local data.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for gradient computation.
+            args: Training arguments.
+
+        Returns:
+            dict: A dictionary containing the accumulated gradients for each parameter.
+        """
         model = self.model
 
         model.to(device)
@@ -58,6 +112,16 @@ class MimeModelTrainer(ClientTrainer):
 
 
     def train(self, train_data, device, args, grad_global, global_named_states):
+        """
+        Train the model with Mime-based federated learning.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+            grad_global: Global gradients.
+            global_named_states: Global model states.
+        """
         model = self.model
 
         model.to(device)

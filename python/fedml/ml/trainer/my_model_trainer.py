@@ -6,23 +6,70 @@ import logging
 
 
 class MyModelTrainer(ClientTrainer):
+    """
+    A custom model trainer that implements training and testing methods.
+
+    Args:
+        ClientTrainer: The base class for client trainers.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Methods:
+        __init__(self, model, args): Initialize the trainer.
+        get_model_params(self): Get the model parameters as a state dictionary.
+        set_model_params(self, model_parameters): Set the model parameters from a state dictionary.
+        on_before_local_training(self, train_data, device, args): Perform actions before local training (optional).
+        train(self, train_data, device, args): Train the model.
+        test(self, test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
 
     def __init__(self, model, args):
         super().__init__(model, args)
-        self.cpu_transfer = False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
+        self.cpu_transfer = False if not hasattr(
+            self.args, "cpu_transfer") else self.args.cpu_transfer
 
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         if self.cpu_transfer:
             return self.model.cpu().state_dict()
         return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def on_before_local_training(self, train_data, device, args):
+        """
+        Execute code before local training (optional).
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
         pass
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
         model = self.model
 
         model.to(device)
@@ -31,7 +78,8 @@ class MyModelTrainer(ClientTrainer):
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(self.model.parameters(), lr=args.learning_rate)
+            optimizer = torch.optim.SGD(
+                self.model.parameters(), lr=args.learning_rate)
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -71,6 +119,17 @@ class MyModelTrainer(ClientTrainer):
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy, test loss, precision, and recall (if applicable).
+        """
         model = self.model
 
         model.to(device)
@@ -91,7 +150,8 @@ class MyModelTrainer(ClientTrainer):
         https://github.com/google-research/federated/blob/49a43456aa5eaee3e1749855eed89c0087983541/optimization/stackoverflow_lr/federated_stackoverflow_lr.py#L131
         """
         if args.dataset == "stackoverflow_lr":
-            criterion = nn.BCELoss(reduction="sum").to(device)  # pylint: disable=E1102
+            criterion = nn.BCELoss(reduction="sum").to(
+                device)  # pylint: disable=E1102
         else:
             criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
 
@@ -104,9 +164,12 @@ class MyModelTrainer(ClientTrainer):
 
                 if args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()
-                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
-                    true_positive = ((target * predicted) > 0.1).int().sum(axis=-1)
-                    precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
+                    correct = predicted.eq(target).sum(
+                        axis=-1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) >
+                                     0.1).int().sum(axis=-1)
+                    precision = true_positive / \
+                        (predicted.sum(axis=-1) + 1e-13)
                     recall = true_positive / (target.sum(axis=-1) + 1e-13)
                     metrics["test_precision"] += precision.sum().item()
                     metrics["test_recall"] += recall.sum().item()

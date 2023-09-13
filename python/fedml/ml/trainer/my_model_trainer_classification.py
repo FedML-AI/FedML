@@ -12,13 +12,51 @@ import logging
 
 
 class ModelTrainerCLS(ClientTrainer):
+    """
+    A custom model trainer for classification tasks.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        args: Training arguments.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        train(train_data, device, args): Train the model.
+        train_iterations(train_data, device, args): Train the model for a specified number of iterations.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
         model = self.model
 
         model.to(device)
@@ -77,6 +115,15 @@ class ModelTrainerCLS(ClientTrainer):
             )
 
     def train_iterations(self, train_data, device, args):
+        """
+        Train the model for a specified number of iterations.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+        """
+
         model = self.model
 
         model.to(device)
@@ -137,6 +184,17 @@ class ModelTrainerCLS(ClientTrainer):
             )
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy, test loss, and
+            """
         model = self.model
 
         model.to(device)
