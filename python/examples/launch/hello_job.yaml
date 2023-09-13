@@ -32,7 +32,6 @@ bootstrap: |
   # pip install -r requirements.txt
   echo "Bootstrap finished."
 
-
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
