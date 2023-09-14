@@ -10,8 +10,6 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
 
-name = "login"
-
 
 @click.command("login", help="Login to MLOps platform")
 @click.help_option("--help", "-h")

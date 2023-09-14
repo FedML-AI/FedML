@@ -8,8 +8,6 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from .utils import stop_jobs_core
 
-name = "launch"
-
 
 @click.group("launch", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
              context_settings={"ignore_unknown_options": True}, invoke_without_command=True)
