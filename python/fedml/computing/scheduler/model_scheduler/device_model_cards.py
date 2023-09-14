@@ -42,7 +42,7 @@ class FedMLModelCards(Singleton):
         user_id = parms_dict.get("FEDML_USER_ID", os.environ.get("FEDML_USER_ID", None))
         user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
         device_type = parms_dict.get("device_type", "md.on_premise_device")
-        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_ID", None))
+        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", None))
         worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
         additional_parms_dict = parms_dict.get("default_parms_dict", {})
         use_local_deployment = parms_dict.get("default_use_local", False)
