@@ -2,7 +2,7 @@ import click
 from prettytable import PrettyTable
 
 import fedml
-from cli_modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
+from modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
 from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
