@@ -130,6 +130,7 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
 
     # Init runtime logs
     setattr(args, "client_id", edge_id)
+    setattr(args, "is_from_docker", is_from_docker)
     runner.args = args
     init_logs(args, edge_id)
     # logging.info("args {}".format(args))

@@ -79,6 +79,7 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Server"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Server"
+    setattr(args, "is_from_docker", is_from_docker)
 
     if is_from_fedml_docker_hub:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Server"

@@ -38,7 +38,7 @@ from ....core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
-from ....serving.fedml_server import FedMLModelServingServer
+#from ....serving.fedml_server import FedMLModelServingServer
 from ....core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -245,16 +245,17 @@ class FedMLServerRunner:
             inference_end_point_id, use_gpu, memory_size, model_version
 
     def inference_run(self):
-        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
-            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
-
-        inference_server = FedMLModelServingServer(self.args,
-                                                   end_point_name,
-                                                   model_name,
-                                                   model_version,
-                                                   inference_request=self.request_json)
-        inference_server.run()
+        # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+        #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+        #     inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        #
+        # inference_server = FedMLModelServingServer(self.args,
+        #                                            end_point_name,
+        #                                            model_name,
+        #                                            model_version,
+        #                                            inference_request=self.request_json)
+        # inference_server.run()
+        pass
 
     def run_impl(self):
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
@@ -1486,6 +1487,7 @@ class FedMLServerRunner:
             "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
         )
+        self.agent_config = service_config
 
         # Init local database
         FedMLServerDataInterface.get_instance().create_job_table()
@@ -1520,7 +1522,13 @@ class FedMLServerRunner:
 
         self.recover_start_deployment_msg_after_upgrading()
 
-    def start_agent_mqtt_loop(self):
+    def stop_agent(self):
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+        self.mqtt_mgr.loop_stop()
+        self.mqtt_mgr.disconnect()
+
+    def start_agent_mqtt_loop(self, should_exit_sys=True):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
@@ -1532,7 +1540,8 @@ class FedMLServerRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
-            time.sleep(5)
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            if should_exit_sys:
+                time.sleep(5)
+                sys_utils.cleanup_all_fedml_server_login_processes(
+                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+                sys.exit(1)

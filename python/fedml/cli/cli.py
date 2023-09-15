@@ -18,13 +18,13 @@ def cli():
 
 @cli.command("version", help="Display fedml version.")
 @click.help_option("--help", "-h")
-def mlops_version():
+def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
 @cli.command("status", help="Display fedml client training status.")
 @click.help_option("--help", "-h")
-def mlops_status():
+def fedml_status():
     training_infos = ClientConstants.get_training_infos()
     click.echo(
         "Client training status: " + str(training_infos["training_status"]).upper()
@@ -38,9 +38,9 @@ def mlops_status():
     "-v",
     type=str,
     default="release",
-    help="show resource type at which version of MLOps platform. It should be dev, test or release",
+    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_show_resource_type(version):
+def fedml_launch_show_resource_type(version):
     FedMLLaunchManager.get_instance().set_config_version(version)
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
@@ -59,7 +59,7 @@ def launch_show_resource_type(version):
          "Python version, etc.",
 )
 @click.help_option("--help", "-h")
-def env():
+def fedml_env():
     collect_env()
 
 
