@@ -259,22 +259,48 @@ def fedml_model_pull(name, user, api_key, version, local_server):
     "--api_key", "-k", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate api key"
 )
 def fedml_model_serve(local, name, master_ids, worker_ids, user_id, api_key):
-    if master_ids != "" or worker_ids != "":
-        if master_ids == "" or worker_ids == "":
-            click.echo("You must provide both master and worker device id(s).")
-            return
-        click.echo("Enter the on-premise deployment mode...")
-        if user_id == "" and os.environ.get("FEDML_USER_ID", None) is None:
-            # Let user enter through command line
-            user_id = click.prompt("Please input your user id")
-            os.environ["FEDML_USER_ID"] = user_id
-        if api_key == "" and os.environ.get("FEDML_API_KEY", None) is None:
-            # Let user enter through command line
-            api_key = click.prompt("Please input your api key", hide_input=True)
-            os.environ["FEDML_API_KEY"] = api_key
-        os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
-        os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
     if local:
         FedMLModelCards.get_instance().local_serve_model(name)
     else:
-        FedMLModelCards.get_instance().serve_model(name)
+        if master_ids != "" or worker_ids != "":
+            # On-Premise deploy mode
+            if master_ids == "" or worker_ids == "":
+                click.echo("You must provide both master and worker device id(s).")
+                return
+            click.echo("Enter the on-premise deployment mode...")
+            if user_id == "" and os.environ.get("FEDML_USER_ID", None) is None:
+                # Let user enter through command line
+                user_id = click.prompt("Please input your user id")
+                os.environ["FEDML_USER_ID"] = user_id
+            if api_key == "" and os.environ.get("FEDML_API_KEY", None) is None:
+                # Let user enter through command line
+                api_key = click.prompt("Please input your api key", hide_input=True)
+                os.environ["FEDML_API_KEY"] = api_key
+            os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
+            os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
+            FedMLModelCards.get_instance().serve_model(name)
+        else:
+            # FedML® Launch deploy mode
+            click.echo("Warning: You did not indicate the master device id and worker device id\n\
+                       Do you want to use fedml® launch platform to find GPU Resources deploy your model?")
+            answer = click.prompt("Please input your answer: (y/n)")
+            if answer == "y" or answer == "Y":
+                api_key = click.prompt("Please input your api key", hide_input=True)
+                # Find the config yaml file in local model cards directory
+                yaml_file = FedMLModelCards.get_instance().find_yaml_for_launch(name)
+                if yaml_file == "":
+                    click.echo("Cannot find the config yaml file for model {}.".format(name))
+                    return False
+                else:
+                    os.chdir(os.path.dirname(yaml_file))    # Set the execution path to the yaml folder
+                    from .launch import FedMLLaunchManager
+                    version = "dev" #TODO: change to release
+                    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+                    if error_code != 0:
+                        click.echo("Please check if your API key is valid.")
+                        return
+                    FedMLLaunchManager.get_instance().set_config_version(version)
+                    FedMLLaunchManager.get_instance().api_launch_job(yaml_file, None)
+            else:
+                click.echo("Please specify both the master device id and worker device ids in the config file.")
+                return False
