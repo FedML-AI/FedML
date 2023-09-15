@@ -2,12 +2,10 @@ import click
 from prettytable import PrettyTable
 
 import fedml
-from modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
 from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-
-simulator_process_list = list()
 
 
 @click.group()

@@ -17,7 +17,8 @@ from .modelops_configs import ModelOpsConfigs
 from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList
-from ....serving.utils import run_bootstrap
+from .device_client_constants import ClientConstants
+
 
 class FedMLModelCards(Singleton):
 
@@ -367,7 +368,7 @@ class FedMLModelCards(Singleton):
         bootstrap_path = config_parms.get("bootstrap_path", None)
         if bootstrap_path is not None:
             dir_name, file_name = os.path.split(bootstrap_path)
-            if run_bootstrap(dir_name, file_name):
+            if ClientConstants.run_bootstrap(dir_name, file_name):
                 print("Bootstrap script {} is executed successfully.".format(bootstrap_path))
             else:
                 print("Failed to execute bootstrap script {}".format(bootstrap_path))
