@@ -49,20 +49,13 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
+    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    if error_code != 0:
+        click.echo("Please check if your API key is valid.")
+        return
 
-    if not yaml_file and click.get_current_context().invoked_subcommand is None:
-        # No subcommand and no yaml_file provided, display help
-        click.echo("No subcommand or yaml_file provided. Displaying help...")
-        ctx = click.get_current_context()
-        click.echo(ctx.get_help())
-    else:
-        error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
-        if error_code != 0:
-            click.echo("Please check if your API key is valid.")
-            return
-
-        FedMLLaunchManager.get_instance().set_config_version(version)
-        FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
+    FedMLLaunchManager.get_instance().set_config_version(version)
+    FedMLLaunchManager.get_instance().api_launch_job(yaml_file[0], None)
 
 
 @fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
