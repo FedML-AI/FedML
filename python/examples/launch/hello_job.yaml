@@ -1,7 +1,7 @@
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
-workspace: serve_mnist
+workspace: hello_world
 
 # Running entry commands which will be executed as the job entry point.
 # If an error occurs, you should exit with a non-zero code, e.g. exit 1.
@@ -13,21 +13,24 @@ job: |
     echo "Hello, Here is the launch platform."
     echo "Current directory is as follows."
     pwd
-
-# Running entry commands on the server side which will be executed as the job entry point.
-# Support multiple lines, which can not be empty.
-#server_job: |
-#    echo "Hello, Here is the server job."
-#    echo "Current directory is as follows."
-#    pwd
+    python3 hello_world.py
+    #sleep 20
+    #exit 1
+    #echo "Current GPU information is as follows."
+    #nvidia-smi # Print GPU information
+    #gpustat
+    #echo "Download the file from http://212.183.159.230/200MB.zip ..."
+    #wget http://212.183.159.230/200MB.zip
+    #rm ./200MB.zip*
+    #echo "The downloading task has finished."
+    # echo "Training the vision transformer model using PyTorch..."
+    # python vision_transformer.py --epochs 1
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
   # pip install -r requirements.txt
   echo "Bootstrap finished."
-
-task_type: serve              # options: serve, train, dev-environment
 
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision

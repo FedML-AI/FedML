@@ -6,6 +6,8 @@ import uuid
 from os.path import expanduser
 
 import click
+from fedml.computing.scheduler.comm_utils import sys_utils
+
 import fedml
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
@@ -157,9 +159,11 @@ class FedMLLaunchManager(object):
                 config_file_handle.writelines(
                     ["environment_args:\n", f"  bootstrap: {Constants.BOOTSTRAP_FILE_NAME}\n"])
                 if model_update_result is not None:
+                    random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
                     config_file_handle.writelines(["serving_args:\n",
                                                    f"  model_name: {model_update_result.model_name}\n",
-                                                   f"  model_storage_url: {model_update_result.model_storage_url}\n"])
+                                                   f"  model_storage_url: {model_update_result.model_storage_url}\n",
+                                                   f"  random: {random}\n"])
                 config_file_handle.close()
 
         # Write bootstrap commands into the bootstrap file.

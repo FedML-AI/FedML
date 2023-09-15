@@ -326,8 +326,12 @@ def __login_as_cloud_server(args, userid, version):
         + str(unique_device_id)
         + "\n"
     )
-    # Start the FedML server
-    runner.callback_start_train(payload=args.runner_cmd)
+
+    # Setup MQTT connection for communication with the FedML server.
+    runner.setup_agent_mqtt_connection(service_config)
+
+    # Start mqtt looper
+    runner.start_agent_mqtt_loop()
 
 
 def init_logs(args, edge_id):
@@ -343,7 +347,7 @@ def init_logs(args, edge_id):
 
 def login(args):
     if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_LOCAL_INDEX]:
-        __login_as_edge_server_and_agent(args, args.user, args.version)
+        __login_as_edge_server_and_agent(args, args.user, args.version, api_key=args.api_key)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_AGENT_INDEX]:
         __login_as_cloud_agent(args, args.user, args.version)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:

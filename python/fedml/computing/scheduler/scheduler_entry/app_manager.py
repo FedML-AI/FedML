@@ -244,7 +244,7 @@ class FedMLAppManager(Singleton):
         model_yaml = load_yaml_config(model_config_file)
 
         upload_result = FedMLModelCards.get_instance().upload_model_api(model_name, model_yaml, model_storage_url,
-                                                                        None, 214, api_key,
+                                                                        None, "", api_key,
                                                                         is_from_open=False,
                                                                         local_server=None)
         if upload_result is None:

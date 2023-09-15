@@ -242,3 +242,6 @@ python/job.yaml
 python/app/fedllm/bootstrap.sh
 python/app/fedllm/example_entry.sh
 python/app/fedllm/config/fedml_config.yaml
+python/fedml/computing/scheduler/scheduler_entry/fedml_job_pack/fedml_job_entry_pack.sh
+python/fedml/computing/scheduler/scheduler_entry/hello_world/fedml_job_entry_pack.sh
+python/fedml/computing/scheduler/scheduler_entry/serve_mnist/fedml_job_entry_pack.sh

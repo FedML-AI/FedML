@@ -33,7 +33,7 @@ from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 @click.option(
     "--mqtt_s3_backend_run_id", "-rid", type=str, default="fedml_diag_9988", help="mqtt+s3 run id.",
 )
-def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client,
+def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client,
                     mqtt_s3_backend_run_id):
     check_open = open
     check_s3 = s3
@@ -86,6 +86,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
     if check_mqtt_s3_backend_server:
         pip_source_dir = os.path.dirname(__file__)
         pip_source_dir = os.path.dirname(pip_source_dir)
+        pip_source_dir = os.path.dirname(pip_source_dir)
         server_diagnosis_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_diagnosis.py")
         backend_server_process = sys_utils.run_subprocess_open([
             sys_utils.get_python_program(),
@@ -99,6 +100,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
     if check_mqtt_s3_backend_client:
         pip_source_dir = os.path.dirname(__file__)
+        pip_source_dir = os.path.dirname(pip_source_dir)
         pip_source_dir = os.path.dirname(pip_source_dir)
         client_diagnosis_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_diagnosis.py")
         backend_client_process = sys_utils.run_subprocess_open([
