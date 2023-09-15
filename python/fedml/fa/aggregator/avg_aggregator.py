@@ -3,12 +3,45 @@ from fedml.fa.base_frame.server_aggregator import FAServerAggregator
 
 
 class AVGAggregatorFA(FAServerAggregator):
+    """
+    Aggregator for Federated Learning with Averaging.
+
+    Args:
+        args (object): An object containing aggregator configuration parameters.
+
+    Attributes:
+        total_sample_num (int): The total number of training samples aggregated.
+        server_data (float): The aggregated server data.
+
+    Methods:
+        aggregate(local_submission_list):
+            Aggregate local submissions from clients and compute the weighted average.
+
+    """
     def __init__(self, args):
+        """
+        Initialize the AVGAggregatorFA.
+
+        Args:
+            args (object): An object containing aggregator configuration parameters.
+
+        Returns:
+            None
+        """
         super().__init__(args)
         self.total_sample_num = 0
         self.set_server_data(server_data=0)
 
     def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
+        """
+        Aggregate local submissions from clients and compute the weighted average.
+
+        Args:
+            local_submission_list (list): A list of tuples containing local sample number and local submissions.
+
+        Returns:
+            float: The computed weighted average.
+        """
         print(f"local_submission_list={local_submission_list}")
         training_num = 0
         for idx in range(len(local_submission_list)):
@@ -28,6 +61,7 @@ class AVGAggregatorFA(FAServerAggregator):
                 (self.total_sample_num - training_num) / self.total_sample_num)
         self.server_data = avg
         return avg
+
 
 
 """ todo: 

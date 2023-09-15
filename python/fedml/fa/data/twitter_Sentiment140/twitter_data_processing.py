@@ -10,9 +10,16 @@ import re
 
 
 def is_valid(word):
-    if len(word) < 3 or (word[-1] in [
-        '?', '!', '.', ';', ','
-    ]) or word.startswith('http') or word.startswith('www'):
+    """
+    Check if a word is valid for processing.
+
+    Args:
+        word (str): The word to check.
+
+    Returns:
+        bool: True if the word is valid, False otherwise.
+    """
+    if len(word) < 3 or (word[-1] in ['?', '!', '.', ';', ',']) or word.startswith('http') or word.startswith('www'):
         return False
     if re.match(r'^[a-z_\@\#\-\;\(\)\*\:\.\'\/]+$', word):
         return True
@@ -20,6 +27,16 @@ def is_valid(word):
 
 
 def truncate_or_extend(word, max_word_len):
+    """
+    Truncate or extend a word to a specified length.
+
+    Args:
+        word (str): The word to modify.
+        max_word_len (int): The desired maximum length of the word.
+
+    Returns:
+        str: The modified word.
+    """
     if len(word) > max_word_len:
         word = word[:max_word_len]
     else:
@@ -28,10 +45,26 @@ def truncate_or_extend(word, max_word_len):
 
 
 def add_end_symbol(word):
+    """
+    Add an end symbol ('$') to a word.
+
+    Args:
+        word (str): The word to modify.
+
+    Returns:
+        str: The modified word with an end symbol.
+    """
     return word + '$'
 
 
 def generate_triehh_clients(clients, path):
+    """
+    Generate TrieHH clients from a list of clients and save them to a file.
+
+    Args:
+        clients (list): List of client names.
+        path (str): The directory path to save the file.
+    """
     clients_num = len(clients)
     triehh_clients = [add_end_symbol(clients[i]) for i in range(clients_num)]
     word_freq = collections.defaultdict(lambda: 0)
@@ -44,6 +77,15 @@ def generate_triehh_clients(clients, path):
 
 
 def preprocess_twitter_data(path):
+    """
+    Preprocess Twitter data from a CSV file.
+
+    Args:
+        path (str): The directory path where the CSV file is located.
+
+    Returns:
+        dict: A dictionary containing client usernames as keys and lists of preprocessed words as values.
+    """
     filename = os.path.join(path, 'training.1600000.processed.noemoticon.csv')
     dataset = {}
     with open(filename, encoding='ISO-8859-1') as csv_file:
@@ -66,6 +108,15 @@ def preprocess_twitter_data(path):
 
 
 def preprocess_twitter_data_heavy_hitter(path):
+    """
+    Preprocess Twitter data and identify heavy hitters (most frequent words) for each client.
+
+    Args:
+        path (str): The directory path where the CSV file is located.
+
+    Returns:
+        dict: A dictionary containing client usernames as keys and their identified heavy hitter words as values.
+    """
     # load dataset from csv file
     filename = os.path.join(path, 'training.1600000.processed.noemoticon.csv')
     clients = {}

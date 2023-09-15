@@ -175,13 +175,71 @@ class FedNova(Optimizer):
 
 
 class FedNovaModelTrainer(ClientTrainer):
+    """
+    A class for training and testing federated Nova (FedNova) models.
+
+    Args:
+        model: The neural network model to train.
+        id: The client's unique identifier.
+        args: A dictionary containing training configuration parameters.
+
+    Attributes:
+        model: The neural network model for training.
+        id: The unique identifier of the client.
+        args: A dictionary containing training configuration parameters.
+
+    Methods:
+        get_model_params():
+            Get the current state dictionary of the model.
+
+        set_model_params(model_parameters):
+            Set the model's parameters using the provided state dictionary.
+
+        get_local_norm_grad(opt, cur_params, init_params, weight=0):
+            Calculate the local normalized gradients.
+
+        get_local_tau_eff(opt):
+            Calculate the effective tau for FedNova.
+
+        train(train_data, device, args, **kwargs):
+            Train the model on the given training data using FedNova optimizer.
+
+        test(test_data, device, args):
+            Test the model's performance on the provided test data.
+
+    """
+
     def get_model_params(self):
+        """
+        Get the current state dictionary of the model.
+
+        Returns:
+            dict: The state dictionary of the model.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model's parameters using the provided state dictionary.
+
+        Args:
+            model_parameters (dict): The state dictionary containing model parameters.
+        """
         self.model.load_state_dict(model_parameters)
 
     def get_local_norm_grad(self, opt, cur_params, init_params, weight=0):
+        """
+        Calculate the local normalized gradients.
+
+        Args:
+            opt: The FedNova optimizer instance.
+            cur_params (dict): The current model's parameters.
+            init_params (dict): The initial model's parameters.
+            weight (float): The weight for gradient scaling (default is 0).
+
+        Returns:
+            dict: Dictionary of local normalized gradients.
+        """ 
         if weight == 0:
             weight = opt.ratio
         grad_dict = {}
@@ -193,12 +251,33 @@ class FedNovaModelTrainer(ClientTrainer):
         return grad_dict
 
     def get_local_tau_eff(self, opt):
+        """
+        Calculate the effective tau for FedNova.
+
+        Args:
+            opt: The FedNova optimizer instance.
+
+        Returns:
+            float: The effective tau for FedNova.
+        """
         if opt.mu != 0:
             return opt.local_steps * opt.ratio
         else:
             return opt.local_normalizing_vec * opt.ratio
 
     def train(self, train_data, device, args, **kwargs):
+        """
+        Train the model on the given training data using the FedNova optimizer.
+
+        Args:
+            train_data (torch.utils.data.DataLoader): The DataLoader containing training data.
+            device (str): The device to perform training (e.g., 'cuda' or 'cpu').
+            args (dict): A dictionary containing training configuration parameters.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Tuple[float, dict, float]: Tuple containing the average loss, local normalized gradients, and effective tau.
+        """
         model = self.model
 
         model.to(device)
@@ -248,6 +327,17 @@ class FedNovaModelTrainer(ClientTrainer):
 
 
     def test(self, test_data, device, args):
+        """
+        Test the model's performance on the provided test data.
+
+        Args:
+            test_data (torch.utils.data.DataLoader): The DataLoader containing test data.
+            device (str): The device to perform testing (e.g., 'cuda' or 'cpu').
+            args (dict): A dictionary containing testing configuration parameters.
+
+        Returns:
+            dict: Metrics including test accuracy and test loss.
+        """
         model = self.model
 
         model.to(device)

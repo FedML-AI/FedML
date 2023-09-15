@@ -7,13 +7,63 @@ import logging
 
 
 class FedProxModelTrainer(ClientTrainer):
+    """
+    A class for training and testing federated Proximal (FedProx) models.
+
+    Args:
+        model: The neural network model to train.
+        id: The client's unique identifier.
+        args: A dictionary containing training configuration parameters.
+
+    Attributes:
+        model: The neural network model for training.
+        id: The unique identifier of the client.
+        args: A dictionary containing training configuration parameters.
+
+    Methods:
+        get_model_params():
+            Get the current state dictionary of the model.
+
+        set_model_params(model_parameters):
+            Set the model's parameters using the provided state dictionary.
+
+        train(train_data, device, args):
+            Train the model on the given training data with optional FedProx regularization.
+
+        train_iterations(train_data, device, args):
+            Train the model for a specified number of local iterations.
+
+        test(test_data, device, args):
+            Test the model's performance on the provided test data.
+
+    """
     def get_model_params(self):
+        """
+        Get the current state dictionary of the model.
+
+        Returns:
+            dict: The state dictionary of the model.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model's parameters using the provided state dictionary.
+
+        Args:
+            model_parameters (dict): The state dictionary containing model parameters.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model on the given training data with optional FedProx regularization.
+
+        Args:
+            train_data (torch.utils.data.DataLoader): The DataLoader containing training data.
+            device (str): The device to perform training (e.g., 'cuda' or 'cpu').
+            args (dict): A dictionary containing training configuration parameters.
+        """
         model = self.model
 
         model.to(device)
@@ -79,6 +129,14 @@ class FedProxModelTrainer(ClientTrainer):
 
 
     def train_iterations(self, train_data, device, args):
+        """
+        Train the model for a specified number of local iterations.
+
+        Args:
+            train_data (torch.utils.data.DataLoader): The DataLoader containing training data.
+            device (str): The device to perform training (e.g., 'cuda' or 'cpu').
+            args (dict): A dictionary containing training configuration parameters.
+        """
         model = self.model
 
         model.to(device)
@@ -145,6 +203,17 @@ class FedProxModelTrainer(ClientTrainer):
 
 
     def test(self, test_data, device, args):
+        """
+        Test the model's performance on the provided test data.
+
+        Args:
+            test_data (torch.utils.data.DataLoader): The DataLoader containing test data.
+            device (str): The device to perform testing (e.g., 'cuda' or 'cpu').
+            args (dict): A dictionary containing testing configuration parameters.
+
+        Returns:
+            dict: Metrics including test accuracy and test loss.
+        """
         model = self.model
 
         model.to(device)

@@ -3,48 +3,77 @@ from typing import List, Tuple, Any
 from fedml.fa.base_frame.server_aggregator import FAServerAggregator
 
 
-def get_intersection_of_two_lists_keep_duplicates(list1, list2):
+def get_intersection_of_two_lists_keep_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
     """
-    Keep duplicates in the intersection, e.g., list1=[1,2,3,2,3], list2=[2,3,2,3]. intersect(list1, list2) = [2,3,2,3]
-    :param list1: first list
-    :param list2: second list
-    :return: intersection of the 2 lists
+    Return the intersection of two lists while keeping duplicates.
+
+    Args:
+        list1 (List): The first list.
+        list2 (List): The second list.
+
+    Returns:
+        List: The intersection of the two lists, keeping duplicates.
     """
     intersection = []
-    for i in range(len(list1)):
-        for j in range(len(list2) - 1, -1, -1):
-            if list1[i] == list2[j]:
-                intersection.append(list2[j])
-                list2.remove(j)
+    for item in list1:
+        if item in list2:
+            intersection.append(item)
+            list2.remove(item)
     return intersection
 
 
-def get_intersection_of_two_lists_remove_duplicates(list1, list2):
+def get_intersection_of_two_lists_remove_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
     """
-    Remove duplicates in the intersection, e.g., list1=[1,2,3,2,3], list2=[2,3,2,3]. intersect(list1, list2) = [2,3]
-    :param list1: first list
-    :param list2: second list
-    :return: intersection of the 2 lists
+    Return the intersection of two lists and remove duplicate values.
+
+    Args:
+        list1 (List): The first list.
+        list2 (List): The second list.
+
+    Returns:
+        List: The intersection of the two lists with duplicates removed.
     """
     return list(set(list1) & set(list2))
 
 
 class IntersectionAggregatorFA(FAServerAggregator):
     def __init__(self, args):
+        """
+        Initialize the IntersectionAggregatorFA.
+
+        Args:
+            args: Additional arguments for initialization.
+
+        Returns:
+            None
+        """
         super().__init__(args)
         self.set_server_data(server_data=[])
 
-    def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
-        for i in range(0, len(local_submission_list)):
-            _, local_submission = local_submission_list[i]
+    def aggregate(self, local_submission_list: List[Tuple[float, Any]]) -> List[Any]:
+        """
+        Aggregate local submissions while maintaining intersection.
+
+        Args:
+            local_submission_list (List[Tuple[float, Any]]): A list of local submissions.
+
+        Returns:
+            List: The intersection of local submissions.
+        """
+        for _, local_submission in local_submission_list:
             if len(self.server_data) == 0:
-                # no need to remove duplicates even in ``remove duplicate'' mode,
-                # as the duplicates will be removed in later computation
+
                 self.server_data = local_submission
             else:
                 self.server_data = get_intersection_of_two_lists_remove_duplicates(self.server_data, local_submission)
         print(f"cardinality = {self.get_cardinality()}")
         return self.server_data
 
-    def get_cardinality(self):
+    def get_cardinality(self) -> int:
+        """
+        Get the cardinality (number of elements) of the aggregated data.
+
+        Returns:
+            int: The cardinality of the aggregated data.
+        """
         return len(self.server_data)

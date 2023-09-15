@@ -7,7 +7,38 @@ from fedml.fa.simulation.utils import client_sampling
 
 
 class FASimulatorSingleProcess:
+    """
+    Simulator for Federated Analytics with a Single Process.
+
+    Args:
+        args (object): Arguments for the simulation.
+        dataset (list): Dataset information including train data count, local datasize, and train data for each client.
+
+    Attributes:
+        args (object): Arguments for the simulation.
+        train_data_num_in_total (int): Total number of training data points.
+        client_list (list): List of client instances.
+        local_datasize_dict (dict): Dictionary of local datasizes for each client.
+        train_data_local_dict (dict): Dictionary of local training data for each client.
+        local_analyzer (object): Local analyzer instance.
+        aggregator (object): Global aggregator instance.
+
+    Methods:
+        analyze():
+            Run the Federated Analytics simulation.
+        
+        run():
+            Run the simulation.
+    """
+
     def __init__(self, args, dataset):
+        """
+        Initialize the FASimulatorSingleProcess class.
+
+        Args:
+            args (object): Arguments for the simulation.
+            dataset (list): Dataset information including train data count, local datasize, and train data for each client.
+        """
         self.args = args
         [
             train_data_num,
@@ -30,6 +61,14 @@ class FASimulatorSingleProcess:
     def _setup_clients(
             self, local_datasize_dict, train_data_local_dict, local_analyzer,
     ):
+        """
+        Set up client instances for the simulation.
+
+        Args:
+            local_datasize_dict (dict): Dictionary of local datasizes for each client.
+            train_data_local_dict (dict): Dictionary of local training data for each client.
+            local_analyzer (object): Local analyzer instance.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -43,6 +82,9 @@ class FASimulatorSingleProcess:
         logging.info("############setup_clients (END)#############")
 
     def analyze(self):
+        """
+        Run the Federated Analytics simulation.
+        """
         logging.info("self.local_analyzer = {}".format(self.local_analyzer))
         local_sample_num = dict()
         for round_idx in range(self.args.comm_round):
@@ -76,4 +118,7 @@ class FASimulatorSingleProcess:
             print(f"round_idx={round_idx}, aggregation result = {result}")
 
     def run(self):
+        """
+        Run the simulation.
+        """
         self.analyze()

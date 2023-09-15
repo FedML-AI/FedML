@@ -11,12 +11,35 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 class MyServerAggregatorCLS(ServerAggregator):
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            OrderedDict: The model parameters.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (OrderedDict): The model parameters to set.
+        """
         self.model.load_state_dict(model_parameters)
 
     def _test(self, test_data, device, args):
+        """
+        Internal method for testing the model on a given dataset.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the test on.
+            args: A dictionary containing configuration parameters.
+
+        Returns:
+            dict: A dictionary containing test metrics.
+        """
         model = self.model
 
         model.to(device)
@@ -42,6 +65,17 @@ class MyServerAggregatorCLS(ServerAggregator):
         return metrics
 
     def test(self, test_data, device, args):
+        """
+        Test the model on a given dataset, log the results, and return test accuracy and loss.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the test on.
+            args: A dictionary containing configuration parameters.
+
+        Returns:
+            tuple: A tuple containing test accuracy and loss.
+        """
         # test data
         test_num_samples = []
         test_tot_corrects = []
