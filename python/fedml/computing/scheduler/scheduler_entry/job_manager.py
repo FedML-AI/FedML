@@ -86,7 +86,13 @@ class FedMLJobManager(Singleton):
             pass
         else:
             resp_data = response.json()
-            job_start_result = FedMLJobStartedModel(resp_data["data"], response=resp_data)
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
+                print(f"Launch job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+            job_start_result = FedMLJobStartedModel(data, response=resp_data)
 
         return job_start_result
 
@@ -121,12 +127,22 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_list_url, headers=job_api_headers, json=job_list_json)
         if response.status_code != 200:
+            print(f"List job with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
+                print(f"List job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return None
-            job_list_result = FedMLJobModelList(resp_data["data"])
+            job_list_json = data.get("jobList", None)
+            if job_list_json is None:
+                return None
+
+            job_list_result = FedMLJobModelList(data)
 
         return job_list_result
 
@@ -157,10 +173,16 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(job_stop_url, headers=job_api_headers, json=job_stop_json)
         if response.status_code != 200:
+            print(f"Stop job with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             return False
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
+                print(f"Stop job with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return False
 
         return True
@@ -196,12 +218,19 @@ class FedMLJobManager(Singleton):
         else:
             response = requests.post(jot_logs_url, headers=job_api_headers, json=job_logs_json)
         if response.status_code != 200:
+            print(f"Get job logs with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
             pass
         else:
             resp_data = response.json()
-            if resp_data["code"] == "FAILURE":
+            code = resp_data.get("code", None)
+            data = resp_data.get("data", None)
+            if code is None or data is None or code == "FAILURE":
+                print(f"Get job logs with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
                 return None
-            job_log_list_result = FedMLJobLogModelList(resp_data["data"])
+
+            job_log_list_result = FedMLJobLogModelList(data)
 
         return job_log_list_result
 
@@ -266,12 +295,17 @@ class FedMLJobManager(Singleton):
             message = resp_data.get("message", "")
             data = resp_data.get("data", None)
             if code == "SUCCESS" and data is not None:
-                return data
+                resource_list = list()
+                for resource_item in data:
+                    gpu_type = resource_item.get("gpuType", None)
+                    resource_type = resource_item.get("resourceType", None)
+                    resource_list.append((resource_type, gpu_type))
+                return resource_list
+            else:
+                print(f"Get resource type with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
 
         return None
-
-
-
 
 
 class FedMLJobStartedModel(object):
@@ -279,6 +313,7 @@ class FedMLJobStartedModel(object):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
+            self.project_id = job_started_json.get("project_id", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
@@ -291,6 +326,7 @@ class FedMLJobStartedModel(object):
         else:
             self.job_id = "0"
             self.job_name = job_name
+            self.project_id = ""
             self.status = response.get("code")
             self.job_url = job_started_json
             self.started_time = time.time()
@@ -316,7 +352,7 @@ class FedMLGpuDevices(object):
 
 class FedMLJobModelList(object):
     def __init__(self, job_list_json):
-        job_list_data = job_list_json["jobList"]
+        job_list_data = job_list_json.get("jobList", [])
         self.job_list = list()
         for job_obj_json in job_list_data:
             job_obj = FedMLJobModel(job_obj_json)

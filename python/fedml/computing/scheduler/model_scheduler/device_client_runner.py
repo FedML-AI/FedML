@@ -37,7 +37,7 @@ from ....core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
-from ....serving.fedml_client import FedMLModelServingClient
+#from ....serving.fedml_client import FedMLModelServingClient
 from ....core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -235,16 +235,17 @@ class FedMLClientRunner:
             raise RunnerError("Runner stopped")
 
     def inference_run(self):
-        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
-            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
-
-        inference_client = FedMLModelServingClient(self.args,
-                                                   end_point_name,
-                                                   model_name,
-                                                   model_version,
-                                                   inference_request=self.request_json)
-        inference_client.run()
+        # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+        #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+        #     inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        #
+        # inference_client = FedMLModelServingClient(self.args,
+        #                                            end_point_name,
+        #                                            model_name,
+        #                                            model_version,
+        #                                            inference_request=self.request_json)
+        # inference_client.run()
+        pass
 
     def run_impl(self):
         run_id = self.request_json["end_point_id"]
@@ -523,32 +524,29 @@ class FedMLClientRunner:
             pass
 
     def ota_upgrade(self, payload, request_json):
-        no_upgrade = False
-        upgrade_version = None
         run_id = request_json["end_point_id"]
+        force_ota = False
+        ota_version = None
 
         try:
             parameters = request_json.get("parameters", None)
             common_args = parameters.get("common_args", None)
-            no_upgrade = common_args.get("no_upgrade", False)
-            upgrade_version = common_args.get("upgrade_version", None)
+            force_ota = common_args.get("force_ota", False)
+            ota_version = common_args.get("ota_version", None)
         except Exception as e:
             pass
 
-        should_upgrade = True
-        if upgrade_version is None or upgrade_version == "latest":
+        if force_ota and ota_version is not None:
+            should_upgrade = True
+            upgrade_version = ota_version
+        else:
             try:
-                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                    check_fedml_is_latest_version(self.version)
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
                 return
 
-            if fedml_is_latest_version:
-                should_upgrade = False
+            should_upgrade = False if fedml_is_latest_version else True
             upgrade_version = remote_ver
-
-        if no_upgrade:
-            should_upgrade = False
 
         if should_upgrade:
             FedMLClientDataInterface.get_instance(). \
@@ -829,10 +827,10 @@ class FedMLClientRunner:
         }
         if gpu_count > 0:
             if gpu_total_mem is not None:
-                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+                json_params["gpu"] = gpu_info if gpu_info is not None else "" + ", Total GPU Memory: " + gpu_total_mem
             else:
-                json_params["gpu"] = gpu_info
-            json_params["extra_infos"]["gpu_info"] = gpu_info
+                json_params["gpu"] = gpu_info if gpu_info is not None else ""
+            json_params["extra_infos"]["gpu_info"] = gpu_info if gpu_info is not None else ""
             if gpu_available_mem is not None:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
@@ -1023,12 +1021,17 @@ class FedMLClientRunner:
                                                          is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         self.mlops_metrics.stop_sys_perf()
-        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args)
+        self.mlops_metrics.report_sys_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_deployment_msg_after_upgrading()
 
-    def start_agent_mqtt_loop(self):
+    def stop_agent(self):
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+        self.mqtt_mgr.loop_stop()
+        self.mqtt_mgr.disconnect()
+
+    def start_agent_mqtt_loop(self, should_exit_sys=False):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
@@ -1040,7 +1043,8 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
-            time.sleep(5)
-            sys_utils.cleanup_all_fedml_client_login_processes(
-                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            if should_exit_sys:
+                time.sleep(5)
+                sys_utils.cleanup_all_fedml_client_login_processes(
+                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+                sys.exit(1)

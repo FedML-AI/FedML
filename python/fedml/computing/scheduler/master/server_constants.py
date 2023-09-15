@@ -15,7 +15,6 @@ from ..comm_utils.yaml_utils import load_yaml_config
 
 
 class ServerConstants(object):
-    load_yaml_config
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
     MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
@@ -59,7 +58,18 @@ class ServerConstants(object):
     LOGIN_MODE_CLOUD_AGENT_INDEX = 1
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
     LOGIN_MODE_GPU_MASTER_SERVER_INDEX = 3
+
     login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server"]
+
+    login_index_role_map = {LOGIN_MODE_LOCAL_INDEX: login_role_list[LOGIN_MODE_LOCAL_INDEX],
+                            LOGIN_MODE_CLOUD_AGENT_INDEX: login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX],
+                            LOGIN_MODE_CLOUD_SERVER_INDEX: login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX],
+                            LOGIN_MODE_GPU_MASTER_SERVER_INDEX: login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]}
+
+    login_role_index_map = {login_role_list[LOGIN_MODE_LOCAL_INDEX]: LOGIN_MODE_LOCAL_INDEX,
+                            login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX]: LOGIN_MODE_CLOUD_AGENT_INDEX,
+                            login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]: LOGIN_MODE_CLOUD_SERVER_INDEX,
+                            login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX}
 
     @staticmethod
     def get_fedml_home_dir():
@@ -411,25 +421,35 @@ class ServerConstants(object):
         return script_process
 
     @staticmethod
-    def execute_commands_with_live_logs(cmds, join='&&'):
+    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
+                                        callback=None, error_processor=None):
         error_list = list()
         with subprocess.Popen(join.join(cmds),
                               shell=True,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE) as sp:
-            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
-                for line in sp.stdout:
-                    line_str = line.decode()
-                    stdout.write(line)
-                    stdout.flush()
-                    logging.info(line_str)
+            if callback is not None:
+                callback(sp.pid)
+
+            if should_write_log_file:
+                with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
+                    for line in sp.stdout:
+                        line_str = sys_utils.decode_byte_str(line)
+                        stdout.write(line)
+                        stdout.flush()
+                        logging.info(line_str)
             with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
                 for line in sp.stderr:
-                    line_str = line.decode()
-                    stderr.write(line)
-                    stderr.flush()
-                    logging.error(line_str)
+                    line_str = sys_utils.decode_byte_str(line)
+                    if should_write_log_file:
+                        stderr.write(line)
+                        stderr.flush()
+                        logging.error(line_str)
                     error_list.append(line_str)
+
+                if error_processor is not None and len(error_list) > 0:
+                    error_processor(error_list)
+
             return sp, error_list
         return None, error_list
 

@@ -3,9 +3,11 @@ import logging
 import os
 import platform
 import time
+import traceback
 
 import click
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.master.server_runner import FedMLServerRunner
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 
@@ -54,6 +56,8 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
                 setattr(runner.args, "log_server_url", log_server_url)
             break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_1, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             config_try_count += 1
             time.sleep(3)
             continue
@@ -75,6 +79,7 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Server"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Server"
+    setattr(args, "is_from_docker", is_from_docker)
 
     if is_from_fedml_docker_hub:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Server"
@@ -95,6 +100,8 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
                 runner.edge_id = edge_id
                 break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             register_try_count += 1
             time.sleep(3)
             continue
@@ -161,6 +168,8 @@ def __login_as_cloud_agent(args, userid, version):
                 setattr(runner.args, "log_server_url", log_server_url)
             break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_1, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             config_try_count += 1
             time.sleep(3)
             continue
@@ -190,6 +199,8 @@ def __login_as_cloud_agent(args, userid, version):
                 runner.edge_id = edge_id
                 break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             register_try_count += 1
             time.sleep(3)
             continue
@@ -257,6 +268,8 @@ def __login_as_cloud_server(args, userid, version):
                 setattr(runner.args, "log_server_url", log_server_url)
             break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_1, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             config_try_count += 1
             time.sleep(3)
             continue
@@ -285,6 +298,8 @@ def __login_as_cloud_server(args, userid, version):
                 runner.edge_id = edge_id
                 break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             register_try_count += 1
             time.sleep(3)
             continue
@@ -311,8 +326,12 @@ def __login_as_cloud_server(args, userid, version):
         + str(unique_device_id)
         + "\n"
     )
-    # Start the FedML server
-    runner.callback_start_train(payload=args.runner_cmd)
+
+    # Setup MQTT connection for communication with the FedML server.
+    runner.setup_agent_mqtt_connection(service_config)
+
+    # Start mqtt looper
+    runner.start_agent_mqtt_loop()
 
 
 def init_logs(args, edge_id):
@@ -328,7 +347,7 @@ def init_logs(args, edge_id):
 
 def login(args):
     if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_LOCAL_INDEX]:
-        __login_as_edge_server_and_agent(args, args.user, args.version)
+        __login_as_edge_server_and_agent(args, args.user, args.version, api_key=args.api_key)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_AGENT_INDEX]:
         __login_as_cloud_agent(args, args.user, args.version)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:

@@ -5,6 +5,7 @@ import signal
 import uuid
 from os.path import expanduser
 
+import chardet
 import psutil
 import yaml
 
@@ -368,6 +369,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                 if is_model_device:
                     if str(cmd).find("model_scheduler.device_server_api:api") != -1:
                         find_api_process = True
+
+                    if str(cmd).find("model_scheduler.device_model_inference:api") != -1:
+                        find_api_process = True
                 else:
                     if str(cmd).find("master.server_api:api") != -1:
                         find_api_process = True
@@ -620,6 +624,23 @@ def check_fedml_is_latest_version(configuration_env="release"):
         return True, local_fedml_version, fedml_version_list[0]
 
     return False, local_fedml_version, fedml_version_list[0]
+    # if configuration_env != "release":
+    #     if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
+    #         return True, local_fedml_version, fedml_version_list[0]
+    #
+    #     return False, local_fedml_version, fedml_version_list[0]
+    # else:
+    #     local_fedml_ver_info = version.parse(local_fedml_version)
+    #     for remote_ver_item in fedml_version_list:
+    #         remote_fedml_ver_info = version.parse(remote_ver_item)
+    #         if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
+    #                 remote_fedml_ver_info.is_devrelease:
+    #             continue
+    #
+    #         if local_fedml_ver_info < remote_fedml_ver_info:
+    #             return False, local_fedml_version, remote_ver_item
+    #         else:
+    #             return True, local_fedml_version, fedml_version_list[0]
 
 
 def daemon_ota_upgrade(in_args):
@@ -661,7 +682,7 @@ def run_cmd(command, show_local_console=False):
     if ret_code is None or ret_code <= 0:
         if out is not None:
             try:
-                out_str = out.decode(encoding="utf-8")
+                out_str = decode_byte_str(out)
             except:
                 logging.info("utf-8 could not decode the output msg")
                 out_str = ""
@@ -676,7 +697,7 @@ def run_cmd(command, show_local_console=False):
     else:
         if err is not None:
             try:
-                err_str = err.decode(encoding="utf-8")
+                err_str = decode_byte_str(err)
             except:
                 logging.info("utf-8 could not decode the err msg")
                 err_str = ""
@@ -781,7 +802,7 @@ def run_subprocess_open(shell_script_list):
 
 def decode_our_err_result(out_err):
     try:
-        result_str = out_err.decode(encoding="utf-8")
+        result_str = decode_byte_str(out_err)
         return result_str
     except Exception as e:
         return out_err
@@ -805,8 +826,36 @@ def get_sys_realtime_stats():
         gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids
 
 
+def decode_byte_str(bytes_str):
+    encoding = dict()
+    try:
+        encoding = chardet.detect(bytes_str)
+    except Exception as e:
+        pass
+    decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
+    return decoded_str
+
+
+def random1(msg, in_msg):
+    msg_bytes = msg.encode('utf-8')
+    in_msg_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_msg_bytes[i % len(in_msg_bytes)])
+    return out_bytes.hex()
+
+
+def random2(msg, in_msg):
+    msg_bytes = bytes.fromhex(msg)
+    in_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_bytes[i % len(in_bytes)])
+    return out_bytes.decode('utf-8')
+
+
 if __name__ == '__main__':
-    fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
+    fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("release")
     print("FedML is latest version: {}, local version {}, remote version {}".format(
         fedml_is_latest_version, local_ver, remote_ver))
-    do_upgrade("release", remote_ver)
+    # do_upgrade("release", remote_ver)

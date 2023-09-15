@@ -6,9 +6,11 @@ import os
 import platform
 import subprocess
 import time
+import traceback
 
 import click
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_runner import FedMLClientRunner
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
@@ -70,6 +72,8 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
                 setattr(runner.args, "log_server_url", log_server_url)
             break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_1, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             config_try_count += 1
             time.sleep(3)
             continue
@@ -112,6 +116,8 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
                 runner.edge_extra_url = extra_url
                 break
         except Exception as e:
+            click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
+            click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
             register_try_count += 1
             time.sleep(3)
             continue
@@ -124,6 +130,7 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
 
     # Init runtime logs
     setattr(args, "client_id", edge_id)
+    setattr(args, "is_from_docker", is_from_docker)
     runner.args = args
     init_logs(args, edge_id)
     # logging.info("args {}".format(args))

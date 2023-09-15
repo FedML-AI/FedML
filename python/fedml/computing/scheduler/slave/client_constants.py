@@ -73,7 +73,16 @@ class ClientConstants(object):
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
     LOGIN_MODE_GPU_SUPPLIER_INDEX = 2
+
     login_role_list = ["client", "edge_simulator", "gpu_supplier"]
+
+    login_index_role_map = {LOGIN_MODE_CLIEN_INDEX: login_role_list[LOGIN_MODE_CLIEN_INDEX],
+                            LOGIN_MODE_EDGE_SIMULATOR_INDEX: login_role_list[LOGIN_MODE_EDGE_SIMULATOR_INDEX],
+                            LOGIN_MODE_GPU_SUPPLIER_INDEX: login_role_list[LOGIN_MODE_GPU_SUPPLIER_INDEX]}
+
+    login_role_index_map = {login_role_list[LOGIN_MODE_CLIEN_INDEX]: LOGIN_MODE_CLIEN_INDEX,
+                            login_role_list[LOGIN_MODE_EDGE_SIMULATOR_INDEX]: LOGIN_MODE_EDGE_SIMULATOR_INDEX,
+                            login_role_list[LOGIN_MODE_GPU_SUPPLIER_INDEX]: LOGIN_MODE_GPU_SUPPLIER_INDEX}
 
     @staticmethod
     def get_fedml_home_dir():
@@ -399,25 +408,35 @@ class ClientConstants(object):
         return script_process
 
     @staticmethod
-    def execute_commands_with_live_logs(cmds, join='&&'):
+    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
+                                        callback=None, error_processor=None):
         error_list = list()
         with subprocess.Popen(join.join(cmds),
                               shell=True,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE) as sp:
-            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
-                for line in sp.stdout:
-                    line_str = line.decode()
-                    stdout.write(line)
-                    stdout.flush()
-                    logging.info(line_str)
+            if callback is not None:
+                callback(sp.pid)
+
+            if should_write_log_file:
+                with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
+                    for line in sp.stdout:
+                        line_str = sys_utils.decode_byte_str(line)
+                        stdout.write(line)
+                        stdout.flush()
+                        logging.info(line_str)
             with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
                 for line in sp.stderr:
-                    line_str = line.decode()
-                    stderr.write(line)
-                    stderr.flush()
-                    logging.error(line_str)
+                    line_str = sys_utils.decode_byte_str(line)
+                    if should_write_log_file:
+                        stderr.write(line)
+                        stderr.flush()
+                        logging.error(line_str)
                     error_list.append(line_str)
+
+                if error_processor is not None and len(error_list) > 0:
+                    error_processor(error_list)
+
             return sp, error_list
         return None, error_list
 

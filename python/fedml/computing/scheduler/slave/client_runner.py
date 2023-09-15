@@ -1,4 +1,3 @@
-
 import json
 import logging
 import multiprocessing
@@ -20,6 +19,8 @@ import zipfile
 from urllib.parse import unquote
 
 import requests
+
+import fedml
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -35,18 +36,29 @@ from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .client_data_interface import FedMLClientDataInterface
 from ..comm_utils import sys_utils
 from ....core.mlops.mlops_utils import MLOpsUtils
+from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
+from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 
 
 class RunnerError(Exception):
-    """ Runner failed. """
+    """ Runner stopped. """
+    pass
+
+
+class RunnerCompletedError(Exception):
+    """ Runner completed. """
     pass
 
 
 class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+        self.model_device_server = None
+        self.model_device_client = None
         self.run_process_event = None
         self.run_process_event_map = dict()
+        self.run_process_completed_event = None
+        self.run_process_completed_event_map = dict()
         self.run_process = None
         self.run_process_map = dict()
         self.local_api_process = None
@@ -96,6 +108,7 @@ class FedMLClientRunner:
         self.client_active_list = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.server_id = None
+        self.computing_started_time = 0
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -317,7 +330,7 @@ class FedMLClientRunner:
                     shell_cmd_list.append(bootstrap_scripts)
                     process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
                     ClientConstants.save_bootstrap_process(run_id, process.pid)
-                    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+                    ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
                             is_bootstrap_run_ok = False
@@ -345,11 +358,12 @@ class FedMLClientRunner:
 
         return is_bootstrap_run_ok
 
-    def run(self, process_event):
+    def run(self, process_event, completed_event):
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
         self.run_process_event = process_event
+        self.run_process_completed_event = completed_event
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
             self.setup_client_mqtt_mgr()
@@ -357,12 +371,19 @@ class FedMLClientRunner:
         except RunnerError:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+        except RunnerCompletedError:
+            logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
             self.mlops_metrics.common_report_client_id_status(self.run_id, self.edge_id,
                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                                                               server_id=self.server_id)
         finally:
+            if self.mlops_metrics is not None:
+                computing_ended_time = MLOpsUtils.get_ntp_time()
+                self.mlops_metrics.report_edge_job_computing_cost(self.run_id, self.edge_id,
+                                                                  self.computing_started_time, computing_ended_time,
+                                                                  self.args.user, self.args.api_key)
             logging.info("Release resources.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
@@ -377,11 +398,20 @@ class FedMLClientRunner:
             logging.info("Received stopping event.")
             raise RunnerError("Runner stopped")
 
+        if self.run_process_completed_event.is_set():
+            logging.info("Received completed event.")
+            raise RunnerCompletedError("Runner completed")
+
     def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
         data_config = run_config.get("data_config", {})
         packages_config = run_config["packages_config"]
+
+        self.computing_started_time = MLOpsUtils.get_ntp_time()
+        self.mlops_metrics.report_edge_job_computing_cost(run_id, self.edge_id,
+                                                          self.computing_started_time, 0,
+                                                          self.args.user, self.args.api_key)
 
         self.check_runner_stop_event()
 
@@ -441,20 +471,16 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        logging.info("starting the learning process...")
+        logging.info("starting the user process...")
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
-        computing_started_time = MLOpsUtils.get_ntp_time()
-        logging.info("waiting the learning process to train models...")
-        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, dynamic_args_config)
+        logging.info("waiting the user process to finish...")
+        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path,
+                                                                    dynamic_args_config)
         ClientConstants.save_learning_process(run_id, process.pid)
 
-        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-        computing_ended_time = MLOpsUtils.get_ntp_time()
-        self.mlops_metrics.report_edge_job_computing_cost(run_id, self.edge_id,
-                                                          computing_started_time, computing_ended_time,
-                                                          self.args.user, self.args.api_key)
+        ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
@@ -534,20 +560,26 @@ class FedMLClientRunner:
             logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
                 python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
 
-            process = ClientConstants.exec_console_with_shell_script_list(
-                [
-                    python_program,
-                    entry_file_full_path,
-                    "--cf",
-                    conf_file_full_path,
-                    "--rank",
-                    str(dynamic_args_config.get("rank", 1)),
-                    "--role",
-                    "client"
-                ],
-                should_capture_stdout=False,
-                should_capture_stderr=True
-            )
+            # process = ClientConstants.exec_console_with_shell_script_list(
+            #     [
+            #         python_program,
+            #         entry_file_full_path,
+            #         "--cf",
+            #         conf_file_full_path,
+            #         "--rank",
+            #         str(dynamic_args_config.get("rank", 1)),
+            #         "--role",
+            #         "client"
+            #     ],
+            #     should_capture_stdout=False,
+            #     should_capture_stderr=True
+            # )
+            rank = str(dynamic_args_config.get("rank", 1))
+            entry_command = f"{python_program} {entry_file_full_path} --cf " \
+                            f"{conf_file_full_path} --rank {rank} --role client"
+            shell_cmd_list = [entry_command]
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -586,14 +618,30 @@ class FedMLClientRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
+                                                                                  callback=self.start_job_perf,
+                                                                                  error_processor=self.job_error_processor)
             is_launch_task = True
+
         return process, is_launch_task, error_list
 
-    def reset_devices_status(self, edge_id, status):
+    def start_job_perf(self, job_pid):
+        self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
+
+    def job_error_processor(self, error_str):
+        raise Exception(f"Error occurs when running the job... {error_str}")
+
+    def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
         self.mlops_metrics.broadcast_client_training_status(edge_id, status)
+
+        if should_send_client_id_status:
+            if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                self.mlops_metrics.common_report_client_id_status(self.run_id, edge_id,
+                                                                  status,
+                                                                  server_id=self.server_id)
 
     def stop_run(self):
         logging.info("Stop run successfully.")
@@ -651,10 +699,12 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-    def cleanup_run_when_starting_failed(self):
+    def cleanup_run_when_starting_failed(self, should_send_client_id_status=True):
         logging.error("Cleanup run successfully when starting failed.")
 
-        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+        self.reset_devices_status(self.edge_id,
+                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                  should_send_client_id_status=should_send_client_id_status)
 
         time.sleep(2)
 
@@ -674,7 +724,9 @@ class FedMLClientRunner:
     def cleanup_run_when_finished(self):
         logging.info("Cleanup run successfully when finished.")
 
-        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        self.reset_devices_status(self.edge_id,
+                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                                  should_send_client_id_status=False)
 
         time.sleep(2)
 
@@ -756,33 +808,30 @@ class FedMLClientRunner:
             pass
 
     def ota_upgrade(self, payload, request_json):
-        no_upgrade = False
-        upgrade_version = None
         run_id = request_json["runId"]
+        force_ota = False
+        ota_version = None
 
         try:
             run_config = request_json.get("run_config", None)
             parameters = run_config.get("parameters", None)
             common_args = parameters.get("common_args", None)
-            no_upgrade = common_args.get("no_upgrade", False)
-            upgrade_version = common_args.get("upgrade_version", None)
+            force_ota = common_args.get("force_ota", False)
+            ota_version = common_args.get("ota_version", None)
         except Exception as e:
             pass
 
-        should_upgrade = True
-        if upgrade_version is None or upgrade_version == "latest":
+        if force_ota and ota_version is not None:
+            should_upgrade = True
+            upgrade_version = ota_version
+        else:
             try:
-                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                    check_fedml_is_latest_version(self.version)
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
                 return
 
-            if fedml_is_latest_version:
-                should_upgrade = False
+            should_upgrade = False if fedml_is_latest_version else True
             upgrade_version = remote_ver
-
-        if no_upgrade:
-            should_upgrade = False
 
         if should_upgrade:
             FedMLClientDataInterface.get_instance(). \
@@ -860,9 +909,13 @@ class FedMLClientRunner:
         self.run_process_event_map[run_id] = multiprocessing.Event()
         self.run_process_event_map[run_id].clear()
         client_runner.run_process_event = self.run_process_event_map[run_id]
+        self.run_process_completed_event_map[run_id] = multiprocessing.Event()
+        self.run_process_completed_event_map[run_id].clear()
+        client_runner.run_process_completed_event = self.run_process_completed_event_map[run_id]
         client_runner.server_id = request_json.get("server_id", "0")
         logging.info("start the runner process.")
-        self.run_process_map[run_id] = Process(target=client_runner.run, args=(self.run_process_event_map[run_id],))
+        self.run_process_map[run_id] = Process(target=client_runner.run, args=(
+            self.run_process_event_map[run_id], self.run_process_completed_event_map[run_id]))
         self.run_process_map[run_id].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id].pid)
 
@@ -929,7 +982,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
             logging.error("received to failed status from the server agent")
-            self.cleanup_run_when_starting_failed()
+            self.cleanup_run_when_starting_failed(should_send_client_id_status=False)
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
@@ -949,6 +1002,10 @@ class FedMLClientRunner:
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
                 status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
+            completed_event = self.run_process_completed_event_map.get(run_id, None)
+            if completed_event is not None:
+                completed_event.set()
+
             # Stop client with multiprocessing mode
             self.request_json = request_json
             client_runner = FedMLClientRunner(
@@ -991,6 +1048,37 @@ class FedMLClientRunner:
             raise Exception("After upgraded, restart runner...")
         elif cmd == ClientConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")
+
+    def callback_report_device_info(self, topic, payload):
+        payload_json = json.loads(payload)
+        server_id = payload_json.get("server_id", 0)
+        run_id = payload_json.get("run_id", 0)
+        response_topic = f"client/server/response_device_info/{server_id}"
+        if self.mlops_metrics is not None and self.model_device_client is not None and \
+                self.model_device_server is not None:
+            total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
+                gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+            device_info_json = {
+                "edge_id": self.edge_id,
+                "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                "cpuUtilization": round(cup_utilization, 2),
+                "cpuCores": cpu_cores,
+                "gpuCoresTotal": gpu_cores_total,
+                "gpuCoresAvailable": gpu_cores_available,
+                "gpu_available_ids": gpu_available_ids,
+                "networkTraffic": sent_bytes + recv_bytes,
+                "updateTime": int(MLOpsUtils.get_ntp_time()),
+                "fedml_version": fedml.__version__,
+                "user_id": self.args.user
+            }
+            response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
+                                "master_device_id": self.model_device_server.get_edge_id(),
+                                "run_id": run_id, "edge_id": self.edge_id,
+                                "edge_info": device_info_json}
+            self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
@@ -1081,10 +1169,10 @@ class FedMLClientRunner:
         }
         if gpu_count > 0:
             if gpu_total_mem is not None:
-                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+                json_params["gpu"] = gpu_info if gpu_info is not None else "" + ", Total GPU Memory: " + gpu_total_mem
             else:
-                json_params["gpu"] = gpu_info
-            json_params["extra_infos"]["gpu_info"] = gpu_info
+                json_params["gpu"] = gpu_info if gpu_info is not None else ""
+            json_params["extra_infos"]["gpu_info"] = gpu_info if gpu_info is not None else ""
             if gpu_available_mem is not None:
                 json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
             if gpu_total_mem is not None:
@@ -1208,6 +1296,10 @@ class FedMLClientRunner:
         topic_ota_msg = "mlops/flclient_agent_" + str(self.edge_id) + "/ota"
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_client_ota_msg)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_request_device_info = "server/client/request_device_info/" + str(self.edge_id)
+        self.mqtt_mgr.add_message_listener(topic_request_device_info, self.callback_report_device_info)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1215,6 +1307,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+        mqtt_client_object.subscribe(topic_request_device_info, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
@@ -1275,11 +1368,22 @@ class FedMLClientRunner:
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
-        self.mlops_metrics.stop_sys_perf()
-        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args)
+        self.mlops_metrics.stop_device_realtime_perf()
+        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_train_msg_after_upgrading()
+
+        if self.model_device_client is None:
+            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            self.model_device_client.start()
+
+        if self.model_device_server is None:
+            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
@@ -1293,6 +1397,13 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
+
+            if self.model_device_server is not None:
+                self.model_device_server.stop()
+
+            if self.model_device_client is not None:
+                self.model_device_client.stop()
+
             time.sleep(5)
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
