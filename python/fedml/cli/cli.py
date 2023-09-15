@@ -7,8 +7,6 @@ from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
-simulator_process_list = list()
-
 
 @click.group()
 @click.help_option("--help", "-h")
