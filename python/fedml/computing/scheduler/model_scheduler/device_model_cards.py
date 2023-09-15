@@ -17,7 +17,8 @@ from .modelops_configs import ModelOpsConfigs
 from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList
-from ....serving.utils import run_bootstrap
+from .device_client_constants import ClientConstants
+
 
 class FedMLModelCards(Singleton):
 
@@ -367,7 +368,7 @@ class FedMLModelCards(Singleton):
         bootstrap_path = config_parms.get("bootstrap_path", None)
         if bootstrap_path is not None:
             dir_name, file_name = os.path.split(bootstrap_path)
-            if run_bootstrap(dir_name, file_name):
+            if ClientConstants.run_bootstrap(dir_name, file_name):
                 print("Bootstrap script {} is executed successfully.".format(bootstrap_path))
             else:
                 print("Failed to execute bootstrap script {}".format(bootstrap_path))
@@ -395,7 +396,7 @@ class FedMLModelCards(Singleton):
         return True
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
-                     params, use_local_deployment, local_server=None):
+                     params, use_local_deployment=None, local_server=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
@@ -502,13 +503,14 @@ class FedMLModelCards(Singleton):
 
         return model_upload_result
 
-    def push_model_to_s3(self, model_name, model_zip_path, user_id):
+    def push_model_to_s3(self, model_name, model_zip_path, user_id, progress_desc=None):
         args = {"config_version": self.config_version}
         _, s3_config = ModelOpsConfigs.get_instance(args).fetch_configs(self.config_version)
         s3_storage = S3Storage(s3_config)
         model_dst_key = "{}@{}@{}".format(user_id, model_name, str(uuid.uuid4()))
         model_storage_url = s3_storage.upload_file_with_progress(model_zip_path, model_dst_key,
-                                                                 out_progress_to_err=False)
+                                                                 out_progress_to_err=False,
+                                                                 progress_desc=progress_desc)
         return model_storage_url
 
     def pull_model_from_s3(self, model_storage_url, model_name):

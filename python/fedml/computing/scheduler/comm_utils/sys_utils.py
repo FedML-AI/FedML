@@ -369,6 +369,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                 if is_model_device:
                     if str(cmd).find("model_scheduler.device_server_api:api") != -1:
                         find_api_process = True
+
+                    if str(cmd).find("model_scheduler.device_model_inference:api") != -1:
+                        find_api_process = True
                 else:
                     if str(cmd).find("master.server_api:api") != -1:
                         find_api_process = True
@@ -831,6 +834,24 @@ def decode_byte_str(bytes_str):
         pass
     decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
     return decoded_str
+
+
+def random1(msg, in_msg):
+    msg_bytes = msg.encode('utf-8')
+    in_msg_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_msg_bytes[i % len(in_msg_bytes)])
+    return out_bytes.hex()
+
+
+def random2(msg, in_msg):
+    msg_bytes = bytes.fromhex(msg)
+    in_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_bytes[i % len(in_bytes)])
+    return out_bytes.decode('utf-8')
 
 
 if __name__ == '__main__':

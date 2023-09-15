@@ -2,12 +2,10 @@ import click
 from prettytable import PrettyTable
 
 import fedml
-from modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
 from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-
-simulator_process_list = list()
 
 
 @click.group()
@@ -18,13 +16,13 @@ def cli():
 
 @cli.command("version", help="Display fedml version.")
 @click.help_option("--help", "-h")
-def mlops_version():
+def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
 @cli.command("status", help="Display fedml client training status.")
 @click.help_option("--help", "-h")
-def mlops_status():
+def fedml_status():
     training_infos = ClientConstants.get_training_infos()
     click.echo(
         "Client training status: " + str(training_infos["training_status"]).upper()
@@ -38,9 +36,9 @@ def mlops_status():
     "-v",
     type=str,
     default="release",
-    help="show resource type at which version of MLOps platform. It should be dev, test or release",
+    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def launch_show_resource_type(version):
+def fedml_show_resource_type(version):
     FedMLLaunchManager.get_instance().set_config_version(version)
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
@@ -59,35 +57,39 @@ def launch_show_resource_type(version):
          "Python version, etc.",
 )
 @click.help_option("--help", "-h")
-def env():
+def fedml_env():
     collect_env()
 
 
 # Add login subcommand module
-cli.add_command(login.mlops_login)
+cli.add_command(login.fedml_login)
 
 # Add logs subcommand module
-cli.add_command(logs.mlops_logs)
+cli.add_command(logs.fedml_logs)
 
 # Add diagnosis subcommand module
-cli.add_command(diagnosis.mlops_diagnosis)
+cli.add_command(diagnosis.fedml_diagnosis)
 
 # Add logout subcommand module
-cli.add_command(logout.mlops_logout)
+cli.add_command(logout.fedml_logout)
 
 # Add build subcommand module
-cli.add_command(build.mlops_build)
+cli.add_command(build.fedml_build)
 
 # Add job subcommand module
-cli.add_command(jobs.jobs)
+cli.add_command(jobs.fedml_jobs)
+
+# Add device subcommand module
+cli.add_command(device.fedml_device)
 
 # Add model subcommand module
-model.model.add_command(device.device)
-model.model.add_command(inference.inference)
-cli.add_command(model.model)
+cli.add_command(model.fedml_model)
+
+# Add inference subcommand module
+cli.add_command(inference.fedml_model_inference)
 
 # Add launch subcommand module
-cli.add_command(launch.launch)
+cli.add_command(launch.fedml_launch)
 
 if __name__ == "__main__":
     cli()

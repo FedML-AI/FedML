@@ -162,6 +162,7 @@ def logout_from_model_ops(slave, master, docker, docker_rank):
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("device_client_login.py")
+        sys_utils.cleanup_all_fedml_client_api_processes(is_model_device=True)
 
     if is_server is True:
         if is_docker:
@@ -171,6 +172,8 @@ def logout_from_model_ops(slave, master, docker, docker_rank):
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("device_server_login.py")
+        sys_utils.cleanup_all_fedml_client_login_processes("device_model_monitor.py")
+        sys_utils.cleanup_all_fedml_server_api_processes(is_model_device=True)
 
 
 if __name__ == "__main__":

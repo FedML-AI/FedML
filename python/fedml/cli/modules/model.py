@@ -1,4 +1,5 @@
 import json
+import os
 
 import click
 
@@ -6,38 +7,49 @@ from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLMo
 
 
 @click.group("model")
-def model():
+@click.help_option("--help", "-h")
+def fedml_model():
     """
     Deploy and infer models.
     """
     pass
 
 
-@model.command("create", help="Create local model repository.")
+@fedml_model.command("create", help="Create local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def create_model(name):
-    if FedMLModelCards.get_instance().create_model(name):
-        click.echo("Create model {} successfully.".format(name))
+@click.option(
+    "--config_file", "-cf", default = None,type=str, help="Model config file (.yaml)",
+)
+def fedml_model_create(name, config_file):
+    if config_file is None:
+        # Just create a model folder
+        if FedMLModelCards.get_instance().create_model(name):
+            click.echo("Create model {} successfully.".format(name))
+        else:
+            click.echo("Failed to create model {}.".format(name))
     else:
-        click.echo("Failed to create model {}.".format(name))
+        # Adding related workspace codes to the model folder
+        if FedMLModelCards.get_instance().create_model_use_config(name, config_file):
+            click.echo("Create model {} using config successfully.".format(name))
+        else:
+            click.echo("Failed to create model {} using config file {}.".format(name, config_file))
 
-
-@model.command("delete", help="Delete local model repository.")
+@fedml_model.command("delete", help="Delete local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def delete_model(name):
+def fedml_model_delete(name):
     if FedMLModelCards.get_instance().delete_model(name):
         click.echo("Delete model {} successfully.".format(name))
     else:
         click.echo("Failed to delete model {}.".format(name))
 
 
-@model.command("add", help="Add file to local model repository.")
+@fedml_model.command("add", help="Add file to local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -45,14 +57,14 @@ def delete_model(name):
 @click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
-def add_model_files(name, path):
+def fedml_model_add_files(name, path):
     if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:
         click.echo("Failed to add file to model {}.".format(name))
 
 
-@model.command("remove", help="Remove file from local model repository.")
+@fedml_model.command("remove", help="Remove file from local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -60,19 +72,19 @@ def add_model_files(name, path):
 @click.option(
     "--file", "-f", type=str, help="file name for specific model.",
 )
-def remove_model_files(name, file):
+def fedml_model_remove_files(name, file):
     if FedMLModelCards.get_instance().remove_model_files(name, file):
         click.echo("Remove file from model {} successfully.".format(name))
     else:
         click.echo("Failed to remove file from model {}.".format(name))
 
 
-@model.command("list", help="List model in the local model repository.")
+@fedml_model.command("list", help="List model in the local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def list_models(name):
+def fedml_model_list(name):
     models = FedMLModelCards.get_instance().list_models(name)
     if len(models) <= 0:
         click.echo("Model list is empty.")
@@ -82,7 +94,7 @@ def list_models(name):
         click.echo("List model {} successfully.".format(name))
 
 
-@model.command("list-remote", help="List models in the remote model repository.")
+@fedml_model.command("list-remote", help="List models in the remote model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -107,7 +119,7 @@ def list_models(name):
     default="127.0.0.1",
     help="local server address.",
 )
-def list_remote_models(name, user, api_key, version, local_server):
+def fedml_model_list_remote(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -124,12 +136,12 @@ def list_remote_models(name, user, api_key, version, local_server):
         click.echo("List model {} successfully.".format(name))
 
 
-@model.command("package", help="Build local model repository as zip model package.")
+@fedml_model.command("package", help="Build local model repository as zip model package.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def package_model(name):
+def fedml_model_package(name):
     model_zip = FedMLModelCards.get_instance().build_model(name)
     if model_zip != "":
         click.echo("Build model package {} successfully".format(name))
@@ -138,7 +150,7 @@ def package_model(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-@model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
+@fedml_model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -169,7 +181,7 @@ def package_model(name):
     default="127.0.0.1",
     help="local server address.",
 )
-def push_model(name, model_storage_url, model_net_url, user, api_key, version, local_server):
+def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -190,7 +202,7 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version, l
             click.echo("Failed to push model {}.".format(name))
 
 
-@model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
+@fedml_model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, help="model name.",
@@ -215,7 +227,7 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version, l
     default="127.0.0.1",
     help="local server address.",
 )
-def pull_model(name, user, api_key, version, local_server):
+def fedml_model_pull(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -226,78 +238,43 @@ def pull_model(name, user, api_key, version, local_server):
         click.echo("Failed to pull model {}.".format(name))
 
 
-@model.command("deploy",
-               help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
+@fedml_model.command("deploy", help="Deploy model to local machine or ModelOps platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.option(
-    "--name", "-n", type=str, help="model name.",
+    "--name", "-n", type=str, help="[Required] Model Cards Name.", required=True
 )
 @click.option(
-    "--on_premise", "-p", default=None, is_flag=True, help="all devices are from on-premise.",
+    "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
-    "--cloud", "-c", default=None, is_flag=True, help="all devices are from fedml cloud.",
+    "--master_ids", "-m", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate master device id(s), seperated with ','"
 )
 @click.option(
-    "--devices", "-d", type=str, help="device list, format: [1,2,3]. The first id is master device.",
+    "--worker_ids", "-w", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate worker device id(s), seperated with ','"
 )
 @click.option(
-    "--user", "-u", type=str, help="user id or api key.",
+    "--user_id", "-u", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate user id"
 )
 @click.option(
-    "--api_key", "-k", type=str, help="user api key.",
+    "--api_key", "-k", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate api key"
 )
-@click.option(
-    "--params", "-pa", type=str, default="", help="serving parameters.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
-)
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-@click.option(
-    "--use_local_deployment", "-ld", default=None, is_flag=True,
-    help="deploy local model repository by sending MQTT message(just use for debugging).",
-)
-def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version,
-                 local_server, use_local_deployment):
-    if user is None or api_key is None:
-        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
-        return
-
-    is_cloud = cloud
-    is_on_premise = on_premise
-    if cloud is None and on_premise is None:
-        is_on_premise = True
-    if is_cloud and is_on_premise:
-        is_cloud = False
-
-    is_local_dev = use_local_deployment
-    if use_local_deployment is None:
-        is_local_dev = False
-
-    if is_on_premise:
-        device_type = "md.on_premise_device"
+def fedml_model_serve(local, name, master_ids, worker_ids, user_id, api_key):
+    if master_ids != "" or worker_ids != "":
+        if master_ids == "" or worker_ids == "":
+            click.echo("You must provide both master and worker device id(s).")
+            return
+        click.echo("Enter the on-premise deployment mode...")
+        if user_id == "" and os.environ.get("FEDML_USER_ID", None) is None:
+            # Let user enter through command line
+            user_id = click.prompt("Please input your user id")
+            os.environ["FEDML_USER_ID"] = user_id
+        if api_key == "" and os.environ.get("FEDML_API_KEY", None) is None:
+            # Let user enter through command line
+            api_key = click.prompt("Please input your api key", hide_input=True)
+            os.environ["FEDML_API_KEY"] = api_key
+        os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
+        os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
+    if local:
+        FedMLModelCards.get_instance().local_serve_model(name)
     else:
-        device_type = "md.fedml_cloud_device"
-    FedMLModelCards.get_instance().set_config_version(version)
-
-    params_dict = {}
-    if is_local_dev:
-        params_dict = json.loads(params)  # load config from Cli
-
-    if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
-                                                   params_dict, use_local_deployment,
-                                                   local_server):
-        click.echo("Deploy model {} successfully.".format(name))
-    else:
-        click.echo("Failed to deploy model {}.".format(name))
+        FedMLModelCards.get_instance().serve_model(name)
