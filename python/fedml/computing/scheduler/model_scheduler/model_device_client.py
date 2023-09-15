@@ -35,7 +35,7 @@ class FedMLModelDeviceClientRunner:
 
     def start(self):
         self.agent_runner = FedMLModelDeviceClientRunner(self.args, self.current_device_id, self.os_name,
-                                                    self.is_from_docker, self.service_config)
+                                                         self.is_from_docker, self.service_config)
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))

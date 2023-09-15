@@ -125,7 +125,7 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
         self.enable_simulation_cloud_agent = False
-        self.use_local_process_as_cloud_server = True
+        self.use_local_process_as_cloud_server = False
 
         self.model_device_server = None
         self.run_model_device_ids = dict()
@@ -1472,14 +1472,17 @@ class FedMLServerRunner:
             # Stop log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
         elif self.run_as_cloud_agent:
-            server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
-                edge_id=server_id
-            )
-            server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-            server_runner.run_process_event = self.run_process_event_map.get(run_id, None)
-            server_runner.run_process = self.run_process_map.get(run_id, None)
-            Process(target=server_runner.stop_cloud_server_process_entry).start()
+            if not self.use_local_process_as_cloud_server:
+                server_runner = FedMLServerRunner(
+                    self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                    edge_id=server_id
+                )
+                server_runner.run_as_cloud_agent = self.run_as_cloud_agent
+                server_runner.run_process_event = self.run_process_event_map.get(run_id, None)
+                server_runner.run_process = self.run_process_map.get(run_id, None)
+                Process(target=server_runner.stop_cloud_server_process_entry).start()
+            else:
+                ServerConstants.cleanup_run_process(run_id)
 
             # Stop log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, server_id)
@@ -1612,15 +1615,18 @@ class FedMLServerRunner:
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             elif self.run_as_cloud_agent:
-                server_runner = FedMLServerRunner(
-                    self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
-                )
-                server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-                server_runner.edge_id = edge_id if server_id is None else server_id
-                server_runner.run_status = status
-                server_runner.client_mqtt_mgr = self.client_mqtt_mgr
-                server_runner.mlops_metrics = self.mlops_metrics
-                server_runner.cleanup_client_with_status()
+                if not self.use_local_process_as_cloud_server:
+                    server_runner = FedMLServerRunner(
+                        self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                    )
+                    server_runner.run_as_cloud_agent = self.run_as_cloud_agent
+                    server_runner.edge_id = edge_id if server_id is None else server_id
+                    server_runner.run_status = status
+                    server_runner.client_mqtt_mgr = self.client_mqtt_mgr
+                    server_runner.mlops_metrics = self.mlops_metrics
+                    server_runner.cleanup_client_with_status()
+                else:
+                    ServerConstants.cleanup_run_process(run_id)
 
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
