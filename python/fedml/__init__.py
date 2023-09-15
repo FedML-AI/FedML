@@ -75,7 +75,7 @@ __all__ = [
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a89"
+__version__ = "0.8.8a93"
 
 
 def init(args=None, check_env=True, should_init_logs=True):
