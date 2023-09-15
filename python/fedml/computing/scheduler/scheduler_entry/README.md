@@ -108,7 +108,7 @@ fedml launch log 1696947481910317056
 ## Login as the GPU supplier
 If you want to login as the role of GPU supplier and join into the FedML launch payment system. You just need to run the following command.
 ```
-fedml launch login $YourUserId -k $YourApiKey
+fedml login $YourUserId -k $YourApiKey -r gpu_supplier
 ```
 
 Then you may find your GPU device in the FedML launch platform https://open.fedml.ai/gpu-supplier/gpus/index
