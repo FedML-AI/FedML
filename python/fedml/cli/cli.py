@@ -38,7 +38,7 @@ def fedml_status():
     default="release",
     help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
 )
-def fedml_launch_show_resource_type(version):
+def fedml_show_resource_type(version):
     FedMLLaunchManager.get_instance().set_config_version(version)
     resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
@@ -62,30 +62,34 @@ def fedml_env():
 
 
 # Add login subcommand module
-cli.add_command(login.mlops_login)
+cli.add_command(login.fedml_login)
 
 # Add logs subcommand module
-cli.add_command(logs.mlops_logs)
+cli.add_command(logs.fedml_logs)
 
 # Add diagnosis subcommand module
-cli.add_command(diagnosis.mlops_diagnosis)
+cli.add_command(diagnosis.fedml_diagnosis)
 
 # Add logout subcommand module
-cli.add_command(logout.mlops_logout)
+cli.add_command(logout.fedml_logout)
 
 # Add build subcommand module
-cli.add_command(build.mlops_build)
+cli.add_command(build.fedml_build)
 
 # Add job subcommand module
-cli.add_command(jobs.jobs)
+cli.add_command(jobs.fedml_jobs)
+
+# Add device subcommand module
+cli.add_command(device.fedml_device)
 
 # Add model subcommand module
-model.model.add_command(device.device)
-model.model.add_command(inference.inference)
-cli.add_command(model.model)
+cli.add_command(model.fedml_model)
+
+# Add inference subcommand module
+cli.add_command(inference.fedml_model_inference)
 
 # Add launch subcommand module
-cli.add_command(launch.launch)
+cli.add_command(launch.fedml_launch)
 
 if __name__ == "__main__":
     cli()

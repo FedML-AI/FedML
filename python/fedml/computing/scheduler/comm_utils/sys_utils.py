@@ -836,6 +836,24 @@ def decode_byte_str(bytes_str):
     return decoded_str
 
 
+def random1(msg, in_msg):
+    msg_bytes = msg.encode('utf-8')
+    in_msg_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_msg_bytes[i % len(in_msg_bytes)])
+    return out_bytes.hex()
+
+
+def random2(msg, in_msg):
+    msg_bytes = bytes.fromhex(msg)
+    in_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_bytes[i % len(in_bytes)])
+    return out_bytes.decode('utf-8')
+
+
 if __name__ == '__main__':
     fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("release")
     print("FedML is latest version: {}, local version {}, remote version {}".format(
