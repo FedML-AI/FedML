@@ -1,26 +1,19 @@
 import os
 from fedml.serving import FedMLPredictor
 from fedml.serving import FedMLInferenceRunner
-
-# DATA_CACHE_DIR is a LOCAL folder that contains the model and config files if 
-# you do NOT want to transfer the model and config files to MLOps
-# Not to also metion DATA_CACHE_DIR in the fedml_model_config.yaml
-DATA_CACHE_DIR = "~/fedml_serving/model_and_config"
-DATA_CACHE_DIR = os.path.expanduser(DATA_CACHE_DIR) # Use absolute path
+from langchain import PromptTemplate, LLMChain
+from langchain.llms import HuggingFacePipeline
+import torch
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextGenerationPipeline,
+)
 
 class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
     def __init__(self):
-        super().__init__()                    # Will excecute the bootstrap shell script
-        from langchain import PromptTemplate, LLMChain
-        from langchain.llms import HuggingFacePipeline
-        import torch
-        from transformers import (
-            AutoConfig,
-            AutoModelForCausalLM,
-            AutoTokenizer,
-            TextGenerationPipeline,
-        )
-
+        super().__init__()
         PROMPT_FOR_GENERATION_FORMAT = f""""Below is an instruction that describes a task. Write a response that appropriately completes the request."
 
         ### Instruction:
@@ -34,14 +27,14 @@ class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
             template=PROMPT_FOR_GENERATION_FORMAT
         )
 
-        config = AutoConfig.from_pretrained(DATA_CACHE_DIR)
+        config = AutoConfig.from_pretrained("EleutherAI/pythia-70m")
         model = AutoModelForCausalLM.from_pretrained(
-            DATA_CACHE_DIR,
+            "EleutherAI/pythia-70m",
             torch_dtype=torch.float32,      # float 16 not supported on CPU
             trust_remote_code=True,
             device_map="auto"
         )
-        tokenizer = AutoTokenizer.from_pretrained(DATA_CACHE_DIR, device_map="auto")
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m", device_map="auto")
 
         hf_pipeline = HuggingFacePipeline(
             pipeline=TextGenerationPipeline(

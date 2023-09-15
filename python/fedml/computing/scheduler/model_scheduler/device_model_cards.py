@@ -17,7 +17,7 @@ from .modelops_configs import ModelOpsConfigs
 from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList
-
+from ....serving.utils import run_bootstrap
 
 class FedMLModelCards(Singleton):
 
@@ -30,10 +30,87 @@ class FedMLModelCards(Singleton):
     @staticmethod
     def get_instance():
         return FedMLModelCards()
+    
+    def serve_model(self, model_name):
+        src_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(src_folder):
+            print("Model {} doesn't exist. Please Create it First".format(model_name))
+            return False
+        config_file_path = os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        parms_dict = self.parse_config_yaml(config_file_path)
+
+        user_id = parms_dict.get("FEDML_USER_ID", os.environ.get("FEDML_USER_ID", None))
+        user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
+        device_type = parms_dict.get("device_type", "md.on_premise_device")
+        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", None))
+        worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
+        additional_parms_dict = parms_dict.get("default_parms_dict", {})
+        use_local_deployment = parms_dict.get("default_use_local", False)
+        local_server = parms_dict.get("local_server", "127.0.0.1")
+        mlops_version = parms_dict.get("mlops_version", "release")
+
+        if not(master_device_id is not None and worker_device_ids is not None):
+            print("Please specify the master device id and worker device ids in the config file.")
+            return False
+        if not (type(worker_device_ids) in [str, list, int] and type(master_device_id) in [str, int, list]):
+            print('''The format of worker_device_ids is wrong, 
+                  please use formate like 1,2,3 or 1,
+                  E.g. export FEDML_MODEL_SERVE_WORKER_DEVICE_IDS=1,2,3
+                  ''')
+            return False
+        
+        if type(worker_device_ids) is not list:
+            if type(worker_device_ids) is int:
+                worker_device_ids = [worker_device_ids]
+            else:
+                worker_device_ids = worker_device_ids.split(",")
+        if type(master_device_id) is not list:
+            master_device_id = [str(master_device_id)]
+        devices = master_device_id + worker_device_ids
+        
+        self.set_config_version(mlops_version)
+        self.build_model(model_name)
+        self.push_model(model_name, user_id, user_api_key)
+        res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
+                           additional_parms_dict, use_local_deployment, local_server)
+        if not res:
+            print("Failed to deploy model")
+            return False
+        
+    def parse_config_yaml(self, yaml_file):
+        with open(yaml_file, 'r') as f:
+            launch_params = yaml.safe_load(f)
+        return launch_params
+    
+    def copy_config_yaml_to_src_folder(self, src_folder, yaml_file):
+        shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
+        return True
 
     def set_config_version(self, config_version):
         if config_version is not None:
             self.config_version = config_version
+
+    def create_model_use_config(self, model_name, config_file) -> bool:
+        if not os.path.exists(config_file):
+            print("The config file {} doesn't exist.".format(config_file))
+            return False
+
+        model_config = self.parse_config_yaml(config_file)
+        # Copy workspace dir to local model cards dir
+        if "workspace" not in model_config:
+            print("Please specify the workspace in the config file.")
+            return False
+
+        if self.add_model_files(model_name, model_config["workspace"]):
+            model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+            if self.copy_config_yaml_to_src_folder(model_dir, config_file):
+                return True
+            else:
+                print(f"Failed to add your config file {config_file} to the model {model_name}.")
+                return False
+        else:
+            print(f"Failed to add your workspace {model_config['workspace']} to the model {model_name}.")
+            return False
 
     def create_model(self, model_name):
         self.current_model_name = model_name
@@ -277,6 +354,45 @@ class FedMLModelCards(Singleton):
                 print("Failed to pull model name {}".format(query_model_name))
 
         return result
+    def local_serve_model(self, model_name):
+        # Check local model card existance
+        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(model_dir):
+            print("Model {} doesn't exist. Please Create it First".format(model_name))
+            return False
+
+        # Execute bootstrap script
+        config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        config_parms = self.parse_config_yaml(config_file_path)
+        bootstrap_path = config_parms.get("bootstrap_path", None)
+        if bootstrap_path is not None:
+            dir_name, file_name = os.path.split(bootstrap_path)
+            if run_bootstrap(dir_name, file_name):
+                print("Bootstrap script {} is executed successfully.".format(bootstrap_path))
+            else:
+                print("Failed to execute bootstrap script {}".format(bootstrap_path))
+                return False
+        
+        # Enter main_entry
+        main_entry_file = config_parms.get("entry_point", "")
+        if main_entry_file == "":
+            print("The entry_point is missing in the model config file.")
+            return False
+        main_entry_file = os.path.join(model_dir, main_entry_file)
+        if not os.path.exists(main_entry_file):
+            print("The entry_point {} doesn't exist.".format(main_entry_file))
+            return False
+        import subprocess
+        # Change the execution path to the model dir
+        os.chdir(model_dir)
+        process = subprocess.Popen(["python3", main_entry_file])
+        print("Local deployment is started. Use Ctrl+C to stop it.")
+        try:
+            process.wait()
+        except KeyboardInterrupt:
+            print("Local deployment is stopped.")
+            process.kill()
+        return True
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
                      params, use_local_deployment=None, local_server=None):
@@ -417,6 +533,8 @@ class FedMLModelCards(Singleton):
         model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        if type(devices) is list:
+            devices = "[" + ",".join([str(device) for device in devices]) + "]"
         model_deployment_json = {
             "edgeId": devices,
             "endpointName": "EndPoint-{}".format(str(uuid.uuid4())),
