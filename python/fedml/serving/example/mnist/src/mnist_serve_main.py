@@ -1,8 +1,9 @@
 from fedml.serving import FedMLPredictor
 from fedml.serving import FedMLInferenceRunner
-from model.minist_model import LogisticRegression
+from model.mnist_model import LogisticRegression
 
 # This is the model file that will upload to MLOps
+# The path is related to the workspace directory
 MODEL_PARMS_DIR = "./model/model_parms_from_mlops"
 # If you do not want to upload the model file to MLOps,
 # (i.e., you want to use the model file in the lcoal DATA_CACHE_DIR)
