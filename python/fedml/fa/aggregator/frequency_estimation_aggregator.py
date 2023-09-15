@@ -4,14 +4,51 @@ from fedml.fa.base_frame.server_aggregator import FAServerAggregator
 
 
 class FrequencyEstimationAggregatorFA(FAServerAggregator):
+    """
+    Aggregator for Federated Learning with Frequency Estimation.
+
+    Args:
+        args (object): An object containing aggregator configuration parameters.
+
+    Attributes:
+        total_sample_num (int): The total number of training samples aggregated.
+        server_data (dict): Dictionary to store aggregated data.
+        round_idx (int): The current training round index.
+        total_round (int): The total number of training rounds.
+
+    Methods:
+        aggregate(local_submission_list):
+            Aggregate local submissions from clients.
+        print_frequency_estimation_results():
+            Print and display frequency estimation results as a histogram.
+
+    """
     def __init__(self, args):
+        """
+        Initialize the FrequencyEstimationAggregatorFA.
+
+        Args:
+            args (object): An object containing aggregator configuration parameters.
+
+        Returns:
+            None
+        """
         super().__init__(args)
         self.total_sample_num = 0
-        self.set_server_data(server_data=[])
+        self.set_server_data(server_data={})
         self.round_idx = 0
         self.total_round = args.comm_round
 
     def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
+        """
+        Aggregate local submissions from clients.
+
+        Args:
+            local_submission_list (list): A list of tuples containing local sample number and local submissions.
+
+        Returns:
+            dict: The aggregated server data.
+        """
         training_num = 0
         (sample_num, averaged_params) = local_submission_list[0]
         for i in range(0, len(local_submission_list)):
@@ -33,6 +70,12 @@ class FrequencyEstimationAggregatorFA(FAServerAggregator):
         return self.server_data
 
     def print_frequency_estimation_results(self):
+        """
+        Print and display frequency estimation results as a histogram.
+
+        Returns:
+            None
+        """
         print("frequency estimation: ")
         for key in self.server_data:
             print(f"key = {key}, freq = {self.server_data[key] / self.total_sample_num}")
@@ -41,3 +84,4 @@ class FrequencyEstimationAggregatorFA(FAServerAggregator):
         plt.ylabel('Occurrence # ')
         plt.title('Histogram')
         plt.show()
+        

@@ -11,18 +11,48 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 class DefaultServerAggregator(ServerAggregator):
     def __init__(self, model, args):
+        """
+        Initialize the DefaultServerAggregator.
+
+        Args:
+            model: The machine learning model.
+            args: A dictionary containing configuration parameters.
+        """
         super().__init__(model, args)
         self.cpu_transfer = False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
 
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            OrderedDict: The model parameters.
+        """
         if self.cpu_transfer:
             return self.model.cpu().state_dict()
         return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (OrderedDict): The model parameters to set.
+        """
         self.model.load_state_dict(model_parameters)
 
     def _test(self, test_data, device, args):
+        """
+        Internal method for testing the model on a given dataset.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the test on.
+            args: A dictionary containing configuration parameters.
+
+        Returns:
+            dict: A dictionary containing test metrics.
+        """
         model = self.model
 
         model.to(device)
@@ -75,6 +105,17 @@ class DefaultServerAggregator(ServerAggregator):
         return metrics
 
     def test(self, test_data, device, args):
+        """
+        Test the model on a given dataset and log the results.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the test on.
+            args: A dictionary containing configuration parameters.
+
+        Returns:
+            tuple: A tuple containing test accuracy and loss.
+        """
         # test data
         test_num_samples = []
         test_tot_corrects = []

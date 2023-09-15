@@ -12,6 +12,16 @@ reference: https://github.com/google-research/federated/tree/master/triehh
 
 class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
     def __init__(self, args, train_data_num):
+        """
+        Initialize the HeavyHitterTriehhAggregatorFA.
+
+        Args:
+            args: Additional arguments for initialization.
+            train_data_num (int): The number of training data samples.
+
+        Returns:
+            None
+        """
         super().__init__(args)
         if hasattr(args, "max_word_len"):
             self.MAX_L = args.max_word_len
@@ -43,7 +53,7 @@ class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
         self.batch_size = int(train_data_num * (np.e ** (self.epsilon / self.MAX_L) - 1) / (
                 self.theta * np.e ** (self.epsilon / self.MAX_L)))
         self.init_msg = int(math.ceil(self.batch_size * 1.0 / args.client_num_per_round))
-        self.w_global = {}  # self.trie = {}
+        self.w_global = {}
 
     def get_init_msg(self):
         return self.init_msg
@@ -52,6 +62,15 @@ class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
         self.init_msg = init_msg
 
     def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
+        """
+        Aggregate local submissions.
+
+        Args:
+            local_submission_list (List[Tuple[float, Any]]): A list of local submissions.
+
+        Returns:
+            Dict: The aggregated data.
+        """
         votes = {}
         for (num, local_vote_dict) in local_submission_list:
             for key in local_vote_dict.keys():
@@ -70,6 +89,12 @@ class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
         return self.w_global
 
     def _set_theta(self):
+        """
+        Calculate and set the value of theta.
+
+        Returns:
+            int: The calculated theta value.
+        """
         theta = 5  # initial guess
         delta_inverse = 1 / self.delta
         while ((theta - 3) / (theta - 2)) * math.factorial(theta) < delta_inverse:
@@ -80,11 +105,15 @@ class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
         return theta
 
     def server_update(self, votes):
-        # It might make more sense to define a small class called server_state
-        # server_state can track 2 things: 1) updated trie, and 2) quit_sign
-        # server_state can be initialized in the constructor of SimulateTrieHH
-        # and server_update would just update server_state
-        # (i.e, it would update self.server_state.trie & self.server_state.quit_sign)
+        """
+        Update the server based on received votes.
+
+        Args:
+            votes (Dict): A dictionary of votes.
+
+        Returns:
+            None
+        """
         self.quit_sign = True
         for prefix in votes:
             if votes[prefix] >= self.theta:
@@ -92,11 +121,17 @@ class HeavyHitterTriehhAggregatorFA(FAServerAggregator):
                 self.quit_sign = False
 
     def print_heavy_hitters(self):
+        """
+        Print the discovered heavy hitters.
+
+        Returns:
+            None
+        """
         heavy_hitters = []
         print(f"self.w_global = {self.w_global}")
         raw_result = self.w_global.keys()
         for word in raw_result:
             if word[-1:] == '$':
                 heavy_hitters.append(word.rstrip('$'))
-        # print(f'Discovered {len(heavy_hitters)} heavy hitters in run #{self.round_counter + 1}: {heavy_hitters}')
+                
         print(f'Discovered {len(heavy_hitters)} heavy hitters: {heavy_hitters}')

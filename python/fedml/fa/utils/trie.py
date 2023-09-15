@@ -195,10 +195,70 @@ def _levenshtein(path, node, word, distance, cigar):
 
 
 class Trie(object):
-    def __init__(self, words=None):
-        """Initialise the class.
+    """
+    A Trie data structure for efficiently storing and searching words.
 
-        :arg list words: List of words.
+    Args:
+        words (list): List of words to initialize the Trie.
+
+    Attributes:
+        root (dict): The root of the Trie.
+
+    Methods:
+        __contains__(word):
+            Check if a word is present in the Trie.
+
+        __iter__():
+            Get an iterator for the words in the Trie.
+
+        list(unique=True):
+            Get a list of words in the Trie.
+
+        add(word, count=1):
+            Add a word to the Trie.
+
+        get(word):
+            Get the count of a word in the Trie.
+
+        remove(word, count=1):
+            Remove a word from the Trie.
+
+        has_prefix(word):
+            Check if any word in the Trie has a given prefix.
+
+        fill(alphabet, length):
+            Fill the Trie with words of a given length using characters from the alphabet.
+
+        all_hamming_(word, distance):
+            Find all words in the Trie within a given Hamming distance.
+
+        all_hamming(word, distance):
+            Find all words in the Trie within a given Hamming distance (returns words only).
+
+        hamming(word, distance):
+            Find the first word in the Trie within a given Hamming distance.
+
+        best_hamming(word, distance):
+            Find the best match for a word in the Trie within a given Hamming distance.
+
+        all_levenshtein_(word, distance):
+            Find all words in the Trie within a given Levenshtein distance.
+
+        all_levenshtein(word, distance):
+            Find all words in the Trie within a given Levenshtein distance (returns words only).
+
+        levenshtein(word, distance):
+            Find the first word in the Trie within a given Levenshtein distance.
+
+        best_levenshtein(word, distance):
+            Find the best match for a word in the Trie within a given Levenshtein distance.
+    """
+    def __init__(self, words=None):
+        """
+        Initialize the Trie class.
+
+        Args:
+            words (list): List of words to initialize the Trie.
         """
         self.root = {}
 
@@ -207,54 +267,153 @@ class Trie(object):
                 self.add(word)
 
     def __contains__(self, word):
+        """
+        Check if a word is present in the Trie.
+
+        Args:
+            word (str): The word to check.
+
+        Returns:
+            bool: True if the word is in the Trie, False otherwise.
+        """
         return '' in _find(self.root, word)
 
     def __iter__(self):
+        """
+        Get an iterator for the words in the Trie.
+
+        Returns:
+            Iterator: An iterator object for iterating through words in the Trie.
+        """
         return _iterate('', self.root, True)
 
     def list(self, unique=True):
+        """
+        Get a list of words in the Trie.
+
+        Args:
+            unique (bool): Whether to return unique words only (default is True).
+
+        Returns:
+            list: A list of words in the Trie.
+        """
         return _iterate('', self.root, unique)
 
     def add(self, word, count=1):
+        """
+        Add a word to the Trie.
+
+        Args:
+            word (str): The word to add.
+            count (int): The count to associate with the word (default is 1).
+        """
         _add(self.root, word, count)
 
     def get(self, word):
+        """
+        Get the count of a word in the Trie.
+
+        Args:
+            word (str): The word to get the count for.
+
+        Returns:
+            int: The count of the word in the Trie or None if not found.
+        """
         node = _find(self.root, word)
         if '' in node:
             return node['']
         return None
 
     def remove(self, word, count=1):
+        """
+        Remove a word from the Trie.
+
+        Args:
+            word (str): The word to remove.
+            count (int): The count to decrement (default is 1).
+
+        Returns:
+            int: The remaining count of the word in the Trie or None if not found.
+        """
         return _remove(self.root, word, count)
 
     def has_prefix(self, word):
+        """
+        Check if any word in the Trie has a given prefix.
+
+        Args:
+            word (str): The prefix to check.
+
+        Returns:
+            bool: True if any word has the given prefix, False otherwise.
+        """
         return _find(self.root, word) != {}
 
     def fill(self, alphabet, length):
+        """
+        Fill the Trie with words of a given length using characters from the alphabet.
+
+        Args:
+            alphabet (str): The characters to use for filling.
+            length (int): The length of words to generate and add to the Trie.
+        """
         _fill(self.root, alphabet, length)
 
     def all_hamming_(self, word, distance):
+        """
+        Find all words in the Trie within a given Hamming distance and return detailed results.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Hamming distance.
+
+        Returns:
+            map: A map containing tuples with (word, remaining distance, count).
+        """
         return map(
             lambda x: (x[0], distance - x[1], x[2]),
             _hamming('', self.root, word, distance, ''))
 
     def all_hamming(self, word, distance):
+        """
+        Find all words in the Trie within a given Hamming distance and return words only.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Hamming distance.
+
+        Returns:
+            map: A map containing words within the specified Hamming distance.
+        """
         return map(
             lambda x: x[0], _hamming('', self.root, word, distance, ''))
 
     def hamming(self, word, distance):
+        """
+        Find the first word in the Trie within a given Hamming distance.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Hamming distance.
+
+        Returns:
+            str: The first word within the specified Hamming distance or None if not found.
+        """
         try:
             return next(self.all_hamming(word, distance))
         except StopIteration:
             return None
 
     def best_hamming(self, word, distance):
-        """Find the best match with {word} in a trie.
+        """
+        Find the best match with {word} in a trie using Hamming distance.
 
-        :arg str word: Query word.
-        :arg int distance: Maximum allowed distance.
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Hamming distance.
 
-        :returns str: Best match with {word}.
+        Returns:
+            str: Best match with {word}.
         """
         if self.get(word):
             return word
@@ -267,27 +426,60 @@ class Trie(object):
         return None
 
     def all_levenshtein_(self, word, distance):
+        """
+        Find all words in the Trie within a given Levenshtein distance and return detailed results.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Levenshtein distance.
+
+        Returns:
+            map: A map containing tuples with (word, remaining distance, count).
+        """
         return map(
             lambda x: (x[0], distance - x[1], x[2]),
             _levenshtein('', self.root, word, distance, ''))
 
     def all_levenshtein(self, word, distance):
+        """
+        Find all words in the Trie within a given Levenshtein distance and return words only.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Levenshtein distance.
+
+        Returns:
+            map: A map containing words within the specified Levenshtein distance.
+        """
         return map(
             lambda x: x[0], _levenshtein('', self.root, word, distance, ''))
 
     def levenshtein(self, word, distance):
+        """
+        Find the first word in the Trie within a given Levenshtein distance.
+
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Levenshtein distance.
+
+        Returns:
+            str: The first word within the specified Levenshtein distance or None if not found.
+        """
         try:
             return next(self.all_levenshtein(word, distance))
         except StopIteration:
             return None
 
     def best_levenshtein(self, word, distance):
-        """Find the best match with {word} in a trie.
+        """
+        Find the best match with {word} in a trie using Levenshtein distance.
 
-        :arg str word: Query word.
-        :arg int distance: Maximum allowed distance.
+        Args:
+            word (str): Query word.
+            distance (int): Maximum allowed Levenshtein distance.
 
-        :returns str: Best match with {word}.
+        Returns:
+            str: Best match with {word}.
         """
         if self.get(word):
             return word

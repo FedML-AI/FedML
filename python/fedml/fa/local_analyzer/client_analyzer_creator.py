@@ -7,8 +7,16 @@ from fedml.fa.local_analyzer.intersection import IntersectionClientAnalyzer
 from fedml.fa.local_analyzer.k_percentage_element import KPercentileElementClientAnalyzer
 from fedml.fa.local_analyzer.union import UnionClientAnalyzer
 
-
 def create_local_analyzer(args):
+    """
+    Create a specific type of local analyzer based on the task type.
+
+    Args:
+        args (object): Arguments for the local analyzer creation.
+
+    Returns:
+        object: A local analyzer instance based on the specified task type.
+    """
     task_type = args.fa_task
     if task_type == FA_TASK_AVG:
         return AverageClientAnalyzer(args)
@@ -24,4 +32,3 @@ def create_local_analyzer(args):
         return FrequencyEstimationClientAnalyzer(args)
     if task_type == FA_TASK_HEAVY_HITTER_TRIEHH:
         return TrieHHClientAnalyzer(args)
-

@@ -9,6 +9,23 @@ from ..ml.engine import ml_engine_adapter
 def mapping_processes_to_gpu_device_from_yaml_file_mpi(
     process_id, worker_number, gpu_util_file, gpu_util_key, args=None
 ):
+    """
+    Map processes to GPU devices based on GPU utilization information from a YAML file.
+
+    Args:
+        process_id (int): The ID of the current process.
+        worker_number (int): The total number of worker processes.
+        gpu_util_file (str): The path to the GPU utilization YAML file.
+        gpu_util_key (str): The key to retrieve GPU utilization information from the YAML file.
+        args (object, optional): An object containing additional arguments (e.g., device settings).
+
+    Returns:
+        str: The GPU device assigned to the current process.
+
+    Raises:
+        AssertionError: If the number of mapped processes does not match the worker number.
+
+    """
     if gpu_util_file is None:
         logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         logging.info(" ################## You do not indicate gpu_util_file, will use CPU training  #################")
@@ -16,10 +33,10 @@ def mapping_processes_to_gpu_device_from_yaml_file_mpi(
         logging.info(device)
         return device
     else:
+        # Load GPU utilization information from the YAML file
         with open(gpu_util_file, "r") as f:
             gpu_util_yaml = yaml.load(f, Loader=yaml.FullLoader)
-            # gpu_util_num_process = 'gpu_util_' + str(worker_number)
-            # gpu_util = gpu_util_yaml[gpu_util_num_process]
+
             gpu_util = gpu_util_yaml[gpu_util_key]
             logging.info("gpu_util = {}".format(gpu_util))
             gpu_util_map = {}
@@ -43,15 +60,31 @@ def mapping_processes_to_gpu_device_from_yaml_file_mpi(
 
 
 def mapping_processes_to_gpu_device_from_gpu_util_parse(process_id, worker_number, gpu_util_parse, args=None):
-    if gpu_util_parse == None:
+    """
+    Map processes to GPU devices based on parsed GPU utilization information.
+
+    Args:
+        process_id (int): The ID of the current process.
+        worker_number (int): The total number of worker processes.
+        gpu_util_parse (str): The parsed GPU utilization information in string format.
+        args (object, optional): An object containing additional arguments (e.g., device settings).
+
+    Returns:
+        str: The GPU device assigned to the current process.
+
+    Raises:
+        AssertionError: If the number of mapped processes does not match the worker number.
+
+    """
+    if gpu_util_parse is None:
         device = ml_engine_adapter.get_device(args, device_type="cpu")
         logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         logging.info(" ##################  Not Indicate gpu_util_file, using cpu  #################")
         logging.info(device)
-        # return gpu_util_map[process_id][1]
+
         return device
     else:
-        # example parse str `gpu_util_parse`:
+        # Example parse str `gpu_util_parse`:
         # "gpu1:0,1,1,2;gpu2:3,3,3;gpu3:0,0,0,1,2,4,4,0"
         gpu_util_parse_temp = gpu_util_parse.split(";")
         gpu_util_parse_temp = [(item.split(":")[0], item.split(":")[1]) for item in gpu_util_parse_temp]
@@ -68,7 +101,7 @@ def mapping_processes_to_gpu_device_from_gpu_util_parse(process_id, worker_numbe
                     gpu_util_map[i] = (host, gpu_j)
                     i += 1
         logging.info(
-            "Process %d running on host: %s,gethostname: %s, gpu: %d ..."
+            "Process %d running on host: %s, gethostname: %s, gpu: %d ..."
             % (process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1])
         )
         assert i == worker_number
