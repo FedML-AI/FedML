@@ -47,11 +47,19 @@ class RunnerError(BaseException):
     pass
 
 
+class RunnerCompletedError(Exception):
+    """ Runner completed. """
+    pass
+
+
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.run_process_event = None
+        self.run_process_event_map = dict()
+        self.run_process_completed_event = None
+        self.run_process_completed_event_map = dict()
         self.run_as_cloud_agent = False
         self.run_as_cloud_server = False
         self.run_as_edge_server_and_agent = False
@@ -180,11 +188,12 @@ class FedMLServerRunner:
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
 
-    def run(self, process_event):
+    def run(self, process_event, completed_event):
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
         self.run_process_event = process_event
+        self.run_process_completed_event = completed_event
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
@@ -196,6 +205,8 @@ class FedMLServerRunner:
             self.mlops_metrics.report_server_training_status(self.run_id,
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
                                                              is_from_model=True)
+        except RunnerCompletedError:
+            logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions.")
             self.mlops_metrics.report_server_training_status(self.run_id,
@@ -319,6 +330,10 @@ class FedMLServerRunner:
         if self.run_process_event is not None and self.run_process_event.is_set():
             logging.info("Received stopping event.")
             raise RunnerError("Runner stopped")
+
+        if self.run_process_completed_event is not None and self.run_process_completed_event.is_set():
+            logging.info("Received completed event.")
+            raise RunnerCompletedError("Runner completed")
 
     def start_device_inference_gateway(self, run_id, end_point_name, model_id, model_name, model_version):
         # start unified inference server
@@ -563,7 +578,7 @@ class FedMLServerRunner:
                                                                     json.dumps(payload_json_saved))
 
             time.sleep(3)
-            self.set_runner_stopped_event(end_point_id)
+            self.set_runner_completed_event(end_point_id)
 
     def callback_deployment_status_message(self, topic=None, payload=None):
         # Save deployment status to local cache
@@ -786,13 +801,16 @@ class FedMLServerRunner:
             server_runner.redis_addr = self.redis_addr
             server_runner.redis_port = self.redis_port
             server_runner.redis_password = self.redis_password
-            if self.run_process_event is None:
-                self.run_process_event = multiprocessing.Event()
-            # server_runner.run(self.run_process_event)
-            self.run_process_event.clear()
-            server_runner.run_process_event = self.run_process_event
+            self.run_process_event_map[run_id] = multiprocessing.Event()
+            self.run_process_event_map[run_id].clear()
+            server_runner.run_process_event = self.run_process_event_map[run_id]
+            self.run_process_completed_event_map[run_id] = multiprocessing.Event()
+            self.run_process_completed_event_map[run_id].clear()
+            server_runner.run_process_completed_event = self.run_process_completed_event_map[run_id]
             self.model_runner_mapping[run_id] = server_runner
-            server_process = Process(target=server_runner.run, args=(self.run_process_event,))
+            server_process = Process(target=server_runner.run, args=(
+                self.run_process_event_map[run_id], self.run_process_completed_event_map[run_id]
+            ))
             server_process.start()
             ServerConstants.save_run_process(run_id, server_process.pid)
 
@@ -863,6 +881,13 @@ class FedMLServerRunner:
         if server_runner is not None:
             if server_runner.run_process_event is not None:
                 server_runner.run_process_event.set()
+            self.model_runner_mapping.pop(run_id)
+
+    def set_runner_completed_event(self, run_id):
+        server_runner = self.model_runner_mapping.get(run_id, None)
+        if server_runner is not None:
+            if server_runner.run_process_completed_event is not None:
+                server_runner.run_process_completed_event.set()
             self.model_runner_mapping.pop(run_id)
 
     def callback_delete_deployment(self, topic, payload):

@@ -285,17 +285,18 @@ class ServerConstants(object):
             if process_id is not None:
                 try:
                     process = psutil.Process(process_id)
-                    for sub_process in process.children():
+                    child_processes = process.children(recursive=True)
+                    for sub_process in child_processes:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGTERM)
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
                 except Exception as e:
                     pass
 
@@ -334,17 +335,18 @@ class ServerConstants(object):
             if process_id is not None:
                 try:
                     process = psutil.Process(process_id)
-                    for sub_process in process.children():
+                    child_processes = process.children(recursive=True)
+                    for sub_process in child_processes:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGTERM)
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
                 except Exception as e:
                     pass
 
