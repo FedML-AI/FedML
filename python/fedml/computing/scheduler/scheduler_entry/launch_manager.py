@@ -79,7 +79,7 @@ class FedMLLaunchManager(object):
             if self.job_config.serving_model_name is None:
                 FedMLAppManager.get_instance().set_config_version(self.config_version)
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
-                    click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace.")
+                    click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace.{self.job_config.workspace}")
                     exit(-1)
 
                 model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,

@@ -50,7 +50,7 @@ class FedMLModelCards(Singleton):
         local_server = parms_dict.get("local_server", "127.0.0.1")
         mlops_version = parms_dict.get("mlops_version", "release")
 
-        if not(master_device_id is not None and worker_device_ids is not None):
+        if master_device_id is None or worker_device_ids is None:
             print("Please specify the master device id and worker device ids in the config file.")
             return False
         if not (type(worker_device_ids) in [str, list, int] and type(master_device_id) in [str, int, list]):
@@ -85,6 +85,12 @@ class FedMLModelCards(Singleton):
     
     def copy_config_yaml_to_src_folder(self, src_folder, yaml_file):
         shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
+        # Change the workspace to "./"
+        with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'r') as f:
+            launch_params = yaml.safe_load(f)
+            launch_params["workspace"] = "./"
+        with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'w') as f:
+            yaml.dump(launch_params, f, sort_keys=False)
         return True
 
     def set_config_version(self, config_version):
@@ -355,6 +361,32 @@ class FedMLModelCards(Singleton):
                 print("Failed to pull model name {}".format(query_model_name))
 
         return result
+    
+    def find_yaml_for_launch(self, model_name) -> str:
+        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(model_dir):
+            print("Model {} doesn't exist. Please Create it First".format(model_name))
+            return ""
+
+        config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        if not os.path.exists(config_file_path):
+            print("Model {} doesn't have config file. Please Create it First".format(model_name))
+            return ""
+        
+        # add some default parameters for fedml®launch to read
+        addtional_parms = {
+            "task_type": "serve"
+        }
+        with open(config_file_path, 'r') as f:
+            config_parms = yaml.safe_load(f)
+            config_parms.update(addtional_parms)
+        # Keep the same file name
+        with open(config_file_path, 'w') as f:
+            yaml.dump(config_parms, f, sort_keys=False)
+        
+        print("The config file {} is used for launching.".format(config_file_path))
+        return config_file_path
+
     def local_serve_model(self, model_name):
         # Check local model card existance
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
