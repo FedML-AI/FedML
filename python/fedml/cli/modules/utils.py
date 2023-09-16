@@ -3,19 +3,19 @@ import shutil
 from os.path import expanduser
 
 import click
+
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
+from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
+from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
 from fedml.computing.scheduler.master.server_constants import ServerConstants
+from fedml.computing.scheduler.master.server_login import logout as server_logout
 from fedml.computing.scheduler.model_scheduler import device_login_entry
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-from fedml.computing.scheduler.master.server_login import logout as server_logout
+from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
 from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
-from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
-from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
-from fedml.computing.scheduler.slave.client_login import logout as client_logout
-
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 

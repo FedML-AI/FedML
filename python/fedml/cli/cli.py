@@ -2,7 +2,7 @@ import click
 from prettytable import PrettyTable
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, inference
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device
 from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
@@ -82,8 +82,7 @@ cli.add_command(jobs.fedml_jobs)
 # Add device subcommand module
 cli.add_command(device.fedml_device)
 
-# Wire inference into model and add model subcommand module
-model.fedml_model.add_command(inference.fedml_model_inference)
+# Add model subcommand module
 cli.add_command(model.fedml_model)
 
 # Add launch subcommand module

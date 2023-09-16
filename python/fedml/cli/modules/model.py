@@ -1,4 +1,3 @@
-import json
 import os
 
 import click
@@ -278,3 +277,39 @@ def fedml_model_serve(local, name, master_ids, worker_ids, user_id, api_key):
         FedMLModelCards.get_instance().local_serve_model(name)
     else:
         FedMLModelCards.get_instance().serve_model(name)
+
+
+@fedml_model.command(
+    "info", help="Get information of specific model from ModelOps platform(open.fedml.ai).")
+@click.help_option("--help", "-h")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+def fedml_model_inference_query(name):
+    inference_output_url, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
+    if inference_output_url != "":
+        click.echo("Query model {} successfully.".format(name))
+        click.echo("infer url: {}.".format(inference_output_url))
+        click.echo("model metadata: {}.".format(model_metadata))
+        click.echo("model config: {}.".format(model_config))
+    else:
+        click.echo("Failed to query model {}.".format(name))
+
+
+@fedml_model.command(
+    "run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
+@click.help_option("--help", "-h")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--data", "-d", type=str, help="input data for model inference.",
+)
+def fedml_model_inference_run(name, data):
+    infer_out_json = FedMLModelCards.get_instance().inference_model(name, data)
+    if infer_out_json != "":
+        click.echo("Inference model {} successfully.".format(name))
+        click.echo("Result: {}.".format(infer_out_json))
+    else:
+        click.echo("Failed to inference model {}.".format(name))
+
