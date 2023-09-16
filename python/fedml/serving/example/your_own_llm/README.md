@@ -1,22 +1,36 @@
 ## Create Model
 ```sh
-cd FedML/python/fedml/serving/example/llm/
+cd FedML/python/fedml/serving/example/your_own_llm/
 fedml model create --name llm --config_file llm.yaml
 ```
-
 ## Option 1: Deploy locally
 ```sh
 fedml model deploy --name llm --local
+#INFO:     Uvicorn running on http://0.0.0.0:2345 (Press CTRL+C to quit)
+curl -XPOST localhost:2345/predict -d '{"text": "Hello"}'
 ```
-## Option 2: On-premsie Deploy
+## Option 2: Deploy to the Cloud (Using fedml®launch platform)
+Uncomment the following line in llm.yaml,
+for infomation about the configuration, please refer to fedml®launch.
+```yaml
+# computing:
+#   minimum_num_gpus: 1
+#   maximum_cost_per_hour: $1
+#   resource_type: A100-80G
+```
+Create a new model cards with serveless configuration
+```sh
+fedml model create --name llm_serverless --config_file llm.yaml
+```
+Deploy
+```sh
+fedml model deploy --name llm_serverless
+```
+## Option 3: On-premsie Deploy
 Device Login
 ```sh
-#Master
-fedml model device login $usr_id -p -m
-# Your FedML Edge ID is XXX
-#Slave
-fedml model device login $usr_id -p
-# Your FedML Edge ID is XXX
+# On Master or Worker Devices
+fedml login $Your_UserId_or_ApiKey
 ```
 Deploy
 ```sh
