@@ -8,23 +8,43 @@ NUM_USER = 30
 
 
 def softmax(x):
+    """
+    Compute the softmax values for a given array.
+
+    Args:
+        x (numpy.ndarray): Input array.
+
+    Returns:
+        numpy.ndarray: Softmax values.
+    """
     ex = np.exp(x)
     sum_ex = np.sum(np.exp(x))
     return ex / sum_ex
 
 
 def generate_synthetic(alpha, beta, iid):
+    """
+    Generate synthetic data for federated learning.
+
+    Args:
+        alpha (float): Mean of user weights.
+        beta (float): Mean of user biases.
+        iid (int): Unused parameter.
+
+    Returns:
+        list: List of user data samples.
+        list: List of labels for user data samples.
+    """
     dimension = 60
     NUM_CLASS = 10
     np.random.seed(0)
     samples_per_user = np.random.lognormal(4, 2, (NUM_USER)).astype(int) + 50
-    print(samples_per_user)
-    # num_samples = np.sum(samples_per_user)
+
 
     X_split = [[] for _ in range(NUM_USER)]
     y_split = [[] for _ in range(NUM_USER)]
 
-    #### define some eprior ####
+
     mean_W = np.random.normal(0, alpha, NUM_USER)
     mean_b = mean_W
     B = np.random.normal(0, beta, NUM_USER)
@@ -37,7 +57,7 @@ def generate_synthetic(alpha, beta, iid):
 
     for i in range(NUM_USER):
         mean_x[i] = np.random.normal(B[i], 1, dimension)
-        # print(mean_x[i])
+
 
     for i in range(NUM_USER):
 
@@ -54,7 +74,7 @@ def generate_synthetic(alpha, beta, iid):
         X_split[i] = xx.tolist()
         y_split[i] = yy.tolist()
 
-        print("{}-th users has {} exampls".format(i, len(y_split[i])))
+
 
     return X_split, y_split
 

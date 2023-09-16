@@ -8,12 +8,35 @@ NUM_USER = 30
 
 
 def softmax(x):
+    """
+    Compute the softmax function for an array of values.
+
+    Args:
+        x (numpy.ndarray): Input array.
+
+    Returns:
+        numpy.ndarray: Softmax probabilities for the input array.
+    """
     ex = np.exp(x)
     sum_ex = np.sum(np.exp(x))
     return ex / sum_ex
 
 
 def generate_synthetic(alpha, beta, iid):
+    """
+    Generate synthetic data for federated learning.
+
+    Args:
+        NUM_USER (int): Number of users/clients.
+        alpha (float): Mean of the normal distribution for generating model weights.
+        beta (float): Mean of the normal distribution for generating model bias.
+        iid (int): Indicator for generating independent (1) or non-independent (0) data.
+
+    Returns:
+        tuple: A tuple containing synthetic data for X (features) and y (labels).
+            - X_split (list): List of lists containing feature data for each user.
+            - y_split (list): List of lists containing label data for each user.
+    """
     dimension = 60
     NUM_CLASS = 10
     np.random.seed(0)

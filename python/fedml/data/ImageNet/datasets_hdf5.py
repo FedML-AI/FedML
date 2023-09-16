@@ -13,7 +13,14 @@ import torchvision.transforms as transforms
 class DatasetHDF5(data.Dataset):
     def __init__(self, hdf5fn, t, transform=None, target_transform=None):
         """
-        t: 'train' or 'val'
+        Initialize a custom dataset from an HDF5 file.
+
+        Args:
+            hdf5fn (str): Filepath to the HDF5 file.
+            t (str): 'train' or 'val' to specify the dataset split.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the labels.
+
         """
         super(DatasetHDF5, self).__init__()
         self.hf = h5py.File(hdf5fn, "r", libver="latest", swmr=True)
@@ -21,8 +28,7 @@ class DatasetHDF5(data.Dataset):
         self.n_images = self.hf["%s_img" % self.t].shape[0]
         self.dlabel = self.hf["%s_labels" % self.t][...]
         self.d = self.hf["%s_img" % self.t]
-        # self.transform = transform
-        # self.target_transform = target_transform
+
 
     def _get_dataset_x_and_target(self, index):
         img = self.d[index, ...]
@@ -30,6 +36,13 @@ class DatasetHDF5(data.Dataset):
         return img, np.int64(target)
 
     def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is the label of the image.
+        """
         img, target = self._get_dataset_x_and_target(index)
         # if self.transform is not None:
         #     img = self.transform(img)
@@ -52,8 +65,20 @@ class ImageNet_hdf5(data.Dataset):
         download=False,
     ):
         """
-        Generating this class too many times will be time-consuming.
-        So it will be better calling this once and put it into ImageNet_truncated.
+        Initialize the ImageNet dataset using HDF5 files.
+
+        Args:
+            data_dir (str): Directory containing the HDF5 file.
+            dataidxs (int or list, optional): List of indices to select specific data subsets.
+            train (bool, optional): If True, loads the training dataset; otherwise, loads the validation dataset.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the labels.
+            download (bool, optional): Whether to download the dataset if it's not found locally.
+
+        Note:
+            Generating this class too many times will be time-consuming.
+            It's better to call this once and use ImageNet_truncated.
+
         """
         self.dataidxs = dataidxs
         self.train = train
@@ -117,7 +142,7 @@ class ImageNet_hdf5(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the label of the image.
         """
 
         img, target = self.all_data_hdf5[self.local_data_idx[index]]
@@ -146,6 +171,19 @@ class ImageNet_truncated_hdf5(data.Dataset):
         target_transform=None,
         download=False,
     ):
+        """
+        Initialize a truncated version of the ImageNet dataset using HDF5 files.
+
+        Args:
+            imagenet_dataset (ImageNet_hdf5): The original ImageNet HDF5 dataset.
+            dataidxs (int or list): List of indices to select specific data subsets.
+            net_dataidx_map (dict): Mapping of data indices in the original dataset.
+            train (bool, optional): If True, loads the training dataset; otherwise, loads the validation dataset.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the labels.
+            download (bool, optional): Whether to download the dataset if it's not found locally.
+
+        """
 
         self.dataidxs = dataidxs
         self.train = train

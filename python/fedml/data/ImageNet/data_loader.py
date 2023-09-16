@@ -13,11 +13,51 @@ from .datasets_hdf5 import ImageNet_hdf5
 from .datasets_hdf5 import ImageNet_truncated_hdf5
 
 
+import numpy as np
+import torch
+
 class Cutout(object):
+    """
+    Apply the Cutout data augmentation technique to an image.
+
+    Cutout is a technique used for regularization during training deep neural networks.
+    It randomly masks out a rectangular region of the input image.
+
+    Args:
+        length (int): The length of the square mask to apply.
+
+    Usage:
+        transform = Cutout(length=16)  # Create an instance of the Cutout transform.
+        transformed_image = transform(input_image)  # Apply the Cutout transform to an image.
+
+    Note:
+        The Cutout transform is typically applied as part of a data augmentation pipeline.
+
+    References:
+        - Original paper: https://arxiv.org/abs/1708.04552
+
+    """
+
     def __init__(self, length):
+        """
+        Initialize the Cutout transform with the specified length.
+
+        Args:
+            length (int): The length of the square mask to apply.
+        """
         self.length = length
 
     def __call__(self, img):
+        """
+        Apply Cutout transformation to an input image.
+
+        Args:
+            img (torch.Tensor): The input image tensor to which Cutout will be applied.
+
+        Returns:
+            torch.Tensor: The input image with a randomly masked region.
+
+        """
         h, w = img.size(1), img.size(2)
         mask = np.ones((h, w), np.float32)
         y = np.random.randint(h)
@@ -36,6 +76,13 @@ class Cutout(object):
 
 
 def _data_transforms_ImageNet():
+    """
+    Define data transforms for the ImageNet dataset.
+
+    Returns:
+        transforms.Compose: A composition of data augmentation transforms for training
+        and validation data.
+    """
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
     # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
 
@@ -43,41 +90,55 @@ def _data_transforms_ImageNet():
     IMAGENET_STD = [0.229, 0.224, 0.225]
 
     image_size = 224
-    train_transform = transforms.Compose(
-        [
-            # transforms.ToPILImage(),
-            transforms.RandomResizedCrop(image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-        ]
-    )
+    train_transform = transforms.Compose([
+        transforms.RandomResizedCrop(image_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ])
 
     train_transform.transforms.append(Cutout(16))
 
-    valid_transform = transforms.Compose(
-        [
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-        ]
-    )
+    valid_transform = transforms.Compose([
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ])
 
     return train_transform, valid_transform
 
-
-# for centralized training
 def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loaders for centralized training.
+
+    Args:
+        dataset (str): The dataset name.
+        datadir (str): The path to the dataset directory.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to use for training (default: None).
+
+    Returns:
+        DataLoader: Training and testing data loaders.
+    """
     return get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs)
 
+def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test):
+    """
+    Get data loaders for local devices.
 
-# for local devices
-def get_dataloader_test(
-    dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
-):
-    return get_dataloader_test_ImageNet(
-        datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
-    )
+    Args:
+        dataset (str): The dataset name.
+        datadir (str): The path to the dataset directory.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list): List of data indices to use for training.
+        dataidxs_test (list): List of data indices to use for testing.
+
+    Returns:
+        DataLoader: Training and testing data loaders.
+    """
+    return get_dataloader_test_ImageNet(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
 
 
 def get_dataloader_ImageNet_truncated(
@@ -89,7 +150,25 @@ def get_dataloader_ImageNet_truncated(
     net_dataidx_map=None,
 ):
     """
-    imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
+    Get data loaders for a truncated version of the ImageNet dataset.
+
+    Args:
+        imagenet_dataset_train: The training dataset (ImageNet or ImageNet_hdf5).
+        imagenet_dataset_test: The testing dataset (ImageNet or ImageNet_hdf5).
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to use for training (default: None).
+        net_dataidx_map (dict, optional): Mapping of data indices to network indices (default: None).
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders.
+
+    Raises:
+        NotImplementedError: If the dataset type is not supported.
+
+    Note:
+        - The `imagenet_dataset_train` and `imagenet_dataset_test` should be instances of `ImageNet` or `ImageNet_hdf5`.
+
     """
     if type(imagenet_dataset_train) == ImageNet:
         dl_obj = ImageNet_truncated
@@ -138,6 +217,19 @@ def get_dataloader_ImageNet_truncated(
 
 
 def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loaders for the ImageNet dataset.
+
+    Args:
+        datadir (str): The path to the dataset directory.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to use for training (default: None).
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders.
+
+    """
     dl_obj = ImageNet
 
     transform_train, transform_test = _data_transforms_ImageNet()
@@ -176,6 +268,20 @@ def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
 def get_dataloader_test_ImageNet(
     datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None
 ):
+    """
+    Get data loaders for the ImageNet dataset for testing.
+
+    Args:
+        datadir (str): The path to the dataset directory.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list, optional): List of data indices to use for training (default: None).
+        dataidxs_test (list, optional): List of data indices to use for testing (default: None).
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders.
+
+    """
     dl_obj = ImageNet
 
     transform_train, transform_test = _data_transforms_ImageNet()
@@ -219,14 +325,25 @@ def distributed_centralized_ImageNet_loader(
     dataset, data_dir, world_size, rank, batch_size
 ):
     """
-    Used for generating distributed dataloader for
-    accelerating centralized training
+    Generate a distributed dataloader for accelerating centralized training.
+
+    Args:
+        dataset (str): The dataset name ("ILSVRC2012" or "ILSVRC2012_hdf5").
+        data_dir (str): The path to the dataset directory.
+        world_size (int): The total number of processes in the distributed training.
+        rank (int): The rank of the current process in the distributed training.
+        batch_size (int): Batch size for training and testing data.
+
+    Returns:
+        tuple: A tuple containing various training and testing data related information.
+
     """
 
     train_bs = batch_size
     test_bs = batch_size
 
     transform_train, transform_test = _data_transforms_ImageNet()
+    
     if dataset == "ILSVRC2012":
         train_dataset = ImageNet(
             data_dir=data_dir, dataidxs=None, train=True, transform=transform_train
@@ -278,6 +395,21 @@ def load_partition_data_ImageNet(
     client_number=100,
     batch_size=10,
 ):
+    """
+    Load and partition data for the ImageNet dataset.
+
+    Args:
+        dataset (str): The dataset name ("ILSVRC2012" or "ILSVRC2012_hdf5").
+        data_dir (str): The path to the dataset directory.
+        partition_method (str, optional): The partitioning method (default: None).
+        partition_alpha (float, optional): The partitioning alpha value (default: None).
+        client_number (int, optional): The number of clients (default: 100).
+        batch_size (int, optional): Batch size for training and testing data (default: 10).
+
+    Returns:
+        tuple: A tuple containing various data-related information.
+
+    """
 
     if dataset == "ILSVRC2012":
         train_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)

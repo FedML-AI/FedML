@@ -28,18 +28,24 @@ def add_args(parser):
 
 
 def read_data(train_data_dir, test_data_dir):
-    """parses data in given train and test data directories
+    """
+    Parse data from train and test data directories.
+    
+    Assumes:
+    - Data in the input directories are .json files with keys 'users' and 'user_data'.
+    - The set of train set users is the same as the set of test set users.
 
-    assumes:
-    - the data in the input directories are .json files with
-        keys 'users' and 'user_data'
-    - the set of train set users is the same as the set of test set users
+    Args:
+        train_data_dir (str): Path to the directory containing train data.
+        test_data_dir (str): Path to the directory containing test data.
 
-    Return:
-        clients: list of client ids
-        groups: list of group ids; empty list if none found
-        train_data: dictionary of train data
-        test_data: dictionary of test data
+    Returns:
+        clients (list): List of client ids.
+        train_num_samples (list): List of the number of samples for each client in the training data.
+        test_num_samples (list): List of the number of samples for each client in the test data.
+        train_data (dict): Dictionary of training data.
+        test_data (dict): Dictionary of test data.
+        client_list (list): List of client arguments.
     """
     clients = []
     train_num_samples = []
@@ -94,6 +100,18 @@ def read_data(train_data_dir, test_data_dir):
 
 
 def client_sampling(round_idx, client_num_in_total, client_num_per_round):
+    """
+    Randomly select clients for federated learning.
+
+    Args:
+        round_idx (int): Index of the current federated learning round.
+        client_num_in_total (int): Total number of clients available.
+        client_num_per_round (int): Number of clients to select for the current round.
+
+    Returns:
+        client_indexes (list): List of selected client indexes for the current round.
+    """
+
     if client_num_in_total == client_num_per_round:
         client_indexes = [client_index for client_index in range(client_num_in_total)]
     else:

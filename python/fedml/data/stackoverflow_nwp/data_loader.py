@@ -21,6 +21,19 @@ DEFAULT_CACHE_FILE = "stackoverflow_nwp_new.pkl"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
+    """
+    Get data loaders for training and testing.
+
+    Args:
+        dataset: The dataset object.
+        data_dir (str): The directory containing the data.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        client_idx (int or None): Index of the client (None for global dataset).
+
+    Returns:
+        tuple: A tuple containing train and test data loaders (train_dl, test_dl).
+    """
     def _tokenizer(x):
         return utils.tokenizer(x, data_dir)
 
@@ -79,6 +92,19 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 def load_partition_data_distributed_federated_stackoverflow_nwp(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for distributed federated StackOverflow NWP.
+
+    Args:
+        process_id (int): The process ID or rank.
+        dataset: The dataset object.
+        data_dir (str): The directory containing the data.
+        batch_size (int): Batch size.
+
+    Returns:
+        tuple: A tuple containing client number, train data number, global train data,
+        global test data, local data number, local train data, local test data, and vocabulary length.
+    """
 
     # get global dataset
     if process_id == 0:

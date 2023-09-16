@@ -35,6 +35,22 @@ def load_partition_data_reddit(
     batch_size,
     n_proc_in_silo=0,
 ):
+    """
+    Load and partition Reddit dataset for Federated Learning.
+
+    Args:
+        args: An object containing configuration parameters.
+        dataset: The Reddit dataset.
+        data_dir: The directory containing the dataset.
+        partition_method: The method used for data partitioning.
+        partition_alpha: A parameter for data partitioning.
+        client_number: The number of clients/partitions.
+        batch_size: The batch size for data loading.
+        n_proc_in_silo: The number of processes in the silo (default: 0).
+
+    Returns:
+        tuple: A tuple containing various data components for Federated Learning.
+    """
 
     from .nlp import load_and_cache_examples, mask_tokens
     from transformers import (AdamW, AlbertTokenizer, AutoConfig,

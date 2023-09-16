@@ -13,10 +13,53 @@ import torch.nn.functional as F
 
 
 class Reddit_dataset():
+    """
+    Dataset class for Reddit data.
+
+    Args:
+        root (str): The root directory where the data is stored.
+        train (bool): Whether to load the training or testing dataset.
+
+    Attributes:
+        train_file (str): The file name for the training dataset.
+        test_file (str): The file name for the testing dataset.
+        vocab_tokens_size (int): The size of the token vocabulary.
+        vocab_tags_size (int): The size of the tag vocabulary.
+        raw_data (list): A list of tokenized text data.
+        dict (dict): A mapping dictionary from sample id to target tag.
+
+    Methods:
+        __getitem__(self, index):
+            Get an item from the dataset by index.
+        __mapping_dict__(self):
+            Get the mapping dictionary.
+        __len__(self):
+            Get the length of the dataset.
+        raw_folder(self):
+            Get the raw data folder path.
+        processed_folder(self):
+            Get the processed data folder path.
+        class_to_idx(self):
+            Get a mapping from class names to class indices.
+        _check_exists(self):
+            Check if the dataset exists.
+        load_token_vocab(self, vocab_size, path):
+            Load token vocabulary from a file.
+        load_file(self, path, is_train):
+            Load the dataset from files.
+
+    """
     classes = []
     MAX_SEQ_LEN = 20000
 
     def __init__(self, root, train=True):
+        """
+        Initialize the Reddit_dataset.
+
+        Args:
+            root (str): The root directory where the data is stored.
+            train (bool): Whether to load the training or testing dataset.
+        """
         self.train = train  # training set or test set
         self.root = root
 
@@ -61,34 +104,90 @@ class Reddit_dataset():
         return tokens
 
     def __mapping_dict__(self):
+        """
+        Get the mapping dictionary.
+
+        Returns:
+            dict: A dictionary mapping sample IDs to target tags.
+        """
+
         return self.dict
 
     def __len__(self):
+        """
+        Get the length of the dataset.
+
+        Returns:
+            int: The number of samples in the dataset.
+        """
         return len(self.raw_data)
 
     @property
     def raw_folder(self):
+        """
+        Get the raw data folder path.
+
+        Returns:
+            str: The path to the raw data folder.
+        """
         return self.root
 
     @property
     def processed_folder(self):
+        """
+        Get the processed data folder path.
+
+        Returns:
+            str: The path to the processed data folder.
+        """
         return self.root
 
     @property
     def class_to_idx(self):
+        """
+        Get a mapping from class names to class indices.
+
+        Returns:
+            dict: A dictionary mapping class names to class indices.
+        """
         return {_class: i for i, _class in enumerate(self.classes)}
 
     def _check_exists(self):
-        return (os.path.exists(os.path.join(self.processed_folder,
-                                            self.data_file)))
+        """
+        Check if the dataset exists.
+
+        Returns:
+            bool: True if the dataset exists, False otherwise.
+        """
+        return (os.path.exists(os.path.join(self.processed_folder, self.data_file)))
 
     def load_token_vocab(self, vocab_size, path):
+        """
+        Load token vocabulary from a file.
+
+        Args:
+            vocab_size (int): The size of the token vocabulary.
+            path (str): The path to the vocabulary file.
+
+        Returns:
+            list: A list of tokens from the vocabulary.
+        """
         tokens_file = "reddit_vocab.pkl"
         with open(os.path.join(path, tokens_file), 'rb') as f:
             tokens = pickle.load(f)
         return tokens[:vocab_size]
 
     def load_file(self, path, is_train):
+        """
+        Load the dataset from files.
+
+        Args:
+            path (str): The path to the dataset files.
+            is_train (bool): Whether to load the training or testing dataset.
+
+        Returns:
+            tuple: A tuple containing text data and a mapping dictionary.
+        """
         file_name = os.path.join(
             path, 'train') if self.train else os.path.join(path, 'test')
 

@@ -14,6 +14,15 @@ import logging
 
 
 def download_mnist(data_cache_dir):
+    """
+    Download the MNIST dataset if it's not already downloaded.
+
+    Args:
+        data_cache_dir (str): Directory where the dataset should be stored.
+
+    Returns:
+        None
+    """
     if not os.path.exists(data_cache_dir):
         os.makedirs(data_cache_dir, exist_ok=True)
 
@@ -30,18 +39,18 @@ def download_mnist(data_cache_dir):
             zip_ref.extractall(data_cache_dir)
 
 def read_data(train_data_dir, test_data_dir):
-    """parses data in given train and test data directories
+    """
+    Parses data in the given train and test data directories.
 
-    assumes:
-    - the data in the input directories are .json files with
-        keys 'users' and 'user_data'
-    - the set of train set users is the same as the set of test set users
+    Args:
+        train_data_dir (str): Path to the directory containing train data.
+        test_data_dir (str): Path to the directory containing test data.
 
-    Return:
-        clients: list of non-unique client ids
-        groups: list of group ids; empty list if none found
-        train_data: dictionary of train data
-        test_data: dictionary of test data
+    Returns:
+        clients (list): List of non-unique client ids.
+        groups (list): List of group ids; empty list if none found.
+        train_data (dict): Dictionary of train data.
+        test_data (dict): Dictionary of test data.
     """
     clients = []
     groups = []
@@ -71,24 +80,29 @@ def read_data(train_data_dir, test_data_dir):
 
     return clients, groups, train_data, test_data
 
-
 def batch_data(args, data, batch_size):
-
     """
-    data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
-    returns x, y, which are both numpy array of length: batch_size
+    Prepare data batches.
+
+    Args:
+        args: Additional arguments (not specified).
+        data (dict): Data dictionary containing 'x' and 'y'.
+        batch_size (int): Size of each batch.
+
+    Returns:
+        batch_data (list): List of data batches.
     """
     data_x = data["x"]
     data_y = data["y"]
 
-    # randomly shuffle data
+    # Randomly shuffle data
     np.random.seed(100)
     rng_state = np.random.get_state()
     np.random.shuffle(data_x)
     np.random.set_state(rng_state)
     np.random.shuffle(data_y)
 
-    # loop through mini-batches
+    # Loop through mini-batches
     batch_data = list()
     for i in range(0, len(data_x), batch_size):
         batched_x = data_x[i : i + batch_size]
@@ -99,6 +113,18 @@ def batch_data(args, data, batch_size):
 
 
 def load_partition_data_mnist_by_device_id(batch_size, device_id, train_path="MNIST_mobile", test_path="MNIST_mobile"):
+    """
+    Load partitioned MNIST data by device ID.
+
+    Args:
+        batch_size (int): Size of each batch.
+        device_id (str): ID of the device.
+        train_path (str): Path to the train data directory.
+        test_path (str): Path to the test data directory.
+
+    Returns:
+        Tuple containing data information.
+    """
     train_path += os.path.join("/", device_id, "train")
     test_path += os.path.join("/", device_id, "test")
     return load_partition_data_mnist(batch_size, train_path, test_path)
@@ -108,6 +134,18 @@ def load_partition_data_mnist(
     args, batch_size, train_path=os.path.join(os.getcwd(), "MNIST", "train"),
         test_path=os.path.join(os.getcwd(), "MNIST", "test")
 ):
+    """
+    Load partitioned MNIST data.
+
+    Args:
+        args: Additional arguments (not specified).
+        batch_size (int): Size of each batch.
+        train_path (str): Path to the train data directory.
+        test_path (str): Path to the test data directory.
+
+    Returns:
+        Tuple containing data information.
+    """
     users, groups, train_data, test_data = read_data(train_path, test_path)
 
     if len(groups) == 0:
