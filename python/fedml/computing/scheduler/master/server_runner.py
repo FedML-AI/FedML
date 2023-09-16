@@ -125,7 +125,7 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
         self.enable_simulation_cloud_agent = False
-        self.use_local_process_as_cloud_server = False
+        self.use_local_process_as_cloud_server = True
 
         self.model_device_server = None
         self.run_model_device_ids = dict()
@@ -923,7 +923,8 @@ class FedMLServerRunner:
             if total_sleep_seconds >= allowed_status_check_sleep_seconds:
                 # If so, send failed message to MLOps and send exception message to all edges.
                 self.mlops_metrics.report_server_id_status(
-                    run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+                    run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+                    server_id=self.edge_id, server_agent_id=self.server_agent_id)
                 self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
                 return False
 
@@ -1044,7 +1045,7 @@ class FedMLServerRunner:
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-                run_id, request_json.get("cloudServerDeviceId", "0")
+                run_id, request_json.get("server_id", "0")
             )
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
@@ -1152,8 +1153,6 @@ class FedMLServerRunner:
                         "-rc",
                         runner_cmd_encoded
                     ])
-                ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(
-                    self.run_process_map[run_id])
                 time.sleep(1)
 
             ServerConstants.save_run_process(run_id, self.run_process_map[run_id].pid)
@@ -1171,6 +1170,7 @@ class FedMLServerRunner:
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
+            server_runner.server_agent_id = self.server_agent_id
             server_runner.start_request_json = self.start_request_json
             self.run_process_event_map[run_id] = multiprocessing.Event()
             self.run_process_event_map[run_id].clear()
@@ -1494,6 +1494,9 @@ class FedMLServerRunner:
         if self.running_request_json.get(str(run_id), None) is not None:
             self.running_request_json.pop(str(run_id))
 
+        if self.run_process_map.get(run_id, None) is not None:
+            self.run_process_map.pop(run_id)
+
     def exit_run_with_exception_entry(self):
         try:
             self.setup_client_mqtt_mgr()
@@ -1589,6 +1592,9 @@ class FedMLServerRunner:
         edge_id = request_json["edge_id"]
         server_id = request_json.get("server_id", None)
 
+        if self.run_process_map.get(run_id, None) is None:
+            return
+
         if (
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
                 or status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
@@ -1630,10 +1636,16 @@ class FedMLServerRunner:
 
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
+
+                time.sleep(1)
+                MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, server_id)
             elif self.run_as_cloud_server:
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
                 pass
+
+            if self.run_process_map.get(run_id, None) is not None:
+                self.run_process_map.pop(run_id)
 
     def cleanup_client_with_status(self):
         if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:

@@ -945,6 +945,9 @@ class FedMLClientRunner:
         client_runner.mlops_metrics = self.mlops_metrics
         client_runner.stop_run_entry()
 
+        if self.run_process_map.get(run_id, None) is not None:
+            self.run_process_map.pop(run_id)
+
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
@@ -998,6 +1001,9 @@ class FedMLClientRunner:
         edge_id = request_json["edge_id"]
         status = request_json["status"]
 
+        if self.run_process_map.get(run_id, None) is None:
+            return
+
         self.save_training_status(edge_id, status)
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
@@ -1019,6 +1025,9 @@ class FedMLClientRunner:
             client_runner.client_mqtt_mgr = self.client_mqtt_mgr
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
+
+            if self.run_process_map.get(run_id, None) is not None:
+                self.run_process_map.pop(run_id)
 
             # Stop log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
