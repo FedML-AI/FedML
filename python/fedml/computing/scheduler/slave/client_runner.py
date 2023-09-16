@@ -359,6 +359,9 @@ class FedMLClientRunner:
         return is_bootstrap_run_ok
 
     def run(self, process_event, completed_event):
+        if platform.system() != "Windows":
+            os.setsid()
+
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
