@@ -82,11 +82,9 @@ cli.add_command(jobs.fedml_jobs)
 # Add device subcommand module
 cli.add_command(device.fedml_device)
 
-# Add model subcommand module
+# Wire inference into model and add model subcommand module
+model.fedml_model.add_command(inference.fedml_model_inference)
 cli.add_command(model.fedml_model)
-
-# Add inference subcommand module
-cli.add_command(inference.fedml_model_inference)
 
 # Add launch subcommand module
 cli.add_command(launch.fedml_launch)
