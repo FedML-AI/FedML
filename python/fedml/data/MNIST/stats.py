@@ -24,6 +24,15 @@ args = parser.parse_args()
 
 
 def load_data(name):
+    """
+    Load user and sample data from JSON files in a specified directory.
+
+    Args:
+        name (str): The name of the dataset.
+
+    Returns:
+        tuple: A tuple containing lists of users and their corresponding number of samples.
+    """
     users = []
     num_samples = []
 
@@ -47,6 +56,12 @@ def load_data(name):
 
 
 def print_dataset_stats(name):
+    """
+    Print statistics about the dataset, including user count, total samples, mean, std, skewness, and histogram.
+
+    Args:
+        name (str): The name of the dataset.
+    """
     users, num_samples = load_data(name)
     num_users = len(users)
 

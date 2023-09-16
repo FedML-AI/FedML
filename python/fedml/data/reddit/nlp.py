@@ -44,13 +44,34 @@ logger = logging.getLogger(__name__)
 
 
 def chunks_idx(l, n):
+    """
+    Split a list into 'n' roughly equal-sized chunks and yield the start and end indices of each chunk.
+
+    Args:
+        l (list): The list to be split.
+        n (int): The number of chunks to split the list into.
+
+    Yields:
+        tuple: A tuple containing the start and end indices of each chunk.
+    """
     d, r = divmod(len(l), n)
     for i in range(n):
         si = (d+1)*(i if i < r else r) + d*(0 if i < r else i - r)
         yield si, si+(d+1 if i < r else d)
 
-
 def feature_creation_worker(files, tokenizer, block_size, worker_idx):
+    """
+    Worker function for creating features from a list of text files.
+
+    Args:
+        files (list): A list of file paths containing text data.
+        tokenizer: The tokenizer to convert text to tokens.
+        block_size (int): The maximum block size for tokenized text.
+        worker_idx (int): The index of the worker.
+
+    Returns:
+        tuple: A tuple containing examples (tokenized text), client mapping, and sample client IDs.
+    """
     examples = []
     sample_client = []
     client_mapping = collections.defaultdict(list)
@@ -83,8 +104,43 @@ def feature_creation_worker(files, tokenizer, block_size, worker_idx):
 
 
 class TextDataset(Dataset):
-    def __init__(self, tokenizer, args, file_path, block_size=512):
+    """
+    Dataset for text data used in language modeling tasks.
 
+    Args:
+        tokenizer: The tokenizer to convert text to tokens.
+        args: An object containing dataset configuration parameters.
+        file_path (str): The directory containing the dataset files.
+        block_size (int): The maximum block size for tokenized text (default: 512).
+
+    Attributes:
+        examples (list): A list of tokenized text examples.
+        sample_client (list): A list of sample client IDs.
+        client_mapping (dict): A dictionary mapping client IDs to tokenized text examples.
+
+    Methods:
+        __len__():
+            Get the number of examples in the dataset.
+        __getitem__(item):
+            Get an example from the dataset.
+
+    """
+    def __init__(self, tokenizer, args, file_path, block_size=512):
+        """
+        Initialize the TextDataset.
+
+        Args:
+            tokenizer: The tokenizer to convert text to tokens.
+            args: An object containing dataset configuration parameters.
+            file_path (str): The directory containing the dataset files.
+            block_size (int): The maximum block size for tokenized text (default: 512).
+
+        Note:
+            This constructor processes and loads the dataset from files or creates features if not cached.
+
+        Returns:
+            None
+        """
         block_size = block_size - \
             (tokenizer.model_max_length - tokenizer.max_len_single_sentence)
 
@@ -135,7 +191,7 @@ class TextDataset(Dataset):
                     self.client_mapping[true_user_id] = client_mapping[user_id]
                 user_id_base = true_sample_client[-1] + 1
 
-            # Note that we are loosing the last truncated example here for the sake of simplicity (no padding)
+            # Note that we are losing the last truncated example here for the sake of simplicity (no padding)
             # If your dataset is small, first you should look for a bigger one :-) and second you
             # can change this behavior by adding (model specific) padding.
             logger.info("Saving features into cached file %s",
@@ -159,13 +215,39 @@ class TextDataset(Dataset):
         self.targets = [0 for i in range(len(self.data))]
 
     def __len__(self):
+        """
+        Get the number of examples in the dataset.
+
+        Returns:
+            int: The number of examples in the dataset.
+        """
         return len(self.examples)
 
     def __getitem__(self, item):
+        """
+        Get an example from the dataset.
+
+        Args:
+            item: The index of the example to retrieve.
+
+        Returns:
+            torch.Tensor: The tokenized text example as a PyTorch tensor.
+        """
         return torch.tensor(self.examples[item], dtype=torch.long)
 
 
 def load_and_cache_examples(args, tokenizer, evaluate=False):
+    """
+    Load and cache examples from the dataset for training or evaluation.
+
+    Args:
+        args: An object containing dataset configuration parameters.
+        tokenizer: The tokenizer to convert text to tokens.
+        evaluate (bool): Whether to load examples for evaluation (default: False).
+
+    Returns:
+        TextDataset: A dataset containing tokenized text examples.
+    """
     file_path = os.path.join(args.data_cache_dir, 'test') if evaluate else os.path.join(
         args.data_cache_dir, 'train')
 
@@ -173,7 +255,18 @@ def load_and_cache_examples(args, tokenizer, evaluate=False):
 
 
 def mask_tokens(inputs, tokenizer, args, device='cpu') -> Tuple[torch.Tensor, torch.Tensor]:
-    """ Prepare masked tokens inputs/labels for masked language modeling: 80% MASK, 10% random, 10% original. """
+    """
+    Prepare masked tokens inputs/labels for masked language modeling: 80% MASK, 10% random, 10% original.
+
+    Args:
+        inputs (torch.Tensor): The input token IDs.
+        tokenizer: The tokenizer to convert text to tokens.
+        args: An object containing configuration parameters.
+        device (str): The device to use for computations (default: 'cpu').
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: A tuple containing masked input tokens and labels for masked language modeling.
+    """
     labels = inputs.clone().to(device=device)
     # We sample a few tokens in each sequence for masked-LM training (with probability args.mlm_probability defaults to 0.15 in Bert/RoBERTa)
     probability_matrix = torch.full(

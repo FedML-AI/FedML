@@ -21,6 +21,19 @@ DEFAULT_CACHE_FILE = "stackoverflow_lr.pkl"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
+    """
+    Get DataLoader objects for training and testing data.
+
+    Args:
+        dataset: The dataset to use.
+        data_dir (str): The directory containing the data.
+        train_bs (int): The batch size for training.
+        test_bs (int): The batch size for testing.
+        client_idx (int, optional): The client index (None for global data).
+
+    Returns:
+        tuple: A tuple containing training and testing DataLoader objects.
+    """
     if client_idx is None:
 
         train_dl = data.DataLoader(
@@ -94,6 +107,18 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 def load_partition_data_distributed_federated_stackoverflow_lr(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for distributed federated stackoverflow_lr.
+
+    Args:
+        process_id (int): The process ID.
+        dataset: The dataset to use.
+        data_dir (str): The directory containing the data.
+        batch_size (int, optional): The batch size (default is 64).
+
+    Returns:
+        tuple: A tuple containing data for distributed federated stackoverflow_lr.
+    """
     # get global dataset
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
@@ -131,6 +156,17 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
 def load_partition_data_federated_stackoverflow_lr(
     dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for federated stackoverflow_lr.
+
+    Args:
+        dataset: The dataset to use.
+        data_dir (str): The directory containing the data.
+        batch_size (int, optional): The batch size (default is 64).
+
+    Returns:
+        tuple: A tuple containing data for federated stackoverflow_lr.
+    """
     logging.info("load_partition_data_federated_stackoverflow_lr START")
     global cache_data
 

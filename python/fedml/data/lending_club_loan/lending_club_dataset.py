@@ -105,20 +105,45 @@ disbursement_method_map = {"Cash": 0, "DirectPay": 1}
 
 
 def normalize(x):
+    """
+    Normalize a numerical array using StandardScaler.
+
+    Args:
+        x (array-like): The data to normalize.
+
+    Returns:
+        array-like: Normalized data.
+    """
     scaler = StandardScaler()
     x_scaled = scaler.fit_transform(x)
     return x_scaled
 
-
 def normalize_df(df):
+    """
+    Normalize a DataFrame using StandardScaler.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to normalize.
+
+    Returns:
+        pd.DataFrame: Normalized DataFrame.
+    """
     column_names = df.columns
     x = df.values
     x_scaled = normalize(x)
     scaled_df = pd.DataFrame(data=x_scaled, columns=column_names)
     return scaled_df
 
-
 def loan_condition(status):
+    """
+    Determine if a loan is a good or bad loan based on its status.
+
+    Args:
+        status (str): Loan status.
+
+    Returns:
+        str: "Good Loan" or "Bad Loan".
+    """
     bad_loan = [
         "Charged Off",
         "Default",
@@ -132,22 +157,45 @@ def loan_condition(status):
     else:
         return "Good Loan"
 
-
 def compute_annual_income(row):
+    """
+    Compute the annual income for a loan applicant.
+
+    Args:
+        row (pd.Series): A row of loan data.
+
+    Returns:
+        float: Annual income.
+    """
     if row["verification_status"] == row["verification_status_joint"]:
         return row["annual_inc_joint"]
     return row["annual_inc"]
 
-
 def determine_good_bad_loan(df_loan):
-    print("[INFO] determine good or bad loan")
+    """
+    Determine if a loan is a good or bad loan based on its status.
 
+    Args:
+        df_loan (pd.DataFrame): DataFrame containing loan data.
+
+    Returns:
+        pd.DataFrame: DataFrame with "target" column indicating loan condition.
+    """
+    print("[INFO] determine good or bad loan")
     df_loan["target"] = np.nan
     df_loan["target"] = df_loan["loan_status"].apply(loan_condition)
     return df_loan
 
-
 def determine_annual_income(df_loan):
+    """
+    Determine annual income for loan applicants.
+
+    Args:
+        df_loan (pd.DataFrame): DataFrame containing loan data.
+
+    Returns:
+        pd.DataFrame: DataFrame with "annual_inc_comp" column for annual income.
+    """
     print("[INFO] determine annual income")
 
     df_loan["annual_inc_comp"] = np.nan
@@ -156,15 +204,32 @@ def determine_annual_income(df_loan):
 
 
 def determine_issue_year(df_loan):
-    print("[INFO] determine issue year")
+    """
+    Determine the issue year of loans.
 
-    # transform the issue dates by year
+    Args:
+        df_loan (pd.DataFrame): DataFrame containing loan data.
+
+    Returns:
+        pd.DataFrame: DataFrame with "issue_year" column for issue years.
+    """
+    print("[INFO] determine issue year")
+    # Transform the issue dates by year
     dt_series = pd.to_datetime(df_loan["issue_d"])
     df_loan["issue_year"] = dt_series.dt.year
     return df_loan
 
 
 def digitize_columns(data_frame):
+    """
+    Digitize categorical columns in the DataFrame.
+
+    Args:
+        data_frame (pd.DataFrame): The DataFrame to digitize.
+
+    Returns:
+        pd.DataFrame: DataFrame with categorical columns converted to numerical values.
+    """
     print("[INFO] digitize columns")
 
     data_frame = data_frame.replace(
@@ -185,6 +250,15 @@ def digitize_columns(data_frame):
 
 
 def prepare_data(file_path):
+    """
+    Prepare loan data from a CSV file.
+
+    Args:
+        file_path (str): Path to the CSV file containing loan data.
+
+    Returns:
+        pd.DataFrame: DataFrame with processed loan data.
+    """
     print("[INFO] prepare loan data.")
 
     df_loan = pd.read_csv(file_path, low_memory=False)
@@ -200,6 +274,15 @@ def prepare_data(file_path):
 
 
 def process_data(loan_df):
+    """
+    Process loan data.
+
+    Args:
+        loan_df (pd.DataFrame): DataFrame containing loan data.
+
+    Returns:
+        pd.DataFrame: DataFrame with processed loan features and target.
+    """
     loan_feat_df = loan_df[all_feature_list]
     loan_feat_df = loan_feat_df.fillna(-99)
     assert loan_feat_df.isnull().sum().sum() == 0
@@ -211,6 +294,15 @@ def process_data(loan_df):
 
 
 def load_processed_data(data_dir):
+    """
+    Load processed loan data from a CSV file, or preprocess and save it if not available.
+
+    Args:
+        data_dir (str): Directory path for data files.
+
+    Returns:
+        pd.DataFrame: DataFrame with processed loan data.
+    """
     file_path = data_dir + "processed_loan.csv"
     if os.path.exists(file_path):
         print(f"[INFO] load processed loan data from {file_path}")
@@ -226,6 +318,15 @@ def load_processed_data(data_dir):
 
 
 def loan_load_two_party_data(data_dir):
+    """
+    Load two-party loan data.
+
+    Args:
+        data_dir (str): Directory path for data files.
+
+    Returns:
+        tuple: Training and testing data for two parties.
+    """
     print("[INFO] load two party data")
     processed_loan_df = load_processed_data(data_dir)
     party_a_feat_list = qualification_feat + loan_feat
@@ -253,6 +354,15 @@ def loan_load_two_party_data(data_dir):
 
 
 def loan_load_three_party_data(data_dir):
+    """
+    Load three-party loan data.
+
+    Args:
+        data_dir (str): Directory path for data files.
+
+    Returns:
+        tuple: Training and testing data for three parties (Party A, Party B, Party C).
+    """
     print("[INFO] load three party data")
     processed_loan_df = load_processed_data(data_dir)
     party_a_feat_list = qualification_feat + loan_feat

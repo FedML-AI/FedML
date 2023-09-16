@@ -48,6 +48,7 @@ def _listener_process(queue: multiprocessing.Queue, log_file: str):
     """Sets up a separate process for handling logging messages.
     This setup is required because without it, the logging messages will be
     duplicated when multiple processes are created for downloading GLD dataset.
+
     Args:
       queue: The queue to receive logging messages.
       log_file: The file which the messages will be written to.
@@ -74,8 +75,10 @@ def _listener_process(queue: multiprocessing.Queue, log_file: str):
 
 def _read_csv(path: str) -> List[Dict[str, str]]:
     """Reads a csv file, and returns the content inside a list of dictionaries.
+
     Args:
       path: The path to the csv file.
+
     Returns:
       A list of dictionaries. Each row in the csv file will be a list entry. The
       dictionary is keyed by the column names.
@@ -88,10 +91,12 @@ def _create_dataset_with_mapping(
     image_dir: str, mapping: List[Dict[str, str]]
 ) -> List[tf.train.Example]:
     """Builds a dataset based on the mapping file and the images in the image dir.
+
     Args:
       image_dir: The directory contains the image files.
       mapping: A list of dictionaries. Each dictionary contains 'image_id' and
         'class' columns.
+
     Returns:
       A list of `tf.train.Example`.
     """
@@ -126,6 +131,7 @@ def _create_dataset_with_mapping(
 
 def _create_train_data_files(cache_dir: str, image_dir: str, mapping_file: str):
     """Create the train data and persist it into a separate file per user.
+
     Args:
       cache_dir: The directory caching the intermediate results.
       image_dir: The directory containing all the downloaded images.
@@ -165,6 +171,7 @@ def _create_train_data_files(cache_dir: str, image_dir: str, mapping_file: str):
 
 def _create_test_data_file(cache_dir: str, image_dir: str, mapping_file: str):
     """Create the test data and persist it into a file.
+
     Args:
       cache_dir: The directory caching the intermediate results.
       image_dir: The directory containing all the downloaded images.
@@ -195,6 +202,7 @@ def _create_federated_gld_dataset(
     cache_dir: str, image_dir: str, train_mapping_file: str, test_mapping_file: str
 ):
     """Generate fedreated GLDv2 dataset with the downloaded images.
+
     Args:
       cache_dir: The directory for caching the intermediate results.
       image_dir: The directory that contains the filtered images.
@@ -217,6 +225,7 @@ def _create_federated_gld_dataset(
 
 def _create_mini_gld_dataset(cache_dir: str, image_dir: str):
     """Generate mini federated GLDv2 dataset with the downloaded images.
+
     Args:
       cache_dir: The directory for caching the intermediate results.
       image_dir: The directory that contains the filtered images.
@@ -249,12 +258,14 @@ def _create_mini_gld_dataset(cache_dir: str, image_dir: str):
 
 def _filter_images(shard: int, all_images: Set[str], image_dir: str, base_url: str):
     """Download full GLDv2 dataset, only keep images that are included in the federated gld v2 dataset.
+
     Args:
       shard: The shard of the GLDv2 dataset.
       all_images: A set which contains all images included in the federated GLD
         dataset.
       image_dir: The directory to keep all filtered images.
       base_url: The base url for downloading GLD v2 dataset images.
+
     Raises:
       IOError: when failed to download checksum.
     """
@@ -301,6 +312,7 @@ def _download_data(num_worker: int, cache_dir: str, base_url: str):
     Download the entire GLD v2 dataset, subset the dataset to only include the
     images in the federated GLD v2 dataset, and create both gld23k and gld160k
     datasets.
+
     Args:
       num_worker: The number of threads for downloading the GLD v2 dataset.
       cache_dir: The directory for caching temporary results.
@@ -362,6 +374,15 @@ def load_data(
     gld23k: bool = False,
     base_url: str = GLD_SHARD_BASE_URL,
 ):
+    """
+    Load the GLD v2 dataset.
+
+    Args:
+        num_worker (int, optional): The number of threads for downloading the GLD v2 dataset.
+        cache_dir (str, optional): The directory for caching temporary results.
+        gld23k (bool, optional): Whether to load the gld23k dataset.
+        base_url (str, optional): The base URL for downloading GLD images.
+    """
 
     if not os.path.exists(cache_dir):
         os.mkdir(cache_dir)

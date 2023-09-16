@@ -4,7 +4,15 @@ import torch.utils.data as data
 
 
 class StackOverflowDataset(data.Dataset):
-    """StackOverflow dataset"""
+    """
+    StackOverflow dataset.
+
+    Args:
+        h5_path (str): Path to the h5 file.
+        client_idx (int): Index of the train file.
+        datast (str): "train" or "test" denoting the train set or test set.
+        preprocess (dict of callable, optional): Optional preprocessing functions with keys "input" and "target".
+    """
 
     __train_client_id_list = None
     __test_client_id_list = None
@@ -33,6 +41,12 @@ class StackOverflowDataset(data.Dataset):
             self.target_fn = preprocess["target"]
 
     def get_client_id_list(self):
+        """
+        Get a list of client IDs based on the dataset type.
+
+        Returns:
+            list: List of client IDs.
+        """
         if self.datast == "train":
             if StackOverflowDataset.__train_client_id_list is None:
                 with h5py.File(self.h5_path, "r") as h5_file:
