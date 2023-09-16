@@ -1,10 +1,10 @@
 import click
 
+from fedml.cli.modules import utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
-from fedml.cli.modules import utils
 
 
 @click.group("launch", cls=utils.DefaultCommandGroup, default_command='default')

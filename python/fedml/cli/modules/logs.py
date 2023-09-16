@@ -1,7 +1,8 @@
 import click
+
+from fedml.cli.modules import utils
 from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
 from fedml.computing.scheduler.slave.docker_login import logs_with_docker_mode
-from fedml.cli.modules import utils
 
 
 @click.command("logs", help="Display fedml logs.")
