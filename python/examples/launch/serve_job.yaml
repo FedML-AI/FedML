@@ -22,6 +22,10 @@ bootstrap: |
   echo "Bootstrap finished."
 
 task_type: serve              # options: serve, train, dev-environment
+# If you want to use the model created by the MLOps platform,
+# just uncomment the following two lines and set model_name to the model card name of the MLOps platform.
+#serving_args:
+#  model_name: $YourModelCardNameCreatedByMLOpsPlatform
 
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision

@@ -4,8 +4,8 @@ from os.path import expanduser
 
 import click
 
-from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.cli.modules import utils
+from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 
 
 @click.command("build", help="Build packages for the FedML® Launch platform (open.fedml.ai)")
