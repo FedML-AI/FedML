@@ -21,8 +21,14 @@ CHAR_VOCAB = list(
 
 
 def get_word_dict():
+    """
+    Get a dictionary mapping words to their corresponding IDs.
+
+    Returns:
+        collections.OrderedDict: A dictionary with words as keys and their IDs as values.
+    """
     global word_dict
-    if word_dict == None:
+    if word_dict is None:
         words = [_pad] + CHAR_VOCAB + [_bos] + [_eos]
         word_dict = collections.OrderedDict()
         for i, w in enumerate(words):
@@ -31,18 +37,42 @@ def get_word_dict():
 
 
 def get_word_list():
+    """
+    Get a list of words in the vocabulary.
+
+    Returns:
+        list: A list of words in the vocabulary.
+    """
     global word_list
-    if word_list == None:
+    if word_list is None:
         word_dict = get_word_dict()
         word_list = list(word_dict.keys())
     return word_list
 
 
 def id_to_word(idx):
+    """
+    Convert a word ID to the corresponding word.
+
+    Args:
+        idx (int): The word ID.
+
+    Returns:
+        str: The corresponding word.
+    """
     return get_word_list()[idx]
 
 
 def char_to_id(char):
+    """
+    Convert a character to its corresponding ID using the word_dict.
+
+    Args:
+        char (str): The character to convert.
+
+    Returns:
+        int: The corresponding ID for the character.
+    """
     word_dict = get_word_dict()
     if char in word_dict:
         return word_dict[char]
@@ -51,15 +81,29 @@ def char_to_id(char):
 
 
 def preprocess(sentences, max_seq_len=SEQUENCE_LENGTH):
+    """
+    Preprocess a list of sentences by converting characters to IDs and padding.
 
+    Args:
+        sentences (list): A list of sentences, where each sentence is a string.
+        max_seq_len (int): Maximum sequence length (including start and end tokens).
+
+    Returns:
+        list: A list of sequences, where each sequence is a list of token IDs.
+    """
     sequences = []
 
     def to_ids(sentence, num_oov_buckets=1):
         """
-        map list of sentence to list of [idx..] and pad to max_seq_len + 1
+        Map a sentence to a list of token IDs and pad it to the specified length.
+
         Args:
-            num_oov_buckets : The number of out of vocabulary buckets.
-            max_seq_len: Integer determining shape of padded batches.
+            sentence (str): The input sentence.
+            num_oov_buckets (int): The number of out-of-vocabulary (OOV) buckets.
+            max_seq_len (int): Maximum sequence length (including start and end tokens).
+
+        Returns:
+            list: A list of token IDs, padded to max_seq_len.
         """
         tokens = [char_to_id(c) for c in sentence]
         tokens = [char_to_id(_bos)] + tokens + [char_to_id(_eos)]
@@ -77,10 +121,21 @@ def preprocess(sentences, max_seq_len=SEQUENCE_LENGTH):
 
 
 def split(dataset):
+    """
+    Split a dataset into input sequences (x) and target sequences (y).
+
+    Args:
+        dataset (list): A list of sequences, where each sequence is a list of token IDs.
+
+    Returns:
+        tuple: A tuple containing two arrays, x and y, where x represents input sequences
+        and y represents target sequences.
+    """
     ds = np.asarray(dataset)
     x = ds[:, :-1]
     y = ds[:, 1:]
     return x, y
+
 
 
 if __name__ == "__main__":

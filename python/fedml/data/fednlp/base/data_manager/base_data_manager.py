@@ -12,8 +12,29 @@ from ..preprocess.base_data_loader import BaseDataLoader
 
 
 class BaseDataManager(ABC):
+    """Abstract base class for managing data in federated learning scenarios.
+
+    This class defines the common interface and functionality for managing data in federated learning,
+    including loading, partitioning, and distributing datasets to clients.
+
+    Attributes:
+        args: The command-line arguments passed to the manager.
+        model_args: The model-specific arguments.
+        train_batch_size: The batch size for training data.
+        eval_batch_size: The batch size for evaluation data.
+        process_id: The identifier of the current process.
+        num_workers: The total number of workers (including the server).
+    """
     @abstractmethod
     def __init__(self, args, model_args, process_id, num_workers):
+        """Initialize the BaseDataManager.
+
+        Args:
+            args: Command-line arguments.
+            model_args: Model-specific arguments.
+            process_id: Identifier of the current process.
+            num_workers: Total number of workers (including the server).
+        """
         self.model_args = model_args
         self.args = args
         self.train_batch_size = model_args.train_batch_size
@@ -44,6 +65,14 @@ class BaseDataManager(ABC):
 
     @staticmethod
     def load_attributes(data_path):
+        """Load data attributes from an HDF5 data file.
+
+        Args:
+            data_path: Path to the HDF5 data file.
+
+        Returns:
+            Dictionary containing data attributes.
+        """
         data_file = h5py.File(data_path, "r", swmr=True)
         attributes = json.loads(data_file["attributes"][()])
         data_file.close()
@@ -51,6 +80,15 @@ class BaseDataManager(ABC):
 
     @staticmethod
     def load_num_clients(partition_file_path, partition_name):
+        """Load the number of clients from a partition file.
+
+        Args:
+            partition_file_path: Path to the partition file.
+            partition_name: Name of the partition.
+
+        Returns:
+            The number of clients.
+        """
         data_file = h5py.File(partition_file_path, "r", swmr=True)
         num_clients = int(data_file[partition_name]["n_clients"][()])
         data_file.close()
@@ -58,11 +96,27 @@ class BaseDataManager(ABC):
 
     @abstractmethod
     def read_instance_from_h5(self, data_file, index_list, desc):
+        """Read instances from an HDF5 data file.
+
+        Args:
+            data_file: HDF5 data file object.
+            index_list: List of indices to read.
+            desc: Description of the read operation.
+
+        Returns:
+            Data instances.
+        """
         pass
 
     def sample_client_index(self, process_id, num_workers):
-        """
-        Sample client indices according to process_id
+        """Sample client indices according to the process_id.
+
+        Args:
+            process_id (int): The identifier of the current process.
+            num_workers (int): The total number of workers.
+
+        Returns:
+            list or None: A list of client indices if process_id is not 0, else None.
         """
         # process_id = 0 means this process is the server process
         if process_id == 0:
@@ -71,6 +125,14 @@ class BaseDataManager(ABC):
             return self._simulated_sampling(process_id)
 
     def _simulated_sampling(self, process_id):
+        """Simulated client sampling for federated learning.
+
+        Args:
+            process_id (int): The identifier of the current process.
+
+        Returns:
+            list: A list of sampled client indices.
+        """
         res_client_indexes = list()
         for round_idx in range(self.args.comm_round):
             if self.num_clients == self.num_workers:
@@ -92,6 +154,14 @@ class BaseDataManager(ABC):
         return list(range(0, self.num_clients))
 
     def load_centralized_data(self, cut_off=None):
+        """Load centralized training and testing data.
+
+        Args:
+            cut_off (int, optional): The maximum number of data points to load.
+
+        Returns:
+            tuple: A tuple containing centralized training and testing data loaders.
+        """
         state, res = self._load_data_loader_from_cache(-1)
         if state:
             (
@@ -169,6 +239,14 @@ class BaseDataManager(ABC):
         return train_dl, test_dl
 
     def load_federated_data(self, test_cut_off=None):
+        """Load federated training and testing data.
+
+        Args:
+            test_cut_off (int, optional): The maximum number of testing data points to load.
+
+        Returns:
+            tuple: A tuple containing federated training and testing data and related information.
+        """
         (
             train_data_num,
             test_data_num,
@@ -193,6 +271,16 @@ class BaseDataManager(ABC):
         )
 
     def _load_federated_data_server(self, test_only=False, test_cut_off=None):
+        """Load federated training and testing data from the server.
+
+        Args:
+            test_only (bool, optional): Whether to load only testing data. Defaults to False.
+            test_cut_off (int, optional): The maximum number of testing data points to load.
+
+        Returns:
+            tuple: A tuple containing the number of training data points, the number of testing data points,
+            federated training data loader, and federated testing data loader.
+        """
         # state, res = self._load_data_loader_from_cache(-1)
         state = False
         train_data_local_dict = None
@@ -288,6 +376,12 @@ class BaseDataManager(ABC):
         return (train_data_num, test_data_num, train_data_global, test_data_global)
 
     def _load_federated_data_local(self):
+        """Load federated training and testing data for local clients.
+
+        Returns:
+            tuple: A tuple containing dictionaries with local client data loaders, the number of clients,
+            and the number of training data points and testing data points.
+        """
 
         data_file = h5py.File(self.args.data_file_path, "r", swmr=True)
         partition_file = h5py.File(self.args.partition_file_path, "r", swmr=True)
@@ -397,8 +491,17 @@ class BaseDataManager(ABC):
         )
 
     def _load_data_loader_from_cache(self, client_id):
-        """
-        Different clients has different cache file. client_id = -1 means loading the cached file on server end.
+        """Load cached data loader from cache file for a specific client.
+
+        Different clients has different cache file. client_id = -1 means
+        loading the cached file on server end.
+
+        Args:
+            client_id (int): The ID of the client for which to load the cached data loader.
+
+        Returns:
+            tuple: A tuple containing a boolean indicating whether the data loader was loaded from cache,
+                and the cached data loader if available.
         """
         args = self.args
         model_args = self.model_args

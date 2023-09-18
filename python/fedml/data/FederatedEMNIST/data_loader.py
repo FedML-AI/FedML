@@ -21,6 +21,19 @@ _LABEL = "label"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
+    """
+    Create data loaders for training and testing data.
+
+    Args:
+        dataset (str): The dataset name.
+        data_dir (str): The directory where the dataset is located.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        client_idx (int or None): Index of the client to load data for. If None, load data for all clients.
+
+    Returns:
+        tuple: A tuple containing the training and testing data loaders.
+    """
 
     train_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TRAIN_FILE), "r")
     test_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TEST_FILE), "r")
@@ -76,6 +89,19 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 def load_partition_data_distributed_federated_emnist(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for a federated EMNIST dataset.
+
+    Args:
+        process_id (int): The ID of the current process (0 for server, >0 for clients).
+        dataset (str): The dataset name.
+        data_dir (str): The directory where the dataset is located.
+        batch_size (int): Batch size for data loaders.
+
+    Returns:
+        tuple: A tuple containing information about the dataset, including the number of clients,
+        the number of samples in the global training data, global and local data loaders, and class number.
+    """
 
     if process_id == 0:
         # get global dataset
@@ -133,6 +159,19 @@ def load_partition_data_distributed_federated_emnist(
 def load_partition_data_federated_emnist(
     dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for federated EMNIST dataset.
+
+    Args:
+        dataset (str): The dataset name.
+        data_dir (str): The directory where the dataset is located.
+        batch_size (int): Batch size for data loaders.
+
+    Returns:
+        tuple: A tuple containing information about the dataset, including the number of clients,
+        the number of samples in the global training and testing data, global and local data loaders,
+        the number of samples per client, and the class number.
+    """
 
     # client ids
     train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
