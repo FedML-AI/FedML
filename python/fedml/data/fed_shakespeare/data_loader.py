@@ -21,19 +21,31 @@ _SNIPPETS = "snippets"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
+    """
+    Get data loaders for the specified dataset.
 
+    Args:
+        dataset (str): The name of the dataset.
+        data_dir (str): The directory containing the dataset.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        client_idx (int): Index of the client (None for all clients).
+
+    Returns:
+        tuple: A tuple of DataLoader objects for training and testing data.
+    """
     train_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TRAIN_FILE), "r")
     test_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TEST_FILE), "r")
     train_ds = []
     test_ds = []
 
-    # load data
+    # Load data
     if client_idx is None:
-        # get ids of all clients
+        # Get IDs of all clients
         train_ids = client_ids_train
         test_ids = client_ids_test
     else:
-        # get ids of single client
+        # Get IDs of a single client
         train_ids = [client_ids_train[client_idx]]
         test_ids = [client_ids_test[client_idx]]
 
@@ -46,7 +58,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
         raw_test = [x.decode("utf8") for x in raw_test]
         test_ds.extend(utils.preprocess(raw_test))
 
-    # split data
+    # Split data
     train_x, train_y = utils.split(train_ds)
     test_x, test_y = utils.split(test_ds)
     train_ds = data.TensorDataset(torch.tensor(train_x[:, :]), torch.tensor(train_y[:]))
@@ -62,26 +74,36 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
     test_h5.close()
     return train_dl, test_dl
 
-
 def load_partition_data_distributed_federated_shakespeare(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for distributed federated learning with Shakespearean text data.
 
+    Args:
+        process_id (int): The process ID of the current worker (0 for the server).
+        dataset (str): The name of the dataset.
+        data_dir (str): The directory containing the dataset.
+        batch_size (int): Batch size for data loaders.
+
+    Returns:
+        tuple: A tuple containing information about the data partitions and vocabulary size.
+    """
     if process_id == 0:
-        # get global dataset
+        # Get global dataset
         train_data_global, test_data_global = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1
         )
-        train_data_num = len(train_data_global)
-        test_data_num = len(test_data_global)
+        train_data_num = len(train_data_global.dataset)
+        test_data_num = len(test_data_global.dataset)
         logging.info("train_dl_global number = " + str(train_data_num))
         logging.info("test_dl_global number = " + str(test_data_num))
         train_data_local = None
         test_data_local = None
         local_data_num = 0
     else:
-        # get local dataset
-        # client id list
+        # Get local dataset
+        # Client ID list
         train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
         test_file_path = os.path.join(data_dir, DEFAULT_TEST_FILE)
         with h5py.File(train_file_path, "r") as train_h5, h5py.File(
@@ -117,8 +139,18 @@ def load_partition_data_distributed_federated_shakespeare(
 def load_partition_data_federated_shakespeare(
     dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load partitioned data for federated learning with Shakespearean text data.
 
-    # client id list
+    Args:
+        dataset (str): The name of the dataset.
+        data_dir (str): The directory containing the dataset.
+        batch_size (int): Batch size for data loaders (default is DEFAULT_BATCH_SIZE).
+
+    Returns:
+        tuple: A tuple containing information about the data partitions and vocabulary size.
+    """
+    # Client ID list
     train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
     test_file_path = os.path.join(data_dir, DEFAULT_TEST_FILE)
     with h5py.File(train_file_path, "r") as train_h5, h5py.File(
@@ -128,7 +160,7 @@ def load_partition_data_federated_shakespeare(
         client_ids_train = list(train_h5[_EXAMPLE].keys())
         client_ids_test = list(test_h5[_EXAMPLE].keys())
 
-    # get local dataset
+    # Get local dataset
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
@@ -149,7 +181,7 @@ def load_partition_data_federated_shakespeare(
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
-    # global dataset
+    # Global dataset
     train_data_global = data.DataLoader(
         data.ConcatDataset(
             list(dl.dataset for dl in list(train_data_local_dict.values()))
@@ -184,4 +216,5 @@ def load_partition_data_federated_shakespeare(
         test_data_local_dict,
         VOCAB_LEN,
     )
+
 

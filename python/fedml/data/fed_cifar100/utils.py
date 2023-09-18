@@ -9,7 +9,18 @@ preprocess reference : https://github.com/google-research/federated/blob/master/
 
 # def cifar100_transform(img_mean, img_std, train=True, crop_size=(24, 24)):
 def cifar100_transform(img_mean, img_std, train=True, crop_size=32):
-    """cropping, flipping, and normalizing."""
+    """
+    Define data transformations for CIFAR-100 dataset.
+
+    Args:
+        img_mean (tuple): Mean values for image normalization.
+        img_std (tuple): Standard deviation values for image normalization.
+        train (bool): Whether the transformations are for training or testing data.
+        crop_size (int): Size of the crop (default is 32).
+
+    Returns:
+        torchvision.transforms.Compose: A composition of data transformations.
+    """
     if train:
         return transforms.Compose(
             [
@@ -40,6 +51,16 @@ def cifar100_transform(img_mean, img_std, train=True, crop_size=32):
 
 
 def preprocess_cifar_img(img, train):
+    """
+    Preprocess CIFAR-100 images for use in a PyTorch model.
+
+    Args:
+        img (torch.Tensor): Input images.
+        train (bool): Whether the data is for training or testing.
+
+    Returns:
+        torch.Tensor: Preprocessed images as a PyTorch tensor.
+    """
     # scale img to range [0,1] to fit ToTensor api
     img = torch.div(img, 255.0)
     transoformed_img = torch.stack(

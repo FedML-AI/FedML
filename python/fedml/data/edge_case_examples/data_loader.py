@@ -28,6 +28,12 @@ import logging
 
 
 def download_edgecase_data(data_cache_dir):
+    """
+    Download edge case attack data and extract it to the specified directory.
+
+    Args:
+        data_cache_dir (str): The directory where the data should be downloaded and extracted.
+    """
     file_path = data_cache_dir + "/edge_case_examples.zip"
     logging.info(file_path)
     URL = "http://pages.cs.wisc.edu/~hongyiwang/edge_case_attack/edge_case_examples.zip"
@@ -38,8 +44,17 @@ def download_edgecase_data(data_cache_dir):
     with zipfile.ZipFile(file_path, "r") as zip_ref:
         zip_ref.extractall(data_cache_dir)
 
-
 def record_net_data_stats(y_train, net_dataidx_map):
+    """
+    Record data statistics for each network based on the provided data index mapping.
+
+    Args:
+        y_train (numpy.ndarray): The labels of the training data.
+        net_dataidx_map (dict): A dictionary mapping network indices to data indices.
+
+    Returns:
+        dict: A dictionary containing class counts for each network.
+    """
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():
@@ -51,6 +66,15 @@ def record_net_data_stats(y_train, net_dataidx_map):
 
 
 def load_mnist_data(datadir):
+    """
+    Load the MNIST dataset from the specified directory.
+
+    Args:
+        datadir (str): The directory where the dataset is stored.
+
+    Returns:
+        tuple: A tuple containing training and testing data and labels for MNIST.
+    """
     transform = transforms.Compose([transforms.ToTensor()])
 
     mnist_train_ds = MNIST_truncated(
@@ -72,6 +96,15 @@ def load_mnist_data(datadir):
 
 
 def load_emnist_data(datadir):
+    """
+    Load the EMNIST dataset from the specified directory.
+
+    Args:
+        datadir (str): The directory where the dataset is stored.
+
+    Returns:
+        tuple: A tuple containing training and testing data and labels for EMNIST.
+    """
     transform = transforms.Compose([transforms.ToTensor()])
 
     emnist_train_ds = EMNIST_truncated(
@@ -93,6 +126,15 @@ def load_emnist_data(datadir):
 
 
 def load_cifar10_data(datadir):
+    """
+    Load the CIFAR-10 dataset from the specified directory.
+
+    Args:
+        datadir (str): The directory where the dataset is stored.
+
+    Returns:
+        tuple: A tuple containing training and testing data and labels for CIFAR-10.
+    """
     transform = transforms.Compose([transforms.ToTensor()])
 
     cifar10_train_ds = CIFAR10_truncated(
@@ -109,6 +151,20 @@ def load_cifar10_data(datadir):
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha, args):
+    """
+    Partition the dataset based on the specified method and parameters.
+
+    Args:
+        dataset (str): The name of the dataset (e.g., "mnist", "emnist", "cifar10").
+        datadir (str): The directory where the dataset is stored.
+        partition (str): The partitioning method ("homo" or "hetero-dir").
+        n_nets (int): The number of clients/networks.
+        alpha (float): A parameter for data partitioning.
+        args: Additional arguments.
+
+    Returns:
+        dict: A dictionary mapping network indices to data indices.
+    """
     if dataset == "mnist":
         X_train, y_train, X_test, y_test = load_mnist_data(datadir)
         n_train = X_train.shape[0]
@@ -244,6 +300,19 @@ def partition_data(dataset, datadir, partition, n_nets, alpha, args):
 
 
 def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loaders for the specified dataset.
+
+    Args:
+        dataset (str): The name of the dataset (e.g., "mnist", "emnist", "cifar10").
+        datadir (str): The directory where the dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (dict): A dictionary mapping network indices to data indices.
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders.
+    """
     if dataset in ("mnist", "emnist", "cifar10"):
         if dataset == "mnist":
             dl_obj = MNIST_truncated
@@ -320,6 +389,24 @@ def get_dataloader_normal_case(
     ardis_dataset=None,
     attack_case="normal-case",
 ):
+    """
+    Get data loaders for the specified dataset with support for poison attacks.
+
+    Args:
+        dataset (str): The name of the dataset (e.g., "mnist", "emnist", "cifar10").
+        datadir (str): The directory where the dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (dict): A dictionary mapping network indices to data indices.
+        user_id (int): The user ID for poison attack.
+        num_total_users (int): The total number of users.
+        poison_type (str): The type of poison attack (e.g., "southwest").
+        ardis_dataset: ARDIS dataset for poison attack (if applicable).
+        attack_case (str): The type of attack case (e.g., "normal-case").
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders.
+    """
     if dataset in ("mnist", "emnist", "cifar10"):
         if dataset == "mnist":
             dl_obj = MNIST_truncated
@@ -391,6 +478,17 @@ def get_dataloader_normal_case(
 
 
 def load_poisoned_dataset(args):
+    """
+    Load a poisoned dataset based on the provided arguments.
+
+    Args:
+        args (Namespace): Command-line arguments containing dataset details.
+
+    Returns:
+        DataLoader: DataLoader for the poisoned dataset.
+        DataLoader: DataLoader for the clean test dataset.
+        DataLoader: DataLoader for the targetted task test dataset.
+    """
     use_cuda = not args.using_gpu and torch.cuda.is_available()
     kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
     if args.dataset in ("mnist", "emnist"):
