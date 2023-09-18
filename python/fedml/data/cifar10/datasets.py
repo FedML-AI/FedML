@@ -18,17 +18,45 @@ IMG_EXTENSIONS = (
 
 
 def default_loader(path):
+    """
+    Default loader function for loading images.
+
+    Args:
+        path (str): Path to the image file.
+
+    Returns:
+        PIL.Image.Image: Loaded image in RGB format.
+    """
     return pil_loader(path)
 
-
 def pil_loader(path):
+    """
+    Custom PIL image loader function.
+
+    Args:
+        path (str): Path to the image file.
+
+    Returns:
+        PIL.Image.Image: Loaded image in RGB format.
+    """
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, "rb") as f:
         img = Image.open(f)
         return img.convert("RGB")
 
-
 class CIFAR10_truncated(data.Dataset):
+    """
+    Custom dataset class for truncated CIFAR-10 data.
+
+    Args:
+        root (str): Root directory where CIFAR-10 dataset is located.
+        dataidxs (list, optional): List of data indices to include (default: None).
+        train (bool, optional): Whether the dataset is for training (default: True).
+        transform (callable, optional): Optional transform to be applied to the image (default: None).
+        target_transform (callable, optional): Optional transform to be applied to the target (default: None).
+        download (bool, optional): Whether to download the dataset if not found (default: False).
+    """
+
     def __init__(
         self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
@@ -43,12 +71,17 @@ class CIFAR10_truncated(data.Dataset):
         self.data, self.target = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
+        """
+        Build the truncated CIFAR-10 dataset.
+
+        Returns:
+            tuple: Tuple containing data and target arrays.
+        """
         print("download = " + str(self.download))
         cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
-            # print("train member of the class: {}".format(self.train))
-            # data = cifar_dataobj.train_data
+            
             data = cifar_dataobj.data
             target = np.array(cifar_dataobj.targets)
         else:
@@ -62,6 +95,12 @@ class CIFAR10_truncated(data.Dataset):
         return data, target
 
     def truncate_channel(self, index):
+        """
+        Truncate channels (G and B) in the images specified by the given index.
+
+        Args:
+            index (numpy.ndarray): Array of indices specifying which images to truncate.
+        """
         for i in range(index.shape[0]):
             gs_index = index[i]
             self.data[gs_index, :, :, 1] = 0.0
@@ -73,7 +112,7 @@ class CIFAR10_truncated(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the index of the target class.
         """
         img, target = self.data[index], self.target[index]
 
@@ -86,4 +125,11 @@ class CIFAR10_truncated(data.Dataset):
         return img, target
 
     def __len__(self):
+        """
+        Get the number of samples in the dataset.
+
+        Returns:
+            int: Number of samples in the dataset.
+        """
         return len(self.data)
+    

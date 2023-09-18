@@ -10,7 +10,16 @@ from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
 
 
 # generate the non-IID distribution for all methods
-def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",):
+def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt"):
+    """
+    Read data distribution from a file and return it as a dictionary.
+
+    Args:
+        filename (str): The path to the file containing data distribution information.
+
+    Returns:
+        dict: A dictionary representing the data distribution.
+    """
     distribution = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -24,8 +33,16 @@ def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/C
                     distribution[first_level_key][second_level_key] = int(tmp[1].strip().replace(",", ""))
     return distribution
 
+def read_net_dataidx_map(filename="./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt"):
+    """
+    Read network data index mapping from a file and return it as a dictionary.
 
-def read_net_dataidx_map(filename="./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt",):
+    Args:
+        filename (str): The path to the file containing network data index mapping information.
+
+    Returns:
+        dict: A dictionary representing the network data index mapping.
+    """
     net_dataidx_map = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -41,6 +58,16 @@ def read_net_dataidx_map(filename="./data_preprocessing/non-iid-distribution/CIF
 
 
 def record_net_data_stats(y_train, net_dataidx_map):
+    """
+    Record data statistics for each network based on network data index mapping.
+
+    Args:
+        y_train (numpy.ndarray): The labels of the training data.
+        net_dataidx_map (dict): The network data index mapping.
+
+    Returns:
+        dict: A dictionary containing data statistics for each network.
+    """
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():
@@ -56,6 +83,15 @@ class Cutout(object):
         self.length = length
 
     def __call__(self, img):
+        """
+        Apply Cutout augmentation to the input image.
+
+        Args:
+            img (PIL.Image): The input image.
+
+        Returns:
+            PIL.Image: The image after applying Cutout augmentation.
+        """
         h, w = img.size(1), img.size(2)
         mask = np.ones((h, w), np.float32)
         y = np.random.randint(h)
@@ -74,6 +110,12 @@ class Cutout(object):
 
 
 def _data_transforms_cifar10():
+    """
+    Define data transforms for CIFAR-10 dataset.
+
+    Returns:
+        transforms.Compose: Training and validation data transforms.
+    """
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
 
@@ -89,15 +131,32 @@ def _data_transforms_cifar10():
 
     train_transform.transforms.append(Cutout(16))
 
-    valid_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
+    valid_transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),]
+    )
 
     return train_transform, valid_transform
 
 
 def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
+    """
+    Load CIFAR-10 dataset with specified configurations.
+
+    Args:
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        process_id (int): ID of the current process.
+        synthetic_data_url (str): URL for synthetic data (not used in the provided code).
+        private_local_data (bool): Whether to use private local data (not used in the provided code).
+        resize (int): Resize images to this size (not used in the provided code).
+        augmentation (bool): Perform data augmentation (not used in the provided code).
+        data_efficient_load (bool): Load data efficiently (not used in the provided code).
+
+    Returns:
+        tuple: Tuple containing X_train, y_train, X_test, y_test, cifar10_train_ds, and cifar10_test_ds.
+    """
     train_transform, test_transform = _data_transforms_cifar10()
 
-    is_download = True;
+    is_download = True
 
     if data_efficient_load:
         cifar10_train_ds = CIFAR10(datadir, train=True, download=True, transform=train_transform)
@@ -113,11 +172,27 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha, process_id, synthetic_data_url, private_local_data):
+    """
+    Partition the CIFAR-10 dataset into subsets for federated learning.
+
+    Args:
+        dataset (str): Name of the dataset (not used in the provided code).
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        partition (str): Partitioning method (homo, hetero, hetero-fix).
+        n_nets (int): Number of clients (networks).
+        alpha (float): Alpha value for partitioning (not used in the provided code).
+        process_id (int): ID of the current process.
+        synthetic_data_url (str): URL for synthetic data (not used in the provided code).
+        private_local_data (bool): Whether to use private local data (not used in the provided code).
+
+    Returns:
+        tuple: Tuple containing X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts, cifar10_train_ds, and cifar10_test_ds.
+    """
     np.random.seed(10)
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds = load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data)
     n_train = X_train.shape[0]
-    # n_test = X_test.shape[0]
+
 
     if partition == "homo":
         total_num = n_train
@@ -174,6 +249,22 @@ def get_dataloader(
     full_train_dataset=None,
     full_test_dataset=None,
 ):
+    """
+    Get data loaders for CIFAR-10 dataset.
+
+    Args:
+        dataset (str): Name of the dataset.
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list): List of data indices for custom data loading (default: None).
+        data_efficient_load (bool): Use data-efficient loading (default: False).
+        full_train_dataset: Full training dataset (default: None).
+        full_test_dataset: Full testing dataset (default: None).
+
+    Returns:
+        tuple: Tuple containing training and testing data loaders.
+    """
     return get_dataloader_CIFAR10(
         datadir,
         train_bs,
@@ -184,11 +275,23 @@ def get_dataloader(
         full_test_dataset=full_test_dataset,
     )
 
-
 # for local devices
 def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test):
-    return get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
+    """
+    Get data loaders for testing CIFAR-10 dataset on local devices.
 
+    Args:
+        dataset (str): Name of the dataset.
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list): List of training data indices.
+        dataidxs_test (list): List of testing data indices.
+
+    Returns:
+        tuple: Tuple containing training and testing data loaders.
+    """
+    return get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
 
 def get_dataloader_CIFAR10(
     datadir,
@@ -199,6 +302,21 @@ def get_dataloader_CIFAR10(
     full_train_dataset=None,
     full_test_dataset=None,
 ):
+    """
+    Get data loaders for CIFAR-10 dataset.
+
+    Args:
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list): List of data indices for custom data loading (default: None).
+        data_efficient_load (bool): Use data-efficient loading (default: False).
+        full_train_dataset: Full training dataset (default: None).
+        full_test_dataset: Full testing dataset (default: None).
+
+    Returns:
+        tuple: Tuple containing training and testing data loaders.
+    """
     transform_train, transform_test = _data_transforms_cifar10()
 
     if data_efficient_load:
@@ -217,8 +335,20 @@ def get_dataloader_CIFAR10(
 
     return train_dl, test_dl
 
-
 def get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None):
+    """
+    Get data loaders for testing CIFAR-10 dataset on local devices.
+
+    Args:
+        datadir (str): Directory where CIFAR-10 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list): List of training data indices.
+        dataidxs_test (list): List of testing data indices.
+
+    Returns:
+        tuple: Tuple containing training and testing data loaders.
+    """
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
@@ -231,7 +361,6 @@ def get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train=None,
 
     return train_dl, test_dl
 
-
 def load_partition_data_distributed_cifar10(
     process_id,
     dataset,
@@ -242,6 +371,24 @@ def load_partition_data_distributed_cifar10(
     batch_size,
     data_efficient_load=True,
 ):
+    """
+    Load partitioned CIFAR-10 data for distributed learning.
+
+    Args:
+        process_id (int): ID of the current process.
+        dataset (str): Name of the dataset.
+        data_dir (str): Directory where CIFAR-10 dataset is stored.
+        partition_method (str): Partitioning method (homo, hetero, hetero-fix).
+        partition_alpha (float): Alpha value for partitioning.
+        client_number (int): Number of clients (networks).
+        batch_size (int): Batch size for training and testing.
+        data_efficient_load (bool): Use data-efficient loading (default: True).
+
+    Returns:
+        tuple: Tuple containing training data size, global training data loader,
+        global testing data loader, local data size, local training data loader,
+        local testing data loader, and class count.
+    """
     (
         X_train,
         y_train,
@@ -318,6 +465,28 @@ def efficient_load_partition_data_cifar10(
     n_proc_in_silo=0,
     data_efficient_load=True,
 ):
+    """
+    Efficiently load partitioned CIFAR-10 data for distributed learning.
+
+    Args:
+        dataset (str): Name of the dataset.
+        data_dir (str): Directory where CIFAR-10 dataset is stored.
+        partition_method (str): Partitioning method (homo, hetero, hetero-fix).
+        partition_alpha (float): Alpha value for partitioning.
+        client_number (int): Number of clients (networks).
+        batch_size (int): Batch size for training and testing.
+        process_id (int): ID of the current process (default: 0).
+        synthetic_data_url (str): URL for synthetic data (default: "").
+        private_local_data (str): Path to private local data (default: "").
+        n_proc_in_silo (int): Number of processes in the silo (default: 0).
+        data_efficient_load (bool): Use data-efficient loading (default: True).
+
+    Returns:
+        tuple: Tuple containing training data size, global testing data size,
+        global training data loader, global testing data loader, dictionary of
+        local data sample numbers, dictionary of local training data loaders,
+        dictionary of local testing data loaders, and class count.
+    """
     (
         X_train,
         y_train,
@@ -327,7 +496,16 @@ def efficient_load_partition_data_cifar10(
         traindata_cls_counts,
         cifar10_train_ds,
         cifar10_test_ds,
-    ) = partition_data(dataset, data_dir, partition_method, client_number, partition_alpha, process_id, synthetic_data_url, private_local_data)
+    ) = partition_data(
+        dataset,
+        data_dir,
+        partition_method,
+        client_number,
+        partition_alpha,
+        process_id,
+        synthetic_data_url,
+        private_local_data,
+    )
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
