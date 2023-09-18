@@ -11,6 +11,15 @@ from .datasets import CIFAR10_truncated
 def read_data_distribution(
     filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",
 ):
+    """
+    Read data distribution from a file.
+
+    Args:
+        filename (str, optional): Path to the distribution file (default: "./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt").
+
+    Returns:
+        dict: A dictionary representing the data distribution.
+    """
     distribution = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -26,10 +35,18 @@ def read_data_distribution(
                     )
     return distribution
 
-
 def read_net_dataidx_map(
     filename="./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt",
 ):
+    """
+    Read network data index map from a file.
+
+    Args:
+        filename (str, optional): Path to the network data index map file (default: "./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt").
+
+    Returns:
+        dict: A dictionary representing the network data index map.
+    """
     net_dataidx_map = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -43,8 +60,17 @@ def read_net_dataidx_map(
                     net_dataidx_map[key] = [int(i.strip()) for i in tmp_array]
     return net_dataidx_map
 
-
 def record_net_data_stats(y_train, net_dataidx_map):
+    """
+    Record network data statistics.
+
+    Args:
+        y_train (numpy.ndarray): Labels for the training data.
+        net_dataidx_map (dict): Network data index map.
+
+    Returns:
+        dict: A dictionary containing network data statistics.
+    """
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():
@@ -54,12 +80,27 @@ def record_net_data_stats(y_train, net_dataidx_map):
     logging.debug("Data statistics: %s" % str(net_cls_counts))
     return net_cls_counts
 
-
 class Cutout(object):
+    """
+    Apply cutout augmentation to an image.
+
+    Args:
+        length (int): Length of the cutout square.
+    """
+
     def __init__(self, length):
         self.length = length
 
     def __call__(self, img):
+        """
+        Apply cutout to the image.
+
+        Args:
+            img (PIL.Image.Image): Input image.
+
+        Returns:
+            PIL.Image.Image: Image with cutout applied.
+        """
         h, w = img.size(1), img.size(2)
         mask = np.ones((h, w), np.float32)
         y = np.random.randint(h)
@@ -78,6 +119,12 @@ class Cutout(object):
 
 
 def _data_transforms_cifar10():
+    """
+    Define data transformations for CIFAR-10 dataset.
+
+    Returns:
+        tuple: A tuple of two transformations, one for training and one for validation.
+    """
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
 
@@ -104,6 +151,15 @@ def _data_transforms_cifar10():
 
 
 def load_cifar10_data(datadir):
+    """
+    Load CIFAR-10 dataset.
+
+    Args:
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+
+    Returns:
+        tuple: A tuple containing training and testing data and labels.
+    """
     train_transform, test_transform = _data_transforms_cifar10()
 
     cifar10_train_ds = CIFAR10_truncated(
@@ -120,11 +176,24 @@ def load_cifar10_data(datadir):
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha):
+    """
+    Partition the CIFAR-10 dataset for federated learning.
+
+    Args:
+        dataset: Not used, included for compatibility with your code.
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+        partition (str): Partitioning method, can be "homo," "hetero," or "hetero-fix."
+        n_nets (int): Number of clients (networks).
+        alpha (float): Dirichlet distribution parameter for data partitioning.
+
+    Returns:
+        tuple: A tuple containing data, labels, data index map, and data statistics.
+    """
     np.random.seed(10)
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test = load_cifar10_data(datadir)
     n_train = X_train.shape[0]
-    # n_test = X_test.shape[0]
+
 
     if partition == "homo":
         total_num = n_train
@@ -184,6 +253,19 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
 
 # for centralized training
 def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loaders for centralized training.
+
+    Args:
+        dataset: Not used, included for compatibility with your code.
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to include (default: None).
+
+    Returns:
+        DataLoader: Training and testing data loaders.
+    """
     return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs)
 
 
@@ -191,12 +273,38 @@ def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
 def get_dataloader_test(
     dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
 ):
+    """
+    Get data loaders for testing in CIFAR-10 dataset.
+
+    Args:
+        dataset: Not used, included for compatibility with your code.
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list): List of data indices to include in the training set.
+        dataidxs_test (list): List of data indices to include in the testing set.
+
+    Returns:
+        DataLoader: Training and testing data loaders for CIFAR-10.
+    """
     return get_dataloader_test_CIFAR10(
         datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
     )
 
 
 def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loaders for CIFAR-10 dataset.
+
+    Args:
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to include (default: None).
+
+    Returns:
+        DataLoader: Training and testing data loaders for CIFAR-10.
+    """
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
@@ -219,6 +327,19 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None):
 def get_dataloader_test_CIFAR10(
     datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None
 ):
+    """
+    Get data loaders for testing CIFAR-10 dataset.
+
+    Args:
+        datadir (str): Directory where the CIFAR-10 dataset is located.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list, optional): List of data indices to include in the training set.
+        dataidxs_test (list, optional): List of data indices to include in the testing set.
+
+    Returns:
+        DataLoader: Training and testing data loaders for CIFAR-10.
+    """
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
@@ -257,6 +378,21 @@ def load_partition_data_distributed_cifar10(
     client_number,
     batch_size,
 ):
+    """
+    Load partitioned CIFAR-10 dataset for distributed training.
+
+    Args:
+        process_id (int): ID of the current process.
+        dataset: Not used, included for compatibility with your code.
+        data_dir (str): Directory where the CIFAR-10 dataset is located.
+        partition_method (str): Partitioning method, can be "homo," "hetero," or "hetero-fix."
+        partition_alpha (float): Dirichlet distribution parameter for data partitioning.
+        client_number (int): Number of clients (networks).
+        batch_size (int): Batch size for training and testing.
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders, data statistics, and class number.
+    """
     (
         X_train,
         y_train,
@@ -318,6 +454,21 @@ def load_partition_data_cifar10(
     batch_size,
     n_proc_in_silo=0,
 ):
+    """
+    Load partitioned CIFAR-10 dataset for federated learning.
+
+    Args:
+        dataset: Not used, included for compatibility with your code.
+        data_dir (str): Directory where the CIFAR-10 dataset is located.
+        partition_method (str): Partitioning method, can be "homo," "hetero," or "hetero-fix."
+        partition_alpha (float): Dirichlet distribution parameter for data partitioning.
+        client_number (int): Number of clients (networks).
+        batch_size (int): Batch size for training and testing.
+        n_proc_in_silo (int, optional): Number of processes in a silo (default: 0).
+
+    Returns:
+        tuple: A tuple containing training and testing data loaders, data statistics, and class number.
+    """
     (
         X_train,
         y_train,

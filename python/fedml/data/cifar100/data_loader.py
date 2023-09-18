@@ -78,6 +78,12 @@ class Cutout(object):
 
 
 def _data_transforms_cifar100():
+    """
+    Get data transforms for CIFAR-100 dataset.
+
+    Returns:
+        tuple: A tuple containing train and validation data transforms.
+    """
     CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
     CIFAR_STD = [0.2673, 0.2564, 0.2762]
 
@@ -103,6 +109,15 @@ def _data_transforms_cifar100():
     return train_transform, valid_transform
 
 def load_cifar100_data(datadir):
+    """
+    Load CIFAR-100 dataset.
+
+    Args:
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+
+    Returns:
+        tuple: A tuple containing training data, training labels, testing data, and testing labels.
+    """
     train_transform, test_transform = _data_transforms_cifar100()
 
     cifar100_train_ds = CIFAR100_truncated(
@@ -115,13 +130,26 @@ def load_cifar100_data(datadir):
     X_train, y_train = cifar100_train_ds.data, cifar100_train_ds.target
     X_test, y_test = cifar100_test_ds.data, cifar100_test_ds.target
 
-    return (X_train, y_train, X_test, y_test)
+    return X_train, y_train, X_test, y_test
 
 def partition_data(dataset, datadir, partition, n_nets, alpha):
+    """
+    Partition CIFAR-100 data for federated learning.
+
+    Args:
+        dataset (str): The dataset name.
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+        partition (str): The data partitioning method ("homo", "hetero", or "hetero-fix").
+        n_nets (int): The number of clients (networks).
+        alpha (float): Alpha parameter for data partitioning.
+
+    Returns:
+        tuple: A tuple containing training data, training labels, testing data, testing labels, network data index map, and class counts.
+    """
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test = load_cifar100_data(datadir)
     n_train = X_train.shape[0]
-    # n_test = X_test.shape[0]
+    
 
     if partition == "homo":
         total_num = n_train
@@ -179,21 +207,58 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     return X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts
 
 
-# for centralized training
+
 def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loader for centralized training.
+
+    Args:
+        dataset (str): The dataset name.
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to use. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing training data loader and testing data loader.
+    """
     return get_dataloader_CIFAR100(datadir, train_bs, test_bs, dataidxs)
 
-
-# for local devices
 def get_dataloader_test(
     dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
 ):
+    """
+    Get data loader for local devices.
+
+    Args:
+        dataset (str): The dataset name.
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list): List of training data indices.
+        dataidxs_test (list): List of testing data indices.
+
+    Returns:
+        tuple: A tuple containing training data loader and testing data loader.
+    """
     return get_dataloader_test_CIFAR100(
         datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
     )
 
 
 def get_dataloader_CIFAR100(datadir, train_bs, test_bs, dataidxs=None):
+    """
+    Get data loader for CIFAR-100 dataset.
+
+    Args:
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs (list, optional): List of data indices to use. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing training data loader and testing data loader.
+    """
     dl_obj = CIFAR100_truncated
 
     transform_train, transform_test = _data_transforms_cifar100()
@@ -216,6 +281,19 @@ def get_dataloader_CIFAR100(datadir, train_bs, test_bs, dataidxs=None):
 def get_dataloader_test_CIFAR100(
     datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None
 ):
+    """
+    Get data loader for testing CIFAR-100 dataset.
+
+    Args:
+        datadir (str): The directory where CIFAR-100 dataset is stored.
+        train_bs (int): Batch size for training data.
+        test_bs (int): Batch size for testing data.
+        dataidxs_train (list, optional): List of training data indices. Defaults to None.
+        dataidxs_test (list, optional): List of testing data indices. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing training data loader and testing data loader.
+    """
     dl_obj = CIFAR100_truncated
 
     transform_train, transform_test = _data_transforms_cifar100()
@@ -254,6 +332,21 @@ def load_partition_data_distributed_cifar100(
     client_number,
     batch_size,
 ):
+    """
+    Load partitioned CIFAR-100 data for distributed training.
+
+    Args:
+        process_id (int): The process ID.
+        dataset (str): The dataset name.
+        data_dir (str): The directory where CIFAR-100 dataset is stored.
+        partition_method (str): The data partitioning method ("homo", "hetero", or "hetero-fix").
+        partition_alpha (float): Alpha parameter for data partitioning.
+        client_number (int): The number of clients (networks).
+        batch_size (int): Batch size for training and testing data.
+
+    Returns:
+        tuple: A tuple containing various data loaders and class count information.
+    """
     (
         X_train,
         y_train,
@@ -268,7 +361,7 @@ def load_partition_data_distributed_cifar100(
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
 
-    # get global test data
+
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
             dataset, data_dir, batch_size, batch_size
@@ -279,13 +372,13 @@ def load_partition_data_distributed_cifar100(
         test_data_local = None
         local_data_num = 0
     else:
-        # get local dataset
+
         dataidxs = net_dataidx_map[process_id - 1]
         local_data_num = len(dataidxs)
         logging.info(
             "rank = %d, local_sample_number = %d" % (process_id, local_data_num)
         )
-        # training batch size = 64; algorithms batch size = 32
+
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, dataidxs
         )
@@ -310,6 +403,21 @@ def load_partition_data_distributed_cifar100(
 def load_partition_data_cifar100(
     dataset, data_dir, partition_method, partition_alpha, client_number, batch_size
 ):
+    """
+    Load and partition CIFAR-100 data for federated learning.
+
+    Args:
+        dataset (str): The dataset name.
+        data_dir (str): The directory where CIFAR-100 dataset is stored.
+        partition_method (str): The data partitioning method ("homo", "hetero", or "hetero-fix").
+        partition_alpha (float): Alpha parameter for data partitioning.
+        client_number (int): The number of clients (networks).
+        batch_size (int): Batch size for training and testing data.
+
+    Returns:
+        tuple: A tuple containing various data loaders and class count information.
+
+    """
     (
         X_train,
         y_train,

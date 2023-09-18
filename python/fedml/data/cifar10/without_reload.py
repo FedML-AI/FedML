@@ -28,6 +28,12 @@ class CIFAR10_truncated(data.Dataset):
         self.data, self.targets = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
+        """
+        Build the truncated CIFAR-10 dataset by loading data based on data indices.
+
+        Returns:
+            tuple: A tuple containing the data and targets (class labels).
+        """
         print("download = " + str(self.download))
         cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 
@@ -47,6 +53,12 @@ class CIFAR10_truncated(data.Dataset):
         return data, targets
 
     def truncate_channel(self, index):
+        """
+        Truncate the green and blue channels of specified images in the dataset.
+
+        Args:
+            index (numpy.ndarray): An array of indices indicating which images to truncate.
+        """
         for i in range(index.shape[0]):
             gs_index = index[i]
             self.data[gs_index, :, :, 1] = 0.0
