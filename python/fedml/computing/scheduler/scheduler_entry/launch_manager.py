@@ -76,10 +76,14 @@ class FedMLLaunchManager(object):
         # Create and update model card with the job yaml file if the task type is serve.
         model_update_result = None
         if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
-            if self.job_config.serving_model_name is None:
-                FedMLAppManager.get_instance().set_config_version(self.config_version)
+            if self.job_config.serving_model_name is not None and self.job_config.serving_model_name != "":
+                self.job_config.model_app_name = self.job_config.serving_model_name
+
+            FedMLAppManager.get_instance().set_config_version(self.config_version)
+            if not FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key):
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
-                    click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace.{self.job_config.workspace}")
+                    click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace."
+                               f"{self.job_config.workspace}")
                     exit(-1)
 
                 model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,
@@ -88,9 +92,13 @@ class FedMLLaunchManager(object):
                 if model_update_result is None:
                     click.echo("Failed to upload the model package to MLOps.")
                     exit(-1)
+                model_update_result.endpoint_name = self.job_config.serving_endpoint_name
             else:
-                model_update_result = FedMLModelUploadResult(self.job_config.serving_model_name,
-                                                             self.job_config.serving_model_s3_url)
+                model_update_result = FedMLModelUploadResult(
+                    self.job_config.serving_model_name, model_version=self.job_config.serving_model_version,
+                    model_storage_url=self.job_config.serving_model_s3_url,
+                    endpoint_name=self.job_config.serving_endpoint_name)
+
             self.parse_job_yaml(yaml_file, should_use_default_workspace=True)
 
         # Generate source, config and bootstrap related paths.
@@ -162,7 +170,9 @@ class FedMLLaunchManager(object):
                     random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
                     config_file_handle.writelines(["serving_args:\n",
                                                    f"  model_name: {model_update_result.model_name}\n",
+                                                   f"  model_version: {model_update_result.model_version}\n",
                                                    f"  model_storage_url: {model_update_result.model_storage_url}\n",
+                                                   f"  endpoint_name: {model_update_result.endpoint_name}\n",
                                                    f"  random: {random}\n"])
                 config_file_handle.close()
 
@@ -843,7 +853,9 @@ class FedMLJobConfig(object):
         self.workspace = self.executable_file_folder
         serving_args = self.job_config_dict.get("serving_args", {})
         self.serving_model_name = serving_args.get("model_name", None)
+        self.serving_model_version = serving_args.get("model_version", "")
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
+        self.serving_endpoint_name = serving_args.get("endpoint_name", "")
 
     @staticmethod
     def generate_application_name(project_name):

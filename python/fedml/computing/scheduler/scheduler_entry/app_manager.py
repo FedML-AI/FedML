@@ -207,10 +207,9 @@ class FedMLAppManager(Singleton):
 
     def push_model_to_s3(self, model_name, model_zip_path):
         FedMLModelCards.get_instance().set_config_version(self.config_version)
-        return FedMLModelCards.get_instance().push_model_to_s3(model_name, model_zip_path,
-                                                               "FedMLLaunchServe",
-                                                               progress_desc="Submitting your job to "
-                                                                             "FedML® Launch platform")
+        return FedMLModelCards.get_instance().push_model_to_s3(
+            model_name, model_zip_path, "FedMLLaunchServe",
+            progress_desc="Submitting your job to FedML® Launch platform")
 
     def check_model_package(self, workspace):
         model_config_file = os.path.join(
@@ -224,6 +223,14 @@ class FedMLAppManager(Singleton):
             return False
 
         return True
+
+    def check_model_exists(self, model_name, api_key):
+        FedMLModelCards.get_instance().set_config_version(self.config_version)
+        result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
+        if result is not None and len(result.model_list) > 0:
+            return True
+
+        return False
 
     def update_model(self, model_name, workspace, api_key):
         FedMLModelCards.get_instance().set_config_version(self.config_version)
@@ -250,13 +257,14 @@ class FedMLAppManager(Singleton):
         if upload_result is None:
             return None
 
-        result = FedMLModelUploadResult(model_name, model_storage_url)
+        result = FedMLModelUploadResult(model_name, model_storage_url=model_storage_url)
 
         return result
 
 
 class FedMLModelUploadResult(object):
-    def __init__(self, model_name, model_storage_url):
+    def __init__(self, model_name, model_version="", model_storage_url="", endpoint_name=""):
         self.model_name = model_name
+        self.model_version = model_version
         self.model_storage_url = model_storage_url
-
+        self.endpoint_name = endpoint_name
