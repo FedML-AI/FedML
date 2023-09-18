@@ -888,7 +888,7 @@ class FedMLServerRunner:
 
         total_sleep_seconds = 0
         status_check_sleep_seconds = 5
-        allowed_status_check_sleep_seconds = 60 * 6
+        allowed_status_check_sleep_seconds = 60 * 15
         while True:
             # Fetch edge info from the edge status queue, which will be added to realtime status map
             while True:
