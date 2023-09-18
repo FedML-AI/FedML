@@ -125,7 +125,7 @@ class FedMLServerRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
         self.enable_simulation_cloud_agent = False
-        self.use_local_process_as_cloud_server = False
+        self.use_local_process_as_cloud_server = True
 
         self.model_device_server = None
         self.run_model_device_ids = dict()
@@ -443,7 +443,9 @@ class FedMLServerRunner:
         if task_type == Constants.JOB_TASK_TYPE_SERVE:
             serving_args = run_params.get("serving_args", {})
             model_name = serving_args.get("model_name", None)
+            model_version = serving_args.get("model_version", None)
             model_storage_url = serving_args.get("model_storage_url", None)
+            endpoint_name = serving_args.get("endpoint_name", None)
             random = serving_args.get("random", "")
             random_out = sys_utils.random2(random, "FEDML@9999GREAT")
             random_list = random_out.split("FEDML@")
@@ -452,7 +454,8 @@ class FedMLServerRunner:
             FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
-                "", random_list[1], None)
+                "", random_list[1], None, in_model_version=model_version,
+                endpoint_name=endpoint_name)
 
     def run_impl(self, edge_status_queue):
         run_id = self.request_json["runId"]
@@ -903,12 +906,14 @@ class FedMLServerRunner:
             # Check all edges which don't send response status successfully
             # and retry to send the status checking message.
             active_edges_count = 0
+            inactivate_edges = list()
             for edge_id in edge_id_list:
                 edge_info_dict = self.run_edges_realtime_status.get(run_id, {})
                 edge_info = edge_info_dict.get(edge_id, None)
                 if edge_info is not None:
                     active_edges_count += 1
                 else:
+                    inactivate_edges.append(edge_id)
                     self.send_status_check_msg(run_id, edge_id, self.edge_id)
 
             # If all edges are ready then send the starting job message to them
@@ -925,6 +930,8 @@ class FedMLServerRunner:
             # Check if the status response message has timed out to receive
             if total_sleep_seconds >= allowed_status_check_sleep_seconds:
                 # If so, send failed message to MLOps and send exception message to all edges.
+                logging.error(f"There are inactive edge devices. "
+                              f"Inactivate edge id list is as follows. {inactivate_edges}")
                 self.mlops_metrics.report_server_id_status(
                     run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
                     server_id=self.edge_id, server_agent_id=self.server_agent_id)
