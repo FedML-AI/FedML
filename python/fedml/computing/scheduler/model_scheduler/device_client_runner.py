@@ -623,39 +623,42 @@ class FedMLClientRunner:
 
         # Start client with multiprocessing mode
         request_json["run_id"] = run_id
+        run_id_str = str(run_id)
         self.request_json = request_json
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         client_runner.infer_host = self.infer_host
-        self.run_process_event_map[run_id] = multiprocessing.Event()
-        self.run_process_event_map[run_id].clear()
-        client_runner.run_process_event = self.run_process_event_map[run_id]
-        self.run_process_completed_event_map[run_id] = multiprocessing.Event()
-        self.run_process_completed_event_map[run_id].clear()
-        client_runner.run_process_completed_event = self.run_process_completed_event_map[run_id]
-        self.model_runner_mapping[run_id] = client_runner
+        self.run_process_event_map[run_id_str] = multiprocessing.Event()
+        self.run_process_event_map[run_id_str].clear()
+        client_runner.run_process_event = self.run_process_event_map[run_id_str]
+        self.run_process_completed_event_map[run_id_str] = multiprocessing.Event()
+        self.run_process_completed_event_map[run_id_str].clear()
+        client_runner.run_process_completed_event = self.run_process_completed_event_map[run_id_str]
+        self.model_runner_mapping[run_id_str] = client_runner
         self.run_id = run_id
         self.process = Process(target=client_runner.run, args=(
-            self.run_process_event_map[run_id], self.run_process_completed_event_map[run_id]
+            self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str]
         ))
         # client_runner.run()
         self.process.start()
         ClientConstants.save_run_process(run_id, self.process.pid)
 
     def set_runner_stopped_event(self, run_id):
-        client_runner = self.model_runner_mapping.get(run_id, None)
+        run_id_str = str(run_id)
+        client_runner = self.model_runner_mapping.get(run_id_str, None)
         if client_runner is not None:
             if client_runner.run_process_event is not None:
                 client_runner.run_process_event.set()
-            self.model_runner_mapping.pop(run_id)
+            self.model_runner_mapping.pop(run_id_str)
 
     def set_runner_completed_event(self, run_id):
-        client_runner = self.model_runner_mapping.get(run_id, None)
+        run_id_str = str(run_id)
+        client_runner = self.model_runner_mapping.get(run_id_str, None)
         if client_runner is not None:
             if client_runner.run_process_completed_event is not None:
                 client_runner.run_process_completed_event.set()
-            self.model_runner_mapping.pop(run_id)
+            self.model_runner_mapping.pop(run_id_str)
 
     def callback_delete_deployment(self, topic, payload):
         logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
