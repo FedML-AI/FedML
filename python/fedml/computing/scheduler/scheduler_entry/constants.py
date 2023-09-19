@@ -7,7 +7,7 @@ from fedml.core.common.singleton import Singleton
 
 
 class Constants(Singleton):
-    FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
+    FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git, *venv'
     FEDML_PLATFORM_OCTOPUS_STR = "octopus"
     FEDML_PLATFORM_PARROT_STR = "parrot"
     FEDML_PLATFORM_CHEETAH_STR = "cheetah"
