@@ -21,7 +21,7 @@ if error_code != 0:
     exit(1)
 
 # Launch job
-job_id, project_id, error_code, error_msg = fedml.api.launch_job(yaml_file, resource_id=resource_id)
+job_id, project_id, error_code, error_msg = fedml.api.launch_job(yaml_file, "test", resource_id=resource_id)
 if error_code != 0:
     print(f"Failed to launch job. Reason: {error_msg}")
     exit(1)
