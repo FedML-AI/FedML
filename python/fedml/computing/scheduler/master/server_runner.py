@@ -424,6 +424,7 @@ class FedMLServerRunner:
             ServerConstants.cleanup_bootstrap_process(self.run_id)
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
+            if self.run_as_cloud_agent:
                 self.stop_cloud_server()
 
     def check_runner_stop_event(self):

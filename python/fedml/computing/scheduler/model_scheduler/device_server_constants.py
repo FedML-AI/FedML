@@ -8,6 +8,8 @@ from os.path import expanduser
 
 import psutil
 import yaml
+
+from ..comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
 
 
@@ -270,105 +272,37 @@ class ServerConstants(object):
 
     @staticmethod
     def cleanup_run_process(run_id):
-        try:
-            local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-sub-process-v2.id")
-            if not os.path.exists(process_id_file):
-                return
-            process_info = load_yaml_config(process_id_file)
-            if run_id is None:
-                for run_id_key, process_id_value in process_info.items():
-                    ServerConstants.cleanup_run_process(run_id_key)
-                return
-            process_id = process_info.get(str(run_id), None)
-            if process_id is not None:
-                try:
-                    process = psutil.Process(process_id)
-                    child_processes = process.children(recursive=True)
-                    for sub_process in child_processes:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
-                        else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
-
-                    if process is not None:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(process.pid))
-                        else:
-                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
-                except Exception as e:
-                    pass
-
-                process_info.pop(str(run_id))
-                ServerConstants.generate_yaml_doc(process_info, process_id_file)
-        except Exception as e:
-            pass
+        RunProcessUtils.cleanup_run_process(
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
 
     @staticmethod
     def save_run_process(run_id, process_id):
-        try:
-            local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-sub-process-v2.id")
-            if os.path.exists(process_id_file):
-                process_info = load_yaml_config(process_id_file)
-            else:
-                process_info = dict()
-            process_info[str(run_id)] = process_id
-            ServerConstants.generate_yaml_doc(process_info, process_id_file)
-        except Exception as e:
-            pass
+        RunProcessUtils.save_run_process(
+            run_id, process_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
 
     @staticmethod
     def cleanup_learning_process(run_id):
-        try:
-            local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-learning-process-v2.id")
-            process_info = load_yaml_config(process_id_file)
-            if run_id is None:
-                for run_id_key, process_id_value in process_info.items():
-                    ServerConstants.cleanup_learning_process(run_id_key)
-                return
-            process_id = process_info.get(str(run_id), None)
-            if process_id is not None:
-                try:
-                    process = psutil.Process(process_id)
-                    child_processes = process.children(recursive=True)
-                    for sub_process in child_processes:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
-                        else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
-
-                    if process is not None:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(process.pid))
-                        else:
-                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
-                except Exception as e:
-                    pass
-
-                process_info.pop(str(run_id))
-                ServerConstants.generate_yaml_doc(process_info, process_id_file)
-        except Exception as e:
-            pass
+        RunProcessUtils.cleanup_run_process(
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            info_file_prefix="user-process")
 
     @staticmethod
     def save_learning_process(run_id, learning_id):
-        try:
-            local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                           "runner-learning-process-v2.id")
-            if os.path.exists(process_id_file):
-                process_info = load_yaml_config(process_id_file)
-            else:
-                process_info = dict()
-            process_info[str(run_id)] = learning_id
-            ServerConstants.generate_yaml_doc(process_info, process_id_file)
-        except Exception as e:
-            pass
+        RunProcessUtils.save_run_process(
+            run_id, learning_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            info_file_prefix="user-process")
+
+    @staticmethod
+    def cleanup_bootstrap_process(run_id):
+        RunProcessUtils.cleanup_run_process(
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            info_file_prefix="bootstrap-process")
+
+    @staticmethod
+    def save_bootstrap_process(run_id, process_id):
+        RunProcessUtils.save_run_process(
+            run_id, process_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            info_file_prefix="bootstrap-process")
 
     @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
