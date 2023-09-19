@@ -554,8 +554,8 @@ class FedMLLaunchManager(object):
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
             else:
                 FedMLJobManager.get_instance().set_config_version(self.config_version)
-                FedMLJobManager.get_instance().stop_job(self.platform_type, result.job_id,
-                                                        FedMLLaunchManager.get_api_key())
+                FedMLJobManager.get_instance().stop_job(
+                    self.platform_type, FedMLLaunchManager.get_api_key(), result.job_id)
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
             click.echo("Please bind your credit card before launching the job.")
@@ -640,8 +640,8 @@ class FedMLLaunchManager(object):
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
-            FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
-                                                    FedMLLaunchManager.get_api_key())
+            FedMLJobManager.get_instance().stop_job(
+                self.platform_type, FedMLLaunchManager.get_api_key(), resource_id)
             return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
