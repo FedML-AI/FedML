@@ -501,8 +501,7 @@ class FedMLLaunchManager(object):
         if api_key is None or api_key == "":
             saved_api_key = FedMLLaunchManager.get_api_key()
             if saved_api_key is None or saved_api_key == "":
-                api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key",
-                                       hide_input=True)
+                api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
             else:
                 api_key = saved_api_key
 
@@ -510,7 +509,7 @@ class FedMLLaunchManager(object):
         is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please input again.")
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key", hide_input=True)
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
             is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
             if not is_valid_heartbeat:
                 click.echo("Your API Key is not correct. Please check and try again.")
@@ -695,9 +694,9 @@ class FedMLLaunchManager(object):
 
         return result.job_id, project_id, 0, ""
 
-    def list_jobs(self, job_id):
+    def list_jobs(self, job_name, job_id):
         job_status = None
-        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, None, None,
+        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, None, job_name,
                                                                FedMLLaunchManager.get_api_key(), job_id=job_id)
         if job_list_obj is not None and len(job_list_obj.job_list) > 0:
             click.echo("Found the following matched jobs.")
@@ -724,7 +723,7 @@ class FedMLLaunchManager(object):
 
         # Show job info
         FedMLJobManager.get_instance().set_config_version(self.config_version)
-        job_status = self.list_jobs(job_id)
+        job_status = self.list_jobs(job_name=None, job_id=job_id)
         if job_status is None:
             return None, 0, 0, None
 
