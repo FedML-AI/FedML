@@ -1063,6 +1063,7 @@ class FedMLServerRunner:
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             run_id = request_json["runId"]
+            run_id_str = str(run_id)
 
             # Start log processor for current run
             self.args.run_id = run_id
@@ -1173,6 +1174,7 @@ class FedMLServerRunner:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(request_json)
             run_id = request_json["runId"]
+            run_id_str = str(run_id)
 
             self.init_job_task(request_json)
 
@@ -1195,11 +1197,11 @@ class FedMLServerRunner:
                 self.edge_status_queue_map[run_id_str] = Queue()
             server_runner.edge_status_queue = self.edge_status_queue_map[run_id_str]
             logging.info("start the runner process.")
-            self.run_process_map[run_id_str] = Process(target=server_runner.run, args=(
+            server_process = Process(target=server_runner.run, args=(
                 self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str],
                 self.edge_status_queue_map[run_id_str], ))
-            self.run_process_map[run_id_str].start()
-            ServerConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
+            server_process.start()
+            # ServerConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
 
     def start_cloud_server_process_entry(self):
         try:
@@ -1660,7 +1662,7 @@ class FedMLServerRunner:
                 pass
 
             if self.run_process_map.get(run_id_str, None) is not None:
-                self.run_process_map.pop(run_id)
+                self.run_process_map.pop(run_id_str)
 
     def cleanup_client_with_status(self):
         if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
