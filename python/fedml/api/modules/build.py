@@ -4,8 +4,9 @@ from os.path import expanduser
 
 import click
 
-from fedml.api.modules.utils import build_mlops_package, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
+from fedml.api.modules.utils import build_mlops_package
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
 def build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
@@ -48,7 +49,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
     except Exception as e:
         pass
 
-    ignore_list = "{},{}".format(ignore, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
+    ignore_list = "{},{}".format(ignore, Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
     pip_source_dir = os.path.dirname(pip_source_dir)
     pip_source_dir = os.path.dirname(pip_source_dir)
