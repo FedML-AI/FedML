@@ -22,13 +22,6 @@ def fedml_jobs():
     help="Id of the job.",
 )
 @click.option(
-    "--job_name",
-    "-j",
-    type=str,
-    default="",
-    help="Name of the job",
-)
-@click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
@@ -47,7 +40,7 @@ def fedml_jobs():
          "default is falcon).",
 )
 def stop_job(platform, job_id, api_key, version):
-    fedml.api.stop_job(job_id, api_key, version, platform)
+    fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
 
 
 @fedml_jobs.command("list", help="List jobs from the MLOps platform.")
