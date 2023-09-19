@@ -1,6 +1,6 @@
 import click
 
-from fedml.cli.modules import utils
+import fedml.api
 
 
 @click.command("login", help="Bind to the FedML® Launch platform (open.fedml.ai)")
@@ -59,10 +59,6 @@ from fedml.cli.modules import utils
 def fedml_login(userid, version, client, server,
                 api_key, local_server, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
-    utils.fedml_device_bind_wrapper(
-        userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
-        docker, docker_rank
-    )
-
-
+    fedml.api.login(userid, version, client, server,
+                    api_key, local_server, role, runner_cmd, device_id, os_name,
+                    docker, docker_rank)

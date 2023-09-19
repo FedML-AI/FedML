@@ -1,7 +1,7 @@
 import logging
 import fedml
 from fedml import FedMLRunner
-from fedml.model.cv.resnet import resnet20z
+from fedml.model.cv.resnet import resnet20
 
 
 def create_model():

@@ -1,6 +1,6 @@
 import click
 
-from fedml.cli.modules import utils
+import fedml.api
 
 
 @click.group("device")
@@ -70,11 +70,9 @@ def fedml_device_bind(
         api_key, local_server, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
-    utils.fedml_device_bind_wrapper(
-        userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
-        docker, docker_rank
-    )
+    fedml.api.device_bind(userid, version, client, server,
+                          api_key, local_server, role, runner_cmd, device_id, os_name,
+                          docker, docker_rank)
 
 
 @fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
@@ -92,4 +90,4 @@ def fedml_device_bind(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
 def fedml_device_unbind(client, server, docker, docker_rank):
-    utils.fedml_device_unbind_wrapper(client, server, docker, docker_rank)
+    fedml.api.device_unbind(client, server, docker, docker_rank)

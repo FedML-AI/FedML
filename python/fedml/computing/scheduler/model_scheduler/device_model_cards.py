@@ -31,7 +31,7 @@ class FedMLModelCards(Singleton):
     @staticmethod
     def get_instance():
         return FedMLModelCards()
-    
+
     def serve_model(self, model_name):
         src_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(src_folder):
@@ -43,8 +43,10 @@ class FedMLModelCards(Singleton):
         user_id = parms_dict.get("FEDML_USER_ID", os.environ.get("FEDML_USER_ID", None))
         user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
         device_type = parms_dict.get("device_type", "md.on_premise_device")
-        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", None))
-        worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
+        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS",
+                                          os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", None))
+        worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS",
+                                           os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
         additional_parms_dict = parms_dict.get("default_parms_dict", {})
         use_local_deployment = parms_dict.get("default_use_local", False)
         local_server = parms_dict.get("local_server", "127.0.0.1")
@@ -59,7 +61,7 @@ class FedMLModelCards(Singleton):
                   E.g. export FEDML_MODEL_SERVE_WORKER_DEVICE_IDS=1,2,3
                   ''')
             return False
-        
+
         if type(worker_device_ids) is not list:
             if type(worker_device_ids) is int:
                 worker_device_ids = [worker_device_ids]
@@ -68,21 +70,21 @@ class FedMLModelCards(Singleton):
         if type(master_device_id) is not list:
             master_device_id = [str(master_device_id)]
         devices = master_device_id + worker_device_ids
-        
+
         self.set_config_version(mlops_version)
         self.build_model(model_name)
         self.push_model(model_name, user_id, user_api_key)
         res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
-                           additional_parms_dict, use_local_deployment, local_server)
+                                additional_parms_dict, use_local_deployment, local_server)
         if not res:
             print("Failed to deploy model")
             return False
-        
+
     def parse_config_yaml(self, yaml_file):
         with open(yaml_file, 'r') as f:
             launch_params = yaml.safe_load(f)
         return launch_params
-    
+
     def copy_config_yaml_to_src_folder(self, src_folder, yaml_file):
         shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
         # Change the workspace to "./"
@@ -295,7 +297,7 @@ class FedMLModelCards(Singleton):
                             return "", ""
                 except:
                     print("You model repository is missing file {}, you should add it.".format(
-                    ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
+                        ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
                     return "", ""
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
@@ -361,7 +363,7 @@ class FedMLModelCards(Singleton):
                 print("Failed to pull model name {}".format(query_model_name))
 
         return result
-    
+
     def find_yaml_for_launch(self, model_name) -> str:
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
@@ -372,7 +374,7 @@ class FedMLModelCards(Singleton):
         if not os.path.exists(config_file_path):
             print("Model {} doesn't have config file. Please Create it First".format(model_name))
             return ""
-        
+
         # add some default parameters for fedml®launch to read
         addtional_parms = {
             "task_type": "serve"
@@ -383,7 +385,7 @@ class FedMLModelCards(Singleton):
         # Keep the same file name
         with open(config_file_path, 'w') as f:
             yaml.dump(config_parms, f, sort_keys=False)
-        
+
         print("The config file {} is used for launching.".format(config_file_path))
         return config_file_path
 
@@ -405,7 +407,7 @@ class FedMLModelCards(Singleton):
             else:
                 print("Failed to execute bootstrap script {}".format(bootstrap_path))
                 return False
-        
+
         # Enter main_entry
         main_entry_file = config_parms.get("entry_point", "")
         if main_entry_file == "":
@@ -428,7 +430,8 @@ class FedMLModelCards(Singleton):
         return True
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
-                     params, use_local_deployment=None, local_server=None):
+                     params, use_local_deployment=None, local_server=None,
+                     in_model_version=None, endpoint_name=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
@@ -437,9 +440,11 @@ class FedMLModelCards(Singleton):
                 return False
             for model in model_query_result.model_list:
                 model_id = model.id
-                model_version = model.model_version
+                model_version = in_model_version if in_model_version is not None and in_model_version != "" \
+                    else model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
-                                                          devices, user_id, user_api_key, local_server)
+                                                          devices, user_id, user_api_key, local_server,
+                                                          endpoint_name=endpoint_name)
                 if deployment_result is not None:
                     return True
         else:
@@ -562,7 +567,7 @@ class FedMLModelCards(Singleton):
         return ""
 
     def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
-                         user_id, user_api_key, local_server):
+                         user_id, user_api_key, local_server, endpoint_name=None):
         model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -570,7 +575,8 @@ class FedMLModelCards(Singleton):
             devices = "[" + ",".join([str(device) for device in devices]) + "]"
         model_deployment_json = {
             "edgeId": devices,
-            "endpointName": "EndPoint-{}".format(str(uuid.uuid4())),
+            "endpointName":
+                endpoint_name if endpoint_name is not None and endpoint_name != "" else f"EndPoint-{str(uuid.uuid4())}",
             "modelId": model_id,
             "modelVersion": model_version,
             "resourceType": device_type,
