@@ -16,6 +16,49 @@ from ...core.mpc.lightsecagg import (
 
 
 class LightSecAggAggregator(object):
+    """
+        Initialize a LightSecAggAggregator for federated learning.
+
+        Args:
+            train_global (Dataset): The global training dataset.
+            test_global (Dataset): The global test dataset.
+            all_train_data_num (int): The total number of training data points globally.
+            train_data_local_dict (dict): A dictionary of local training datasets for each client.
+            test_data_local_dict (dict): A dictionary of local test datasets for each client.
+            train_data_local_num_dict (dict): A dictionary of the number of local training data points for each client.
+            client_num (int): The number of client nodes participating in federated learning.
+            device (torch.device): The device on which the server runs.
+            args (argparse.Namespace): Command-line arguments and configurations.
+            model_trainer: An instance of the model trainer for federated learning.
+
+        Attributes:
+            trainer: The model trainer for federated learning.
+            args (argparse.Namespace): Command-line arguments and configurations.
+            train_global (Dataset): The global training dataset.
+            test_global (Dataset): The global test dataset.
+            val_global: The validation dataset generated from the global test dataset.
+            all_train_data_num (int): The total number of training data points globally.
+            train_data_local_dict (dict): A dictionary of local training datasets for each client.
+            test_data_local_dict (dict): A dictionary of local test datasets for each client.
+            train_data_local_num_dict (dict): A dictionary of the number of local training data points for each client.
+            client_num (int): The number of client nodes participating in federated learning.
+            device (torch.device): The device on which the server runs.
+            model_dict (dict): A dictionary to store the local models submitted by clients.
+            sample_num_dict (dict): A dictionary to store the number of samples each client used for training.
+            aggregate_encoded_mask_dict (dict): A dictionary to store encoded aggregate masks from clients.
+            flag_client_model_uploaded_dict (dict): A dictionary to track whether a client has uploaded its model.
+            flag_client_aggregate_encoded_mask_uploaded_dict (dict): A dictionary to track whether a client has uploaded its encoded aggregate mask.
+            total_dimension: The total dimension of the model's parameters.
+            dimensions (list): A list of dimensions for each parameter of the model.
+            targeted_number_active_clients (int): The targeted number of active clients for aggregation.
+            privacy_guarantee (int): The privacy guarantee parameter.
+            prime_number: The prime number used in aggregation.
+            precision_parameter: The precision parameter used in aggregation.
+
+        Returns:
+            None
+        """
+
     def __init__(
         self,
         train_global,
@@ -62,14 +105,35 @@ class LightSecAggAggregator(object):
         self.precision_parameter = args.precision_parameter
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters from the model trainer.
+
+        Returns:
+            dict: The global model parameters.
+        """
         global_model_params = self.trainer.get_model_params()
-        self.dimensions, self.total_dimension = model_dimension(global_model_params)
+        self.dimensions, self.total_dimension = model_dimension(
+            global_model_params)
         return global_model_params
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters in the model trainer.
+
+        Args:
+            model_parameters (dict): The global model parameters to be set.
+        """
         self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
+        """
+        Add the locally trained model results for a client.
+
+        Args:
+            index (int): The index of the client.
+            model_params (dict): The locally trained model parameters.
+            sample_num (int): The number of samples used for training.
+        """
         logging.info("add_model. index = %d" % index)
         # for key in model_params.keys():
         #     model_params[key] = model_params[key].to(self.device)
@@ -78,11 +142,24 @@ class LightSecAggAggregator(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def add_local_aggregate_encoded_mask(self, index, aggregate_encoded_mask):
+        """
+        Add the locally generated aggregate encoded mask for a client.
+
+        Args:
+            index (int): The index of the client.
+            aggregate_encoded_mask (array): The encoded aggregate mask.
+        """
         logging.info("add_aggregate_encoded_mask index = %d" % index)
         self.aggregate_encoded_mask_dict[index] = aggregate_encoded_mask
         self.flag_client_aggregate_encoded_mask_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check whether all clients have uploaded their local models.
+
+        Returns:
+            bool: True if all clients have uploaded their models, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -91,6 +168,12 @@ class LightSecAggAggregator(object):
         return True
 
     def check_whether_all_aggregate_encoded_mask_receive(self):
+        """
+        Check whether all clients have uploaded their aggregate encoded masks.
+
+        Returns:
+            bool: True if all clients have uploaded their masks, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_aggregate_encoded_mask_uploaded_dict[idx]:
                 return False
@@ -100,38 +183,60 @@ class LightSecAggAggregator(object):
 
     def aggregate_mask_reconstruction(self, active_clients):
         """
-        Recover the aggregate-mask via decoding
+        Recover the aggregate-mask via decoding.
+
+        Args:
+            active_clients (list): List of active client indices for aggregation.
+
+        Returns:
+            array: The reconstructed aggregate mask.
         """
         d = self.total_dimension
         N = self.client_num
         U = self.targeted_number_active_clients
         T = self.privacy_guarantee
         p = self.prime_number
-        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+        logging.debug(
+            "d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
         d = int(np.ceil(float(d) / (U - T))) * (U - T)
 
         alpha_s = np.array(range(N)) + 1
         beta_s = np.array(range(U)) + (N + 1)
         logging.info("Server starts the reconstruction of aggregate_mask")
-        aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
+        aggregate_encoded_mask_buffer = np.zeros(
+            (U, d // (U - T)), dtype="int64")
         # logging.info(
         #     "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
         #         active_clients, self.aggregate_encoded_mask_dict
         #     )
         # )
         for i, client_idx in enumerate(active_clients):
-            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
+            aggregate_encoded_mask_buffer[i,
+                                          :] = self.aggregate_encoded_mask_dict[client_idx]
         eval_points = alpha_s[active_clients]
-        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
-        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
+        aggregate_mask = LCC_decoding_with_points(
+            aggregate_encoded_mask_buffer, eval_points, beta_s, p)
+        logging.info(
+            "Server finish the reconstruction of aggregate_mask via LCC decoding")
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
         # logging.info("aggregated mask = {}".format(aggregate_mask))
         return aggregate_mask
 
     def aggregate_model_reconstruction(self, active_clients_first_round, active_clients_second_round):
+        """
+        Perform aggregate model reconstruction using encoded masks.
+
+        Args:
+            active_clients_first_round (list): List of active client indices in the first round.
+            active_clients_second_round (list): List of active client indices in the second round.
+
+        Returns:
+            dict: The averaged global model parameters after reconstruction.
+        """
         start_time = time.time()
-        aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)
+        aggregate_mask = self.aggregate_mask_reconstruction(
+            active_clients_second_round)
         p = self.prime_number
         q_bits = self.precision_parameter
         logging.info("Server starts the reconstruction of aggregate_model")
@@ -146,7 +251,7 @@ class LightSecAggAggregator(object):
                     averaged_params[k] += local_model_params[k]
             cur_shape = np.shape(averaged_params[k])
             d = self.dimensions[j]
-            cur_mask = np.array(aggregate_mask[pos : pos + d, :])
+            cur_mask = np.array(aggregate_mask[pos: pos + d, :])
             cur_mask = np.reshape(cur_mask, cur_shape)
 
             # Cancel out the aggregate-mask to recover the aggregate-model
@@ -157,7 +262,8 @@ class LightSecAggAggregator(object):
         # Convert the model from finite to real
         # logging.info("Server converts the aggregate_model from finite to tensor")
         # logging.info("aggregate model before transform = {}".format(averaged_params))
-        averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
+        averaged_params = transform_finite_to_tensor(
+            averaged_params, p, q_bits)
 
         # do the avg after transform
         for j, k in enumerate(averaged_params):
@@ -188,15 +294,18 @@ class LightSecAggAggregator(object):
 
         """
         logging.info(
-            "client_num_in_total = %d, client_num_per_round = %d" % (client_num_in_total, client_num_per_round)
+            "client_num_in_total = %d, client_num_per_round = %d" % (
+                client_num_in_total, client_num_per_round)
         )
         assert client_num_in_total >= client_num_per_round
 
         if client_num_in_total == client_num_per_round:
             return [i for i in range(client_num_per_round)]
         else:
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
+            # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(round_idx)
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False)
             return data_silo_index_list
 
     def client_selection(self, round_idx, client_id_list_in_total, client_num_per_round):
@@ -213,31 +322,78 @@ class LightSecAggAggregator(object):
         """
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
-        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
+        # make sure for each comparison, we are selecting the same clients each round
+        np.random.seed(round_idx)
+        client_id_list_in_this_round = np.random.choice(
+            client_id_list_in_total, client_num_per_round, replace=False)
         return client_id_list_in_this_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Sample a list of clients for the current training round.
+
+        Args:
+            round_idx (int): Round index, starting from 0.
+            client_num_in_total (int): Total number of clients in the dataset.
+            client_num_per_round (int): The number of clients to sample for the current round.
+
+        Returns:
+            list: List of sampled client indices for the current round.
+        """
         if client_num_in_total == client_num_per_round:
-            client_indexes = [client_index for client_index in range(client_num_in_total)]
+            client_indexes = [
+                client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+            # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(round_idx)
+            client_indexes = np.random.choice(
+                range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation dataset subset.
+
+        Args:
+            num_samples (int): The number of samples to include in the validation set.
+
+        Returns:
+            torch.utils.data.DataLoader: DataLoader for the validation dataset subset.
+        """
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
-            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
-            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+            sample_indices = random.sample(
+                range(test_data_num), min(num_samples, test_data_num))
+            subset = torch.utils.data.Subset(
+                self.test_global.dataset, sample_indices)
+            sample_testset = torch.utils.data.DataLoader(
+                subset, batch_size=self.args.batch_size)
             return sample_testset
         else:
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        """
+        Perform testing on the server for all clients and log the results.
+
+        Args:
+            round_idx (int): Round index, starting from 0.
+
+        This method tests the performance of the global model on both the training and testing datasets for all clients
+        and logs the results. It calculates and logs the training accuracy, training loss, test accuracy, and test loss.
+
+        If the `round_idx` is a multiple of the specified `frequency_of_the_test` or it's the final round (`comm_round - 1`),
+        testing is performed; otherwise, it is skipped.
+
+        The results are logged using the `wandb` library if the `enable_wandb` flag is set.
+
+        Note: The method assumes that the `trainer` attribute has appropriate testing methods defined.
+
+        Returns:
+            None
+        """
         # if self.trainer.test_on_the_server(
         #     self.train_data_local_dict,
         #     self.test_data_local_dict,
@@ -247,13 +403,15 @@ class LightSecAggAggregator(object):
         #     return
 
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+            logging.info(
+                "################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
+                metrics = self.trainer.test(
+                    self.train_data_local_dict[client_idx], self.device, self.args)
                 train_tot_correct, train_num_sample, train_loss = (
                     metrics["test_correct"],
                     metrics["test_total"],
@@ -272,7 +430,8 @@ class LightSecAggAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            mlops.log({"accuracy": round(train_acc, 4), "loss": round(train_loss, 4)})
+            mlops.log({"accuracy": round(train_acc, 4),
+                      "loss": round(train_loss, 4)})
 
             # test data
             test_num_samples = []
@@ -280,9 +439,11 @@ class LightSecAggAggregator(object):
             test_losses = []
 
             if round_idx == self.args.comm_round - 1:
-                metrics = self.trainer.test(self.test_global, self.device, self.args)
+                metrics = self.trainer.test(
+                    self.test_global, self.device, self.args)
             else:
-                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                metrics = self.trainer.test(
+                    self.val_global, self.device, self.args)
 
             test_tot_correct, test_num_sample, test_loss = (
                 metrics["test_correct"],

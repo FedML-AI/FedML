@@ -3,6 +3,25 @@ from ..core import ClientTrainer
 
 
 class FedMLCrossSiloClient:
+    """
+    Represents a client for a cross-silo federated learning setup.
+
+    Args:
+        args (object): An object containing various configuration parameters.
+        device (torch.device): The device (e.g., 'cpu' or 'cuda') for computation.
+        dataset (tuple): A tuple containing dataset-related information.
+        model (torch.nn.Module): The PyTorch model used in federated learning.
+        model_trainer (ClientTrainer, optional): An optional client trainer.
+
+    Raises:
+        Exception: If an unsupported federated optimizer is specified in args.
+
+    Attributes:
+        None
+
+    Methods:
+        run(): Placeholder method for client execution.
+    """
     def __init__(self, args, device, dataset, model, model_trainer: ClientTrainer = None):
         if args.federated_optimizer == "FedAvg":
             [
@@ -61,4 +80,13 @@ class FedMLCrossSiloClient:
             raise Exception("Exception")
 
     def run(self):
+        """
+        Placeholder method for client execution.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass

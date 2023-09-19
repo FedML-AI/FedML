@@ -2,6 +2,25 @@ from fedml.core import ServerAggregator
 
 
 class FedMLCrossSiloServer:
+    """
+    Represents a server for a cross-silo federated learning setup.
+
+    Args:
+        args (object): An object containing various configuration parameters.
+        device (torch.device): The device (e.g., 'cpu' or 'cuda') for computation.
+        dataset (tuple): A tuple containing dataset-related information.
+        model (torch.nn.Module): The PyTorch model used in federated learning.
+        server_aggregator (ServerAggregator, optional): An optional server aggregator.
+
+    Raises:
+        Exception: If an unsupported federated optimizer is specified in args.
+
+    Attributes:
+        None
+
+    Methods:
+        run(): Placeholder method for server execution.
+    """
     def __init__(self, args, device, dataset, model, server_aggregator: ServerAggregator = None):
         if args.federated_optimizer == "FedAvg":
             from fedml.cross_silo.server import server_initializer
@@ -65,4 +84,13 @@ class FedMLCrossSiloServer:
             raise Exception("Exception")
 
     def run(self):
+        """
+        Placeholder method for server execution.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass
