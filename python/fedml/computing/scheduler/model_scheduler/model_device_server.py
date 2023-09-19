@@ -41,7 +41,7 @@ class FedMLModelDeviceServerRunner:
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))
-        self.edge_id = self.bind_device()
+        self.edge_id = self.bind_device(init_params=False)
         self.agent_process.start()
 
     def run_entry(self, process_event):
@@ -101,7 +101,7 @@ class FedMLModelDeviceServerRunner:
         setattr(self.args, "using_mlops", True)
         setattr(self.args, "server_agent_id", edge_id)
 
-    def bind_device(self):
+    def bind_device(self, init_params=True):
         self.unique_device_id = self.get_binding_unique_device_id(self.current_device_id, self.os_name,
                                                                   self.is_from_docker)
 
@@ -136,14 +136,15 @@ class FedMLModelDeviceServerRunner:
         self.edge_id = edge_id
 
         # Init runtime logs
-        setattr(self.args, "client_id", edge_id)
-        self.real_server_runner.infer_host = self.infer_host
-        self.real_server_runner.redis_addr = self.redis_addr
-        self.real_server_runner.redis_port = self.redis_port
-        self.real_server_runner.redis_password = self.redis_password
-        self.init_logs_param(edge_id)
-        self.real_server_runner.args = self.args
-        self.real_server_runner.run_as_edge_server_and_agent = True
+        if init_params:
+            setattr(self.args, "client_id", edge_id)
+            self.real_server_runner.infer_host = self.infer_host
+            self.real_server_runner.redis_addr = self.redis_addr
+            self.real_server_runner.redis_port = self.redis_port
+            self.real_server_runner.redis_password = self.redis_password
+            self.init_logs_param(edge_id)
+            self.real_server_runner.args = self.args
+            self.real_server_runner.run_as_edge_server_and_agent = True
 
         return edge_id
 

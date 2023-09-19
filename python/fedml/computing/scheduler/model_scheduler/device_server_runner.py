@@ -1558,8 +1558,10 @@ class FedMLServerRunner:
     def stop_agent(self):
         if self.run_process_event is not None:
             self.run_process_event.set()
-        self.mqtt_mgr.loop_stop()
-        self.mqtt_mgr.disconnect()
+
+        if self.mqtt_mgr is not None:
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
 
     def start_agent_mqtt_loop(self, should_exit_sys=True):
         # Start MQTT message loop
