@@ -21,6 +21,21 @@ With the aggregated gradient, the parameter server performs a gradient descent u
 
 
 class BulyanDefense(BaseDefenseMethod):
+    """
+    Bulyan Defense for Federated Learning.
+
+    Bulyan Defense is a defense method for federated learning that aims to mitigate the impact of Byzantine clients
+    by selecting a subset of clients' gradients for aggregation.
+
+    Args:
+        config: Configuration parameters for the defense.
+            - byzantine_client_num (int): The number of Byzantine (malicious) clients.
+            - client_num_per_round (int): The total number of clients participating in each aggregation round.
+
+    Attributes:
+        byzantine_client_num (int): The number of Byzantine (malicious) clients.
+        client_num_per_round (int): The total number of clients participating in each aggregation round.
+    """
     def __init__(self, config):
         self.byzantine_client_num = config.byzantine_client_num
         self.client_num_per_round = config.client_num_per_round
@@ -37,6 +52,18 @@ class BulyanDefense(BaseDefenseMethod):
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ) -> OrderedDict:
+        """
+        Run the Bulyan Defense to aggregate gradients.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): A list of tuples containing the number of samples
+                and gradients for each client.
+            base_aggregation_func (Callable, optional): The base aggregation function to use. Default is None.
+            extra_auxiliary_info (Any, optional): Additional auxiliary information. Default is None.
+
+        Returns:
+            OrderedDict: The aggregated gradients after applying the Bulyan Defense.
+        """
         # note: raw_client_grad_list is a list, each item is (sample_num, gradients).
         num_clients = len(raw_client_grad_list)
         (num0, localw0) = raw_client_grad_list[0]
@@ -70,6 +97,18 @@ class BulyanDefense(BaseDefenseMethod):
         return aggregated_params
 
     def _bulyan(self, users_params, users_count, corrupted_count):
+        """
+        Perform the Bulyan aggregation.
+
+        Args:
+            users_params (numpy.ndarray): Gradients of users' parameters.
+            users_count (int): The total number of users.
+            corrupted_count (int): The number of corrupted (Byzantine) users.
+
+        Returns:
+            Tuple[List[int], List[numpy.ndarray], numpy.ndarray]: A tuple containing the selected indices,
+                selected set of gradients, and the aggregated gradients.
+        """
         assert users_count >= 4 * corrupted_count + 3
         set_size = users_count - 2 * corrupted_count
         selection_set = []
@@ -98,6 +137,16 @@ class BulyanDefense(BaseDefenseMethod):
 
     @staticmethod
     def trimmed_mean(users_params, corrupted_count):
+        """
+        Compute the trimmed mean of users' gradients.
+
+        Args:
+            users_params (numpy.ndarray): Gradients of users' parameters.
+            corrupted_count (int): The number of corrupted (Byzantine) users.
+
+        Returns:
+            numpy.ndarray: The trimmed mean of gradients.
+        """
 
         users_params = np.array(users_params)
         number_to_consider = int(users_params.shape[0] - corrupted_count) - 1
@@ -120,6 +169,19 @@ class BulyanDefense(BaseDefenseMethod):
         distances=None,
         return_index=False,
     ):
+        """
+        Perform the Krum selection.
+
+        Args:
+            users_params (numpy.ndarray): Gradients of users' parameters.
+            users_count (int): The total number of users.
+            corrupted_count (int): The number of corrupted (Byzantine) users.
+            distances (dict, optional): Precomputed distances between users. Default is None.
+            return_index (bool, optional): Whether to return the selected index. Default is False.
+
+        Returns:
+            numpy.ndarray or int: The selected gradients or index.
+        """
 
         non_malicious_count = users_count - corrupted_count
         minimal_error = 1e20
@@ -141,6 +203,15 @@ class BulyanDefense(BaseDefenseMethod):
 
     @staticmethod
     def _krum_create_distances(users_params):
+        """
+        Create pairwise distances between users' gradients.
+
+        Args:
+            users_params (numpy.ndarray): Gradients of users' parameters.
+
+        Returns:
+            dict: A dictionary containing pairwise distances between users' gradients.
+        """
         distances = defaultdict(dict)
         for i in range(len(users_params)):
             for j in range(i):

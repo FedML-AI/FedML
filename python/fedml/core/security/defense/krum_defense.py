@@ -16,6 +16,12 @@ https://infoscience.epfl.ch/record/287261
 
 class KrumDefense(BaseDefenseMethod):
     def __init__(self, config):
+        """
+        Initialize the KrumDefense method.
+
+        Args:
+            config (object): Configuration object containing defense parameters.
+        """
         self.config = config
         self.byzantine_client_num = config.byzantine_client_num
 
@@ -29,6 +35,16 @@ class KrumDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform defense before aggregation using the KrumDefense method.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Additional information (optional).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of defended client gradients.
+        """
         num_client = len(raw_client_grad_list)
         # in the Krum paper, it says 2 * byzantine_client_num + 2 < client #
         if not 2 * self.byzantine_client_num + 2 <= num_client - self.krum_param_m:
@@ -48,6 +64,15 @@ class KrumDefense(BaseDefenseMethod):
         return [raw_client_grad_list[i] for i in score_index]
 
     def _compute_krum_score(self, vec_grad_list):
+        """
+        Compute Krum scores for the given list of gradient vectors.
+
+        Args:
+            vec_grad_list (List[torch.Tensor]): List of gradient vectors.
+
+        Returns:
+            List[float]: List of Krum scores.
+        """
         krum_scores = []
         num_client = len(vec_grad_list)
         for i in range(0, num_client):

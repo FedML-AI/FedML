@@ -27,7 +27,42 @@ and alpha = 0 indicates the global model is identical to the old one.
 
 
 class SLSGDDefense(BaseDefenseMethod):
+    """
+    Stochastic Leader Selection for SGD Defense.
+
+    This defense method performs leader selection and aggregation for federated learning.
+
+    Args:
+        config: Configuration parameters.
+
+    Attributes:
+        b (int): Parameter of trimmed mean.
+        alpha (float): Weighting factor for aggregation.
+        option_type (int): Type of option.
+        config: Configuration parameters.
+
+    Methods:
+        defend_before_aggregation(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
+        ) -> List[Tuple[float, OrderedDict]]:
+        Perform preprocessing and leader selection on client gradients before aggregation.
+
+        defend_on_aggregation(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
+        ) -> OrderedDict:
+        Perform aggregation with leader selection based on the given configuration.
+
+    """
     def __init__(self, config):
+        """
+        Initialize the SLSGDDefense.
+
+        Args:
+            config: Configuration parameters.
+        """
         self.b = config.trim_param_b  # parameter of trimmed mean
         if config.alpha > 1 or config.alpha < 0:
             raise ValueError("the bound of alpha is [0, 1]")
@@ -40,6 +75,19 @@ class SLSGDDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform preprocessing and leader selection on client gradients before aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]:
+                Processed and selected client gradients.
+        """
         if self.b > math.ceil(len(raw_client_grad_list) / 2) - 1 or self.b < 0:
             raise ValueError(
                 "the bound of b is [0, {}])".format(
@@ -60,6 +108,21 @@ class SLSGDDefense(BaseDefenseMethod):
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform aggregation with leader selection based on the given configuration.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            base_aggregation_func (Callable, optional):
+                Base aggregation function (currently unused).
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            OrderedDict:
+                Aggregated parameters after leader selection and aggregation.
+        """
         global_model = extra_auxiliary_info
         avg_params = base_aggregation_func(args=self.config, raw_grad_list=raw_client_grad_list)
         for k in avg_params.keys():
