@@ -13,6 +13,24 @@ from collections import OrderedDict
 # too much difference: malicious, need further defense
 # todo: pretraining round?
 class CrossRoundDefense(BaseDefenseMethod):
+    """
+    CrossRoundDefense for Federated Learning.
+
+    CrossRoundDefense is a defense method for federated learning that detects potentially poisoned workers
+    based on cosine similarity between client and global model features across training rounds.
+
+    Args:
+        config: Configuration parameters for the defense, including 'upperbound' and 'lowerbound'.
+
+    Attributes:
+        potentially_poisoned_worker_list (list): List of potentially poisoned worker indices.
+        lazy_worker_list (list): List of lazy worker indices.
+        upperbound (float): Threshold for detecting potential attacks.
+        lowerbound (float): Threshold for defining "very limited difference."
+        client_cache (list): Cache of client features for comparison across training rounds.
+        training_round (int): The current training round.
+        is_attack_existing (bool): Flag indicating whether an attack exists in the current round.
+    """
     def __init__(self, config):
         self.potentially_poisoned_worker_list = []
         self.lazy_worker_list = None
@@ -28,6 +46,16 @@ class CrossRoundDefense(BaseDefenseMethod):
             raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
+        """
+        Apply CrossRoundDefense before model aggregation.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients for the current round.
+            extra_auxiliary_info: Global model or auxiliary information.
+
+        Returns:
+            list: List of potentially poisoned client gradients.
+        """
         self.is_attack_existing = False
         client_features = self._get_importance_feature(raw_client_grad_list)
         if self.training_round == 1:
@@ -71,9 +99,25 @@ class CrossRoundDefense(BaseDefenseMethod):
         return raw_client_grad_list
 
     def get_potential_poisoned_clients(self):
+        """
+        Get the list of potentially poisoned client indices.
+
+        Returns:
+            list: List of potentially poisoned client indices.
+        """
         return self.potentially_poisoned_worker_list
 
     def compute_client_cosine_scores(self, client_features, global_model_feature):
+        """
+        Compute cosine similarity scores between client features and global model features.
+
+        Args:
+            client_features (list): List of client feature vectors.
+            global_model_feature (list): Feature vector of the global model.
+
+        Returns:
+            tuple: Two lists of cosine similarity scores for each client (client-wise and global-wise).
+        """
         client_wise_scores = []
         global_wise_scores = []
         num_client = len(client_features)
@@ -85,6 +129,15 @@ class CrossRoundDefense(BaseDefenseMethod):
         return client_wise_scores, global_wise_scores
 
     def _get_importance_feature(self, raw_client_grad_list):
+        """
+        Extract importance features from client gradients.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients.
+
+        Returns:
+            list: List of extracted importance feature vectors.
+        """
         ret_feature_vector_list = []
         for idx in range(len(raw_client_grad_list)):
             raw_grad = raw_client_grad_list[idx]
@@ -96,6 +149,15 @@ class CrossRoundDefense(BaseDefenseMethod):
 
     @classmethod
     def _get_importance_feature_of_a_model(self, grad):
+        """
+        Extract importance feature from a client gradient.
+
+        Args:
+            grad (OrderedDict): Client gradient.
+
+        Returns:
+            numpy.ndarray: Importance feature vector.
+        """
         # Get last key-value tuple
         (weight_name, importance_feature) = list(grad.items())[-2]
         # print(importance_feature)

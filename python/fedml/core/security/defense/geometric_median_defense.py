@@ -20,7 +20,23 @@ With the aggregated gradient, the parameter server performs a gradient descent u
 
 
 class GeometricMedianDefense(BaseDefenseMethod):
+    """
+    Defense method using Geometric Median for federated learning.
+
+    Attributes:
+        byzantine_client_num: Number of Byzantine clients in the system.
+        client_num_per_round: Number of clients participating in each round.
+        batch_num: Number of batches used for geometric median computation.
+        batch_size: Size of each batch for gradient aggregation.
+    """
+
     def __init__(self, config):
+        """
+        Initialize the GeometricMedianDefense.
+
+        Args:
+            config: Configuration parameters for the defense method.
+        """
         self.byzantine_client_num = config.byzantine_client_num
         self.client_num_per_round = config.client_num_per_round
         # 2(1 + ε )q ≤ batch_num ≤ client_num_per_round
@@ -37,7 +53,19 @@ class GeometricMedianDefense(BaseDefenseMethod):
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ):
-        batch_grad_list = Bucket.bucketization(raw_client_grad_list, self.batch_size)
+        """
+        Apply Geometric Median defense on gradient aggregation.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients for the current round.
+            base_aggregation_func (Callable): Base aggregation function to use (optional).
+            extra_auxiliary_info: Additional information required for defense (optional).
+
+        Returns:
+            OrderedDict: Aggregated global model parameters.
+        """
+        batch_grad_list = Bucket.bucketization(
+            raw_client_grad_list, self.batch_size)
         (num0, avg_params) = batch_grad_list[0]
         alphas = {alpha for (alpha, params) in batch_grad_list}
         alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
@@ -45,5 +73,3 @@ class GeometricMedianDefense(BaseDefenseMethod):
             batch_grads = [params[k] for (alpha, params) in batch_grad_list]
             avg_params[k] = compute_geometric_median(alphas, batch_grads)
         return avg_params
-
-

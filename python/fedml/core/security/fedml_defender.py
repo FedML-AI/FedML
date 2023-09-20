@@ -38,21 +38,64 @@ from ...core.security.constants import (
 
 
 class FedMLDefender:
+    """
+    A class for managing defense mechanisms in federated learning.
+
+    This class handles the configuration and execution of defense mechanisms to enhance the robustness
+    of federated learning against adversarial attacks.
+
+    Methods:
+        get_instance: Get an instance of the FedMLDefender class.
+        init: Initialize the defense mechanism based on configuration.
+        is_defense_enabled: Check if defense mechanisms are enabled.
+        defend: Defend against adversarial attacks on client gradients.
+        is_defense_on_aggregation: Check if defense occurs during aggregation.
+        is_defense_before_aggregation: Check if defense occurs before aggregation.
+        is_defense_after_aggregation: Check if defense occurs after aggregation.
+        defend_before_aggregation: Apply defense before gradient aggregation.
+        defend_on_aggregation: Apply defense during gradient aggregation.
+        defend_after_aggregation: Apply defense after gradient aggregation.
+        get_malicious_client_idxs: Get the indices of malicious clients.
+        get_benign_client_idxs: Get the indices of benign clients.
+
+    Attributes:
+        None
+    """
+
     _defender_instance = None
 
     @staticmethod
     def get_instance():
+        """
+        Get an instance of the FedMLDefender class.
+
+        Returns:
+            FedMLDefender: An instance of the FedMLDefender class.
+        """
+
         if FedMLDefender._defender_instance is None:
             FedMLDefender._defender_instance = FedMLDefender()
 
         return FedMLDefender._defender_instance
 
     def __init__(self):
+        """
+        Initialize a FedMLDefender instance.
+        """
         self.is_enabled = False
         self.defense_type = None
         self.defender = None
 
     def init(self, args):
+        """
+        Initialize the defense mechanism based on configuration.
+
+        Args:
+            args: The command-line arguments.
+
+        Raises:
+            Exception: If the defense mechanism type is not defined.
+        """
         if hasattr(args, "enable_defense") and args.enable_defense:
             self.args = args
             logging.info("------init defense..." + args.defense_type)
@@ -114,6 +157,12 @@ class FedMLDefender:
             self.is_enabled = False
 
     def is_defense_enabled(self):
+        """
+        Check if defense mechanisms are enabled.
+
+        Returns:
+            bool: True if defense is enabled, False otherwise.
+        """
         return self.is_enabled
 
     def defend(
@@ -122,6 +171,21 @@ class FedMLDefender:
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Defend against adversarial attacks on client gradients.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): A list of tuples, each containing a weight and a
+                dictionary of client gradients.
+            base_aggregation_func (Callable, optional): The base aggregation function for gradient aggregation.
+            extra_auxiliary_info (Any, optional): Additional auxiliary information for the defense mechanism.
+
+        Returns:
+            Any: The defended client gradients or the result of the aggregation function.
+
+        Raises:
+            Exception: If the defender is not initialized.
+        """
         if self.defender is None:
             raise Exception("defender is not initialized!")
         return self.defender.run(
@@ -129,9 +193,22 @@ class FedMLDefender:
         )
 
     def is_defense_on_aggregation(self):
+        """
+        Check if defense occurs during gradient aggregation.
+
+        Returns:
+            bool: True if defense occurs during aggregation, False otherwise.
+        """
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_RFA, DEFENSE_WISE_MEDIAN, DEFENSE_GEO_MEDIAN]
 
     def is_defense_before_aggregation(self):
+        """
+        Check if defense occurs before gradient aggregation.
+
+        Returns:
+            bool: True if defense occurs before aggregation, False otherwise.
+        """
+
         return self.is_defense_enabled() and self.defense_type in [
             DEFENSE_SLSGD,
             DEFENSE_FOOLSGOLD,
@@ -147,6 +224,13 @@ class FedMLDefender:
         ]
 
     def is_defense_after_aggregation(self):
+        """
+        Check if defense occurs after gradient aggregation.
+
+        Returns:
+            bool: True if defense occurs after aggregation, False otherwise.
+        """
+
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_CRFL, DEFENSE_CCLIP]
 
     def defend_before_aggregation(
@@ -154,6 +238,20 @@ class FedMLDefender:
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Apply defense before gradient aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): A list of tuples, each containing a weight and a
+                dictionary of client gradients.
+            extra_auxiliary_info (Any, optional): Additional auxiliary information for the defense mechanism.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: The defended client gradients.
+
+        Raises:
+            Exception: If the defender is not initialized.
+        """
         if self.defender is None:
             raise Exception("defender is not initialized!")
         if self.is_defense_before_aggregation():
@@ -168,6 +266,21 @@ class FedMLDefender:
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Apply defense during gradient aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): A list of tuples, each containing a weight and a
+                dictionary of client gradients.
+            base_aggregation_func (Callable, optional): The base aggregation function for gradient aggregation.
+            extra_auxiliary_info (Any, optional): Additional auxiliary information for the defense mechanism.
+
+        Returns:
+            Any: The defended client gradients or the result of the aggregation function.
+
+        Raises:
+            Exception: If the defender is not initialized.
+        """
         if self.defender is None:
             raise Exception("defender is not initialized!")
         if self.is_defense_on_aggregation():
@@ -177,6 +290,18 @@ class FedMLDefender:
         return base_aggregation_func(args=self.args, raw_grad_list=raw_client_grad_list)
 
     def defend_after_aggregation(self, global_model):
+        """
+        Apply defense after gradient aggregation.
+
+        Args:
+            global_model: The global model after gradient aggregation.
+
+        Returns:
+            Any: The defended global model or its equivalent.
+
+        Raises:
+            Exception: If the defender is not initialized.
+        """
         if self.defender is None:
             raise Exception("defender is not initialized!")
         if self.is_defense_after_aggregation():
@@ -184,7 +309,26 @@ class FedMLDefender:
         return global_model
 
     def get_malicious_client_idxs(self):
+        """
+        Get the indices of malicious clients.
+
+        Returns:
+            List[int]: A list of indices corresponding to malicious clients.
+        """
+
         return self.defender.get_malicious_client_idxs()
 
     def get_benign_client_idxs(self, client_idxs):
+        """
+        Get the indices of benign clients from a list of client indices.
+
+        Args:
+            client_idxs (List[int]): A list of client indices.
+
+        Returns:
+            List[int]: A list of indices corresponding to benign clients.
+
+        Notes:
+            This method assumes that malicious clients have been identified using defense mechanisms.
+        """
         return [i for i in client_idxs if i not in self.defender.get_malicious_client_idxs()]
