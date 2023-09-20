@@ -1,21 +1,18 @@
+
 import os
 import platform
 import shutil
-import time
-import uuid
 from os.path import expanduser
 
 import click
 from fedml.computing.scheduler.comm_utils import sys_utils
 
-import fedml
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
     check_fedml_is_latest_version
-from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
-from fedml.core.mlops import MLOpsUtils
 from prettytable import PrettyTable
 
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
@@ -843,8 +840,6 @@ class FedMLJobConfig(object):
         computing_obj = self.job_config_dict.get("computing", {})
         self.minimum_num_gpus = computing_obj.get("minimum_num_gpus", 0)
         self.maximum_cost_per_hour = computing_obj.get("maximum_cost_per_hour", "$0")
-        self.application_name = FedMLJobConfig.generate_application_name(self.project_name)
-        self.model_app_name = self.application_name
         self.task_type = self.job_config_dict.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
@@ -856,9 +851,9 @@ class FedMLJobConfig(object):
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
         self.serving_endpoint_name = serving_args.get("endpoint_name", "")
 
+        self.application_name = FedMLJobConfig.generate_application_name(self.workspace)
+        self.model_app_name = self.application_name
+
     @staticmethod
-    def generate_application_name(project_name):
-        return "{}-{}-{}-{}".format(Constants.LAUNCH_APP_NAME_PREFIX,
-                                    project_name if project_name is not None else Constants.LAUNCH_PROJECT_NAME_DEFAULT,
-                                    MLOpsUtils.get_ntp_time(),
-                                    str(uuid.uuid4()))
+    def generate_application_name(workspace):
+        return "{}@{}".format(Constants.LAUNCH_APP_NAME_PREFIX, get_content_hash(workspace))
