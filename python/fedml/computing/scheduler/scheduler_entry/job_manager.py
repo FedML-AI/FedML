@@ -1,9 +1,10 @@
-import json
+
 import time
 import uuid
 
 import requests
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.scheduler_entry.launch_job_interface import FedMLLaunchJobDataInterface
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
@@ -24,7 +25,8 @@ class FedMLJobManager(Singleton):
             self.config_version = config_version
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_api_key, no_confirmation=False, job_id=None):
+                  user_api_key, no_confirmation=False, job_id=None,
+                  model_name=None, model_endpoint=None, job_yaml=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -88,6 +90,29 @@ class FedMLJobManager(Singleton):
                       f"response.content: {response.content}")
                 return None
             job_start_result = FedMLJobStartedModel(data, response=resp_data)
+
+            # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
+            # if job_obj is None:
+            #     job_obj = FedMLLaunchJobDataInterface()
+            #     job_obj.status = job_start_result.status
+            #     job_obj.started_time = job_start_result.started_time
+            #     job_obj.app_name = application_name
+            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
+            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
+            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
+            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
+            #     job_obj.updated_time = str(time.time())
+            #     FedMLLaunchJobDataInterface.insert_job_to_db(job_obj)
+            # else:
+            #     job_obj.status = job_start_result.status
+            #     job_obj.started_time = job_start_result.started_time
+            #     job_obj.app_name = application_name
+            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
+            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
+            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
+            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
+            #     job_obj.updated_time = str(time.time())
+            #     FedMLLaunchJobDataInterface.update_job_to_db(job_obj)
 
         return job_start_result
 
