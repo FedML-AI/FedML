@@ -22,10 +22,27 @@ this work supports image classification over ResNet or EfficientNet.
 
 class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
     def __init__(self, batch_size, model_type):
+        """
+        Initialize the Revealing Labels from Gradients Attack.
+
+        Args:
+            batch_size (int): Batch size for the attack.
+            model_type (str): The type of the target model (e.g., "ResNet50").
+        """
         self.batch_size = batch_size
         self.model_type = model_type
 
     def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+        """
+        Reconstruct data labels using gradients information.
+
+        Args:
+            a_gradient (dict): A dictionary containing gradients information.
+            extra_auxiliary_info (Any): Additional auxiliary information (e.g., ground truth labels).
+
+        Returns:
+            None
+        """
         vec_local_weight = utils.vectorize_weight(a_gradient)
         print(vec_local_weight)
 
@@ -37,12 +54,33 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
         return
 
     def _attack_on_gradients(self, gt_labels, v):
+        """
+        Attack on gradients to infer labels.
+
+        Args:
+            gt_labels (set): Ground truth labels.
+            v: Gradients information.
+
+        Returns:
+            None
+        """
         grads = np.sign(v)
         _, pred_labels = self._infer_labels(grads, gt_k=self.batch_size, epsilon=1e-10)
         print("In gt, not in pr:", [i for i in gt_labels if i not in pred_labels])
         print("In pr, not in gt:", [i for i in pred_labels if i not in gt_labels])
 
     def _infer_labels(self, grads, gt_k=None, epsilon=1e-8):
+        """
+        Infer labels from gradients.
+
+        Args:
+            grads: Gradients information.
+            gt_k: Number of ground truth labels to consider.
+            epsilon: A small value to avoid numerical instability.
+
+        Returns:
+            Tuple[int, list]: Tuple containing the number of predicted labels and the list of inferred labels.
+        """
         m, n = np.shape(grads)
         B, s, C = np.linalg.svd(grads, full_matrices=False)
         pred_k = np.linalg.matrix_rank(grads)
@@ -91,6 +129,20 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
 
     @staticmethod
     def _solve_perceptron(X, y, fit_intercept=True, max_iter=1000, tol=1e-3, eta0=1.0):
+        """
+        Solve the perceptron problem.
+
+        Args:
+            X: Input data.
+            y: Target labels.
+            fit_intercept: Whether to fit an intercept.
+            max_iter: Maximum number of iterations.
+            tol: Tolerance for stopping criterion.
+            eta0: Learning rate.
+
+        Returns:
+            bool: True if the perceptron problem is successfully solved, False otherwise.
+        """
         from sklearn.linear_model import Perceptron
 
         clf = Perceptron(
@@ -105,6 +157,17 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
 
     @staticmethod
     def solve_lp(grads, b, c):
+        """
+        Solve a linear programming problem.
+
+        Args:
+            grads: Gradients information.
+            b: Target vector.
+            c: Coefficients matrix.
+
+        Returns:
+            bool: True if the linear programming problem is successfully solved, False otherwise.
+        """
         # from cvxopt import matrix, solvers
 
         np.solvers.options["show_progress"] = False

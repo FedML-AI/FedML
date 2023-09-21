@@ -19,6 +19,12 @@ attack @client, added by Yuhui, 07/08/2022
 
 class LabelFlippingAttack(BaseAttackMethod):
     def __init__(self, args):
+        """
+        Initialize the Label Flipping Attack.
+
+        Args:
+            args: An object containing attack configuration parameters.
+        """
         self.original_class_list = args.original_class_list
         self.target_class_list = args.target_class_list
         self.batch_size = args.batch_size
@@ -43,9 +49,21 @@ class LabelFlippingAttack(BaseAttackMethod):
         self.counter = 0
 
     def get_ite_num(self):
+        """
+        Get the current iteration number.
+
+        Returns:
+            int: The current iteration number.
+        """
         return math.floor(self.counter / self.client_num_per_round)  # ite num starts from 0
 
     def is_to_poison_data(self):
+        """
+        Check if data poisoning should be performed for the current iteration.
+
+        Returns:
+            bool: True if data poisoning should be performed, False otherwise.
+        """
         self.counter += 1
         if self.get_ite_num() < self.poison_start_round_id or self.get_ite_num() > self.poison_end_round_id:
             return False
@@ -55,11 +73,26 @@ class LabelFlippingAttack(BaseAttackMethod):
         return rand < self.ratio_of_poisoned_client
 
     def print_dataset(self, dataset):
+        """
+        Print information about the given dataset.
+
+        Args:
+            dataset: The dataset to print information about.
+        """
         print("---------------print dataset------------")
         for batch_idx, (data, target) in enumerate(dataset):
             print(f"{batch_idx} ----- {target}")
 
     def poison_data(self, local_dataset):
+        """
+        Poison the local dataset by flipping labels.
+
+        Args:
+            local_dataset: The local dataset to poison.
+
+        Returns:
+            DataLoader: The poisoned data loader.
+        """
         get_client_data_stat(local_dataset)
         # print("=======================1 end ")
         # self.print_dataset(local_dataset)
@@ -83,7 +116,7 @@ class LabelFlippingAttack(BaseAttackMethod):
             total_counter += item[1]
         # print(f"total counter = {total_counter}")
 
-        ####################### below are correct ###############################3
+        # below are correct ###############################3
 
         tmp_y = replace_original_class_with_target_class(
             data_labels=tmp_local_dataset_y,

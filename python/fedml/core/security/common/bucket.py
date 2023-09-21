@@ -5,6 +5,19 @@ from collections import OrderedDict
 class Bucket:
     @classmethod
     def bucketization(cls, client_grad_list, batch_size):
+        """
+        Perform bucketization of client gradients.
+
+        Args:
+            client_grad_list (list): A list of tuples containing client gradients, where each tuple consists of
+                the number of samples and a dictionary of gradient values.
+            batch_size (int): The desired batch size for bucketization.
+
+        Returns:
+            list: A list of batched client gradients, where each batch is represented as a tuple containing
+                the total number of samples and a dictionary of batched gradient values.
+
+        """
         (num0, averaged_params) = client_grad_list[0]
         batch_grad_list = []
         for batch_idx in range(0, math.ceil(len(client_grad_list) / batch_size)):

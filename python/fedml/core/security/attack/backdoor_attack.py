@@ -32,6 +32,16 @@ class BackdoorAttack(BaseAttackMethod):
     def __init__(
         self, backdoor_client_num, client_num, num_std=None, dataset=None, backdoor_type="pattern",
     ):
+        """
+        Initialize the BackdoorAttack.
+
+        Args:
+            backdoor_client_num (int): Number of malicious clients for the backdoor attack.
+            client_num (int): Total number of clients.
+            num_std (float): Number of standard deviations for clipping gradients (default=None).
+            dataset (Tuple[Tensor, Tensor] or None): Dataset for generating backdoor (default=None).
+            backdoor_type (str): Type of backdoor ("pattern" or "random").
+        """
         self.backdoor_client_num = backdoor_client_num
         self.client_num = client_num
         self.num_std = num_std
@@ -52,9 +62,20 @@ class BackdoorAttack(BaseAttackMethod):
             pass
 
     def attack_model(self, raw_client_grad_list: List[Tuple[float, OrderedDict]],
-        extra_auxiliary_info: Any = None):
+                     extra_auxiliary_info: Any = None):
+        """
+        Attack the model using a backdoor attack strategy.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Extra auxiliary information.
+
+        Returns:
+            np.ndarray: New gradients for malicious clients.
+        """
         # the local_w comes from local training (regular)
-        backdoor_idxs = self._get_malicious_client_idx(len(raw_client_grad_list))
+        backdoor_idxs = self._get_malicious_client_idx(
+            len(raw_client_grad_list))
         (num0, averaged_params) = raw_client_grad_list[0]
 
         # fake grad
@@ -64,54 +85,105 @@ class BackdoorAttack(BaseAttackMethod):
         for i in backdoor_idxs:
             (_, param) = raw_client_grad_list[i]
             # grad = np.concatenate([param.grad.data.cpu().numpy().flatten() for param in model.parameters()]) // for real net
-            grad = np.concatenate([param[p_name].numpy().flatten() * 0.5 for p_name in param])
+            grad = np.concatenate(
+                [param[p_name].numpy().flatten() * 0.5 for p_name in param])
             grads.append(grad)
         grads_mean = np.mean(grads, axis=0)
         grads_stdev = np.var(grads, axis=0) ** 0.5
 
         learning_rate = 0.1
-        original_params_flat = np.concatenate([averaged_params[p_name].numpy().flatten() for p_name in averaged_params])
+        original_params_flat = np.concatenate(
+            [averaged_params[p_name].numpy().flatten() for p_name in averaged_params])
         initial_params_flat = (
             original_params_flat - learning_rate * grads_mean
         )  # the corrected param after the user optimized, because we still want the model to improve
-        mal_net_params = self.train_malicious_network(initial_params_flat, original_params_flat)
+        mal_net_params = self.train_malicious_network(
+            initial_params_flat, original_params_flat)
 
         # Getting from the final required mal_net_params to the gradients that needs to be applied on the parameters of the previous round.
         new_params = mal_net_params + learning_rate * grads_mean
         new_grads = (initial_params_flat - new_params) / learning_rate
         # authors in the paper claims to limit the range of parameters but the code limits the gradient.
         new_user_grads = np.clip(
-            new_grads, grads_mean - self.num_std * grads_stdev, grads_mean + self.num_std * grads_stdev,
+            new_grads, grads_mean - self.num_std *
+            grads_stdev, grads_mean + self.num_std * grads_stdev,
         )
         # the returned gradient controls the local update for malicious clients
         return new_user_grads
 
     @staticmethod
     def add_pattern(img):
+        """
+        Add a pattern to an image (currently disabled).
+
+        Args:
+            img (Tensor): Input image.
+
+        Returns:
+            Tensor: Image with added pattern (disabled).
+        """
         # disable
         img[:, :5, :5] = 2.8
         return img
 
     def train_malicious_network(self, initial_params_flat, param):
+        """
+        Train a malicious network (currently skipped).
+
+        Args:
+            initial_params_flat (np.ndarray): Initial flattened model parameters.
+            param (np.ndarray): Original model parameters.
+
+        Returns:
+            np.ndarray: Flattened malicious model parameters.
+        """
         # skip training process
         # return flatten_params(param)
         return param
 
     def _get_malicious_client_idx(self, client_num):
+        """
+        Get indices of malicious clients.
+
+        Args:
+            client_num (int): Total number of clients.
+
+        Returns:
+            List[int]: List of indices of malicious clients.
+        """
         return random.sample(range(client_num), self.backdoor_client_num)
 
 
 def flatten_params(params):
+    """
+    Flatten model parameters.
+
+    Args:
+        params (Iterable[Tensor]): Model parameters.
+
+    Returns:
+        np.ndarray: Flattened parameters as a NumPy array.
+    """
     # for real net
     return np.concatenate([i.data.cpu().numpy().flatten() for i in params])
 
 
 def row_into_parameters(row, parameters):
+    """
+    Map a flattened row of parameters to the original model parameters.
+
+    Args:
+        row (np.ndarray): Flattened row of parameters.
+        parameters (Iterable[Tensor]): Model parameters to map to.
+
+    Returns:
+        None
+    """
     # for real net
     offset = 0
     for param in parameters:
         new_size = functools.reduce(lambda x, y: x * y, param.shape)
-        current_data = row[offset : offset + new_size]
+        current_data = row[offset: offset + new_size]
 
         param.data[:] = torch.from_numpy(current_data.reshape(param.shape))
         offset += new_size

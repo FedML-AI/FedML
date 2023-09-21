@@ -24,6 +24,12 @@ randomly select a client as a malicious client each round; attack happens at eac
 
 class ModelReplacementBackdoorAttack(BaseAttackMethod):
     def __init__(self, args):
+        """
+        Initialize the Model Replacement Backdoor Attack.
+
+        Args:
+            args: An object containing attack parameters.
+        """
         if hasattr(args, "malicious_client_id") and isinstance(args.malicious_client_id, int):
             # assume only 1 malicious client
             self.malicious_client_id = args.malicious_client_id
@@ -46,6 +52,16 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
             raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
+        """
+        Attack the global model by replacing the model of a selected malicious client.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Additional auxiliary information.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Updated list of client gradients with the model replacement attack.
+        """
         participant_num = len(raw_client_grad_list)
         if self.attack_training_rounds is not None and self.training_round not in self.attack_training_rounds:
             return raw_client_grad_list
@@ -71,6 +87,16 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
         return raw_client_grad_list
 
     def compute_gamma(self, global_model, original_client_model):
+        """
+        Compute the scaling factor gamma for model replacement.
+
+        Args:
+            global_model (OrderedDict): Global model parameters.
+            original_client_model (OrderedDict): Model parameters of the malicious client.
+
+        Returns:
+            float: Scaling factor gamma.
+        """
         # total_client_num / η, η: global learning rate;
         # when η = total_client_num/participant_num, the model is fully replaced by the average of the local models
         malicious_client_model_vec = vectorize_weight(original_client_model)

@@ -55,7 +55,8 @@ def non_iid_partition_with_dirichlet_distribution(
                     )
                 else:
                     idx_k = np.asarray(
-                        [np.any(label_list[i] == cat) for i in range(len(label_list))]
+                        [np.any(label_list[i] == cat)
+                         for i in range(len(label_list))]
                     )
 
                 # Get the indices of images that have category = c
@@ -87,6 +88,26 @@ def non_iid_partition_with_dirichlet_distribution(
 def partition_class_samples_with_dirichlet_distribution(
     N, alpha, client_num, idx_batch, idx_k
 ):
+    """
+    Partition class samples using the Dirichlet distribution.
+
+    Parameters:
+        N (int): Total number of samples to partition.
+        alpha (float): Parameter for the Dirichlet distribution.
+        client_num (int): Number of clients.
+        idx_batch (list of arrays): List of arrays containing sample indices for each client.
+        idx_k (array): Array of sample indices to be partitioned.
+
+    Returns:
+        tuple: A tuple containing the updated idx_batch and the minimum batch size.
+
+    This function partitions class samples using the Dirichlet distribution to create unbalanced proportions
+    for each client. It shuffles the sample indices, calculates the proportions, and generates batch lists
+    for each client. The minimum batch size is also computed.
+
+    Example:
+        idx_batch, min_size = partition_class_samples_with_dirichlet_distribution(N, alpha, client_num, idx_batch, idx_k)
+    """
     np.random.shuffle(idx_k)
     # using dirichlet distribution to determine the unbalanced proportion for each client (client_num in total)
     # e.g., when client_num = 4, proportions = [0.29543505 0.38414498 0.31998781 0.00043216], sum(proportions) = 1
@@ -94,7 +115,8 @@ def partition_class_samples_with_dirichlet_distribution(
 
     # get the index in idx_k according to the dirichlet distribution
     proportions = np.array(
-        [p * (len(idx_j) < N / client_num) for p, idx_j in zip(proportions, idx_batch)]
+        [p * (len(idx_j) < N / client_num)
+         for p, idx_j in zip(proportions, idx_batch)]
     )
     proportions = proportions / proportions.sum()
     proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
@@ -110,6 +132,22 @@ def partition_class_samples_with_dirichlet_distribution(
 
 
 def record_data_stats(y_train, net_dataidx_map, task="classification"):
+    """
+    Record data statistics for each client.
+
+    Parameters:
+        y_train (array): Labels for the entire dataset.
+        net_dataidx_map (dict): Mapping of client indices to their respective data indices.
+        task (str): Task type, either "classification" or "segmentation".
+
+    Returns:
+        dict: A dictionary containing class counts for each client.
+
+    This function records data statistics for each client, specifically the count of each class in their data.
+
+    Example:
+        net_cls_counts = record_data_stats(y_train, net_dataidx_map, task="classification")
+    """
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():

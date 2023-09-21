@@ -7,6 +7,41 @@ sys.setrecursionlimit(10000)
 
 
 class SeqTrainScheduler:
+    """
+        Initialize the Sequential Training Scheduler.
+
+        Parameters:
+            workloads (list): List of client workloads.
+            constraints (list): List of constraints corresponding to each resource.
+            memory (list): List of memory constraints for each resource.
+            cost_funcs (list of lists or list of functions): Cost functions for assigning workloads.
+            uniform_client (bool): Whether the client workloads are uniform.
+            uniform_gpu (bool): Whether the GPU resources are uniform.
+            prune_equal_sub_solution (bool): Whether to prune equal sub-solutions.
+
+        Attributes:
+            workloads (list): List of client workloads.
+            constraints (list): List of constraints corresponding to each resource.
+            memory (list): List of memory constraints for each resource.
+            cost_funcs (list of lists or list of functions): Cost functions for assigning workloads.
+            uniform_client (bool): Whether the client workloads are uniform.
+            uniform_gpu (bool): Whether the GPU resources are uniform.
+            len_x (int): Number of workloads (clients).
+            len_y (int): Number of constraints (resources).
+            iter_times (int): Iteration counter.
+
+        Example:
+            scheduler = SeqTrainScheduler(
+                workloads=[100, 200, 150],
+                constraints=[10, 20],
+                memory=[300, 400],
+                cost_funcs=[[cost_func1, cost_func2], [cost_func3, cost_func4]],
+                uniform_client=True,
+                uniform_gpu=False,
+                prune_equal_sub_solution=True,
+            )
+        """
+
     def __init__(
         self,
         workloads,
@@ -33,6 +68,23 @@ class SeqTrainScheduler:
         self.iter_times = 0
 
     def obtain_client_cost(self, resource_id, client_id):
+        """
+        Calculate the cost of assigning a workload to a resource.
+
+        Parameters:
+            resource_id (int): Index of the resource.
+            client_id (int): Index of the client.
+
+        Returns:
+            float: The calculated cost.
+
+        This method calculates the cost of assigning a workload to a resource based on the specified cost functions
+        and resource and client characteristics. It handles different scenarios based on the values of
+        `uniform_client` and `uniform_gpu`.
+
+        Example:
+            cost = scheduler.obtain_client_cost(0, 1)
+        """
         if self.uniform_client and self.uniform_gpu:
             # cost = self.cost_funcs[0][0](self.client_data_nums[client_id])
             cost = self.cost_funcs[0][0](self.workloads[client_id])
@@ -44,12 +96,29 @@ class SeqTrainScheduler:
             cost = self.cost_funcs[resource_id][0](self.workloads[client_id])
         else:
             # cost = self.cost_funcs[resource_id][client_id](self.client_data_nums[client_id])
-            cost = self.cost_funcs[resource_id][client_id](self.workloads[client_id])
+            cost = self.cost_funcs[resource_id][client_id](
+                self.workloads[client_id])
         if cost < 0.0:
             cost = 0.0
         return cost
 
     def assign_a_workload_serial(self, x_maps, cost_maps):
+        """
+        Assign workloads to resources sequentially.
+
+        Parameters:
+            x_maps (list): List of workload assignment maps.
+            cost_maps (list): List of cost maps corresponding to workload assignments.
+
+        Returns:
+            tuple: A tuple containing updated x_maps and cost_maps.
+
+        This method assigns workloads to resources sequentially while minimizing the cost. It explores various workload
+        assignments and prunes suboptimal solutions based on the `prune_equal_sub_solution` attribute.
+
+        Example:
+            x_maps, cost_maps = scheduler.assign_a_workload_serial(x_maps, cost_maps)
+        """
         # Find the case with the minimum cost.
         self.iter_times += 1
         costs = []
@@ -108,6 +177,24 @@ class SeqTrainScheduler:
         return self.assign_a_workload_serial(x_maps, cost_maps)
 
     def assign_a_workload(self, x_maps, cost_maps, resource_maps):
+        """
+        Assign workloads to resources considering both parallel and serial execution.
+
+        Parameters:
+            x_maps (list): List of workload assignment maps.
+            cost_maps (list): List of cost maps corresponding to workload assignments.
+            resource_maps (list): List of resource maps.
+
+        Returns:
+            tuple: A tuple containing updated x_maps, cost_maps, and resource_maps.
+
+        This method assigns workloads to resources while considering both parallel and serial execution possibilities.
+        It explores various workload assignments and prunes suboptimal solutions based on the `prune_equal_sub_solution`
+        attribute.
+
+        Example:
+            x_maps, cost_maps, resource_maps = scheduler.assign_a_workload(x_maps, cost_maps, resource_maps)
+        """
         # Find the case with the minimum cost.
         costs = []
         for i in range(len(cost_maps)):
@@ -139,7 +226,8 @@ class SeqTrainScheduler:
             new_maps.append(np.copy(x_map))
             new_maps[-1][target_index] = i
             new_costs.append(np.copy(cost_map))
-            new_costs[-1][i] = max((self.y[i] * self.x[target_index]), new_costs[-1][i])
+            new_costs[-1][i] = max((self.y[i] *
+                                   self.x[target_index]), new_costs[-1][i])
             new_resources.append(np.copy(resource_map))
             new_resources[-1][i] += self.x[target_index]
 
@@ -163,6 +251,22 @@ class SeqTrainScheduler:
         return self.assign_a_workload(x_maps, cost_maps, resource_maps)
 
     def DP_schedule(self, mode):
+        """
+        Perform Dynamic Programming (DP) based scheduling.
+
+        Parameters:
+            mode (int): Scheduling mode, 0 for serial, 1 for parallel.
+
+        Returns:
+            tuple: A tuple containing the schedules and output_schedules.
+
+        This method performs dynamic programming-based scheduling to assign workloads to resources while minimizing
+        the cost. It explores various workload assignments and prunes suboptimal solutions based on the scheduling mode.
+        The schedules are returned in the format of a list of dictionaries.
+
+        Example:
+            schedules, output_schedules = scheduler.DP_schedule(1)
+        """
         x_maps = []
         x_maps.append(np.negative(np.ones((self.len_x))))
         cost_maps = []
@@ -172,9 +276,11 @@ class SeqTrainScheduler:
         if mode == 1:
             resource_maps = []
             resource_maps.append(np.zeros((self.len_y)))
-            x_maps, cost_maps, resource_maps = self.assign_a_workload(x_maps, cost_maps, resource_maps)
+            x_maps, cost_maps, resource_maps = self.assign_a_workload(
+                x_maps, cost_maps, resource_maps)
         else:
-            x_maps, cost_maps = self.assign_a_workload_serial(x_maps, cost_maps)
+            x_maps, cost_maps = self.assign_a_workload_serial(
+                x_maps, cost_maps)
 
         # print(f"x_maps: {x_maps} len(x_maps): {len(x_maps)}")
         # print(f"cost_maps: {cost_maps}  len(cost_maps): {len(cost_maps)}")
@@ -195,9 +301,11 @@ class SeqTrainScheduler:
         # logging.info(f"schedules: {schedules}  len(schedules): {len(schedules)}")
         logging.info(f"self.iter_times: {self.iter_times}")
         logging.info(
-            "The optimal maximum cost: %f, assignment: %s\n" % (costs[target_index], str(x_maps[target_index]))
+            "The optimal maximum cost: %f, assignment: %s\n" % (
+                costs[target_index], str(x_maps[target_index]))
         )
-        logging.info(f"target_index: {target_index} cost_map: {cost_maps[target_index]}")
+        logging.info(
+            f"target_index: {target_index} cost_map: {cost_maps[target_index]}")
 
         # print(f"schedules: {schedules}  len(schedules): {len(schedules)}")
         # print(f"self.iter_times: {self.iter_times}")
@@ -239,4 +347,3 @@ class SeqTrainScheduler:
                     schedule[num_bunches] = jobs
                 output_schedules.append(schedule)
         return schedules, output_schedules
-
