@@ -1394,17 +1394,17 @@ class FedMLClientRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
-        if self.model_device_client is None:
-            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            self.model_device_client.start()
+        # if self.model_device_client is None:
+        #     self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
+        #                                                             self.args.os_name, self.args.is_from_docker,
+        #                                                             self.agent_config)
+        #     self.model_device_client.start()
 
-        if self.model_device_server is None:
-            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            self.model_device_server.start()
+        # if self.model_device_server is None:
+        #     self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+        #                                                             self.args.os_name, self.args.is_from_docker,
+        #                                                             self.agent_config)
+        #     self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
