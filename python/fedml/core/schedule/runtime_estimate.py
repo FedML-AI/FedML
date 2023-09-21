@@ -2,6 +2,24 @@ import numpy as np
 
 
 def linear_fit(x, y):
+    """
+    Fit a linear model to the given data.
+
+    Parameters:
+        x (array-like): The independent variable data.
+        y (array-like): The dependent variable data.
+
+    Returns:
+        z1 (array-like): Coefficients of the linear fit.
+        p1 (numpy.poly1d): The polynomial representing the linear fit.
+        yvals (array-like): Predicted values based on the linear fit.
+        fit_error (float): Mean absolute percentage error of the fit.
+
+    Example:
+        x = [1, 2, 3, 4, 5]
+        y = [2, 4, 5, 4, 5]
+        z1, p1, yvals, fit_error = linear_fit(x, y)
+    """
     z1 = np.polyfit(x, y, 1)
     p1 = np.poly1d(z1)
     print(p1)
@@ -21,6 +39,44 @@ def t_sample_fit(
             0: {0: [], 1: [], 2: []...},
             1: {0: [], 1: [], 2: []...},
         }  
+    
+    Fit linear models to runtime data for each worker and client combination.
+
+    Parameters:
+        num_workers (int): The number of workers.
+        num_clients (int): The number of clients.
+        runtime_history (dict): A dictionary containing runtime history data.
+            Format: {
+                worker_id: {
+                    client_id: [list of runtimes]
+                }
+            }
+        train_data_local_num_dict (dict): A dictionary containing the number of local training data samples for each client.
+            Format: {
+                client_id: num_samples
+            }
+        uniform_client (bool): Whether all clients have the same number of GPUs.
+        uniform_gpu (bool): Whether all clients have the same number of GPUs.
+
+    Returns:
+        fit_params (dict): Fitted parameters (slope and intercept) of the linear models for each worker and client.
+            Format: {
+                worker_id: {
+                    client_id: (slope, intercept)
+                }
+            }
+        fit_funcs (dict): Fitted linear functions for each worker and client.
+            Format: {
+                worker_id: {
+                    client_id: p1 (linear function)
+                }
+            }
+        fit_errors (dict): Fit errors (mean absolute percentage error) for each worker and client.
+            Format: {
+                worker_id: {
+                    client_id: fit_error
+                }
+            }
     """
     fit_params = {}
     fit_funcs = {}

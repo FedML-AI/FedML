@@ -13,13 +13,30 @@ attack @ server, added by Shanshan, 07/04/2022
 
 
 class ByzantineAttack(BaseAttackMethod):
+    
     def __init__(self, args):
+        """
+        Initialize the ByzantineAttack.
+
+        Args:
+            args (Namespace): Command-line arguments containing attack configuration.
+        """
         self.byzantine_client_num = args.byzantine_client_num
         self.attack_mode = args.attack_mode  # random: randomly generate a weight; zero: set the weight to 0
         self.device = fedml.device.get_device(args)
 
     def attack_model(self, raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None):
+        """
+        Attack the model using Byzantine clients.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Extra auxiliary information (global model).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of modified client gradients.
+        """
         if len(raw_client_grad_list) < self.byzantine_client_num:
             self.byzantine_client_num = len(raw_client_grad_list)
         byzantine_idxs = sample_some_clients(len(raw_client_grad_list), self.byzantine_client_num)
@@ -35,6 +52,16 @@ class ByzantineAttack(BaseAttackMethod):
         return byzantine_local_w
 
     def _attack_zero_mode(self, model_list, byzantine_idxs):
+        """
+        Perform zero-value Byzantine attack on the model gradients.
+
+        Args:
+            model_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            byzantine_idxs (List[int]): Indices of Byzantine clients.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of modified client gradients.
+        """
         new_model_list = []
         for i in range(0, len(model_list)):
             if i not in byzantine_idxs:
@@ -48,6 +75,16 @@ class ByzantineAttack(BaseAttackMethod):
         return new_model_list
 
     def _attack_random_mode(self, model_list, byzantine_idxs):
+        """
+        Perform random Byzantine attack on the model gradients.
+
+        Args:
+            model_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            byzantine_idxs (List[int]): Indices of Byzantine clients.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of modified client gradients.
+        """
         new_model_list = []
 
         for i in range(0, len(model_list)):

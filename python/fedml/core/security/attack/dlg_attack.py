@@ -25,9 +25,14 @@ Steps:
 
 class DLGAttack(BaseAttackMethod):
     def __init__(self, args):
+        """
+        Initialize the DLGAttack.
+
+        Args:
+            args (Namespace): Command-line arguments containing attack configuration.
+        """
         self.model = None
         self.model_type = args.model
-
 
         if args.dataset in ["cifar10", "cifar100"]:
             self.original_data_size = torch.Size([1, 3, 32, 32])
@@ -39,7 +44,8 @@ class DLGAttack(BaseAttackMethod):
             self.original_data_size = torch.Size([1, 28, 28])
             self.original_label_size = torch.Size([1, 10])
         else:
-            raise Exception(f"do not support this dataset for DLG attack: {args.dataset}")
+            raise Exception(
+                f"do not support this dataset for DLG attack: {args.dataset}")
         self.criterion = cross_entropy_for_onehot
         # cifar 100：
         # original data size = torch.Size([1, 3, 32, 32])
@@ -60,6 +66,13 @@ class DLGAttack(BaseAttackMethod):
             # attack the last iteration, as it contains more information
 
     def get_model(self):
+        """
+        Get the model based on the specified model type.
+
+        Returns:
+            torch.nn.Module: The model instance.
+        """
+
         if self.model_type == "LeNet":
             return LeNet()
         elif self.model_type == "resnet56":
@@ -70,13 +83,36 @@ class DLGAttack(BaseAttackMethod):
             raise Exception(f"do not support this model: {self.model_type}")
 
     def reconstruct_data(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
+        """
+        Reconstruct the data using the provided client gradients.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Extra auxiliary information (global model of last round).
+
+        Note:
+            This method performs data reconstruction based on specified conditions.
+
+        """
         if self.iteration_num in self.attack_iteration_idxs:
             for (_, local_model) in raw_client_grad_list:
                 print(f"-----------attack---------------")
-                self.reconstruct_data_using_a_model(a_model=local_model, extra_auxiliary_info=extra_auxiliary_info)
+                self.reconstruct_data_using_a_model(
+                    a_model=local_model, extra_auxiliary_info=extra_auxiliary_info)
         self.iteration_num += 1
 
     def reconstruct_data_using_a_model(self, a_model: OrderedDict, extra_auxiliary_info: Any = None):
+        """
+        Reconstruct data using a specific model and auxiliary information.
+
+        Args:
+            a_model (OrderedDict): Client model parameters.
+            extra_auxiliary_info (Any): Extra auxiliary information (global model of last round).
+
+        Returns:
+            torch.Tensor: Reconstructed data.
+            torch.Tensor: Reconstructed labels.
+        """
         self.model = self.get_model()
         global_model_of_last_round = extra_auxiliary_info
         gradient = []
@@ -85,10 +121,13 @@ class DLGAttack(BaseAttackMethod):
         for k, _ in global_model_of_last_round.items():
             if "weight" in k or "bias" in k:
                 if self.protected_layers is not None and layer_counter in self.protected_layers:
-                    gradient.append(torch.from_numpy(np.zeros(global_model_of_last_round[k].size())).float())
+                    gradient.append(torch.from_numpy(
+                        np.zeros(global_model_of_last_round[k].size())).float())
                     # if the layer is protected, set to 0
                 else:
-                    gradient.append(a_model[k] - global_model_of_last_round[k].to(self.device))  # !!!!!!!!!!!!!!!!!!todo: to double check
+                    # !!!!!!!!!!!!!!!!!!todo: to double check
+                    gradient.append(
+                        a_model[k] - global_model_of_last_round[k].to(self.device))
                 layer_counter += 1
         gradient = tuple(gradient)
         dummy_data = torch.randn(self.original_data_size)
@@ -101,8 +140,10 @@ class DLGAttack(BaseAttackMethod):
             def closure():
                 optimizer.zero_grad()
                 dummy_pred = self.model(dummy_data)
-                dummy_loss = self.criterion(dummy_pred, F.softmax(dummy_label, dim=-1))
-                dummy_grad = torch.autograd.grad(dummy_loss, self.model.parameters(), create_graph=True)
+                dummy_loss = self.criterion(
+                    dummy_pred, F.softmax(dummy_label, dim=-1))
+                dummy_grad = torch.autograd.grad(
+                    dummy_loss, self.model.parameters(), create_graph=True)
                 dummy_grad = tuple(
                     g.to(self.device) for g in dummy_grad)  # extract tensor from tuple and move to device
 

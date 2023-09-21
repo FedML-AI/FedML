@@ -25,6 +25,16 @@ class EdgeCaseBackdoorAttack:
         backdoor_dataset,
         batch_size,
     ):
+        """
+        Initialize the EdgeCaseBackdoorAttack.
+
+        Args:
+            client_num (int): Total number of clients in the system.
+            poisoned_client_num (int): Number of clients to poison with backdoor samples.
+            backdoor_sample_percentage (float): Percentage of backdoor samples to insert.
+            backdoor_dataset (Dataset): Backdoor dataset containing poisoned samples.
+            batch_size (int): Batch size for data loaders.
+        """
         self.client_num = client_num
         self.attack_epoch = 0
         self.poisoned_client_num = poisoned_client_num
@@ -34,6 +44,16 @@ class EdgeCaseBackdoorAttack:
         self.batch_size = batch_size
 
     def poison_data(self, dataset):
+        """
+        Poison the training data of selected clients with backdoor samples.
+
+        Args:
+            dataset (list): List containing various data related to clients and the dataset.
+
+        Returns:
+            list: List of data loaders for each client, including backdoored clients.
+        """
+
         [
             train_data_num,
             test_data_num,
