@@ -274,6 +274,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             device_requests.append(
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
         logging.info("Start pulling the inference image..., may take a few minutes...")
+        # TODO:only pull if the image is not in the local
         client.images.pull(inference_image_name)
         logging.info("Start creating the inference container...")
 
@@ -304,7 +305,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             name = llm_server_container_name,
             volumes = volumns,
             ports = [2345],                     # port open inside the container
-            entrypoint=["python3", relative_entry],
+            # entrypoint=["python3", relative_entry],
             environment = environment,
             host_config = client.api.create_host_config(
                 binds = binds,
@@ -317,12 +318,19 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             detach = True,
         )
         client.api.start(container=new_container.get("Id"))
-        try:    # check port allocation
-            port_info = client.api.port(new_container.get("Id"), 2345)
-            inference_http_port = port_info[0]["HostPort"]
-            logging.info("inference_http_port: {}".format(inference_http_port))
-        except docker.errors.APIError:
-            raise Exception("Failed to get the port info")
+
+        cnt = 0
+        while True:
+            cnt += 1
+            try:    # check dynamic port allocation
+                port_info = client.api.port(new_container.get("Id"), 2345)
+                inference_http_port = port_info[0]["HostPort"]
+                logging.info("inference_http_port: {}".format(inference_http_port))
+                break
+            except:
+                if cnt >= 5:
+                    raise Exception("Failed to get the port allocation")
+                time.sleep(3)
         
         # report the status
         log_deployment_result(end_point_id, model_id, llm_server_container_name,

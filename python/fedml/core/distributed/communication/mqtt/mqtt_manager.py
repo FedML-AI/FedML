@@ -90,9 +90,9 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, publish_single_message=False):
-        logging.info(
-            f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        # )
         self.check_connection()
 
         mqtt_send_start_time = time.time()
@@ -110,9 +110,9 @@ class MqttManager(object):
         return True
 
     def send_message_json(self, topic, message, publish_single_message=False):
-        logging.info(
-            f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        # )
         self.check_connection()
 
         if publish_single_message:

@@ -217,7 +217,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(edge_process.pid))
                 else:
-                    os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
+                    os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
                 # edge_process.terminate()
                 # edge_process.join()
         yaml_object = {}
@@ -264,7 +264,7 @@ def cleanup_all_fedml_client_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -284,7 +284,7 @@ def cleanup_all_fedml_client_diagnosis_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -301,9 +301,9 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                         if platform.system() == "Windows":
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.kill(process.pid, signal.SIGKILL)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -327,7 +327,7 @@ def cleanup_all_fedml_server_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -352,9 +352,9 @@ def cleanup_all_fedml_client_api_processes(kill_all=False, is_model_device=False
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                     else:
-                        os.kill(process.pid, signal.SIGTERM)
+                        os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -369,6 +369,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                 if is_model_device:
                     if str(cmd).find("model_scheduler.device_server_api:api") != -1:
                         find_api_process = True
+
+                    if str(cmd).find("model_scheduler.device_model_inference:api") != -1:
+                        find_api_process = True
                 else:
                     if str(cmd).find("master.server_api:api") != -1:
                         find_api_process = True
@@ -379,9 +382,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                     else:
-                        os.kill(process.pid, signal.SIGTERM)
+                        os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -398,9 +401,9 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.kill(process.pid, signal.SIGKILL)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -417,9 +420,9 @@ def cleanup_all_bootstrap_processes(bootstrap_program, clean_process_group=False
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.kill(process.pid, signal.SIGKILL)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -442,7 +445,7 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.kill(process.pid, signal.SIGTERM)
+                    os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -831,6 +834,24 @@ def decode_byte_str(bytes_str):
         pass
     decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
     return decoded_str
+
+
+def random1(msg, in_msg):
+    msg_bytes = msg.encode('utf-8')
+    in_msg_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_msg_bytes[i % len(in_msg_bytes)])
+    return out_bytes.hex()
+
+
+def random2(msg, in_msg):
+    msg_bytes = bytes.fromhex(msg)
+    in_bytes = in_msg.encode('utf-8')
+    out_bytes = bytearray()
+    for i in range(len(msg_bytes)):
+        out_bytes.append(msg_bytes[i] ^ in_bytes[i % len(in_bytes)])
+    return out_bytes.decode('utf-8')
 
 
 if __name__ == '__main__':

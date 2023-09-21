@@ -27,7 +27,6 @@ requirements = [
     "wget",
     "paho-mqtt",
     "boto3",
-    "pynvml",
     "scikit-learn",
     "networkx<3.0",
     "click",
@@ -37,7 +36,6 @@ requirements = [
     "gensim",
     "multiprocess",
     "smart-open==6.3.0",
-    "nvidia-ml-py3",
     "matplotlib",
     "dill",
     "pandas",
@@ -95,7 +93,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.8a93",
+    version="0.8.8a109",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

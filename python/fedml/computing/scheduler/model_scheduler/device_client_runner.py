@@ -37,7 +37,7 @@ from ....core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
-from ....serving.fedml_client import FedMLModelServingClient
+#from ....serving.fedml_client import FedMLModelServingClient
 from ....core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -46,11 +46,19 @@ class RunnerError(Exception):
     pass
 
 
+class RunnerCompletedError(Exception):
+    """ Runner completed. """
+    pass
+
+
 class FedMLClientRunner:
     FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
         self.run_process_event = None
+        self.run_process_event_map = dict()
+        self.run_process_completed_event = None
+        self.run_process_completed_event_map = dict()
         self.device_status = None
         self.current_training_status = None
         self.mqtt_mgr = None
@@ -199,11 +207,15 @@ class FedMLClientRunner:
 
         return unzip_package_path
 
-    def run(self, process_event):
+    def run(self, process_event, completed_event):
+        if platform.system() != "Windows":
+            os.setsid()
+
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
         self.run_process_event = process_event
+        self.run_process_completed_event = completed_event
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
             self.setup_client_mqtt_mgr()
@@ -211,6 +223,8 @@ class FedMLClientRunner:
         except RunnerError:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+        except RunnerCompletedError:
+            logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -234,17 +248,22 @@ class FedMLClientRunner:
             logging.info("Received stopping event.")
             raise RunnerError("Runner stopped")
 
-    def inference_run(self):
-        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
-            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        if self.run_process_completed_event is not None and self.run_process_completed_event.is_set():
+            logging.info("Received completed event.")
+            raise RunnerCompletedError("Runner completed")
 
-        inference_client = FedMLModelServingClient(self.args,
-                                                   end_point_name,
-                                                   model_name,
-                                                   model_version,
-                                                   inference_request=self.request_json)
-        inference_client.run()
+    def inference_run(self):
+        # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+        #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+        #     inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        #
+        # inference_client = FedMLModelServingClient(self.args,
+        #                                            end_point_name,
+        #                                            model_name,
+        #                                            model_version,
+        #                                            inference_request=self.request_json)
+        # inference_client.run()
+        pass
 
     def run_impl(self):
         run_id = self.request_json["end_point_id"]
@@ -604,28 +623,42 @@ class FedMLClientRunner:
 
         # Start client with multiprocessing mode
         request_json["run_id"] = run_id
+        run_id_str = str(run_id)
         self.request_json = request_json
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         client_runner.infer_host = self.infer_host
-        if self.run_process_event is None:
-            self.run_process_event = multiprocessing.Event()
-        self.run_process_event.clear()
-        client_runner.run_process_event = self.run_process_event
-        self.model_runner_mapping[run_id] = client_runner
+        self.run_process_event_map[run_id_str] = multiprocessing.Event()
+        self.run_process_event_map[run_id_str].clear()
+        client_runner.run_process_event = self.run_process_event_map[run_id_str]
+        self.run_process_completed_event_map[run_id_str] = multiprocessing.Event()
+        self.run_process_completed_event_map[run_id_str].clear()
+        client_runner.run_process_completed_event = self.run_process_completed_event_map[run_id_str]
+        self.model_runner_mapping[run_id_str] = client_runner
         self.run_id = run_id
-        self.process = Process(target=client_runner.run, args=(self.run_process_event,))
+        self.process = Process(target=client_runner.run, args=(
+            self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str]
+        ))
         # client_runner.run()
         self.process.start()
         ClientConstants.save_run_process(run_id, self.process.pid)
 
     def set_runner_stopped_event(self, run_id):
-        client_runner = self.model_runner_mapping.get(run_id, None)
+        run_id_str = str(run_id)
+        client_runner = self.model_runner_mapping.get(run_id_str, None)
         if client_runner is not None:
             if client_runner.run_process_event is not None:
                 client_runner.run_process_event.set()
-            self.model_runner_mapping.pop(run_id)
+            self.model_runner_mapping.pop(run_id_str)
+
+    def set_runner_completed_event(self, run_id):
+        run_id_str = str(run_id)
+        client_runner = self.model_runner_mapping.get(run_id_str, None)
+        if client_runner is not None:
+            if client_runner.run_process_completed_event is not None:
+                client_runner.run_process_completed_event.set()
+            self.model_runner_mapping.pop(run_id_str)
 
     def callback_delete_deployment(self, topic, payload):
         logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
@@ -1024,7 +1057,15 @@ class FedMLClientRunner:
 
         self.recover_start_deployment_msg_after_upgrading()
 
-    def start_agent_mqtt_loop(self):
+    def stop_agent(self):
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+
+        if self.mqtt_mgr is not None:
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
+
+    def start_agent_mqtt_loop(self, should_exit_sys=False):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
@@ -1036,7 +1077,8 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
-            time.sleep(5)
-            sys_utils.cleanup_all_fedml_client_login_processes(
-                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            if should_exit_sys:
+                time.sleep(5)
+                sys_utils.cleanup_all_fedml_client_login_processes(
+                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+                sys.exit(1)

@@ -1,9 +1,10 @@
-import json
+
 import time
 import uuid
 
 import requests
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.scheduler_entry.launch_job_interface import FedMLLaunchJobDataInterface
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
@@ -24,12 +25,8 @@ class FedMLJobManager(Singleton):
             self.config_version = config_version
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_api_key, no_confirmation=False, job_id=None):
-        return self.start_job_api(platform, project_name, application_name, device_server, device_edges,
-                                  user_api_key, no_confirmation=no_confirmation, job_id=job_id)
-
-    def start_job_api(self, platform, project_name, application_name, device_server, device_edges,
-                      user_api_key, no_confirmation=False, job_id=None):
+                  user_api_key, no_confirmation=False, job_id=None,
+                  model_name=None, model_endpoint=None, job_yaml=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -94,23 +91,42 @@ class FedMLJobManager(Singleton):
                 return None
             job_start_result = FedMLJobStartedModel(data, response=resp_data)
 
+            # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
+            # if job_obj is None:
+            #     job_obj = FedMLLaunchJobDataInterface()
+            #     job_obj.status = job_start_result.status
+            #     job_obj.started_time = job_start_result.started_time
+            #     job_obj.app_name = application_name
+            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
+            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
+            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
+            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
+            #     job_obj.updated_time = str(time.time())
+            #     FedMLLaunchJobDataInterface.insert_job_to_db(job_obj)
+            # else:
+            #     job_obj.status = job_start_result.status
+            #     job_obj.started_time = job_start_result.started_time
+            #     job_obj.app_name = application_name
+            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
+            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
+            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
+            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
+            #     job_obj.updated_time = str(time.time())
+            #     FedMLLaunchJobDataInterface.update_job_to_db(job_obj)
+
         return job_start_result
 
     def list_job(self, platform, project_name, job_name, user_api_key, job_id=None):
-        return self.list_job_api(platform, project_name, job_name, user_api_key, job_id=job_id)
-
-    def list_job_api(self, platform, project_name, job_name, user_api_key, job_id=None):
         job_list_result = None
         jot_list_url = ServerConstants.get_job_list_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         job_list_json = {
             "platformType": platform,
             "jobName": job_name if job_name is not None else "",
+            "jobId": job_id if job_id is not None else "",
             "projectName": project_name if project_name is not None else "",
             "userApiKey": user_api_key
         }
-        if job_id is not None and job_id != "":
-            job_list_json["jobId"] = job_id
         args = {"config_version": self.config_version}
         _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
         if cert_path is not None:
@@ -146,10 +162,7 @@ class FedMLJobManager(Singleton):
 
         return job_list_result
 
-    def stop_job(self, platform, job_id, user_api_key):
-        return self.stop_job_api(platform, job_id, user_api_key)
-
-    def stop_job_api(self, platform, job_id, user_api_key):
+    def stop_job(self, platform, user_api_key, job_id):
         job_stop_url = ServerConstants.get_job_stop_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         job_stop_json = {
@@ -188,9 +201,6 @@ class FedMLJobManager(Singleton):
         return True
 
     def get_job_logs(self, job_id, page_num, page_size, user_api_key):
-        return self.get_job_logs_api(job_id, page_num, page_size, user_api_key)
-
-    def get_job_logs_api(self, job_id, page_num, page_size,user_api_key):
         job_log_list_result = None
         jot_logs_url = ServerConstants.get_job_logs_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -313,6 +323,7 @@ class FedMLJobStartedModel(object):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
+            self.project_id = job_started_json.get("project_id", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
@@ -325,6 +336,7 @@ class FedMLJobStartedModel(object):
         else:
             self.job_id = "0"
             self.job_name = job_name
+            self.project_id = ""
             self.status = response.get("code")
             self.job_url = job_started_json
             self.started_time = time.time()

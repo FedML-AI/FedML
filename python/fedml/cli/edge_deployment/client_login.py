@@ -4,7 +4,6 @@ import os
 
 from fedml.computing.scheduler.slave.client_login import login, logout
 
-
 if __name__ == "__main__":
     os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
     os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
