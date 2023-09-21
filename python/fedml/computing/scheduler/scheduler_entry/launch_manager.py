@@ -207,21 +207,23 @@ class FedMLLaunchManager(object):
 
         # Create and update an application with the built packages.
         FedMLAppManager.get_instance().set_config_version(self.config_version)
-        app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
-                                                                       self.job_config.application_name, configs,
-                                                                       user_api_key,
-                                                                       client_package_file=build_client_package,
-                                                                       server_package_file=build_server_package)
+        app_updated_result = FedMLAppManager.get_instance().update_app(
+            platform_type, self.job_config.application_name, configs, user_api_key,
+            client_package_file=build_client_package, server_package_file=build_server_package,
+            workspace=self.job_config.workspace, model_name=self.job_config.serving_model_name,
+            model_version=self.job_config.serving_model_version,
+            model_url=self.job_config.serving_model_s3_url)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
             exit(-1)
 
         # Start the job with the above application.
         FedMLJobManager.get_instance().set_config_version(self.config_version)
-        launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
-                                                                 self.job_config.application_name,
-                                                                 device_server, device_edges, user_api_key,
-                                                                 no_confirmation=no_confirmation)
+        launch_result = FedMLJobManager.get_instance().start_job(
+            platform_str, self.job_config.project_name, self.job_config.application_name,
+            device_server, device_edges, user_api_key, no_confirmation=no_confirmation,
+            model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
+            job_yaml=self.job_config.job_config_dict)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -856,4 +858,4 @@ class FedMLJobConfig(object):
 
     @staticmethod
     def generate_application_name(workspace):
-        return "{}@{}".format(Constants.LAUNCH_APP_NAME_PREFIX, get_content_hash(workspace))
+        return "{}@{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)

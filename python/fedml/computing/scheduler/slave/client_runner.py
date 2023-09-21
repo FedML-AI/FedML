@@ -479,8 +479,14 @@ class FedMLClientRunner:
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("waiting the user process to finish...")
+        logging.info("                          ")
+        logging.info("                          ")
+        logging.info("====Your Run Logs Begin===")
         process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path,
                                                                     dynamic_args_config)
+        logging.info("====Your Run Logs End===")
+        logging.info("                        ")
+        logging.info("                        ")
         ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
@@ -994,9 +1000,9 @@ class FedMLClientRunner:
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        # )
 
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)

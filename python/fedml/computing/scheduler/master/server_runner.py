@@ -539,8 +539,13 @@ class FedMLServerRunner:
 
         entry_file_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
         conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
+        logging.info("                          ")
+        logging.info("                          ")
+        logging.info("====Your Run Logs Begin===")
         process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path, run_id)
-        logging.info("waiting the aggregation process to aggregate models...")
+        logging.info("====Your Run Logs End===")
+        logging.info("                        ")
+        logging.info("                        ")
         ServerConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
