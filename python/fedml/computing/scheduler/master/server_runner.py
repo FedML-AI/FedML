@@ -2072,7 +2072,7 @@ class FedMLServerRunner:
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         self.mlops_metrics.stop_device_realtime_perf()
-        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
+        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"], is_client=False)
 
         if not self.run_as_cloud_server:
             self.recover_start_train_msg_after_upgrading()

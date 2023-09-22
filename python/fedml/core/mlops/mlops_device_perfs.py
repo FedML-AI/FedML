@@ -4,6 +4,7 @@ import os
 import time
 import traceback
 import uuid
+from os.path import expanduser
 
 import multiprocess as multiprocessing
 import psutil
@@ -23,6 +24,7 @@ class MLOpsDevicePerfStats(object):
         self.device_id = None
         self.run_id = None
         self.edge_id = None
+        self.is_client = True
 
     def report_device_realtime_stats(self, sys_args):
         self.setup_realtime_stats_process(sys_args)
@@ -45,6 +47,7 @@ class MLOpsDevicePerfStats(object):
         perf_stats.edge_id = 0 if perf_stats.edge_id is None else perf_stats.edge_id
         perf_stats.device_id = getattr(sys_args, "device_id", 0)
         perf_stats.run_id = getattr(sys_args, "run_id", 0)
+        perf_stats.is_client = self.is_client
         if self.device_realtime_stats_event is None:
             self.device_realtime_stats_event = multiprocessing.Event()
         self.device_realtime_stats_event.clear()
@@ -81,6 +84,10 @@ class MLOpsDevicePerfStats(object):
 
             time.sleep(10)
 
+            self.check_fedml_client_parent_process()
+
+            self.check_fedml_server_parent_process()
+
         logging.info("Device metrics process is about to exit.")
         mqtt_mgr.loop_stop()
         mqtt_mgr.disconnect()
@@ -108,3 +115,61 @@ class MLOpsDevicePerfStats(object):
         message_json = json.dumps(artifact_info_json)
         if mqtt_mgr is not None:
             mqtt_mgr.send_message_json(topic_name, message_json)
+
+    def check_fedml_client_parent_process(self):
+        if not self.is_client:
+            return
+
+        try:
+            home_dir = expanduser("~")
+            fedml_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+            fedml_parent_pid_file = os.path.join(fedml_data_dir, "fedml_parent_pid")
+            if not os.path.exists(fedml_parent_pid_file):
+                return
+
+            with open(fedml_parent_pid_file, "r") as parent_pid_file:
+                parent_pid = parent_pid_file.readline()
+                parent_pid_file.close()
+                if parent_pid is None:
+                    return
+
+                parent_pid = parent_pid.strip('\n')
+                if parent_pid == "":
+                    return
+
+                if not psutil.pid_exists(int(parent_pid)):
+                    print(f"Parent client process {parent_pid} has been killed, so fedml will exit.")
+                    logging.info(f"Parent client process {parent_pid} has been killed, so fedml will exit.")
+                    os.remove(fedml_parent_pid_file)
+                    os.system("fedml logout")
+        except Exception as e:
+            pass
+
+    def check_fedml_server_parent_process(self):
+        if self.is_client:
+            return
+
+        try:
+            home_dir = expanduser("~")
+            fedml_data_dir = os.path.join(home_dir, "fedml-server", "fedml", "data")
+            fedml_parent_pid_file = os.path.join(fedml_data_dir, "fedml_parent_pid")
+            if not os.path.exists(fedml_parent_pid_file):
+                return
+
+            with open(fedml_parent_pid_file, "r") as parent_pid_file:
+                parent_pid = parent_pid_file.readline()
+                parent_pid_file.close()
+                if parent_pid is None:
+                    return
+
+                parent_pid = parent_pid.strip('\n')
+                if parent_pid == "":
+                    return
+
+                if not psutil.pid_exists(int(parent_pid)):
+                    print(f"Parent server process {parent_pid} has been killed, so fedml will exit.")
+                    logging.info(f"Parent server process {parent_pid} has been killed, so fedml will exit.")
+                    os.remove(fedml_parent_pid_file)
+                    os.system("fedml logout -s")
+        except Exception as e:
+            pass
