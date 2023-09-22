@@ -19,13 +19,25 @@ class MLOpsRuntimeLogProcessor:
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
 
     def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
+        """
+        Initialize the MLOpsRuntimeLogProcessor.
+
+        Args:
+            using_mlops: Whether MLOps is being used.
+            log_run_id: The ID of the log run.
+            log_device_id: The ID of the log device.
+            log_file_dir: The directory where log files are stored.
+            log_server_url: The URL of the log server.
+            in_args: Input arguments (system configuration).
+        """
         self.args = in_args
         self.is_log_reporting = False
         self.log_reporting_status_file = os.path.join(log_file_dir,
                                                       MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR,
                                                       MLOpsRuntimeLogProcessor.FEDML_LOG_REPORTING_STATUS_FILE_NAME +
                                                       "-" + str(log_run_id) + ".conf")
-        os.makedirs(os.path.join(log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR), exist_ok=True)
+        os.makedirs(os.path.join(
+            log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR), exist_ok=True)
         self.logger = None
         self.should_upload_log_file = using_mlops
         self.log_file_dir = log_file_dir
@@ -53,12 +65,28 @@ class MLOpsRuntimeLogProcessor:
         self.log_process_event = None
 
     def set_log_source(self, source):
+        """
+        Set the source of the log.
+
+        Args:
+            source: The source of the log.
+        """
         self.log_source = source
         if source is not None:
             self.log_source = str(self.log_source).replace(' ', '')
 
     @staticmethod
     def build_log_file_path(in_args):
+        """
+        Build the log file path based on input arguments.
+
+        Args:
+            in_args: Input arguments (system configuration).
+
+        Returns:
+            log_file_path: The path to the log file.
+            program_prefix: The prefix for the program's log.
+        """
         if in_args.rank == 0:
             if hasattr(in_args, "server_id"):
                 log_device_id = in_args.server_id
@@ -67,7 +95,8 @@ class MLOpsRuntimeLogProcessor:
                     log_device_id = in_args.edge_id
                 else:
                     log_device_id = 0
-            program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, log_device_id)
+            program_prefix = "FedML-Server({}) @device-id-{}".format(
+                in_args.rank, log_device_id)
         else:
             if hasattr(in_args, "client_id"):
                 log_device_id = in_args.client_id
@@ -82,7 +111,8 @@ class MLOpsRuntimeLogProcessor:
                     log_device_id = in_args.edge_id
                 else:
                     log_device_id = 0
-            program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
+            program_prefix = "FedML-Client({}) @device-id-{}".format(
+                in_args.rank, log_device_id)
 
         if not os.path.exists(in_args.log_file_dir):
             os.makedirs(in_args.log_file_dir, exist_ok=True)
@@ -95,6 +125,13 @@ class MLOpsRuntimeLogProcessor:
         return log_file_path, program_prefix
 
     def log_upload(self, run_id, device_id):
+        """
+        Upload logs to the log server.
+
+        Args:
+            run_id: The ID of the run.
+            device_id: The ID of the device.
+        """
         # read log data from local log file
         log_lines = self.log_read()
         if log_lines is None or len(log_lines) <= 0:
@@ -131,7 +168,8 @@ class MLOpsRuntimeLogProcessor:
                                                           prev_line_prefix_list[2])
 
                 if not str(log_lines[index]).startswith('[FedML-'):
-                    log_line = "{} {}".format(prev_line_prefix, log_lines[index])
+                    log_line = "{} {}".format(
+                        prev_line_prefix, log_lines[index])
                     log_lines[index] = log_line
 
                 index += 1
@@ -146,7 +184,8 @@ class MLOpsRuntimeLogProcessor:
             for log_index in range(len(upload_lines)):
                 log_line = str(upload_lines[log_index])
                 if log_line.find(' [ERROR] ') != -1:
-                    err_line_dict = {"errLine": self.log_uploaded_line_index + log_index, "errMsg": log_line}
+                    err_line_dict = {
+                        "errLine": self.log_uploaded_line_index + log_index, "errMsg": log_line}
                     err_list.append(err_line_dict)
 
             log_upload_request = {
@@ -165,10 +204,12 @@ class MLOpsRuntimeLogProcessor:
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 
-            log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+            log_headers = {'Content-Type': 'application/json',
+                           'Connection': 'close'}
 
             # send log data to the log server
-            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            _, cert_path = MLOpsConfigs.get_instance(
+                self.args).get_request_params()
             if cert_path is not None:
                 try:
                     requests.session().verify = cert_path
@@ -187,7 +228,8 @@ class MLOpsRuntimeLogProcessor:
                     # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
             else:
                 # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+                response = requests.post(
+                    self.log_server_url, headers=log_headers, json=log_upload_request)
                 # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
             if response.status_code != 200:
                 pass
@@ -201,6 +243,15 @@ class MLOpsRuntimeLogProcessor:
 
     @staticmethod
     def should_ignore_log_line(log_line):
+        """
+        Determine whether to ignore a log line.
+
+        Args:
+            log_line: The log line to check.
+
+        Returns:
+            True if the log line should be ignored, False otherwise.
+        """
         #  if str is empty, then continue, will move it later
         if str(log_line) == '' or str(log_line) == '\n':
             return True
@@ -215,6 +266,12 @@ class MLOpsRuntimeLogProcessor:
         return False
 
     def log_process(self, process_event):
+        """
+        Continuously upload log data to the log server.
+
+        Args:
+            process_event: Event object to control the log processing loop.
+        """
         self.log_process_event = process_event
 
         while not self.should_stop():
@@ -228,6 +285,9 @@ class MLOpsRuntimeLogProcessor:
         print("FedDebug log_process STOPPED")
 
     def log_relocation(self):
+        """
+        Relocate the log file pointer to the last uploaded log line.
+        """
         log_line_count = self.log_line_index
         self.log_uploaded_line_index = self.log_line_index
         while log_line_count > 0:
@@ -244,6 +304,9 @@ class MLOpsRuntimeLogProcessor:
                 self.log_line_index = 0
 
     def log_open(self):
+        """
+        Open the log file for reading.
+        """
         try:
             shutil.copyfile(self.origin_log_file_path, self.log_file_path)
             if self.log_file is None:
@@ -253,6 +316,13 @@ class MLOpsRuntimeLogProcessor:
             pass
 
     def log_read(self):
+        """
+        Read log data from the log file.
+
+        Returns:
+            log_lines: A list of log lines read from the file.
+        """
+
         self.log_open()
 
         if self.log_file is None:
@@ -272,6 +342,13 @@ class MLOpsRuntimeLogProcessor:
 
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):
+        """
+        Generate a YAML document from a configuration object and save it to a file.
+
+        Args:
+            log_config_object: The configuration object to serialize.
+            yaml_file: The path to the YAML file to save.
+        """
         try:
             file = open(yaml_file, "w", encoding="utf-8")
             yaml.dump(log_config_object, file)
@@ -281,7 +358,15 @@ class MLOpsRuntimeLogProcessor:
 
     @staticmethod
     def __load_yaml_config(yaml_path):
-        """Helper function to load a yaml config file"""
+        """
+        Load a YAML configuration file.
+
+        Args:
+            yaml_path: The path to the YAML configuration file.
+
+        Returns:
+            config_data: The loaded configuration data.
+        """
         with open(yaml_path, "r") as stream:
             try:
                 return yaml.safe_load(stream)
@@ -289,23 +374,50 @@ class MLOpsRuntimeLogProcessor:
                 raise ValueError("Yaml error - check yaml file")
 
     def save_log_config(self):
+        """
+        Save the log configuration to a YAML file, including the log line index.
+
+        This method saves the log line index to the log configuration YAML file
+        for resuming log processing where it left off.
+
+        Raises:
+            Exception: If there is an error while saving the configuration.
+        """
         try:
-            log_config_key = "log_config_{}_{}".format(self.run_id, self.device_id)
+            log_config_key = "log_config_{}_{}".format(
+                self.run_id, self.device_id)
             self.log_config[log_config_key] = dict()
             self.log_config[log_config_key]["log_line_index"] = self.log_line_index
-            MLOpsRuntimeLogProcessor.__generate_yaml_doc(self.log_config, self.log_config_file)
+            MLOpsRuntimeLogProcessor.__generate_yaml_doc(
+                self.log_config, self.log_config_file)
         except Exception as e:
             pass
 
     def load_log_config(self):
+        """
+        Load the log configuration from a YAML file.
+
+        This method loads the log configuration, including the log line index,
+        from the log configuration YAML file.
+
+        Raises:
+            Exception: If there is an error while loading the configuration.
+        """
         try:
-            log_config_key = "log_config_{}_{}".format(self.run_id, self.device_id)
+            log_config_key = "log_config_{}_{}".format(
+                self.run_id, self.device_id)
             self.log_config = self.__load_yaml_config(self.log_config_file)
             self.log_line_index = self.log_config[log_config_key]["log_line_index"]
         except Exception as e:
             pass
 
     def should_stop(self):
+        """
+        Check if the log processing should stop.
+
+        Returns:
+            bool: True if the log processing should stop; False otherwise.
+        """
         if self.log_process_event is not None and self.log_process_event.is_set():
             return True
 
@@ -324,6 +436,22 @@ class MLOpsRuntimeLogDaemon:
         return MLOpsRuntimeLogDaemon._instance
 
     def __init__(self, in_args):
+        """
+        Initialize the MLOpsRuntimeLogDaemon.
+
+        Args:
+            in_args: Input arguments passed to the daemon.
+
+        Attributes:
+            args: Input arguments.
+            edge_id: The ID of the edge device (server or client).
+            log_server_url: The URL for the log server.
+            log_file_dir: Directory where log files are stored.
+            log_child_process_list: List to keep track of child log processing processes.
+            log_child_process: Reference to the child log processing process.
+            log_process_event: Event to control log processing.
+
+        """
         self.args = in_args
 
         if in_args.role == "server":
@@ -364,16 +492,43 @@ class MLOpsRuntimeLogDaemon:
 
     @staticmethod
     def get_instance(args):
+        """
+        Get an instance of the MLOpsRuntimeLogDaemon.
+
+        Args:
+            args: Input arguments.
+
+        Returns:
+            MLOpsRuntimeLogDaemon: An instance of the log daemon.
+
+        """
         if MLOpsRuntimeLogDaemon._log_sdk_instance is None:
-            MLOpsRuntimeLogDaemon._log_sdk_instance = MLOpsRuntimeLogDaemon(args)
+            MLOpsRuntimeLogDaemon._log_sdk_instance = MLOpsRuntimeLogDaemon(
+                args)
             MLOpsRuntimeLogDaemon._log_sdk_instance.log_source = None
 
         return MLOpsRuntimeLogDaemon._log_sdk_instance
 
     def set_log_source(self, source):
+        """
+        Set the source of log messages.
+
+        Args:
+            source (str): The source of log messages.
+
+        """
         self.log_source = source
 
     def start_log_processor(self, log_run_id, log_device_id):
+        """
+        Start a log processor for a specific run and device.
+
+        Args:
+            log_run_id: The ID of the log run.
+            log_device_id: The ID of the log device.
+
+        """
+
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
@@ -389,11 +544,21 @@ class MLOpsRuntimeLogDaemon:
         if self.log_child_process is not None:
             self.log_child_process.start()
             try:
-                self.log_child_process_list.index((self.log_child_process, log_run_id, log_device_id))
+                self.log_child_process_list.index(
+                    (self.log_child_process, log_run_id, log_device_id))
             except ValueError as ex:
-                self.log_child_process_list.append((self.log_child_process, log_run_id, log_device_id))
+                self.log_child_process_list.append(
+                    (self.log_child_process, log_run_id, log_device_id))
 
     def stop_log_processor(self, log_run_id, log_device_id):
+        """
+        Stop a log processor for a specific run and device.
+
+        Args:
+            log_run_id: The ID of the log run.
+            log_device_id: The ID of the log device.
+
+        """
         if log_run_id is None or log_device_id is None:
             return
 
@@ -407,6 +572,10 @@ class MLOpsRuntimeLogDaemon:
                 break
 
     def stop_all_log_processor(self):
+        """
+        Stop all running log processors.
+
+        """
         for (log_child_process, _, _) in self.log_child_process_list:
             if self.log_process_event is not None:
                 self.log_process_event.set()
@@ -415,11 +584,13 @@ class MLOpsRuntimeLogDaemon:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--log_file_dir", "-log", help="log file dir")
     parser.add_argument("--rank", "-r", type=str, default="1")
     parser.add_argument("--client_id_list", "-cil", type=str, default="[]")
-    parser.add_argument("--log_server_url", "-lsu", type=str, default="http://")
+    parser.add_argument("--log_server_url", "-lsu",
+                        type=str, default="http://")
 
     args = parser.parse_args()
     setattr(args, "using_mlops", True)
@@ -427,7 +598,8 @@ if __name__ == "__main__":
 
     run_id = 9998
     device_id = 1
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(run_id, device_id)
+    MLOpsRuntimeLogDaemon.get_instance(
+        args).start_log_processor(run_id, device_id)
 
     while True:
         time.sleep(1)
