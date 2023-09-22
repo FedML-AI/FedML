@@ -831,8 +831,10 @@ def decode_byte_str(bytes_str):
     try:
         encoding = chardet.detect(bytes_str)
     except Exception as e:
-        pass
-    decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
+        encoding = dict()
+    str_encoding = encoding.get("encoding", 'utf-8')
+    str_encoding = "utf-8" if str_encoding is None else str_encoding
+    decoded_str = bytes_str.decode(encoding=str_encoding, errors='ignore')
     return decoded_str
 
 

@@ -2,8 +2,7 @@ import logging
 import os
 import platform
 import shutil
-import signal
-import subprocess
+from ..comm_utils import subprocess
 import sys
 import urllib
 import zipfile
@@ -68,6 +67,8 @@ class ClientConstants(object):
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
+
+    FEDML_PARENT_PID_FILE = "fedml_parent_pid"
 
     LOCAL_CLIENT_API_PORT = 40800
 
@@ -290,37 +291,56 @@ class ClientConstants(object):
         return script_process
 
     @staticmethod
-    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
-                                        callback=None, error_processor=None):
-        error_list = list()
-        with subprocess.Popen(join.join(cmds),
-                              shell=True,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE) as sp:
-            if callback is not None:
-                callback(sp.pid)
-
-            if should_write_log_file:
-                with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
-                    for line in sp.stdout:
-                        line_str = sys_utils.decode_byte_str(line)
-                        stdout.write(line)
-                        stdout.flush()
-                        logging.info(line_str)
+    def data_arrived_callback(data, is_err=True, process_obj=None, error_processor=None):
+        if not is_err:
+            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
+                data_str = sys_utils.decode_byte_str(data)
+                stdout.write(data)
+                stdout.flush()
+                logging.info(data_str)
+        else:
+            error_list = list()
             with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
-                for line in sp.stderr:
-                    line_str = sys_utils.decode_byte_str(line)
-                    if should_write_log_file:
-                        stderr.write(line)
-                        stderr.flush()
-                        logging.error(line_str)
-                    error_list.append(line_str)
+                data_str = sys_utils.decode_byte_str(data)
+                stderr.write(data)
+                stderr.flush()
+                if process_obj.returncode is None or process_obj.returncode == 0:
+                    logging.info(data_str)
+                else:
+                    logging.error(data_str)
+                    error_list.append(data_str)
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
 
-            return sp, error_list
-        return None, error_list
+    @staticmethod
+    def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
+                                        callback=None, error_processor=None):
+        error_list = list()
+        script_process = subprocess.Popen(join.join(cmds), shell=True, stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+        if script_process is None:
+            return None, error_list
+
+        if callback is not None:
+            callback(script_process.pid)
+
+        try:
+            exec_out, exec_err = script_process.communicate(
+                timeout=100, data_arrived_callback=ClientConstants.data_arrived_callback,
+                error_processor=error_processor
+            )
+        except Exception as e:
+            pass
+
+        if script_process.returncode is not None and script_process.returncode != 0:
+            err_str = sys_utils.decode_byte_str(exec_err)
+            error_list.append(err_str)
+
+            if error_processor is not None and len(error_list) > 0:
+                error_processor(error_list)
+
+        return script_process, error_list
 
     @staticmethod
     def get_console_pipe_out_err_results(script_process):
@@ -403,6 +423,20 @@ class ClientConstants(object):
         filename = os.path.basename(path)
         filename_without_extension, file_extension = os.path.splitext(filename)
         return filename, filename_without_extension, file_extension
+
+    @staticmethod
+    def get_fedml_parent_pid_file():
+        data_dir = ClientConstants.get_data_dir()
+        return os.path.join(data_dir, ClientConstants.FEDML_PARENT_PID_FILE)
+
+    @staticmethod
+    def remove_fedml_parent_pid_file():
+        ppid_file = ClientConstants.get_fedml_parent_pid_file()
+        try:
+            if os.path.exists(ppid_file):
+                os.remove(ppid_file)
+        except Exception as e:
+            pass
 
 
 if __name__ == "__main__":
