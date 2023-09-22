@@ -15,7 +15,7 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
-from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model
+from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster
 
 
 def fedml_login(api_key=None, version="release"):
@@ -30,18 +30,18 @@ def fedml_login(api_key=None, version="release"):
 
 # inputs: yaml file
 # return: resource_id, error_code (0 means successful), error_message,
-def match_resources(yaml_file):
+def match_resources(yaml_file, cluster=""):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
     :returns: str: resource id, int: error code (0 means successful), str: error message
     """
-    return utils.match_resources(yaml_file, prompt=False)
+    return utils.match_resources(yaml_file, cluster, prompt=False)
 
 
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, version="release", api_key=None, resource_id=None, prompt=True):
+def launch_job(yaml_file, cluster="", version="release", api_key=None, resource_id=None, prompt=True):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
@@ -50,7 +50,7 @@ def launch_job(yaml_file, version="release", api_key=None, resource_id=None, pro
     :param version: version of MLOps platform. It should be dev, test or release
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return launch.job(yaml_file, api_key, version, resource_id, prompt=prompt)
+    return launch.job(yaml_file, api_key, version, resource_id, cluster, prompt=prompt)
 
 
 # input: job id, page num, page size, need_all_logs
@@ -72,7 +72,19 @@ def stop_job(job_id, version, platform="falcon", api_key=None, show_hint_texts=T
 
 
 def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
-    return job.lists(version, job_name, job_id, platform, api_key)
+    return job.list_jobs(version, job_name, job_id, platform, api_key)
+
+
+def list_clusters(version, api_key=None, cluster_names=()):
+    return cluster.list_clusters(version, api_key, cluster_names)
+
+
+def kill_clusters(version, cluster_names, api_key=None, show_hint_texts=True):
+    return cluster.kill(version=version, api_key=api_key, cluster_names=cluster_names, show_hint_texts=show_hint_texts)
+
+
+def killall_clusters(version, api_key=None, show_hint_texts=True):
+    return cluster.killall(version=version, api_key=api_key, show_hint_texts=show_hint_texts)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

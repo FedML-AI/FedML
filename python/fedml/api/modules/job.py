@@ -24,7 +24,7 @@ def stop(job_id, version, platform, api_key, show_hint_texts):
     return is_stopped
 
 
-def lists(version, job_name, job_id, platform, api_key):
+def list_jobs(version, job_name, job_id, platform, api_key):
     authenticate(api_key, version)
 
     if not platform_is_valid(platform):

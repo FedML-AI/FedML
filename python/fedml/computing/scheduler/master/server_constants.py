@@ -158,6 +158,17 @@ class ServerConstants(object):
         return job_ops_url
 
     @staticmethod
+    def get_cluster_list_url(config_version="release"):
+        cluster_list_url = "{}/fedmlOpsServer/api/v1/cli/getClusterStatus".format(ServerConstants.get_mlops_url(config_version))
+        return cluster_list_url
+
+    @staticmethod
+    def get_cluster_stop_url(config_version="release"):
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/shutDownCluster".format(ServerConstants.get_mlops_url(config_version))
+        return cluster_stop_url
+
+
+    @staticmethod
     def get_app_create_url(config_version="release"):
         app_url = "{}/fedmlOpsServer/api/v1/application/createApplicationFromCli".format(
             ServerConstants.get_mlops_url(config_version))

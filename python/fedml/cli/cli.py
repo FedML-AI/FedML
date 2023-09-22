@@ -1,7 +1,7 @@
 import click
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, cluster
 from fedml.computing.scheduler.env.collect_env import collect_env
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
@@ -63,6 +63,9 @@ cli.add_command(model.fedml_model)
 
 # Add launch subcommand module
 cli.add_command(launch.fedml_launch)
+
+# Add cluster subcommand module
+cli.add_command(cluster.fedml_clusters)
 
 if __name__ == "__main__":
     cli()

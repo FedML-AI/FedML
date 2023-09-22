@@ -78,4 +78,4 @@ def stop_job(platform, job_id, api_key, version):
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
 def list_jobs(platform, job_name, job_id, api_key, version):
-    fedml.api.list_jobs(api_key, version, job_name, job_id, platform)
+    fedml.api.list_jobs(api_key=api_key, version=version, job_name=job_name, job_id=job_id, platform=platform)

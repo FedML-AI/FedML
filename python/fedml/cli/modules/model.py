@@ -214,7 +214,7 @@ def fedml_model_run(name, data):
     fedml.api.model_run(name, data)
 
 
-@fedml_model.command("show-resource-type", help="Show resource type at the FedML® Launch platform (open.fedml.ai)")
+@fedml_model.command("resource-types", help="Show resource type at the FedML® Launch platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
