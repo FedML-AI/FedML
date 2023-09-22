@@ -7,6 +7,20 @@ Common functions for DP. Some codes refer to diffprivlib: https://github.com/IBM
 
 
 def check_bounds(lower, upper):
+    """
+    Check if the provided lower and upper bounds are valid.
+
+    Args:
+        lower (Real): The lower bound.
+        upper (Real): The upper bound.
+
+    Returns:
+        Tuple[Real, Real]: A tuple containing the validated lower and upper bounds.
+
+    Raises:
+        TypeError: If lower or upper is not a numeric type.
+        ValueError: If the lower bound is greater than the upper bound.
+    """
     if not isinstance(lower, Real) or not isinstance(upper, Real):
         raise TypeError("Bounds must be numeric")
     if lower > upper:
@@ -15,18 +29,54 @@ def check_bounds(lower, upper):
 
 
 def check_numeric_value(value):
+    """
+    Check if the provided value is a numeric type.
+
+    Args:
+        value (Real): The value to be checked.
+
+    Returns:
+        bool: True if the value is numeric, False otherwise.
+
+    Raises:
+        TypeError: If the value is not a numeric type.
+    """
     if not isinstance(value, Real):
         raise TypeError("Value to be randomised must be a number")
     return True
 
 
 def check_integer_value(value):
+    """
+    Check if the provided value is an integer.
+
+    Args:
+        value (Integral): The value to be checked.
+
+    Returns:
+        bool: True if the value is an integer, False otherwise.
+
+    Raises:
+        TypeError: If the value is not an integer.
+    """
     if not isinstance(value, Integral):
         raise TypeError("Value to be randomised must be an integer")
     return True
 
 
 def check_epsilon_delta(epsilon, delta, allow_zero=False):
+    """
+    Check if the provided epsilon and delta values are valid for differential privacy.
+
+    Args:
+        epsilon (Real): Epsilon value.
+        delta (Real): Delta value.
+        allow_zero (bool, optional): Whether to allow epsilon and delta to be zero. Default is False.
+
+    Raises:
+        TypeError: If epsilon or delta is not a numeric type.
+        ValueError: If epsilon is negative, delta is outside [0, 1] range, or both epsilon and delta are zero.
+    """
     if not isinstance(epsilon, Real) or not isinstance(delta, Real):
         raise TypeError("Epsilon and delta must be numeric")
     if epsilon < 0:
@@ -38,6 +88,18 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
 
 
 def check_params(epsilon, delta, sensitivity):
+    """
+    Check the validity of epsilon, delta, and sensitivity parameters for differential privacy.
+
+    Args:
+        epsilon (Real): Epsilon value.
+        delta (Real): Delta value.
+        sensitivity (Real): Sensitivity value.
+
+    Raises:
+        TypeError: If epsilon, delta, or sensitivity is not a numeric type.
+        ValueError: If epsilon is negative, delta is outside [0, 1] range, or sensitivity is negative.
+    """
     check_epsilon_delta(epsilon, delta, allow_zero=False)
     if not isinstance(sensitivity, Real):
         raise TypeError("Sensitivity must be numeric")

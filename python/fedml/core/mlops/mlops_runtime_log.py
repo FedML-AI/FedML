@@ -33,7 +33,8 @@ class MLOpsRuntimeLog:
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
-        logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+        logging.error("Uncaught exception", exc_info=(
+            exc_type, exc_value, exc_traceback))
 
         if MLOpsRuntimeLog._log_sdk_instance is not None and \
                 hasattr(MLOpsRuntimeLog._log_sdk_instance, "args") and \
@@ -48,6 +49,23 @@ class MLOpsRuntimeLog:
         mlops.send_exit_train_msg()
 
     def __init__(self, args):
+        """
+        Initialize the MLOpsRuntimeLog.
+
+        Args:
+            args: Input arguments.
+
+        Attributes:
+            logger: Logger instance for logging.
+            args: Input arguments.
+            should_write_log_file: Boolean indicating whether log files should be written.
+            log_file_dir: Directory where log files are stored.
+            log_file: File handle for the log file.
+            run_id: The ID of the current run.
+            edge_id: The ID of the edge device (server or client).
+            origin_log_file_path: Path to the original log file.
+
+        """
         self.logger = None
         self.args = args
         if hasattr(args, "using_mlops"):
@@ -92,13 +110,31 @@ class MLOpsRuntimeLog:
 
     @staticmethod
     def get_instance(args):
+        """
+        Get an instance of the MLOpsRuntimeLog.
+
+        Args:
+            args: Input arguments.
+
+        Returns:
+            MLOpsRuntimeLog: An instance of the log handler.
+
+        """
         if MLOpsRuntimeLog._log_sdk_instance is None:
             MLOpsRuntimeLog._log_sdk_instance = MLOpsRuntimeLog(args)
 
         return MLOpsRuntimeLog._log_sdk_instance
 
     def init_logs(self, show_stdout_log=True):
-        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        """
+        Initialize logging.
+
+        Args:
+            show_stdout_log (bool): Flag to control whether to show log messages on stdout.
+
+        """
+        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(
+            self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
 
@@ -118,7 +154,8 @@ class MLOpsRuntimeLog:
                 if self.ntp_offset is None:
                     self.ntp_offset = 0.0
 
-                log_ntp_time = int((log_time * 1000 + self.ntp_offset) / 1000.0)
+                log_ntp_time = int(
+                    (log_time * 1000 + self.ntp_offset) / 1000.0)
                 ct = self.converter(log_ntp_time)
                 if datefmt:
                     s = ct.strftime(datefmt)
@@ -156,6 +193,17 @@ class MLOpsRuntimeLog:
 
     @staticmethod
     def build_log_file_path(in_args):
+        """
+        Build the log file path based on input arguments.
+
+        Args:
+            in_args: Input arguments.
+
+        Returns:
+            str: Log file path.
+            str: Program prefix.
+
+        """
         if in_args.role == "server":
             if hasattr(in_args, "server_id"):
                 edge_id = in_args.server_id
@@ -182,7 +230,8 @@ class MLOpsRuntimeLog:
                     edge_id = in_args.edge_id
                 else:
                     edge_id = 0
-            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
+            program_prefix = "FedML-Client @device-id-{edge}".format(
+                edge=edge_id)
 
         if not os.path.exists(in_args.log_file_dir):
             os.makedirs(in_args.log_file_dir, exist_ok=True)
@@ -196,7 +245,8 @@ class MLOpsRuntimeLog:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--log_file_dir", "-log", help="log file dir")
     parser.add_argument("--run_id", "-ri", type=str,
                         help='run id')

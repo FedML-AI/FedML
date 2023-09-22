@@ -6,6 +6,28 @@ from .stats_impl import WandbSystemStats
 
 class SysStats:
     def __init__(self, process_id=None):
+        """
+        Initialize the SysStats object.
+
+        Args:
+            process_id (int): Optional process ID. Defaults to None.
+
+        Attributes:
+            sys_stats_impl (WandbSystemStats): Instance of WandbSystemStats for collecting system statistics.
+            gpu_time_spent_accessing_memory (float): GPU time spent accessing memory.
+            gpu_power_usage (float): GPU power usage.
+            gpu_temp (float): GPU temperature.
+            gpu_memory_allocated (float): GPU memory allocated.
+            gpu_utilization (float): GPU utilization.
+            network_traffic (float): Network traffic.
+            disk_utilization (float): Disk utilization.
+            process_cpu_threads_in_use (int): Number of CPU threads in use by the process.
+            process_memory_available (float): Available process memory.
+            process_memory_in_use (float): Process memory in use.
+            process_memory_in_use_size (float): Process memory in use (size).
+            system_memory_utilization (float): System memory utilization.
+            cpu_utilization (float): CPU utilization.
+        """
         settings = SettingsStatic(d={"_stats_pid": os.getpid() if process_id is None else process_id})
         self.sys_stats_impl = WandbSystemStats(settings=settings, interface=None)
         self.gpu_time_spent_accessing_memory = 0.0
@@ -23,6 +45,9 @@ class SysStats:
         self.cpu_utilization = 0.0
 
     def produce_info(self):
+        """
+        Collect system statistics and update attributes.
+        """
         stats = self.sys_stats_impl.stats()
 
         self.cpu_utilization = stats.get("cpu", 0.0)

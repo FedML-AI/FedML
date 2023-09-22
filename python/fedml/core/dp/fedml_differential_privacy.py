@@ -11,6 +11,33 @@ from ..common.ml_engine_backend import MLEngineBackend
 
 
 class FedMLDifferentialPrivacy:
+    """
+    A class for managing Differential Privacy in Federated Learning.
+
+    Attributes:
+        enable_rdp_accountant (bool): Flag indicating if RDP accountant is enabled.
+        max_grad_norm (float): Maximum gradient norm for clipping.
+        dp_solution_type (str): Type of differential privacy solution (e.g., 'gaussian', 'laplace').
+        dp_solution: An instance of the differential privacy solution.
+        dp_accountant: An instance of the differential privacy accountant.
+        is_enabled (bool): Flag indicating if differential privacy is enabled.
+        privacy_engine: The privacy engine used for differential privacy.
+        current_round (int): Current federated learning round.
+        accountant: An accountant for tracking privacy budget consumption.
+        delta (float): Delta value for differential privacy.
+
+    Methods:
+        init(args): Initialize the differential privacy settings based on command-line arguments.
+        is_dp_enabled(): Check if differential privacy is enabled.
+        is_local_dp_enabled(): Check if local differential privacy is enabled.
+        is_global_dp_enabled(): Check if global differential privacy is enabled.
+        is_clipping(): Check if gradient clipping is enabled.
+        to_compute_params_in_aggregation_enabled(): Check if computing parameters in aggregation is enabled.
+        global_clip(raw_client_model_or_grad_list): Apply global gradient clipping.
+        add_local_noise(local_grad): Add local noise to gradients.
+        add_global_noise(global_model): Add global noise to the global model.
+        set_params_for_dp(raw_client_model_or_grad_list): Set parameters for differential privacy.
+    """
     _dp_instance = None
 
     @staticmethod
@@ -20,6 +47,12 @@ class FedMLDifferentialPrivacy:
         return FedMLDifferentialPrivacy._dp_instance
 
     def __init__(self):
+        """
+        Initialize differential privacy settings based on command-line arguments.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+        """
         self.enable_rdp_accountant = False
         self.max_grad_norm = None
         self.dp_solution_type = None
@@ -33,7 +66,8 @@ class FedMLDifferentialPrivacy:
 
     def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
-            logging.info(".......init dp......." + args.dp_solution_type + "-" + args.dp_solution_type)
+            logging.info(".......init dp......." +
+                         args.dp_solution_type + "-" + args.dp_solution_type)
             self.is_enabled = True
             self.dp_solution_type = args.dp_solution_type.strip()
             if hasattr(args, "max_grad_norm"):
@@ -67,6 +101,12 @@ class FedMLDifferentialPrivacy:
             self.is_enabled = False
 
     def is_dp_enabled(self):
+        """
+        Check if differential privacy is enabled.
+
+        Returns:
+            bool: True if differential privacy is enabled, False otherwise.
+        """
         return self.is_enabled
 
     def is_local_dp_enabled(self):
@@ -101,4 +141,3 @@ class FedMLDifferentialPrivacy:
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
         self.dp_solution.set_params_for_dp(raw_client_model_or_grad_list)
-
