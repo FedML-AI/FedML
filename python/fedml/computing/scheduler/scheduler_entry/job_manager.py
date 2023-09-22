@@ -329,6 +329,7 @@ class FedMLJobStartedModel(object):
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
             self.message = job_started_json.get("message", None)
+            self.cluster_id = job_started_json.get("cluster_id", None)
             gpu_list_json = job_started_json.get("gpu_matched", None)
             if gpu_list_json is not None:
                 for gpu_dev_json in gpu_list_json:
@@ -346,6 +347,7 @@ class FedMLJobStartedModel(object):
 
 class FedMLGpuDevices(object):
     def __init__(self, gpu_device_json):
+        self.gpu_id = gpu_device_json.get("id", None)
         self.gpu_vendor = gpu_device_json.get("gpu_vendor", None)
         self.gpu_num = gpu_device_json.get("total_gpu_count", None)
         self.gpu_type = gpu_device_json.get("gpu_type", None)

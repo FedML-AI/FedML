@@ -18,6 +18,7 @@ from prettytable import PrettyTable
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
+from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterManager
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
 from fedml.api.constants import ApiConstants
 
@@ -610,7 +611,7 @@ class FedMLLaunchManager(object):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file, prompt=prompt)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file=yaml_file, cluster=cluster, prompt=prompt)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
                 return resource_id, project_id, error_code, error_msg
@@ -630,10 +631,21 @@ class FedMLLaunchManager(object):
         # Start the job
         job_id = result.job_id,
         project_id = result.project_id
+        cluster_id = result.cluster_id
+        gpu_matched = result.gpu_matched
+        cluster_confirmed = True
+        if not (cluster_id is None or cluster_id == ""):
+            FedMLClusterManager.get_instance().set_config_version(self.config_version)
+            cluster_confirmed = FedMLClusterManager.get_instance().confirm_cluster(cluster_id, gpu_matched)
+
+        if not cluster_confirmed:
+            return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED], \
+                ApiConstants.CLUSTER_CONFIRM_FAILED
+
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
-                                                             result.application_name,
-                                                             self.device_server, self.device_edges, api_key, cluster,
-                                                             no_confirmation=True, job_id=result.job_id)
+                                                                 result.application_name,
+                                                                 self.device_server, self.device_edges, api_key, cluster,
+                                                                 no_confirmation=True, job_id=result.job_id)
         if result is None:
             return job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
