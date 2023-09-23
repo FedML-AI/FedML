@@ -328,7 +328,7 @@ class ServerConstants(object):
                                         callback=None, error_processor=None):
         error_list = list()
         script_process = subprocess_with_live_logs.Popen(
-            join.join(cmds), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            join.join(cmds), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if script_process is None:
             return None, error_list
 
