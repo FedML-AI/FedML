@@ -18,6 +18,46 @@ from ...alg_frame.params import Params
 
 
 class FedMLAlgorithmFlow(FedMLCommManager):
+    """
+    Base class for defining the flow of a federated machine learning algorithm.
+
+    Args:
+        args: Arguments for initializing the algorithm flow.
+        executor (FedMLExecutor): An instance of a FedMLExecutor class to execute tasks within the flow.
+
+    Attributes:
+        ONCE (str): Flow tag indicating that the flow should run once.
+        FINISH (str): Flow tag indicating the end of the flow.
+        executor (FedMLExecutor): An instance of a FedMLExecutor class.
+        executor_cls_name (str): Name of the executor class.
+        flow_index (int): Index to keep track of flow sequences.
+        flow_sequence_original (list): List to store the original flow sequence.
+        flow_sequence_current_map (dict): Mapping of current flow sequences.
+        flow_sequence_next_map (dict): Mapping of next flow sequences.
+        flow_sequence_executed (list): List to store executed flow sequences.
+        neighbor_node_online_map (dict): Mapping of neighbor node online status.
+        is_all_neighbor_connected (bool): Flag to indicate if all neighbor nodes are connected.
+
+    Methods:
+        register_message_receive_handlers(): Register message receive handlers for different message types.
+        add_flow(flow_name, executor_task, flow_tag=ONCE): Add a flow to the algorithm.
+        run(): Start running the algorithm flow.
+        build(): Build the flow sequence and prepare for execution.
+        _on_ready_to_run_flow(): Handle when the algorithm is ready to run.
+        _handle_message_received(msg_params): Handle received messages within the flow.
+        _execute_flow(flow_params, flow_name, executor_task, executor_task_cls_name, flow_tag): Execute a flow task.
+        __direct_to_next_flow(flow_name, flow_tag): Get the details of the next flow in the sequence.
+        _send_msg(flow_name, params): Send a message to other nodes.
+        _handle_flow_finish(msg_params): Handle the finish of the algorithm flow.
+        __shutdown(): Shutdown the algorithm flow.
+        _pass_message_locally(flow_name, params): Pass a message to a locally executed flow.
+        _handle_connection_ready(msg_params): Handle the readiness of the algorithm to run.
+        _handle_neighbor_report_node_status(msg_params): Handle neighbor nodes reporting their online status.
+        _handle_neighbor_check_node_status(msg_params): Handle checking of neighbor node status.
+        _send_message_to_check_neighbor_node_status(receiver_id): Send a message to check neighbor node status.
+        _send_message_to_report_node_status(receiver_id): Send a message to report node status.
+        _get_class_that_defined_method(meth): Get the class that defined a method.
+    """
     ONCE = "FLOW_TAG_ONCE"
     FINISH = "FLOW_TAG_FINISH"
 
@@ -39,6 +79,14 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         self.is_all_neighbor_connected = False
 
     def register_message_receive_handlers(self) -> None:
+        """
+        Register message receive handlers for various message types.
+
+        This method registers message handlers for messages related to the algorithm flow.
+
+        Returns:
+            None
+        """
         self.register_message_receive_handler(MSG_TYPE_CONNECTION_IS_READY, self._handle_connection_ready)
         self.register_message_receive_handler(
             MSG_TYPE_NEIGHBOR_CHECK_NODE_STATUS, self._handle_neighbor_check_node_status,
@@ -64,6 +112,17 @@ class FedMLAlgorithmFlow(FedMLCommManager):
                 self.register_message_receive_handler(flow_name, self._handle_message_received)
 
     def add_flow(self, flow_name, executor_task: Callable, flow_tag=ONCE):
+        """
+        Add a flow to the algorithm's flow sequence.
+
+        Args:
+            flow_name (str): Name of the flow.
+            executor_task (Callable): Callable function representing the task to be executed in the flow.
+            flow_tag (str): Tag indicating the type of flow (ONCE or FINISH).
+
+        Returns:
+            None
+        """
 
         logging.info("flow_name = {}, executor_task = {}".format(flow_name, executor_task))
         executor_task_cls_name = self._get_class_that_defined_method(executor_task)
@@ -72,9 +131,21 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         self.flow_index += 1
 
     def run(self):
+        """
+        Start running the algorithm flow.
+
+        Returns:
+            None
+        """
         super().run()
 
     def build(self):
+        """
+        Build the flow sequence and prepare for execution.
+
+        Returns:
+            None
+        """
         logging.info("self.flow_sequence = {}".format(self.flow_sequence_original))
         (flow_name, executor_task, executor_task_cls_name, flow_tag,) = self.flow_sequence_original[
             len(self.flow_sequence_original) - 1
@@ -114,6 +185,12 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         logging.info("self.flow_sequence_next_map = {}".format(self.flow_sequence_next_map))
 
     def _on_ready_to_run_flow(self):
+        """
+        Handle when the algorithm is ready to run.
+
+        Returns:
+            None
+        """
         logging.info("#######_on_ready_to_run_flow#######")
         (
             flow_name_current,
@@ -127,6 +204,15 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             )
 
     def _handle_message_received(self, msg_params):
+        """
+        Handle received messages within the flow.
+
+        Args:
+            msg_params (Params): Parameters received in the message.
+
+        Returns:
+            None
+        """
         flow_name = msg_params.get_type()
 
         flow_params = Params()
@@ -141,6 +227,19 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         self._execute_flow(flow_params, flow_name_next, executor_task_next, executor_task_cls_name_next, flow_tag_next)
 
     def _execute_flow(self, flow_params, flow_name, executor_task, executor_task_cls_name, flow_tag):
+        """
+        Execute a flow task.
+
+        Args:
+            flow_params (Params): Parameters for the flow.
+            flow_name (str): Name of the flow.
+            executor_task (Callable): Callable function representing the task to be executed.
+            executor_task_cls_name (str): Name of the executor task's class.
+            flow_tag (str): Tag indicating the type of flow (ONCE or FINISH).
+
+        Returns:
+            None
+        """
         logging.info(
             "\n\n###########_execute_flow (START). flow_name = {}, executor_task name = {}() #######".format(
                 flow_name, executor_task.__name__
@@ -183,6 +282,16 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self._send_msg(flow_name, params)
 
     def __direct_to_next_flow(self, flow_name, flow_tag):
+        """
+        Determine the next flow to execute based on the current flow.
+
+        Args:
+            flow_name (str): Name of the current flow.
+            flow_tag (str): Tag indicating the type of flow (ONCE or FINISH).
+
+        Returns:
+            Tuple: A tuple containing the name, executor task, executor task class name, and flow tag of the next flow.
+        """
         (
             flow_name_next,
             executor_task_next,
@@ -197,6 +306,16 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         )
 
     def _send_msg(self, flow_name, params: Params):
+        """
+        Send a message to one or more receivers.
+
+        Args:
+            flow_name (str): Name of the flow.
+            params (Params): Parameters to be included in the message.
+
+        Returns:
+            None
+        """
         sender_id = params.get(PARAMS_KEY_SENDER_ID)
         receiver_id = params.get(PARAMS_KEY_RECEIVER_ID)
         logging.info("sender_id = {}, receiver_id = {}".format(sender_id, receiver_id))
@@ -211,9 +330,24 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self.send_message(message)
 
     def _handle_flow_finish(self, msg_params):
+        """
+        Handle the completion of the algorithm flow.
+
+        Args:
+            msg_params (Params): Parameters received in the completion message.
+
+        Returns:
+            None
+        """
         self.__shutdown()
 
     def __shutdown(self):
+        """
+        Shutdown the algorithm flow and terminate communication.
+
+        Returns:
+            None
+        """
         for rid in self.executor.get_neighbor_id_list():
             message = Message(MSG_TYPE_FLOW_FINISH, self.executor.get_id(), rid)
             self.send_message(message)
@@ -221,6 +355,16 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         self.finish()
 
     def _pass_message_locally(self, flow_name, params: Params):
+        """
+        Pass a message locally to be handled within the algorithm.
+
+        Args:
+            flow_name (str): Name of the flow.
+            params (Params): Parameters to be included in the message.
+
+        Returns:
+            None
+        """
         sender_id = params.get(PARAMS_KEY_SENDER_ID)
         receiver_id = params.get(PARAMS_KEY_RECEIVER_ID)
         logging.info("sender_id = {}, receiver_id = {}".format(sender_id, receiver_id))
@@ -235,6 +379,15 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self._handle_message_received(message)
 
     def _handle_connection_ready(self, msg_params):
+        """
+        Handle the readiness of connections with neighbors.
+
+        Args:
+            msg_params (Params): Parameters received indicating connection readiness.
+
+        Returns:
+            None
+        """
         if self.is_all_neighbor_connected:
             return
         logging.info("_handle_connection_ready")
@@ -243,6 +396,15 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self._send_message_to_report_node_status(receiver_id)
 
     def _handle_neighbor_report_node_status(self, msg_params):
+        """
+        Handle the reporting of neighbor node statuses.
+
+        Args:
+            msg_params (Params): Parameters received with neighbor node status information.
+
+        Returns:
+            None
+        """
         sender_id = msg_params.get_sender_id()
         logging.info(
             "_handle_neighbor_report_node_status. node_id = {}, neighbor_id = {} is online".format(
@@ -262,10 +424,28 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self._on_ready_to_run_flow()
 
     def _handle_neighbor_check_node_status(self, msg_params):
+        """
+        Handle a message to check the status of a neighbor node.
+
+        Args:
+            msg_params (Params): Parameters received in the check node status message.
+
+        Returns:
+            None
+        """
         sender_id = msg_params.get_sender_id()
         self._send_message_to_report_node_status(sender_id)
 
     def _send_message_to_check_neighbor_node_status(self, receiver_id):
+        """
+        Send a message to check the status of a neighbor node.
+
+        Args:
+            receiver_id (int): ID of the receiver neighbor node.
+
+        Returns:
+            None
+        """
         message = Message(MSG_TYPE_NEIGHBOR_CHECK_NODE_STATUS, self.executor.get_id(), receiver_id)
         logging.info(
             "_send_message_to_check_neighbor_node_status. node_id = {}, neighbor_id = {} is online".format(
@@ -275,10 +455,28 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         self.send_message(message)
 
     def _send_message_to_report_node_status(self, receiver_id):
+        """
+        Send a message to report the node status to a neighbor node.
+
+        Args:
+            receiver_id (int): ID of the receiver neighbor node.
+
+        Returns:
+            None
+        """
         message = Message(MSG_TYPE_NEIGHBOR_REPORT_NODE_STATUS, self.executor.get_id(), receiver_id)
         self.send_message(message)
 
     def _get_class_that_defined_method(self, meth):
+        """
+        Get the name of the class that defines a method.
+
+        Args:
+            meth (method/function): The method or function to determine the defining class.
+
+        Returns:
+            str: The name of the defining class.
+        """
         if inspect.ismethod(meth):
             for cls in inspect.getmro(meth.__self__.__class__):
                 if cls.__dict__.get(meth.__name__) is meth:

@@ -5,19 +5,23 @@ import torch.nn.functional as F
 
 def load_params_from_tf(py_model:nn.Module, tf_model:list):
     """
-    Load and update the parameters from tensorflow.js to pytorch nn.Module
+    Load and update the parameters from TensorFlow.js to PyTorch nn.Module.
 
     Args:
-        py_model: An nn.Moudule network structure from pytorch
-        tf_module: A list read from JSON file which stored the meta data of tensorflow.js model
-                   (length is number of layers, and has two keys in each layer, 'model' and 'params' respectively)
+        py_model (nn.Module): A PyTorch neural network structure.
+        tf_model (list): A list read from a JSON file containing metadata for the TensorFlow.js model.
 
     Returns:
-        An updated nn.Module network structure
+        nn.Module: An updated PyTorch neural network structure.
 
     Raises:
-        Exception: Certain layer structure is not aligned
-        KeyError: Model layer is not aligned
+        Exception: If certain layer structures do not align between PyTorch and TensorFlow.js.
+        KeyError: If a model layer is not aligned.
+
+    This function loads and updates the parameters from a TensorFlow.js model to a PyTorch nn.Module.
+    It compares layer names between the two models and assigns the TensorFlow.js parameters to the
+    corresponding layers in the PyTorch model.
+
     """
     state_dict = py_model.state_dict()
     py_layers = list(state_dict.keys())
@@ -41,6 +45,22 @@ def load_params_from_tf(py_model:nn.Module, tf_model:list):
         raise TypeError("The model structure of pytorch and tensorflow.js is not aligned! Cannot transfer parameters accordingly.")
 
 def process_state_dict(state_dict):
+    """
+    Process a PyTorch state dictionary to convert it into a Python dictionary.
+
+    Args:
+        state_dict (dict): A PyTorch state dictionary containing model parameters.
+
+    Returns:
+        dict: A Python dictionary where keys are parameter names and values are
+              NumPy arrays representing the parameter values.
+
+    This function takes a PyTorch state dictionary, which typically contains the
+    parameters of a neural network model, and converts it into a Python dictionary.
+    Each key in the resulting dictionary corresponds to a parameter's name, and the
+    corresponding value is a NumPy array containing the parameter's values.
+
+    """
     lr_py = {}
     for key, value in state_dict.items():
         lr_py[key] = value.cpu().detach().numpy().tolist()
@@ -48,12 +68,31 @@ def process_state_dict(state_dict):
 
 
 class LogisticRegression(torch.nn.Module):
-     def __init__(self, input_dim, output_dim):
-         super(LogisticRegression, self).__init__()
-         self.linear = torch.nn.Linear(input_dim, output_dim)
-     def forward(self, x):
-         outputs = torch.sigmoid(self.linear(x))
-         return outputs
+    def __init__(self, input_dim, output_dim):
+        """
+        Initialize a logistic regression model.
+
+        Args:
+            input_dim (int): The input dimension.
+            output_dim (int): The output dimension.
+
+        """
+        super(LogisticRegression, self).__init__()
+        self.linear = torch.nn.Linear(input_dim, output_dim)
+
+    def forward(self, x):
+        """
+        Forward pass of the logistic regression model.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor after applying the sigmoid function.
+
+        """
+        outputs = torch.sigmoid(self.linear(x))
+        return outputs
 
 
 class CNN_WEB(nn.Module):

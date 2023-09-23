@@ -6,31 +6,42 @@ from nacl.public import Box, PrivateKey, PublicKey
 
 
 def export_public_key(private_key_hex: str) -> bytes:
-    """Export public key for contract join request.
+    """
+    Export the public key for a contract join request.
 
     Args:
-        private_key: hex string representing private key
+        private_key_hex (str): Hex string representing the private key.
 
     Returns:
-        32 bytes representing public key
+        bytes: 32 bytes representing the public key.
     """
 
     def _hex_to_bytes(hex: str) -> bytes:
+        """
+        Convert a hex string to bytes.
+
+        Args:
+            hex (str): Hex string.
+
+        Returns:
+            bytes: Bytes representation of the hex string.
+        """
         return bytes.fromhex(hex[2:] if hex[:2] == "0x" else hex)
 
     return bytes(PrivateKey(_hex_to_bytes(private_key_hex)).public_key)
 
 
 def encrypt_nacl(public_key: bytes, data: bytes) -> bytes:
-    """Encryption function using NaCl box compatible with MetaMask
+    """
+    Encrypt data using NaCl box compatible with MetaMask.
     For implementation used in MetaMask look into: https://github.com/MetaMask/eth-sig-util
 
     Args:
-        public_key: public key of recipient
-        data: message data
+        public_key (bytes): Public key of the recipient.
+        data (bytes): Message data to be encrypted.
 
     Returns:
-        encrypted data
+        bytes: Encrypted data.
     """
     emph_key = PrivateKey.generate()
     enc_box = Box(emph_key, PublicKey(public_key))
@@ -57,7 +68,17 @@ def decrypt_nacl(private_key: bytes, data: bytes) -> bytes:
 
 
 def get_current_secret(secret: bytes, entry_key_turn: int, key_turn: int) -> bytes:
-    """Calculate shared secret at current state."""
+    """
+    Calculate the shared secret at the current state.
+
+    Args:
+        secret (bytes): Initial secret.
+        entry_key_turn (int): Entry key turn.
+        key_turn (int): Key turn.
+
+    Returns:
+        bytes: The calculated shared secret.
+    """
     for _ in range(entry_key_turn, key_turn):
         secret = hashlib.sha256(secret).digest()
     return secret

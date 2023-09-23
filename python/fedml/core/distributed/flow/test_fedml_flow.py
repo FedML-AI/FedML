@@ -7,6 +7,16 @@ from fedml.core import FedMLExecutor, Params, FedMLAlgorithmFlow
 
 class Client(FedMLExecutor):
     def __init__(self, args):
+        """
+        Initialize the Client object.
+
+        Args:
+            args: Command-line arguments or configuration settings.
+
+        Returns:
+            None
+        """
+
         self.args = args
         id = args.rank
         neighbor_id_list = [0]
@@ -17,17 +27,40 @@ class Client(FedMLExecutor):
         self.model = None
 
     def init(self, device, dataset, model):
+        """
+        Initialize the client with device, dataset, and model.
+
+        Args:
+            device: The device (e.g., CPU or GPU) for training.
+            dataset: The dataset used for training.
+            model: The machine learning model used for training.
+
+        Returns:
+            None
+        """
         self.device = device
         self.dataset = dataset
         self.model = model
 
     def local_training(self):
+        """
+        Perform local training on the client.
+
+        Returns:
+            Params: Parameters containing model updates or other relevant information.
+        """
         logging.info("local_training start")
         params = self.get_params()
         model_params = params.get(Params.KEY_MODEL_PARAMS)
         return params
 
     def handle_init_global_model(self):
+        """
+        Handle the initialization of the global model on the client.
+
+        Returns:
+            Params: Parameters containing the model parameters.
+        """
         received_params = self.get_params()
         model_params = received_params.get(Params.KEY_MODEL_PARAMS)
 
@@ -38,6 +71,15 @@ class Client(FedMLExecutor):
 
 class Server(FedMLExecutor):
     def __init__(self, args):
+        """
+        Initialize the Server object.
+
+        Args:
+            args: Command-line arguments or configuration settings.
+
+        Returns:
+            None
+        """
         self.args = args
         id = args.rank
         neighbor_id_list = [1, 2]
@@ -53,17 +95,41 @@ class Server(FedMLExecutor):
         self.client_num = 2
 
     def init(self, device, dataset, model):
+        """
+        Initialize the server with device, dataset, and model.
+
+        Args:
+            device: The device (e.g., CPU or GPU) for server operations.
+            dataset: The dataset used for server operations.
+            model: The machine learning model used for server operations.
+
+        Returns:
+            None
+        """
+
         self.device = device
         self.dataset = dataset
         self.model = model
 
     def init_global_model(self):
+        """
+        Initialize the global model on the server.
+
+        Returns:
+            Params: Parameters containing the initial model parameters.
+        """
         logging.info("init_global_model")
         params = Params()
         params.add(Params.KEY_MODEL_PARAMS, self.model.state_dict())
         return params
 
     def server_aggregate(self):
+        """
+        Perform server-side aggregation of client updates.
+
+        Returns:
+            Params: Parameters containing the aggregated model updates.
+        """
         logging.info("server_aggregate")
         params = self.get_params()
         model_params = params.get(Params.KEY_MODEL_PARAMS)
@@ -77,6 +143,12 @@ class Server(FedMLExecutor):
             return params
 
     def final_eval(self):
+        """
+        Perform final evaluation or operations on the server.
+
+        Returns:
+            None
+        """
         logging.info("final_eval")
 
 

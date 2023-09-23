@@ -10,6 +10,18 @@ lock = threading.Lock()
 
 class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
     def __init__(self, host, port, client_num, client_id):
+        """
+        Initializes the gRPC Communication Servicer.
+
+        Args:
+            host (str): The IP address of the server.
+            port (int): The port number.
+            client_num (int): The number of clients.
+            client_id (int): The client ID.
+
+        Returns:
+            None
+        """
         # host is the ip address of server
         self.host = host
         self.port = port
@@ -24,6 +36,16 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
         self.message_q = queue.Queue()
 
     def sendMessage(self, request, context):
+        """
+        Handles the gRPC sendMessage request.
+
+        Args:
+            request (grpc_comm_manager_pb2.CommRequest): The request message.
+            context (grpc.ServicerContext): The context of the request.
+
+        Returns:
+            grpc_comm_manager_pb2.CommResponse: The response message.
+        """
         context_ip = context.peer().split(":")[1]
         logging.info(
             "client_{} got something from client_{} from ip address {}".format(
@@ -39,4 +61,14 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
         return response
 
     def handleReceiveMessage(self, request, context):
+        """
+        Handles the gRPC handleReceiveMessage request.
+
+        Args:
+            request (grpc_comm_manager_pb2.CommRequest): The request message.
+            context (grpc.ServicerContext): The context of the request.
+
+        Returns:
+            None
+        """
         pass

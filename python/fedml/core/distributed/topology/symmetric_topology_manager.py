@@ -14,11 +14,28 @@ class SymmetricTopologyManager(BaseTopologyManager):
     """
 
     def __init__(self, n, neighbor_num=2):
+        """
+        Initialize the SymmetricTopologyManager.
+
+        Args:
+            n (int): Number of nodes in the topology.
+            neighbor_num (int): Number of neighbors for each node.
+
+        Returns:
+            None
+        """
         self.n = n
         self.neighbor_num = neighbor_num
         self.topology = []
 
     def generate_topology(self):
+        """
+        Generate the symmetric topology based on the specified parameters.
+
+        Returns:
+            None
+        """
+
         # first generate a ring topology
         topology_ring = np.array(
             nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32
@@ -56,16 +73,43 @@ class SymmetricTopologyManager(BaseTopologyManager):
         self.topology = topology_symmetric
 
     def get_in_neighbor_weights(self, node_index):
+        """
+        Get the weights of incoming neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[float]: List of weights for incoming neighbors.
+        """
         if node_index >= self.n:
             return []
         return self.topology[node_index]
 
     def get_out_neighbor_weights(self, node_index):
+        """
+        Get the weights of outgoing neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[float]: List of weights for outgoing neighbors.
+        """
         if node_index >= self.n:
             return []
         return self.topology[node_index]
 
     def get_in_neighbor_idx_list(self, node_index):
+        """
+        Get the indices of incoming neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[int]: List of indices for incoming neighbors.
+        """
         neighbor_in_idx_list = []
         neighbor_weights = self.get_in_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
@@ -74,6 +118,15 @@ class SymmetricTopologyManager(BaseTopologyManager):
         return neighbor_in_idx_list
 
     def get_out_neighbor_idx_list(self, node_index):
+        """
+        Get the indices of outgoing neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[int]: List of indices for outgoing neighbors.
+        """
         neighbor_out_idx_list = []
         neighbor_weights = self.get_out_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):

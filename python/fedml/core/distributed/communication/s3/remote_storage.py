@@ -26,6 +26,15 @@ aws_s3_resource = None
 
 class S3Storage:
     def __init__(self, s3_config_path):
+        """
+        Initializes an S3MNNStorage instance with S3 configuration.
+
+        Args:
+            s3_config_path (str): The path to the S3 configuration file.
+
+        Returns:
+            None
+        """
         self.bucket_name = None
         self.cn_region_name = None
         self.cn_s3_sak = None
@@ -49,6 +58,16 @@ class S3Storage:
         )
 
     def write_model(self, message_key, model):
+        """
+        Writes a machine learning model to S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+            model: The machine learning model to be stored.
+
+        Returns:
+            str: The URL of the stored model in S3.
+        """
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -62,19 +81,23 @@ class S3Storage:
         model_file_size = len(model_to_send)
         model_file_transfered = 0
         prev_progress = 0
+
         def upload_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal model_file_size
-            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
+            # since the callback is stateless, we need to keep the previous progress
+            nonlocal prev_progress
             model_file_transfered += bytes_transferred
             uploaded_kb = format(model_file_transfered / 1024, '.2f')
-            progress = (model_file_transfered / model_file_size * 100) if model_file_size != 0 else 0
+            progress = (model_file_transfered / model_file_size *
+                        100) if model_file_size != 0 else 0
             progress_format_int = int(progress)
             # print the process every 5%
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
-                logging.info("model uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
+                logging.info("model uploaded to S3 size {} KB, progress {}%".format(
+                    uploaded_kb, progress_format_int))
                 prev_progress = progress_format_int
-        
+
         aws_s3_client.upload_fileobj(
             Fileobj=io.BytesIO(model_to_send), Bucket=self.bucket_name, Key=message_key,
             Callback=upload_model_progress,
@@ -90,6 +113,16 @@ class S3Storage:
         return model_url
 
     def write_model_net(self, message_key, model, dummy_input_tensor, local_model_cache_path):
+        """
+        Writes a machine learning model to S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+            model: The machine learning model to be stored.
+
+        Returns:
+            str: The URL of the stored model in S3.
+        """
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -117,21 +150,25 @@ class S3Storage:
         model_to_send.seek(0, 0)
         net_file_transfered = 0
         prev_progress = 0
+
         def upload_model_net_progress(bytes_transferred):
             nonlocal net_file_transfered
             nonlocal net_file_size
-            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
+            # since the callback is stateless, we need to keep the previous progress
+            nonlocal prev_progress
             net_file_transfered += bytes_transferred
             uploaded_kb = format(net_file_transfered / 1024, '.2f')
-            progress = (net_file_transfered / net_file_size * 100) if net_file_size != 0 else 0
+            progress = (net_file_transfered / net_file_size *
+                        100) if net_file_size != 0 else 0
             progress_format_int = int(progress)
             # print the process every 5%
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
-                logging.info("model net uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
+                logging.info("model net uploaded to S3 size {} KB, progress {}%".format(
+                    uploaded_kb, progress_format_int))
                 prev_progress = progress_format_int
         aws_s3_client.upload_fileobj(
             Fileobj=model_to_send, Bucket=self.bucket_name, Key=message_key,
-            Callback= upload_model_net_progress,
+            Callback=upload_model_net_progress,
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
@@ -144,6 +181,18 @@ class S3Storage:
         return model_url
 
     def write_model_input(self, message_key, input_size, input_type, local_model_cache_path):
+        """
+        Writes model input information to S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored input information in S3.
+            input_size: The size of the model input.
+            input_type: The type of the model input.
+            local_model_cache_path (str): The local cache path for input information storage.
+
+        Returns:
+            str: The URL of the stored input information in S3.
+        """
         global aws_s3_client
 
         if not os.path.exists(local_model_cache_path):
@@ -157,7 +206,8 @@ class S3Storage:
             json.dump(model_input_dict, f)
 
         with open(model_input_path, 'rb') as f:
-            aws_s3_client.upload_fileobj(f, Bucket=self.bucket_name, Key=message_key)
+            aws_s3_client.upload_fileobj(
+                f, Bucket=self.bucket_name, Key=message_key)
 
         model_input_url = aws_s3_client.generate_presigned_url("get_object",
                                                                ExpiresIn=60 * 60 * 24 * 5,
@@ -165,6 +215,16 @@ class S3Storage:
         return model_input_url
 
     def write_model_web(self, message_key, model):
+        """
+        Writes a machine learning model to S3 storage in web format.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+            model: The machine learning model to be stored.
+
+        Returns:
+            str: The URL of the stored model in S3.
+        """
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -189,6 +249,15 @@ class S3Storage:
         return model_url
 
     def read_model(self, message_key):
+        """
+        Reads a machine learning model from S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+
+        Returns:
+            model: The machine learning model retrieved from S3.
+        """
         global aws_s3_client
         message_handler_start_time = time.time()
 
@@ -200,7 +269,8 @@ class S3Storage:
                 os.makedirs(cache_dir)
             except Exception as e:
                 pass
-        temp_base_file_path = os.path.join(cache_dir, str(os.getpid()) + "@" + str(uuid.uuid4()))
+        temp_base_file_path = os.path.join(
+            cache_dir, str(os.getpid()) + "@" + str(uuid.uuid4()))
         if not os.path.exists(temp_base_file_path):
             try:
                 os.makedirs(temp_base_file_path)
@@ -211,22 +281,25 @@ class S3Storage:
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
         prev_progress = 0
+
         def read_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
             nonlocal prev_progress
             model_file_transfered += bytes_transferred
             readed_kb = format(model_file_transfered / 1024, '.2f')
-            progress = (model_file_transfered / object_size * 100) if object_size != 0 else 0
+            progress = (model_file_transfered / object_size *
+                        100) if object_size != 0 else 0
             progress_format_int = int(progress)
             # print the process every 5%
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
-                logging.info("model readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format_int))
+                logging.info("model readed from S3 size {} KB, progress {}%".format(
+                    readed_kb, progress_format_int))
                 prev_progress = progress_format_int
 
         with open(temp_file_path, 'wb') as f:
             aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                            Callback=read_model_progress)
+                                           Callback=read_model_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -242,6 +315,16 @@ class S3Storage:
         return model
 
     def read_model_net(self, message_key, local_model_cache_path):
+        """
+        Reads a machine learning model in net format from S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+            local_model_cache_path (str): The local cache path for model storage.
+
+        Returns:
+            model: The machine learning model retrieved from S3.
+        """
         global aws_s3_client
         message_handler_start_time = time.time()
 
@@ -259,21 +342,25 @@ class S3Storage:
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
         prev_progress = 0
+
         def read_model_net_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
-            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
+            # since the callback is stateless, we need to keep the previous progress
+            nonlocal prev_progress
             model_file_transfered += bytes_transferred
             readed_kb = format(model_file_transfered / 1024, '.2f')
-            progress = (model_file_transfered / object_size * 100) if object_size != 0 else 0
+            progress = (model_file_transfered / object_size *
+                        100) if object_size != 0 else 0
             progress_format_int = int(progress)
             # print the process every 5%
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
-                logging.info("model net readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format_int))
+                logging.info("model net readed from S3 size {} KB, progress {}%".format(
+                    readed_kb, progress_format_int))
                 prev_progress = progress_format_int
         with open(temp_file_path, 'wb') as f:
             aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                            Callback=read_model_net_progress)
+                                           Callback=read_model_net_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -291,6 +378,17 @@ class S3Storage:
         return model
 
     def read_model_input(self, message_key, local_model_cache_path):
+        """
+        Reads model input information from S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored input information in S3.
+            local_model_cache_path (str): The local cache path for input information storage.
+
+        Returns:
+            input_size: The size of the model input.
+            input_type: The type of the model input.
+        """
         global aws_s3_client
 
         temp_base_file_path = local_model_cache_path
@@ -304,7 +402,8 @@ class S3Storage:
             os.remove(temp_file_path)
         logging.info("temp_file_path = {}".format(temp_file_path))
         with open(temp_file_path, 'wb') as f:
-            aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f)
+            aws_s3_client.download_fileobj(
+                Bucket=self.bucket_name, Key=message_key, Fileobj=f)
 
         with open(temp_file_path, 'r') as f:
             model_input_dict = json.load(f)
@@ -316,9 +415,21 @@ class S3Storage:
 
     # TODO: added python torch model to align the Tensorflow parameters from browser
     def read_model_web(self, message_key, py_model: nn.Module):
+        """
+        Reads a machine learning model in web format from S3 storage.
+
+        Args:
+            message_key (str): The key to identify the stored model in S3.
+            py_model (nn.Module): The PyTorch model to align Tensorflow parameters from the browser.
+
+        Returns:
+            model: The machine learning model retrieved from S3.
+        """
+
         global aws_s3_client
         message_handler_start_time = time.time()
-        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        obj = aws_s3_client.get_object(
+            Bucket=self.bucket_name, Key=message_key)
         model_json = obj["Body"].read()
         if type(model_json) == list:
             model = load_params_from_tf(py_model, model_json)
@@ -368,16 +479,21 @@ class S3Storage:
 
     def upload_file(self, src_local_path, message_key):
         """
-        upload file
-        :param src_local_path:
-        :param message_key:
-        :return:
+        Uploads a file to S3 storage.
+
+        Args:
+            src_local_path (str): The local path to the file to be uploaded.
+            message_key (str): The key to identify the stored file in S3.
+
+        Returns:
+            str: The URL of the uploaded file.
         """
         try:
             with open(src_local_path, "rb") as f:
                 global aws_s3_client
                 aws_s3_client.upload_fileobj(
-                    f, self.bucket_name, message_key, ExtraArgs={"ACL": "public-read"}
+                    f, self.bucket_name, message_key, ExtraArgs={
+                        "ACL": "public-read"}
                 )
 
             model_url = aws_s3_client.generate_presigned_url(
@@ -398,10 +514,14 @@ class S3Storage:
 
     def download_file(self, message_key, path_local):
         """
-        download file
-        :param message_key: s3 key
-        :param path_local: local path
-        :return:
+        Downloads a file from S3 storage to the local filesystem.
+
+        Args:
+            message_key (str): The key to identify the file in S3.
+            path_local (str): The local path where the file should be saved.
+
+        Returns:
+            None
         """
         retry = 0
         while retry < 3:
@@ -410,7 +530,8 @@ class S3Storage:
             )
             try:
                 global aws_s3_client
-                aws_s3_client.download_file(self.bucket_name, message_key, path_local)
+                aws_s3_client.download_file(
+                    self.bucket_name, message_key, path_local)
                 file_size = os.path.getsize(path_local)
                 logging.info(
                     f"Downloading completed. | size: {round(file_size / 1048576, 2)} MB"
@@ -425,12 +546,16 @@ class S3Storage:
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
                                   out_progress_to_err=True, progress_desc=None):
         """
-        upload file
-        :param out_progress_to_err:
-        :param progress_desc:
-        :param src_local_path:
-        :param dest_s3_path:
-        :return:
+        Uploads a file to S3 storage with progress tracking.
+
+        Args:
+            src_local_path (str): The local path to the file to be uploaded.
+            dest_s3_path (str): The key to identify the stored file in S3.
+            out_progress_to_err (bool): Whether to output progress to stderr.
+            progress_desc (str): A description for the progress tracking.
+
+        Returns:
+            str: The URL of the uploaded file.
         """
         file_uploaded_url = ""
         progress_desc_text = "Uploading Package to AWS S3"
@@ -447,8 +572,10 @@ class S3Storage:
                                file=sys.stderr if out_progress_to_err else sys.stdout,
                                desc=progress_desc_text) as pbar:
                     aws_s3_client.upload_fileobj(
-                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
-                        Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                        f, self.bucket_name, dest_s3_path, ExtraArgs={
+                            "ACL": "public-read"},
+                        Callback=lambda bytes_transferred: pbar.update(
+                            bytes_transferred),
                     )
 
                 file_uploaded_url = aws_s3_client.generate_presigned_url(
@@ -469,12 +596,16 @@ class S3Storage:
     def download_file_with_progress(self, path_s3, path_local,
                                     out_progress_to_err=True, progress_desc=None):
         """
-        download file
-        :param out_progress_to_err:
-        :param progress_desc:
-        :param path_s3: s3 key
-        :param path_local: local path
-        :return:
+        Downloads a file from S3 storage to the local filesystem with progress tracking.
+
+        Args:
+            path_s3 (str): The key to identify the file in S3.
+            path_local (str): The local path where the file should be saved.
+            out_progress_to_err (bool): Whether to output progress to stderr.
+            progress_desc (str): A description for the progress tracking.
+
+        Returns:
+            None
         """
         retry = 0
         progress_desc_text = "Downloading Package from AWS S3"
@@ -487,7 +618,8 @@ class S3Storage:
             try:
                 global aws_s3_client
                 kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
-                object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+                object_size = aws_s3_client.head_object(
+                    **kwargs)["ContentLength"]
                 with tqdm.tqdm(total=object_size, unit="B", unit_scale=True,
                                file=sys.stderr if out_progress_to_err else sys.stdout,
                                desc=progress_desc_text) as pbar:
@@ -504,10 +636,14 @@ class S3Storage:
 
     def test_s3_base_cmds(self, message_key, message_body):
         """
-        test_s3_base_cmds
-        :param file_key: s3 message key
-        :param file_key: s3 message body
-        :return:
+        Tests basic S3 commands by uploading and downloading a message.
+
+        Args:
+            message_key (str): The key to identify the stored message in S3.
+            message_body: The message body to be stored and retrieved.
+
+        Returns:
+            bool: True if the test is successful, False otherwise.
         """
         retry = 0
         while retry < 3:
@@ -517,7 +653,8 @@ class S3Storage:
                 aws_s3_client.put_object(
                     Body=message_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
                 )
-                obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+                obj = aws_s3_client.get_object(
+                    Bucket=self.bucket_name, Key=message_key)
                 message_pkl_downloaded = obj["Body"].read()
                 message_downloaded = pickle.loads(message_pkl_downloaded)
                 if str(message_body) == str(message_downloaded):
@@ -534,15 +671,28 @@ class S3Storage:
 
     def delete_s3_zip(self, path_s3):
         """
-        delete s3 object
-        :param path_s3: s3 key
-        :return:
+        Deletes an object from S3 storage.
+
+        Args:
+            path_s3 (str): The key to identify the object in S3.
+
+        Returns:
+            None
         """
         global aws_s3_client
         aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
         logging.info(f"Delete s3 file Successful. | path_s3 = {path_s3}")
 
     def set_config_from_file(self, config_file_path):
+        """
+        Sets the S3 configuration from a file.
+
+        Args:
+            config_file_path (str): The path to the configuration file.
+
+        Returns:
+            None
+        """
         try:
             with open(config_file_path, "r") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -554,6 +704,15 @@ class S3Storage:
             pass
 
     def set_config_from_objects(self, s3_config):
+        """
+        Sets the S3 configuration from a dictionary of S3 configuration values.
+
+        Args:
+            s3_config (dict): A dictionary containing S3 configuration values.
+
+        Returns:
+            None
+        """
         self.cn_s3_aki = s3_config["CN_S3_AKI"]
         self.cn_s3_sak = s3_config["CN_S3_SAK"]
         self.cn_region_name = s3_config["CN_REGION_NAME"]
