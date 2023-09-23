@@ -296,18 +296,15 @@ class ClientConstants(object):
         if not is_err:
             if should_write_log:
                 for data_line in data:
-                    print(data_line)
                     logging.info(data_line)
         else:
             error_list = list()
             for data_line in data:
                 if process_obj.returncode is None or process_obj.returncode == 0:
                     if should_write_log:
-                        print(data_line)
                         logging.info(data_line)
                 else:
                     if should_write_log:
-                        print(data_line)
                         logging.error(data_line)
                     error_list.append(data_line)
 
