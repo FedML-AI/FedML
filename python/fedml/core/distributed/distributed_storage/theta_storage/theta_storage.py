@@ -14,19 +14,45 @@ import shutil
 
 
 class ThetaStorage:
-    def __init__(
-            self, thetasotre_config):
+    def __init__(self, thetasotre_config):
+        """
+        Initialize a ThetaStorage instance.
+
+        Args:
+            thetasotre_config (dict): Configuration parameters for ThetaStore.
+
+        Attributes:
+            ipfs_config (dict): ThetaStore configuration dictionary.
+            store_home_dir (str): Home directory for ThetaStore.
+            ipfs_upload_uri (str): URI for uploading files to ThetaStore.
+            ipfs_download_uri (str): URI for downloading files from ThetaStore.
+
+        """
         self.ipfs_config = thetasotre_config
-        self.store_home_dir = thetasotre_config.get("store_home_dir", "~/edge-store-playground")
+        self.store_home_dir = thetasotre_config.get(
+            "store_home_dir", "~/edge-store-playground")
         if str(self.store_home_dir).startswith("~"):
             home_dir = expanduser("~")
-            new_store_dir = str(self.store_home_dir).replace('\\', os.sep).replace('/', os.sep)
+            new_store_dir = str(self.store_home_dir).replace(
+                '\\', os.sep).replace('/', os.sep)
             strip_dir = new_store_dir.lstrip('~').lstrip(os.sep)
             self.store_home_dir = os.path.join(home_dir, strip_dir)
-        self.ipfs_upload_uri = thetasotre_config.get("upload_uri", "http://localhost:19888/rpc")
-        self.ipfs_download_uri = thetasotre_config.get("download_uri", "http://localhost:19888/rpc")
+        self.ipfs_upload_uri = thetasotre_config.get(
+            "upload_uri", "http://localhost:19888/rpc")
+        self.ipfs_download_uri = thetasotre_config.get(
+            "download_uri", "http://localhost:19888/rpc")
 
     def write_model(self, model):
+        """
+        Serialize and upload a machine learning model to ThetaStore.
+
+        Args:
+            model: The machine learning model to be uploaded.
+
+        Returns:
+            str: The IPFS key where the model is stored.
+
+        """
         pickle_dump_start_time = time.time()
         model_pkl = pickle.dumps(model)
         secret_key = Context().get("ipfs_secret_key")
@@ -43,7 +69,17 @@ class ThetaStorage:
         )
         return model_url
 
-    def read_model(self, message_key):
+    def read_model(self, message_key): 
+        """
+        Download and deserialize a machine learning model from ThetaStore.
+
+        Args:
+            message_key: The ThetaStore key of the model to be retrieved.
+
+        Returns:
+            model: The deserialized machine learning model.
+
+        """
         message_handler_start_time = time.time()
         model_pkl, _ = self.storage_ipfs_download_file(message_key)
         secret_key = Context().get("ipfs_secret_key")
@@ -61,13 +97,15 @@ class ThetaStorage:
         return model
 
     def storage_ipfs_upload_file(self, file_obj):
-        """Upload file to IPFS using web3.storage.
+        """
+        Upload a file to ThetaStore using Theta's RPC.
 
         Args:
-            file_obj: file-like object in byte mode
+            file_obj: A file-like object in byte mode.
 
         Returns:
-            Response: (Successful, cid or error message)
+            tuple: A tuple containing a boolean indicating success, and either the ThetaStore key or an error message.
+
         """
         # Request: upload a file
         # curl -X POST -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0","method":"edgestore.PutFile","params":[{"path": "theta-edge-store-demos/demos/image/data/smiley_explorer.png"}],"id":1}' http://localhost:19888/rpc
@@ -89,10 +127,10 @@ class ThetaStorage:
         with open(file_path, "wb") as file_handle:
             file_handle.write(file_obj)
 
-        request_data = {"jsonrpc":"2.0",
-                "method":"edgestore.PutFile",
-                "params":[{"path": file_path}],
-                "id":1}
+        request_data = {"jsonrpc": "2.0",
+                        "method": "edgestore.PutFile",
+                        "params": [{"path": file_path}],
+                        "id": 1}
         res = httpx.post(
             self.ipfs_upload_uri,
             headers={"Content-Type": "application/json"},
@@ -133,10 +171,10 @@ class ThetaStorage:
         #   }
         # }
 
-        request_data = {"jsonrpc":"2.0",
-                       "method":"edgestore.GetFile",
-                       "params":[{"key": ipfs_cid}],
-                       "id":1}
+        request_data = {"jsonrpc": "2.0",
+                        "method": "edgestore.GetFile",
+                        "params": [{"key": ipfs_cid}],
+                        "id": 1}
         res = httpx.post(
             self.ipfs_download_uri,
             headers={"Content-Type": "application/json"},
@@ -154,7 +192,8 @@ class ThetaStorage:
             if download_path is None:
                 return False, "Failed to download file(path is none)."
             else:
-                download_path = os.path.join(self.store_home_dir, download_path)
+                download_path = os.path.join(
+                    self.store_home_dir, download_path)
 
         output_file_obj = None
         file_content = None

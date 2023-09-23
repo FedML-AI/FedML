@@ -2,6 +2,15 @@ import csv
 
 
 def build_ip_table(path):
+    """
+    Builds an IP table from a CSV file.
+
+    Args:
+        path (str): The path to the CSV file containing receiver IDs and IP addresses.
+
+    Returns:
+        dict: A dictionary mapping receiver IDs to IP addresses.
+    """
     ip_config = dict()
     with open(path, newline="") as csv_file:
         csv_reader = csv.reader(csv_file)

@@ -28,6 +28,20 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         client_num=0,
         args=None
     ):
+        """
+        Initializes an MQTT-based ThetaStore Communication Manager.
+
+        Args:
+            config_path (str): The path to the MQTT configuration file.
+            thetastore_config_path (str): The path to the ThetaStore configuration file.
+            topic (str, optional): The MQTT topic. Defaults to "fedml".
+            client_rank (int, optional): The client rank. Defaults to 0.
+            client_num (int, optional): The number of clients. Defaults to 0.
+            args (object, optional): Additional arguments.
+
+        Returns:
+            None
+        """
         self.broker_port = None
         self.broker_host = None
         self.mqtt_user = None
@@ -44,7 +58,8 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         self.client_real_ids = []
         if args.client_id_list is not None:
             logging.info(
-                "MqttThetastoreCommManager args client_id_list: " + str(args.client_id_list)
+                "MqttThetastoreCommManager args client_id_list: " +
+                str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -91,7 +106,8 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         if args.rank == 0:
             self.top_active_msg = CommunicationConstants.SERVER_TOP_ACTIVE_MSG
             self.topic_last_will_msg = CommunicationConstants.SERVER_TOP_LAST_WILL_MSG
-        self.last_will_msg = json.dumps({"ID": self.edge_id, "status": CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE})
+        self.last_will_msg = json.dumps(
+            {"ID": self.edge_id, "status": CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE})
         self.mqtt_mgr = MqttManager(self.broker_host, self.broker_port, self.mqtt_user, self.mqtt_pwd,
                                     self.keepalive_time,
                                     self._client_id, self.topic_last_will_msg,
@@ -104,6 +120,12 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
 
     @property
     def client_id(self):
+        """
+        Runs the MQTT message loop forever.
+
+        Returns:
+            None
+        """
         return self._client_id
 
     @property
@@ -115,6 +137,14 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
 
     def on_connected(self, mqtt_client_object):
         """
+        Callback function when MQTT client is connected.
+
+        Args:
+            mqtt_client_object (MqttManager): The MQTT client object.
+
+        Returns:
+            None
+
         [server]
         sending message topic (publish): serverID_clientID
         receiving message topic (subscribe): clientID
@@ -135,7 +165,8 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
 
             # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
-                real_topic = self._topic + str(self.client_real_ids[client_rank])
+                real_topic = self._topic + \
+                    str(self.client_real_ids[client_rank])
                 result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
 
                 # logging.info(
@@ -146,7 +177,8 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
             self._notify_connection_ready()
         else:
             # client
-            real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
+            real_topic = self._topic + \
+                str(self.server_id) + "_" + str(self.client_real_ids[0])
             result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
 
             self._notify_connection_ready()
@@ -158,12 +190,39 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         self.is_connected = True
 
     def on_disconnected(self, mqtt_client_object):
+        """
+        Callback function when MQTT client is disconnected.
+
+        Args:
+            mqtt_client_object (MqttManager): The MQTT client object.
+
+        Returns:
+            None
+        """
         self.is_connected = False
 
     def add_observer(self, observer: Observer):
+        """
+        Adds an observer to the communication manager.
+
+        Args:
+            observer (Observer): The observer to be added.
+
+        Returns:
+            None
+        """
         self._observers.append(observer)
 
     def remove_observer(self, observer: Observer):
+        """
+        Removes an observer from the communication manager.
+
+        Args:
+            observer (Observer): The observer to be removed.
+
+        Returns:
+            None
+        """
         self._observers.remove(observer)
 
     def _notify_connection_ready(self):
@@ -185,7 +244,8 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         payload_obj = json.loads(json_payload)
         sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
-        thetastore_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+        thetastore_key_str = payload_obj.get(
+            Message.MSG_ARG_KEY_MODEL_PARAMS, "")
         thetastore_key_str = str(thetastore_key_str).strip(" ")
 
         if thetastore_key_str != "":
@@ -195,10 +255,12 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
 
             model_params = self.theta_storage.read_model(thetastore_key_str)
             Context().add("received_model_cid", thetastore_key_str)
-            logging.info("Received model cid {}".format(Context().get("received_model_cid")))
+            logging.info("Received model cid {}".format(
+                Context().get("received_model_cid")))
 
             logging.info(
-                "mqtt_thetastore.on_message: model params length %d" % len(model_params)
+                "mqtt_thetastore.on_message: model params length %d" % len(
+                    model_params)
             )
 
             # replace the thetastore object key with raw model params
@@ -213,6 +275,14 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
 
     def send_message(self, msg: Message):
         """
+        Sends a message using MQTT.
+
+        Args:
+            msg (Message): The message to be sent.
+
+        Returns:
+            None
+
         [server]
         sending message topic (publish): fedml_runid_serverID_clientID
         receiving message topic (subscribe): fedml_runid_clientID
@@ -227,16 +297,20 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
-            logging.info("mqtt_thetastore.send_message: msg topic = %s" % str(topic))
+            logging.info(
+                "mqtt_thetastore.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
-            model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+            model_params_obj = payload.get(
+                Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
                 # thetastore
                 logging.info("mqtt_thetastore.send_message: to python client.")
-                message_key = model_url = self.theta_storage.write_model(model_params_obj)
+                message_key = model_url = self.theta_storage.write_model(
+                    model_params_obj)
                 Context().add("sent_model_cid", model_url)
-                logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
+                logging.info("Sent model cid {}".format(
+                    Context().get("sent_model_cid")))
                 logging.info(
                     "mqtt_thetastore.send_message: thetastore+MQTT msg sent, thetastore message key = %s"
                     % message_key
@@ -261,12 +335,15 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
             topic = self._topic + str(msg.get_sender_id())
 
             payload = msg.get_params()
-            model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+            model_params_obj = payload.get(
+                Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
                 # thetastore
-                message_key = model_url = self.theta_storage.write_model(model_params_obj)
+                message_key = model_url = self.theta_storage.write_model(
+                    model_params_obj)
                 Context().add("sent_model_cid", model_url)
-                logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
+                logging.info("Sent model cid {}".format(
+                    Context().get("sent_model_cid")))
                 logging.info(
                     "mqtt_thetastore.send_message: thetastore+MQTT msg sent, message_key = %s"
                     % message_key
@@ -286,20 +363,52 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
     def send_message_json(self, topic_name, json_message):
+        """
+        Sends a JSON message using MQTT.
+
+        Args:
+            topic_name (str): The MQTT topic name.
+            json_message (str): The JSON message to be sent.
+
+        Returns:
+            None
+        """
         self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
+        """
+        Handles the reception of messages.
+
+        Returns:
+            None
+        """
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         self.run_loop_forever()
-        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"TotalTime": time.time() - start_listening_time})
 
     def stop_receive_message(self):
+        """
+        Stops the reception of messages and disconnects the MQTT client.
+
+        Returns:
+            None
+        """
         logging.info("mqtt_thetastore.stop_receive_message: stopping...")
         self.mqtt_mgr.loop_stop()
         self.mqtt_mgr.disconnect()
 
     def set_config_from_file(self, config_file_path):
+        """
+        Sets the MQTT configuration from a file.
+
+        Args:
+            config_file_path (str): The path to the MQTT configuration file.
+
+        Returns:
+            None
+        """
         try:
             with open(config_file_path, "r") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -315,6 +424,15 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
             pass
 
     def set_config_from_objects(self, mqtt_config):
+        """
+        Sets the MQTT configuration from an object.
+
+        Args:
+            mqtt_config (dict): The MQTT configuration.
+
+        Returns:
+            None
+        """
         self.broker_host = mqtt_config["BROKER_HOST"]
         self.broker_port = mqtt_config["BROKER_PORT"]
         self.mqtt_user = None
@@ -325,21 +443,49 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
             self.mqtt_pwd = mqtt_config["MQTT_PWD"]
 
     def callback_client_last_will_msg(self, topic, payload):
+        """
+        Callback function for processing client last will messages.
+
+        Args:
+            topic (str): The MQTT topic.
+            payload (str): The message payload.
+
+        Returns:
+            None
+        """
         msg = json.loads(payload)
         edge_id = msg.get("ID", None)
-        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+        status = msg.get(
+            "status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
         if edge_id is not None and status == CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE:
             if self.client_active_list.get(edge_id, None) is not None:
                 self.client_active_list.pop(edge_id)
 
     def callback_client_active_msg(self, topic, payload):
+        """
+        Callback function for processing client active status messages.
+
+        Args:
+            topic (str): The MQTT topic.
+            payload (str): The message payload.
+
+        Returns:
+            None
+        """
         msg = json.loads(payload)
         edge_id = msg.get("ID", None)
-        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
+        status = msg.get(
+            "status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
         if edge_id is not None:
             self.client_active_list[edge_id] = status
 
     def subscribe_client_status_message(self):
+        """
+        Subscribes to client status messages.
+
+        Returns:
+            None
+        """
         # Setup MQTT message listener to the last will message form the client.
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
                                            self.callback_client_last_will_msg)
@@ -349,9 +495,24 @@ class MqttThetastoreCommManager(BaseCommunicationManager):
                                            self.callback_client_active_msg)
 
     def get_client_status(self, client_id):
+        """
+        Gets the status of a specific client.
+
+        Args:
+            client_id (int): The client ID.
+
+        Returns:
+            str: The status of the client.
+        """
         return self.client_active_list.get(client_id, CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
 
     def get_client_list_status(self):
+        """
+        Gets the status of all clients.
+
+        Returns:
+            dict: A dictionary of client statuses.
+        """
         return self.client_active_list
 
 

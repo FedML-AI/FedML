@@ -20,6 +20,19 @@ lock = threading.Lock()
 
 class TRPCCommManager(BaseCommunicationManager):
     def __init__(self, trpc_master_config_path, process_id=0, world_size=0, args=None):
+        """
+        Initialize a TRPC communication manager.
+
+        Args:
+            trpc_master_config_path (str): Path to the TRPC master configuration file.
+            process_id (int): The ID of the current process.
+            world_size (int): The total number of processes in the world.
+            args (Optional): Additional arguments.
+
+        Returns:
+            None
+        """
+
         logging.info("using TRPC backend")
         with open(trpc_master_config_path, newline="") as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -40,19 +53,33 @@ class TRPCCommManager(BaseCommunicationManager):
 
         logging.info(f"Worker rank {process_id} initializing RPC")
 
-        self.trpc_servicer = TRPCCOMMServicer(master_address, master_port, self.world_size, process_id)
+        self.trpc_servicer = TRPCCOMMServicer(
+            master_address, master_port, self.world_size, process_id)
         logging.info(os.getcwd())
 
         os.environ["MASTER_ADDR"] = self.master_address
         os.environ["MASTER_PORT"] = self.master_port
 
-        self._init_torch_rpc_tp(master_address, master_port, process_id, self.world_size)
+        self._init_torch_rpc_tp(
+            master_address, master_port, process_id, self.world_size)
         self.is_running = True
         logging.info("server started. master address: " + str(master_address))
 
     def _init_torch_rpc_tp(
         self, master_addr, master_port, worker_idx, worker_num,
     ):
+        """
+        Initialize the Torch RPC using TensorPipe backend.
+
+        Args:
+            master_addr (str): The address of the RPC master.
+            master_port (str): The port of the RPC master.
+            worker_idx (int): The index of the current worker.
+            worker_num (int): The total number of workers.
+
+        Returns:
+            None
+        """
         # https://github.com/pytorch/pytorch/issues/55615
         # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
         str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
@@ -73,6 +100,15 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info("_init_torch_rpc_tp finished.")
 
     def send_message(self, msg: Message):
+        """
+        Send a message to the specified receiver.
+
+        Args:
+            msg (Message): The message to be sent.
+
+        Returns:
+            None
+        """
         receiver_id = msg.get_receiver_id()
 
         logging.info("sending message to {}".format(receiver_id))
@@ -82,21 +118,52 @@ class TRPCCommManager(BaseCommunicationManager):
         rpc.rpc_sync(
             WORKER_NAME.format(receiver_id), TRPCCOMMServicer.sendMessage, args=(self.process_id, msg),
         )
-        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/send_delay": time.time() - tick})
         logging.debug("sent")
 
     def add_observer(self, observer: Observer):
+        """
+        Add an observer to the communication manager.
+
+        Args:
+            observer (Observer): The observer to be added.
+
+        Returns:
+            None
+        """
         self._observers.append(observer)
 
     def remove_observer(self, observer: Observer):
+        """
+        Remove an observer from the communication manager.
+
+        Args:
+            observer (Observer): The observer to be removed.
+
+        Returns:
+            None
+        """
         self._observers.remove(observer)
 
     def handle_receive_message(self):
+        """
+        Handle receiving messages in a separate thread.
+
+        Returns:
+            None
+        """
         thread = threading.Thread(target=self.message_handling_subroutine)
         thread.start()
         self._notify_connection_ready()
 
     def message_handling_subroutine(self):
+        """
+        Subroutine for handling received messages.
+
+        Returns:
+            None
+        """
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
@@ -105,21 +172,44 @@ class TRPCCommManager(BaseCommunicationManager):
                 message_handler_start_time = time.time()
                 msg = self.trpc_servicer.message_q.get()
                 self.notify(msg)
-                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
+                MLOpsProfilerEvent.log_to_wandb(
+                    {"BusyTime": time.time() - message_handler_start_time})
                 lock.release()
-        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"TotalTime": time.time() - start_listening_time})
         return
 
     def stop_receive_message(self):
+        """
+        Stop receiving messages and shutdown the communication manager.
+
+        Returns:
+            None
+        """
         rpc.shutdown()
         self.is_running = False
 
     def notify(self, message: Message):
+        """
+        Notify observers about a received message.
+
+        Args:
+            message (Message): The received message.
+
+        Returns:
+            None
+        """
         msg_type = message.get_type()
         for observer in self._observers:
             observer.receive_message(msg_type, message)
 
     def _notify_connection_ready(self):
+        """
+        Notify observers that the connection is ready.
+
+        Returns:
+            None
+        """
         msg_params = Message()
         msg_params.sender_id = self.rank
         msg_params.receiver_id = self.rank

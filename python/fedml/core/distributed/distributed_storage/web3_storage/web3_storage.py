@@ -10,13 +10,34 @@ import httpx
 
 
 class Web3Storage:
-    def __init__(
-            self, ipfs_config):
+    def __init__(self, ipfs_config):
+        """
+        Initialize a Web3Storage instance.
+
+        Args:
+            ipfs_config (dict): Configuration parameters for IPFS.
+
+        Attributes:
+            ipfs_config (dict): IPFS configuration dictionary.
+            ipfs_upload_uri (str): URI for uploading files to IPFS.
+            ipfs_download_uri (str): URI for downloading files from IPFS.
+
+        """
         self.ipfs_config = ipfs_config
         self.ipfs_upload_uri = ipfs_config.get("upload_uri", "https://api.web3.storage/upload")
         self.ipfs_download_uri = ipfs_config.get("download_uri", "ipfs.w3s.link2")
 
     def write_model(self, model):
+        """
+        Serialize and upload a machine learning model to IPFS.
+
+        Args:
+            model: The machine learning model to be uploaded.
+
+        Returns:
+            str: The IPFS URL where the model is stored.
+
+        """
         pickle_dump_start_time = time.time()
         model_pkl = pickle.dumps(model)
         secret_key = Context().get("ipfs_secret_key")
@@ -34,6 +55,16 @@ class Web3Storage:
         return model_url
 
     def read_model(self, message_key):
+        """
+        Download and deserialize a machine learning model from IPFS.
+
+        Args:
+            message_key: The IPFS key of the model to be retrieved.
+
+        Returns:
+            model: The deserialized machine learning model.
+
+        """
         message_handler_start_time = time.time()
         model_pkl, _ = self.storage_ipfs_download_file(message_key)
         secret_key = Context().get("ipfs_secret_key")
