@@ -1,7 +1,8 @@
-
+import logging
 import os
 import platform
-from ..comm_utils import subprocess
+from ..comm_utils import subprocess_with_live_logs
+import subprocess
 import sys
 from os.path import expanduser
 from urllib.parse import urlparse, unquote
@@ -303,11 +304,31 @@ class ServerConstants(object):
         return script_process
 
     @staticmethod
+    def log_callback(data, is_err=True, process_obj=None, error_processor=None, should_write_log=True):
+        if not is_err:
+            if should_write_log:
+                for data_line in data:
+                    logging.info(data_line)
+        else:
+            error_list = list()
+            for data_line in data:
+                if process_obj.returncode is None or process_obj.returncode == 0:
+                    if should_write_log:
+                        logging.info(data_line)
+                else:
+                    if should_write_log:
+                        logging.error(data_line)
+                    error_list.append(data_line)
+
+            if error_processor is not None and len(error_list) > 0:
+                error_processor(error_list)
+
+    @staticmethod
     def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
                                         callback=None, error_processor=None):
         error_list = list()
-        script_process = subprocess.Popen(join.join(cmds), shell=True, stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
+        script_process = subprocess_with_live_logs.Popen(
+            join.join(cmds), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if script_process is None:
             return None, error_list
 
@@ -316,8 +337,8 @@ class ServerConstants(object):
 
         try:
             exec_out, exec_err = script_process.communicate(
-                timeout=100, data_arrived_callback=ClientConstants.data_arrived_callback,
-                error_processor=error_processor
+                timeout=100, data_arrived_callback=ServerConstants.log_callback,
+                error_processor=error_processor, should_write_log=should_write_log_file
             )
         except Exception as e:
             pass

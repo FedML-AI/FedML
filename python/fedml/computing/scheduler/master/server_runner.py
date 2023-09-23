@@ -475,6 +475,7 @@ class FedMLServerRunner:
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
 
+        logging.info("Detect all status of Edge ids: " + str(edge_ids))
         if not self.detect_edges_status(
                 edge_status_queue, callback_when_edges_ready=self.send_training_request_to_edges):
             return
@@ -881,7 +882,6 @@ class FedMLServerRunner:
         run_id = self.request_json["runId"]
         run_id_str = str(run_id)
         edge_id_list = self.request_json["edgeids"]
-        logging.info("Detect all status of Edge ids: " + str(edge_id_list))
 
         # Init realtime status of all edges
         if self.run_edges_realtime_status.get(run_id_str, None) is None:

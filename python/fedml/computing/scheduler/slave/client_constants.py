@@ -2,7 +2,8 @@ import logging
 import os
 import platform
 import shutil
-from ..comm_utils import subprocess
+from ..comm_utils import subprocess_with_live_logs
+import subprocess
 import sys
 import urllib
 import zipfile
@@ -291,34 +292,34 @@ class ClientConstants(object):
         return script_process
 
     @staticmethod
-    def data_arrived_callback(data, is_err=True, process_obj=None, error_processor=None):
+    def log_callback(data, is_err=True, process_obj=None, error_processor=None, should_write_log=True):
         if not is_err:
-            with os.fdopen(sys.stdout.fileno(), 'wb', closefd=False) as stdout:
-                data_str = sys_utils.decode_byte_str(data)
-                stdout.write(data)
-                stdout.flush()
-                logging.info(data_str)
+            if should_write_log:
+                for data_line in data:
+                    print(data_line)
+                    logging.info(data_line)
         else:
             error_list = list()
-            with os.fdopen(sys.stderr.fileno(), 'wb', closefd=False) as stderr:
-                data_str = sys_utils.decode_byte_str(data)
-                stderr.write(data)
-                stderr.flush()
+            for data_line in data:
                 if process_obj.returncode is None or process_obj.returncode == 0:
-                    logging.info(data_str)
+                    if should_write_log:
+                        print(data_line)
+                        logging.info(data_line)
                 else:
-                    logging.error(data_str)
-                    error_list.append(data_str)
+                    if should_write_log:
+                        print(data_line)
+                        logging.error(data_line)
+                    error_list.append(data_line)
 
-                if error_processor is not None and len(error_list) > 0:
-                    error_processor(error_list)
+            if error_processor is not None and len(error_list) > 0:
+                error_processor(error_list)
 
     @staticmethod
     def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
                                         callback=None, error_processor=None):
         error_list = list()
-        script_process = subprocess.Popen(join.join(cmds), shell=True, stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
+        script_process = subprocess_with_live_logs.Popen(
+            join.join(cmds), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if script_process is None:
             return None, error_list
 
@@ -327,8 +328,8 @@ class ClientConstants(object):
 
         try:
             exec_out, exec_err = script_process.communicate(
-                timeout=100, data_arrived_callback=ClientConstants.data_arrived_callback,
-                error_processor=error_processor
+                timeout=100, data_arrived_callback=ClientConstants.log_callback,
+                error_processor=error_processor, should_write_log=should_write_log_file
             )
         except Exception as e:
             pass
