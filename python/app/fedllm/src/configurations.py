@@ -11,6 +11,7 @@ from .constants import (
     DATASET_NAMES,
     FINETUNE_TASKS,
     MODEL_NAMES,
+    PROMPT_STYLES,
 )
 from .utils import is_directory, is_file
 
@@ -116,6 +117,13 @@ class DatasetArguments:
     remove_long_seq: bool = field(
         default=False,
         metadata={"help": "Whether to remove all data whose token length > max_seq_length."}
+    )
+    prompt_style: str = field(
+        default="dolly",
+        metadata={
+            "help": "Prompt template style.",
+            "choices": PROMPT_STYLES,
+        }
     )
 
     def __post_init__(self) -> None:

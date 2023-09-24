@@ -26,7 +26,8 @@ from run_train import (
     get_tokenizer,
 )
 from src.configurations import DatasetArguments, FinetuningArguments, ModelArguments
-from src.constants import DEFAULT_MAX_SEQ_LENGTH, RESPONSE_KEY_NL
+from src.constants import DEFAULT_MAX_SEQ_LENGTH
+from src.dataset_utils import RESPONSE_KEY_NL
 from src.hf_resume_trainer import HFResumeTrainer
 from src.hf_trainer import HFTrainer
 from src.modeling_utils import get_data_collator

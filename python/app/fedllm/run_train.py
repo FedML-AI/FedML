@@ -14,10 +14,11 @@ from transformers.deepspeed import is_deepspeed_zero3_enabled
 from src.configurations import DatasetArguments, FinetuningArguments, ModelArguments
 from src.constants import (
     DEFAULT_MAX_SEQ_LENGTH,
+)
+from src.dataset_utils import (
     END_KEY,
+    get_prompt_formatter,
     INSTRUCTION_KEY,
-    PROMPT_NO_INPUT_FORMAT,
-    PROMPT_WITH_INPUT_FORMAT,
     RESPONSE_KEY_NL,
 )
 from src.hf_trainer import HFTrainer
@@ -27,29 +28,6 @@ from src.typing import ModelConfigType, ModelType, TokenizerType
 from src.utils import parse_hf_args, save_config, should_process_save
 
 
-def _add_text(rec):
-    instruction = rec["instruction"]
-    response = rec["response"]
-    context = rec.get("context")
-
-    if not instruction:
-        raise ValueError(f"Expected an instruction in: {rec}")
-
-    if not response:
-        raise ValueError(f"Expected a response in: {rec}")
-
-    # For some instructions there is an input that goes along with the instruction, providing context for the
-    # instruction. For example, the input might be a passage from Wikipedia and the instruction says to extract
-    # some piece of information from it. The response is that information to extract. In other cases there is
-    # no input. For example, the instruction might be open QA such as asking what year some historic figure was
-    # born.
-    if context:
-        rec["text"] = PROMPT_WITH_INPUT_FORMAT.format(instruction=instruction, response=response, input=context)
-    else:
-        rec["text"] = PROMPT_NO_INPUT_FORMAT.format(instruction=instruction, response=response)
-    return rec
-
-
 def preprocess_dataset(
         dataset_args: DatasetArguments,
         dataset: Dataset,
@@ -57,7 +35,7 @@ def preprocess_dataset(
 ) -> Dataset:
     remove_columns = list({"text", *dataset.column_names})
     if "text" not in dataset.column_names:
-        dataset = dataset.map(_add_text)
+        dataset = dataset.map(get_prompt_formatter(dataset_args.prompt_style))
 
     tokenization_kwargs = dict(
         truncation=dataset_args.truncate_long_seq,

@@ -23,7 +23,8 @@ from run_train import (
     ModelArguments,
     SavePeftModelCallback,
 )
-from src.constants import IGNORE_INDEX, RESPONSE_KEY_NL
+from src.constants import IGNORE_INDEX
+from src.dataset_utils import RESPONSE_KEY_NL
 from src.modeling_utils import get_data_collator
 
 
