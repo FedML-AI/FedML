@@ -709,7 +709,7 @@ class FedMLClientRunner:
         time.sleep(1)
 
     def cleanup_run_when_starting_failed(self, should_send_client_id_status=True):
-        logging.error("Cleanup run successfully when starting failed.")
+        #logging.error("Cleanup run successfully when starting failed.")
 
         self.reset_devices_status(self.edge_id,
                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
@@ -731,7 +731,7 @@ class FedMLClientRunner:
             pass
 
     def cleanup_run_when_finished(self):
-        logging.info("Cleanup run successfully when finished.")
+        #logging.info("Cleanup run successfully when finished.")
 
         self.reset_devices_status(self.edge_id,
                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
@@ -992,10 +992,10 @@ class FedMLClientRunner:
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
-            logging.info("received to finished status.")
+            #logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.error("received to failed status from the server agent")
+            #logging.error("received to failed status from the server agent")
             self.cleanup_run_when_starting_failed(should_send_client_id_status=False)
 
     def callback_runner_id_status(self, topic, payload):
@@ -1013,8 +1013,6 @@ class FedMLClientRunner:
         status = request_json["status"]
 
         run_id_str = str(run_id)
-        if self.run_process_map.get(run_id_str, None) is None:
-            return
 
         self.save_training_status(edge_id, status)
 
@@ -1025,7 +1023,6 @@ class FedMLClientRunner:
                 completed_event.set()
 
             # Stop client with multiprocessing mode
-            self.request_json = request_json
             client_runner = FedMLClientRunner(
                 self.args,
                 edge_id=self.edge_id,

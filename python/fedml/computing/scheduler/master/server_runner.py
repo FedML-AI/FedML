@@ -812,7 +812,7 @@ class FedMLServerRunner:
         if self.run_as_cloud_agent:
             self.stop_cloud_server()
 
-        logging.info("Cleanup run successfully when finished.")
+        #logging.info("Cleanup run successfully when finished.")
 
         self.mlops_metrics.broadcast_server_training_status(
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id
@@ -845,7 +845,7 @@ class FedMLServerRunner:
         if self.run_as_cloud_agent:
             self.stop_cloud_server()
 
-        logging.info("Cleanup run successfully when starting failed.")
+        #logging.info("Cleanup run successfully when starting failed.")
 
         self.mlops_metrics.broadcast_server_training_status(self.run_id,
                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
@@ -1601,9 +1601,9 @@ class FedMLServerRunner:
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        # )
 
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
@@ -1614,9 +1614,6 @@ class FedMLServerRunner:
         edge_id = request_json["edge_id"]
         server_id = request_json.get("server_id", None)
         run_id_str = str(run_id)
-
-        if self.run_process_map.get(run_id_str, None) is None:
-            return
 
         if (
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
@@ -1672,10 +1669,10 @@ class FedMLServerRunner:
 
     def cleanup_client_with_status(self):
         if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
-            logging.info("received to finished status.")
+            #logging.info("received to finished status.")
             self.cleanup_run_when_finished(should_send_server_id_status=False)
         elif self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
-            logging.info("received to failed status.")
+            #logging.info("received to failed status.")
             self.cleanup_run_when_starting_failed(should_send_server_id_status=False)
 
     def callback_report_current_status(self, topic, payload):
