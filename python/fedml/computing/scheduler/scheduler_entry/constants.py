@@ -94,7 +94,7 @@ class Constants(Singleton):
 
     CHECK_MARK_STRING = chr(8730)
 
-    JOB_LOG_PAGE_SIZE = 100
+    JOB_LOG_PAGE_SIZE = 1000
 
     @staticmethod
     def get_fedml_home_dir(is_client=True):
