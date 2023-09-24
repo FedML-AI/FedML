@@ -33,6 +33,13 @@ def preprocess_dataset(
         dataset: Dataset,
         tokenizer: TokenizerType
 ) -> Dataset:
+    if {"input", "output"}.issubset(dataset.column_names):
+        # This is required for medical meadow
+        dataset = dataset.rename_columns({
+            "input": "context",
+            "output": "response",
+        })
+
     remove_columns = list({"text", *dataset.column_names})
     if "text" not in dataset.column_names:
         dataset = dataset.map(get_prompt_formatter(dataset_args.prompt_style))

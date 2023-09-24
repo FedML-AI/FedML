@@ -39,6 +39,9 @@ DATASET_NAMES = [
     "togethercomputer/RedPajama-Data-1T",
     "togethercomputer/RedPajama-Data-1T-Sample",
     "EleutherAI/pile",
+    # "EleutherAI/pile" is no longer available for some unknown reasons. The below datasets are backups.
+    "FedML/pile",
+    "medalpaca/medical_meadow_mediqa",
 ]
 
 PROMPT_STYLES = [
