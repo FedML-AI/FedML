@@ -42,6 +42,8 @@ DATASET_NAMES = [
     # "EleutherAI/pile" is no longer available for some unknown reasons. The below datasets are backups.
     "FedML/pile",
     "medalpaca/medical_meadow_mediqa",
+    "bitext/Bitext-customer-support-llm-chatbot-training-dataset",
+    "gbharti/wealth-alpaca_lora",
 ]
 
 PROMPT_STYLES = [
