@@ -399,7 +399,7 @@ class FedMLModelCards(Singleton):
         # Execute bootstrap script
         config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         config_parms = self.parse_config_yaml(config_file_path)
-        bootstrap_path = config_parms.get("bootstrap_path", None)
+        bootstrap_path = config_parms.get("bootstrap", None)
         if bootstrap_path is not None:
             dir_name, file_name = os.path.split(bootstrap_path)
             if ClientConstants.run_bootstrap(dir_name, file_name):
