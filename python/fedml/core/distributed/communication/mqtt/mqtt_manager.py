@@ -13,6 +13,19 @@ from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
                  client_id, last_will_topic=None, last_will_msg=None):
+        """
+        MQTT Manager for handling MQTT connections, sending, and receiving messages.
+
+        Args:
+            host (str): MQTT broker host.
+            port (int): MQTT broker port.
+            user (str): MQTT username.
+            pwd (str): MQTT password.
+            keepalive_time (int): Keepalive time for the MQTT connection.
+            client_id (str): Client ID for the MQTT client.
+            last_will_topic (str, optional): Last will topic for the MQTT client.
+            last_will_msg (str, optional): Last will message for the MQTT client.
+        """
         self._client = None
         self.mqtt_connection_id = None
         self._host = host
@@ -44,6 +57,7 @@ class MqttManager(object):
         self._client = None
 
     def init_connect(self):
+        
         self.mqtt_connection_id = "{}_{}".format(self._client_id, "ID")
         self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
         self._client.connected_flag = False
@@ -90,6 +104,17 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, publish_single_message=False):
+        """
+        Send an MQTT message.
+
+        Args:
+            topic (str): The MQTT topic to which the message will be sent.
+            message (str): The message to send.
+            publish_single_message (bool, optional): If True, publish as a single message; otherwise, use MQTT publish.
+
+        Returns:
+            bool: True if the message was successfully sent, False otherwise.
+        """
         logging.info(
             f"FedMLDebug - Send: topic ({topic}), message ({message})"
         )
@@ -110,6 +135,17 @@ class MqttManager(object):
         return True
 
     def send_message_json(self, topic, message, publish_single_message=False):
+        """
+        Send an MQTT message as JSON.
+
+        Args:
+            topic (str): The MQTT topic to which the message will be sent.
+            message (str): The message to send as JSON.
+            publish_single_message (bool, optional): If True, publish as a single message; otherwise, use MQTT publish.
+
+        Returns:
+            bool: True if the message was successfully sent, False otherwise.
+        """
         logging.info(
             f"FedMLDebug - Send: topic ({topic}), message ({message})"
         )

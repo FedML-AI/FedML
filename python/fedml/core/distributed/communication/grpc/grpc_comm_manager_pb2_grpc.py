@@ -6,10 +6,15 @@ from ..grpc import grpc_comm_manager_pb2 as grpc__comm__manager__pb2
 
 
 class gRPCCommManagerStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """
+    gRPC Communication Manager Stub.
+
+    This class provides a client-side stub for interacting with the gRPC communication manager service.
+    """
 
     def __init__(self, channel):
-        """Constructor.
+        """
+        Initialize the gRPCCommManagerStub.
 
         Args:
             channel: A grpc.Channel.
@@ -27,22 +32,53 @@ class gRPCCommManagerStub(object):
 
 
 class gRPCCommManagerServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """
+    gRPC Communication Manager Servicer.
+
+    This class defines the gRPC service methods for the communication manager.
+    """
 
     def sendMessage(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """
+        Handle the sendMessage gRPC service method.
+
+        Args:
+            request: The request message.
+            context: The gRPC context.
+
+        Raises:
+            NotImplementedError: This method is not implemented.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
     def handleReceiveMessage(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """
+        Handle the handleReceiveMessage gRPC service method.
+
+        Args:
+            request: The request message.
+            context: The gRPC context.
+
+        Raises:
+            NotImplementedError: This method is not implemented.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
 
 def add_gRPCCommManagerServicer_to_server(servicer, server):
+    """
+    Add a gRPC Communication Manager Servicer to a gRPC server.
+
+    This function registers the gRPC service methods provided by the servicer to the gRPC server.
+
+    Args:
+        servicer: The gRPC Communication Manager Servicer instance.
+        server: The gRPC server instance to which the servicer will be added.
+    """
     rpc_method_handlers = {
         "sendMessage": grpc.unary_unary_rpc_method_handler(
             servicer.sendMessage,
@@ -63,7 +99,13 @@ def add_gRPCCommManagerServicer_to_server(servicer, server):
 
 # This class is part of an EXPERIMENTAL API.
 class gRPCCommManager(object):
-    """Missing associated documentation comment in .proto file."""
+    """
+    gRPC Communication Manager.
+
+    This class provides static methods for making gRPC calls to the Communication Manager service.
+
+    Note: This class is part of an experimental API.
+    """
 
     @staticmethod
     def sendMessage(
@@ -78,6 +120,24 @@ class gRPCCommManager(object):
         timeout=None,
         metadata=None,
     ):
+        """
+        Send a gRPC sendMessage request.
+
+        Args:
+            request: The request message.
+            target: The target server to send the request.
+            options: Additional gRPC options.
+            channel_credentials: Channel credentials.
+            call_credentials: Call credentials.
+            insecure: Whether to use an insecure channel.
+            compression: Compression method to use.
+            wait_for_ready: Wait for the server to become ready.
+            timeout: Request timeout.
+            metadata: Request metadata.
+
+        Returns:
+            grpc.Call: A gRPC call instance.
+        """
         return grpc.experimental.unary_unary(
             request,
             target,
@@ -107,6 +167,24 @@ class gRPCCommManager(object):
         timeout=None,
         metadata=None,
     ):
+        """
+        Send a gRPC handleReceiveMessage request.
+
+        Args:
+            request: The request message.
+            target: The target server to send the request.
+            options: Additional gRPC options.
+            channel_credentials: Channel credentials.
+            call_credentials: Call credentials.
+            insecure: Whether to use an insecure channel.
+            compression: Compression method to use.
+            wait_for_ready: Wait for the server to become ready.
+            timeout: Request timeout.
+            metadata: Request metadata.
+
+        Returns:
+            grpc.Call: A gRPC call instance.
+        """
         return grpc.experimental.unary_unary(
             request,
             target,

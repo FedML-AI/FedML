@@ -12,7 +12,21 @@ from ..observer import Observer
 
 
 class MpiCommunicationManager(BaseCommunicationManager):
+    """
+    MPI Communication Manager.
+
+    This class manages communication using MPI (Message Passing Interface) for federated learning.
+    """
+
     def __init__(self, comm, rank, size):
+        """
+        Initialize the MPI Communication Manager.
+
+        Args:
+            comm: The MPI communicator.
+            rank: The rank of the current process.
+            size: The total number of processes in the communicator.
+        """
         self.comm = comm
         self.rank = rank
         self.size = size
@@ -39,6 +53,12 @@ class MpiCommunicationManager(BaseCommunicationManager):
         # assert False
 
     def init_server_communication(self):
+        """
+        Initialize server-side communication components.
+
+        Returns:
+            Tuple: A tuple containing server send and receive queues.
+        """
         server_send_queue = queue.Queue(0)
         # self.server_send_thread = MPISendThread(
         #     self.comm, self.rank, self.size, "ServerSendThread", server_send_queue
@@ -54,6 +74,12 @@ class MpiCommunicationManager(BaseCommunicationManager):
         return server_send_queue, server_receive_queue
 
     def init_client_communication(self):
+        """
+        Initialize client-side communication components.
+
+        Returns:
+            Tuple: A tuple containing client send and receive queues.
+        """
         # SEND
         client_send_queue = queue.Queue(0)
         # self.client_send_thread = MPISendThread(
@@ -75,19 +101,43 @@ class MpiCommunicationManager(BaseCommunicationManager):
     #     self.q_sender.put(msg)
 
     def send_message(self, msg: Message):
+        """
+        Send a message using MPI.
+
+        Args:
+            msg: The message to be sent.
+        """
         # self.q_sender.put(msg)
         dest_id = msg.get(Message.MSG_ARG_KEY_RECEIVER)
         tick = time.time()
         self.comm.send(msg, dest=dest_id)
-        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/send_delay": time.time() - tick})
 
     def add_observer(self, observer: Observer):
+        """
+        Add an observer to the list of observers.
+
+        Args:
+            observer: The observer to be added.
+        """
         self._observers.append(observer)
 
     def remove_observer(self, observer: Observer):
+        """
+        Remove an observer from the list of observers.
+
+        Args:
+            observer: The observer to be removed.
+        """
         self._observers.remove(observer)
 
     def handle_receive_message(self):
+        """
+        Handle receiving messages using MPI.
+
+        This function continuously listens for incoming messages and notifies observers when a message is received.
+        """
         self.is_running = True
         # the first message after connection, aligned the protocol with MQTT + S3
         self._notify_connection_ready()
@@ -108,6 +158,9 @@ class MpiCommunicationManager(BaseCommunicationManager):
         logging.info("!!!!!!handle_receive_message stopped!!!")
 
     def stop_receive_message(self):
+        """
+        Stop receiving messages and threads.
+        """
         self.is_running = False
         # self.__stop_thread(self.server_send_thread)
         self.__stop_thread(self.server_receive_thread)
@@ -117,11 +170,20 @@ class MpiCommunicationManager(BaseCommunicationManager):
         self.__stop_thread(self.client_collective_thread)
 
     def notify(self, msg_params):
+        """
+        Notify observers with the received message.
+
+        Args:
+            msg_params: The received message.
+        """
         msg_type = msg_params.get_type()
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
     def _notify_connection_ready(self):
+        """
+        Notify observers that the connection is ready.
+        """
         msg_params = Message()
         msg_params.sender_id = self.rank
         msg_params.receiver_id = self.rank

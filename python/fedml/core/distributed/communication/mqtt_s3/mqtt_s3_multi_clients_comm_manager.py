@@ -18,6 +18,44 @@ import time
 
 
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
+    """
+    MQTT communication manager for multi-client federated learning.
+
+    This class provides an MQTT-based communication manager for multi-client federated learning scenarios.
+    It supports communication between a central server and multiple client devices.
+
+    Args:
+        config_path (str): Path to the MQTT configuration file.
+        s3_config_path (str): Path to the S3 storage configuration file.
+        topic (str): The MQTT topic prefix.
+        client_rank (int): The rank or ID of the client.
+        client_num (int): The total number of clients.
+        args (object): Additional configuration arguments.
+
+    Attributes:
+        client_id (str): The unique ID of the MQTT client.
+        topic (str): The MQTT topic.
+        is_connected (bool): Indicates if the MQTT client is connected to the broker.
+        client_active_list (dict): A dictionary to store the status of connected clients.
+
+    Methods:
+        run_loop_forever(): Run the MQTT loop forever to handle incoming messages.
+        on_connected(mqtt_client_object): MQTT on_connected callback.
+        on_disconnected(mqtt_client_object): MQTT on_disconnected callback.
+        add_observer(observer): Add an observer to receive messages.
+        remove_observer(observer): Remove an observer.
+        send_message(msg, wait_for_publish=False): Send a message using MQTT.
+        send_message_json(topic_name, json_message): Send a JSON message using MQTT.
+        handle_receive_message(): Start handling received messages by running the MQTT loop.
+        stop_receive_message(): Stop receiving messages and disconnect from MQTT.
+        set_config_from_file(config_file_path): Load MQTT configuration from a file.
+        set_config_from_objects(mqtt_config): Set MQTT configuration from objects.
+        callback_client_last_will_msg(topic, payload): Callback for client last will message.
+        callback_client_active_msg(topic, payload): Callback for client active message.
+        subscribe_client_status_message(): Subscribe to client status messages.
+        get_client_status(client_id): Get the status of a specific client.
+        get_client_list_status(): Get the status of all clients.
+    """
 
     def __init__(
             self,
@@ -28,6 +66,17 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             client_num=0,
             args=None
     ):
+        """
+        Initialize the MQTT communication manager.
+
+        Args:
+            config_path (str): Path to the MQTT configuration file.
+            s3_config_path (str): Path to the S3 storage configuration file.
+            topic (str): The MQTT topic prefix.
+            client_rank (int): The rank or ID of the client.
+            client_num (int): The total number of clients.
+            args (object): Additional configuration arguments.
+        """
         self.args = args
         self.broker_port = None
         self.broker_host = None
@@ -51,7 +100,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.client_real_ids = []
         if args.client_id_list is not None:
             logging.info(
-                "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+                "MqttS3CommManager args client_id_list: " +
+                str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -82,7 +132,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
         self._observers: List[Observer] = []
 
-        self._client_id = "FedML_CS_{}_{}_{}".format(str(args.run_id), str(self.edge_id), str(uuid.uuid4()))
+        self._client_id = "FedML_CS_{}_{}_{}".format(
+            str(args.run_id), str(self.edge_id), str(uuid.uuid4()))
         self.client_num = client_num
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
@@ -95,7 +146,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         if args.rank == 0:
             self.top_active_msg = CommunicationConstants.SERVER_TOP_ACTIVE_MSG
             self.topic_last_will_msg = CommunicationConstants.SERVER_TOP_LAST_WILL_MSG
-        self.last_will_msg = json.dumps({"ID": self.edge_id, "status": CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE})
+        self.last_will_msg = json.dumps(
+            {"ID": self.edge_id, "status": CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE})
         self.mqtt_mgr = MqttManager(
             config_path["BROKER_HOST"],
             config_path["BROKER_PORT"],
@@ -114,25 +166,39 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     @property
     def client_id(self):
+        """
+        Get the client ID.
+
+        Returns:
+            str: The client ID.
+        """
         return self._client_id
 
     @property
     def topic(self):
+        """
+        Get the MQTT topic.
+
+        Returns:
+            str: The MQTT topic.
+        """
         return self._topic
 
     def run_loop_forever(self):
+        """
+        Run the MQTT loop forever to handle incoming messages.
+        """
         self.mqtt_mgr.loop_forever()
 
     def on_connected(self, mqtt_client_object):
         """
-        [server]
-        sending message topic (publish): serverID_clientID
-        receiving message topic (subscribe): clientID
+        MQTT on_connected callback.
 
-        [client]
-        sending message topic (publish): clientID
-        receiving message topic (subscribe): serverID_clientID
+        This method is called when the MQTT client is connected to the broker. It handles
+        subscription to topics based on whether the current instance is a server or client.
 
+        Args:
+            mqtt_client_object: The MQTT client object.
         """
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
@@ -143,7 +209,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
             # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
-                real_topic = self._topic + str(self.client_real_ids[client_rank])
+                real_topic = self._topic + \
+                    str(self.client_real_ids[client_rank])
                 result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
 
                 # logging.info(
@@ -155,7 +222,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             self._notify_connection_ready()
         else:
             # client
-            real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
+            real_topic = self._topic + \
+                str(self.server_id) + "_" + str(self.client_real_ids[0])
             result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
 
             self._notify_connection_ready()
@@ -167,21 +235,56 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.is_connected = True
 
     def on_disconnected(self, mqtt_client_object):
+        """
+        MQTT on_disconnected callback.
+
+        This method is called when the MQTT client is disconnected from the broker.
+
+        Args:
+            mqtt_client_object: The MQTT client object.
+        """
         self.is_connected = False
 
     def add_observer(self, observer: Observer):
+        """
+        Add an observer to receive messages.
+
+        Args:
+            observer (Observer): The observer to add.
+        """
         self._observers.append(observer)
 
     def remove_observer(self, observer: Observer):
+        """
+        Remove an observer.
+
+        Args:
+            observer (Observer): The observer to remove.
+        """
         self._observers.remove(observer)
 
     def _notify_connection_ready(self):
+        """
+        Notify observers that the connection is ready.
+        """
         msg_params = Message()
         msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
     def _notify(self, msg_obj):
+        """
+        Notify registered observers with a received message.
+
+        This method parses the incoming message, extracts its type, and notifies all registered
+        observers with the message type and parameters.
+
+        Args:
+            msg_obj (dict): The received message object.
+
+        Returns:
+            None
+        """
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
@@ -190,6 +293,18 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             observer.receive_message(msg_type, msg_params)
 
     def _on_message_impl(self, msg):
+        """
+        Handle incoming MQTT messages.
+
+        This method is called when an MQTT message is received. It parses the message payload,
+        processes it, and notifies observers with the received message.
+
+        Args:
+            msg (paho.mqtt.client.MQTTMessage): The received MQTT message.
+
+        Returns:
+            None
+        """
         json_payload = str(msg.payload, encoding="utf-8")
         payload_obj = json.loads(json_payload)
         logging.info(
@@ -218,16 +333,19 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 elif self.dataSetType == 'cifar10':
                     py_model = CNN_WEB()
 
-                model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
+                model_params = self.s3_storage.read_model_web(
+                    s3_key_str, py_model)
             else:
                 model_params = self.s3_storage.read_model(s3_key_str)
 
             if not hasattr(self.args, "fa_task"):
                 logging.info(
-                    "mqtt_s3.on_message: model params length %d" % len(model_params)
+                    "mqtt_s3.on_message: model params length %d" % len(
+                        model_params)
                 )
 
-            model_url = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
+            model_url = payload_obj.get(
+                Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
             logging.info("mqtt_s3.on_message: model url {}".format(model_url))
 
             # replace the S3 object key with raw model params
@@ -239,6 +357,19 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self._notify(payload_obj)
 
     def _on_message(self, msg):
+        """
+        Send a message using MQTT.
+
+        This method sends a message to the specified recipient using MQTT. The topic for publishing
+        the message is determined based on whether the current instance is a server or client.
+
+        Args:
+            msg (Message): The message to be sent.
+            wait_for_publish (bool): Whether to wait for the message to be published.
+
+        Returns:
+            bool: True if the message was sent successfully, False otherwise.
+        """
         self._on_message_impl(msg)
 
     def send_message(self, msg: Message, wait_for_publish=False):
@@ -259,7 +390,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
-            model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+            model_params_obj = payload.get(
+                Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             model_url = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
             model_key = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS_KEY, "")
             if model_params_obj != "":
@@ -267,9 +399,11 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 if model_url == "":
                     model_key = topic + "_" + str(uuid.uuid4())
                     if self.isBrowser:
-                        model_url = self.s3_storage.write_model_web(model_key, model_params_obj)
+                        model_url = self.s3_storage.write_model_web(
+                            model_key, model_params_obj)
                     else:
-                        model_url = self.s3_storage.write_model(model_key, model_params_obj)
+                        model_url = self.s3_storage.write_model(
+                            model_key, model_params_obj)
 
                 logging.info(
                     "mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = %s"
@@ -290,14 +424,16 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             message_key = topic + "_" + str(uuid.uuid4())
 
             payload = msg.get_params()
-            model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+            model_params_obj = payload.get(
+                Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
                 # S3
                 logging.info(
                     "mqtt_s3.send_message: S3+MQTT msg sent, message_key = %s"
                     % message_key
                 )
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                model_url = self.s3_storage.write_model(
+                    message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -319,20 +455,60 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         return True
 
     def send_message_json(self, topic_name, json_message):
+        """
+        Send a JSON message to a specified MQTT topic.
+
+        Args:
+            topic_name (str): The MQTT topic to which the message will be sent.
+            json_message (str): The JSON-formatted message to send.
+
+        Returns:
+            bool: True if the message was sent successfully, False otherwise.
+        """
         return self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
+        """
+        Start listening for incoming MQTT messages and handle them.
+
+        This method initiates the process of receiving and handling MQTT messages.
+        It runs a loop to continuously listen for messages and processes them until stopped.
+
+        Returns:
+            None
+        """
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         self.run_loop_forever()
-        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"TotalTime": time.time() - start_listening_time})
 
     def stop_receive_message(self):
+        """
+        Stop listening for incoming MQTT messages and disconnect from the MQTT broker.
+
+        This method stops the MQTT message listening loop and disconnects from the MQTT broker.
+
+        Returns:
+            None
+        """
         logging.info("mqtt_s3.stop_receive_message: stopping...")
         self.mqtt_mgr.loop_stop()
         self.mqtt_mgr.disconnect()
 
     def set_config_from_file(self, config_file_path):
+        """
+        Load MQTT configuration settings from a YAML file.
+
+        This method reads MQTT configuration settings, including the broker host, port, username, and
+        password, from a YAML file and updates the instance variables accordingly.
+
+        Args:
+            config_file_path (str): The path to the YAML configuration file.
+
+        Returns:
+            None
+        """
         try:
             with open(config_file_path, "r") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -348,6 +524,18 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             pass
 
     def set_config_from_objects(self, mqtt_config):
+        """
+        Set MQTT configuration settings from a dictionary.
+
+        This method sets the MQTT configuration settings, including the broker host, port, username,
+        and password, from a dictionary object.
+
+        Args:
+            mqtt_config (dict): A dictionary containing MQTT configuration settings.
+
+        Returns:
+            None
+        """
         self.broker_host = mqtt_config["BROKER_HOST"]
         self.broker_port = mqtt_config["BROKER_PORT"]
         self.mqtt_user = None
@@ -358,21 +546,58 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             self.mqtt_pwd = mqtt_config["MQTT_PWD"]
 
     def callback_client_last_will_msg(self, topic, payload):
+        """
+        Handle the last will message from a client.
+
+        This method processes the last will message received from a client and updates the client's
+        status accordingly.
+
+        Args:
+            topic (str): The MQTT topic on which the last will message was received.
+            payload (str): The payload of the last will message.
+
+        Returns:
+            None
+        """
         msg = json.loads(payload)
         edge_id = msg.get("ID", None)
-        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+        status = msg.get(
+            "status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
         if edge_id is not None and status == CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE:
             if self.client_active_list.get(edge_id, None) is not None:
                 self.client_active_list.pop(edge_id)
 
     def callback_client_active_msg(self, topic, payload):
+        """
+        Handle the active status message from a client.
+
+        This method processes the active status message received from a client and updates the client's
+        status in the active list.
+
+        Args:
+            topic (str): The MQTT topic on which the active status message was received.
+            payload (str): The payload of the active status message.
+
+        Returns:
+            None
+        """
         msg = json.loads(payload)
         edge_id = msg.get("ID", None)
-        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
+        status = msg.get(
+            "status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
         if edge_id is not None:
             self.client_active_list[edge_id] = status
 
     def subscribe_client_status_message(self):
+        """
+        Subscribe to client status messages.
+
+        This method sets up MQTT message listeners to handle both last will messages and active status
+        messages from clients.
+
+        Returns:
+            None
+        """
         # Setup MQTT message listener to the last will message form the client.
         self.mqtt_mgr.add_message_listener(self.topic_last_will_msg,
                                            self.callback_client_last_will_msg)
@@ -382,7 +607,26 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                                            self.callback_client_active_msg)
 
     def get_client_status(self, client_id):
+        """
+        Get the status of a specific client.
+
+        This method retrieves the status of a client based on its ID from the client active list.
+
+        Args:
+            client_id (str): The ID of the client.
+
+        Returns:
+            str: The status of the client, e.g., 'offline' or 'idle'.
+        """
         return self.client_active_list.get(client_id, CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
 
     def get_client_list_status(self):
+        """
+        Get the status of all connected clients.
+
+        This method returns the entire client active list, containing the statuses of all connected clients.
+
+        Returns:
+            dict: A dictionary mapping client IDs to their statuses.
+        """
         return self.client_active_list
