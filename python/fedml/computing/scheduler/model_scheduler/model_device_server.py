@@ -45,6 +45,8 @@ class FedMLModelDeviceServerRunner:
         self.agent_process.start()
 
     def run_entry(self, process_event):
+        print(f"Model master process id {os.getpid()}")
+
         self.agent_process_event = process_event
 
         while not self.agent_process_event.is_set():

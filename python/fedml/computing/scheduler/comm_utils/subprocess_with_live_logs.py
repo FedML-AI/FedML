@@ -97,12 +97,27 @@ class Popen(subprocess.Popen):
         def _readerthread(
                 self, fh, buffer, is_err, process_obj,
                 data_arrived_callback, error_processor, should_write_log):
-            buffer.append(fh.read())
+            while True:
+                try:
+                    data_buff = fh.readline()
+                    if not data_buff:
+                        break
+                    data_line = self._translate_newlines(data_buff,
+                                                         self.stderr.encoding if is_err else self.stdout.encoding,
+                                                         self.stderr.errors if is_err else self.stdout.errors) \
+                        if isinstance(data_buff, bytes) else data_buff.replace("\n", "")
+
+                except EOFError as e:
+                    break
+
+                if data_line is None:
+                    break
+                if data_arrived_callback is not None:
+                    data_arrived_callback([data_line], is_err=is_err,
+                                          process_obj=process_obj, error_processor=error_processor,
+                                          should_write_log=should_write_log)
+                buffer.append(data_line)
             fh.close()
-            if data_arrived_callback is not None:
-                data_arrived_callback(buffer, is_err=is_err,
-                                      process_obj=process_obj, error_processor=error_processor,
-                                      should_write_log=should_write_log)
 
         def _communicate(self, input, endtime, orig_timeout,
                          data_arrived_callback=None, error_processor=None, should_write_log=True):
@@ -158,8 +173,10 @@ class Popen(subprocess.Popen):
                 self.stderr.close()
 
             # All data exchanged.  Translate lists into strings.
-            stdout = stdout[0] if stdout else None
-            stderr = stderr[0] if stderr else None
+            #stdout = stdout[0] if stdout else None
+            #stderr = stderr[0] if stderr else None
+            stdout = ''.join(stdout)
+            stderr = ''.join(stderr)
 
             return (stdout, stderr)
     else:
