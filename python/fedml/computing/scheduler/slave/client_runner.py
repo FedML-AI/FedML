@@ -1094,8 +1094,9 @@ class FedMLClientRunner:
         server_id = payload_json.get("server_id", 0)
         run_id = payload_json.get("run_id", 0)
         response_topic = f"client/server/response_device_info/{server_id}"
-        if self.mlops_metrics is not None and self.model_device_client is not None and \
-                self.model_device_server is not None:
+        if self.mlops_metrics is not None:
+                #and self.model_device_client is not None and \
+                #self.model_device_server is not None:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
             device_info_json = {
@@ -1114,8 +1115,8 @@ class FedMLClientRunner:
                 "fedml_version": fedml.__version__,
                 "user_id": self.args.user
             }
-            response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
-                                "master_device_id": self.model_device_server.get_edge_id(),
+            response_payload = {"slave_device_id": 111,  #self.model_device_client.get_edge_id(),
+                                "master_device_id": 112,  #self.model_device_server.get_edge_id(),
                                 "run_id": run_id, "edge_id": self.edge_id,
                                 "edge_info": device_info_json}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
@@ -1415,17 +1416,17 @@ class FedMLClientRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
-        if self.model_device_client is None:
-            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            self.model_device_client.start()
+        # if self.model_device_client is None:
+        #     self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
+        #                                                             self.args.os_name, self.args.is_from_docker,
+        #                                                             self.agent_config)
+        #     self.model_device_client.start()
 
-        if self.model_device_server is None:
-            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            self.model_device_server.start()
+        # if self.model_device_server is None:
+        #     self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+        #                                                             self.args.os_name, self.args.is_from_docker,
+        #                                                             self.agent_config)
+        #     self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
