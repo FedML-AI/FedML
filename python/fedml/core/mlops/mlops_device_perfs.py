@@ -4,7 +4,9 @@ import os
 import time
 import traceback
 import uuid
+from os.path import expanduser
 
+import chardet
 import multiprocess as multiprocessing
 import psutil
 
@@ -23,6 +25,7 @@ class MLOpsDevicePerfStats(object):
         self.device_id = None
         self.run_id = None
         self.edge_id = None
+        self.is_client = True
 
     def report_device_realtime_stats(self, sys_args):
         self.setup_realtime_stats_process(sys_args)
@@ -45,6 +48,7 @@ class MLOpsDevicePerfStats(object):
         perf_stats.edge_id = 0 if perf_stats.edge_id is None else perf_stats.edge_id
         perf_stats.device_id = getattr(sys_args, "device_id", 0)
         perf_stats.run_id = getattr(sys_args, "run_id", 0)
+        perf_stats.is_client = self.is_client
         if self.device_realtime_stats_event is None:
             self.device_realtime_stats_event = multiprocessing.Event()
         self.device_realtime_stats_event.clear()
@@ -56,6 +60,8 @@ class MLOpsDevicePerfStats(object):
         self.device_realtime_stats_process.start()
 
     def report_device_realtime_stats_entry(self, sys_event):
+        print(f"Report device realtime stats, process id {os.getpid()}")
+
         self.device_realtime_stats_event = sys_event
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],
@@ -80,6 +86,10 @@ class MLOpsDevicePerfStats(object):
                 pass
 
             time.sleep(10)
+
+            self.check_fedml_client_parent_process()
+
+            self.check_fedml_server_parent_process()
 
         logging.info("Device metrics process is about to exit.")
         mqtt_mgr.loop_stop()
@@ -108,3 +118,59 @@ class MLOpsDevicePerfStats(object):
         message_json = json.dumps(artifact_info_json)
         if mqtt_mgr is not None:
             mqtt_mgr.send_message_json(topic_name, message_json)
+
+    def check_fedml_client_parent_process(self):
+        if not self.is_client:
+            return
+
+        try:
+            home_dir = expanduser("~")
+            fedml_ppids_dir = os.path.join(home_dir, "fedml-client", "fedml", "data", "ppids")
+            if not os.path.exists(fedml_ppids_dir):
+                return
+
+            should_logout = True
+            file_list = os.listdir(fedml_ppids_dir)
+            if len(file_list) <= 0:
+                should_logout = False
+            else:
+                for parent_pid in file_list:
+                    if not psutil.pid_exists(int(parent_pid)):
+                        os.remove(os.path.join(fedml_ppids_dir, parent_pid))
+                    else:
+                        should_logout = False
+
+            if should_logout:
+                print(f"Parent client process {file_list} has been killed, so fedml will exit.")
+                logging.info(f"Parent client process {file_list} has been killed, so fedml will exit.")
+                os.system("fedml logout")
+        except Exception as e:
+            pass
+
+    def check_fedml_server_parent_process(self):
+        if self.is_client:
+            return
+
+        try:
+            home_dir = expanduser("~")
+            fedml_ppids_dir = os.path.join(home_dir, "fedml-server", "fedml", "data", "ppids")
+            if not os.path.exists(fedml_ppids_dir):
+                return
+
+            should_logout = True
+            file_list = os.listdir(fedml_ppids_dir)
+            if len(file_list) <= 0:
+                should_logout = False
+            else:
+                for parent_pid in file_list:
+                    if not psutil.pid_exists(int(parent_pid)):
+                        os.remove(os.path.join(fedml_ppids_dir, parent_pid))
+                    else:
+                        should_logout = False
+
+            if should_logout:
+                print(f"Parent server process {file_list} has been killed, so fedml will exit.")
+                logging.info(f"Parent server process {file_list} has been killed, so fedml will exit.")
+                os.system("fedml logout -s")
+        except Exception as e:
+            pass

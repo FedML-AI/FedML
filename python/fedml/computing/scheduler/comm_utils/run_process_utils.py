@@ -22,17 +22,25 @@ class RunProcessUtils:
                 if run_id is None:
                     run_splits = process_file.split("@")
                     process_id = None if len(run_splits) < 4 else run_splits[3]
+                    if process_id is None or process_id == "":
+                        continue
                 else:
                     run_pid_prefix = RunProcessUtils.get_run_process_prefix(info_file_prefix, run_id)
                     if not process_file.startswith(run_pid_prefix):
                         continue
 
-                    process_id = process_file.split(run_pid_prefix)
+                    split_list = process_file.split(run_pid_prefix)
+                    if split_list is None or len(split_list) < 2:
+                        continue
+
+                    process_id = split_list[1]
                     if process_id is None or process_id == "":
                         continue
 
+                print(f"Found process file {process_file}, process id {process_id}")
+
                 try:
-                    process = psutil.Process(process_id)
+                    process = psutil.Process(int(process_id))
                     child_processes = process.children(recursive=True)
                     for sub_process in child_processes:
                         if platform.system() == 'Windows':
@@ -72,6 +80,26 @@ class RunProcessUtils:
             process_info_dict["run_id"] = run_id
             process_info_dict["pid"] = process_id
             RunProcessUtils.generate_yaml_doc(process_info_dict, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def kill_process(process_id):
+        try:
+            process = psutil.Process(process_id)
+            if process is None:
+                return
+            child_processes = process.children(recursive=True)
+            for sub_process in child_processes:
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                else:
+                    os.kill(sub_process.pid, signal.SIGKILL)
+
+            if platform.system() == 'Windows':
+                os.system("taskkill /PID {} /T /F".format(process.pid))
+            else:
+                os.killpg(os.getpgid(process_id), signal.SIGKILL)
         except Exception as e:
             pass
 

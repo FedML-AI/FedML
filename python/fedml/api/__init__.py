@@ -127,18 +127,10 @@ def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
 def model_create(name, config_file):
     model.create(name, config_file)
-
+    
 
 def model_delete(name):
     model.delete(name)
-
-
-def model_add_files(name, path):
-    model.add_files(name, path)
-
-
-def model_remove_files(name, file):
-    model.remove_files(name, file)
 
 
 def model_list(name):

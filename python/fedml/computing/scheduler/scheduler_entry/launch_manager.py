@@ -78,7 +78,7 @@ class FedMLLaunchManager(object):
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
             FedMLAppManager.get_instance().set_config_version(self.config_version)
-            if not FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key):
+            if self.job_config.serving_model_name is None or self.job_config.serving_model_name == "":
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
                     click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace."
                                f"{self.job_config.workspace}")
@@ -846,9 +846,12 @@ class FedMLJobConfig(object):
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
         self.serving_endpoint_name = serving_args.get("endpoint_name", "")
 
-        self.application_name = FedMLJobConfig.generate_application_name(self.workspace)
-        self.model_app_name = self.application_name
+        self.application_name = FedMLJobConfig.generate_application_name(
+            self.executable_file_folder if workspace is None or workspace == "" else workspace)
+
+        self.model_app_name = self.serving_model_name \
+            if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
     @staticmethod
     def generate_application_name(workspace):
-        return "{}@{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)
+        return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)

@@ -827,12 +827,17 @@ def get_sys_realtime_stats():
 
 
 def decode_byte_str(bytes_str):
+    if not isinstance(bytes_str, bytes):
+        return bytes_str
+
     encoding = dict()
     try:
         encoding = chardet.detect(bytes_str)
     except Exception as e:
-        pass
-    decoded_str = bytes_str.decode(encoding=encoding.get("encoding", 'utf-8'), errors='ignore')
+        encoding = dict()
+    str_encoding = encoding.get("encoding", 'utf-8')
+    str_encoding = "utf-8" if str_encoding is None else str_encoding
+    decoded_str = bytes_str.decode(encoding=str_encoding, errors='ignore')
     return decoded_str
 
 
@@ -852,6 +857,21 @@ def random2(msg, in_msg):
     for i in range(len(msg_bytes)):
         out_bytes.append(msg_bytes[i] ^ in_bytes[i % len(in_bytes)])
     return out_bytes.decode('utf-8')
+
+
+def get_file_encoding(file_path):
+    with open(file_path, "rb") as f:
+        file_content = f.read()
+        f.close()
+
+    try:
+        encoding = chardet.detect(file_content)
+    except Exception as e:
+        encoding = dict()
+    str_encoding = encoding.get("encoding", 'utf-8')
+    str_encoding = "utf-8" if str_encoding is None else str_encoding
+
+    return str_encoding
 
 
 if __name__ == '__main__':
