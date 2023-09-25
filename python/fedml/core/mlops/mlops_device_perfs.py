@@ -6,6 +6,7 @@ import traceback
 import uuid
 from os.path import expanduser
 
+import chardet
 import multiprocess as multiprocessing
 import psutil
 
@@ -59,6 +60,8 @@ class MLOpsDevicePerfStats(object):
         self.device_realtime_stats_process.start()
 
     def report_device_realtime_stats_entry(self, sys_event):
+        print(f"Report device realtime stats, process id {os.getpid()}")
+
         self.device_realtime_stats_event = sys_event
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],
@@ -122,26 +125,25 @@ class MLOpsDevicePerfStats(object):
 
         try:
             home_dir = expanduser("~")
-            fedml_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
-            fedml_parent_pid_file = os.path.join(fedml_data_dir, "fedml_parent_pid")
-            if not os.path.exists(fedml_parent_pid_file):
+            fedml_ppids_dir = os.path.join(home_dir, "fedml-client", "fedml", "data", "ppids")
+            if not os.path.exists(fedml_ppids_dir):
                 return
 
-            with open(fedml_parent_pid_file, "r") as parent_pid_file:
-                parent_pid = parent_pid_file.readline()
-                parent_pid_file.close()
-                if parent_pid is None:
-                    return
+            should_logout = True
+            file_list = os.listdir(fedml_ppids_dir)
+            if len(file_list) <= 0:
+                should_logout = False
+            else:
+                for parent_pid in file_list:
+                    if not psutil.pid_exists(int(parent_pid)):
+                        os.remove(os.path.join(fedml_ppids_dir, parent_pid))
+                    else:
+                        should_logout = False
 
-                parent_pid = parent_pid.strip('\n')
-                if parent_pid == "":
-                    return
-
-                if not psutil.pid_exists(int(parent_pid)):
-                    print(f"Parent client process {parent_pid} has been killed, so fedml will exit.")
-                    logging.info(f"Parent client process {parent_pid} has been killed, so fedml will exit.")
-                    os.remove(fedml_parent_pid_file)
-                    os.system("fedml logout")
+            if should_logout:
+                print(f"Parent client process {file_list} has been killed, so fedml will exit.")
+                logging.info(f"Parent client process {file_list} has been killed, so fedml will exit.")
+                os.system("fedml logout")
         except Exception as e:
             pass
 
@@ -151,25 +153,24 @@ class MLOpsDevicePerfStats(object):
 
         try:
             home_dir = expanduser("~")
-            fedml_data_dir = os.path.join(home_dir, "fedml-server", "fedml", "data")
-            fedml_parent_pid_file = os.path.join(fedml_data_dir, "fedml_parent_pid")
-            if not os.path.exists(fedml_parent_pid_file):
+            fedml_ppids_dir = os.path.join(home_dir, "fedml-server", "fedml", "data", "ppids")
+            if not os.path.exists(fedml_ppids_dir):
                 return
 
-            with open(fedml_parent_pid_file, "r") as parent_pid_file:
-                parent_pid = parent_pid_file.readline()
-                parent_pid_file.close()
-                if parent_pid is None:
-                    return
+            should_logout = True
+            file_list = os.listdir(fedml_ppids_dir)
+            if len(file_list) <= 0:
+                should_logout = False
+            else:
+                for parent_pid in file_list:
+                    if not psutil.pid_exists(int(parent_pid)):
+                        os.remove(os.path.join(fedml_ppids_dir, parent_pid))
+                    else:
+                        should_logout = False
 
-                parent_pid = parent_pid.strip('\n')
-                if parent_pid == "":
-                    return
-
-                if not psutil.pid_exists(int(parent_pid)):
-                    print(f"Parent server process {parent_pid} has been killed, so fedml will exit.")
-                    logging.info(f"Parent server process {parent_pid} has been killed, so fedml will exit.")
-                    os.remove(fedml_parent_pid_file)
-                    os.system("fedml logout -s")
+            if should_logout:
+                print(f"Parent server process {file_list} has been killed, so fedml will exit.")
+                logging.info(f"Parent server process {file_list} has been killed, so fedml will exit.")
+                os.system("fedml logout -s")
         except Exception as e:
             pass

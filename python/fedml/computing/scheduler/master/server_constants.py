@@ -344,11 +344,12 @@ class ServerConstants(object):
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
-            err_str = sys_utils.decode_byte_str(exec_err)
-            error_list.append(err_str)
+            if exec_err is not None:
+                err_str = sys_utils.decode_byte_str(exec_err)
+                error_list.append(err_str)
 
-            if error_processor is not None and len(error_list) > 0:
-                error_processor(error_list)
+                if error_processor is not None and len(error_list) > 0:
+                    error_processor(error_list)
 
         return script_process, error_list
 

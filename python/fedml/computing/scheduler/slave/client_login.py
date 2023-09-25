@@ -316,7 +316,9 @@ if __name__ == "__main__":
     parser.add_argument("--api_key", "-k", type=str, default="")
     parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
     args = parser.parse_args()
-    
+
+    print(f"Client login process id {os.getpid()}")
+
     args.user = args.user
     if args.type == 'login':
         login(args)
