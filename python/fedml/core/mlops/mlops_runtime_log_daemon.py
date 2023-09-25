@@ -215,6 +215,8 @@ class MLOpsRuntimeLogProcessor:
         return False
 
     def log_process(self, process_event):
+        print(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
+
         self.log_process_event = process_event
 
         while not self.should_stop():

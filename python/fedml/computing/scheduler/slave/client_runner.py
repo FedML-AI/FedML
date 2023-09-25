@@ -21,6 +21,7 @@ from urllib.parse import unquote
 import requests
 
 import fedml
+from ..comm_utils.run_process_utils import RunProcessUtils
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -322,10 +323,12 @@ class FedMLClientRunner:
                     else:
                         os.chmod(bootstrap_script_path,
                                  bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                        bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir,
-                                                                 os.path.basename(bootstrap_script_file))
+                        bootstrap_scripts = "cd {}; ./{}".format(
+                            bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+
                     bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
                     logging.info("Bootstrap scripts are being executed...")
+
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
                     process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
@@ -359,6 +362,8 @@ class FedMLClientRunner:
         return is_bootstrap_run_ok
 
     def run(self, process_event, completed_event):
+        print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
+
         if platform.system() != "Windows":
             os.setsid()
 
@@ -611,8 +616,19 @@ class FedMLClientRunner:
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
 
+                entry_commands_filled = list()
+                if platform.system() == "Windows":
+                    entry_file_full_path = entry_file_full_path.replace(".sh", ".bat")
+                    for cmd in entry_commands:
+                        entry_commands_filled.append(cmd)
+                        entry_commands_filled.append("if %ERRORLEVEL% neq 0 EXIT %ERRORLEVEL%\n")
+                    entry_commands_filled.append("EXIT %ERRORLEVEL%")
+                else:
+                    entry_commands_filled = entry_commands
+                    entry_commands_filled.insert(0, "set -e\n")
+
                 with open(entry_file_full_path, 'w') as entry_file_handle:
-                    entry_file_handle.writelines(entry_commands)
+                    entry_file_handle.writelines(entry_commands_filled)
                     entry_file_handle.close()
                 shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
             else:
@@ -709,7 +725,7 @@ class FedMLClientRunner:
         time.sleep(1)
 
     def cleanup_run_when_starting_failed(self, should_send_client_id_status=True):
-        logging.error("Cleanup run successfully when starting failed.")
+        #logging.error("Cleanup run successfully when starting failed.")
 
         self.reset_devices_status(self.edge_id,
                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
@@ -727,11 +743,12 @@ class FedMLClientRunner:
         try:
             ClientConstants.cleanup_learning_process(self.run_id)
             ClientConstants.cleanup_bootstrap_process(self.run_id)
+            ClientConstants.cleanup_run_process(self.run_id)
         except Exception as e:
             pass
 
     def cleanup_run_when_finished(self):
-        logging.info("Cleanup run successfully when finished.")
+        #logging.info("Cleanup run successfully when finished.")
 
         self.reset_devices_status(self.edge_id,
                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
@@ -749,6 +766,7 @@ class FedMLClientRunner:
         try:
             ClientConstants.cleanup_learning_process(self.run_id)
             ClientConstants.cleanup_bootstrap_process(self.run_id)
+            ClientConstants.cleanup_run_process(self.run_id)
         except Exception as e:
             pass
 
@@ -992,10 +1010,10 @@ class FedMLClientRunner:
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
-            logging.info("received to finished status.")
+            #logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.error("received to failed status from the server agent")
+            #logging.error("received to failed status from the server agent")
             self.cleanup_run_when_starting_failed(should_send_client_id_status=False)
 
     def callback_runner_id_status(self, topic, payload):
@@ -1013,8 +1031,6 @@ class FedMLClientRunner:
         status = request_json["status"]
 
         run_id_str = str(run_id)
-        if self.run_process_map.get(run_id_str, None) is None:
-            return
 
         self.save_training_status(edge_id, status)
 
@@ -1025,7 +1041,6 @@ class FedMLClientRunner:
                 completed_event.set()
 
             # Stop client with multiprocessing mode
-            self.request_json = request_json
             client_runner = FedMLClientRunner(
                 self.args,
                 edge_id=self.edge_id,
@@ -1038,7 +1053,11 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            if self.run_process_map.get(run_id_str, None) is not None:
+            run_process = self.run_process_map.get(run_id_str, None)
+            if run_process is not None:
+                if run_process.pid is not None:
+                    RunProcessUtils.kill_process(run_process.pid)
+
                 self.run_process_map.pop(run_id_str)
 
             # Stop log processor for current run
@@ -1377,6 +1396,8 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
+        if self.local_api_process is not None and self.local_api_process.pid is not None:
+            print(f"Client local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

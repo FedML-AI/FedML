@@ -125,6 +125,8 @@ class MLOpsJobPerfStats(object):
         self.setup_job_stats_process(sys_args)
 
     def report_job_stats_entry(self, sys_event):
+        print(f"Report job realtime stats, process id {os.getpid()}")
+
         self.job_stats_event = sys_event
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],

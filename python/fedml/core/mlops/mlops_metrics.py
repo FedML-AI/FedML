@@ -405,8 +405,9 @@ class MLOpsMetrics(object):
     def stop_job_perf(self):
         self.job_perfs.stop_job_stats()
 
-    def report_device_realtime_perf(self, sys_args, mqtt_config):
+    def report_device_realtime_perf(self, sys_args, mqtt_config, is_client=True):
         setattr(sys_args, "mqtt_config_path", mqtt_config)
+        self.device_perfs.is_client = is_client
         self.device_perfs.report_device_realtime_stats(sys_args)
 
     def stop_device_realtime_perf(self):
