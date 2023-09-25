@@ -32,6 +32,8 @@ MODEL_NAMES = [
     "meta-llama/Llama-2-13b-chat-hf",
     "meta-llama/Llama-2-70b-hf",
     "meta-llama/Llama-2-70b-chat-hf",
+    "tiiuae/falcon-7b",
+    "tiiuae/falcon-40b",
 ]
 
 DATASET_NAMES = [
