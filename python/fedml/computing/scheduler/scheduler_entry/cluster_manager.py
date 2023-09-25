@@ -114,7 +114,7 @@ class FedMLClusterManager(Singleton):
             code = resp_data.get("code", None)
             data = resp_data.get("data", None)
             if code is None or data is None or code == "FAILURE":
-                print(f"List job with response.status_code = {response.status_code}, "
+                print(f"List cluster with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return None
             cluster_list_result = FedMLClusterModelList(data)

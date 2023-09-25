@@ -27,7 +27,7 @@ def killall(version, api_key, show_hint_texts):
     FedMLClusterManager.get_instance().set_config_version(version)
     cluster_list_obj = FedMLClusterManager.get_instance().list_clusters()
     if cluster_list_obj is not None and len(cluster_list_obj.cluster_list) > 0:
-        print_clusters(cluster_list_obj)
+        _print_clusters(cluster_list_obj)
         if click.confirm(f"Are you sure you want to kill all these clusters?", abort=False):
             kill(version=version, api_key=api_key, cluster_names=(), show_hint_texts=show_hint_texts)
     else:
@@ -39,12 +39,12 @@ def list_clusters(version, api_key, cluster_names):
     FedMLClusterManager.get_instance().set_config_version(version)
     cluster_list_obj = FedMLClusterManager.get_instance().list_clusters(cluster_names)
     if cluster_list_obj is not None and len(cluster_list_obj.cluster_list) > 0:
-        print_clusters(cluster_list_obj)
+        _print_clusters(cluster_list_obj)
     else:
         click.echo("No clusters found.")
 
 
-def print_clusters(cluster_list_obj):
+def _print_clusters(cluster_list_obj):
     click.echo("Found the following matching clusters.")
     cluster_list_table = PrettyTable(['Cluster Name', 'Cluster ID', 'Status'])
 
