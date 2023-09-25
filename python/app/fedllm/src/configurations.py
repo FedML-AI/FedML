@@ -5,14 +5,18 @@ import os
 import warnings
 
 from accelerate.utils import compare_versions
+import torch
 from transformers import TrainingArguments
 
 from .constants import (
     DATASET_NAMES,
     FINETUNE_TASKS,
+    MODEL_DTYPES,
+    MODEL_DTYPE_MAPPING,
     MODEL_NAMES,
     PROMPT_STYLES,
 )
+from .typing import to_torch_dtype
 from .utils import is_directory, is_file
 
 
@@ -28,6 +32,13 @@ class FinetuningArguments(TrainingArguments):
 @dataclass
 class ModelArguments:
     model_name_or_path: str = field(default="EleutherAI/pythia-70m", metadata={"help": "model name or path."})
+    model_dtype: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "model dtype.",
+            "choices": MODEL_DTYPES,
+        },
+    )
     use_lora: bool = field(default=False, metadata={"help": "Set to `True` to enable LoRA."})
     lora_r: int = field(default=8, metadata={"help": "LoRA attention dimension (rank)."})
     lora_alpha: int = field(default=32, metadata={"help": "LoRA alpha."})
@@ -91,6 +102,14 @@ class ModelArguments:
                         f"\nTo login, use `huggingface-cli login` or `huggingface_hub.login`."
                         f" See https://huggingface.co/settings/tokens."
                     )
+
+        if self.model_dtype is not None:
+            # convert model_dtype to canonical name
+            self.model_dtype = MODEL_DTYPE_MAPPING[self.model_dtype]
+
+    @property
+    def torch_dtype(self) -> Optional[torch.dtype]:
+        return to_torch_dtype(self.model_dtype)
 
 
 @dataclass

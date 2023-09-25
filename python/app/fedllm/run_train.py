@@ -135,15 +135,20 @@ def get_tokenizer(model_args: ModelArguments, add_special_tokens: bool = False, 
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
     kwargs.setdefault("trust_remote_code", True)
+    torch_dtype = kwargs.pop("torch_dtype", model_args.torch_dtype)
 
     if model_args.load_pretrained:
         kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
 
-        model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path, **kwargs)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            torch_dtype=torch_dtype,
+            **kwargs
+        )
     else:
         # see https://discuss.huggingface.co/t/how-to-load-model-without-pretrained-weight/34155/3
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **kwargs)
-        model = AutoModelForCausalLM.from_config(config)
+        config = AutoConfig.from_pretrained(model_args.model_name_or_path, torch_dtype=torch_dtype, **kwargs)
+        model = AutoModelForCausalLM.from_config(config, torch_dtype=torch_dtype)
 
     model_vocab_size = get_vocab_size(model.config)
     if tokenizer_length is not None and model_vocab_size < tokenizer_length:
@@ -190,6 +195,11 @@ def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None
             for n, p in model.named_parameters():
                 if not n.startswith(lora_layer_prefixes):
                     p.requires_grad = True
+
+    if torch_dtype is not None:
+        logging.info(f"Loading model in {model_args.model_dtype}.")
+        model.to(torch_dtype)
+        model.config.torch_dtype = torch_dtype
 
     return model
 

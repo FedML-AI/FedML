@@ -50,3 +50,15 @@ PROMPT_STYLES = [
     "dolly",
     "llama",
 ]
+
+MODEL_DTYPE_MAPPING = {
+    "bf16": "bfloat16",
+    "bfloat16": "bfloat16",
+    "fp16": "float16",
+    "float16": "float16",
+    "fp32": None,
+    "float": None,
+    "float32": None,
+    "none": None,
+}
+MODEL_DTYPES = list(MODEL_DTYPE_MAPPING.keys())
