@@ -25,7 +25,7 @@ deepspeed \
   run_train.py \
   --task "instruction" \
   --deepspeed "configs/ds_z3_bf16_config.json" \
-  --model_name "EleutherAI/pythia-6.9b" \
+  --model_name "EleutherAI/pythia-70m" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
   --seed 1234 \
@@ -38,7 +38,7 @@ deepspeed \
   --learning_rate "5e-6" \
   --warmup_steps 50 \
   --num_train_epochs 5 \
-  --output_dir ".logs/dolly_pythia-6.9b" \
+  --output_dir ".logs/dolly_pythia-70m" \
   --logging_steps 50 \
   --eval_steps 200 \
   --save_steps 200 \

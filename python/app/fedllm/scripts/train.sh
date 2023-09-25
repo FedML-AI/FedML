@@ -7,7 +7,14 @@ cd "${BASE_DIR}"
 
 bash scripts/setup.sh
 
-export CUDA_VISIBLE_DEVICES="0"
+NUM_GPU="$(python3 -c "import torch; print(torch.cuda.device_count())")"
+
+# see https://stackoverflow.com/a/13864829
+if [[ -z "${CUDA_VISIBLE_DEVICES+x}" && "${NUM_GPU}" -gt 1 ]]; then
+  echo "Detected ${NUM_GPU} > 1 GPUs; will use the first GPU."
+
+  export CUDA_VISIBLE_DEVICES="0"
+fi
 
 DATASET_PATHS=(
   ".data/databricks-dolly-15k.jsonl"
@@ -15,8 +22,7 @@ DATASET_PATHS=(
 )
 
 python3 run_train.py \
-  --task "instruction" \
-  --model_name "EleutherAI/pythia-6.9b" \
+  --model_name_or_path "EleutherAI/pythia-70m" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
   --seed 1234 \
@@ -29,7 +35,7 @@ python3 run_train.py \
   --learning_rate "5e-6" \
   --warmup_steps 50 \
   --num_train_epochs 5 \
-  --output_dir ".logs/dolly_pythia-6.9b" \
+  --output_dir ".logs/dolly_pythia-70m" \
   --logging_steps 50 \
   --eval_steps 200 \
   --save_steps 200 \
