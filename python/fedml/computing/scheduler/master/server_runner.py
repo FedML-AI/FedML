@@ -848,7 +848,6 @@ class FedMLServerRunner:
 
         ServerConstants.cleanup_learning_process(self.run_id)
         ServerConstants.cleanup_bootstrap_process(self.run_id)
-        ClientConstants.cleanup_run_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -881,7 +880,6 @@ class FedMLServerRunner:
 
         ServerConstants.cleanup_learning_process(self.run_id)
         ServerConstants.cleanup_bootstrap_process(self.run_id)
-        ClientConstants.cleanup_run_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -1678,11 +1676,6 @@ class FedMLServerRunner:
                     server_runner.cleanup_client_with_status()
                 else:
                     ServerConstants.cleanup_run_process(run_id)
-
-                    run_process = self.run_process_map.get(run_id_str, None)
-                    if run_process is not None:
-                        if run_process.pid is not None:
-                            RunProcessUtils.kill_process(run_process.pid)
 
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
