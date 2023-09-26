@@ -16,6 +16,7 @@ Usages:
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
 from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster
+from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
 
 def fedml_login(api_key=None, version="release"):
@@ -75,7 +76,7 @@ def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
     return job.list_jobs(version, job_name, job_id, platform, api_key)
 
 
-def list_clusters(version, api_key=None, cluster_names=()):
+def list_clusters(version, api_key=None, cluster_names=()) -> FedMLClusterModelList:
     return cluster.list_clusters(version, api_key, cluster_names)
 
 
@@ -83,7 +84,7 @@ def kill_clusters(version, cluster_names, api_key=None, show_hint_texts=True):
     return cluster.kill(version=version, api_key=api_key, cluster_names=cluster_names, show_hint_texts=show_hint_texts)
 
 
-def killall_clusters(version, api_key=None, show_hint_texts=True):
+def killall_clusters(version, api_key=None, show_hint_texts=False):
     return cluster.killall(version=version, api_key=api_key, show_hint_texts=show_hint_texts)
 
 
