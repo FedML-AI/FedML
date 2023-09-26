@@ -248,7 +248,8 @@ class FedMLLaunchManager(object):
             model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
             job_yaml=self.job_config.job_config_dict)
         if launch_result is not None:
-            launch_result.job_id = self.job_config.serving_endpoint_id
+            launch_result.inner_id = self.job_config.serving_endpoint_id \
+                    if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
         # print(f"launch_result = {launch_result}")
@@ -673,6 +674,7 @@ class FedMLLaunchManager(object):
 
         # Start the job
         job_id = result.job_id,
+        ret_job_id = job_id if result.inner_id is None else result.inner_id
         project_id = result.project_id
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
                                                              result.application_name,
@@ -715,7 +717,7 @@ class FedMLLaunchManager(object):
         click.echo(f"fedml launch log {result.job_id}" +
                    "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
 
-        return result.job_id, project_id, 0, ""
+        return ret_job_id, project_id, 0, ""
 
     def list_jobs(self, job_name, job_id):
         job_status = None
