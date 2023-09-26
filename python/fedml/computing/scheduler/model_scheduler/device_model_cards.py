@@ -399,7 +399,9 @@ class FedMLModelCards(Singleton):
         # Execute bootstrap script
         config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         config_parms = self.parse_config_yaml(config_file_path)
-        bootstrap_path = config_parms.get("bootstrap_path", None)
+        bootstrap_path = config_parms.get("bootstrap", None)
+        # Change the execution path to the model dir
+        os.chdir(model_dir)
         if bootstrap_path is not None:
             dir_name, file_name = os.path.split(bootstrap_path)
             if ClientConstants.run_bootstrap(dir_name, file_name):
@@ -418,8 +420,6 @@ class FedMLModelCards(Singleton):
             print("The entry_point {} doesn't exist.".format(main_entry_file))
             return False
         import subprocess
-        # Change the execution path to the model dir
-        os.chdir(model_dir)
         process = subprocess.Popen(["python3", main_entry_file])
         print("Local deployment is started. Use Ctrl+C to stop it.")
         try:
