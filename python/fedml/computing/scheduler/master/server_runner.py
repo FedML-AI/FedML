@@ -672,8 +672,8 @@ class FedMLServerRunner:
             entry_command = f"{python_program} {entry_file_full_path} --cf " \
                             f"{conf_file_full_path} --rank 0 --role server"
             shell_cmd_list = [entry_command]
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  should_write_log_file=False)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -724,14 +724,17 @@ class FedMLServerRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf,
-                                                                                  error_processor=self.job_error_processor)
+            process, error_list = ServerConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor)
             is_launch_task = True
 
         return process, is_launch_task, error_list
 
+    def callback_start_fl_job(self, job_pid):
+        ServerConstants.save_learning_process(self.run_id, job_pid)
+
     def start_job_perf(self, job_pid):
+        ServerConstants.save_learning_process(self.run_id, job_pid)
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_str):
