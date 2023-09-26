@@ -164,6 +164,15 @@ class MqttManager(object):
         return True
 
     def on_connect(self, client, userdata, flags, rc):
+        """
+        Callback function for the MQTT on_connect event.
+
+        Args:
+            client: The MQTT client instance.
+            userdata: User data.
+            flags: Connection flags.
+            rc: Return code from the MQTT broker.
+        """
         if rc == 0:
             client.connected_flag = True
             client.bad_conn_flag = False
@@ -200,16 +209,43 @@ class MqttManager(object):
                     self.mqtt_connection_id, rc))
 
     def is_connected(self):
+        """
+        Check if the MQTT client is connected.
+
+        Returns:
+            bool: True if the client is connected, False otherwise.
+        """
         return self._client.is_connected()
 
     def subscribe_will_set_msg(self, client):
+        """
+        Subscribe to the last will message topic and set a callback.
+
+        Args:
+            client: The MQTT client instance.
+        """
         self.add_message_listener(self.last_will_topic, self.callback_will_set_msg)
         client.subscribe(self.last_will_topic, qos=2)
 
     def callback_will_set_msg(self, topic, payload):
+        """
+        Callback function for handling the last will message.
+
+        Args:
+            topic (str): The MQTT topic.
+            payload (str): The message payload.
+        """
         logging.info(f"MQTT client will be disconnected, id: {self._client_id}, topic: {topic}, payload: {payload}")
 
     def on_message(self, client, userdata, msg):
+        """
+        Callback function for the MQTT on_message event.
+
+        Args:
+            client: The MQTT client instance.
+            userdata: User data.
+            msg: The received MQTT message.
+        """
         # logging.info("on_message: msg.topic {}, msg.retain {}".format(msg.topic, msg.retain))
 
         if msg.retain:
@@ -230,98 +266,250 @@ class MqttManager(object):
         MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
+        """
+        Callback function for the MQTT on_publish event.
+
+        Args:
+            client: The MQTT client instance.
+            obj: Object.
+            mid: Message ID.
+        """
         self.callback_published_listener(client)
 
     def on_disconnect(self, client, userdata, rc):
+        """
+        Callback function for the MQTT on_disconnect event.
+
+        Args:
+            client: The MQTT client instance.
+            userdata: User data.
+            rc: Return code from the MQTT broker.
+        """
         client.connected_flag = False
         client.bad_conn_flag = True
         self.callback_disconnected_listener(client)
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
+        """
+        Callback function for the MQTT on_subscribe event.
+
+        Args:
+            client: The MQTT client instance.
+            userdata: User data.
+            mid: Message ID.
+            granted_qos: Granted QoS levels.
+        """
         self.callback_subscribed_listener(client)
 
     def _on_log(self, client, userdata, level, buf):
+        """
+        Callback function for MQTT logging.
+
+        Args:
+            client: The MQTT client instance.
+            userdata: User data.
+            level: Logging level.
+            buf: Log message buffer.
+        """
         logging.info("mqtt log {}, client id {}.".format(buf, self.mqtt_connection_id))
 
     def add_message_listener(self, topic, listener):
+        """
+        Add a message listener to handle messages received on a specific topic.
+
+        Args:
+            topic (str): The MQTT topic to listen to.
+            listener (callable): The callback function to handle the received messages.
+        """
         self._listeners[topic] = listener
 
     def remove_message_listener(self, topic):
+        """
+        Remove a message listener for a specific topic.
+
+        Args:
+            topic (str): The MQTT topic to remove the listener from.
+        """
         try:
             del self._listeners[topic]
         except Exception as e:
             pass
 
     def add_message_passthrough_listener(self, listener):
+        """
+        Add a message passthrough listener to handle all incoming messages.
+
+        Args:
+            listener (callable): The callback function to handle incoming messages.
+        """
+        #        if not callable(listener):
+        #            raise Exception("listener must be callable!")
+        #         self.__message_passthrough_listener = listener
         self.remove_message_passthrough_listener(listener)
         self._passthrough_listeners.append(listener)
 
     def remove_message_passthrough_listener(self, listener):
+        """
+        Remove a message passthrough listener.
+
+        Args:
+            listener (callable): The passthrough listener to remove.
+        """
+        #        if hasattr(self,'__message_passthrough_listener') and \
+        #                self.__message_passthrough_listener is not None:
+        #            self.__message_passthrough_listener = None
+        #             if isinstance(listener,(list)):
+        #                 for l in listener:
+        #                     self._passthrough_listeners.remove(l)
+        #             else:
+        #                 self._passthrough_listeners.remove(listener)
         try:
             self._passthrough_listeners.remove(listener)
         except Exception as e:
             pass
 
     def add_connected_listener(self, listener):
+        """
+        Add a listener to handle the MQTT client's connection event.
+
+        Args:
+            listener (callable): The callback function to handle the connection event.
+        """
         self._connected_listeners.append(listener)
 
     def remove_connected_listener(self, listener):
+        """
+        Remove a connected listener.
+
+        Args:
+            listener (callable): The connected listener to remove.
+        """
         try:
             self._connected_listeners.remove(listener)
         except Exception as e:
             pass
 
     def callback_connected_listener(self, client):
+        """
+        Callback function for handling connected listeners.
+
+        Args:
+            client: The MQTT client instance.
+        """
         for listener in self._connected_listeners:
             if listener is not None and callable(listener):
                 listener(client)
 
     def add_disconnected_listener(self, listener):
+        """
+        Add a listener to handle the MQTT client's disconnection event.
+
+        Args:
+            listener (callable): The callback function to handle the disconnection event.
+        """
         self._disconnected_listeners.append(listener)
 
     def remove_disconnected_listener(self, listener):
+        """
+        Remove a disconnected listener.
+
+        Args:
+            listener (callable): The disconnected listener to remove.
+        """
         try:
             self._disconnected_listeners.remove(listener)
         except Exception as e:
             pass
 
     def callback_disconnected_listener(self, client):
+        """
+        Callback function for handling disconnected listeners.
+
+        Args:
+            client: The MQTT client instance.
+        """
         for listener in self._disconnected_listeners:
             if listener is not None and callable(listener):
                 listener(client)
 
     def add_subscribed_listener(self, listener):
+        """
+        Add a listener to handle the MQTT client's subscription event.
+
+        Args:
+            listener (callable): The callback function to handle the subscription event.
+        """
         self._subscribed_listeners.append(listener)
 
     def remove_subscribed_listener(self, listener):
+        """
+        Remove a subscribed listener.
+
+        Args:
+            listener (callable): The subscribed listener to remove.
+        """
         try:
             self._subscribed_listeners.remove(listener)
         except Exception as e:
             pass
 
     def callback_subscribed_listener(self, client):
+        """
+        Callback function for handling subscribed listeners.
+
+        Args:
+            client: The MQTT client instance.
+        """
         for listener in self._subscribed_listeners:
             if listener is not None and callable(listener):
                 listener(client)
 
     def add_published_listener(self, listener):
+        """
+        Add a listener to handle the MQTT client's message publishing event.
+
+        Args:
+            listener (callable): The callback function to handle the publishing event.
+        """
         self._published_listeners.append(listener)
 
     def remove_published_listener(self, listener):
+        """
+        Remove a published listener.
+
+        Args:
+            listener (callable): The published listener to remove.
+        """
         try:
             self._published_listeners.remove(listener)
         except Exception as e:
             pass
 
     def callback_published_listener(self, client):
+        """
+        Callback function for handling published listeners.
+
+        Args:
+            client: The MQTT client instance.
+        """
         for listener in self._published_listeners:
             if listener is not None and callable(listener):
                 listener(client)
 
     def subscribe_msg(self, topic):
+        """
+        Subscribe to an MQTT topic with a QoS level of 2.
+
+        Args:
+            topic (str): The MQTT topic to subscribe to.
+        """
         self._client.subscribe(topic, qos=2)
 
     def check_connection(self):
+        """
+        Check the MQTT client's connection status and wait for a connection if not connected.
+        Raises an exception if the connection fails.
+        """
         count = 0
         while not self._client.connected_flag and self._client.bad_conn_flag:
             if count >= 30:
