@@ -60,7 +60,7 @@ class MLOpsDevicePerfStats(object):
         self.device_realtime_stats_process.start()
 
     def report_device_realtime_stats_entry(self, sys_event):
-        print(f"Report device realtime stats, process id {os.getpid()}")
+        # print(f"Report device realtime stats, process id {os.getpid()}")
 
         self.device_realtime_stats_event = sys_event
         mqtt_mgr = MqttManager(

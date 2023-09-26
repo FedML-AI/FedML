@@ -1398,8 +1398,8 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Client local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Client local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
