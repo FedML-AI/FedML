@@ -2,8 +2,10 @@ import click
 
 import fedml.api
 
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
-@click.group("jobs")
+
+@click.group("job")
 @click.help_option("--help", "-h")
 def fedml_jobs():
     """
@@ -41,6 +43,17 @@ def fedml_jobs():
 )
 def stop_job(platform, job_id, api_key, version):
     fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
+
+
+
+@fedml_jobs.command("status", help="Display fedml client training status.")
+@click.help_option("--help", "-h")
+def fedml_status():
+    training_infos = ClientConstants.get_training_infos()
+    click.echo(
+        "Job status: " + str(training_infos["training_status"]).upper()
+    )
+
 
 
 @fedml_jobs.command("list", help="List jobs from the MLOps platform.")

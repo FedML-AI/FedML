@@ -14,7 +14,7 @@ import tritonclient.http as http_client
 
 import collections.abc
 
-from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
 
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
@@ -82,6 +82,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         sudo_prefix = ""
         gpu_attach_cmd = ""
 
+    running_model_name = ClientConstants.get_running_model_name(end_point_name,
+                                                                inference_model_name,
+                                                                model_version, end_point_id, model_id)
+
     # Check whether triton server is running.
     triton_server_is_running = False
     if not use_simulation_test_without_triton:
@@ -117,9 +121,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
     # Convert models from pytorch to onnx format
     if model_is_from_open:
-        running_model_name = ClientConstants.get_running_model_name(end_point_name,
-                                                                    inference_model_name,
-                                                                    model_version, end_point_id, model_id)
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
@@ -164,9 +165,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         else:
             raise Exception("Unsupported inference engine type: {}".format(inference_engine))
     elif model_is_from_open == False:
-        running_model_name = ClientConstants.get_running_model_name(end_point_name,
-                                                                    inference_model_name,
-                                                                    model_version, end_point_id, model_id)
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         try:
             model = torch.jit.load(model_location)
@@ -179,13 +177,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
-                inference_image_name = config.get('inference_image_name', ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)                
+                inference_image_name = config.get('inference_image_name',
+                                                  ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
                 bootstrap_src_dir = config.get('bootstrap', "")
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', "")
-                logging.info(f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
+                logging.info(
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
                 src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
@@ -211,7 +211,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
             if relative_entry == "":
                 raise Exception("Please indicate main_entry in the fedml_model_config.yaml")
-        
+
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli
             input_size = model_params["input_size"]
@@ -258,7 +258,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:
         client = docker.from_env()
         llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                    str(running_model_name) # Running model name is concat of model name and version
+                                    security_utils.get_content_hash(running_model_name)  # Running model name is concat of model name and version
 
         try:
             exist_container_obj = client.containers.get(llm_server_container_name)
@@ -266,7 +266,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             exist_container_obj = None
         except docker.errors.APIError:
             raise Exception("Failed to get the container object")
-        
+
         if exist_container_obj is not None:
             client.api.remove_container(exist_container_obj.id, v=False, force=True)
         device_requests = []
@@ -301,28 +301,28 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         environment["MAIN_ENTRY"] = relative_entry
 
         new_container = client.api.create_container(
-            image = inference_image_name,
-            name = llm_server_container_name,
-            volumes = volumns,
-            ports = [2345],                     # port open inside the container
+            image=inference_image_name,
+            name=llm_server_container_name,
+            volumes=volumns,
+            ports=[2345],  # port open inside the container
             # entrypoint=["python3", relative_entry],
-            environment = environment,
-            host_config = client.api.create_host_config(
-                binds = binds,
-                port_bindings = {
-                    2345: None        # randomlly open a port on the host
+            environment=environment,
+            host_config=client.api.create_host_config(
+                binds=binds,
+                port_bindings={
+                    2345: None  # randomlly open a port on the host
                 },
-                device_requests = device_requests,
+                device_requests=device_requests,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
             ),
-            detach = True,
+            detach=True,
         )
         client.api.start(container=new_container.get("Id"))
 
         cnt = 0
         while True:
             cnt += 1
-            try:    # check dynamic port allocation
+            try:  # check dynamic port allocation
                 port_info = client.api.port(new_container.get("Id"), 2345)
                 inference_http_port = port_info[0]["HostPort"]
                 logging.info("inference_http_port: {}".format(inference_http_port))
@@ -331,14 +331,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if cnt >= 5:
                     raise Exception("Failed to get the port allocation")
                 time.sleep(3)
-        
+
         # report the status
         log_deployment_result(end_point_id, model_id, llm_server_container_name,
                               ClientConstants.CMD_TYPE_RUN_TRITON_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="llm")
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(running_model_name, inference_engine, inference_http_port,\
-                            infer_host, inference_type="llm", request_input_example=request_input_example)
+            get_model_info(running_model_name, inference_engine, inference_http_port, \
+                           infer_host, inference_type="llm", request_input_example=request_input_example)
 
         # testing
         if request_input_example == "":
@@ -486,7 +486,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
 
 
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
-                        inference_model_name, inference_engine,
+                          inference_model_name, inference_engine,
                           inference_http_port, inference_type=None):
     sudo_prefix = "sudo "
     sys_name = platform.system()

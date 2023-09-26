@@ -21,6 +21,7 @@ def create(name, config_file):
         else:
             click.echo("Failed to create model {} using config file {}.".format(name, config_file))
 
+    package(name)
 
 def delete(name):
     if FedMLModelCards.get_instance().delete_model(name):

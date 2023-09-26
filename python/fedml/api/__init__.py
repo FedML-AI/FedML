@@ -41,7 +41,7 @@ def match_resources(yaml_file):
 
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, version="release", api_key=None, resource_id=None):
+def launch_job(yaml_file, version="release", api_key=None, resource_id=None, prompt=True):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
@@ -50,7 +50,7 @@ def launch_job(yaml_file, version="release", api_key=None, resource_id=None):
     :param version: version of MLOps platform. It should be dev, test or release
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return launch.job(yaml_file, api_key, version, resource_id)
+    return launch.job(yaml_file, api_key, version, resource_id, prompt=prompt)
 
 
 # input: job id, page num, page size, need_all_logs
@@ -115,18 +115,10 @@ def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
 def model_create(name, config_file):
     model.create(name, config_file)
-
+    
 
 def model_delete(name):
     model.delete(name)
-
-
-def model_add_files(name, path):
-    model.add_files(name, path)
-
-
-def model_remove_files(name, file):
-    model.remove_files(name, file)
 
 
 def model_list(name):

@@ -1,12 +1,15 @@
-import argparse
+
 import os
+import time
 import uuid
 
 import requests
 
+from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash, get_file_hash
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.model_scheduler import device_client_constants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.scheduler_entry.launch_app_interface import FedMLLaunchAppDataInterface
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
@@ -35,9 +38,15 @@ class FedMLAppManager(Singleton):
                                client_package_file, server_package_file)
 
     def update_app(self, platform, application_name, app_config,
-                   user_api_key, client_package_file=None, server_package_file=None):
+                   user_api_key, client_package_file=None, server_package_file=None,
+                   workspace=None, model_name=None, model_version=None,
+                   model_url=None):
         if client_package_file is None and server_package_file is None:
             return False
+
+        # should_upload, workspace_hash, app_hash = self.should_upload_app_package(workspace)
+        # if not should_upload:
+        #     return True
 
         client_package_url = self.push_app_package_to_s3(application_name, client_package_file) \
             if client_package_file is not None else None
@@ -53,7 +62,54 @@ class FedMLAppManager(Singleton):
         if result is None:
             return False
 
+        # self.update_local_app_storage(
+        #     application_name, app_config, workspace_hash, app_hash,
+        #     client_package_url=client_package_url, server_package_url=server_package_url,
+        #     client_package_file=client_package_file, server_package_file=server_package_file,
+        #     workspace=workspace, model_name=model_name, model_version=model_version, model_url=model_url)
+
         return True
+
+    def should_upload_app_package(self, workspace):
+        workspace_hash = get_content_hash(workspace)
+        app_hash = get_file_hash(workspace)
+        app_obj = FedMLLaunchAppDataInterface.get_app_by_id(workspace_hash)
+        return (False if app_obj is not None and str(app_obj.app_hash) == str(app_hash) else False,
+                workspace_hash, app_hash)
+
+    def update_local_app_storage(self, application_name, app_config,
+                                 workspace_hash, app_hash,
+                                 client_package_url=None, server_package_url=None,
+                                 client_package_file=None, server_package_file=None,
+                                 workspace=None, model_name=None, model_version=None,
+                                 model_url=None):
+        client_diff_url = ""
+        client_diff_file = ""
+        server_diff_url = ""
+        server_diff_file = ""
+        app_obj = FedMLLaunchAppDataInterface.get_app_by_id(workspace_hash)
+        if app_obj is None:
+            app_obj = FedMLLaunchAppDataInterface(
+                workspace_hash, application_name, app_config, workspace, workspace_hash,
+                app_hash, client_package_url, client_package_file, server_package_url, server_package_file,
+                client_diff_url, client_diff_file, server_diff_url, server_diff_file,
+                model_name, model_version, model_url, str(time.time()))
+            FedMLLaunchAppDataInterface.insert_app_to_db(app_obj)
+        else:
+            app_obj.app_hash = app_hash
+            app_obj.client_package_url = client_package_file if client_package_url is not None else \
+                app_obj.client_package_url
+            app_obj.client_package_file = client_package_file if client_package_url is not None else \
+                app_obj.client_package_file
+            app_obj.server_package_url = server_package_url if server_package_url is not None else \
+                app_obj.server_package_url
+            app_obj.server_package_file = server_package_file if server_package_file is not None else \
+                app_obj.server_package_file
+            app_obj.workspace = workspace if workspace is not None else app_obj.workspace
+            app_obj.model_name = model_name if model_name is not None else app_obj.model_name
+            app_obj.model_version = model_version if model_version is not None else app_obj.model_version
+            app_obj.model_url = model_url if model_url is not None else app_obj.model_url
+            FedMLLaunchAppDataInterface.update_app_to_db(app_obj)
 
     def update_app_api(self, platform, application_name, app_config,
                        client_package_url, client_package_file, server_package_url, server_package_file,

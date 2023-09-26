@@ -91,3 +91,16 @@ def fedml_device_bind(
 )
 def fedml_device_unbind(client, server, docker, docker_rank):
     fedml.api.device_unbind(client, server, docker, docker_rank)
+
+
+@fedml_device.command("gpu-type", help="Show gpu resource type (e.g., NVIDIA A100, etc.)")
+@click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
+)
+def resource_type(version):
+    fedml.api.resource_type(version)

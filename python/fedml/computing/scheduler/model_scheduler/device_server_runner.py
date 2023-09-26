@@ -56,6 +56,7 @@ class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        self.local_api_process = None
         self.run_process_event = None
         self.run_process_event_map = dict()
         self.run_process_completed_event = None
@@ -189,6 +190,8 @@ class FedMLServerRunner:
         pass
 
     def run(self, process_event, completed_event):
+        print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
+
         if platform.system() != "Windows":
             os.setsid()
 
@@ -1527,12 +1530,15 @@ class FedMLServerRunner:
 
         # Start local API services
         python_program = get_python_program()
-        local_api_process = ServerConstants.exec_console_with_script(
-            "{} -m uvicorn fedml.computing.scheduler.model_scheduler.server_api:api --host 0.0.0.0 --port {} "
+        self.local_api_process = ServerConstants.exec_console_with_script(
+            "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_server_api:api --host 0.0.0.0 --port {} "
             "--log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
+        if self.local_api_process is not None and self.local_api_process.pid is not None:
+            print(f"Model master local API process id {self.local_api_process.pid}")
+
 
         self.recover_inference_and_monitor()
 
@@ -1558,8 +1564,10 @@ class FedMLServerRunner:
     def stop_agent(self):
         if self.run_process_event is not None:
             self.run_process_event.set()
-        self.mqtt_mgr.loop_stop()
-        self.mqtt_mgr.disconnect()
+
+        if self.mqtt_mgr is not None:
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
 
     def start_agent_mqtt_loop(self, should_exit_sys=True):
         # Start MQTT message loop

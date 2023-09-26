@@ -77,6 +77,9 @@ class TrainerDistAdapter:
         weights, local_sample_num = self.trainer.train(round_idx)
         return weights, local_sample_num
 
+    def test(self, round_idx):
+        self.trainer.test(round_idx)
+
     def update_model(self, model_params):
         self.trainer.update_model(model_params)
 

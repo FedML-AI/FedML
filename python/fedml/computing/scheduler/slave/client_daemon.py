@@ -25,6 +25,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.user = args.user
 
+    print(f"Client daemon process id {os.getpid()}")
+
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "client_login.py")
     while True:

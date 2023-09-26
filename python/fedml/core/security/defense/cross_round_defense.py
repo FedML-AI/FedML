@@ -16,35 +16,45 @@ class CrossRoundDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.potentially_poisoned_worker_list = []
         self.lazy_worker_list = None
-        # cosine similarity in [0, 2] 0 means 2 vectors are same
-        self.upperbound = 0.31  # cosine similarity > upperbound: attack may happen; need further defense
-        self.lowerbound = 0.0000001  # cosine similarity < lowerbound is defined as ``very limited difference''-> lazy worker
-        self.client_cache = None
+
+        # self.upperbound = 1  # cosine similarity > upperbound: ``very limited difference''-> lazy worker
+        self.lowerbound = config.cosine_similarity_bound  # cosine similarity < lowerbound attack may happen; need further defense
+        self.client_cache = dict()
         self.training_round = 1
         self.is_attack_existing = True  # for the first round, true
+        self.temp_client_features = None
+        self.global_model_feature = None
+        self.total_client_num = -1
 
     def defend_before_aggregation(
             self,
             raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
-        self.is_attack_existing = False
-        client_features = self._get_importance_feature(raw_client_grad_list)
-        if self.training_round == 1:
+        self.temp_client_features = self._get_importance_feature(raw_client_grad_list)
+        if self.training_round == 1:  # set attack exists by default for the first round and leave for second phase
             self.training_round += 1
-            self.client_cache = client_features
+            self.total_client_num = len(raw_client_grad_list)
+            # self.client_cache = self.temp_client_features
+            self.potentially_poisoned_worker_list = range(self.total_client_num)
             return raw_client_grad_list
+        self.is_attack_existing = False
+
         self.lazy_worker_list = []
         self.potentially_poisoned_worker_list = []
         # extra_auxiliary_info: global model
-        global_model_feature = self._get_importance_feature_of_a_model(
+        self.global_model_feature = self._get_importance_feature_of_a_model(
             extra_auxiliary_info
         )
+        if self.training_round == 2:
+            for i in range(self.total_client_num):
+                if i not in self.client_cache:
+                    self.client_cache[i] = self.global_model_feature
         client_wise_scores, global_wise_scores = self.compute_client_cosine_scores(
-            client_features, global_model_feature
+            client_features=self.temp_client_features, global_model_feature=self.global_model_feature
         )
-        print(f"client_wise_scores = {client_wise_scores}")
-        print(f"global_wise_scores = {global_wise_scores}")
+        # print(f"client_wise_scores = {client_wise_scores}")
+        # print(f"global_wise_scores = {global_wise_scores}")
 
         for i in range(len(client_wise_scores)):
             # if (
@@ -52,23 +62,27 @@ class CrossRoundDefense(BaseDefenseMethod):
             #         or global_wise_scores[i] < self.lowerbound
             # ):
             #     self.lazy_worker_list.append(i)  # will be directly kicked out later
-            # el
-            if (
-                    client_wise_scores[i] > self.upperbound
-                    or global_wise_scores[i] > self.upperbound
-            ):
+            if client_wise_scores[i] < self.lowerbound or global_wise_scores[i] < self.lowerbound:
                 self.is_attack_existing = True
                 self.potentially_poisoned_worker_list.append(i)
 
-        for i in range(len(client_features) - 1, -1, -1):
-            # if i in self.lazy_worker_list:
-            #     raw_client_grad_list.pop(i)
-            if i not in self.potentially_poisoned_worker_list:
-                self.client_cache[i] = client_features[i]
+        # for i in range(len(self.temp_client_features) - 1, -1, -1):
+        #     # if i in self.lazy_worker_list:
+        #     #     raw_client_grad_list.pop(i)
+        #     if i not in self.potentially_poisoned_worker_list:
+        #         self.client_cache[i] = self.temp_client_features[i]
         self.training_round += 1
-        print(f"self.potentially_poisoned_worker_list = {self.potentially_poisoned_worker_list}")
-        print(f"self.lazy_worker_list = {self.lazy_worker_list}")
+        print(
+            f"!!!!!!!!!!!!!!!!!!!!first phase: self.potentially_poisoned_worker_list = {self.potentially_poisoned_worker_list}")
         return raw_client_grad_list
+
+    def renew_cache(self, real_poisoned_client_ids):
+        for i in range(self.total_client_num):
+            if i not in real_poisoned_client_ids:
+                self.client_cache[i] = self.temp_client_features[i]
+            else:
+                if i not in self.client_cache and self.global_model_feature is not None:
+                    self.client_cache[i] = self.global_model_feature
 
     def get_potential_poisoned_clients(self):
         return self.potentially_poisoned_worker_list
@@ -78,10 +92,11 @@ class CrossRoundDefense(BaseDefenseMethod):
         global_wise_scores = []
         num_client = len(client_features)
         for i in range(0, num_client):
-            score = spatial.distance.cosine(client_features[i], self.client_cache[i])
-            client_wise_scores.append(score)
-            score = spatial.distance.cosine(client_features[i], global_model_feature)
-            global_wise_scores.append(score)
+            # spatial.distance.cosine ranges from 0 to 2; cosine_similarity below ranges from -1 to 1
+            cosine_similarity = 1 - spatial.distance.cosine(client_features[i], self.client_cache[i])
+            client_wise_scores.append(cosine_similarity)
+            cosine_similarity = 1 - spatial.distance.cosine(client_features[i], global_model_feature)
+            global_wise_scores.append(cosine_similarity)
         return client_wise_scores, global_wise_scores
 
     def _get_importance_feature(self, raw_client_grad_list):

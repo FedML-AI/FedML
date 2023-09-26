@@ -287,6 +287,7 @@ class ClientConstants(object):
         running_model_name = "model_endpoint_{}_model_{}_ver_-{}".format(end_point_name, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
+        running_model_name = running_model_name.replace('@', '-')
         return running_model_name
 
     @staticmethod

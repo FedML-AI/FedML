@@ -1,21 +1,18 @@
+
 import os
 import platform
 import shutil
-import time
-import uuid
 from os.path import expanduser
 
 import click
 from fedml.computing.scheduler.comm_utils import sys_utils
 
-import fedml
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
     check_fedml_is_latest_version
-from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
-from fedml.core.mlops import MLOpsUtils
 from prettytable import PrettyTable
 
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
@@ -80,7 +77,7 @@ class FedMLLaunchManager(object):
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
             FedMLAppManager.get_instance().set_config_version(self.config_version)
-            if not FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key):
+            if self.job_config.serving_model_name is None or self.job_config.serving_model_name == "":
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
                     click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace."
                                f"{self.job_config.workspace}")
@@ -210,21 +207,23 @@ class FedMLLaunchManager(object):
 
         # Create and update an application with the built packages.
         FedMLAppManager.get_instance().set_config_version(self.config_version)
-        app_updated_result = FedMLAppManager.get_instance().update_app(platform_type,
-                                                                       self.job_config.application_name, configs,
-                                                                       user_api_key,
-                                                                       client_package_file=build_client_package,
-                                                                       server_package_file=build_server_package)
+        app_updated_result = FedMLAppManager.get_instance().update_app(
+            platform_type, self.job_config.application_name, configs, user_api_key,
+            client_package_file=build_client_package, server_package_file=build_server_package,
+            workspace=self.job_config.workspace, model_name=self.job_config.serving_model_name,
+            model_version=self.job_config.serving_model_version,
+            model_url=self.job_config.serving_model_s3_url)
         if not app_updated_result:
             click.echo("Failed to upload the application package to MLOps.")
             exit(-1)
 
         # Start the job with the above application.
         FedMLJobManager.get_instance().set_config_version(self.config_version)
-        launch_result = FedMLJobManager.get_instance().start_job(platform_str, self.job_config.project_name,
-                                                                 self.job_config.application_name,
-                                                                 device_server, device_edges, user_api_key,
-                                                                 no_confirmation=no_confirmation)
+        launch_result = FedMLJobManager.get_instance().start_job(
+            platform_str, self.job_config.project_name, self.job_config.application_name,
+            device_server, device_edges, user_api_key, no_confirmation=no_confirmation,
+            model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
+            job_yaml=self.job_config.job_config_dict)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -554,8 +553,8 @@ class FedMLLaunchManager(object):
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
             else:
                 FedMLJobManager.get_instance().set_config_version(self.config_version)
-                FedMLJobManager.get_instance().stop_job(self.platform_type, result.job_id,
-                                                        FedMLLaunchManager.get_api_key())
+                FedMLJobManager.get_instance().stop_job(
+                    self.platform_type, FedMLLaunchManager.get_api_key(), result.job_id)
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
             click.echo("Please bind your credit card before launching the job.")
@@ -640,8 +639,8 @@ class FedMLLaunchManager(object):
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
-            FedMLJobManager.get_instance().stop_job(self.platform_type, resource_id,
-                                                    FedMLLaunchManager.get_api_key())
+            FedMLJobManager.get_instance().stop_job(
+                self.platform_type, FedMLLaunchManager.get_api_key(), resource_id)
             return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
@@ -783,8 +782,8 @@ class FedMLJobConfig(object):
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
-        self.executable_file_folder = self.job_config_dict.get("workspace", None) \
-            if not should_use_default_workspace else None
+        workspace = self.job_config_dict.get("workspace", None)
+        self.executable_file_folder = workspace if not should_use_default_workspace else None
         self.executable_commands = self.job_config_dict.get("job", "")
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
         self.executable_file = None
@@ -843,8 +842,6 @@ class FedMLJobConfig(object):
         computing_obj = self.job_config_dict.get("computing", {})
         self.minimum_num_gpus = computing_obj.get("minimum_num_gpus", 0)
         self.maximum_cost_per_hour = computing_obj.get("maximum_cost_per_hour", "$0")
-        self.application_name = FedMLJobConfig.generate_application_name(self.project_name)
-        self.model_app_name = self.application_name
         self.task_type = self.job_config_dict.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
@@ -856,9 +853,12 @@ class FedMLJobConfig(object):
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
         self.serving_endpoint_name = serving_args.get("endpoint_name", "")
 
+        self.application_name = FedMLJobConfig.generate_application_name(
+            self.executable_file_folder if workspace is None or workspace == "" else workspace)
+
+        self.model_app_name = self.serving_model_name \
+            if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
+
     @staticmethod
-    def generate_application_name(project_name):
-        return "{}-{}-{}-{}".format(Constants.LAUNCH_APP_NAME_PREFIX,
-                                    project_name if project_name is not None else Constants.LAUNCH_PROJECT_NAME_DEFAULT,
-                                    MLOpsUtils.get_ntp_time(),
-                                    str(uuid.uuid4()))
+    def generate_application_name(workspace):
+        return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)

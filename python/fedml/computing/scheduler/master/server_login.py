@@ -377,6 +377,8 @@ if __name__ == "__main__":
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
 
+    print(f"Server login process id {os.getpid()}")
+
     args = parser.parse_args()
     args.user = args.user
     if args.type == 'login':

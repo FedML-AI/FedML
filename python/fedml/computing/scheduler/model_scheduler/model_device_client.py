@@ -39,10 +39,12 @@ class FedMLModelDeviceClientRunner:
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))
-        self.edge_id = self.bind_device()
+        self.edge_id = self.bind_device(init_params=False)
         self.agent_process.start()
 
     def run_entry(self, process_event):
+        print(f"Model worker process id {os.getpid()}")
+
         self.agent_process_event = process_event
 
         while not self.agent_process_event.is_set():
@@ -100,7 +102,7 @@ class FedMLModelDeviceClientRunner:
         self.args.client_id_list = json.dumps(client_ids)
         setattr(self.args, "using_mlops", True)
 
-    def bind_device(self):
+    def bind_device(self, init_params=True):
         self.unique_device_id = self.get_binding_unique_device_id(self.current_device_id, self.os_name,
                                                                   self.is_from_docker)
 
@@ -135,9 +137,10 @@ class FedMLModelDeviceClientRunner:
         self.edge_id = edge_id
 
         # Init runtime logs
-        setattr(self.args, "client_id", edge_id)
-        self.init_logs_param(edge_id)
-        self.real_client_runner.args = self.args
+        if init_params:
+            setattr(self.args, "client_id", edge_id)
+            self.init_logs_param(edge_id)
+            self.real_client_runner.args = self.args
 
         return edge_id
 
