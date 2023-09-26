@@ -1,0 +1,49 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: ~/fedml_data
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+
+train_args:
+  federated_optimizer: "HierarchicalFL"
+  client_id_list: "[]"
+  client_num_in_total: 1000
+  client_num_per_round: 10
+  comm_round: 20
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+  group_method: "random"
+  group_num: 2
+  group_comm_round: 5
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 3
+  using_gpu: true
+  gpu_mapping_file: config/mnist_lr/gpu_mapping.yaml
+  gpu_mapping_key: mapping_config1_3
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+
+tracking_args:
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+  enable_wandb: true
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  run_name: mpi_hierarchical_fl_mnist_lr
+  wandb_only_server: true
