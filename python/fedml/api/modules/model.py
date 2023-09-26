@@ -139,7 +139,8 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
                        Do you want to use fedml® launch platform to find GPU Resources deploy your model?")
             answer = click.prompt("Please input your answer: (y/n)")
             if answer == "y" or answer == "Y":
-                api_key = click.prompt("Please input your api key", hide_input=True)
+                from .launch import FedMLLaunchManager
+                api_key = FedMLLaunchManager.get_api_key()
                 # Find the config yaml file in local model cards directory
                 yaml_file = FedMLModelCards.get_instance().find_yaml_for_launch(name)
                 if yaml_file == "":
@@ -147,7 +148,6 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
                     return False
                 else:
                     os.chdir(os.path.dirname(yaml_file))    # Set the execution path to the yaml folder
-                    from .launch import FedMLLaunchManager
                     version = "dev" #TODO: change to release
                     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
                     if error_code != 0:
