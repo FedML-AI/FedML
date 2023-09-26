@@ -352,8 +352,8 @@ class FedMLServerRunner:
                     logging.info("Bootstrap scripts are being executed...")
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
-                    ClientConstants.save_bootstrap_process(run_id, process.pid)
+                    process, error_list = ServerConstants.execute_commands_with_live_logs(
+                        shell_cmd_list, callback=self.callback_run_bootstrap)
 
                     ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
@@ -383,6 +383,9 @@ class FedMLServerRunner:
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
+
+    def callback_run_bootstrap(self, job_pid):
+        ServerConstants.save_bootstrap_process(self.run_id, job_pid)
 
     def run(self, process_event, completed_event, edge_status_queue=None):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
@@ -552,7 +555,6 @@ class FedMLServerRunner:
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
-        ServerConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
