@@ -774,8 +774,9 @@ class FedMLJobConfig(object):
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
+        workspace = self.job_config_dict.get("workspace", None)
         self.executable_file_folder = os.path.normpath(
-            os.path.join(self.base_dir, self.job_config_dict.get("workspace", None))) \
+            os.path.join(self.base_dir, workspace)) \
             if not should_use_default_workspace else None
         self.executable_commands = self.job_config_dict.get("job", "")
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
