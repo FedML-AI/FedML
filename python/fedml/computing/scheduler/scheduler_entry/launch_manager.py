@@ -673,7 +673,7 @@ class FedMLLaunchManager(object):
         api_key = FedMLLaunchManager.get_api_key()
 
         # Start the job
-        job_id = result.job_id,
+        job_id = result.job_id
         ret_job_id = job_id if result.inner_id is None else result.inner_id
         project_id = result.project_id
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
