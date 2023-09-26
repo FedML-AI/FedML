@@ -550,7 +550,7 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            
+
     def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})

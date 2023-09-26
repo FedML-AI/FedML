@@ -263,6 +263,12 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_apply_endpoint_url(config_version="release", local_server=None):
+        model_ops_url = "{}/api/v1/endpoint/applyEndpointId".format(
+            ClientConstants.get_model_ops_url(config_version, local_server))
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_upload_url(config_version="release", local_server=None):
         model_ops_url = "{}/api/v1/model/createFromCli".format(
             ClientConstants.get_model_ops_url(config_version, local_server))

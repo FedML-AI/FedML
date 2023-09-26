@@ -3,6 +3,8 @@ import time
 import uuid
 
 import requests
+
+from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.launch_job_interface import FedMLLaunchJobDataInterface
 
@@ -316,6 +318,13 @@ class FedMLJobManager(Singleton):
                       f"response.content: {response.content}")
 
         return None
+
+    def apply_endpoint_id(self, api_key, endpoint_name,
+                          model_id=None, model_name=None, model_version=None):
+        FedMLModelCards.get_instance().set_config_version(self.config_version)
+        return FedMLModelCards.get_instance().apply_endpoint_api(
+            api_key, endpoint_name, model_id=model_id,
+            model_name=model_name, model_version=model_version)
 
 
 class FedMLJobStartedModel(object):

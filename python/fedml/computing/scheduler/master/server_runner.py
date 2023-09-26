@@ -451,10 +451,12 @@ class FedMLServerRunner:
         task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
         if task_type == Constants.JOB_TASK_TYPE_SERVE:
             serving_args = run_params.get("serving_args", {})
+            model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
             model_version = serving_args.get("model_version", None)
             model_storage_url = serving_args.get("model_storage_url", None)
             endpoint_name = serving_args.get("endpoint_name", None)
+            endpoint_id = serving_args.get("endpoint_id", None)
             random = serving_args.get("random", "")
             random_out = sys_utils.random2(random, "FEDML@9999GREAT")
             random_list = random_out.split("FEDML@")
@@ -463,8 +465,9 @@ class FedMLServerRunner:
             FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
-                "", random_list[1], None, in_model_version=model_version,
-                endpoint_name=endpoint_name)
+                "", random_list[1], None,
+                in_model_id=model_id, in_model_version=model_version,
+                endpoint_name=endpoint_name, endpoint_id=endpoint_id)
 
     def run_impl(self, edge_status_queue):
         run_id = self.request_json["runId"]

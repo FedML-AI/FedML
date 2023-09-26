@@ -431,7 +431,7 @@ class FedMLModelCards(Singleton):
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
                      params, use_local_deployment=None, local_server=None,
-                     in_model_version=None, endpoint_name=None):
+                     in_model_version=None, in_model_id=None, endpoint_name=None, endpoint_id=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
@@ -439,12 +439,12 @@ class FedMLModelCards(Singleton):
             if model_query_result is None:
                 return False
             for model in model_query_result.model_list:
-                model_id = model.id
+                model_id = in_model_id if in_model_id is not None and in_model_id != "" else model.id
                 model_version = in_model_version if in_model_version is not None and in_model_version != "" \
                     else model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
                                                           devices, user_id, user_api_key, local_server,
-                                                          endpoint_name=endpoint_name)
+                                                          endpoint_name=endpoint_name, endpoint_id=endpoint_id)
                 if deployment_result is not None:
                     return True
         else:
@@ -567,7 +567,7 @@ class FedMLModelCards(Singleton):
         return ""
 
     def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
-                         user_id, user_api_key, local_server, endpoint_name=None):
+                         user_id, user_api_key, local_server, endpoint_name=None, endpoint_id=None):
         model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -581,8 +581,10 @@ class FedMLModelCards(Singleton):
             "modelVersion": model_version,
             "resourceType": device_type,
             "userId": str(user_id),
-            "apiKey": user_api_key
+            "apiKey": user_api_key,
         }
+        if endpoint_id is not None:
+            model_deployment_json["id"] = endpoint_id
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
         if cert_path is not None:
@@ -608,6 +610,55 @@ class FedMLModelCards(Singleton):
             model_deployment_result = resp_data
 
         return model_deployment_result
+
+    def apply_endpoint_api(self, user_api_key, endpoint_name,
+                           model_id=None, model_name=None, model_version=None,
+                           local_server=None):
+        endpoint_apply_result = None
+        model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version, local_server)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_apply_json = {
+            "apiKey": user_api_key,
+            "endpointName": endpoint_name,
+            "resourceType": "md.on_premise_device"
+        }
+        if model_id is not None:
+            endpoint_apply_json["modelId"] = model_id
+        if model_name is not None:
+            endpoint_apply_json["modelName"] = model_name
+        if model_version is not None:
+            endpoint_apply_json["modelVersion"] = model_version
+
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_apply_json
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_apply_json
+                )
+        else:
+            response = requests.post(model_ops_url, headers=endpoint_api_headers, json=endpoint_apply_json)
+        if response.status_code != 200:
+            print(f"Apply endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            endpoint_apply_result = resp_data["data"]
+            if endpoint_apply_result is None or endpoint_apply_result == "":
+                print(f"Apply endpoint with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+
+        return endpoint_apply_result
 
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id, params):

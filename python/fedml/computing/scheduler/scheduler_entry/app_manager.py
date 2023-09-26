@@ -283,10 +283,7 @@ class FedMLAppManager(Singleton):
     def check_model_exists(self, model_name, api_key):
         FedMLModelCards.get_instance().set_config_version(self.config_version)
         result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
-        if result is not None and len(result.model_list) > 0:
-            return True
-
-        return False
+        return result
 
     def update_model(self, model_name, workspace, api_key):
         FedMLModelCards.get_instance().set_config_version(self.config_version)
@@ -319,7 +316,8 @@ class FedMLAppManager(Singleton):
 
 
 class FedMLModelUploadResult(object):
-    def __init__(self, model_name, model_version="", model_storage_url="", endpoint_name=""):
+    def __init__(self, model_name, model_id="", model_version="", model_storage_url="", endpoint_name=""):
+        self.model_id = model_id
         self.model_name = model_name
         self.model_version = model_version
         self.model_storage_url = model_storage_url
