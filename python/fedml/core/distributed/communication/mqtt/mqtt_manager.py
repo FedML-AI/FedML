@@ -530,12 +530,26 @@ received_msg_count = 0
 
 
 def test_msg_callback(topic, payload):
+    """
+    Callback function to handle received MQTT messages for testing purposes.
+
+    Args:
+        topic (str): The MQTT topic on which the message was received.
+        payload (str): The payload of the received message.
+    """
     global received_msg_count
     received_msg_count += 1
     logging.info("Received the topic: {}, message: {}, count {}.".format(topic, payload, received_msg_count))
 
 
 def test_last_will_callback(topic, payload):
+    """
+    Callback function to handle last will messages received for testing purposes.
+
+    Args:
+        topic (str): The MQTT topic on which the last will message was received.
+        payload (str): The payload of the received last will message.
+    """
     logging.info("Received the topic: {}, message: {}.".format(topic, payload))
 
 
