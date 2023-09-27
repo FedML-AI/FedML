@@ -132,7 +132,7 @@ def fedml_model_pull(name, user, api_key, version, local_server):
 @fedml_model.command("list", help="List model in the local model repository")
 @click.help_option("--help", "-h")
 @click.option(
-    "--name", "-n", type=str, help="model name.",
+    "--name", "-n", type=str, default="*", help="[Optional] Show a specific model's information.",
 )
 def fedml_model_list(name):
     fedml.api.model_list(name)

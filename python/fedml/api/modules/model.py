@@ -46,13 +46,19 @@ def remove_files(name, file):
 
 def list_models(name):
     models = FedMLModelCards.get_instance().list_models(name)
-    if len(models) <= 0:
-        click.echo("Model list is empty.")
+    if name == "*":
+        if len(models) <= 0:
+            click.echo("Model list is empty.")
+        else:
+            click.echo("-------------------------")
+            click.echo("Model Name")
+            click.echo("-------------------------")
+            for model_item in models:
+                click.echo(model_item)
+            click.echo("-------------------------")
     else:
-        for model_item in models:
-            click.echo(model_item)
-        click.echo("List model {} successfully.".format(name))
-
+        if len(models) <= 0:
+            click.echo("Cannot locate model {}.".format(name))
 
 def list_remote(name, user, api_key, version, local_server):
     if user is None or api_key is None:
@@ -141,8 +147,8 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
             if answer == "y" or answer == "Y":
                 from .launch import FedMLLaunchManager
                 api_key = FedMLLaunchManager.get_api_key()
-                # Find the config yaml file in local model cards directory
-                yaml_file = FedMLModelCards.get_instance().find_yaml_for_launch(name)
+                # Find the config yaml file in local model cards directory ~/fedml-model-client/fedml/models
+                yaml_file = FedMLModelCards.get_instance().prepare_yaml_for_launch(name)
                 if yaml_file == "":
                     click.echo("Cannot find the config yaml file for model {}.".format(name))
                     return False

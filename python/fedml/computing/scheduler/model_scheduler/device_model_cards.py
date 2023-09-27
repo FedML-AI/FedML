@@ -207,6 +207,24 @@ class FedMLModelCards(Singleton):
             else:
                 for model in models:
                     if model == model_name:
+                        model_dir = os.path.join(model_home_dir, model)
+                        print("------------------------")
+                        print("Model Name: {}".format(model))
+                        print("Local Model Directory: {}".format(model_dir))
+                        try:
+                            print("Model Files:")
+                            pre_level = 1
+                            for root, dirs, files in os.walk(model_dir):
+                                level = root.replace(model_dir, '').count(os.sep)
+                                indent = ' ' * 4 * (level + pre_level)
+                                print('{}{}/'.format(indent, os.path.basename(root)))
+                                subindent = ' ' * 4 * (level + pre_level + 1)
+                                for f in files:
+                                    print('{}{}'.format(subindent, f))
+                            print("------------------------")
+                        except Exception as e:
+                            print("------------------------")
+                            print("Failed to list the model files. {}".format(e))
                         return [model]
         else:
             return self.list_model_api(model_name, user_id, user_api_key, local_server)
@@ -364,7 +382,7 @@ class FedMLModelCards(Singleton):
 
         return result
 
-    def find_yaml_for_launch(self, model_name) -> str:
+    def prepare_yaml_for_launch(self, model_name) -> str:
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             print("Model {} doesn't exist. Please Create it First".format(model_name))
@@ -404,6 +422,7 @@ class FedMLModelCards(Singleton):
         os.chdir(model_dir)
         if bootstrap_path is not None:
             dir_name, file_name = os.path.split(bootstrap_path)
+            print("Bootstrap script {} is being executed.".format(bootstrap_path))
             if ClientConstants.run_bootstrap(dir_name, file_name):
                 print("Bootstrap script {} is executed successfully.".format(bootstrap_path))
             else:
