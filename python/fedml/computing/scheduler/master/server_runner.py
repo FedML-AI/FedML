@@ -352,8 +352,8 @@ class FedMLServerRunner:
                     logging.info("Bootstrap scripts are being executed...")
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
-                    ClientConstants.save_bootstrap_process(run_id, process.pid)
+                    process, error_list = ServerConstants.execute_commands_with_live_logs(
+                        shell_cmd_list, callback=self.callback_run_bootstrap)
 
                     ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
@@ -383,6 +383,9 @@ class FedMLServerRunner:
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
+
+    def callback_run_bootstrap(self, job_pid):
+        ServerConstants.save_bootstrap_process(self.run_id, job_pid)
 
     def run(self, process_event, completed_event, edge_status_queue=None):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
@@ -448,10 +451,12 @@ class FedMLServerRunner:
         task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
         if task_type == Constants.JOB_TASK_TYPE_SERVE:
             serving_args = run_params.get("serving_args", {})
+            model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
             model_version = serving_args.get("model_version", None)
             model_storage_url = serving_args.get("model_storage_url", None)
             endpoint_name = serving_args.get("endpoint_name", None)
+            endpoint_id = serving_args.get("endpoint_id", None)
             random = serving_args.get("random", "")
             random_out = sys_utils.random2(random, "FEDML@9999GREAT")
             random_list = random_out.split("FEDML@")
@@ -460,8 +465,9 @@ class FedMLServerRunner:
             FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
-                "", random_list[1], None, in_model_version=model_version,
-                endpoint_name=endpoint_name)
+                "", random_list[1], None,
+                in_model_id=model_id, in_model_version=model_version,
+                endpoint_name=endpoint_name, endpoint_id=endpoint_id)
 
     def run_impl(self, edge_status_queue):
         run_id = self.request_json["runId"]
@@ -552,7 +558,6 @@ class FedMLServerRunner:
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
-        ServerConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
