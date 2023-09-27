@@ -209,7 +209,7 @@ class FedMLClientRunner:
         return unzip_package_path
 
     def run(self, process_event, completed_event):
-        print(f"Model worker runner process id {os.getpid()}, run id {self.run_id}")
+        # print(f"Model worker runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -729,7 +729,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
-        logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
+        # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
         run_id = request_json["run_id"]
@@ -1001,12 +1001,12 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
-        )
+        # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        # print(
+        #     "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+        #     + str(self.unique_device_id)
+        #     + "\n"
+        # )
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
@@ -1042,8 +1042,8 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Model worker local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Model worker local API process id {self.local_api_process.pid}")
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 

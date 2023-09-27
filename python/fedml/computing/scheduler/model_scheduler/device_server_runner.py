@@ -190,7 +190,7 @@ class FedMLServerRunner:
         pass
 
     def run(self, process_event, completed_event):
-        print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
+        # print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -1007,7 +1007,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = True
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
         if self.client_mqtt_mgr is not None:
@@ -1454,12 +1454,12 @@ class FedMLServerRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
-        )
+        # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        # print(
+        #     "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+        #     + str(self.unique_device_id)
+        #     + "\n"
+        # )
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
@@ -1536,9 +1536,8 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Model master local API process id {self.local_api_process.pid}")
-
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Model master local API process id {self.local_api_process.pid}")
 
         self.recover_inference_and_monitor()
 
