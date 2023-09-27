@@ -7,7 +7,6 @@ import click
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
     check_fedml_is_latest_version
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
@@ -685,81 +684,6 @@ class FedMLLaunchManager(object):
 
         return result.job_id, project_id, 0, ""
 
-    def list_jobs(self, job_name, job_id):
-        job_status = None
-        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, None, job_name,
-                                                               get_api_key(), job_id=job_id)
-        if job_list_obj is not None and len(job_list_obj.job_list) > 0:
-            click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status',
-                                          'Created', 'Spend Time(hour)', 'Cost'])
-            jobs_count = 0
-            for job in job_list_obj.job_list:
-                jobs_count += 1
-                job_status = job.status
-                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                        job.compute_duration, job.cost])
-
-            print(job_list_table)
-        else:
-            click.echo("Not found any jobs")
-
-        return job_status
-
-    # input: job id, page num, page size
-    # return job status, total_log_nums, total_log_pages, log list
-    def api_launch_log(self, job_id, page_num, page_size, need_all_logs=False):
-        # Get the API key
-        api_key = get_api_key()
-
-        # Show job info
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
-        job_status = self.list_jobs(job_name=None, job_id=job_id)
-        if job_status is None:
-            return None, 0, 0, None
-
-        # Get job logs
-        if not need_all_logs:
-            job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_num, page_size, api_key)
-            if job_logs is None:
-                return job_status, 0, 0, None
-            return job_status, job_logs.total_num, job_logs.total_pages, job_logs.log_lines
-
-        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
-        if job_logs is None:
-            return job_status, 0, 0, None
-
-        # Show job log summary info
-        log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
-        log_head_table.add_row([job_id, job_logs.total_num, job_logs.log_full_url])
-        click.echo("\nLogs summary info is as follows.")
-        print(log_head_table)
-
-        # Show job logs URL for each device
-        if len(job_logs.log_devices) > 0:
-            log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
-            for log_device in job_logs.log_devices:
-                log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
-            click.echo("\nLogs URL for each device is as follows.")
-            print(log_device_table)
-
-        # Show job log lines
-        log_line_list = list()
-        if len(job_logs.log_lines):
-            click.echo("\nAll logs is as follows.")
-            for log_line in job_logs.log_lines:
-                log_line_list.append(log_line)
-                click.echo(str(log_line).rstrip('\n'))
-
-            for page_count in range(2, job_logs.total_pages + 1):
-                job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_count,
-                                                                       Constants.JOB_LOG_PAGE_SIZE, api_key)
-                for log_line in job_logs.log_lines:
-                    log_line_list.append(log_line)
-                    click.echo(str(log_line).rstrip('\n'))
-
-        return job_status, job_logs.total_num, job_logs.total_pages, log_line_list
-
 
 '''
 For the Job yaml file, please review the call_gpu.yaml :
@@ -774,6 +698,7 @@ class FedMLJobConfig(object):
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
+        workspace = self.job_config_dict.get("workspace", None)
         self.executable_file_folder = os.path.normpath(
             os.path.join(self.base_dir, self.job_config_dict.get("workspace", None))) \
             if not should_use_default_workspace else None

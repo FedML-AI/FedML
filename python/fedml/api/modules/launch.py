@@ -9,7 +9,5 @@ def job(yaml_file, api_key, version, resource_id, cluster="", prompt=True):
     return FedMLLaunchManager.get_instance().api_launch_job(yaml_file, cluster=cluster, resource_id=resource_id, prompt=prompt)
 
 
-def log(job_id, version, api_key, page_num, page_size, need_all_logs):
-    authenticate(api_key, version)
-    return FedMLLaunchManager.get_instance().api_launch_log(job_id, page_num, page_size, need_all_logs)
+
 

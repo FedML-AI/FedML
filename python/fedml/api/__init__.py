@@ -54,26 +54,37 @@ def launch_job(yaml_file, cluster="", version="release", api_key=None, resource_
     return launch.job(yaml_file, api_key, version, resource_id, cluster, prompt=prompt)
 
 
-# input: job id, page num, page size, need_all_logs
-# return job status, total_log_nums, total_log_pages, log list
-def launch_log(job_id, page_num, page_size, version="release", api_key=None, need_all_logs=False):
-    """
-    fetch logs
-    :param job_id: launched job id
-    :param page_num: request page num for logs
-    :param page_size: request page size for logs
-    :param need_all_logs: boolean value representing if all logs are needed
-    :returns: str: job status, int: total log num, int: total log pages, list: log list
-    """
-    return launch.log(job_id, version, api_key, page_num, page_size, need_all_logs)
-
-
-def stop_job(job_id, version, platform="falcon", api_key=None, show_hint_texts=True):
+def job_stop(job_id, version, platform="falcon", api_key=None, show_hint_texts=True):
     return job.stop(job_id, version, platform, api_key, show_hint_texts)
 
 
-def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
-    return job.list_jobs(version, job_name, job_id, platform, api_key)
+def job_list(version, job_name, job_id=None, platform="falcon", api_key=None):
+    return job.list_job(version, job_name, job_id, platform, api_key)
+
+
+def job_status(version, job_name, job_id, platform, api_key):
+    return job.status(version, job_name, job_id, platform, api_key)
+
+
+def job_logs(job_id, page_num, page_size, need_all_logs=False, version="release", platform="falcon", api_key=None):
+    """
+    fetch logs
+
+    :param str job_id: launched job id
+    :param int page_num: request page num for logs
+    :param int page_size: request page size for logs
+    :param bool need_all_logs: boolean value representing if all logs are needed. Default is False
+    :param str version: version of MLOps platform. It should be dev, test or release. Default is release
+    :param str platform: The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon,
+                         launch). Default is falcon
+    :param str api_key: API Key from MLOPs. Not needed if already configured once
+
+    :returns: str: job_status, int: total_log_lines, int: total_log_pages, List[str]: log_list, FedMLJobLogModelList:
+    logs
+
+    :rtype: Tuple[str, int, int, List[str], FedMLJobLogModelList]
+    """
+    return job.logs(job_id, page_num, page_size, need_all_logs, version, platform, api_key)
 
 
 def list_clusters(version, api_key=None, cluster_names=()) -> FedMLClusterModelList:
@@ -128,7 +139,7 @@ def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
 def model_create(name, config_file):
     model.create(name, config_file)
-    
+
 
 def model_delete(name):
     model.delete(name)

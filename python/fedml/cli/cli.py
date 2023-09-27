@@ -2,7 +2,7 @@ import collections
 import click
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, cluster
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, job, model, device, cluster
 from fedml.cli.modules.utils import OrderedGroup
 from fedml.computing.scheduler.env.collect_env import collect_env
 
@@ -27,7 +27,7 @@ cli.add_command(logout.fedml_logout)
 cli.add_command(launch.fedml_launch)
 
 # Add job subcommand module
-cli.add_command(jobs.fedml_jobs)
+cli.add_command(job.fedml_jobs)
 
 
 # Add device subcommand module
