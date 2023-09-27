@@ -300,7 +300,7 @@ class FedMLClientRunner:
 
         logging.info("model deployment request: {}".format(self.request_json))
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
         # Initiate an FedMLInferenceClient object
         # client_runner = FedMLClientRunner(
@@ -617,7 +617,7 @@ class FedMLClientRunner:
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -1008,7 +1008,7 @@ class FedMLClientRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
