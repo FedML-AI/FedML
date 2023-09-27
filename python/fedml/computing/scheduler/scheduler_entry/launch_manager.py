@@ -679,7 +679,7 @@ class FedMLLaunchManager(object):
         # Show querying infos for getting job logs
         click.echo("")
         click.echo(f"For querying the realtime status of your job, please run the following command.")
-        click.echo(f"fedml launch log {result.job_id}" +
+        click.echo(f"fedml job logs -jid {result.job_id}" +
                    "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
 
         return result.job_id, project_id, 0, ""

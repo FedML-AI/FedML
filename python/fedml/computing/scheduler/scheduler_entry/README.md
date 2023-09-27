@@ -102,7 +102,7 @@ You can track your job running details at this URL:
 https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&jobId=1696947481910317056
 
 For querying the realtime status of your job, please run the following command.
-fedml launch log 1696947481910317056
+fedml job logs -jid 1696947481910317056
 ```
 
 ## Login as the GPU supplier
