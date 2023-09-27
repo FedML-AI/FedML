@@ -28,7 +28,8 @@ class FedMLJobManager(Singleton):
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
                   user_api_key, no_confirmation=False, job_id=None,
-                  model_name=None, model_endpoint=None, job_yaml=None):
+                  model_name=None, model_endpoint=None, job_yaml=None,
+                  job_type=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url(self.config_version)
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -55,6 +56,9 @@ class FedMLJobManager(Singleton):
             job_start_json["projectName"] = project_name
         else:
             job_start_json["projectName"] = ""
+
+        if job_type is not None:
+            job_start_json["jobType"] = job_type
 
         if platform == "octopus":
             if project_name is not None and len(str(project_name).strip(' ')) > 0:

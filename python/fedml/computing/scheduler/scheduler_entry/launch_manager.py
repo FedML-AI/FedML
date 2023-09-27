@@ -1,4 +1,3 @@
-
 import os
 import platform
 import shutil
@@ -73,7 +72,8 @@ class FedMLLaunchManager(object):
 
         # Create and update model card with the job yaml file if the task type is serve.
         model_update_result = None
-        if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
+        if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+                self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
             if self.job_config.serving_model_name is not None and self.job_config.serving_model_name != "":
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
@@ -112,7 +112,7 @@ class FedMLLaunchManager(object):
             # Apply model endpoint id and act as job id
             self.job_config.serving_endpoint_id = FedMLJobManager.get_instance().apply_endpoint_id(
                 user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
-                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version,)
+                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version, )
             if self.job_config.serving_endpoint_id is None:
                 click.echo("Failed to apply endpoint for your model.")
                 exit(-1)
@@ -246,10 +246,11 @@ class FedMLLaunchManager(object):
             platform_str, self.job_config.project_name, self.job_config.application_name,
             device_server, device_edges, user_api_key, no_confirmation=no_confirmation,
             model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
-            job_yaml=self.job_config.job_config_dict)
+            job_yaml=self.job_config.job_config_dict, job_type=self.job_config.task_type)
         if launch_result is not None:
             launch_result.inner_id = self.job_config.serving_endpoint_id \
-                    if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
+                if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+                   self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
         # print(f"launch_result = {launch_result}")
@@ -257,11 +258,11 @@ class FedMLLaunchManager(object):
 
     def start_job(self, platform_type, project_name, application_name,
                   device_server, device_edges,
-                  user_api_key, no_confirmation=True, job_id=None):
-        launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
-                                                                 application_name,
-                                                                 device_server, device_edges, user_api_key,
-                                                                 no_confirmation=no_confirmation, job_id=job_id)
+                  user_api_key, no_confirmation=True,
+                  job_id=None, job_type=None):
+        launch_result = FedMLJobManager.get_instance().start_job(
+            platform_type, project_name, application_name, device_server, device_edges, user_api_key,
+            no_confirmation=no_confirmation, job_id=job_id, job_type=job_type)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -666,7 +667,8 @@ class FedMLLaunchManager(object):
             FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(
                 self.platform_type, FedMLLaunchManager.get_api_key(), resource_id)
-            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
+            return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
+                ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
         # Get the API key
@@ -676,10 +678,9 @@ class FedMLLaunchManager(object):
         job_id = result.job_id
         ret_job_id = job_id if result.inner_id is None else result.inner_id
         project_id = result.project_id
-        result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
-                                                             result.application_name,
-                                                             self.device_server, self.device_edges, api_key,
-                                                             no_confirmation=True, job_id=result.job_id)
+        result = FedMLLaunchManager.get_instance().start_job(
+            self.platform_type, result.project_name, result.application_name, self.device_server, self.device_edges,
+            api_key, no_confirmation=True, job_id=result.job_id, job_type=self.job_config.task_type)
         if result is None:
             return job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
@@ -868,7 +869,9 @@ class FedMLJobConfig(object):
         computing_obj = self.job_config_dict.get("computing", {})
         self.minimum_num_gpus = computing_obj.get("minimum_num_gpus", 0)
         self.maximum_cost_per_hour = computing_obj.get("maximum_cost_per_hour", "$0")
-        self.task_type = self.job_config_dict.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
+        self.task_type = self.job_config_dict.get("task_type", None)
+        if self.task_type is None:
+            self.task_type = self.job_config_dict.get("job_type", Constants.JOB_TASK_TYPE_TRAIN)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
         self.resource_type = computing_obj.get("resource_type", "")
