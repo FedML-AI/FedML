@@ -23,7 +23,7 @@ class HFLClient(Client):
         self.model_trainer = model_trainer
         self.criterion = nn.CrossEntropyLoss().to(device)
 
-    def train(self, global_round_idx, group_round_idx, w):
+    def train(self, w):
         self.model.load_state_dict(w)
         self.model.to(self.device)
 
@@ -37,7 +37,6 @@ class HFLClient(Client):
                 amsgrad=True,
             )
 
-        w_list = []
         for epoch in range(self.args.epochs):
             for x, labels in self.local_training_data:
                 x, labels = x.to(self.device), labels.to(self.device)
@@ -46,10 +45,5 @@ class HFLClient(Client):
                 loss = self.criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
-        client_round = (
-            global_round_idx * self.args.group_comm_round
-            + group_round_idx
-        )
-        # if client_round % self.args.frequency_of_the_test == 0:
-        w_list.append((client_round, copy.deepcopy(self.model.cpu().state_dict())))
-        return w_list
+
+        return copy.deepcopy(self.model.cpu().state_dict())

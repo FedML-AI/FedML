@@ -16,6 +16,7 @@ class HierFedAVGCloudManager(FedMLCommManager):
         rank=0,
         size=0,
         backend="MPI",
+        topology_manager=None
         # is_preprocessed=False,
         # preprocessed_client_lists=None,
     ):
@@ -26,6 +27,19 @@ class HierFedAVGCloudManager(FedMLCommManager):
         self.group_to_client_indexes = group_to_client_indexes
         self.round_num = args.comm_round
         self.args.round_idx = 0
+        self.topology_manager = topology_manager
+
+        total_clients = len(self.group_indexes)
+        self.group_to_client_num_per_round = [
+            args.client_num_per_round * len(self.group_to_client_indexes[i]) // total_clients
+            for i in range(args.group_num)
+        ]
+
+        remain_client_num_list_per_round = args.client_num_per_round - sum(self.group_to_client_num_per_round)
+        while remain_client_num_list_per_round > 0:
+            self.group_to_client_num_per_round[remain_client_num_list_per_round-1] += 1
+            remain_client_num_list_per_round -= 1
+
         # self.is_preprocessed = is_preprocessed
         # self.preprocessed_client_lists = preprocessed_client_lists
 
@@ -36,18 +50,18 @@ class HierFedAVGCloudManager(FedMLCommManager):
         # broadcast to edge servers
         global_model_params = self.aggregator.get_global_model_params()
 
-        sampled_client_indexes = self.aggregator.client_sampling(
-            self.args.round_idx,
-            self.args.client_num_in_total,
-            self.args.client_num_per_round,
-        )
-
         sampled_group_to_client_indexes = {}
-        for client_idx in sampled_client_indexes:
-            group_idx = self.group_indexes[client_idx]
-            if not group_idx in sampled_group_to_client_indexes:
-                sampled_group_to_client_indexes[group_idx] = []
-            sampled_group_to_client_indexes[group_idx].append(client_idx)
+        for group_idx, client_num_per_round in enumerate(self.group_to_client_num_per_round):
+            client_num_in_total = len(self.group_to_client_indexes[group_idx])
+            sampled_client_indexes = self.aggregator.client_sampling(
+                self.args.round_idx,
+                client_num_in_total,
+                client_num_per_round,
+            )
+
+            sampled_group_to_client_indexes[group_idx] = [self.group_to_client_indexes[group_idx][index]
+                                                          for index in sampled_client_indexes]
+
         logging.info(
             "client_indexes of each group = {}".format(sampled_group_to_client_indexes)
         )
@@ -70,16 +84,20 @@ class HierFedAVGCloudManager(FedMLCommManager):
     def handle_message_receive_model_from_edge(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params_list = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_LIST)
-        edge_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+        sample_num_list = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
         self.aggregator.add_local_trained_result(
-            sender_id - 1, model_params_list, edge_sample_number
+            sender_id - 1, model_params_list, sample_num_list
         )
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
+            # If topology_manage is None, it is simple average. Otherwise, it is mixing between neighbours.
+            if self.topology_manager is None:
+                global_model_params = self.aggregator.aggregate()
+            else:
+                global_model_params_list = self.aggregator.mix(self.topology_manager)
 
-            global_model_params = self.aggregator.aggregate()
             # start the next round
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
@@ -87,27 +105,32 @@ class HierFedAVGCloudManager(FedMLCommManager):
                 self.finish()
                 return
 
-            sampled_client_indexes = self.aggregator.client_sampling(
-                self.args.round_idx,
-                self.args.client_num_in_total,
-                self.args.client_num_per_round,
-            )
-
             sampled_group_to_client_indexes = {}
-            for client_idx in sampled_client_indexes:
-                group_idx = self.group_indexes[client_idx]
-                if not group_idx in sampled_group_to_client_indexes:
-                    sampled_group_to_client_indexes[group_idx] = []
-                sampled_group_to_client_indexes[group_idx].append(client_idx)
+            for group_idx, client_num_per_round in enumerate(self.group_to_client_num_per_round):
+                client_num_in_total = len(self.group_to_client_indexes[group_idx])
+                sampled_client_indexes = self.aggregator.client_sampling(
+                    self.args.round_idx,
+                    client_num_in_total,
+                    client_num_per_round,
+                )
+
+                sampled_group_to_client_indexes[group_idx] = [self.group_to_client_indexes[group_idx][index]
+                                                              for index in sampled_client_indexes]
             logging.info(
                 "client_indexes of each group = {}".format(sampled_group_to_client_indexes)
             )
 
             for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_edge(
-                    receiver_id, global_model_params,
-                    sampled_group_to_client_indexes[receiver_id-1], receiver_id-1
-                )
+                if self.topology_manager is None:
+                    self.send_message_sync_model_to_edge(
+                        receiver_id, global_model_params,
+                        sampled_group_to_client_indexes[receiver_id-1], receiver_id-1
+                    )
+                else:
+                    self.send_message_sync_model_to_edge(
+                        receiver_id, global_model_params_list[receiver_id - 1],
+                        sampled_group_to_client_indexes[receiver_id - 1], receiver_id - 1
+                    )
 
     def send_message_init_config(self, receive_id, global_model_params, total_client_indexes, sampled_client_indexed, edge_index):
         message = Message(

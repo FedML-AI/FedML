@@ -41,10 +41,9 @@ class HierFedAVGEdgeManager(FedMLCommManager):
 
         self.group.setup_clients(total_client_indexes)
         self.args.round_idx = 0
-        w_group_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
-        edge_sample_num = self.group.get_sample_number(sampled_client_indexes)
+        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
 
-        self.send_model_to_cloud(0, w_group_list, edge_sample_num)
+        self.send_model_to_cloud(0, w_group_list, sample_num_list)
 
     def handle_message_receive_model_from_cloud(self, msg_params):
         logging.info("handle_message_receive_model_from_cloud.")
@@ -53,9 +52,8 @@ class HierFedAVGEdgeManager(FedMLCommManager):
         edge_index = msg_params.get(MyMessage.MSG_ARG_KEY_EDGE_INDEX)
 
         self.args.round_idx += 1
-        w_group_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
-        edge_sample_num = self.group.get_sample_number(sampled_client_indexes)
-        self.send_model_to_cloud(0, w_group_list, edge_sample_num)
+        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
+        self.send_model_to_cloud(0, w_group_list, sample_num_list)
 
         if self.args.round_idx == self.num_rounds:
             post_complete_message_to_sweep_process(self.args)

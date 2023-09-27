@@ -47,27 +47,28 @@ class HierGroup(FedAvgAPI):
             self.group_sample_number += self.train_data_local_num_dict[client_idx]
         return self.group_sample_number
 
-    def train(self, global_round_idx, w, sampled_client_indexes):
+    def train(self, round_idx, w, sampled_client_indexes):
         sampled_client_list = [self.client_dict[client_idx] for client_idx in sampled_client_indexes]
         w_group = w
         w_group_list = []
+        sample_num_list = []
         for group_round_idx in range(self.args.group_comm_round):
             logging.info("Group ID : {} / Group Communication Round : {}".format(self.idx, group_round_idx))
-            w_locals_dict = {}
+            w_locals = []
 
+            global_round_idx = (
+                    round_idx * self.args.group_comm_round
+                    + group_round_idx
+            )
             # train each client
             for client in sampled_client_list:
-                w_local_list = client.train(global_round_idx, group_round_idx, w_group)
-                for client_round, w in w_local_list:
-                    if not client_round in w_locals_dict:
-                        w_locals_dict[client_round] = []
-                    w_locals_dict[client_round].append((client.get_sample_number(), w))
+                w_local = client.train(w_group)
+                w_locals.append((client.get_sample_number(), w_local))
 
             # aggregate local weights
-            for client_round in sorted(w_locals_dict.keys()):
-                w_locals = w_locals_dict[client_round]
-                w_group_list.append((client_round, self._aggregate(w_locals)))
+            w_group_list.append((global_round_idx, self._aggregate(w_locals)))
+            sample_num_list.append(self.get_sample_number(sampled_client_indexes))
 
             # update the group weight
             w_group = w_group_list[-1][1]
-        return w_group_list
+        return w_group_list, sample_num_list

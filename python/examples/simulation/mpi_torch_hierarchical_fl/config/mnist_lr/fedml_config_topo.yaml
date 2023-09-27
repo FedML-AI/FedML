@@ -25,6 +25,8 @@ train_args:
   group_method: "random"
   group_num: 4
   group_comm_round: 5
+  topo_name: "complete"
+  topo_edge_probability: 0.5
 
 validation_args:
   frequency_of_the_test: 5

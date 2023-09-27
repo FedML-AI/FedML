@@ -2,15 +2,18 @@ from .HierFedAvgCloudAggregator import HierFedAVGCloudAggregator
 from .HierFedAvgCloudManager import HierFedAVGCloudManager
 from .HierFedAvgEdgeManager import HierFedAVGEdgeManager
 from .HierGroup import HierGroup
+from .utils import analyze_clients_type, hetero_partition_groups, visualize_group_detail
 from ....core import ClientTrainer, ServerAggregator
 from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
+from ....core.distributed.topology.symmetric_topology_manager import SymmetricTopologyManager
+
 
 import numpy as np
-
+import wandb
 
 def FedML_HierFedAvg_distributed(
     args,
@@ -52,7 +55,8 @@ def FedML_HierFedAvg_distributed(
             train_data_local_dict,
             test_data_local_dict,
             train_data_local_num_dict,
-            server_aggregator
+            server_aggregator,
+            class_num
         )
     else:
         init_edge_server_clients(
@@ -84,14 +88,22 @@ def init_cloud_server(
     train_data_local_dict,
     test_data_local_dict,
     train_data_local_num_dict,
-    server_aggregator
+    server_aggregator,
+    class_num
 ):
     if server_aggregator is None:
         server_aggregator = create_server_aggregator(model, args)
     server_aggregator.set_id(-1)
 
-    # aggregator
     worker_num = size - 1
+
+    # set up topology
+    topology_manager = None
+    if hasattr(args, "topo_name"):
+        topology_manager = SymmetricTopologyManager(worker_num, args)
+        topology_manager.generate_custom_topology(args)
+
+    # aggregator
     aggregator = HierFedAVGCloudAggregator(
         train_data_global,
         test_data_global,
@@ -102,13 +114,20 @@ def init_cloud_server(
         worker_num,
         device,
         args,
-        server_aggregator,
+        server_aggregator
     )
 
     # start the distributed training
     backend = args.backend
-    group_indexes, group_to_client_indexes = setup_clients(args)
-    server_manager = HierFedAVGCloudManager(args, aggregator, group_indexes, group_to_client_indexes, comm, rank, size, backend)
+    group_indexes, group_to_client_indexes = setup_clients(args, train_data_local_dict, class_num)
+
+    # visualize group detail
+    if args.enable_wandb:
+        visualize_group_detail(group_to_client_indexes, train_data_local_dict, train_data_local_num_dict, class_num)
+
+
+    server_manager = HierFedAVGCloudManager(args, aggregator, group_indexes, group_to_client_indexes,
+                                            comm, rank, size, backend, topology_manager)
     server_manager.send_init_msg()
     server_manager.run()
 
@@ -151,8 +170,11 @@ def init_edge_server_clients(
 
 
 def setup_clients(
-    args
+    args,
+    train_data_local_dict,
+    class_num
     ):
+
     if args.group_method == "random":
         group_indexes = np.random.randint(
             0, args.group_num, args.client_num_in_total
@@ -162,7 +184,10 @@ def setup_clients(
             if not group_idx in group_to_client_indexes:
                 group_to_client_indexes[group_idx] = []
             group_to_client_indexes[group_idx].append(client_idx)
-    else:
-        raise Exception(args.group_method)
+    elif args.group_method == "hetero":
+        clients_type_list = analyze_clients_type(train_data_local_dict, class_num, num_type=args.group_num)
+        group_indexes, group_to_client_indexes = hetero_partition_groups(clients_type_list,
+                                                                          args.group_num,
+                                                                          alpha=args.group_alpha)
 
     return group_indexes, group_to_client_indexes
