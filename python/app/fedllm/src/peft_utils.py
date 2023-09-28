@@ -1,5 +1,5 @@
 from peft import PeftModel, PeftType, PromptLearningConfig
-from peft.import_utils import is_bnb_available, is_bnb_4bit_available
+from .integrations import is_bnb_available, is_bnb_4bit_available
 from torch import nn
 
 from .utils import load_state_dict
