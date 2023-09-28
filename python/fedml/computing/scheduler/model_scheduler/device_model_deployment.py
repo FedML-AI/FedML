@@ -181,11 +181,21 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
-                bootstrap_src_dir = config.get('bootstrap', "")
+
+                # Get the bootstrap commands inside the yaml file
+                bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
+                if bootstrap_cmds_str_frm_yaml != "":
+                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-auto-gen.sh"
+                    src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
+                    with open(src_bootstrap_file_path, 'w') as f:
+                        f.write(bootstrap_cmds_str_frm_yaml)
+                else:
+                    src_bootstrap_file_path = ""
+
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', "")
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_dir: {bootstrap_src_dir}, data_cache_dir_input: {data_cache_dir_input}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}, data_cache_dir_input: {data_cache_dir_input}")
                 src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
@@ -202,8 +212,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
-                if bootstrap_src_dir != "":
-                    dst_bootstrap_dir = os.path.join(dst_model_serving_dir, bootstrap_src_dir)
+                if src_bootstrap_file_path != "":
+                    dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
                 else:
                     dst_bootstrap_dir = ""
 

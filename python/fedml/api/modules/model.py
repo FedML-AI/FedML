@@ -46,13 +46,19 @@ def remove_files(name, file):
 
 def list_models(name):
     models = FedMLModelCards.get_instance().list_models(name)
-    if len(models) <= 0:
-        click.echo("Model list is empty.")
+    if name == "*":
+        if len(models) <= 0:
+            click.echo("Model list is empty.")
+        else:
+            click.echo("-------------------------")
+            click.echo("Model Name")
+            click.echo("-------------------------")
+            for model_item in models:
+                click.echo(model_item)
+            click.echo("-------------------------")
     else:
-        for model_item in models:
-            click.echo(model_item)
-        click.echo("List model {} successfully.".format(name))
-
+        if len(models) <= 0:
+            click.echo("Cannot locate model {}.".format(name))
 
 def list_remote(name, user, api_key, version, local_server):
     if user is None or api_key is None:
@@ -112,9 +118,9 @@ def pull(name, user, api_key, version, local_server):
         click.echo("Failed to pull model {}.".format(name))
 
 
-def deploy(local, name, master_ids, worker_ids, user_id, api_key):
+def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
     if local:
-        FedMLModelCards.get_instance().local_serve_model(name)
+        FedMLModelCards.get_instance().local_serve_model(name, config_file)
     else:
         if master_ids != "" or worker_ids != "":
             # On-Premise deploy mode
@@ -132,7 +138,7 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
                 os.environ["FEDML_API_KEY"] = api_key
             os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
             os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
-            FedMLModelCards.get_instance().serve_model(name)
+            FedMLModelCards.get_instance().serve_model(name, config_file)
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\
@@ -141,8 +147,8 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
             if answer == "y" or answer == "Y":
                 from .launch import FedMLLaunchManager
                 api_key = FedMLLaunchManager.get_api_key()
-                # Find the config yaml file in local model cards directory
-                yaml_file = FedMLModelCards.get_instance().find_yaml_for_launch(name)
+                # Find the config yaml file in local model cards directory ~/fedml-model-client/fedml/models
+                yaml_file = FedMLModelCards.get_instance().prepare_yaml_for_launch(name)
                 if yaml_file == "":
                     click.echo("Cannot find the config yaml file for model {}.".format(name))
                     return False
