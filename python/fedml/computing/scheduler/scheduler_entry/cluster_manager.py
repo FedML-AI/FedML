@@ -47,82 +47,36 @@ class FedMLClusterManager(Singleton):
         if config_version is not None:
             self.config_version = config_version
 
-    def kill_clusters(self, cluster_names=()):
-        cluster_stop_url = ServerConstants.get_cluster_stop_url(self.config_version)
-        cluster_api_headers = ServerConstants.API_HEADERS
-        cluster_list_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
-        args = {"config_version": self.config_version}
-        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    cluster_stop_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    cluster_stop_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-                )
-        else:
-            response = requests.post(
-                cluster_stop_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-            )
-        if response.status_code != 200:
-            print(f"Stop cluster with response.status_code = {response.status_code}, "
-                  f"response.content: {response.content}")
-            return False
-        else:
-            resp_data = response.json()
-            code = resp_data.get("code", None)
-            data = resp_data.get("data", None)
-            if code is None or data is None or code == "FAILURE":
-                print(f"Stop cluster with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
-                return False
+    def start_clusters(self, cluster_names=()):
+        cluster_start_url = ServerConstants.get_cluster_start_url(self.config_version)
+        cluster_start_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        response = self._request(cluster_start_url, cluster_start_json, self.config_version)
+        data = self._get_data_from_response(command="Start", response=response)
+        return True if data is not None else False
 
-        return True
+    def stop_clusters(self, cluster_names=()):
+        cluster_stop_url = ServerConstants.get_cluster_stop_url(self.config_version)
+        cluster_stop_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        response = self._request(cluster_stop_url, cluster_stop_json, self.config_version)
+        data = self._get_data_from_response(command="Stop", response=response)
+        return True if data is not None else False
+
+    def kill_clusters(self, cluster_names=()):
+        cluster_kill_url = ServerConstants.get_cluster_kill_url(self.config_version)
+        cluster_list_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        response = self._request(cluster_kill_url, cluster_list_json, self.config_version)
+        data = self._get_data_from_response(command="Kill", response=response)
+        return True if data is not None else False
 
     def list_clusters(self, cluster_names=()):
-        cluster_list_result = None
         cluster_list_url = ServerConstants.get_cluster_list_url(self.config_version)
-        cluster_api_headers = ServerConstants.API_HEADERS
         cluster_list_json = {'cluster_names': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
-        args = {"config_version": self.config_version}
-        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    cluster_list_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    cluster_list_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-                )
-        else:
-            response = requests.post(
-                cluster_list_url, verify=True, headers=cluster_api_headers, json=cluster_list_json
-            )
-        if response.status_code != 200:
-            print(
-                f"Cluster list with response.status_code = {response.status_code}, response.content: {response.content}")
-            pass
-        else:
-            resp_data = response.json()
-            code = resp_data.get("code", None)
-            data = resp_data.get("data", None)
-            if code is None or data is None or code == "FAILURE":
-                print(f"List cluster with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
-                return None
-            cluster_list_result = FedMLClusterModelList(data)
-        return cluster_list_result
+        response = self._request(cluster_list_url, cluster_list_json, self.config_version)
+        data = self._get_data_from_response(command="List", response=response)
+        return FedMLClusterModelList(data) if data is not None else data
 
     def confirm_cluster(self, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
         confirm_cluster_url = ServerConstants.get_cluster_confirm_url(self.config_version)
-        args = {"config_version": self.config_version}
         selected_machines_list = list()
         for gpu_machine in gpu_matched:
             selected_machine_json = {
@@ -135,34 +89,45 @@ class FedMLClusterManager(Singleton):
                                 ClusterConstants.MACHINE_SELECTED_LIST: selected_machines_list,
                                 ClusterConstants.API_KEY: get_api_key()}
 
-        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        response = self._request(confirm_cluster_url, confirm_cluster_json, self.config_version)
+        data = self._get_data_from_response(command="Confirm", response=response)
+        return True if data is not None else False
 
+    @staticmethod
+    def _request(url: str, json_data: dict, config_version: str):
+        args = {"config_version": config_version}
+        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(config_version)
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
                 response = requests.post(
-                    confirm_cluster_url, verify=True, headers=ServerConstants.API_HEADERS, json=confirm_cluster_json
+                    url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
                 )
             except requests.exceptions.SSLError as err:
                 MLOpsConfigs.install_root_ca_file()
                 response = requests.post(
-                    confirm_cluster_url, verify=True, headers=ServerConstants.API_HEADERS, json=confirm_cluster_json
+                    url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
                 )
         else:
             response = requests.post(
-                confirm_cluster_url, verify=True, headers=ServerConstants.API_HEADERS, json=confirm_cluster_json
+                url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
             )
+        return response
+
+    @staticmethod
+    def _get_data_from_response(command: str, response):
+
         if response.status_code != 200:
-            print(f"Cluster confirmation errored with response.status_code = {response.status_code}, "
+            print(f"{command} cluster with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
-            return False
+            return None
         else:
             resp_data = response.json()
             code = resp_data.get("code", None)
             data = resp_data.get("data", None)
             if code is None or data is None or code == "FAILURE":
-                print(f"Cluster confirmation errored with response.status_code = {response.status_code}, "
+                print(f"{command} cluster with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return False
+                return None
 
-        return True
+        return data

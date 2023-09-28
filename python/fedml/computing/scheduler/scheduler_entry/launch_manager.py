@@ -7,7 +7,6 @@ import click
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
     check_fedml_is_latest_version
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key

@@ -42,8 +42,13 @@ def fedml_jobs():
          "default is falcon).",
 )
 def stop_job(platform, job_id, api_key, version):
-    fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
+    is_job_stopped = fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
 
+    if is_job_stopped:
+        click.echo("Job has been stopped.")
+    else:
+        click.echo("Failed to stop the job, please check the arguments are valid and your network connection "
+                   "and make sure be able to access the FedML® Launch platform.")
 
 
 @fedml_jobs.command("status", help="Display fedml client training status.")
