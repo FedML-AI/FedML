@@ -22,6 +22,7 @@ import requests
 
 import fedml
 from ..comm_utils.run_process_utils import RunProcessUtils
+from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -263,6 +264,8 @@ class FedMLClientRunner:
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
                                        os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
 
         # Replace local fedml config objects with parameters from MLOps web
         parameters_object = run_config.get("parameters", None)
@@ -310,6 +313,11 @@ class FedMLClientRunner:
         fedml_conf_object["dynamic_args"] = package_dynamic_args
 
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
+
+        job_type = job_yaml.get("task_type", None)
+        job_type = job_yaml.get("job_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
+            return True
 
         is_bootstrap_run_ok = True
         try:
