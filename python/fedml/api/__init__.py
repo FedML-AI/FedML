@@ -15,7 +15,7 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
-from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster
+from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster, run
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
 
@@ -168,3 +168,6 @@ def model_run(name, data):
 
 def resource_type(version):
     model.resource_type(version)
+
+def run_command(commands, version="release", api_key=None):
+    return run.command(commands, version, api_key)
