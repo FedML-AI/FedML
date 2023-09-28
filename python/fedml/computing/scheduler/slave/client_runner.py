@@ -22,6 +22,7 @@ import requests
 
 import fedml
 from ..comm_utils.run_process_utils import RunProcessUtils
+from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -263,6 +264,8 @@ class FedMLClientRunner:
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
                                        os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
 
         # Replace local fedml config objects with parameters from MLOps web
         parameters_object = run_config.get("parameters", None)
@@ -311,6 +314,11 @@ class FedMLClientRunner:
 
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
+        job_type = job_yaml.get("task_type", None)
+        job_type = job_yaml.get("job_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
+            return True
+
         is_bootstrap_run_ok = True
         try:
             if bootstrap_script_path is not None:
@@ -331,8 +339,9 @@ class FedMLClientRunner:
 
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
-                    ClientConstants.save_bootstrap_process(run_id, process.pid)
+                    process, error_list = ClientConstants.execute_commands_with_live_logs(
+                        shell_cmd_list, callback=self.callback_run_bootstrap)
+
                     ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
@@ -360,6 +369,9 @@ class FedMLClientRunner:
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
+
+    def callback_run_bootstrap(self, job_pid):
+        ClientConstants.save_bootstrap_process(self.run_id, job_pid)
 
     def run(self, process_event, completed_event):
         print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
@@ -492,7 +504,6 @@ class FedMLClientRunner:
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
-        ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
@@ -592,8 +603,8 @@ class FedMLClientRunner:
             entry_command = f"{python_program} {entry_file_full_path} --cf " \
                             f"{conf_file_full_path} --rank {rank} --role client"
             shell_cmd_list = [entry_command]
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  should_write_log_file=False)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -643,14 +654,17 @@ class FedMLClientRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf,
-                                                                                  error_processor=self.job_error_processor)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor)
             is_launch_task = True
 
         return process, is_launch_task, error_list
 
+    def callback_start_fl_job(self, job_pid):
+        ClientConstants.save_learning_process(self.run_id, job_pid)
+
     def start_job_perf(self, job_pid):
+        ClientConstants.save_learning_process(self.run_id, job_pid)
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_str):
@@ -949,9 +963,9 @@ class FedMLClientRunner:
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        # )
 
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
@@ -1395,8 +1409,8 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Client local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Client local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

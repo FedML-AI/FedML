@@ -2,8 +2,6 @@ import click
 
 import fedml.api
 
-from fedml.computing.scheduler.slave.client_constants import ClientConstants
-
 from prettytable import PrettyTable
 
 

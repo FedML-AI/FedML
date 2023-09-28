@@ -8,20 +8,14 @@ from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunch
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
-def stop(job_id, version, platform, api_key, show_hint_texts):
-    if not _authenticated_and_validated_platform(api_key, version, platform):
+def stop(job_id, version, platform, api_key):
+    authenticate(api_key, version)
+
+    if not platform_is_valid(platform):
         return
 
     FedMLJobManager.get_instance().set_config_version(version)
-    is_stopped = FedMLJobManager.get_instance().job_stop(platform, api_key, job_id)
-
-    if show_hint_texts:
-        if is_stopped:
-            print("Job has been stopped.")
-        else:
-            print("Failed to stop the job, please check the arguments are valid and your network connection "
-                  "and make sure be able to access the FedML® Launch platform.")
-
+    is_stopped = FedMLJobManager.get_instance().stop_job(platform, api_key, job_id)
     return is_stopped
 
 
