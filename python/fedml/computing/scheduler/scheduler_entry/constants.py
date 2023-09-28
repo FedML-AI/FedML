@@ -85,7 +85,9 @@ class Constants(Singleton):
     JOB_FRAMEWORK_TYPE_GENERAL = "general"
 
     JOB_TASK_TYPE_TRAIN = "train"
+    JOB_TASK_TYPE_DEPLOY = "deploy"
     JOB_TASK_TYPE_SERVE = "serve"
+    JOB_TASK_TYPE_FEDERATE = "federate"
     JOB_TASK_TYPE_DEV_ENV = "dev-environment"
 
     JOB_DEVICE_TYPE_CPU = "CPU"

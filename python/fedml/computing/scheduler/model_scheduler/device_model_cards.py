@@ -32,11 +32,27 @@ class FedMLModelCards(Singleton):
     def get_instance():
         return FedMLModelCards()
 
-    def serve_model(self, model_name):
+    def serve_model(self, model_name, config_file_path=""):
         src_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(src_folder):
-            print("Model {} doesn't exist. Please Create it First".format(model_name))
-            return False
+            print("Local Model {} doesn't exist. Will Create it First...".format(model_name))
+            if not self.create_model_use_config(model_name, config_file_path):
+                return False
+            else:
+                print("Local Model {} is created!".format(model_name))
+        else:
+            # Exist a local model
+            if config_file_path != "":
+                # User indicate a config file to create model
+                print("Local Model {} already exists. Will recreate it using this config file...".format(
+                    model_name))
+                if not self.create_model_use_config(model_name, config_file_path):
+                    return False
+                else:
+                    print("Local Model {} is been recreated.".format(model_name))
+            else:
+                print("Using existing local model {}.".format(model_name))
+
         config_file_path = os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         parms_dict = self.parse_config_yaml(config_file_path)
 
@@ -100,8 +116,12 @@ class FedMLModelCards(Singleton):
             self.config_version = config_version
 
     def create_model_use_config(self, model_name, config_file) -> bool:
+        if config_file is None or config_file == "":
+            print("[Error] Please specify your config file using --config_file or -cf.")
+            return False
+
         if not os.path.exists(config_file):
-            print("The config file {} doesn't exist.".format(config_file))
+            print("[Error] The config file {} doesn't exist.".format(config_file))
             return False
 
         model_config = self.parse_config_yaml(config_file)
@@ -207,6 +227,24 @@ class FedMLModelCards(Singleton):
             else:
                 for model in models:
                     if model == model_name:
+                        model_dir = os.path.join(model_home_dir, model)
+                        print("------------------------")
+                        print("Model Name: {}".format(model))
+                        print("Local Model Directory: {}".format(model_dir))
+                        try:
+                            print("Model Files:")
+                            pre_level = 1
+                            for root, dirs, files in os.walk(model_dir):
+                                level = root.replace(model_dir, '').count(os.sep)
+                                indent = ' ' * 4 * (level + pre_level)
+                                print('{}{}/'.format(indent, os.path.basename(root)))
+                                subindent = ' ' * 4 * (level + pre_level + 1)
+                                for f in files:
+                                    print('{}{}'.format(subindent, f))
+                            print("------------------------")
+                        except Exception as e:
+                            print("------------------------")
+                            print("Failed to list the model files. {}".format(e))
                         return [model]
         else:
             return self.list_model_api(model_name, user_id, user_api_key, local_server)
@@ -364,7 +402,7 @@ class FedMLModelCards(Singleton):
 
         return result
 
-    def find_yaml_for_launch(self, model_name) -> str:
+    def prepare_yaml_for_launch(self, model_name) -> str:
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             print("Model {} doesn't exist. Please Create it First".format(model_name))
@@ -389,24 +427,34 @@ class FedMLModelCards(Singleton):
         print("The config file {} is used for launching.".format(config_file_path))
         return config_file_path
 
-    def local_serve_model(self, model_name):
+    def local_serve_model(self, model_name, config_file_path=""):
         # Check local model card existance
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
-            print("Model {} doesn't exist. Please Create it First".format(model_name))
-            return False
+            print("Local Model {} doesn't exist. Will Create it First".format(model_name))
+            time.sleep(1)
+            if self.create_model_use_config(model_name, config_file_path):
+                print("Local Model {} is created successfully. Using \"fedml model list -n\" {} to check later"\
+                      .format(model_name, model_name))
+                time.sleep(2)
+            else:
+                return False
 
         # Execute bootstrap script
         config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         config_parms = self.parse_config_yaml(config_file_path)
-        bootstrap_path = config_parms.get("bootstrap_path", None)
-        if bootstrap_path is not None:
-            dir_name, file_name = os.path.split(bootstrap_path)
-            if ClientConstants.run_bootstrap(dir_name, file_name):
-                print("Bootstrap script {} is executed successfully.".format(bootstrap_path))
-            else:
-                print("Failed to execute bootstrap script {}".format(bootstrap_path))
-                return False
+        bootstrap_exec_str = config_parms.get("bootstrap", "")
+
+        # Change the execution path to the model dir
+        os.chdir(model_dir)
+        if bootstrap_exec_str != "":
+            print("Executing bootstrap script ...")
+            time.sleep(2)
+            import subprocess
+            process = subprocess.Popen(bootstrap_exec_str, shell=True)
+            process.wait()
+            print("Bootstrap script is executed successfully!")
+            time.sleep(2)
 
         # Enter main_entry
         main_entry_file = config_parms.get("entry_point", "")
@@ -418,8 +466,6 @@ class FedMLModelCards(Singleton):
             print("The entry_point {} doesn't exist.".format(main_entry_file))
             return False
         import subprocess
-        # Change the execution path to the model dir
-        os.chdir(model_dir)
         process = subprocess.Popen(["python3", main_entry_file])
         print("Local deployment is started. Use Ctrl+C to stop it.")
         try:
@@ -431,7 +477,7 @@ class FedMLModelCards(Singleton):
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
                      params, use_local_deployment=None, local_server=None,
-                     in_model_version=None, endpoint_name=None):
+                     in_model_version=None, in_model_id=None, endpoint_name=None, endpoint_id=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
@@ -439,12 +485,12 @@ class FedMLModelCards(Singleton):
             if model_query_result is None:
                 return False
             for model in model_query_result.model_list:
-                model_id = model.id
+                model_id = in_model_id if in_model_id is not None and in_model_id != "" else model.id
                 model_version = in_model_version if in_model_version is not None and in_model_version != "" \
                     else model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
                                                           devices, user_id, user_api_key, local_server,
-                                                          endpoint_name=endpoint_name)
+                                                          endpoint_name=endpoint_name, endpoint_id=endpoint_id)
                 if deployment_result is not None:
                     return True
         else:
@@ -567,7 +613,7 @@ class FedMLModelCards(Singleton):
         return ""
 
     def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
-                         user_id, user_api_key, local_server, endpoint_name=None):
+                         user_id, user_api_key, local_server, endpoint_name=None, endpoint_id=None):
         model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -581,8 +627,10 @@ class FedMLModelCards(Singleton):
             "modelVersion": model_version,
             "resourceType": device_type,
             "userId": str(user_id),
-            "apiKey": user_api_key
+            "apiKey": user_api_key,
         }
+        if endpoint_id is not None:
+            model_deployment_json["id"] = endpoint_id
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
         if cert_path is not None:
@@ -608,6 +656,55 @@ class FedMLModelCards(Singleton):
             model_deployment_result = resp_data
 
         return model_deployment_result
+
+    def apply_endpoint_api(self, user_api_key, endpoint_name,
+                           model_id=None, model_name=None, model_version=None,
+                           local_server=None):
+        endpoint_apply_result = None
+        model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version, local_server)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_apply_json = {
+            "apiKey": user_api_key,
+            "endpointName": endpoint_name,
+            "resourceType": "md.on_premise_device"
+        }
+        if model_id is not None:
+            endpoint_apply_json["modelId"] = model_id
+        if model_name is not None:
+            endpoint_apply_json["modelName"] = model_name
+        if model_version is not None:
+            endpoint_apply_json["modelVersion"] = model_version
+
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_apply_json
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_apply_json
+                )
+        else:
+            response = requests.post(model_ops_url, headers=endpoint_api_headers, json=endpoint_apply_json)
+        if response.status_code != 200:
+            print(f"Apply endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            endpoint_apply_result = resp_data["data"]
+            if endpoint_apply_result is None or endpoint_apply_result == "":
+                print(f"Apply endpoint with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+
+        return endpoint_apply_result
 
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id, params):

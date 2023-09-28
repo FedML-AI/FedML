@@ -170,8 +170,8 @@ def model_pull(name, user, api_key, version, local_server):
     model.pull(name, user, api_key, version, local_server)
 
 
-def model_deploy(local, name, master_ids, worker_ids, user_id, api_key):
-    model.deploy(local, name, master_ids, worker_ids, user_id, api_key)
+def model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    model.deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
 
 
 def model_info(name):

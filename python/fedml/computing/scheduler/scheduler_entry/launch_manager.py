@@ -1,6 +1,7 @@
 import os
 import platform
 import shutil
+import uuid
 from os.path import expanduser
 
 import click
@@ -72,12 +73,14 @@ class FedMLLaunchManager(object):
 
         # Create and update model card with the job yaml file if the task type is serve.
         model_update_result = None
-        if self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
+        if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+                self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
             if self.job_config.serving_model_name is not None and self.job_config.serving_model_name != "":
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
             FedMLAppManager.get_instance().set_config_version(self.config_version)
-            if self.job_config.serving_model_name is None or self.job_config.serving_model_name == "":
+            models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
+            if models is None or len(models.model_list) <= 0:
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
                     click.echo(f"Please make sure fedml_model_config.yaml exists in your workspace."
                                f"{self.job_config.workspace}")
@@ -89,14 +92,33 @@ class FedMLLaunchManager(object):
                 if model_update_result is None:
                     click.echo("Failed to upload the model package to MLOps.")
                     exit(-1)
+
+                models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
+                if models is None or len(models.model_list) <= 0:
+                    click.echo("Failed to upload the model package to MLOps.")
+                    exit(-1)
+
+                model_update_result.model_id = models.model_list[0].id
+                model_update_result.model_version = models.model_list[0].model_version
                 model_update_result.endpoint_name = self.job_config.serving_endpoint_name
             else:
                 model_update_result = FedMLModelUploadResult(
-                    self.job_config.serving_model_name, model_version=self.job_config.serving_model_version,
+                    self.job_config.model_app_name, model_id=models.model_list[0].id,
+                    model_version=models.model_list[0].model_version,
                     model_storage_url=self.job_config.serving_model_s3_url,
                     endpoint_name=self.job_config.serving_endpoint_name)
 
             self.parse_job_yaml(yaml_file, should_use_default_workspace=True)
+
+            # Apply model endpoint id and act as job id
+            self.job_config.serving_endpoint_id = FedMLJobManager.get_instance().apply_endpoint_id(
+                user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
+                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version, )
+            if self.job_config.serving_endpoint_id is None:
+                click.echo("Failed to apply endpoint for your model.")
+                exit(-1)
+
+            model_update_result.endpoint_id = self.job_config.serving_endpoint_id
 
         # Generate source, config and bootstrap related paths.
         platform_str = mlops_platform_type
@@ -166,10 +188,12 @@ class FedMLLaunchManager(object):
                 if model_update_result is not None:
                     random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
                     config_file_handle.writelines(["serving_args:\n",
+                                                   f"  model_id: {model_update_result.model_id}\n",
                                                    f"  model_name: {model_update_result.model_name}\n",
                                                    f"  model_version: {model_update_result.model_version}\n",
                                                    f"  model_storage_url: {model_update_result.model_storage_url}\n",
                                                    f"  endpoint_name: {model_update_result.endpoint_name}\n",
+                                                   f"  endpoint_id: {model_update_result.endpoint_id}\n",
                                                    f"  random: {random}\n"])
                 config_file_handle.close()
 
@@ -223,8 +247,11 @@ class FedMLLaunchManager(object):
             platform_str, self.job_config.project_name, self.job_config.application_name,
             device_server, device_edges, user_api_key, cluster=cluster, no_confirmation=no_confirmation,
             model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
-            job_yaml=self.job_config.job_config_dict)
+            job_yaml=self.job_config.job_config_dict, job_type=self.job_config.task_type)
         if launch_result is not None:
+            launch_result.inner_id = self.job_config.serving_endpoint_id \
+                if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+                   self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
         # print(f"launch_result = {launch_result}")
@@ -236,7 +263,7 @@ class FedMLLaunchManager(object):
         launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
                                                                  application_name,
                                                                  device_server, device_edges, user_api_key, cluster,
-                                                                 no_confirmation=no_confirmation, job_id=job_id)
+                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=None)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -628,7 +655,8 @@ class FedMLLaunchManager(object):
         api_key = get_api_key()
 
         # Start the job
-        job_id = result.job_id,
+        job_id = result.job_id
+        ret_job_id = job_id if result.inner_id is None else result.inner_id
         project_id = result.project_id
         cluster_id = result.cluster_id
         gpu_matched = result.gpu_matched
@@ -644,7 +672,7 @@ class FedMLLaunchManager(object):
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
                                                                  result.application_name,
                                                                  self.device_server, self.device_edges, api_key, cluster,
-                                                                 no_confirmation=True, job_id=result.job_id)
+                                                                 no_confirmation=True, job_id=result.job_id, job_type=self.job_config.task_type)
         if result is None:
             return job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
@@ -682,7 +710,7 @@ class FedMLLaunchManager(object):
         click.echo(f"fedml launch log {result.job_id}" +
                    "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
 
-        return result.job_id, project_id, 0, ""
+        return ret_job_id, project_id, 0, ""
 
     def list_jobs(self, job_name, job_id):
         job_status = None
@@ -835,7 +863,9 @@ class FedMLJobConfig(object):
         computing_obj = self.job_config_dict.get("computing", {})
         self.minimum_num_gpus = computing_obj.get("minimum_num_gpus", 0)
         self.maximum_cost_per_hour = computing_obj.get("maximum_cost_per_hour", "$0")
-        self.task_type = self.job_config_dict.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
+        self.task_type = self.job_config_dict.get("task_type", None)
+        if self.task_type is None:
+            self.task_type = self.job_config_dict.get("job_type", Constants.JOB_TASK_TYPE_TRAIN)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
         self.resource_type = computing_obj.get("resource_type", "")
@@ -844,7 +874,10 @@ class FedMLJobConfig(object):
         self.serving_model_name = serving_args.get("model_name", None)
         self.serving_model_version = serving_args.get("model_version", "")
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
-        self.serving_endpoint_name = serving_args.get("endpoint_name", "")
+        self.serving_endpoint_name = serving_args.get("endpoint_name", None)
+        if self.serving_endpoint_name is None or self.serving_endpoint_name == "":
+            self.serving_endpoint_name = f"Endpoint-{str(uuid.uuid4())}"
+        self.serving_endpoint_id = None
 
         self.application_name = FedMLJobConfig.generate_application_name(
             self.executable_file_folder if workspace is None or workspace == "" else workspace)
