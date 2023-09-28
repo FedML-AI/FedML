@@ -118,9 +118,9 @@ def pull(name, user, api_key, version, local_server):
         click.echo("Failed to pull model {}.".format(name))
 
 
-def deploy(local, name, master_ids, worker_ids, user_id, api_key):
+def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
     if local:
-        FedMLModelCards.get_instance().local_serve_model(name)
+        FedMLModelCards.get_instance().local_serve_model(name, config_file)
     else:
         if master_ids != "" or worker_ids != "":
             # On-Premise deploy mode
@@ -138,7 +138,7 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key):
                 os.environ["FEDML_API_KEY"] = api_key
             os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
             os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
-            FedMLModelCards.get_instance().serve_model(name)
+            FedMLModelCards.get_instance().serve_model(name, config_file)
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\

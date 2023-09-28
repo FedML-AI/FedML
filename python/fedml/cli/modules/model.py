@@ -80,8 +80,11 @@ def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, vers
 @click.option(
     "--api_key", "-k", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate api key"
 )
-def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key):
-    fedml.api.model_deploy(local, name, master_ids, worker_ids, user_id, api_key)
+@click.option(
+    "--config_file", "-cf", default = "", type=str, help="Model config file (.yaml)"
+)
+def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    fedml.api.model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
 
 
 
