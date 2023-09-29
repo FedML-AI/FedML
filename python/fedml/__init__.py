@@ -11,6 +11,18 @@ import torch
 import fedml
 from .computing.scheduler.env.collect_env import collect_env
 from .constants import (
+    FEDML_BACKEND_SERVICE_DOMAIN_DEV,
+    FEDML_BACKEND_SERVICE_DOMAIN_LOCAL,
+    FEDML_BACKEND_SERVICE_DOMAIN_RELEASE,
+    FEDML_BACKEND_SERVICE_DOMAIN_TEST,
+    FEDML_BACKEND_SERVICE_URL_DEV,
+    FEDML_BACKEND_SERVICE_URL_LOCAL,
+    FEDML_BACKEND_SERVICE_URL_RELEASE,
+    FEDML_BACKEND_SERVICE_URL_TEST,
+    FEDML_MQTT_DOMAIN_DEV,
+    FEDML_MQTT_DOMAIN_LOCAL,
+    FEDML_MQTT_DOMAIN_TEST,
+    FEDML_MQTT_DOMAIN_RELEASE,
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
     FEDML_SIMULATION_TYPE_MPI,
@@ -403,6 +415,27 @@ def init_cross_device(args):
 
 def run_distributed():
     pass
+
+
+def _get_backend_service(version):
+    if version == "local":
+        return FEDML_BACKEND_SERVICE_DOMAIN_LOCAL, FEDML_BACKEND_SERVICE_URL_LOCAL
+    elif version == "dev":
+        return FEDML_BACKEND_SERVICE_DOMAIN_DEV, FEDML_BACKEND_SERVICE_URL_DEV
+    elif version == "test":
+        return FEDML_BACKEND_SERVICE_DOMAIN_TEST, FEDML_BACKEND_SERVICE_URL_TEST
+    else:
+        return FEDML_BACKEND_SERVICE_DOMAIN_RELEASE, FEDML_BACKEND_SERVICE_URL_RELEASE
+
+def _get_mqtt_service(version):
+    if version == "local":
+        return FEDML_MQTT_DOMAIN_LOCAL
+    if version == "dev":
+        return FEDML_MQTT_DOMAIN_DEV
+    elif version == "test":
+        return FEDML_MQTT_DOMAIN_TEST
+    else:
+        return FEDML_MQTT_DOMAIN_RELEASE
 
 
 from fedml import device

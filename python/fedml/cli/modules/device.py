@@ -32,13 +32,6 @@ def fedml_device():
     "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-@click.option(
     "--role",
     "-r",
     type=str,
@@ -67,11 +60,11 @@ def fedml_device():
 )
 def fedml_device_bind(
         userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
+        api_key, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
     fedml.api.device_bind(userid, version, client, server,
-                          api_key, local_server, role, runner_cmd, device_id, os_name,
+                          api_key, role, runner_cmd, device_id, os_name,
                           docker, docker_rank)
 
 

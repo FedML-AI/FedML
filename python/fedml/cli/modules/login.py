@@ -23,13 +23,6 @@ import fedml.api
     "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-@click.option(
     "--role",
     "-r",
     type=str,
@@ -57,8 +50,8 @@ import fedml.api
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def fedml_login(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
     fedml.api.login(userid, version, client, server,
-                    api_key, local_server, role, runner_cmd, device_id, os_name,
+                    api_key, role, runner_cmd, device_id, os_name,
                     docker, docker_rank)

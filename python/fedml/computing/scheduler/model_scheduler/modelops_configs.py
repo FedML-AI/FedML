@@ -4,6 +4,8 @@ import time
 
 import certifi
 import requests
+
+import fedml
 from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -30,22 +32,14 @@ class ModelOpsConfigs(Singleton):
         return ModelOpsConfigs._config_instance
 
     def get_request_params(self, in_config_version="release"):
-        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
         config_version = "release"
+        _, url = fedml._get_backend_service(config_version)
+        url = "{}/fedmlOpsServer/configs/fetch".format(url)
+
         if in_config_version is not None and in_config_version != "":
             # Setup config url based on selected version.
             config_version = in_config_version
-            if config_version == "release":
-                url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif config_version == "test":
-                url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif config_version == "dev":
-                url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif config_version == "local":
-                if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                    url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
-                else:
-                    url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
+            _, url = fedml._get_backend_service(config_version)
 
         cert_path = None
         if str(url).startswith("https://"):

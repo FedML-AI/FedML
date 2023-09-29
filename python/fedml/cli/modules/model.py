@@ -49,15 +49,8 @@ def fedml_model_create(name, config_file):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
-    fedml.api.model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server)
+def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version):
+    fedml.api.model_push(name, model_storage_url, model_net_url, user, api_key, version)
 
 
 @fedml_model.command("deploy", help="Deploy model to the local machine or MLOps platform (cloud)")
@@ -120,15 +113,8 @@ def fedml_model_run(name, data):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-def fedml_model_pull(name, user, api_key, version, local_server):
-    fedml.api.model_pull(name, user, api_key, version, local_server)
+def fedml_model_pull(name, user, api_key, version):
+    fedml.api.model_pull(name, user, api_key, version)
 
 
 
@@ -159,15 +145,8 @@ def fedml_model_list(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
-)
-def fedml_model_list_remote(name, user, api_key, version, local_server):
-    fedml.api.model_list_remote(name, user, api_key, version, local_server)
+def fedml_model_list_remote(name, user, api_key, version):
+    fedml.api.model_list_remote(name, user, api_key, version)
 
 
 

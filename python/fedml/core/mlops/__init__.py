@@ -743,25 +743,7 @@ def create_run(project_id, api_key, run_name=None):
 
 
 def get_request_params(args):
-    url = "https://open.fedml.ai"
-    config_version = "release"
-    if (
-            hasattr(args, "config_version")
-            and args.config_version is not None
-    ):
-        # Setup config url based on selected version.
-        config_version = args.config_version
-        if args.config_version == "release":
-            url = "https://open.fedml.ai"
-        elif args.config_version == "test":
-            url = "https://open-test.fedml.ai"
-        elif args.config_version == "dev":
-            url = "https://open-dev.fedml.ai"
-        elif args.config_version == "local":
-            if hasattr(args, "local_server") and args.local_server is not None:
-                url = "http://{}:9000".format(args.local_server)
-            else:
-                url = "http://localhost:9000"
+    _, url = fedml._get_backend_service(args.config_version)
 
     cert_path = None
     if str(url).startswith("https://"):

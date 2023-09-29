@@ -11,6 +11,8 @@ import yaml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from ..comm_utils.run_process_utils import RunProcessUtils
 
+import fedml
+
 
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
@@ -129,8 +131,8 @@ class ServerConstants(object):
 
     @staticmethod
     def get_mlops_url(config_version="release"):
-        return "https://open{}.fedml.ai".format(
-            "" if config_version == "release" else "-" + config_version)
+        _, url = fedml._get_backend_service(config_version)
+        return url
 
     @staticmethod
     def get_job_start_url(config_version="release"):

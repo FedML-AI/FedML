@@ -254,8 +254,6 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
                 str(args.user),
                 "-v",
                 args.version,
-                "-ls",
-                args.local_server,
                 "-r",
                 args.role,
                 "-id",
@@ -309,7 +307,6 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
-    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")

@@ -80,10 +80,10 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
 
 
 def login(userid, version, client, server,
-          api_key, local_server, role, runner_cmd, device_id, os_name,
+          api_key, role, runner_cmd, device_id, os_name,
           docker, docker_rank):
     device_bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
 
@@ -92,10 +92,10 @@ def logout(client, server, docker, docker_rank):
 
 
 def device_bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
     device.bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
 
@@ -125,20 +125,20 @@ def model_list(name):
     model.list_models(name)
 
 
-def model_list_remote(name, user, api_key, version, local_server):
-    model.list_remote(name, user, api_key, version, local_server)
+def model_list_remote(name, user, api_key, version):
+    model.list_remote(name, user, api_key, version)
 
 
 def model_package(name):
     model.package(name)
 
 
-def model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
-    model.push(name, model_storage_url, model_net_url, user, api_key, version, local_server)
+def model_push(name, model_storage_url, model_net_url, user, api_key, version):
+    model.push(name, model_storage_url, model_net_url, user, api_key, version)
 
 
-def model_pull(name, user, api_key, version, local_server):
-    model.pull(name, user, api_key, version, local_server)
+def model_pull(name, user, api_key, version):
+    model.pull(name, user, api_key, version)
 
 
 def model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
