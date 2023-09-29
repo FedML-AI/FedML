@@ -68,24 +68,44 @@ def launch_log(job_id, page_num, page_size, version="release", api_key=None, nee
     return launch.log(job_id, version, api_key, page_num, page_size, need_all_logs)
 
 
-def stop_job(job_id, version, platform="falcon", api_key=None, show_hint_texts=True):
-    return job.stop(job_id, version, platform, api_key, show_hint_texts)
+def stop_job(job_id, version, platform="falcon", api_key=None):
+    return job.stop(job_id, version, platform, api_key)
 
 
 def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
     return job.list_jobs(version, job_name, job_id, platform, api_key)
 
 
-def list_clusters(version, api_key=None, cluster_names=()) -> FedMLClusterModelList:
-    return cluster.list_clusters(version, api_key, cluster_names)
+def cluster_list(cluster_names=(), version="release", api_key=None) -> FedMLClusterModelList:
+    return cluster.list_clusters(cluster_names=cluster_names, version=version, api_key=api_key)
 
 
-def kill_clusters(version, cluster_names, api_key=None, show_hint_texts=True):
-    return cluster.kill(version=version, api_key=api_key, cluster_names=cluster_names, show_hint_texts=show_hint_texts)
+def cluster_status(cluster_name, version="release", api_key=None) -> FedMLClusterModelList:
+    return cluster.status(cluster_name=cluster_name, version=version, api_key=api_key)
 
 
-def killall_clusters(version, api_key=None, show_hint_texts=False):
-    return cluster.killall(version=version, api_key=api_key, show_hint_texts=show_hint_texts)
+def cluster_start(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.start(cluster_names=cluster_names, version=version, api_key=api_key)
+
+
+def cluster_startall(version="release", api_key=None) -> bool:
+    return cluster.start(cluster_names=(), version=version, api_key=api_key)
+
+
+def cluster_stop(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.stop(cluster_names=cluster_names, version=version, api_key=api_key)
+
+
+def cluster_stopall(version="release", api_key=None) -> bool:
+    return cluster.stop(cluster_names=(), version=version, api_key=api_key)
+
+
+def cluster_kill(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.kill(cluster_names=cluster_names, version=version, api_key=api_key)
+
+
+def cluster_killall(version="release", api_key=None) -> bool:
+    return cluster.kill(cluster_names=(), version=version, api_key=api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
@@ -128,7 +148,7 @@ def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
 def model_create(name, config_file):
     model.create(name, config_file)
-    
+
 
 def model_delete(name):
     model.delete(name)
@@ -154,8 +174,8 @@ def model_pull(name, user, api_key, version, local_server):
     model.pull(name, user, api_key, version, local_server)
 
 
-def model_deploy(local, name, master_ids, worker_ids, user_id, api_key):
-    model.deploy(local, name, master_ids, worker_ids, user_id, api_key)
+def model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    model.deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
 
 
 def model_info(name):

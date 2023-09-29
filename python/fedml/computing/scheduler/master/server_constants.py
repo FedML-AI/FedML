@@ -165,7 +165,19 @@ class ServerConstants(object):
         return cluster_list_url
 
     @staticmethod
+    def get_cluster_start_url(config_version="release"):
+        cluster_start_url = "{}/fedmlOpsServer/api/v1/cli/startCluster".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_start_url
+
+    @staticmethod
     def get_cluster_stop_url(config_version="release"):
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/stopCluster".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_kill_url(config_version="release"):
         cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/shutDownCluster".format(
             ServerConstants.get_mlops_url(config_version))
         return cluster_stop_url

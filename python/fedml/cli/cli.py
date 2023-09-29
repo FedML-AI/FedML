@@ -65,7 +65,6 @@ def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
-
 # Add cluster subcommand module
 cli.add_command(cluster.fedml_clusters)
 

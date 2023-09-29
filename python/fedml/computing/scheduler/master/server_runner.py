@@ -352,8 +352,8 @@ class FedMLServerRunner:
                     logging.info("Bootstrap scripts are being executed...")
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list)
-                    ClientConstants.save_bootstrap_process(run_id, process.pid)
+                    process, error_list = ServerConstants.execute_commands_with_live_logs(
+                        shell_cmd_list, callback=self.callback_run_bootstrap)
 
                     ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
@@ -383,6 +383,9 @@ class FedMLServerRunner:
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
+
+    def callback_run_bootstrap(self, job_pid):
+        ServerConstants.save_bootstrap_process(self.run_id, job_pid)
 
     def run(self, process_event, completed_event, edge_status_queue=None):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
@@ -446,12 +449,14 @@ class FedMLServerRunner:
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
         task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
-        if task_type == Constants.JOB_TASK_TYPE_SERVE:
+        if task_type == Constants.JOB_TASK_TYPE_DEPLOY or task_type == Constants.JOB_TASK_TYPE_SERVE:
             serving_args = run_params.get("serving_args", {})
+            model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
             model_version = serving_args.get("model_version", None)
             model_storage_url = serving_args.get("model_storage_url", None)
             endpoint_name = serving_args.get("endpoint_name", None)
+            endpoint_id = serving_args.get("endpoint_id", None)
             random = serving_args.get("random", "")
             random_out = sys_utils.random2(random, "FEDML@9999GREAT")
             random_list = random_out.split("FEDML@")
@@ -460,8 +465,9 @@ class FedMLServerRunner:
             FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
-                "", random_list[1], None, in_model_version=model_version,
-                endpoint_name=endpoint_name)
+                "", random_list[1], None,
+                in_model_id=model_id, in_model_version=model_version,
+                endpoint_name=endpoint_name, endpoint_id=endpoint_id)
 
     def run_impl(self, edge_status_queue):
         run_id = self.request_json["runId"]
@@ -552,7 +558,6 @@ class FedMLServerRunner:
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
-        ServerConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
@@ -672,8 +677,8 @@ class FedMLServerRunner:
             entry_command = f"{python_program} {entry_file_full_path} --cf " \
                             f"{conf_file_full_path} --rank 0 --role server"
             shell_cmd_list = [entry_command]
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  should_write_log_file=False)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -724,14 +729,17 @@ class FedMLServerRunner:
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ServerConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf,
-                                                                                  error_processor=self.job_error_processor)
+            process, error_list = ServerConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor)
             is_launch_task = True
 
         return process, is_launch_task, error_list
 
+    def callback_start_fl_job(self, job_pid):
+        ServerConstants.save_learning_process(self.run_id, job_pid)
+
     def start_job_perf(self, job_pid):
+        ServerConstants.save_learning_process(self.run_id, job_pid)
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_str):
@@ -848,7 +856,6 @@ class FedMLServerRunner:
 
         ServerConstants.cleanup_learning_process(self.run_id)
         ServerConstants.cleanup_bootstrap_process(self.run_id)
-        ClientConstants.cleanup_run_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -881,7 +888,6 @@ class FedMLServerRunner:
 
         ServerConstants.cleanup_learning_process(self.run_id)
         ServerConstants.cleanup_bootstrap_process(self.run_id)
-        ClientConstants.cleanup_run_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -1679,11 +1685,6 @@ class FedMLServerRunner:
                 else:
                     ServerConstants.cleanup_run_process(run_id)
 
-                    run_process = self.run_process_map.get(run_id_str, None)
-                    if run_process is not None:
-                        if run_process.pid is not None:
-                            RunProcessUtils.kill_process(run_process.pid)
-
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
 
@@ -1762,7 +1763,7 @@ class FedMLServerRunner:
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
         task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
-        if task_type != Constants.JOB_TASK_TYPE_SERVE:
+        if task_type != Constants.JOB_TASK_TYPE_DEPLOY and task_type != Constants.JOB_TASK_TYPE_SERVE:
             return
 
         # Init model device ids for each run
@@ -2084,8 +2085,8 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Server local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Server local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

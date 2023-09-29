@@ -190,7 +190,7 @@ class FedMLServerRunner:
         pass
 
     def run(self, process_event, completed_event):
-        print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
+        # print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -300,7 +300,7 @@ class FedMLServerRunner:
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE4["text"])
 
         self.args.run_id = self.run_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
         # report server running status
         logging.info("report deployment status...")
@@ -751,7 +751,7 @@ class FedMLServerRunner:
         # Start log processor for current run
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -1007,7 +1007,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = True
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
         if self.client_mqtt_mgr is not None:
@@ -1454,14 +1454,14 @@ class FedMLServerRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
-        )
+        # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        # print(
+        #     "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+        #     + str(self.unique_device_id)
+        #     + "\n"
+        # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
@@ -1536,9 +1536,8 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Model master local API process id {self.local_api_process.pid}")
-
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Model master local API process id {self.local_api_process.pid}")
 
         self.recover_inference_and_monitor()
 
