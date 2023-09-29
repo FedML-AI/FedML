@@ -76,32 +76,36 @@ def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
     return job.list_jobs(version, job_name, job_id, platform, api_key)
 
 
-def cluster_list(version, api_key=None, cluster_names=()) -> FedMLClusterModelList:
-    return cluster.list_clusters(version, api_key, cluster_names)
+def cluster_list(cluster_names=(), version="release", api_key=None) -> FedMLClusterModelList:
+    return cluster.list_clusters(cluster_names=cluster_names, version=version, api_key=api_key)
 
 
-def cluster_start(version, cluster_names, api_key=None) -> bool:
-    return cluster.start(version=version, api_key=api_key, cluster_names=cluster_names)
+def cluster_status(cluster_name, version="release", api_key=None) -> FedMLClusterModelList:
+    return cluster.status(cluster_name=cluster_name, version=version, api_key=api_key)
 
 
-def cluster_startall(version, api_key=None) -> bool:
-    return cluster.start(version=version, api_key=api_key, cluster_names=())
+def cluster_start(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.start(cluster_names=cluster_names, version=version, api_key=api_key)
 
 
-def cluster_stop(version, cluster_names, api_key=None) -> bool:
-    return cluster.stop(version=version, api_key=api_key, cluster_names=cluster_names)
+def cluster_startall(version="release", api_key=None) -> bool:
+    return cluster.start(cluster_names=(), version=version, api_key=api_key)
 
 
-def cluster_stopall(version, api_key=None) -> bool:
-    return cluster.stop(version=version, api_key=api_key, cluster_names=())
+def cluster_stop(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.stop(cluster_names=cluster_names, version=version, api_key=api_key)
 
 
-def cluster_kill(version, cluster_names, api_key=None) -> bool:
-    return cluster.kill(version=version, api_key=api_key, cluster_names=cluster_names)
+def cluster_stopall(version="release", api_key=None) -> bool:
+    return cluster.stop(cluster_names=(), version=version, api_key=api_key)
 
 
-def cluster_killall(version, api_key=None) -> bool:
-    return cluster.kill(version=version, api_key=api_key, cluster_names=())
+def cluster_kill(cluster_names, version="release", api_key=None) -> bool:
+    return cluster.kill(cluster_names=cluster_names, version=version, api_key=api_key)
+
+
+def cluster_killall(version="release", api_key=None) -> bool:
+    return cluster.kill(cluster_names=(), version=version, api_key=api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

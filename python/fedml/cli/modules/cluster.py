@@ -43,7 +43,7 @@ def validate_cluster_names(ctx, param, value):
     default="release",
     help=version_help,
 )
-def start(version, api_key, cluster_names):
+def start(cluster_names, version, api_key):
     is_started = fedml.api.cluster_start(version=version, api_key=api_key, cluster_names=cluster_names)
     if is_started:
         click.echo("Clusters have been started.")
@@ -90,7 +90,7 @@ def startall(version, api_key):
     default="release",
     help=version_help,
 )
-def stop(version, api_key, cluster_names):
+def stop(cluster_names, version, api_key):
     is_stopped = fedml.api.cluster_stop(version=version, api_key=api_key, cluster_names=cluster_names)
     if is_stopped:
         click.echo("Clusters have been stopped.")
@@ -137,7 +137,7 @@ def stopall(version, api_key):
     default="release",
     help=version_help,
 )
-def kill(version, api_key, cluster_names):
+def kill(cluster_names, version, api_key):
     is_killed = fedml.api.cluster_kill(version=version, api_key=api_key, cluster_names=cluster_names)
     if is_killed:
         click.echo("Clusters have been killed.")
@@ -185,12 +185,33 @@ def killall(version, api_key):
     default="release",
     help=version_help,
 )
-def list_clusters(version, api_key, cluster_names):
+def list_clusters(cluster_names, version, api_key):
     cluster_list_obj = fedml.api.cluster_list(version=version, api_key=api_key, cluster_names=cluster_names)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
     else:
         click.echo("No clusters found.")
+
+
+@fedml_clusters.command("status", help=cluster_action_help.format("Status of"))
+@click.help_option("--help", "-h")
+@click.argument("cluster_name", nargs=1)
+@click.option(
+    "--api_key", "-k", type=str, help=api_key_help,
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help=version_help,
+)
+def status(cluster_name, version, api_key):
+    cluster_status, cluster_list_obj = fedml.api.cluster_status(cluster_name=(cluster_name,), version=version, api_key=api_key)
+    if cluster_status is None:
+        click.echo("No cluster found with the given name.")
+    else:
+        _print_clusters(cluster_list_obj)
 
 
 def _print_clusters(cluster_list_obj):
@@ -200,4 +221,5 @@ def _print_clusters(cluster_list_obj):
     for cluster in cluster_list_obj.cluster_list:
         cluster_list_table.add_row([cluster.cluster_name, cluster.cluster_id, cluster.status])
 
-    print(cluster_list_table)
+    click.echo(cluster_list_table)
+

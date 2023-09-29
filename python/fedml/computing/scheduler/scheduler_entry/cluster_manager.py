@@ -17,6 +17,7 @@ class ClusterConstants(object):
     STATUS = "status"
     ID = "id"
     SHORT_NAME = "shortName"
+    CLUSTER_NAME_LIST = "clusterNameList"
 
 
 class FedMLClusterModelList(object):
@@ -56,21 +57,21 @@ class FedMLClusterManager(Singleton):
 
     def stop_clusters(self, cluster_names=()):
         cluster_stop_url = ServerConstants.get_cluster_stop_url(self.config_version)
-        cluster_stop_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        cluster_stop_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_stop_url, cluster_stop_json, self.config_version)
         data = self._get_data_from_response(command="Stop", response=response)
         return True if data is not None else False
 
     def kill_clusters(self, cluster_names=()):
         cluster_kill_url = ServerConstants.get_cluster_kill_url(self.config_version)
-        cluster_list_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        cluster_list_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_kill_url, cluster_list_json, self.config_version)
         data = self._get_data_from_response(command="Kill", response=response)
         return True if data is not None else False
 
     def list_clusters(self, cluster_names=()):
         cluster_list_url = ServerConstants.get_cluster_list_url(self.config_version)
-        cluster_list_json = {'cluster_names': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
+        cluster_list_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_list_url, cluster_list_json, self.config_version)
         data = self._get_data_from_response(command="List", response=response)
         return FedMLClusterModelList(data) if data is not None else data
