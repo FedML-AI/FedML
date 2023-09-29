@@ -72,24 +72,7 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
 def fedml_launch_cancel(job_id, platform, api_key, version):
-    fedml.api.stop_job(job_id[0], version, platform, api_key)
-
-
-@fedml_launch.command("log", help="View the job list at the FedML® Launch platform (open.fedml.ai)", )
-@click.help_option("--help", "-h")
-@click.argument("job_id", nargs=-1)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="list jobs at which version of the FedML® Launch platform. It should be dev, test or release",
-)
-def fedml_launch_log(job_id, api_key, version):
-    fedml.api.launch_log(job_id[0], 0, 0, version, api_key, need_all_logs=True)
+    fedml.api.job_stop(job_id[0], version, platform, api_key)
 
 
 @fedml_launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
