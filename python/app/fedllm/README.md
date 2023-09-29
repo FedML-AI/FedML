@@ -44,11 +44,11 @@ Hugging Face repo access.
    on [Hugging Face](https://huggingface.co/meta-llama/Llama-2-7b-hf). See below image for detail.
    ![Meta's private repo on Hugging Face](assets/Llama/huggingface_llama_repo.png)
 3. Once both access are granted, you can start using Llama with FedLLM
-   1. For centralized/conventional training, pass `--model_name "meta-llama/Llama-2-7b-hf"` to the training script.
+   1. For centralized/conventional training, pass `--model_name_or_path "meta-llama/Llama-2-7b-hf"` to the training script.
    2. For federated training, update the fedml_config as follow
    ```yaml
    model_args:
-      model_name: "meta-llama/Llama-2-7b-hf"
+      model_name_or_path: "meta-llama/Llama-2-7b-hf"
       ...
    ```
 
@@ -147,6 +147,11 @@ A concrete example can be found in [fedml_config/fedml_config.yaml](fedml_config
 common_args:
   training_type: "cross_silo"  # federated training type, we recommend `cross_silo` for LLMs
   scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
+  use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-silo; this could improve the training stability
+  random_seed: 0
+
+environment_args:
+  bootstrap: fedml_config/bootstrap.sh  # change to "config/bootstrap.sh" when using MLOps
 
 data_args:
   dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
@@ -158,17 +163,17 @@ data_args:
     - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # [optional] train dataset path for client
     - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # [optional] test dataset path for client
   test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
+  remove_long_seq: True  # if `True` remove all data whose sequence length > max_seq_length
 
 model_args:
   skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
-  model_name: "EleutherAI/pythia-6.9b"  # choose from `MODEL_NAMES` in `src/constants.py`
+  model_name_or_path: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
 train_args:
   federated_optimizer: "FedAvg"
   client_optimizer: "adamw_hf"
   server_optimizer: "FedAvg"
-  client_id_list:
   client_num_in_total: 2  # number of clients
   client_num_per_round: 2  # choose from 1~client_num_in_total
   comm_round: 5  # number of rounds of aggregation
@@ -186,7 +191,7 @@ train_args:
   learning_rate: 1.0e-5
   warmup_steps: 50
   num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
-  output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
+  output_dir: "~/fedml_logs/MLOps/{run_id}/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
@@ -195,6 +200,7 @@ train_args:
   logging_strategy: "no"
   evaluation_strategy: "no"  # should be turned off
   save_strategy: "no"
+  save_on_each_node: True
 
 validation_args:
   frequency_of_the_test: 1

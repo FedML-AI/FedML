@@ -1,11 +1,11 @@
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
+  training_type: "cross_silo"  # federated training type, we recommend `cross_silo` for LLMs
+  scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
   use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-silo; this could improve the training stability
   random_seed: 0
 
 environment_args:
-  bootstrap: config/bootstrap.sh  # set to "config/bootstrap.sh" when using MLOps
+  bootstrap: config/bootstrap.sh  # change to "config/bootstrap.sh" when using MLOps
 
 data_args:
   dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
@@ -21,7 +21,7 @@ data_args:
 
 model_args:
   skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
-  model_name: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
+  model_name_or_path: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
 train_args:
