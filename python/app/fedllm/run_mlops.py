@@ -21,7 +21,7 @@ if __name__ == '__main__':
         process = ClientConstants.exec_console_with_shell_script_list(
             [
                 python_program,         # python
-                entry_fill_full_path,   # ./main_mlops.py
+                entry_fill_full_path,   # ./run_mlops.py
                 "--cf",                 # --cf
                 conf_file_full_path,    # $mlops_path/fedml_config.yaml
                 "--rank",               # --rank
@@ -29,7 +29,7 @@ if __name__ == '__main__':
                 "--role",               # --role
                 "client",               # client
             ],
-        python main_mlops.py --cf fedml_config/fedml_config.yaml --rank 0 --role client
+        python run_mlops.py --cf fedml_config/fedml_config.yaml --rank 0 --role client
     """
     print(f"sys.argv = {sys.argv}")
     result = subprocess.run(
@@ -39,7 +39,7 @@ if __name__ == '__main__':
             "\"\"",  # master address
             f"{master_port}",  # master port
             "\"\"",  # number of nodes
-            "main_fedllm.py",  # main program
+            "run_fedllm.py",  # main program
             *sys.argv[1:],
         ]),
         stdout=subprocess.PIPE,

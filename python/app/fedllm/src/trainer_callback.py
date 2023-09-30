@@ -2,14 +2,18 @@ import math
 from pathlib import Path
 
 from peft import PeftModel
+from peft.utils import WEIGHTS_NAME as PEFT_WEIGHTS_NAME
 import torch
 from transformers import (
-    TrainingArguments,
     TrainerCallback,
     TrainerControl,
     TrainerState,
+    TrainingArguments,
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
+
+from .utils import is_file
 
 
 class SavePeftModelCallback(TrainerCallback):
@@ -25,13 +29,18 @@ class SavePeftModelCallback(TrainerCallback):
             checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
             model = kwargs.get("model", None)
 
-            if isinstance(model, PeftModel):
+            # TODO: support shard loading; see transformers.modeling_utils.load_sharded_checkpoint
+            checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
+            adapter_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
+            if isinstance(model, PeftModel) and not is_file(adapter_checkpoint_path):
+                # backward compatibility
+                assert is_file(checkpoint_path)
+
                 # when using DeepSpeed Zero 3, model weights need to be converted.
                 # conversion is done by Trainer, we need to load the saved weights manually
-                checkpoint = torch.load(str(checkpoint_dir / "pytorch_model.bin"), map_location="cpu")
+                checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
 
-                peft_model_path = checkpoint_dir / "adapter_model"
-                model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
+                model.save_pretrained(str(checkpoint_dir), state_dict=checkpoint)
 
         return control
 
@@ -69,7 +78,7 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if self.start_global_step < 0 and self.start_epoch < 0:
             # if both values are unset
             self.start_epoch = state.epoch
@@ -87,12 +96,14 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if state.global_step - self.start_global_step >= self.step_threshold:
             control.should_training_stop = True
+
         elif self.use_epoch_threshold and state.epoch - self.start_epoch >= self.epoch_threshold:
             # epoch is a float; partial epoch is allowed which means it needs to be checked every step
             control.should_training_stop = True
+
         return control
 
     def on_epoch_end(
@@ -101,9 +112,10 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if state.epoch - self.start_epoch >= self.epoch_threshold:
             control.should_training_stop = True
+
         return control
 
     def on_train_end(
@@ -112,7 +124,7 @@ class PauseResumeCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
+    ) -> TrainerControl:
         if args.max_steps is not None and state.global_step < args.max_steps:
             control.should_training_stop = False
 

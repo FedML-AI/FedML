@@ -7,10 +7,18 @@ DEFAULT_MAX_SEQ_LENGTH = 1024
 IGNORE_INDEX = -100
 
 # -----------------------------------------------------------------
+FINETUNE_TASKS = [
+    "finetune",
+    "instruction",
+]
+
+# -----------------------------------------------------------------
 MODEL_NAMES = [
     "EleutherAI/pythia-70m",
     "EleutherAI/pythia-160m",
+    "EleutherAI/pythia-410m",
     "EleutherAI/pythia-1b",
+    "EleutherAI/pythia-1.4b",
     "EleutherAI/pythia-2.8b",
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
@@ -18,63 +26,41 @@ MODEL_NAMES = [
     "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
     "databricks/dolly-v2-12b",
+    "meta-llama/Llama-2-7b-hf",
+    "meta-llama/Llama-2-7b-chat-hf",
+    "meta-llama/Llama-2-13b-hf",
+    "meta-llama/Llama-2-13b-chat-hf",
+    "meta-llama/Llama-2-70b-hf",
+    "meta-llama/Llama-2-70b-chat-hf",
+    "tiiuae/falcon-7b",
+    "tiiuae/falcon-40b",
 ]
 
-# -----------------------------------------------------------------
-INTRO_BLURB = (
-    "Below is an instruction that describes a task. Write a response that appropriately completes the request."
-)
+DATASET_NAMES = [
+    "databricks/databricks-dolly-15k",
+    "togethercomputer/RedPajama-Data-1T",
+    "togethercomputer/RedPajama-Data-1T-Sample",
+    "EleutherAI/pile",
+    # "EleutherAI/pile" is no longer available for some unknown reasons. The below datasets are backups.
+    "FedML/pile",
+    "medalpaca/medical_meadow_mediqa",
+    "bitext/Bitext-customer-support-llm-chatbot-training-dataset",
+    "gbharti/wealth-alpaca_lora",
+]
 
-INSTRUCTION_KEY = "### Instruction:"
-INPUT_KEY = "Input:"
-RESPONSE_KEY = "### Response:"
-END_KEY = "### End"
-RESPONSE_KEY_NL = f"{RESPONSE_KEY}\n"
+PROMPT_STYLES = [
+    "dolly",
+    "llama",
+]
 
-# This is a training prompt that does not contain an input string. The instruction by itself has enough information
-# to respond.For example, the instruction might ask for the year a historic figure was born.
-PROMPT_NO_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
-
-# This is a training prompt that contains an input string that serves as context for the instruction. For example,
-# the input might be a passage from Wikipedia and the instruction is to extract some information from it.
-PROMPT_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{INPUT_KEY}
-{{input}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
-
-# This is the prompt that is used for generating responses using an already trained model. It ends with the response
-# key, where the job of the model is to provide the completion that follows it (i.e. the response itself).
-PROMPT_FOR_GENERATION_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{RESPONSE_KEY}
-"""
-
-PROMPT_FOR_GENERATION_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{INPUT_KEY}
-{{input}}
-
-{RESPONSE_KEY}
-"""
+MODEL_DTYPE_MAPPING = {
+    "bf16": "bfloat16",
+    "bfloat16": "bfloat16",
+    "fp16": "float16",
+    "float16": "float16",
+    "fp32": None,
+    "float": None,
+    "float32": None,
+    "none": None,
+}
+MODEL_DTYPES = list(MODEL_DTYPE_MAPPING.keys())

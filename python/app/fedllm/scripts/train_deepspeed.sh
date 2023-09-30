@@ -22,9 +22,10 @@ deepspeed \
   --num_gpus="${NUM_GPU}" \
   --master_addr="${MASTER_ADDR}" \
   --master_port="${MASTER_PORT}" \
-  train.py \
+  run_train.py \
+  --task "instruction" \
   --deepspeed "configs/ds_z3_bf16_config.json" \
-  --model_name "EleutherAI/pythia-6.9b" \
+  --model_name "EleutherAI/pythia-70m" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
   --seed 1234 \
@@ -37,14 +38,16 @@ deepspeed \
   --learning_rate "5e-6" \
   --warmup_steps 50 \
   --num_train_epochs 5 \
-  --output_dir ".logs/dolly_pythia-6.9b" \
+  --output_dir ".logs/dolly_pythia-70m" \
   --logging_steps 50 \
   --eval_steps 200 \
   --save_steps 200 \
-  --save_total_limit 20 \
+  --save_total_limit 10 \
   --logging_strategy "steps" \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
   --do_train "True" \
+  --do_eval "True" \
+  --remove_long_seq "True" \
   "${@:4}" # skip first 3 arguments

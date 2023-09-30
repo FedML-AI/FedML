@@ -19,9 +19,20 @@ from transformers.utils import is_tf_available
 if is_tf_available():
     import tensorflow as tf
 
-from src.constants import END_KEY, PROMPT_FOR_GENERATION_FORMAT, RESPONSE_KEY
+from src.dataset_utils import END_KEY, INSTRUCTION_KEY, RESPONSE_KEY
 
 logger = logging.getLogger(__name__)
+
+# This is the prompt that is used for generating responses using an already trained model. It ends with the response
+# key, where the job of the model is to provide the completion that follows it (i.e. the response itself).
+PROMPT_FOR_GENERATION_FORMAT = f"""\
+Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+{INSTRUCTION_KEY}
+{{instruction}}
+
+{RESPONSE_KEY}
+"""
 
 
 def load_model_tokenizer_for_generate(

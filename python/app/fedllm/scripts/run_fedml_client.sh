@@ -27,7 +27,7 @@ bash scripts/run_fedml.sh \
   "${MASTER_ADDR}" \
   "${MASTER_PORT}" \
   "${NUM_NODES}" \
-  main_fedllm.py \
+  run_fedllm.py \
   --cf "${CONFIG_PATH}" \
   --rank "${RANK}" \
   --role client \
