@@ -24,6 +24,7 @@ class MyMessage(object):
     MSG_ARG_KEY_EDGE_INDEX = "edge_idx"
     MSG_ARG_KEY_TOTAL_EDGE_CLIENTS = "total_edge_clients"
     MSG_ARG_KEY_SAMPLED_EDGE_CLIENTS = "sampled_edge_clients"
+    MSG_ARG_KEY_TOTAL_SAMPLED_DATA_SIZE = "total_sampled_data_size"
 
     MSG_ARG_KEY_TRAIN_CORRECT = "train_correct"
     MSG_ARG_KEY_TRAIN_ERROR = "train_error"

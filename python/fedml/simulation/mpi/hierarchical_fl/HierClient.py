@@ -23,17 +23,18 @@ class HFLClient(Client):
         self.model_trainer = model_trainer
         self.criterion = nn.CrossEntropyLoss().to(device)
 
-    def train(self, w):
+    def train(self, w, scaled_loss_factor=1.0):
         self.model.load_state_dict(w)
         self.model.to(self.device)
 
+        scaled_loss_factor = min(scaled_loss_factor, 1.0)
         if self.args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.learning_rate)
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.learning_rate * scaled_loss_factor)
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=self.args.learning_rate,
-                weight_decay=self.args.wd,
+                lr=self.args.learning_rate * scaled_loss_factor,
+                weight_decay=self.args.weight_decay,
                 amsgrad=True,
             )
 

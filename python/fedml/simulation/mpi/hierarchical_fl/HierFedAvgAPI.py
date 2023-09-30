@@ -2,7 +2,7 @@ from .HierFedAvgCloudAggregator import HierFedAVGCloudAggregator
 from .HierFedAvgCloudManager import HierFedAVGCloudManager
 from .HierFedAvgEdgeManager import HierFedAVGEdgeManager
 from .HierGroup import HierGroup
-from .utils import analyze_clients_type, hetero_partition_groups, visualize_group_detail
+from .utils import analyze_clients_type, hetero_partition_groups, stats_group
 from ....core import ClientTrainer, ServerAggregator
 from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
@@ -121,10 +121,8 @@ def init_cloud_server(
     backend = args.backend
     group_indexes, group_to_client_indexes = setup_clients(args, train_data_local_dict, class_num)
 
-    # visualize group detail
-    if args.enable_wandb:
-        visualize_group_detail(group_to_client_indexes, train_data_local_dict, train_data_local_num_dict, class_num)
-
+    # print group detail
+    stats_group(group_to_client_indexes, train_data_local_dict, train_data_local_num_dict, class_num, args)
 
     server_manager = HierFedAVGCloudManager(args, aggregator, group_indexes, group_to_client_indexes,
                                             comm, rank, size, backend, topology_manager)
