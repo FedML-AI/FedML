@@ -38,6 +38,7 @@ def fedml_launch():
 @click.option(
     "--cluster",
     "-c",
+    default="",
     type=str,
     help="Please provide a cluster name. If a cluster with that name already exists, it will be used; otherwise, "
          "a new cluster with the provided name will be created."
@@ -46,7 +47,7 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
-    fedml.api.launch_job(yaml_file[0], version=version, api_key=api_key)
+    fedml.api.launch_job(yaml_file[0], cluster=cluster, version=version, api_key=api_key)
 
 
 @fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )

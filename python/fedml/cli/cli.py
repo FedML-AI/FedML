@@ -2,7 +2,7 @@ import collections
 import click
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, jobs, model, device, cluster
 from fedml.cli.modules.utils import OrderedGroup
 from fedml.computing.scheduler.env.collect_env import collect_env
 
@@ -65,6 +65,8 @@ def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
+# Add cluster subcommand module
+cli.add_command(cluster.fedml_clusters)
 
 if __name__ == "__main__":
     cli()

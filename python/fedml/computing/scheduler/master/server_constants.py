@@ -73,6 +73,8 @@ class ServerConstants(object):
                             login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]: LOGIN_MODE_CLOUD_SERVER_INDEX,
                             login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX}
 
+    API_HEADERS = {'Content-Type': 'application/json', 'Connection': 'close'}
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -157,6 +159,36 @@ class ServerConstants(object):
         job_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
             ServerConstants.get_mlops_url(config_version))
         return job_ops_url
+
+    @staticmethod
+    def get_cluster_list_url(config_version="release"):
+        cluster_list_url = "{}/fedmlOpsServer/api/v1/cli/getClusterStatus".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_list_url
+
+    @staticmethod
+    def get_cluster_start_url(config_version="release"):
+        cluster_start_url = "{}/fedmlOpsServer/api/v1/cli/startCluster".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_start_url
+
+    @staticmethod
+    def get_cluster_stop_url(config_version="release"):
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/stopCluster".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_kill_url(config_version="release"):
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/shutDownCluster".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_confirm_url(config_version="release"):
+        cluster_confirm_url = "{}/fedmlOpsServer/api/v1/cli/confirmClusterMachines".format(
+            ServerConstants.get_mlops_url(config_version))
+        return cluster_confirm_url
 
     @staticmethod
     def get_app_create_url(config_version="release"):

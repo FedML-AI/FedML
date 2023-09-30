@@ -13,8 +13,8 @@ def login(api_key, version):
     return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
 
 
-def match_resources(yaml_file, prompt):
-    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, prompt)
+def match_resources(yaml_file, cluster, prompt):
+    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, cluster, prompt)
 
 
 def authenticate(api_key, version):

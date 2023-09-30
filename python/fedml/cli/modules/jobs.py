@@ -42,8 +42,13 @@ def fedml_jobs():
          "default is falcon).",
 )
 def stop_job(platform, job_id, api_key, version):
-    fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
+    is_job_stopped = fedml.api.stop_job(job_id=job_id, version=version, platform=platform, api_key=api_key)
 
+    if is_job_stopped:
+        click.echo("Job has been stopped.")
+    else:
+        click.echo("Failed to stop the job, please check the arguments are valid and your network connection "
+                   "and make sure be able to access the FedML® Launch platform.")
 
 
 @fedml_jobs.command("status", help="Display fedml client training status.")
@@ -91,4 +96,4 @@ def fedml_status():
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
 def list_jobs(platform, job_name, job_id, api_key, version):
-    fedml.api.list_jobs(api_key, version, job_name, job_id, platform)
+    fedml.api.list_jobs(api_key=api_key, version=version, job_name=job_name, job_id=job_id, platform=platform)

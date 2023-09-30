@@ -27,7 +27,7 @@ class FedMLJobManager(Singleton):
             self.config_version = config_version
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_api_key, no_confirmation=False, job_id=None,
+                  user_api_key, cluster="", no_confirmation=False, job_id=None,
                   model_name=None, model_endpoint=None, job_yaml=None,
                   job_type=None):
         job_start_result = None
@@ -48,6 +48,7 @@ class FedMLJobManager(Singleton):
             "applicationName": application_name,
             "applicationConfigId": 0,
             "devices": device_lists,
+            "clusterName": cluster,
             "urls": [],
             "apiKey": user_api_key,
             "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
@@ -342,6 +343,7 @@ class FedMLJobStartedModel(object):
             self.job_url = job_started_json.get("job_url", job_started_json)
             self.gpu_matched = list()
             self.message = job_started_json.get("message", None)
+            self.cluster_id = job_started_json.get("cluster_id", None)
             gpu_list_json = job_started_json.get("gpu_matched", None)
             if gpu_list_json is not None:
                 for gpu_dev_json in gpu_list_json:
@@ -359,6 +361,7 @@ class FedMLJobStartedModel(object):
 
 class FedMLGpuDevices(object):
     def __init__(self, gpu_device_json):
+        self.gpu_id = gpu_device_json.get("id", None)
         self.gpu_vendor = gpu_device_json.get("gpu_vendor", None)
         self.gpu_num = gpu_device_json.get("total_gpu_count", None)
         self.gpu_type = gpu_device_json.get("gpu_type", None)
