@@ -22,10 +22,11 @@ train_args:
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
-  group_method: "random"
+  group_method: "hetero"
+  group_alpha: 0.5
   group_num: 4
   group_comm_round: 5
-  topo_name: "complete"
+  topo_name: "ring"
   topo_edge_probability: 0.5
 
 validation_args:

@@ -47,7 +47,7 @@ class HierGroup(FedAvgAPI):
             self.group_sample_number += self.train_data_local_num_dict[client_idx]
         return self.group_sample_number
 
-    def train(self, round_idx, w, sampled_client_indexes):
+    def train(self, round_idx, w, sampled_client_indexes, total_sampled_data_size=0):
         sampled_client_list = [self.client_dict[client_idx] for client_idx in sampled_client_indexes]
         w_group = w
         w_group_list = []
@@ -62,7 +62,14 @@ class HierGroup(FedAvgAPI):
             )
             # train each client
             for client in sampled_client_list:
-                w_local = client.train(w_group)
+                if total_sampled_data_size > 0:
+                    scaled_loss_factor = (
+                            self.args.group_num * len(sampled_client_list)
+                            * client.local_sample_number / total_sampled_data_size
+                    )
+                    w_local = client.train(w_group, scaled_loss_factor)
+                else:
+                    w_local = client.train(w_group)
                 w_locals.append((client.get_sample_number(), w_local))
 
             # aggregate local weights

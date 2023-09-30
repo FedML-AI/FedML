@@ -51,6 +51,7 @@ class HierFedAVGCloudManager(FedMLCommManager):
         global_model_params = self.aggregator.get_global_model_params()
 
         sampled_group_to_client_indexes = {}
+        total_sampled_data_size = 0
         for group_idx, client_num_per_round in enumerate(self.group_to_client_num_per_round):
             client_num_in_total = len(self.group_to_client_indexes[group_idx])
             sampled_client_indexes = self.aggregator.client_sampling(
@@ -58,20 +59,24 @@ class HierFedAVGCloudManager(FedMLCommManager):
                 client_num_in_total,
                 client_num_per_round,
             )
-
-            sampled_group_to_client_indexes[group_idx] = [self.group_to_client_indexes[group_idx][index]
-                                                          for index in sampled_client_indexes]
+            sampled_group_to_client_indexes[group_idx] = []
+            for index in sampled_client_indexes:
+                client_idx = self.group_to_client_indexes[group_idx][index]
+                sampled_group_to_client_indexes[group_idx].append(client_idx)
+                total_sampled_data_size += self.aggregator.train_data_local_num_dict[client_idx]
 
         logging.info(
             "client_indexes of each group = {}".format(sampled_group_to_client_indexes)
         )
 
         for process_id in range(1, self.size):
+            total_sampled_data_size = 0 if self.topology_manager is None else total_sampled_data_size
             self.send_message_init_config(
                 process_id,
                 global_model_params,
                 self.group_to_client_indexes[process_id - 1],
                 sampled_group_to_client_indexes[process_id - 1],
+                total_sampled_data_size,
                 process_id - 1
             )
 
@@ -106,6 +111,7 @@ class HierFedAVGCloudManager(FedMLCommManager):
                 return
 
             sampled_group_to_client_indexes = {}
+            total_sampled_data_size = 0
             for group_idx, client_num_per_round in enumerate(self.group_to_client_num_per_round):
                 client_num_in_total = len(self.group_to_client_indexes[group_idx])
                 sampled_client_indexes = self.aggregator.client_sampling(
@@ -113,37 +119,43 @@ class HierFedAVGCloudManager(FedMLCommManager):
                     client_num_in_total,
                     client_num_per_round,
                 )
+                sampled_group_to_client_indexes[group_idx] = []
+                for index in sampled_client_indexes:
+                    client_idx = self.group_to_client_indexes[group_idx][index]
+                    sampled_group_to_client_indexes[group_idx].append(client_idx)
+                    total_sampled_data_size += self.aggregator.train_data_local_num_dict[client_idx]
 
-                sampled_group_to_client_indexes[group_idx] = [self.group_to_client_indexes[group_idx][index]
-                                                              for index in sampled_client_indexes]
             logging.info(
                 "client_indexes of each group = {}".format(sampled_group_to_client_indexes)
             )
 
             for receiver_id in range(1, self.size):
-                if self.topology_manager is None:
-                    self.send_message_sync_model_to_edge(
-                        receiver_id, global_model_params,
-                        sampled_group_to_client_indexes[receiver_id-1], receiver_id-1
-                    )
+                if self.topology_manager is not None:
+                    global_model_params = global_model_params_list[receiver_id - 1]
                 else:
-                    self.send_message_sync_model_to_edge(
-                        receiver_id, global_model_params_list[receiver_id - 1],
-                        sampled_group_to_client_indexes[receiver_id - 1], receiver_id - 1
-                    )
+                    total_sampled_data_size = 0
+                self.send_message_sync_model_to_edge(
+                    receiver_id,
+                    global_model_params,
+                    sampled_group_to_client_indexes[receiver_id - 1],
+                    total_sampled_data_size,
+                    receiver_id - 1
+                )
 
-    def send_message_init_config(self, receive_id, global_model_params, total_client_indexes, sampled_client_indexed, edge_index):
+    def send_message_init_config(self, receive_id, global_model_params, total_client_indexes,
+                                 sampled_client_indexed, total_sampled_data_size, edge_index):
         message = Message(
             MyMessage.MSG_TYPE_C2E_INIT_CONFIG, self.get_sender_id(), receive_id
         )
         message.add_params(MyMessage.MSG_ARG_KEY_TOTAL_EDGE_CLIENTS, total_client_indexes)
         message.add_params(MyMessage.MSG_ARG_KEY_SAMPLED_EDGE_CLIENTS, sampled_client_indexed)
+        message.add_params(MyMessage.MSG_ARG_KEY_TOTAL_SAMPLED_DATA_SIZE, total_sampled_data_size)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_EDGE_INDEX, str(edge_index))
         self.send_message(message)
 
     def send_message_sync_model_to_edge(
-        self, receive_id, global_model_params, sampled_client_indexed, edge_index
+        self, receive_id, global_model_params, sampled_client_indexed, total_sampled_data_size, edge_index
     ):
         logging.info("send_message_sync_model_to_edge. receive_id = %d" % receive_id)
         message = Message(
@@ -152,6 +164,7 @@ class HierFedAVGCloudManager(FedMLCommManager):
             receive_id,
         )
         message.add_params(MyMessage.MSG_ARG_KEY_SAMPLED_EDGE_CLIENTS, sampled_client_indexed)
+        message.add_params(MyMessage.MSG_ARG_KEY_TOTAL_SAMPLED_DATA_SIZE, total_sampled_data_size)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_EDGE_INDEX, str(edge_index))
         self.send_message(message)

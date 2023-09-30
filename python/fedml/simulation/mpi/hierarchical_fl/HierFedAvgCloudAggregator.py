@@ -109,7 +109,7 @@ class HierFedAVGCloudAggregator(object):
         group_comm_round = len(self.sample_num_dict[0])
         edge_model_list = [None for _ in range(self.worker_num)]
 
-        p = cal_mixing_consensus_speed(topology_manager.topology, self.model_dict[0][0][0])
+        p = cal_mixing_consensus_speed(topology_manager.topology, self.model_dict[0][0][0], self.args)
 
         for group_round_idx in range(group_comm_round):
             model_list = []
@@ -126,7 +126,7 @@ class HierFedAVGCloudAggregator(object):
                                                               topology_manager.get_in_neighbor_weights(idx))
                                         )
             # average for testing
-            averaged_params = self._fedavg_aggregation_(edge_model_list)
+            averaged_params = self._pfedavg_aggregation_(edge_model_list)
             self.set_global_model_params(averaged_params)
             self.test_on_cloud_for_all_clients(global_round_idx)
 
@@ -153,6 +153,21 @@ class HierFedAVGCloudAggregator(object):
                 else:
                     averaged_params[k] += (
                         local_model_params[k] * local_sample_number / training_num
+                    )
+        return averaged_params
+
+    def _pfedavg_aggregation_(self, model_list):
+        (num0, averaged_params) = model_list[0]
+        for k in averaged_params.keys():
+            for i in range(0, len(model_list)):
+                _, local_model_params = model_list[i]
+                if i == 0:
+                    averaged_params[k] = (
+                        local_model_params[k] * 1 / len(model_list)
+                    )
+                else:
+                    averaged_params[k] += (
+                        local_model_params[k] * 1 / len(model_list)
                     )
         return averaged_params
 

@@ -37,22 +37,26 @@ class HierFedAVGEdgeManager(FedMLCommManager):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         total_client_indexes = msg_params.get(MyMessage.MSG_ARG_KEY_TOTAL_EDGE_CLIENTS)
         sampled_client_indexes = msg_params.get(MyMessage.MSG_ARG_KEY_SAMPLED_EDGE_CLIENTS)
+        total_sampled_data_size = msg_params.get(MyMessage.MSG_ARG_KEY_TOTAL_SAMPLED_DATA_SIZE)
         edge_index = msg_params.get(MyMessage.MSG_ARG_KEY_EDGE_INDEX)
 
         self.group.setup_clients(total_client_indexes)
         self.args.round_idx = 0
-        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
+        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params,
+                                                         sampled_client_indexes, total_sampled_data_size)
 
         self.send_model_to_cloud(0, w_group_list, sample_num_list)
 
     def handle_message_receive_model_from_cloud(self, msg_params):
         logging.info("handle_message_receive_model_from_cloud.")
         sampled_client_indexes = msg_params.get(MyMessage.MSG_ARG_KEY_SAMPLED_EDGE_CLIENTS)
+        total_sampled_data_size = msg_params.get(MyMessage.MSG_ARG_KEY_TOTAL_SAMPLED_DATA_SIZE)
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         edge_index = msg_params.get(MyMessage.MSG_ARG_KEY_EDGE_INDEX)
 
         self.args.round_idx += 1
-        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params, sampled_client_indexes)
+        w_group_list, sample_num_list = self.group.train(self.args.round_idx, global_model_params,
+                                                         sampled_client_indexes, total_sampled_data_size)
         self.send_model_to_cloud(0, w_group_list, sample_num_list)
 
         if self.args.round_idx == self.num_rounds:

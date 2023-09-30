@@ -4,20 +4,22 @@ import time
 import numpy as np
 import torch
 import wandb
+import logging
 
 from sklearn.cluster import KMeans
 
 
-def cal_mixing_consensus_speed(topo_weight_matrix, global_round_idx):
+def cal_mixing_consensus_speed(topo_weight_matrix, global_round_idx, args):
     n_rows, n_cols = np.shape(topo_weight_matrix)
     assert n_rows == n_cols
     A = np.array(topo_weight_matrix) - 1 / n_rows
     p = 1 - np.linalg.norm(A, ord=2) ** 2
-    wandb.log({"Groups/p": p, "comm_round": global_round_idx})
+    if args.enable_wandb:
+        wandb.log({"Groups/p": p, "comm_round": global_round_idx})
     return p
 
 
-def visualize_group_detail(group_to_client_indexes, train_data_local_dict, train_data_local_num_dict, class_num):
+def stats_group(group_to_client_indexes, train_data_local_dict, train_data_local_num_dict, class_num, args):
 
     xs = [i for i in range(class_num)]
     ys = []
@@ -37,12 +39,20 @@ def visualize_group_detail(group_to_client_indexes, train_data_local_dict, train
         ys.append(count_vector/count_vector.sum())
         keys.append("Group {}".format(group_idx))
 
-        wandb.log({"Groups/Client_num": len(group_to_client_indexes[group_idx]), "group_id": group_idx})
-        wandb.log({"Groups/Data_size": data_size, "group_id": group_idx})
+        if args.enable_wandb:
+            wandb.log({"Groups/Client_num": len(group_to_client_indexes[group_idx]), "group_id": group_idx})
+            wandb.log({"Groups/Data_size": data_size, "group_id": group_idx})
 
-    wandb.log({"Groups/Data_distribution":
-                   wandb.plot.line_series(xs=xs, ys=ys, keys=keys, title="Data distribution", xname="Label")}
-              )
+        logging.info("Group {}: client num={}, data size={} ".format(
+            group_idx,
+            len(group_to_client_indexes[group_idx]),
+            data_size
+        ))
+
+    if args.enable_wandb:
+        wandb.log({"Groups/Data_distribution":
+                       wandb.plot.line_series(xs=xs, ys=ys, keys=keys, title="Data distribution", xname="Label")}
+                  )
 
 
 def hetero_partition_groups(clients_type_list, num_groups, alpha=0.5):
