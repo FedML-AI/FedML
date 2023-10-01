@@ -47,7 +47,8 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
-    fedml.api.launch_job(yaml_file[0], cluster=cluster, version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    fedml.api.launch_job(yaml_file[0], cluster=cluster, api_key=api_key)
 
 
 @fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )

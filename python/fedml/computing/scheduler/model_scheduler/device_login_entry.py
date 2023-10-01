@@ -20,13 +20,13 @@ def login_as_model_device_agent(
     runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
 ):
     account_id = userid[0]
-    platform_domain, _ = fedml._get_backend_service(version)
+    url = fedml._get_backend_service()
 
     # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id in the MLOps platform ({}).".format(
-                platform_domain
+                url
             )
         )
         return

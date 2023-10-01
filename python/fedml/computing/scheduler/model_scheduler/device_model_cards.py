@@ -6,6 +6,7 @@ import time
 import uuid
 import yaml
 
+import fedml
 import requests
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
@@ -27,6 +28,7 @@ class FedMLModelCards(Singleton):
         self.local_deployment_end_point_id = None
         self.should_end_local_deployment = False
         self.local_deployment_mqtt_mgr = None
+        self.config_version = fedml.get_env_version()
 
     @staticmethod
     def get_instance():
@@ -86,7 +88,6 @@ class FedMLModelCards(Singleton):
             master_device_id = [str(master_device_id)]
         devices = master_device_id + worker_device_ids
 
-        self.set_config_version(mlops_version)
         self.build_model(model_name)
         self.push_model(model_name, user_id, user_api_key)
         res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
@@ -109,10 +110,6 @@ class FedMLModelCards(Singleton):
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'w') as f:
             yaml.dump(launch_params, f, sort_keys=False)
         return True
-
-    def set_config_version(self, config_version):
-        if config_version is not None:
-            self.config_version = config_version
 
     def create_model_use_config(self, model_name, config_file) -> bool:
         if config_file is None or config_file == "":

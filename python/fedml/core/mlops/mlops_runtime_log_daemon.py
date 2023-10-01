@@ -353,7 +353,7 @@ class MLOpsRuntimeLogDaemon:
 
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
-                _, url = fedml._get_backend_service("release")
+                url = fedml._get_backend_service()
                 self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
             else:
                 self.log_server_url = self.args.log_server_url

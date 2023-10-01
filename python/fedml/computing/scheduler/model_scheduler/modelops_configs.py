@@ -32,20 +32,13 @@ class ModelOpsConfigs(Singleton):
         return ModelOpsConfigs._config_instance
 
     def get_request_params(self, in_config_version="release"):
-        config_version = "release"
-        _, url = fedml._get_backend_service(config_version)
+        url = fedml._get_backend_service()
         url = "{}/fedmlOpsServer/configs/fetch".format(url)
-
-        if in_config_version is not None and in_config_version != "":
-            # Setup config url based on selected version.
-            config_version = in_config_version
-            _, url = fedml._get_backend_service(config_version)
-
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(
-                cur_source_dir, "ssl", "model-" + config_version + ".fedml.ai_bundle.crt"
+                cur_source_dir, "ssl", "model-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
             )
 
         return url, cert_path

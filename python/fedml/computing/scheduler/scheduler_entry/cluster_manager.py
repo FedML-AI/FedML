@@ -2,6 +2,7 @@ from typing import List
 
 import requests
 
+import fedml
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLGpuDevices
@@ -38,46 +39,42 @@ class FedMLClusterModel(object):
 class FedMLClusterManager(Singleton):
 
     def __init__(self):
-        pass
+        self.config_version = fedml.get_env_version()
 
     @staticmethod
     def get_instance():
         return FedMLClusterManager()
-
-    def set_config_version(self, config_version):
-        if config_version is not None:
-            self.config_version = config_version
-
+    
     def start_clusters(self, cluster_names=()):
-        cluster_start_url = ServerConstants.get_cluster_start_url(self.config_version)
+        cluster_start_url = ServerConstants.get_cluster_start_url()
         cluster_start_json = {'clusterNameList': list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_start_url, cluster_start_json, self.config_version)
         data = self._get_data_from_response(command="Start", response=response)
         return True if data is not None else False
 
     def stop_clusters(self, cluster_names=()):
-        cluster_stop_url = ServerConstants.get_cluster_stop_url(self.config_version)
+        cluster_stop_url = ServerConstants.get_cluster_stop_url()
         cluster_stop_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_stop_url, cluster_stop_json, self.config_version)
         data = self._get_data_from_response(command="Stop", response=response)
         return True if data is not None else False
 
     def kill_clusters(self, cluster_names=()):
-        cluster_kill_url = ServerConstants.get_cluster_kill_url(self.config_version)
+        cluster_kill_url = ServerConstants.get_cluster_kill_url()
         cluster_list_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_kill_url, cluster_list_json, self.config_version)
         data = self._get_data_from_response(command="Kill", response=response)
         return True if data is not None else False
 
     def list_clusters(self, cluster_names=()):
-        cluster_list_url = ServerConstants.get_cluster_list_url(self.config_version)
+        cluster_list_url = ServerConstants.get_cluster_list_url()
         cluster_list_json = {ClusterConstants.CLUSTER_NAME_LIST: list(set(cluster_names)), ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_list_url, cluster_list_json, self.config_version)
         data = self._get_data_from_response(command="List", response=response)
         return FedMLClusterModelList(data) if data is not None else data
 
     def confirm_cluster(self, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
-        confirm_cluster_url = ServerConstants.get_cluster_confirm_url(self.config_version)
+        confirm_cluster_url = ServerConstants.get_cluster_confirm_url()
         selected_machines_list = list()
         for gpu_machine in gpu_matched:
             selected_machine_json = {
@@ -97,7 +94,7 @@ class FedMLClusterManager(Singleton):
     @staticmethod
     def _request(url: str, json_data: dict, config_version: str):
         args = {"config_version": config_version}
-        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(config_version)
+        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path

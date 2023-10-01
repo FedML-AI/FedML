@@ -42,7 +42,7 @@ def match_resources(yaml_file, cluster=""):
 
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, cluster="", version="release", api_key=None, resource_id=None, prompt=True):
+def launch_job(yaml_file, cluster="", api_key=None, resource_id=None, prompt=True):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
@@ -51,7 +51,7 @@ def launch_job(yaml_file, cluster="", version="release", api_key=None, resource_
     :param version: version of MLOps platform. It should be dev, test or release
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return launch.job(yaml_file, api_key, version, resource_id, cluster, prompt=prompt)
+    return launch.job(yaml_file, api_key, resource_id, cluster, prompt=prompt)
 
 
 def job_stop(job_id, version, platform="falcon", api_key=None):
@@ -123,10 +123,10 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 
 
-def login(userid, version, client, server,
+def login(userid, client, server,
           api_key, role, runner_cmd, device_id, os_name,
           docker, docker_rank):
-    device_bind(userid, version, client, server,
+    device_bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
@@ -135,10 +135,10 @@ def logout(client, server, docker, docker_rank):
     device_unbind(client, server, docker, docker_rank)
 
 
-def device_bind(userid, version, client, server,
+def device_bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
-    device.bind(userid, version, client, server,
+    device.bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
@@ -146,6 +146,9 @@ def device_bind(userid, version, client, server,
 def device_unbind(client, server, docker, docker_rank):
     device.unbind(client, server, docker, docker_rank)
 
+
+def resource_type():
+    device.resource_type()
 
 def fedml_logs(client, server, docker, docker_rank):
     logs.log(client, server, docker, docker_rank)
@@ -195,7 +198,3 @@ def model_info(name):
 
 def model_run(name, data):
     model.run(name, data)
-
-
-def resource_type(version):
-    model.resource_type(version)

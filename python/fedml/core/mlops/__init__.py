@@ -213,7 +213,7 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
     logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
 
     if len(MLOpsStore.mlops_log_agent_config) == 0:
-        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version(version)
+        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version()
         service_config = dict()
         service_config["mqtt_config"] = mqtt_config
         service_config["s3_config"] = s3_config
@@ -743,7 +743,7 @@ def create_run(project_id, api_key, run_name=None):
 
 
 def get_request_params(args):
-    _, url = fedml._get_backend_service(args.config_version)
+    url = fedml._get_backend_service()
 
     cert_path = None
     if str(url).startswith("https://"):
