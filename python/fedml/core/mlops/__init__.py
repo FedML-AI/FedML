@@ -94,7 +94,7 @@ def init(args, should_init_logs=True):
             # Bind local device as simulation device on the MLOps platform.
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
-            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user, args.version)
+            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user)
             return
 
     project_name = None
@@ -874,7 +874,7 @@ def init_logs(args, edge_id):
     logging.info("client ids:{}".format(args.client_id_list))
 
 
-def bind_simulation_device(args, userid, version="release"):
+def bind_simulation_device(args, userid):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -882,6 +882,7 @@ def bind_simulation_device(args, userid, version="release"):
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
+    version = fedml.get_env_version()
     setattr(args, "version", version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
@@ -931,7 +932,7 @@ def bind_simulation_device(args, userid, version="release"):
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"],
                 args.account_id, unique_device_id, args.os_name
             )

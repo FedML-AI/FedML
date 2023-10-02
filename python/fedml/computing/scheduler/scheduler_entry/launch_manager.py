@@ -253,11 +253,11 @@ class FedMLLaunchManager(object):
 
     def start_job(self, platform_type, project_name, application_name,
                   device_server, device_edges,
-                  user_api_key, cluster="", no_confirmation=True, job_id=None):
+                  user_api_key, cluster="", no_confirmation=True, job_id=None, job_type="train"):
         launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
                                                                  application_name,
                                                                  device_server, device_edges, user_api_key, cluster,
-                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=None)
+                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=job_type)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name

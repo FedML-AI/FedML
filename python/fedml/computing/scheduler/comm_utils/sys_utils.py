@@ -506,21 +506,23 @@ def save_simulator_process(data_dir, runner_info_dir, process_id, run_id, run_st
 
 def get_simulator_process_list(data_dir, runner_info_dir):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
-    process_files = os.listdir(simulator_proc_path)
-    running_info = dict()
-    status_info = dict()
-    for process_file in process_files:
-        process_spit = str(process_file).split('-')
-        if len(process_spit) == 3:
-            process_id = process_spit[2]
-        else:
-            continue
-        run_id_info = load_yaml_config(os.path.join(simulator_proc_path, process_file))
-        running_info[str(process_id)] = run_id_info["run_id"]
-        status_info[str(run_id_info["run_id"])] = run_id_info.get("run_status", "")
+    if os.path.exists(simulator_proc_path):
+        process_files = os.listdir(simulator_proc_path)
+        running_info = dict()
+        status_info = dict()
+        for process_file in process_files:
+            process_spit = str(process_file).split('-')
+            if len(process_spit) == 3:
+                process_id = process_spit[2]
+            else:
+                continue
+            run_id_info = load_yaml_config(os.path.join(simulator_proc_path, process_file))
+            running_info[str(process_id)] = run_id_info["run_id"]
+            status_info[str(run_id_info["run_id"])] = run_id_info.get("run_status", "")
 
-    return running_info, status_info
-
+        return running_info, status_info
+    else:
+        return dict(), dict()
 
 def remove_simulator_process(data_dir, runner_info_dir, process_id):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
