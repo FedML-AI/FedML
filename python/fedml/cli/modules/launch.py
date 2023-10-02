@@ -17,7 +17,6 @@ def fedml_launch():
     context_settings={"ignore_unknown_options": True}
 )
 @click.help_option("--help", "-h")
-@click.argument("yaml_file", nargs=-1)
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
@@ -43,11 +42,13 @@ def fedml_launch():
     help="Please provide a cluster name. If a cluster with that name already exists, it will be used; otherwise, "
          "a new cluster with the provided name will be created."
 )
+@click.argument("yaml_file", nargs=-1)
 def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
-    fedml.api.launch_job(yaml_file[0], cluster=cluster, version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    fedml.api.launch_job(yaml_file[0], cluster=cluster, api_key=api_key)
 
 
 @fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
@@ -72,11 +73,15 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
 )
 def fedml_launch_cancel(job_id, platform, api_key, version):
-    fedml.api.job_stop(job_id[0], version, platform, api_key)
+    fedml.set_env_version(version)
+    if len(job_id) == 0:
+        print("no job is running.")
+    else:
+        fedml.api.job_stop(job_id[0], platform, api_key)
 
 
 @fedml_launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
 @click.help_option("--help", "-h")
 @click.argument("group_id", nargs=-1)
 def fedml_launch_queue(group_id):
-    pass
+    print("this CLI is not implemented yet")

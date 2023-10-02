@@ -42,7 +42,8 @@ def fedml_jobs():
          "default is falcon).",
 )
 def stop_job(platform, job_id, api_key, version):
-    fedml.api.job_stop(job_id=job_id, version=version, platform=platform, api_key=api_key)
+    fedml.set_env_version(version)
+    fedml.api.job_stop(job_id=job_id, platform=platform, api_key=api_key)
 
 
 @fedml_jobs.command("list", help="List jobs from the MLOps platform.")
@@ -80,7 +81,8 @@ def stop_job(platform, job_id, api_key, version):
     help="list jobs at which version of MLOps platform. It should be dev, test or release",
 )
 def list_jobs(platform, job_name, job_id, api_key, version):
-    job_list_obj = fedml.api.job_list(api_key=api_key, version=version, job_name=job_name, job_id=job_id,
+    fedml.set_env_version(version)
+    job_list_obj = fedml.api.job_list(api_key=api_key, job_name=job_name, job_id=job_id,
                                        platform=platform)
 
     _print_job_table(job_list_obj)
@@ -121,11 +123,11 @@ def list_jobs(platform, job_name, job_id, api_key, version):
     help="get status of job at which version of MLOps platform. It should be dev, test or release",
 )
 def status(platform, job_name, job_id, api_key, version):
+    fedml.set_env_version(version)
     if job_name is None and job_id is None:
         click.echo("Please specify job name or job id.")
         return
-
-    job_list_obj, _ = fedml.api.job_status(api_key=api_key, version=version, job_name=job_name, job_id=job_id,
+    job_list_obj, _ = fedml.api.job_status(api_key=api_key, job_name=job_name, job_id=job_id,
                                            platform=platform)
     _print_job_table(job_list_obj)
 
@@ -179,6 +181,7 @@ def status(platform, job_name, job_id, api_key, version):
     help="boolean value representing if all logs are needed",
 )
 def logs(platform, job_id, api_key, version, page_num, page_size, need_all_logs):
+    fedml.set_env_version(version)
     if job_id is None:
         click.echo("Please specify job id.")
         return
@@ -187,7 +190,6 @@ def logs(platform, job_id, api_key, version, page_num, page_size, need_all_logs)
                                                                                           page_num=page_num,
                                                                                           page_size=page_size,
                                                                                           need_all_logs=need_all_logs,
-                                                                                          version=version,
                                                                                           platform=platform,
                                                                                           api_key=api_key)
 

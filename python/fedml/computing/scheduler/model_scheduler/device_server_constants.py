@@ -247,7 +247,7 @@ class ServerConstants(object):
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        _, url = fedml._get_backend_service(config_version)
+        url = fedml._get_backend_service()
         return f"{url}/fedmlModelServer"
 
     @staticmethod

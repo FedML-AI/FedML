@@ -460,7 +460,6 @@ class FedMLServerRunner:
             random_list = random_out.split("FEDML@")
             device_type = device_client_constants.ClientConstants.login_role_list[
                 device_client_constants.ClientConstants.LOGIN_MODE_ON_PREMISE_INDEX]
-            FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
                 "", random_list[1], None,
@@ -1057,6 +1056,7 @@ class FedMLServerRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic=None, payload=None):
+        print("callback_start_train: ")
         try:
             _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
         except Exception as e:

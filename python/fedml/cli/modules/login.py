@@ -52,6 +52,7 @@ import fedml.api
 def fedml_login(userid, version, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
-    fedml.api.login(userid, version, client, server,
+    fedml.set_env_version(version)
+    fedml.api.login(userid, client, server,
                     api_key, role, runner_cmd, device_id, os_name,
                     docker, docker_rank)

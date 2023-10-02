@@ -44,7 +44,8 @@ def validate_cluster_names(ctx, param, value):
     help=version_help,
 )
 def start(cluster_names, version, api_key):
-    is_started = fedml.api.cluster_start(version=version, api_key=api_key, cluster_names=cluster_names)
+    fedml.set_env_version(version)
+    is_started = fedml.api.cluster_start(api_key=api_key, cluster_names=cluster_names)
     if is_started:
         click.echo("Clusters have been started.")
     else:
@@ -64,11 +65,12 @@ def start(cluster_names, version, api_key):
     help=version_help,
 )
 def startall(version, api_key):
-    cluster_list_obj = fedml.api.cluster_list(version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
         if click.confirm(confirmation_message.format("start"), abort=False):
-            is_started = fedml.api.cluster_startall(version=version, api_key=api_key)
+            is_started = fedml.api.cluster_startall(api_key=api_key)
             if is_started:
                 click.echo("Clusters have been started.")
             else:
@@ -91,7 +93,8 @@ def startall(version, api_key):
     help=version_help,
 )
 def stop(cluster_names, version, api_key):
-    is_stopped = fedml.api.cluster_stop(version=version, api_key=api_key, cluster_names=cluster_names)
+    fedml.set_env_version(version)
+    is_stopped = fedml.api.cluster_stop(api_key=api_key, cluster_names=cluster_names)
     if is_stopped:
         click.echo("Clusters have been stopped.")
     else:
@@ -111,11 +114,12 @@ def stop(cluster_names, version, api_key):
     help=version_help,
 )
 def stopall(version, api_key):
-    cluster_list_obj = fedml.api.cluster_list(version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
         if click.confirm(confirmation_message.format("stop"), abort=False):
-            is_stopped = fedml.api.cluster_stopall(version=version, api_key=api_key)
+            is_stopped = fedml.api.cluster_stopall(api_key=api_key)
             if is_stopped:
                 click.echo("Clusters have been stopped.")
             else:
@@ -138,7 +142,8 @@ def stopall(version, api_key):
     help=version_help,
 )
 def kill(cluster_names, version, api_key):
-    is_killed = fedml.api.cluster_kill(version=version, api_key=api_key, cluster_names=cluster_names)
+    fedml.set_env_version(version)
+    is_killed = fedml.api.cluster_kill(api_key=api_key, cluster_names=cluster_names)
     if is_killed:
         click.echo("Clusters have been killed.")
     else:
@@ -158,11 +163,12 @@ def kill(cluster_names, version, api_key):
     help=version_help,
 )
 def killall(version, api_key):
-    cluster_list_obj = fedml.api.cluster_list(version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
         if click.confirm(confirmation_message.format("kill"), abort=False):
-            is_killed = fedml.api.cluster_killall(version=version, api_key=api_key)
+            is_killed = fedml.api.cluster_killall(api_key=api_key)
             if is_killed:
                 click.echo("Clusters have been killed.")
             else:
@@ -186,7 +192,8 @@ def killall(version, api_key):
     help=version_help,
 )
 def list_clusters(cluster_names, version, api_key):
-    cluster_list_obj = fedml.api.cluster_list(version=version, api_key=api_key, cluster_names=cluster_names)
+    fedml.set_env_version(version)
+    cluster_list_obj = fedml.api.cluster_list(api_key=api_key, cluster_names=cluster_names)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
     else:
@@ -207,7 +214,8 @@ def list_clusters(cluster_names, version, api_key):
     help=version_help,
 )
 def status(cluster_name, version, api_key):
-    cluster_status, cluster_list_obj = fedml.api.cluster_status(cluster_name=(cluster_name,), version=version, api_key=api_key)
+    fedml.set_env_version(version)
+    cluster_status, cluster_list_obj = fedml.api.cluster_status(cluster_name=(cluster_name,), api_key=api_key)
     if cluster_status is None:
         click.echo("No cluster found with the given name.")
     else:

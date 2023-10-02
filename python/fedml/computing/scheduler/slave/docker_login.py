@@ -3,13 +3,14 @@ import os
 import platform
 
 import click
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from .client_constants import ClientConstants
 from .client_runner import FedMLClientRunner
 
 
-def login_with_docker_mode(userid, version, docker_rank):
+def login_with_docker_mode(userid, docker_rank):
     account_id = userid
 
     # Get os name
@@ -19,12 +20,9 @@ def login_with_docker_mode(userid, version, docker_rank):
 
     # Get data directory
     cur_dir = ClientConstants.get_fedml_home_dir()
-
-    # Set default version if the version argument is empty
-    if version == "":
-        version = "release"
-
+    
     # Set registry server and image path based on the version.
+    version = fedml.get_env_version()
     if version == "dev":
         image_dir = "/x6k8q1x9"
     elif version == "release":
@@ -47,7 +45,6 @@ def login_with_docker_mode(userid, version, docker_rank):
 
     # Set environment variables for client agent docker
     env_account_id = account_id
-    env_version = version
     env_current_running_dir = cur_dir
     env_current_os_name = os_name
     env_current_device_id = device_id
@@ -72,7 +69,7 @@ def login_with_docker_mode(userid, version, docker_rank):
     docker_run_cmd = "docker run --name " + fedml_docker_name + \
                      " -v " + fedml_client_home_dir + ":/home/fedml/fedml-client" + \
                      " --env ACCOUNT_ID=" + str(env_account_id) + \
-                     " --env FEDML_VERSION=" + env_version + \
+                     " --env FEDML_VERSION=" + version + \
                      " --env CLIENT_DEVICE_ID=" + env_current_device_id + \
                      " --env CLIENT_OS_NAME=" + env_current_os_name + \
                      " -d " + client_agent_image
@@ -130,6 +127,6 @@ def logs_with_docker_mode(docker_rank):
 
 
 if __name__ == "__main__":
-    login_with_docker_mode("214", "dev", 1)
+    login_with_docker_mode("214", 1)
     #logout_with_docker_mode(1)
 
