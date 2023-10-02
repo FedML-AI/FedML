@@ -156,8 +156,8 @@ class FedMLJobManager(Singleton):
             code = resp_data.get("code", None)
             data = resp_data.get("data", None)
             if code is None or data is None or code == "FAILURE":
-                print(f"List job with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
+                # print(f"List job with response.status_code = {response.status_code}, "
+                #       f"response.content: {response.content}")
                 return None
             job_list_json = data.get("jobList", None)
             if job_list_json is None:

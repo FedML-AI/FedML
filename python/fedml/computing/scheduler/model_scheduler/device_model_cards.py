@@ -499,7 +499,7 @@ class FedMLModelCards(Singleton):
         return False
 
     def query_model(self, model_name):
-        return get_model_info(model_name, ClientConstants.INFERENCE_HTTP_PORT)
+        return get_model_info(model_name, ClientConstants.INFERENCE_ENGINE_TYPE_ONNX, ClientConstants.INFERENCE_HTTP_PORT)
 
     def list_model_api(self, model_name, user_id, user_api_key):
         model_list_result = None

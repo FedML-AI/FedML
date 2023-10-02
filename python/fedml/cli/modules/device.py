@@ -72,6 +72,13 @@ def fedml_device_bind(
 @fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
 @click.help_option("--help", "-h")
 @click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="unbind to which version of FedML® Launch platform. It should be dev, test or release",
+)
+@click.option(
     "--client", "-c", default=None, is_flag=True, help="unbind from the FedML client.",
 )
 @click.option(
@@ -83,7 +90,8 @@ def fedml_device_bind(
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def fedml_device_unbind(client, server, docker, docker_rank):
+def fedml_device_unbind(version, client, server, docker, docker_rank):
+    fedml.set_env_version(version)
     fedml.api.device_unbind(client, server, docker, docker_rank)
 
 

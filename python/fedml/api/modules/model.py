@@ -59,7 +59,7 @@ def list_models(name):
         if len(models) <= 0:
             click.echo("Cannot locate model {}.".format(name))
 
-def list_remote(name, user, api_key, version):
+def list_remote(name, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -84,7 +84,7 @@ def package(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-def push(name, model_storage_url, model_net_url, user, api_key, version):
+def push(name, model_storage_url, model_net_url, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -103,7 +103,7 @@ def push(name, model_storage_url, model_net_url, user, api_key, version):
             click.echo("Failed to push model {}.".format(name))
 
 
-def pull(name, user, api_key, version):
+def pull(name, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -149,7 +149,6 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                     return False
                 else:
                     os.chdir(os.path.dirname(yaml_file))    # Set the execution path to the yaml folder
-                    version = "dev" #TODO: change to release
                     error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key)
                     if error_code != 0:
                         click.echo("Please check if your API key is valid.")
@@ -161,14 +160,18 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
 
 
 def info(name):
-    inference_output_url, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
+    inference_output_url, model_version, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
     if inference_output_url != "":
         click.echo("Query model {} successfully.".format(name))
         click.echo("infer url: {}.".format(inference_output_url))
+        click.echo("model version: {}.".format(model_version))
         click.echo("model metadata: {}.".format(model_metadata))
         click.echo("model config: {}.".format(model_config))
     else:
-        click.echo("Failed to query model {}.".format(name))
+        if name is None:
+            print("please specifiy the model name")
+        else:
+            click.echo("Failed to query model {}.".format(name))
 
 
 def run(name, data):

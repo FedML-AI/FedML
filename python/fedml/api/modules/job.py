@@ -9,7 +9,7 @@ from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
 def stop(job_id, platform, api_key):
-    authenticate(api_key, version)
+    authenticate(api_key)
 
     if not platform_is_valid(platform):
         return
@@ -28,7 +28,7 @@ def list_job(job_name, job_id, platform, api_key):
     return job_list_obj
 
 
-def status(version, job_name, job_id, platform, api_key):
+def status(job_name, job_id, platform, api_key):
     if not _authenticated_and_validated_platform(api_key, platform):
         return
 
@@ -48,14 +48,14 @@ def status(version, job_name, job_id, platform, api_key):
     return job_list_obj, job_status
 
 
-# input: job_id, page_num, page_size, need_all_logs, version, platform, api_key
+# input: job_id, page_num, page_size, need_all_logs, platform, api_key
 # return job status, total_log_lines, total_log_pages, log_list, logs
-def logs(job_id, page_num, page_size, need_all_logs, version, platform, api_key) -> (
+def logs(job_id, page_num, page_size, need_all_logs, platform, api_key) -> (
 str, int, int, List[str], FedMLJobLogModelList):
     if job_id is None:
         raise Exception("Please specify job id.")
 
-    _, job_status = status(version=version, job_name=None, job_id=job_id, platform=platform, api_key=api_key)
+    _, job_status = status(job_name=None, job_id=job_id, platform=platform, api_key=api_key)
 
     total_log_nums, total_log_pages, log_line_list, job_logs = 0, 0, list(), None
 
