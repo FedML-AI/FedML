@@ -8,7 +8,7 @@ from fedml.cli.modules.utils import DefaultCommandGroup
 @click.help_option("--help", "-h")
 def fedml_launch():
     """
-    Manage resources on the FedML® Launch platform (open.fedml.ai).
+    Launch job at the FedML® Launch platform (open.fedml.ai).
     """
 
 
