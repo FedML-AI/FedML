@@ -83,7 +83,7 @@ def stop_job(platform, job_id, api_key, version):
 def list_jobs(platform, job_name, job_id, api_key, version):
     fedml.set_env_version(version)
     job_list_obj = fedml.api.job_list(api_key=api_key, job_name=job_name, job_id=job_id,
-                                       platform=platform)
+                                      platform=platform)
 
     _print_job_table(job_list_obj)
 
@@ -216,6 +216,14 @@ def logs(platform, job_id, api_key, version, page_num, page_size, need_all_logs)
         click.echo("\nAll logs is as follows.")
         for log_line in log_list:
             click.echo(log_line.rstrip('\n'))
+
+
+@fedml_jobs.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
+@click.help_option("--help", "-h")
+@click.argument("group_id", nargs=-1)
+def fedml_launch_queue(group_id):
+    click.echo("this CLI is not implemented yet")
+    return
 
 
 def _print_job_table(job_list_obj):
