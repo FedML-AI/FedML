@@ -14,6 +14,7 @@ from os.path import expanduser
 import psutil
 import yaml
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
@@ -257,35 +258,28 @@ class ClientConstants(object):
         return model_infer_data_dir
 
     @staticmethod
-    def get_model_ops_list_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/listFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_list_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/listFromCli"
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_apply_endpoint_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/endpoint/applyEndpointId".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_apply_endpoint_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/applyEndpointId"
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_upload_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/createFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_upload_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/createFromCli"
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_url(config_version="release", local_server=None):
-        if config_version == "local":
-            return "http://{}:9000/fedmlModelServer".format(
-                "localhost" if local_server is None else local_server)
-        return "https://open{}.fedml.ai/fedmlModelServer".format(
-            "" if config_version == "release" else "-" + config_version)
+    def get_model_ops_url(config_version="release"):
+        _, url = fedml._get_backend_service(config_version)
+        return f"{url}/fedmlModelServer"
 
     @staticmethod
-    def get_model_ops_deployment_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_deployment_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/createFromCli"
         return model_ops_url
 
     @staticmethod

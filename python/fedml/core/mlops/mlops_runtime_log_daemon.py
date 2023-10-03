@@ -10,7 +10,7 @@ import time
 import requests
 import yaml
 from ...core.mlops.mlops_configs import MLOpsConfigs
-
+import fedml
 
 class MLOpsRuntimeLogProcessor:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
@@ -353,11 +353,12 @@ class MLOpsRuntimeLogDaemon:
 
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
-                self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
+                _, url = fedml._get_backend_service("release")
+                self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
             else:
                 self.log_server_url = self.args.log_server_url
         except Exception as e:
-            self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
+            self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
 
         self.log_file_dir = self.args.log_file_dir
         self.log_child_process_list = list()

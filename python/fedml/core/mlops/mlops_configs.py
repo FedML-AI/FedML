@@ -3,6 +3,7 @@ import os
 import time
 import certifi
 import requests
+import fedml
 from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -39,26 +40,16 @@ class MLOpsConfigs(object):
         return MLOpsConfigs._config_instance
 
     def get_request_params(self):
-        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
         config_version = "release"
+        _, url = fedml._get_backend_service(config_version)
+        url = f"{url}/fedmlOpsServer/configs/fetch"
         if (
-                hasattr(self.args, "config_version")
-                and self.args.config_version is not None
+            hasattr(self.args, "config_version") and self.args.config_version is not None
         ):
             # Setup config url based on selected version.
             config_version = self.args.config_version
-            if self.args.config_version == "release":
-                url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "test":
-                url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "dev":
-                url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "local":
-                if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                    url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
-                else:
-                    url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
-
+            _, url = fedml._get_backend_service(config_version)
+            url = f"{url}/fedmlOpsServer/configs/fetch"
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
@@ -69,18 +60,7 @@ class MLOpsConfigs(object):
         return url, cert_path
 
     def get_request_params_with_version(self, version):
-        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        if version == "release":
-            url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "test":
-            url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "dev":
-            url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "local":
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
-            else:
-                url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
+        _, url = fedml._get_backend_service(version)
 
         cert_path = None
         if str(url).startswith("https://"):
@@ -110,6 +90,7 @@ class MLOpsConfigs(object):
 
     def fetch_configs(self):
         url, cert_path = self.get_request_params()
+        print("url, cert_path = {}, {}".format(url, cert_path))
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
 
@@ -129,6 +110,7 @@ class MLOpsConfigs(object):
                 url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
             )
 
+        print("response = {}".format(response))
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
@@ -203,6 +185,7 @@ class MLOpsConfigs(object):
 
     def fetch_all_configs(self):
         url, cert_path = self.get_request_params()
+        print("url = {}, cert_path = {}".format(url, cert_path))
         json_params = {
             "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
             "device_send_time": int(time.time() * 1000)
@@ -238,8 +221,8 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def fetch_all_configs_with_version(version):
-        url = "https://open{}.fedml.ai/fedmlOpsServer/configs/fetch".format(
-            "" if version == "release" else "-"+version)
+        _, url = fedml._get_backend_service(version)
+        url = f"{url}/fedmlOpsServer/configs/fetch"
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)

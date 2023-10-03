@@ -277,8 +277,6 @@ class FedMLClientRunner:
             fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
             fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
             fedml_conf_object["common_args"]["using_mlops"] = True
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         if fedml_conf_object.get("train_args", None) is not None:
             fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
             fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]

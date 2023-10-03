@@ -2,6 +2,7 @@ import os
 
 import click
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
 from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
@@ -16,24 +17,22 @@ from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
 
 def bind(
         userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
+        api_key, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform "
-          "(https://open.fedml.ai)...\n")
+    platform_domain = fedml._get_backend_service(version)
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
     if userid is None or len(userid) <= 0:
         click.echo("Please specify your account id or API key, usage: fedml login $your_account_id_or_api_key")
         return
     account_id = userid[0]
-    platform_url = "open.fedml.ai"
-    if version != "release":
-        platform_url = "open-{}.fedml.ai".format(version)
 
+    
     # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id or API key in the FedML® Launch platform ({}).".format(
-                platform_url
+                platform_domain
             )
         )
         return
@@ -103,8 +102,6 @@ def bind(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-id",
@@ -147,8 +144,6 @@ def bind(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-rc",

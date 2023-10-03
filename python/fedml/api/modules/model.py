@@ -60,12 +60,12 @@ def list_models(name):
         if len(models) <= 0:
             click.echo("Cannot locate model {}.".format(name))
 
-def list_remote(name, user, api_key, version, local_server):
+def list_remote(name, user, api_key, version):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key, local_server)
+    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
     if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
     else:
@@ -86,7 +86,7 @@ def package(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-def push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
+def push(name, model_storage_url, model_net_url, user, api_key, version):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -94,8 +94,7 @@ def push(name, model_storage_url, model_net_url, user, api_key, version, local_s
     model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
                                                                              model_storage_url=model_storage_url,
-                                                                             model_net_url=model_net_url,
-                                                                             local_server=local_server)
+                                                                             model_net_url=model_net_url)
     if model_is_from_open:
         click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
     else:
@@ -107,12 +106,12 @@ def push(name, model_storage_url, model_net_url, user, api_key, version, local_s
             click.echo("Failed to push model {}.".format(name))
 
 
-def pull(name, user, api_key, version, local_server):
+def pull(name, user, api_key, version):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    if FedMLModelCards.get_instance().pull_model(name, user, api_key, local_server):
+    if FedMLModelCards.get_instance().pull_model(name, user, api_key):
         click.echo("Pull model {} successfully.".format(name))
     else:
         click.echo("Failed to pull model {}.".format(name))

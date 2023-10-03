@@ -65,7 +65,6 @@ class FedMLModelCards(Singleton):
                                            os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
         additional_parms_dict = parms_dict.get("default_parms_dict", {})
         use_local_deployment = parms_dict.get("default_use_local", False)
-        local_server = parms_dict.get("local_server", "127.0.0.1")
         mlops_version = parms_dict.get("mlops_version", "release")
 
         if master_device_id is None or worker_device_ids is None:
@@ -91,7 +90,7 @@ class FedMLModelCards(Singleton):
         self.build_model(model_name)
         self.push_model(model_name, user_id, user_api_key)
         res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
-                                additional_parms_dict, use_local_deployment, local_server)
+                                additional_parms_dict, use_local_deployment)
         if not res:
             print("Failed to deploy model")
             return False
@@ -215,7 +214,7 @@ class FedMLModelCards(Singleton):
 
         return True
 
-    def list_models(self, model_name, user_id=None, user_api_key=None, local_server=None):
+    def list_models(self, model_name, user_id=None, user_api_key=None):
         if user_id is None:
             model_home_dir = ClientConstants.get_model_dir()
             if not os.path.exists(model_home_dir):
@@ -247,7 +246,7 @@ class FedMLModelCards(Singleton):
                             print("Failed to list the model files. {}".format(e))
                         return [model]
         else:
-            return self.list_model_api(model_name, user_id, user_api_key, local_server)
+            return self.list_model_api(model_name, user_id, user_api_key)
 
         return []
 
@@ -306,7 +305,7 @@ class FedMLModelCards(Singleton):
         return model_zip_path
 
     def push_model(self, model_name, user_id, user_api_key, model_storage_url=None,
-                   model_net_url=None, no_uploading_modelops=False, local_server=None):
+                   model_net_url=None, no_uploading_modelops=False):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
@@ -374,7 +373,7 @@ class FedMLModelCards(Singleton):
 
                 upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
                                                       model_net_url, user_id, user_api_key,
-                                                      is_from_open=is_from_open, local_server=local_server)
+                                                      is_from_open=is_from_open)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -382,8 +381,8 @@ class FedMLModelCards(Singleton):
 
         return model_storage_url, model_zip_path
 
-    def pull_model(self, model_name, user_id, user_api_key, local_server=None):
-        model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server=local_server)
+    def pull_model(self, model_name, user_id, user_api_key):
+        model_query_result = self.list_model_api(model_name, user_id, user_api_key)
         if model_query_result is None:
             return False
 
@@ -476,12 +475,12 @@ class FedMLModelCards(Singleton):
         return True
 
     def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
-                     params, use_local_deployment=None, local_server=None,
+                     params, use_local_deployment=None,
                      in_model_version=None, in_model_id=None, endpoint_name=None, endpoint_id=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
-            model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server)
+            model_query_result = self.list_model_api(model_name, user_id, user_api_key)
             if model_query_result is None:
                 return False
             for model in model_query_result.model_list:
@@ -489,7 +488,7 @@ class FedMLModelCards(Singleton):
                 model_version = in_model_version if in_model_version is not None and in_model_version != "" \
                     else model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
-                                                          devices, user_id, user_api_key, local_server,
+                                                          devices, user_id, user_api_key,
                                                           endpoint_name=endpoint_name, endpoint_id=endpoint_id)
                 if deployment_result is not None:
                     return True
@@ -505,9 +504,9 @@ class FedMLModelCards(Singleton):
     def query_model(self, model_name):
         return get_model_info(model_name, ClientConstants.INFERENCE_HTTP_PORT)
 
-    def list_model_api(self, model_name, user_id, user_api_key, local_server):
+    def list_model_api(self, model_name, user_id, user_api_key):
         model_list_result = None
-        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version, local_server)
+        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_list_json = {
             "model_name": model_name,
@@ -543,9 +542,9 @@ class FedMLModelCards(Singleton):
         return model_list_result
 
     def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url,
-                         user_id, user_api_key, is_from_open=True, local_server=None):
+                         user_id, user_api_key, is_from_open=True):
         model_upload_result = None
-        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version, local_server)
+        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_upload_json = {
             "description": model_name,
@@ -613,9 +612,9 @@ class FedMLModelCards(Singleton):
         return ""
 
     def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
-                         user_id, user_api_key, local_server, endpoint_name=None, endpoint_id=None):
+                         user_id, user_api_key, endpoint_name=None, endpoint_id=None):
         model_deployment_result = None
-        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
+        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         if type(devices) is list:
             devices = "[" + ",".join([str(device) for device in devices]) + "]"
@@ -658,10 +657,9 @@ class FedMLModelCards(Singleton):
         return model_deployment_result
 
     def apply_endpoint_api(self, user_api_key, endpoint_name,
-                           model_id=None, model_name=None, model_version=None,
-                           local_server=None):
+                           model_id=None, model_name=None, model_version=None):
         endpoint_apply_result = None
-        model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version, local_server)
+        model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version)
         endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         endpoint_apply_json = {
             "apiKey": user_api_key,

@@ -97,6 +97,7 @@ class FedMLJobManager(Singleton):
                       f"response.content: {response.content}")
                 return None
             job_start_result = FedMLJobStartedModel(data, response=resp_data)
+            print("resp_data:", resp_data)
 
             # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
             # if job_obj is None:

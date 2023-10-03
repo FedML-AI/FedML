@@ -26,15 +26,18 @@ if [ "${NUM_GPU}" -gt 0 ]; then
   )
 
   if [[ -z "${CUDA_VISIBLE_DEVICES}" ]]; then
+    # when `CUDA_VISIBLE_DEVICES` is not specified, use all GPUs by setting `--num_nodes`
     CMD+=(
       --num_nodes="${NUM_NODES}"
       --num_gpus="${NUM_GPU}"
     )
-  #else
-  #  # see https://github.com/microsoft/DeepSpeed/issues/662
-  #  CMD+=(
-  #    --include "${localhost}:${CUDA_VISIBLE_DEVICES}"
-  #  )
+  else
+    # see https://github.com/microsoft/DeepSpeed/issues/662
+    # use `--include` to select GPUs and unset `CUDA_VISIBLE_DEVICES`
+    CMD+=(
+      --include "${MASTER_ADDR}:${CUDA_VISIBLE_DEVICES}"
+    )
+    unset CUDA_VISIBLE_DEVICES
   fi
 else
   CMD=(

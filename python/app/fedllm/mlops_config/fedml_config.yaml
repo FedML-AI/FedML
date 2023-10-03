@@ -1,37 +1,38 @@
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
+  training_type: "cross_silo"  # federated training type, we recommend `cross_silo` for LLMs
+  scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
+  use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-silo; this could improve the training stability
   random_seed: 0
 
 environment_args:
-  bootstrap: config/bootstrap.sh  # set to "config/bootstrap.sh" when using MLOps
+  bootstrap: config/bootstrap.sh  # change to "config/bootstrap.sh" when using MLOps
 
 data_args:
-  dataset: "databricks-dolly"  # dataset name
-  data_cache_dir: ~/fedml_data
-  # below copied from scripts/train_deepspeed.sh
+  dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
+  dataset_name: null
   dataset_path:
-    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  client_dataset_path:
-    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+    - "~/fedml_data/FedLLM/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # train dataset path
+    - "~/fedml_data/FedLLM/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # test dataset path
+  client_dataset_path: # [optional] if specified, will replace content in dataset_path for client
+    - "~/fedml_data/FedLLM/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"  # [optional] train dataset path for client
+    - "~/fedml_data/FedLLM/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"  # [optional] test dataset path for client
   test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
+  remove_long_seq: True  # if `True` remove all data whose sequence length > max_seq_length
 
 model_args:
-  # below copied from scripts/train_deepspeed.sh
-  model_name: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
+  skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
+  model_name_or_path: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_optimizer: sgd
+  client_optimizer: "adamw_hf"
   server_optimizer: "FedAvg"
-  client_id_list:
-  client_num_in_total: 2  # set number of clients
+  client_num_in_total: 2  # number of clients
   client_num_per_round: 2  # choose from 1~client_num_in_total
-  comm_round: 5  # total round of communications
-  # below copied from scripts/train_deepspeed.sh
+  comm_round: 5  # number of rounds of aggregation
+  # below are the same as HuggingFace settings
+  task: instruction  # choose from `finetune` and `instruction`. If set to `instruction`, will apply template to the dataset and affects loss calculation.
   deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
@@ -39,21 +40,21 @@ train_args:
   gradient_checkpointing: True
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 1
+  eval_accumulation_steps: 4
   learning_rate: 1.0e-5
   warmup_steps: 50
   num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
-  output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
+  output_dir: "~/fedml_logs/MLOps/{run_id}/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
-  max_steps: 17500   # number of training steps for the entire training, should >= comm_round, this option overwrites `num_train_epochs`
-  save_total_limit: 20
+  max_steps: 17500  # number of training steps for the entire training, should >= comm_round, this option overwrites `num_train_epochs`
+  save_total_limit: 10
   logging_strategy: "no"
   evaluation_strategy: "no"  # should be turned off
   save_strategy: "no"
-  eval_accumulation_steps: 4
-  # save_on_each_node: True
-  report_to: "none"
+  save_on_each_node: True
 
 validation_args:
   frequency_of_the_test: 1

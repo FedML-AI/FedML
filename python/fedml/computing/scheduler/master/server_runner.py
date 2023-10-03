@@ -304,8 +304,6 @@ class FedMLServerRunner:
             fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("cloud_agent_id", self.edge_id)
             fedml_conf_object["train_args"]["group_server_id_list"] = self.request_json.get("group_server_id_list",
                                                                                             list())
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         if fedml_conf_object.get("device_args", None) is not None:
             fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]

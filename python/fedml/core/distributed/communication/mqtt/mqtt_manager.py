@@ -9,6 +9,7 @@ import paho.mqtt.publish as mqtt_publish
 import time
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
+import fedml
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
@@ -330,7 +331,8 @@ if __name__ == "__main__":
 
     last_will_topic = "fedml/mqtt-test/lastwill"
     last_will_msg = {"ID": 1, "status": "OFFLINE"}
-    mqtt_manager = MqttManager("mqtt.fedml.ai", 1883, "admin", "test",
+    mqtt_url = fedml._get_mqtt_service("release")
+    mqtt_manager = MqttManager(mqtt_url, 1883, "admin", "test",
                                30, args.client_id,
                                last_will_topic=last_will_topic,
                                last_will_msg=json.dumps(last_will_msg))
