@@ -2,13 +2,11 @@ import collections
 import click
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, job, model, device, cluster
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, job, model, device, cluster, run
 from fedml.cli.modules.utils import OrderedGroup
 from fedml.computing.scheduler.env.collect_env import collect_env
 
 
-    
-    
 @click.group(cls=OrderedGroup)
 @click.help_option("--help", "-h")
 def cli():
@@ -28,6 +26,9 @@ cli.add_command(launch.fedml_launch)
 
 # Add cluster subcommand module
 cli.add_command(cluster.fedml_clusters)
+
+# Add run subcommand module
+cli.add_command(run.fedml_run)
 
 # Add job subcommand module
 cli.add_command(job.fedml_jobs)

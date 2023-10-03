@@ -15,7 +15,7 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
-from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster
+from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster, run
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
 
@@ -87,6 +87,8 @@ def job_logs(job_id, page_num, page_size, need_all_logs=False, platform="falcon"
 def cluster_list(cluster_names=(), api_key=None) -> FedMLClusterModelList:
     return cluster.list_clusters(cluster_names=cluster_names, api_key=api_key)
 
+def cluster_exists(cluster_name:str, api_key:str=None) -> bool:
+    return cluster.exists(cluster_name=cluster_name, api_key=api_key)
 
 def cluster_status(cluster_name, api_key=None) -> FedMLClusterModelList:
     return cluster.status(cluster_name=cluster_name, api_key=api_key)
@@ -195,3 +197,7 @@ def model_info(name):
 
 def model_run(name, data):
     model.run(name, data)
+
+
+def run_command(cmd, cluster_name, api_key=None):
+    return run.command(cmd, cluster_name, api_key)

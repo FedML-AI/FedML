@@ -35,3 +35,12 @@ def status(cluster_name, api_key) -> (str, FedMLClusterModelList):
         if len(cluster_status_obj.cluster_list) > 1:
             raise Exception("More than one cluster found with the same name.")
     return cluster_status_obj.cluster_list[0].status, cluster_status_obj
+
+
+def exists(cluster_name, api_key) -> bool:
+    authenticate(api_key)
+    cluster_list_obj = FedMLClusterManager.get_instance().list_clusters()
+    if cluster_list_obj is None or not len(cluster_list_obj.cluster_list):
+        return False
+    clusters = set(map(lambda x: x.cluster_name, cluster_list_obj.cluster_list))
+    return cluster_name in clusters
