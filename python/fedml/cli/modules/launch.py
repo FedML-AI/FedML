@@ -14,7 +14,7 @@ def fedml_launch():
 
 @fedml_launch.command(
     "default", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
-    context_settings={"ignore_unknown_options": True}
+    context_settings={"ignore_unknown_options": True}, hidden=True
 )
 @click.help_option("--help", "-h")
 @click.option(

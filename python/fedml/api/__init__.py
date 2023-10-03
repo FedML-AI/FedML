@@ -87,6 +87,8 @@ def job_logs(job_id, page_num, page_size, need_all_logs=False, platform="falcon"
 def cluster_list(cluster_names=(), api_key=None) -> FedMLClusterModelList:
     return cluster.list_clusters(cluster_names=cluster_names, api_key=api_key)
 
+def cluster_exists(cluster_name:str, api_key:str=None) -> bool:
+    return cluster.exists(cluster_name=cluster_name, api_key=api_key)
 
 def cluster_status(cluster_name, api_key=None) -> FedMLClusterModelList:
     return cluster.status(cluster_name=cluster_name, api_key=api_key)
@@ -197,5 +199,5 @@ def model_run(name, data):
     model.run(name, data)
 
 
-def run_command(commands, version="release", api_key=None):
-    return run.command(commands, version, api_key)
+def run_command(cmd, cluster_name, api_key=None):
+    return run.command(cmd, cluster_name, api_key)
