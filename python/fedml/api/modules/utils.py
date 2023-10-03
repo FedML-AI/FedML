@@ -9,16 +9,16 @@ FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-pac
 
 
 
-def login(api_key, version):
-    return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+def login(api_key):
+    return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key)
 
 
 def match_resources(yaml_file, cluster, prompt):
     return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, cluster, prompt)
 
 
-def authenticate(api_key, version):
-    error_code, _ = login(api_key, version)
+def authenticate(api_key):
+    error_code, _ = login(api_key)
 
     # Exit if not able to authenticate successfully
     if error_code:

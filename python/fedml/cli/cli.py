@@ -26,6 +26,9 @@ cli.add_command(logout.fedml_logout)
 # Add launch subcommand module
 cli.add_command(launch.fedml_launch)
 
+# Add cluster subcommand module
+cli.add_command(cluster.fedml_clusters)
+
 # Add job subcommand module
 cli.add_command(job.fedml_jobs)
 
@@ -51,7 +54,15 @@ cli.add_command(logs.fedml_logs)
          "Python version, etc.",
 )
 @click.help_option("--help", "-h")
-def fedml_env():
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="support values: local, dev, test, release",
+)
+def fedml_env(version):
+    fedml.set_env_version(version)
     collect_env()
 
 
@@ -64,9 +75,6 @@ cli.add_command(diagnosis.fedml_diagnosis)
 def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
-
-# Add cluster subcommand module
-cli.add_command(cluster.fedml_clusters)
 
 if __name__ == "__main__":
     cli()

@@ -8,37 +8,34 @@ from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunch
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
-def stop(job_id, version, platform, api_key):
-    authenticate(api_key, version)
+def stop(job_id, platform, api_key):
+    authenticate(api_key)
 
     if not platform_is_valid(platform):
         return
 
-    FedMLJobManager.get_instance().set_config_version(version)
     is_stopped = FedMLJobManager.get_instance().stop_job(platform, api_key, job_id)
     return is_stopped
 
 
-def list_job(version, job_name, job_id, platform, api_key):
-    if not _authenticated_and_validated_platform(api_key, version, platform):
+def list_job(job_name, job_id, platform, api_key):
+    if not _authenticated_and_validated_platform(api_key, platform):
         return
 
-    FedMLJobManager.get_instance().set_config_version(version)
     job_list_obj = FedMLJobManager.get_instance().list_job(platform=platform, project_name=None, job_name=job_name,
                                                            user_api_key=get_api_key(), job_id=job_id)
 
     return job_list_obj
 
 
-def status(version, job_name, job_id, platform, api_key):
-    if not _authenticated_and_validated_platform(api_key, version, platform):
+def status(job_name, job_id, platform, api_key):
+    if not _authenticated_and_validated_platform(api_key, platform):
         return
 
     if job_name is None and job_id is None:
         raise Exception("Please specify either job name or job id.")
 
     job_status = None
-    FedMLJobManager.get_instance().set_config_version(version)
     job_list_obj = FedMLJobManager.get_instance().list_job(platform=platform, project_name=None, job_name=job_name,
                                                            user_api_key=get_api_key(), job_id=job_id)
 
@@ -51,14 +48,14 @@ def status(version, job_name, job_id, platform, api_key):
     return job_list_obj, job_status
 
 
-# input: job_id, page_num, page_size, need_all_logs, version, platform, api_key
+# input: job_id, page_num, page_size, need_all_logs, platform, api_key
 # return job status, total_log_lines, total_log_pages, log_list, logs
-def logs(job_id, page_num, page_size, need_all_logs, version, platform, api_key) -> (
+def logs(job_id, page_num, page_size, need_all_logs, platform, api_key) -> (
 str, int, int, List[str], FedMLJobLogModelList):
     if job_id is None:
         raise Exception("Please specify job id.")
 
-    _, job_status = status(version=version, job_name=None, job_id=job_id, platform=platform, api_key=api_key)
+    _, job_status = status(job_name=None, job_id=job_id, platform=platform, api_key=api_key)
 
     total_log_nums, total_log_pages, log_line_list, job_logs = 0, 0, list(), None
 
@@ -91,8 +88,8 @@ str, int, int, List[str], FedMLJobLogModelList):
     return job_status, job_logs.total_num, job_logs.total_pages, log_line_list, job_logs
 
 
-def _authenticated_and_validated_platform(api_key, version, platform):
-    authenticate(api_key, version)
+def _authenticated_and_validated_platform(api_key, platform):
+    authenticate(api_key)
 
     if not platform_is_valid(platform):
         return False

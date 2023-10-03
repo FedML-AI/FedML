@@ -538,6 +538,8 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False,
                    inference_type=None, request_input_example=""):
+    if model_name is None:
+        return "", "", {}, {}
     local_ip = ClientConstants.get_local_ip()
     if infer_host is not None and infer_host != "127.0.0.1":
         infer_url_host = infer_host

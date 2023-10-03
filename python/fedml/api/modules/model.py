@@ -1,10 +1,9 @@
 import os
 
 import click
-from prettytable import PrettyTable
 
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+
 
 
 def create(name, config_file):
@@ -60,11 +59,10 @@ def list_models(name):
         if len(models) <= 0:
             click.echo("Cannot locate model {}.".format(name))
 
-def list_remote(name, user, api_key, version):
+def list_remote(name, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
-    FedMLModelCards.get_instance().set_config_version(version)
     model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
     if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
@@ -86,11 +84,10 @@ def package(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-def push(name, model_storage_url, model_net_url, user, api_key, version):
+def push(name, model_storage_url, model_net_url, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
-    FedMLModelCards.get_instance().set_config_version(version)
     model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
                                                                              model_storage_url=model_storage_url,
@@ -106,11 +103,10 @@ def push(name, model_storage_url, model_net_url, user, api_key, version):
             click.echo("Failed to push model {}.".format(name))
 
 
-def pull(name, user, api_key, version):
+def pull(name, user, api_key):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
-    FedMLModelCards.get_instance().set_config_version(version)
     if FedMLModelCards.get_instance().pull_model(name, user, api_key):
         click.echo("Pull model {} successfully.".format(name))
     else:
@@ -153,12 +149,10 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                     return False
                 else:
                     os.chdir(os.path.dirname(yaml_file))    # Set the execution path to the yaml folder
-                    version = "dev" #TODO: change to release
-                    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+                    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key)
                     if error_code != 0:
                         click.echo("Please check if your API key is valid.")
                         return
-                    FedMLLaunchManager.get_instance().set_config_version(version)
                     FedMLLaunchManager.get_instance().api_launch_job(yaml_file, None)
             else:
                 click.echo("Please specify both the master device id and worker device ids in the config file.")
@@ -166,14 +160,18 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
 
 
 def info(name):
-    inference_output_url, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
+    inference_output_url, model_version, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
     if inference_output_url != "":
         click.echo("Query model {} successfully.".format(name))
         click.echo("infer url: {}.".format(inference_output_url))
+        click.echo("model version: {}.".format(model_version))
         click.echo("model metadata: {}.".format(model_metadata))
         click.echo("model config: {}.".format(model_config))
     else:
-        click.echo("Failed to query model {}.".format(name))
+        if name is None:
+            print("please specifiy the model name")
+        else:
+            click.echo("Failed to query model {}.".format(name))
 
 
 def run(name, data):
@@ -184,15 +182,3 @@ def run(name, data):
     else:
         click.echo("Failed to inference model {}.".format(name))
 
-
-def resource_type(version):
-    FedMLLaunchManager.get_instance().set_config_version(version)
-    resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
-    if resource_type_list is not None and len(resource_type_list) > 0:
-        click.echo("All available resource type is as follows.")
-        resource_table = PrettyTable(['Resource Type', 'GPU Type'])
-        for type_item in resource_type_list:
-            resource_table.add_row([type_item[0], type_item[1]])
-        print(resource_table)
-    else:
-        click.echo("No available resource type.")

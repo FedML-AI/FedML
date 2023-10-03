@@ -5,6 +5,8 @@ import uuid
 from os.path import expanduser
 
 import click
+
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
@@ -23,6 +25,7 @@ from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUplo
 from fedml.api.constants import ApiConstants
 
 
+
 class FedMLLaunchManager(object):
     def __new__(cls, *args, **kw):
         if not hasattr(cls, "_instance"):
@@ -32,7 +35,7 @@ class FedMLLaunchManager(object):
         return cls._instance
 
     def __init__(self):
-        pass
+        self.config_version = fedml.get_env_version()
 
     @staticmethod
     def get_instance():
@@ -44,14 +47,9 @@ class FedMLLaunchManager(object):
         self.device_server = ""
         self.device_edges = ""
 
-    def set_config_version(self, config_version):
-        if config_version is not None:
-            self.config_version = config_version
-
     def launch_job(self, yaml_file, user_api_key, cluster, mlops_platform_type,
                    device_server, device_edges,
                    no_confirmation=False):
-
         try:
             is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=self.config_version)
             if not is_latest_version:
@@ -78,7 +76,6 @@ class FedMLLaunchManager(object):
             if self.job_config.serving_model_name is not None and self.job_config.serving_model_name != "":
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
-            FedMLAppManager.get_instance().set_config_version(self.config_version)
             models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
             if models is None or len(models.model_list) <= 0:
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
@@ -230,7 +227,6 @@ class FedMLLaunchManager(object):
             build_server_package = None
 
         # Create and update an application with the built packages.
-        FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(
             platform_type, self.job_config.application_name, configs, user_api_key,
             client_package_file=build_client_package, server_package_file=build_server_package,
@@ -242,7 +238,6 @@ class FedMLLaunchManager(object):
             exit(-1)
 
         # Start the job with the above application.
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         launch_result = FedMLJobManager.get_instance().start_job(
             platform_str, self.job_config.project_name, self.job_config.application_name,
             device_server, device_edges, user_api_key, cluster=cluster, no_confirmation=no_confirmation,
@@ -254,16 +249,15 @@ class FedMLLaunchManager(object):
                    self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
-        # print(f"launch_result = {launch_result}")
         return launch_result
 
     def start_job(self, platform_type, project_name, application_name,
                   device_server, device_edges,
-                  user_api_key, cluster="", no_confirmation=True, job_id=None):
+                  user_api_key, cluster="", no_confirmation=True, job_id=None, job_type="train"):
         launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
                                                                  application_name,
                                                                  device_server, device_edges, user_api_key, cluster,
-                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=None)
+                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=job_type)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -275,6 +269,7 @@ class FedMLLaunchManager(object):
     @staticmethod
     def build_job_package(platform, client_server_type, source_folder, entry_point,
                           config_folder, dest_folder, ignore, verbose=False):
+        
         if verbose:
             print("Argument for type: " + client_server_type)
             print("Argument for source folder: " + source_folder)
@@ -495,14 +490,12 @@ class FedMLLaunchManager(object):
         return 0
 
     def check_heartbeat(self, api_key):
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         return FedMLJobManager.get_instance().check_heartbeat(api_key)
 
     def show_resource_type(self):
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         return FedMLJobManager.get_instance().show_resource_type()
 
-    def check_api_key(self, api_key=None, version="release"):
+    def check_api_key(self, api_key=None):
         if api_key is None or api_key == "":
             saved_api_key = get_api_key()
             if saved_api_key is None or saved_api_key == "":
@@ -510,7 +503,6 @@ class FedMLLaunchManager(object):
             else:
                 api_key = saved_api_key
 
-        FedMLLaunchManager.get_instance().set_config_version(version)
         is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
             click.echo("Your API Key is not correct. Please input again.")
@@ -525,15 +517,14 @@ class FedMLLaunchManager(object):
 
         return False
 
-    def fedml_login(self, api_key=None, version="release"):
+    def fedml_login(self, api_key=None):
         """
         init the launch environment
         :param api_key: API Key from MLOPs
         :param version: dev, test, release
         :return int: error code (0 means successful), str: error message
         """
-        self.set_config_version(version)
-        api_key_is_valid = self.check_api_key(api_key=api_key, version=version)
+        api_key_is_valid = self.check_api_key(api_key=api_key)
         if api_key_is_valid:
             return 0, "Login successfully"
 
@@ -558,7 +549,6 @@ class FedMLLaunchManager(object):
                 click.echo("You have confirmed to keep your job in the waiting list.")
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
             else:
-                FedMLJobManager.get_instance().set_config_version(self.config_version)
                 FedMLJobManager.get_instance().stop_job(
                     self.platform_type, get_api_key(), result.job_id)
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
@@ -644,7 +634,6 @@ class FedMLLaunchManager(object):
 
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
-            FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(
                 self.platform_type, get_api_key(), resource_id)
             return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
@@ -662,7 +651,6 @@ class FedMLLaunchManager(object):
         gpu_matched = result.gpu_matched
         cluster_confirmed = True
         if not (cluster_id is None or cluster_id == ""):
-            FedMLClusterManager.get_instance().set_config_version(self.config_version)
             cluster_confirmed = FedMLClusterManager.get_instance().confirm_cluster(cluster_id, gpu_matched)
 
         if not cluster_confirmed:
@@ -708,8 +696,7 @@ class FedMLLaunchManager(object):
         click.echo("")
         click.echo(f"For querying the realtime status of your job, please run the following command.")
         click.echo(f"fedml job logs -jid {result.job_id}" +
-                   "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
-
+                   "{}".format(f" -v {self.config_version}"))
         return ret_job_id, project_id, 0, ""
 
 

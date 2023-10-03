@@ -2,6 +2,7 @@
 import os
 import time
 import uuid
+import fedml
 
 import requests
 
@@ -22,15 +23,11 @@ from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLMo
 class FedMLAppManager(Singleton):
 
     def __init__(self):
-        pass
+        self.config_version = fedml.get_env_version()
 
     @staticmethod
     def get_instance():
         return FedMLAppManager()
-
-    def set_config_version(self, config_version):
-        if config_version is not None:
-            self.config_version = config_version
 
     def create_app(self, platform, application_name, client_package_file, server_package_file,
                    user_id, user_api_key):
@@ -115,7 +112,7 @@ class FedMLAppManager(Singleton):
                        client_package_url, client_package_file, server_package_url, server_package_file,
                        user_api_key):
         app_update_result = None
-        app_update_url = ServerConstants.get_app_update_url(self.config_version)
+        app_update_url = ServerConstants.get_app_update_url()
         app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         app_update_json = {
             "avatar": "https://fedml.s3.us-west-1.amazonaws.com/profile_picture2.png",
@@ -192,7 +189,7 @@ class FedMLAppManager(Singleton):
         app_update_json["fileList"] = package_file_list
 
         args = {"config_version": self.config_version}
-        _, cert_path = MLOpsConfigs.get_instance(args).get_request_params_with_version(self.config_version)
+        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -247,7 +244,6 @@ class FedMLAppManager(Singleton):
         return ""
 
     def build_model(self, model_name, workspace_dir):
-        FedMLModelCards.get_instance().set_config_version(self.config_version)
         FedMLModelCards.get_instance().delete_model(model_name)
         if not FedMLModelCards.get_instance().create_model(model_name):
             return Constants.ERROR_CODE_MODEL_CREATE_FAILED, None
@@ -262,7 +258,6 @@ class FedMLAppManager(Singleton):
         return 0, model_zip_path
 
     def push_model_to_s3(self, model_name, model_zip_path):
-        FedMLModelCards.get_instance().set_config_version(self.config_version)
         return FedMLModelCards.get_instance().push_model_to_s3(
             model_name, model_zip_path, "FedMLLaunchServe",
             progress_desc="Submitting your job to FedML® Launch platform")
@@ -281,13 +276,10 @@ class FedMLAppManager(Singleton):
         return True
 
     def check_model_exists(self, model_name, api_key):
-        FedMLModelCards.get_instance().set_config_version(self.config_version)
         result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
         return result
 
     def update_model(self, model_name, workspace, api_key):
-        FedMLModelCards.get_instance().set_config_version(self.config_version)
-
         error_code, model_zip_path = self.build_model(model_name, workspace)
         if error_code != 0:
             return None

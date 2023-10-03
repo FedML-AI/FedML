@@ -22,6 +22,9 @@ def fedml_model():
     "--config_file", "-cf", default = None,type=str, help="Model config file (.yaml)",
 )
 def fedml_model_create(name, config_file):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_create(name, config_file)
 
 
@@ -50,7 +53,11 @@ def fedml_model_create(name, config_file):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version):
-    fedml.api.model_push(name, model_storage_url, model_net_url, user, api_key, version)
+    fedml.set_env_version(version)
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
+    fedml.api.model_push(name, model_storage_url, model_net_url, user, api_key)
 
 
 @fedml_model.command("deploy", help="Deploy model to the local machine or MLOps platform (cloud)")
@@ -77,6 +84,9 @@ def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, vers
     "--config_file", "-cf", default = "", type=str, help="Model config file (.yaml)"
 )
 def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
 
 
@@ -91,6 +101,9 @@ def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key, co
     "--data", "-d", type=str, help="input data for model inference.",
 )
 def fedml_model_run(name, data):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_run(name, data)
 
 
@@ -114,7 +127,11 @@ def fedml_model_run(name, data):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def fedml_model_pull(name, user, api_key, version):
-    fedml.api.model_pull(name, user, api_key, version)
+    fedml.set_env_version(version)
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
+    fedml.api.model_pull(name, user, api_key)
 
 
 
@@ -124,6 +141,9 @@ def fedml_model_pull(name, user, api_key, version):
     "--name", "-n", type=str, default="*", help="[Optional] Show a specific model's information.",
 )
 def fedml_model_list(name):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_list(name)
 
 
@@ -146,7 +166,11 @@ def fedml_model_list(name):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def fedml_model_list_remote(name, user, api_key, version):
-    fedml.api.model_list_remote(name, user, api_key, version)
+    fedml.set_env_version(version)
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
+    fedml.api.model_list_remote(name, user, api_key)
 
 
 
@@ -157,6 +181,9 @@ def fedml_model_list_remote(name, user, api_key, version):
     "--name", "-n", type=str, help="model name.",
 )
 def fedml_model_info(name):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_info(name)
 
 
@@ -167,4 +194,7 @@ def fedml_model_info(name):
     "--name", "-n", type=str, help="model name.",
 )
 def fedml_model_delete(name):
+    if name is None:
+        click.echo("You must provide a model name (use -n option).")
+        return
     fedml.api.model_delete(name)
