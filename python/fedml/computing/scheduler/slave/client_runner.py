@@ -1265,7 +1265,7 @@ class FedMLClientRunner:
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
-            pass
+            raise Exception("The FedML backend service is not available now. Failed to bind account and device id.")
         else:
             # print("url = {}, response = {}".format(url, response))
             status_code = response.json().get("code")
