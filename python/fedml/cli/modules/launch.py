@@ -14,7 +14,7 @@ def fedml_launch():
 
 @fedml_launch.command(
     "default", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
-    context_settings={"ignore_unknown_options": True}
+    context_settings={"ignore_unknown_options": True}, hidden=True
 )
 @click.help_option("--help", "-h")
 @click.option(
@@ -49,39 +49,3 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     fedml.set_env_version(version)
     fedml.api.launch_job(yaml_file[0], cluster=cluster, api_key=api_key)
-
-
-@fedml_launch.command("cancel", help="Cancel job at the FedML® Launch platform (open.fedml.ai)", )
-@click.help_option("--help", "-h")
-@click.argument("job_id", nargs=-1)
-@click.option(
-    "--platform",
-    "-pf",
-    type=str,
-    default="falcon",
-    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon, launch, "
-         "default is falcon).",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="stop a job at which version of FedML® Launch platform. It should be dev, test or release",
-)
-def fedml_launch_cancel(job_id, platform, api_key, version):
-    fedml.set_env_version(version)
-    if len(job_id) == 0:
-        print("no job is running.")
-    else:
-        fedml.api.job_stop(job_id[0], platform, api_key)
-
-
-@fedml_launch.command("queue", help="View the job queue at the FedML® Launch platform (open.fedml.ai)", )
-@click.help_option("--help", "-h")
-@click.argument("group_id", nargs=-1)
-def fedml_launch_queue(group_id):
-    print("this CLI is not implemented yet")
