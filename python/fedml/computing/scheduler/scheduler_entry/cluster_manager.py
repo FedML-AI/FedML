@@ -1,6 +1,7 @@
 from typing import List
 
 import requests
+import json
 
 import fedml
 from fedml.core.common.singleton import Singleton
@@ -78,21 +79,27 @@ class FedMLClusterManager(Singleton):
         selected_machines_list = list()
         for gpu_machine in gpu_matched:
             selected_machine_json = {
-                ClusterConstants.ID: gpu_machine.gpu_id,
-                "got_gpt_count": gpu_machine.gpu_count
+                "gotGpuCount": int(gpu_machine.gpu_count),
+                ClusterConstants.ID: gpu_machine.gpu_id
             }
+            print(f"gotGpuCount = {gpu_machine.gpu_count}")
             selected_machines_list.append(selected_machine_json)
 
-        confirm_cluster_json = {ClusterConstants.CLUSTER_ID: cluster_id,
+        confirm_cluster_dict = {ClusterConstants.CLUSTER_ID: str(cluster_id),
                                 ClusterConstants.MACHINE_SELECTED_LIST: selected_machines_list,
                                 ClusterConstants.API_KEY: get_api_key()}
-
+        
+        confirm_cluster_json_str = json.dumps(confirm_cluster_dict)
+        print("confirm_cluster_json_str = ", confirm_cluster_json_str)
+        confirm_cluster_json = json.loads(confirm_cluster_json_str)
+        print("confirm_cluster_json = ", confirm_cluster_json)
         response = self._request(confirm_cluster_url, confirm_cluster_json, self.config_version)
         data = self._get_data_from_response(command="Confirm", response=response)
         return True if data is not None else False
 
     @staticmethod
     def _request(url: str, json_data: dict, config_version: str):
+        print("json_data = ", json_data)
         args = {"config_version": config_version}
         cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:

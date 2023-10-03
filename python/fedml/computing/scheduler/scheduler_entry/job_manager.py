@@ -368,7 +368,8 @@ class FedMLGpuDevices(object):
         self.gpu_region = "DEFAULT" if self.gpu_region is None or self.gpu_region == "" else self.gpu_region
         self.cpu_count = gpu_device_json.get("cpu_count", None)
         self.cpu_count = None if self.cpu_count is not None and int(self.cpu_count) <= 0 else self.cpu_count
-        self.gpu_count = gpu_device_json.get("got_gpu_count", None)
+        self.gpu_count = gpu_device_json.get("got_gpu_count", -1)
+        print("self.gpu_count = ", self.gpu_count)
         self.gpu_name = gpu_device_json.get("gpu_name", None)
         self.gpu_instance = self.gpu_name
         self.gpu_provider = gpu_device_json.get("gpu_provider", None)
