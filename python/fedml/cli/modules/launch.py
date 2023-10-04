@@ -6,10 +6,29 @@ from fedml.cli.modules.utils import DefaultCommandGroup
 
 @click.group("launch", cls=DefaultCommandGroup, default_command='default')
 @click.help_option("--help", "-h")
-def fedml_launch():
+@click.option(
+    "--cluster",
+    "-c",
+    default="",
+    type=str,
+    help="Please provide a cluster name. If a cluster with that name already exists, it will be used; otherwise, "
+         "a new cluster with the provided name will be created."
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="launch job to which version of MLOps platform. It should be dev, test or release",
+)
+def fedml_launch(api_key, version, cluster):
     """
-    Manage resources on the FedML® Launch platform (open.fedml.ai).
+    Launch job at the FedML® Launch platform (open.fedml.ai).
     """
+    pass
 
 
 @fedml_launch.command(
