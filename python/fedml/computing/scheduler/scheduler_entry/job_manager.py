@@ -274,7 +274,7 @@ class FedMLJobManager(Singleton):
         if response.status_code != 200:
             print(f"Check heartbeat with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
-            pass
+            return False
         else:
             resp_data = response.json()
             code = resp_data.get("code", "")

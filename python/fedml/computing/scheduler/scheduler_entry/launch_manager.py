@@ -505,18 +505,11 @@ class FedMLLaunchManager(object):
 
         is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please input again.")
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
-            is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-            if not is_valid_heartbeat:
-                click.echo("Your API Key is not correct. Please check and try again.")
-
-        if is_valid_heartbeat:
+            return False
+        else:
             save_api_key(api_key)
             return True
-
-        return False
-
+        
     def fedml_login(self, api_key=None):
         """
         init the launch environment
@@ -655,9 +648,6 @@ class FedMLLaunchManager(object):
             if not cluster_confirmed:
                 return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED], \
                     ApiConstants.CLUSTER_CONFIRM_FAILED
-            else:
-                return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS], \
-                    ApiConstants.CLUSTER_CONFIRM_SUCCESS
 
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
                                                                  result.application_name,
