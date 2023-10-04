@@ -648,6 +648,9 @@ class FedMLLaunchManager(object):
             if not cluster_confirmed:
                 return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED], \
                     ApiConstants.CLUSTER_CONFIRM_FAILED
+            else:
+                return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS], \
+                    ApiConstants.CLUSTER_CONFIRM_SUCCESS
 
         result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
                                                                  result.application_name,
