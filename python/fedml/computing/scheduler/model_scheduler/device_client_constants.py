@@ -15,10 +15,12 @@ import psutil
 import yaml
 
 import fedml
+import docker
+
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
-
+from ..comm_utils import security_utils
 
 class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE"
@@ -294,6 +296,24 @@ class ClientConstants(object):
     def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
                                                                     end_point_id, model_id)
+        # Stop and delete the container
+        container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                         security_utils.get_content_hash(running_model_name)
+        client = docker.from_env()
+        try:
+            exist_container_obj = client.containers.get(container_name)
+        except docker.errors.NotFound:
+            exist_container_obj = None
+        except docker.errors.APIError:
+            logging.error("Failed to get the container object")
+            return False
+
+        if exist_container_obj is not None:
+            exist_container_obj.stop()
+            exist_container_obj.remove(v=True)
+            logging.info("Stopped and removed the container {}".format(container_name))
+
+        # Delete the deployment
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
         if os.path.exists(model_dir):
@@ -306,6 +326,7 @@ class ClientConstants(object):
                 shutil.rmtree(model_file_path, ignore_errors=True)
                 os.system("sudo rm -Rf {}".format(model_file_path))
 
+        # Delete the serving file
         model_serving_dir = ClientConstants.get_model_serving_dir()
         if not os.path.exists(model_serving_dir):
             return False
