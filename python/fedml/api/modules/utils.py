@@ -3,26 +3,44 @@ import shutil
 
 import click
 
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
 
+def fedml_login(api_key):
+    api_key_is_valid = _check_api_key(api_key=api_key)
+    if api_key_is_valid:
+        return 0, "Login successfully"
 
-def login(api_key):
-    return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key)
+    return -1, "Login failed"
 
 
-def match_resources(yaml_file, cluster, prompt):
-    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, cluster, prompt)
+def _check_api_key(self, api_key=None):
+    if api_key is None or api_key == "":
+        saved_api_key = get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
+        else:
+            api_key = saved_api_key
+
+    is_valid_heartbeat = FedMLResourceManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        return False
+    else:
+        save_api_key(api_key)
+        return True
+
 
 
 def authenticate(api_key):
-    error_code, _ = login(api_key)
+    error_code, _ = fedml_login(api_key)
 
     # Exit if not able to authenticate successfully
     if error_code:
         exit(0)
+
 
 def build_mlops_package(
         ignore,

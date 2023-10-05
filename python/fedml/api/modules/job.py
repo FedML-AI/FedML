@@ -8,6 +8,43 @@ from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunch
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
+def start(platform, project_name, application_name, device_server, device_edges,
+          user_api_key, no_confirmation=False, job_id=None,
+          model_name=None, model_endpoint=None, job_yaml=None,
+          job_type=None):
+    authenticate(user_api_key)
+
+    if not platform_is_valid(platform):
+        return
+
+    job_start_result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
+                                                                device_server, device_edges, user_api_key,
+                                                                no_confirmation=no_confirmation, job_id=job_id,
+                                                                model_name=model_name, model_endpoint=model_endpoint,
+                                                                job_yaml=job_yaml, job_type=job_type)
+
+    return job_start_result
+
+
+def start_on_cluster(platform, cluster, project_name, application_name, device_server, device_edges,
+                     user_api_key, no_confirmation=False, job_id=None, model_name=None,
+                     model_endpoint=None,
+                     job_yaml=None, job_type=None):
+    authenticate(user_api_key)
+
+    if not platform_is_valid(platform):
+        return
+
+    job_start_result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
+                                                                device_server, device_edges, user_api_key,
+                                                                cluster=cluster, no_confirmation=no_confirmation,
+                                                                job_id=job_id, model_name=model_name,
+                                                                model_endpoint=model_endpoint, job_yaml=job_yaml,
+                                                                job_type=job_type)
+
+    return job_start_result
+
+
 def stop(job_id, platform, api_key):
     authenticate(api_key)
 
@@ -51,7 +88,7 @@ def status(job_name, job_id, platform, api_key):
 # input: job_id, page_num, page_size, need_all_logs, platform, api_key
 # return job status, total_log_lines, total_log_pages, log_list, logs
 def logs(job_id, page_num, page_size, need_all_logs, platform, api_key) -> (
-str, int, int, List[str], FedMLJobLogModelList):
+        str, int, int, List[str], FedMLJobLogModelList):
     if job_id is None:
         raise Exception("Please specify job id.")
 

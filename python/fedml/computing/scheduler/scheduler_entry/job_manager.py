@@ -7,7 +7,6 @@ import requests
 
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
-from fedml.computing.scheduler.scheduler_entry.launch_job_interface import FedMLLaunchJobDataInterface
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
@@ -24,7 +23,7 @@ class FedMLJobManager(Singleton):
         return FedMLJobManager()
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_api_key, cluster="", no_confirmation=False, job_id=None,
+                  user_api_key, cluster=None, no_confirmation=False, job_id=None,
                   model_name=None, model_endpoint=None, job_yaml=None,
                   job_type=None):
         job_start_result = None
@@ -45,11 +44,14 @@ class FedMLJobManager(Singleton):
             "applicationName": application_name,
             "applicationConfigId": 0,
             "devices": device_lists,
-            "clusterName": cluster,
             "urls": [],
             "apiKey": user_api_key,
             "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
         }
+
+        if cluster is not None:
+            job_start_json["cluster"] = cluster
+
         if project_name is not None and len(str(project_name).strip(' ')) > 0:
             job_start_json["projectName"] = project_name
         else:
@@ -93,7 +95,7 @@ class FedMLJobManager(Singleton):
                 print(f"Launch job with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return None
-            job_start_result = FedMLJobStartedModel(data, response=resp_data)
+            job_start_result = FedMLJobStartedModel(data, job_type, response=resp_data)
             print("resp_data:", resp_data)
 
             # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
@@ -331,10 +333,11 @@ class FedMLJobManager(Singleton):
 
 
 class FedMLJobStartedModel(object):
-    def __init__(self, job_started_json, job_name=None, response=None):
+    def __init__(self, job_started_json, job_type=None, job_name=None, response=None):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
+            self.job_type = job_type
             self.project_id = job_started_json.get("project_id", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
@@ -354,6 +357,7 @@ class FedMLJobStartedModel(object):
             self.job_url = job_started_json
             self.started_time = time.time()
             self.message = response.get("message")
+            self.job_type = None
 
 
 class FedMLGpuDevices(object):
