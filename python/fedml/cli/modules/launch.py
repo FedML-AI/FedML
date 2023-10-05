@@ -26,13 +26,13 @@ from fedml.cli.modules.utils import DefaultCommandGroup
 )
 def fedml_launch(api_key, version, cluster):
     """
-    Launch job at the FedML® Launch platform (open.fedml.ai).
+    Launch job at the FedML® platform
     """
     pass
 
 
 @fedml_launch.command(
-    "default", help="Launch job at the FedML® Launch platform (open.fedml.ai)",
+    "default", help="Launch job at the FedML platform",
     context_settings={"ignore_unknown_options": True}, hidden=True
 )
 @click.help_option("--help", "-h")

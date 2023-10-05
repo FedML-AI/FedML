@@ -16,12 +16,19 @@ def fedml_model():
 @fedml_model.command("create", help="Create local model repository")
 @click.help_option("--help", "-h")
 @click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
+@click.option(
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
     "--config_file", "-cf", default = None,type=str, help="Model config file (.yaml)",
 )
-def fedml_model_create(name, config_file):
+def fedml_model_create(version, name, config_file):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
@@ -30,6 +37,12 @@ def fedml_model_create(name, config_file):
 
 @fedml_model.command("push", help="Push local model repository to the MLOps platform (cloud)")
 @click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -45,13 +58,6 @@ def fedml_model_create(name, config_file):
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
-)
 def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version):
     fedml.set_env_version(version)
     if name is None:
@@ -62,6 +68,12 @@ def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, vers
 
 @fedml_model.command("deploy", help="Deploy model to the local machine or MLOps platform (cloud)")
 @click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
 @click.option(
     "--name", "-n", type=str, help="[Required] Model Cards Name.", required=True
 )
@@ -83,7 +95,8 @@ def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, vers
 @click.option(
     "--config_file", "-cf", default = "", type=str, help="Model config file (.yaml)"
 )
-def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+def fedml_model_deploy(version, local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
@@ -95,12 +108,19 @@ def fedml_model_deploy(local, name, master_ids, worker_ids, user_id, api_key, co
     "run", help="Run inference action for model from the MLOps platform")
 @click.help_option("--help", "-h")
 @click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
+@click.option(
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
     "--data", "-d", type=str, help="input data for model inference.",
 )
-def fedml_model_run(name, data):
+def fedml_model_run(version, name, data):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
@@ -136,11 +156,19 @@ def fedml_model_pull(name, user, api_key, version):
 
 
 @fedml_model.command("list", help="List model in the local model repository")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
 @click.help_option("--help", "-h")
 @click.option(
     "--name", "-n", type=str, default="*", help="[Optional] Show a specific model's information.",
 )
-def fedml_model_list(name):
+def fedml_model_list(version, name):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
@@ -180,7 +208,15 @@ def fedml_model_list_remote(name, user, api_key, version):
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def fedml_model_info(name):
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+def fedml_model_info(name, version):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
@@ -193,7 +229,15 @@ def fedml_model_info(name):
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
-def fedml_model_delete(name):
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+def fedml_model_delete(name, version):
+    fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
