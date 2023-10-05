@@ -14,7 +14,7 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
 from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
-from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLResourceManager
+from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
 
 
 def bind(

@@ -12,7 +12,7 @@ def fedml_device():
     pass
 
 
-@fedml_device.command("bind", help="Bind to the FedML® Launch platform (open.fedml.ai)")
+@fedml_device.command("bind", help="Bind to the FedML Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
@@ -69,7 +69,7 @@ def fedml_device_bind(
                           docker, docker_rank)
 
 
-@fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
+@fedml_device.command("unbind", help="Logout from the FedML AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",

@@ -3,7 +3,7 @@ import click
 import fedml.api
 
 
-@click.command("login", help="Bind to the FedML® Launch platform (open.fedml.ai)")
+@click.command("login", help="Login the FedML Platform")
 @click.help_option("--help", "-h")
 @click.argument("userid", nargs=-1)
 @click.option(

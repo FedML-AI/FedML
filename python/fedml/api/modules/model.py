@@ -3,9 +3,9 @@ import os
 import click
 
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
-
 from fedml.api import launch_job
 from fedml.api.modules.utils import fedml_login
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
 def create(name, config_file):
@@ -144,9 +144,7 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                        Do you want to use fedml® launch platform to find GPU Resources deploy your model?")
             answer = click.prompt("Please input your answer: (y/n)")
             if answer == "y" or answer == "Y":
-                from .launch import FedMLLaunchManager
-                api_key = FedMLLaunchManager.get_api_key()
-                # Find the config yaml file in local model cards directory ~/fedml-model-client/fedml/models
+                api_key = get_api_key()
                 yaml_file = FedMLModelCards.get_instance().prepare_yaml_for_launch(name)
                 if yaml_file == "":
                     click.echo("Cannot find the config yaml file for model {}.".format(name))

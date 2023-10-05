@@ -51,7 +51,7 @@ class FedMLModelCards(Singleton):
                 if not self.create_model_use_config(model_name, config_file_path):
                     return False
                 else:
-                    print("Local Model {} is been recreated.".format(model_name))
+                    print("Local Model {} has been recreated.".format(model_name))
             else:
                 print("Using existing local model {}.".format(model_name))
 
