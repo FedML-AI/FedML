@@ -9,7 +9,7 @@ from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLGpuDevices
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
-from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
 class ClusterConstants(object):

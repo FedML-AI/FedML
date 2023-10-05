@@ -4,21 +4,20 @@ from fedml.api.modules.utils import authenticate
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobLogModelList
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLJobManager
+from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
 def start(platform, project_name, application_name, device_server, device_edges,
-          user_api_key, no_confirmation=False, job_id=None,
+          api_key, no_confirmation=False, job_id=None,
           model_name=None, model_endpoint=None, job_yaml=None,
           job_type=None):
-    authenticate(user_api_key)
 
-    if not platform_is_valid(platform):
+    if not _authenticated_and_validated_platform(api_key, platform):
         return
 
     job_start_result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
-                                                                device_server, device_edges, user_api_key,
+                                                                device_server, device_edges, get_api_key(),
                                                                 no_confirmation=no_confirmation, job_id=job_id,
                                                                 model_name=model_name, model_endpoint=model_endpoint,
                                                                 job_yaml=job_yaml, job_type=job_type)
@@ -27,16 +26,15 @@ def start(platform, project_name, application_name, device_server, device_edges,
 
 
 def start_on_cluster(platform, cluster, project_name, application_name, device_server, device_edges,
-                     user_api_key, no_confirmation=False, job_id=None, model_name=None,
+                     api_key, no_confirmation=False, job_id=None, model_name=None,
                      model_endpoint=None,
                      job_yaml=None, job_type=None):
-    authenticate(user_api_key)
 
-    if not platform_is_valid(platform):
+    if not _authenticated_and_validated_platform(api_key, platform):
         return
 
     job_start_result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
-                                                                device_server, device_edges, user_api_key,
+                                                                device_server, device_edges, get_api_key(),
                                                                 cluster=cluster, no_confirmation=no_confirmation,
                                                                 job_id=job_id, model_name=model_name,
                                                                 model_endpoint=model_endpoint, job_yaml=job_yaml,
@@ -46,12 +44,10 @@ def start_on_cluster(platform, cluster, project_name, application_name, device_s
 
 
 def stop(job_id, platform, api_key):
-    authenticate(api_key)
-
-    if not platform_is_valid(platform):
+    if not _authenticated_and_validated_platform(api_key, platform):
         return
 
-    is_stopped = FedMLJobManager.get_instance().stop_job(platform, api_key, job_id)
+    is_stopped = FedMLJobManager.get_instance().stop_job(platform=platform, user_api_key=get_api_key(), job_id=job_id)
     return is_stopped
 
 
@@ -89,10 +85,14 @@ def status(job_name, job_id, platform, api_key):
 # return job status, total_log_lines, total_log_pages, log_list, logs
 def logs(job_id, page_num, page_size, need_all_logs, platform, api_key) -> (
         str, int, int, List[str], FedMLJobLogModelList):
+
+    if not _authenticated_and_validated_platform(api_key, platform):
+        return
+
     if job_id is None:
         raise Exception("Please specify job id.")
 
-    _, job_status = status(job_name=None, job_id=job_id, platform=platform, api_key=api_key)
+    _, job_status = status(job_name=None, job_id=job_id, platform=platform, api_key=get_api_key())
 
     total_log_nums, total_log_pages, log_line_list, job_logs = 0, 0, list(), None
 

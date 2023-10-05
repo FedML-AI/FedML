@@ -16,20 +16,18 @@ from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.api.modules.utils import build_mlops_package
 
+from fedml.core.common.singleton import Singleton
 
-class FedMLLaunchManager(object):
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, "_instance"):
-            orig = super(FedMLLaunchManager, cls)
-            cls._instance = orig.__new__(cls, *args, **kw)
-            cls._instance.init()
-        return cls._instance
+
+class FedMLLaunchManager(Singleton):
 
     def __init__(self):
         self.config_version = fedml.get_env_version()
         self.matched_results_map = dict()
+        self.platform_type = SchedulerConstants.PLATFORM_TYPE_FALCON
 
     @staticmethod
     def get_instance():

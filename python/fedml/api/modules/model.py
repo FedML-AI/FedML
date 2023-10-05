@@ -3,8 +3,8 @@ import os
 import click
 
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
-from fedml.api import launch_job
 from fedml.api.modules.utils import fedml_login
+from fedml.api.modules.launch import job as launch_job
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 

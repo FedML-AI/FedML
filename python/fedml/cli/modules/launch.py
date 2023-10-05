@@ -1,12 +1,15 @@
 import click
 import os
 
-import fedml.api
 from prettytable import PrettyTable
+
 from fedml.cli.modules.utils import DefaultCommandGroup
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml import set_env_version
+from fedml.api import (schedule_job, schedule_job_on_cluster, run_scheduled_job, confirm_cluster_and_start_job, job_stop,
+                       job_list)
 
 
 @click.group("launch", cls=DefaultCommandGroup, default_command='default')
@@ -71,7 +74,7 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
     Manage resources on the FedML® Launch platform (open.fedml.ai).
     """
-    fedml.set_env_version(version)
+    set_env_version(version)
 
     if cluster is None:
         _launch_job(yaml_file[0], api_key)
@@ -80,15 +83,15 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
 
 
 def _launch_job(yaml_file, api_key):
-    _, _, schedule_result = fedml.api.schedule_job(yaml_file, api_key=api_key)
+    _, _, schedule_result = schedule_job(yaml_file, api_key=api_key)
 
     if _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
-        result = fedml.api.run_scheduled_job(schedule_result=schedule_result, api_key=api_key)
+        result = run_scheduled_job(schedule_result=schedule_result, api_key=api_key)
         process_job_result(result)
 
 
 def _launch_job_with_cluster(yaml_file, api_key, cluster):
-    _, _, schedule_result = fedml.api.schedule_job_on_cluster(yaml_file, cluster, api_key)
+    _, _, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
 
     if _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
         cluster_id = getattr(schedule_result, "cluster_id", None)
@@ -97,7 +100,7 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
             click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
             return
 
-        cluster_confirmed = fedml.api.confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
+        cluster_confirmed = confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
 
         if cluster_confirmed:
             click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
@@ -166,7 +169,7 @@ def _match_and_show_resources(result):
 def _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
     match_result = _check_match_result(schedule_result, yaml_file)
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED:
-        fedml.api.job.stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+        job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
         return False
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
         gpu_matched = _match_and_show_resources(schedule_result)
@@ -175,7 +178,7 @@ def _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
 
         if not click.confirm("Do you want to launch the job with the above matched GPU resource?", abort=False):
             click.echo("Cancelling the job with the above matched GPU resource.")
-            fedml.api.job.stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+            job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
             return False
 
         click.echo("Launching the job with the above matched GPU resource.")
@@ -195,8 +198,8 @@ def process_job_result(result):
             click.echo("Failed to launch the job")
 
     # List the job status
-    job_list_obj = fedml.api.job_list(result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
-                                      api_key=api_key, job_id=result.job_id)
+    job_list_obj = job_list(job_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
+                                      job_id=result.job_id)
     if job_list_obj is not None and len(job_list_obj.job_list) > 0:
         click.echo("")
         click.echo("Your launch result is as follows:")

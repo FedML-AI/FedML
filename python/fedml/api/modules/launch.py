@@ -1,7 +1,8 @@
 import os
 
-import fedml.api
 from fedml.api.modules.utils import authenticate
+from fedml.api.modules.job import start, start_on_cluster, stop
+from fedml.api.modules.cluster import confirm_and_start
 
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLAppManager
 
@@ -10,8 +11,6 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
-
-from fedml.api import job_start, job_start_on_cluster
 
 
 def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
@@ -31,7 +30,7 @@ def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
         user_api_key = get_api_key()
 
         # Start the job with the above application.
-        schedule_result = job_start(SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.project_name,
+        schedule_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.project_name,
                                     job_config.application_name,
                                     device_server, device_edges, user_api_key, no_confirmation=False,
                                     model_name=job_config.serving_model_name,
@@ -68,7 +67,7 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
         user_api_key = get_api_key()
 
         # Start the job with the above application.
-        schedule_result = job_start_on_cluster(SchedulerConstants.PLATFORM_TYPE_FALCON, cluster,
+        schedule_result = start_on_cluster(SchedulerConstants.PLATFORM_TYPE_FALCON, cluster,
                                                job_config.project_name,
                                                job_config.application_name,
                                                device_server, device_edges, user_api_key, no_confirmation=False,
@@ -96,7 +95,7 @@ def run_job(schedule_result, api_key, device_server, device_edges):
     user_api_key = get_api_key()
 
     # Start the job
-    launch_result = job_start(SchedulerConstants.PLATFORM_TYPE_FALCON,
+    launch_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON,
                               schedule_result.project_name,
                               schedule_result.application_name,
                               device_server, device_edges, user_api_key,
@@ -154,7 +153,7 @@ def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, devi
                 ApiConstants.CLUSTER_CREATION_FAILED)
 
     # Confirm cluster and start job
-    cluster_confirmed = fedml.api.confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
+    cluster_confirmed = confirm_and_start(cluster_id, schedule_result.gpu_matched)
 
     if cluster_confirmed:
         return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
@@ -203,7 +202,7 @@ def _parse_schedule_result(result, yaml_file, api_key):
                 f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
                 f"for your job. \n")
     elif result.status == Constants.JOB_START_STATUS_QUEUED:
-        fedml.api.job_stop(result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+        stop(result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_FAILED],
                 ApiConstants.RESOURCE_MATCHED_STATUS_FAILED, None)
     elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
