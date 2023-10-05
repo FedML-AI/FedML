@@ -13,8 +13,7 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../../")"
 cd "${BASE_DIR}"
 
-TARGET="${1:-"client"}"
-CONFIG_PATH="${2:-"mlops_config"}" # must be the directory containing the config file
+CONFIG_PATH="${1:-"mlops_config"}" # must be the directory containing the config file
 
 GIT_IGNORE_PATTERN=(
   "cmake-build-*"
@@ -54,10 +53,12 @@ IGNORE_PATTERN=(
 IGNORE_STR="$(join_by "," "${IGNORE_PATTERN[@]}")"
 #echo "${IGNORE_STR}"
 
-fedml build \
-  -t "${TARGET}" \
-  -sf . \
-  -ep main_mlops.py \
-  -df build \
-  -cf "${CONFIG_PATH}" \
-  -ig "${IGNORE_STR}"
+for target in "client" "server"; do
+  fedml build \
+    -t "${target}" \
+    -sf . \
+    -ep run_mlops.py \
+    -df build \
+    -cf "${CONFIG_PATH}" \
+    -ig "${IGNORE_STR}"
+done

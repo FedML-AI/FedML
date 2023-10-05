@@ -5,12 +5,14 @@ import uuid
 from os.path import expanduser
 
 import click
+
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.comm_utils.security_utils import get_content_hash
 from fedml.computing.scheduler.comm_utils.sys_utils import daemon_ota_upgrade_with_version, \
     check_fedml_is_latest_version
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from prettytable import PrettyTable
@@ -18,8 +20,10 @@ from prettytable import PrettyTable
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
 from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
+from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterManager
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
 from fedml.api.constants import ApiConstants
+
 
 
 class FedMLLaunchManager(object):
@@ -31,7 +35,7 @@ class FedMLLaunchManager(object):
         return cls._instance
 
     def __init__(self):
-        pass
+        self.config_version = fedml.get_env_version()
 
     @staticmethod
     def get_instance():
@@ -43,14 +47,9 @@ class FedMLLaunchManager(object):
         self.device_server = ""
         self.device_edges = ""
 
-    def set_config_version(self, config_version):
-        if config_version is not None:
-            self.config_version = config_version
-
-    def launch_job(self, yaml_file, user_api_key, mlops_platform_type,
+    def launch_job(self, yaml_file, user_api_key, cluster, mlops_platform_type,
                    device_server, device_edges,
                    no_confirmation=False):
-
         try:
             is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=self.config_version)
             if not is_latest_version:
@@ -77,7 +76,6 @@ class FedMLLaunchManager(object):
             if self.job_config.serving_model_name is not None and self.job_config.serving_model_name != "":
                 self.job_config.model_app_name = self.job_config.serving_model_name
 
-            FedMLAppManager.get_instance().set_config_version(self.config_version)
             models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
             if models is None or len(models.model_list) <= 0:
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
@@ -229,7 +227,6 @@ class FedMLLaunchManager(object):
             build_server_package = None
 
         # Create and update an application with the built packages.
-        FedMLAppManager.get_instance().set_config_version(self.config_version)
         app_updated_result = FedMLAppManager.get_instance().update_app(
             platform_type, self.job_config.application_name, configs, user_api_key,
             client_package_file=build_client_package, server_package_file=build_server_package,
@@ -241,10 +238,9 @@ class FedMLLaunchManager(object):
             exit(-1)
 
         # Start the job with the above application.
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         launch_result = FedMLJobManager.get_instance().start_job(
             platform_str, self.job_config.project_name, self.job_config.application_name,
-            device_server, device_edges, user_api_key, no_confirmation=no_confirmation,
+            device_server, device_edges, user_api_key, cluster=cluster, no_confirmation=no_confirmation,
             model_name=self.job_config.serving_model_name, model_endpoint=self.job_config.serving_endpoint_name,
             job_yaml=self.job_config.job_config_dict, job_type=self.job_config.task_type)
         if launch_result is not None:
@@ -253,16 +249,15 @@ class FedMLLaunchManager(object):
                    self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
-        # print(f"launch_result = {launch_result}")
         return launch_result
 
     def start_job(self, platform_type, project_name, application_name,
                   device_server, device_edges,
-                  user_api_key, no_confirmation=True,
-                  job_id=None, job_type=None):
-        launch_result = FedMLJobManager.get_instance().start_job(
-            platform_type, project_name, application_name, device_server, device_edges, user_api_key,
-            no_confirmation=no_confirmation, job_id=job_id, job_type=job_type)
+                  user_api_key, cluster="", no_confirmation=True, job_id=None, job_type="train"):
+        launch_result = FedMLJobManager.get_instance().start_job(platform_type, project_name,
+                                                                 application_name,
+                                                                 device_server, device_edges, user_api_key, cluster,
+                                                                 no_confirmation=no_confirmation, job_id=job_id, job_type=job_type)
         if launch_result is not None:
             launch_result.project_name = self.job_config.project_name
             launch_result.application_name = self.job_config.application_name
@@ -274,6 +269,7 @@ class FedMLLaunchManager(object):
     @staticmethod
     def build_job_package(platform, client_server_type, source_folder, entry_point,
                           config_folder, dest_folder, ignore, verbose=False):
+        
         if verbose:
             print("Argument for type: " + client_server_type)
             print("Argument for source folder: " + source_folder)
@@ -493,67 +489,35 @@ class FedMLLaunchManager(object):
 
         return 0
 
-    @staticmethod
-    def save_api_key(api_key):
-        try:
-            os.makedirs(Constants.get_secret_dir(), exist_ok=True)
-
-            with open(Constants.get_launch_secret_file(), 'w') as secret_file_handle:
-                secret_file_handle.writelines([api_key])
-                secret_file_handle.close()
-        except Exception as e:
-            pass
-
     def check_heartbeat(self, api_key):
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         return FedMLJobManager.get_instance().check_heartbeat(api_key)
 
-    @staticmethod
-    def get_api_key():
-        try:
-            with open(Constants.get_launch_secret_file(), 'r') as secret_file_handle:
-                api_key = secret_file_handle.readline()
-                secret_file_handle.close()
-                return api_key
-        except Exception as e:
-            return ""
-
     def show_resource_type(self):
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
         return FedMLJobManager.get_instance().show_resource_type()
 
-    def check_api_key(self, api_key=None, version="release"):
+    def check_api_key(self, api_key=None):
         if api_key is None or api_key == "":
-            saved_api_key = FedMLLaunchManager.get_api_key()
+            saved_api_key = get_api_key()
             if saved_api_key is None or saved_api_key == "":
                 api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
             else:
                 api_key = saved_api_key
 
-        FedMLLaunchManager.get_instance().set_config_version(version)
         is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
         if not is_valid_heartbeat:
-            click.echo("Your API Key is not correct. Please input again.")
-            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
-            is_valid_heartbeat = FedMLLaunchManager.get_instance().check_heartbeat(api_key)
-            if not is_valid_heartbeat:
-                click.echo("Your API Key is not correct. Please check and try again.")
-
-        if is_valid_heartbeat:
-            FedMLLaunchManager.save_api_key(api_key)
+            return False
+        else:
+            save_api_key(api_key)
             return True
-
-        return False
-
-    def fedml_login(self, api_key=None, version="release"):
+        
+    def fedml_login(self, api_key=None):
         """
         init the launch environment
         :param api_key: API Key from MLOPs
         :param version: dev, test, release
         :return int: error code (0 means successful), str: error message
         """
-        self.set_config_version(version)
-        api_key_is_valid = self.check_api_key(api_key=api_key, version=version)
+        api_key_is_valid = self.check_api_key(api_key=api_key)
         if api_key_is_valid:
             return 0, "Login successfully"
 
@@ -578,9 +542,8 @@ class FedMLLaunchManager(object):
                 click.echo("You have confirmed to keep your job in the waiting list.")
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
             else:
-                FedMLJobManager.get_instance().set_config_version(self.config_version)
                 FedMLJobManager.get_instance().stop_job(
-                    self.platform_type, FedMLLaunchManager.get_api_key(), result.job_id)
+                    self.platform_type, get_api_key(), result.job_id)
                 return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
             click.echo("Please bind your credit card before launching the job.")
@@ -621,16 +584,16 @@ class FedMLLaunchManager(object):
 
     # inputs: yaml file
     # return: resource_id, error_code (0 means successful), error_message,
-    def api_match_resources(self, yaml_file, prompt=True):
+    def api_match_resources(self, yaml_file, cluster="", prompt=True):
         """
         launch a job
         :param prompt:
         :param yaml_file: full path of your job yaml file
         :returns: str: resource id, project_id, int: error code (0 means successful), str: error message
         """
-        api_key = FedMLLaunchManager.get_api_key()
+        api_key = get_api_key()
 
-        result = FedMLLaunchManager.get_instance().launch_job(yaml_file, api_key,
+        result = FedMLLaunchManager.get_instance().launch_job(yaml_file, api_key, cluster,
                                                               self.platform_type,
                                                               self.device_server, self.device_edges)
         if result is not None:
@@ -651,36 +614,48 @@ class FedMLLaunchManager(object):
         return None, None, ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED], \
             ApiConstants.RESOURCE_MATCHED_STATUS_REQUEST_FAILED
 
-    # inputs: yaml file, resource id
+    # inputs: yaml file, cluster, resource id
     # return: job_id, error_code (0 means successful), error_message,
-    def api_launch_job(self, yaml_file, resource_id=None, prompt=True):
+    def api_launch_job(self, yaml_file, cluster="", resource_id=None, prompt=True):
         # Check if resource is available
         result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
         if result is None:
-            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file, prompt=prompt)
+            resource_id, project_id, error_code, error_msg = self.api_match_resources(yaml_file=yaml_file, cluster=cluster, prompt=prompt)
             result = self.matched_results_map.get(resource_id, None) if resource_id is not None else None
             if result is None:
                 return resource_id, project_id, error_code, error_msg
 
         # Confirm to launch job
         if prompt and not click.confirm(f"Are you sure to launch it?", abort=False):
-            FedMLJobManager.get_instance().set_config_version(self.config_version)
             FedMLJobManager.get_instance().stop_job(
-                self.platform_type, FedMLLaunchManager.get_api_key(), resource_id)
+                self.platform_type, get_api_key(), resource_id)
             return result.job_id, result.project_id, ApiConstants.ERROR_CODE[
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED], \
                 ApiConstants.LAUNCH_JOB_STATUS_JOB_CANCELED
 
         # Get the API key
-        api_key = FedMLLaunchManager.get_api_key()
+        api_key = get_api_key()
 
         # Start the job
         job_id = result.job_id
         ret_job_id = job_id if result.inner_id is None else result.inner_id
         project_id = result.project_id
-        result = FedMLLaunchManager.get_instance().start_job(
-            self.platform_type, result.project_name, result.application_name, self.device_server, self.device_edges,
-            api_key, no_confirmation=True, job_id=result.job_id, job_type=self.job_config.task_type)
+        cluster_id = result.cluster_id
+        gpu_matched = result.gpu_matched
+        cluster_confirmed = True
+        if not (cluster_id is None or cluster_id == ""):
+            cluster_confirmed = FedMLClusterManager.get_instance().confirm_cluster(cluster_id, gpu_matched)
+            if not cluster_confirmed:
+                return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED], \
+                    ApiConstants.CLUSTER_CONFIRM_FAILED
+            else:
+                return job_id, project_id, cluster_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS], \
+                    ApiConstants.CLUSTER_CONFIRM_SUCCESS
+
+        result = FedMLLaunchManager.get_instance().start_job(self.platform_type, result.project_name,
+                                                                 result.application_name,
+                                                                 self.device_server, self.device_edges, api_key, cluster,
+                                                                 no_confirmation=True, job_id=result.job_id, job_type=self.job_config.task_type)
         if result is None:
             return job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
@@ -715,85 +690,9 @@ class FedMLLaunchManager(object):
         # Show querying infos for getting job logs
         click.echo("")
         click.echo(f"For querying the realtime status of your job, please run the following command.")
-        click.echo(f"fedml launch log {result.job_id}" +
-                   "{}".format(f" -v {self.config_version}" if self.config_version == "dev" else ""))
-
+        click.echo(f"fedml job logs -jid {result.job_id}" +
+                   "{}".format(f" -v {self.config_version}"))
         return ret_job_id, project_id, 0, ""
-
-    def list_jobs(self, job_name, job_id):
-        job_status = None
-        job_list_obj = FedMLJobManager.get_instance().list_job(self.platform_type, None, job_name,
-                                                               FedMLLaunchManager.get_api_key(), job_id=job_id)
-        if job_list_obj is not None and len(job_list_obj.job_list) > 0:
-            click.echo("Found the following matched jobs.")
-            job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status',
-                                          'Created', 'Spend Time(hour)', 'Cost'])
-            jobs_count = 0
-            for job in job_list_obj.job_list:
-                jobs_count += 1
-                job_status = job.status
-                job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                        job.compute_duration, job.cost])
-
-            print(job_list_table)
-        else:
-            click.echo("Not found any jobs")
-
-        return job_status
-
-    # input: job id, page num, page size
-    # return job status, total_log_nums, total_log_pages, log list
-    def api_launch_log(self, job_id, page_num, page_size, need_all_logs=False):
-        # Get the API key
-        api_key = FedMLLaunchManager.get_api_key()
-
-        # Show job info
-        FedMLJobManager.get_instance().set_config_version(self.config_version)
-        job_status = self.list_jobs(job_name=None, job_id=job_id)
-        if job_status is None:
-            return None, 0, 0, None
-
-        # Get job logs
-        if not need_all_logs:
-            job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_num, page_size, api_key)
-            if job_logs is None:
-                return job_status, 0, 0, None
-            return job_status, job_logs.total_num, job_logs.total_pages, job_logs.log_lines
-
-        job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, 1, Constants.JOB_LOG_PAGE_SIZE, api_key)
-        if job_logs is None:
-            return job_status, 0, 0, None
-
-        # Show job log summary info
-        log_head_table = PrettyTable(['Job ID', 'Total Log Lines', 'Log URL'])
-        log_head_table.add_row([job_id, job_logs.total_num, job_logs.log_full_url])
-        click.echo("\nLogs summary info is as follows.")
-        print(log_head_table)
-
-        # Show job logs URL for each device
-        if len(job_logs.log_devices) > 0:
-            log_device_table = PrettyTable(['Device ID', 'Device Name', 'Device Log URL'])
-            for log_device in job_logs.log_devices:
-                log_device_table.add_row([log_device.device_id, log_device.device_name, log_device.log_url])
-            click.echo("\nLogs URL for each device is as follows.")
-            print(log_device_table)
-
-        # Show job log lines
-        log_line_list = list()
-        if len(job_logs.log_lines):
-            click.echo("\nAll logs is as follows.")
-            for log_line in job_logs.log_lines:
-                log_line_list.append(log_line)
-                click.echo(str(log_line).rstrip('\n'))
-
-            for page_count in range(2, job_logs.total_pages + 1):
-                job_logs = FedMLJobManager.get_instance().get_job_logs(job_id, page_count,
-                                                                       Constants.JOB_LOG_PAGE_SIZE, api_key)
-                for log_line in job_logs.log_lines:
-                    log_line_list.append(log_line)
-                    click.echo(str(log_line).rstrip('\n'))
-
-        return job_status, job_logs.total_num, job_logs.total_pages, log_line_list
 
 
 '''
@@ -810,7 +709,9 @@ class FedMLJobConfig(object):
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
         workspace = self.job_config_dict.get("workspace", None)
-        self.executable_file_folder = workspace if not should_use_default_workspace else None
+        self.executable_file_folder = os.path.normpath(
+            os.path.join(self.base_dir, workspace)) \
+            if not should_use_default_workspace else None
         self.executable_commands = self.job_config_dict.get("job", "")
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
         self.executable_file = None

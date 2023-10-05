@@ -12,9 +12,8 @@ def fedml_device():
     pass
 
 
-@fedml_device.command("bind", help="Bind to the FedML® Launch platform (open.fedml.ai)")
+@fedml_device.command("bind", help="Bind to the FedML Platform")
 @click.help_option("--help", "-h")
-@click.argument("userid", nargs=-1)
 @click.option(
     "--version",
     "-v",
@@ -22,6 +21,7 @@ def fedml_device():
     default="release",
     help="bind to which version of FedML® Launch platform. It should be dev, test or release",
 )
+@click.argument("userid", nargs=-1)
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="bind as the FedML client.",
 )
@@ -30,13 +30,6 @@ def fedml_device():
 )
 @click.option(
     "--api_key", "-k", type=str, default="", help="user api key.",
-)
-@click.option(
-    "--local_server",
-    "-ls",
-    type=str,
-    default="127.0.0.1",
-    help="local server address.",
 )
 @click.option(
     "--role",
@@ -66,17 +59,25 @@ def fedml_device():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def fedml_device_bind(
-        userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
+        version, userid, client, server,
+        api_key, role, runner_cmd, device_id, os_name,
         docker, docker_rank
 ):
-    fedml.api.device_bind(userid, version, client, server,
-                          api_key, local_server, role, runner_cmd, device_id, os_name,
+    fedml.set_env_version(version)
+    fedml.api.device_bind(userid, client, server,
+                          api_key, role, runner_cmd, device_id, os_name,
                           docker, docker_rank)
 
 
-@fedml_device.command("unbind", help="unbind from the FedML® Launch platform (open.fedml.ai)")
+@fedml_device.command("unbind", help="Logout from the FedML AI Platform")
 @click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="unbind to which version of FedML® Launch platform. It should be dev, test or release",
+)
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="unbind from the FedML client.",
 )
@@ -89,5 +90,20 @@ def fedml_device_bind(
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def fedml_device_unbind(client, server, docker, docker_rank):
+def fedml_device_unbind(version, client, server, docker, docker_rank):
+    fedml.set_env_version(version)
     fedml.api.device_unbind(client, server, docker, docker_rank)
+
+
+@fedml_device.command("gpu-type", help="Show gpu resource type (e.g., NVIDIA A100, etc.)")
+@click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
+)
+def resource_type(version):
+    fedml.set_env_version(version)
+    fedml.api.resource_type()

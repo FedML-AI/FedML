@@ -11,20 +11,21 @@ from transformers import (
     HfArgumentParser,
     PreTrainedTokenizer,
     Trainer,
-    TrainingArguments,
 )
 
-from train import (
-    DataArguments,
-    get_data_collator,
+from run_train import (
+    DatasetArguments,
+    FinetuningArguments,
     get_dataset,
     get_max_seq_length,
     get_model,
     get_tokenizer,
-    IGNORE_INDEX,
     ModelArguments,
     SavePeftModelCallback,
 )
+from src.constants import IGNORE_INDEX
+from src.dataset_utils import RESPONSE_KEY_NL
+from src.modeling_utils import get_data_collator
 
 
 def answer_extraction(response: str, answer_type: Optional[str] = None) -> str:
@@ -145,12 +146,12 @@ def compute_acc(
 
 def main() -> None:
     # configs
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DatasetArguments, FinetuningArguments))
     model_args, dataset_args, training_args = parser.parse_args_into_dataclasses()
 
     # prepare models
     print(f"Loading tokenizer for \"{model_args.model_name}\"")
-    tokenizer = get_tokenizer(model_args.model_name)
+    tokenizer = get_tokenizer(model_args, add_special_tokens=training_args.is_instruction_finetune)
 
     print(f"Loading model for \"{model_args.model_name}\"")
     model = get_model(model_args, tokenizer_length=len(tokenizer), use_cache=not training_args.gradient_checkpointing)
@@ -160,11 +161,9 @@ def main() -> None:
 
     # dataset
     train_dataset, test_dataset = get_dataset(
-        dataset_path=dataset_args.dataset_path,
+        dataset_args=dataset_args,
         tokenizer=tokenizer,
-        max_length=dataset_args.max_seq_length,
-        seed=training_args.seed,
-        test_dataset_size=dataset_args.test_dataset_size
+        seed=training_args.seed
     )
 
     def _preprocess_logits_for_metrics(logits: torch.Tensor, labels: torch.Tensor):
@@ -178,7 +177,11 @@ def main() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=get_data_collator(tokenizer, pad_to_multiple_of=dataset_args.max_seq_length),
+        data_collator=get_data_collator(
+            tokenizer,
+            escape_token=RESPONSE_KEY_NL if training_args.is_instruction_finetune else None,
+            pad_to_multiple_of=dataset_args.max_seq_length
+        ),
         callbacks=[
             # save peft adapted model weights
             SavePeftModelCallback,

@@ -31,6 +31,11 @@ verify_download() {
 
 BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
+
+DATA_ROOT="${1:-"${BASE_DIR}/.data"}"
+DATA_ROOT="$(python3 -c "import os; print(os.path.realpath(os.path.expanduser(\"${DATA_ROOT}\")))")"
+mkdir -p "${DATA_ROOT}"
+
 cd "${BASE_DIR}"
 
 TARGET_MD5_LIST=(
@@ -43,17 +48,21 @@ TARGET_MD5_LIST=(
   "1e6cc91caefaf740b77230544a90f1a8"
   "71c9b558e990bf9ce14a30e92546fa52"
   "8c7998ceb7a9ee1601ecd3261fe4cb1d"
+  "ee3eb3f1d3adb7387862339e25207afc"
+  "eada0ca49dc9c92cb95e3e8f2d992e95"
 )
 DATASET_PATHS=(
-  "${BASE_DIR}/.data/databricks-dolly-15k.jsonl"
-  "${BASE_DIR}/.data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  "${BASE_DIR}/.data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
-  "${BASE_DIR}/.data/MedMCQA/train_182822.jsonl"
-  "${BASE_DIR}/.data/MedMCQA/valid_4183.jsonl"
-  "${BASE_DIR}/.data/PubMedQA/test_1000.jsonl"
-  "${BASE_DIR}/.data/PubMedQA/train_211269.jsonl"
-  "${BASE_DIR}/.data/MedQA-USMLE/train_10178.jsonl"
-  "${BASE_DIR}/.data/MedQA-USMLE/valid_1273.jsonl"
+  "${DATA_ROOT}/databricks-dolly-15k.jsonl"
+  "${DATA_ROOT}/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+  "${DATA_ROOT}/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
+  "${DATA_ROOT}/MedMCQA/train_182822.jsonl"
+  "${DATA_ROOT}/MedMCQA/valid_4183.jsonl"
+  "${DATA_ROOT}/PubMedQA/test_1000.jsonl"
+  "${DATA_ROOT}/PubMedQA/train_211269.jsonl"
+  "${DATA_ROOT}/MedQA-USMLE/train_10178.jsonl"
+  "${DATA_ROOT}/MedQA-USMLE/valid_1273.jsonl"
+  "${DATA_ROOT}/PubMedQA_instruction/test_1000.jsonl"
+  "${DATA_ROOT}/PubMedQA_instruction/train_272518.jsonl"
 )
 DATASET_URLS=(
   "https://huggingface.co/datasets/databricks/databricks-dolly-15k/resolve/d72c16e4644a463b9c678c71d9440befd4594556/databricks-dolly-15k.jsonl"
@@ -65,6 +74,8 @@ DATASET_URLS=(
   "https://fedllm.s3.us-west-2.amazonaws.com/PubMedQA/train_211269.jsonl"
   "https://fedllm.s3.us-west-2.amazonaws.com/MedQA-USMLE/train_10178.jsonl"
   "https://fedllm.s3.us-west-2.amazonaws.com/MedQA-USMLE/valid_1273.jsonl"
+  "https://fedllm.s3.us-west-2.amazonaws.com/PubMedQA_instruction/test_1000.jsonl"
+  "https://fedllm.s3.us-west-2.amazonaws.com/PubMedQA_instruction/train_272518.jsonl"
 )
 
 for ((i = 0; i < "${#DATASET_PATHS[@]}"; i++)); do

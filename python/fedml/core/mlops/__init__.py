@@ -94,7 +94,7 @@ def init(args, should_init_logs=True):
             # Bind local device as simulation device on the MLOps platform.
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
-            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user, args.version)
+            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user)
             return
 
     project_name = None
@@ -213,7 +213,7 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
     logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
 
     if len(MLOpsStore.mlops_log_agent_config) == 0:
-        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version(version)
+        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version()
         service_config = dict()
         service_config["mqtt_config"] = mqtt_config
         service_config["s3_config"] = s3_config
@@ -743,25 +743,7 @@ def create_run(project_id, api_key, run_name=None):
 
 
 def get_request_params(args):
-    url = "https://open.fedml.ai"
-    config_version = "release"
-    if (
-            hasattr(args, "config_version")
-            and args.config_version is not None
-    ):
-        # Setup config url based on selected version.
-        config_version = args.config_version
-        if args.config_version == "release":
-            url = "https://open.fedml.ai"
-        elif args.config_version == "test":
-            url = "https://open-test.fedml.ai"
-        elif args.config_version == "dev":
-            url = "https://open-dev.fedml.ai"
-        elif args.config_version == "local":
-            if hasattr(args, "local_server") and args.local_server is not None:
-                url = "http://{}:9000".format(args.local_server)
-            else:
-                url = "http://localhost:9000"
+    url = fedml._get_backend_service()
 
     cert_path = None
     if str(url).startswith("https://"):
@@ -892,7 +874,7 @@ def init_logs(args, edge_id):
     logging.info("client ids:{}".format(args.client_id_list))
 
 
-def bind_simulation_device(args, userid, version="release"):
+def bind_simulation_device(args, userid):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -900,6 +882,7 @@ def bind_simulation_device(args, userid, version="release"):
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
+    version = fedml.get_env_version()
     setattr(args, "version", version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
@@ -949,7 +932,7 @@ def bind_simulation_device(args, userid, version="release"):
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"],
                 args.account_id, unique_device_id, args.os_name
             )

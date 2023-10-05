@@ -3,6 +3,7 @@ import subprocess
 
 import click
 
+import fedml
 from .device_client_constants import ClientConstants
 from .device_server_constants import ServerConstants
 from .device_client_login import logout as client_logout
@@ -15,19 +16,17 @@ from ..comm_utils import sys_utils
 
 
 def login_as_model_device_agent(
-    userid, cloud, on_premise, master, infer_host, version, local_server,
+    userid, cloud, on_premise, master, infer_host, version,
     runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
 ):
     account_id = userid[0]
-    platform_url = "open.fedml.ai"
-    if version != "release":
-        platform_url = "open-{}.fedml.ai".format(version)
+    url = fedml._get_backend_service()
 
     # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id in the MLOps platform ({}).".format(
-                platform_url
+                url
             )
         )
         return
@@ -78,8 +77,6 @@ def login_as_model_device_agent(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-id",
@@ -120,8 +117,6 @@ def login_as_model_device_agent(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-rc",

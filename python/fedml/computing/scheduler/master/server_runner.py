@@ -304,8 +304,6 @@ class FedMLServerRunner:
             fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("cloud_agent_id", self.edge_id)
             fedml_conf_object["train_args"]["group_server_id_list"] = self.request_json.get("group_server_id_list",
                                                                                             list())
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         if fedml_conf_object.get("device_args", None) is not None:
             fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
@@ -462,7 +460,6 @@ class FedMLServerRunner:
             random_list = random_out.split("FEDML@")
             device_type = device_client_constants.ClientConstants.login_role_list[
                 device_client_constants.ClientConstants.LOGIN_MODE_ON_PREMISE_INDEX]
-            FedMLModelCards.get_instance().set_config_version(self.version)
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
                 "", random_list[1], None,
@@ -1059,6 +1056,7 @@ class FedMLServerRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic=None, payload=None):
+        print("callback_start_train: ")
         try:
             _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
         except Exception as e:

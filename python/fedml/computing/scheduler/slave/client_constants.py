@@ -73,17 +73,17 @@ class ClientConstants(object):
 
     LOCAL_CLIENT_API_PORT = 40800
 
-    LOGIN_MODE_CLIEN_INDEX = 0
+    LOGIN_MODE_CLIENT_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
     LOGIN_MODE_GPU_SUPPLIER_INDEX = 2
 
     login_role_list = ["client", "edge_simulator", "gpu_supplier"]
 
-    login_index_role_map = {LOGIN_MODE_CLIEN_INDEX: login_role_list[LOGIN_MODE_CLIEN_INDEX],
+    login_index_role_map = {LOGIN_MODE_CLIENT_INDEX: login_role_list[LOGIN_MODE_CLIENT_INDEX],
                             LOGIN_MODE_EDGE_SIMULATOR_INDEX: login_role_list[LOGIN_MODE_EDGE_SIMULATOR_INDEX],
                             LOGIN_MODE_GPU_SUPPLIER_INDEX: login_role_list[LOGIN_MODE_GPU_SUPPLIER_INDEX]}
 
-    login_role_index_map = {login_role_list[LOGIN_MODE_CLIEN_INDEX]: LOGIN_MODE_CLIEN_INDEX,
+    login_role_index_map = {login_role_list[LOGIN_MODE_CLIENT_INDEX]: LOGIN_MODE_CLIENT_INDEX,
                             login_role_list[LOGIN_MODE_EDGE_SIMULATOR_INDEX]: LOGIN_MODE_EDGE_SIMULATOR_INDEX,
                             login_role_list[LOGIN_MODE_GPU_SUPPLIER_INDEX]: LOGIN_MODE_GPU_SUPPLIER_INDEX}
 
@@ -338,7 +338,8 @@ class ClientConstants(object):
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
-
+            for error_info in error_list:
+                logging.error(error_info)
         return script_process, error_list
 
     @staticmethod

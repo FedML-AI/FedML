@@ -4,8 +4,8 @@ import time
 import fedml
 
 # Login
-current_version = "dev"
-error_code, error_msg = fedml.api.fedml_login(version=current_version)
+fedml.set_env_version("dev")
+error_code, error_msg = fedml.api.fedml_login()
 if error_code != 0:
     print("API Key is invalid!")
     exit(1)

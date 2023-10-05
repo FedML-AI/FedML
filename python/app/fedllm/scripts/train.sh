@@ -7,15 +7,22 @@ cd "${BASE_DIR}"
 
 bash scripts/setup.sh
 
-export CUDA_VISIBLE_DEVICES="0"
+NUM_GPU="$(python3 -c "import torch; print(torch.cuda.device_count())")"
+
+# see https://stackoverflow.com/a/13864829
+if [[ -z "${CUDA_VISIBLE_DEVICES+x}" && "${NUM_GPU}" -gt 1 ]]; then
+  echo "Detected ${NUM_GPU} > 1 GPUs; will use the first GPU."
+
+  export CUDA_VISIBLE_DEVICES="0"
+fi
 
 DATASET_PATHS=(
   ".data/databricks-dolly-15k.jsonl"
   # add your datasets here
 )
 
-python3 train.py \
-  --model_name "EleutherAI/pythia-6.9b" \
+python3 run_train.py \
+  --model_name_or_path "EleutherAI/pythia-70m" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
   --seed 1234 \
@@ -28,14 +35,16 @@ python3 train.py \
   --learning_rate "5e-6" \
   --warmup_steps 50 \
   --num_train_epochs 5 \
-  --output_dir ".logs/dolly_pythia-6.9b" \
+  --output_dir ".logs/dolly_pythia-70m" \
   --logging_steps 50 \
   --eval_steps 200 \
   --save_steps 200 \
-  --save_total_limit 20 \
+  --save_total_limit 10 \
   --logging_strategy "steps" \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
   --do_train "True" \
+  --do_eval "True" \
+  --remove_long_seq "True" \
   "${@}"

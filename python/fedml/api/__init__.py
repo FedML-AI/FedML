@@ -15,75 +15,118 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
-from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model
+from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster, run
+from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
 
-def fedml_login(api_key=None, version="release"):
+def fedml_login(api_key=None):
     """
     init the launch environment
     :param api_key: API Key from MLOPs
-    :param version: dev, test, release
     :return int: error code (0 means successful), str: error message
     """
-    return utils.login(api_key, version)
+    return utils.login(api_key)
 
 
 # inputs: yaml file
 # return: resource_id, error_code (0 means successful), error_message,
-def match_resources(yaml_file):
+def match_resources(yaml_file, cluster=""):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
     :returns: str: resource id, int: error code (0 means successful), str: error message
     """
-    return utils.match_resources(yaml_file, prompt=False)
+    return utils.match_resources(yaml_file, cluster, prompt=False)
 
 
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, version="release", api_key=None, resource_id=None, prompt=True):
+def launch_job(yaml_file, cluster="", api_key=None, resource_id=None, prompt=True):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
     :param resource_id: resource id returned from matching resources api, if you do not specify resource id,
            we will match resources based on your job yaml, and then automatically launch the job using matched resources
-    :param version: version of MLOps platform. It should be dev, test or release
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return launch.job(yaml_file, api_key, version, resource_id, prompt=prompt)
+    return launch.job(yaml_file, api_key, resource_id, cluster, prompt=prompt)
 
 
-# input: job id, page num, page size, need_all_logs
-# return job status, total_log_nums, total_log_pages, log list
-def launch_log(job_id, page_num, page_size, version="release", api_key=None, need_all_logs=False):
+def job_stop(job_id, platform="falcon", api_key=None):
+    return job.stop(job_id, platform, api_key)
+
+
+def job_list(job_name, job_id=None, platform="falcon", api_key=None):
+    return job.list_job(job_name, job_id, platform, api_key)
+
+
+def job_status(job_name, job_id, platform, api_key):
+    return job.status(job_name, job_id, platform, api_key)
+
+
+def job_logs(job_id, page_num, page_size, need_all_logs=False, platform="falcon", api_key=None):
     """
     fetch logs
-    :param job_id: launched job id
-    :param page_num: request page num for logs
-    :param page_size: request page size for logs
-    :param need_all_logs: boolean value representing if all logs are needed
-    :returns: str: job status, int: total log num, int: total log pages, list: log list
+
+    :param str job_id: launched job id
+    :param int page_num: request page num for logs
+    :param int page_size: request page size for logs
+    :param bool need_all_logs: boolean value representing if all logs are needed. Default is False
+    :param str platform: The platform name at the MLOps platform (options: octopus, parrot, spider, beehive, falcon,
+                         launch). Default is falcon
+    :param str api_key: API Key from MLOPs. Not needed if already configured once
+
+    :returns: str: job_status, int: total_log_lines, int: total_log_pages, List[str]: log_list, FedMLJobLogModelList:
+    logs
+
+    :rtype: Tuple[str, int, int, List[str], FedMLJobLogModelList]
     """
-    return launch.log(job_id, version, api_key, page_num, page_size, need_all_logs)
+    return job.logs(job_id, page_num, page_size, need_all_logs, platform, api_key)
 
 
-def stop_job(job_id, version, platform="falcon", api_key=None, show_hint_texts=True):
-    return job.stop(job_id, version, platform, api_key, show_hint_texts)
+def cluster_list(cluster_names=(), api_key=None) -> FedMLClusterModelList:
+    return cluster.list_clusters(cluster_names=cluster_names, api_key=api_key)
+
+def cluster_exists(cluster_name:str, api_key:str=None) -> bool:
+    return cluster.exists(cluster_name=cluster_name, api_key=api_key)
+
+def cluster_status(cluster_name, api_key=None) -> FedMLClusterModelList:
+    return cluster.status(cluster_name=cluster_name, api_key=api_key)
 
 
-def list_jobs(version, job_name, job_id=None, platform="falcon", api_key=None):
-    return job.lists(version, job_name, job_id, platform, api_key)
+def cluster_start(cluster_names, api_key=None) -> bool:
+    return cluster.start(cluster_names=cluster_names, api_key=api_key)
+
+
+def cluster_startall(api_key=None) -> bool:
+    return cluster.start(cluster_names=(), api_key=api_key)
+
+
+def cluster_stop(cluster_names, api_key=None) -> bool:
+    return cluster.stop(cluster_names=cluster_names, api_key=api_key)
+
+
+def cluster_stopall(api_key=None) -> bool:
+    return cluster.stop(cluster_names=(), api_key=api_key)
+
+
+def cluster_kill(cluster_names, api_key=None) -> bool:
+    return cluster.kill(cluster_names=cluster_names, api_key=api_key)
+
+
+def cluster_killall(api_key=None) -> bool:
+    return cluster.kill(cluster_names=(), api_key=api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 
 
-def login(userid, version, client, server,
-          api_key, local_server, role, runner_cmd, device_id, os_name,
+def login(userid, client, server,
+          api_key, role, runner_cmd, device_id, os_name,
           docker, docker_rank):
-    device_bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+    device_bind(userid, client, server,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
 
@@ -91,17 +134,20 @@ def logout(client, server, docker, docker_rank):
     device_unbind(client, server, docker, docker_rank)
 
 
-def device_bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+def device_bind(userid, client, server,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank):
-    device.bind(userid, version, client, server,
-                api_key, local_server, role, runner_cmd, device_id, os_name,
+    device.bind(userid, client, server,
+                api_key, role, runner_cmd, device_id, os_name,
                 docker, docker_rank)
 
 
 def device_unbind(client, server, docker, docker_rank):
     device.unbind(client, server, docker, docker_rank)
 
+
+def resource_type():
+    device.resource_type()
 
 def fedml_logs(client, server, docker, docker_rank):
     logs.log(client, server, docker, docker_rank)
@@ -121,36 +167,28 @@ def model_delete(name):
     model.delete(name)
 
 
-def model_add_files(name, path):
-    model.add_files(name, path)
-
-
-def model_remove_files(name, file):
-    model.remove_files(name, file)
-
-
 def model_list(name):
     model.list_models(name)
 
 
-def model_list_remote(name, user, api_key, version, local_server):
-    model.list_remote(name, user, api_key, version, local_server)
+def model_list_remote(name, user, api_key):
+    model.list_remote(name, user, api_key)
 
 
 def model_package(name):
     model.package(name)
 
 
-def model_push(name, model_storage_url, model_net_url, user, api_key, version, local_server):
-    model.push(name, model_storage_url, model_net_url, user, api_key, version, local_server)
+def model_push(name, model_storage_url, model_net_url, user, api_key):
+    model.push(name, model_storage_url, model_net_url, user, api_key)
 
 
-def model_pull(name, user, api_key, version, local_server):
-    model.pull(name, user, api_key, version, local_server)
+def model_pull(name, user, api_key):
+    model.pull(name, user, api_key)
 
 
-def model_deploy(local, name, master_ids, worker_ids, user_id, api_key):
-    model.deploy(local, name, master_ids, worker_ids, user_id, api_key)
+def model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+    model.deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
 
 
 def model_info(name):
@@ -161,5 +199,5 @@ def model_run(name, data):
     model.run(name, data)
 
 
-def resource_type(version):
-    model.resource_type(version)
+def run_command(cmd, cluster_name, api_key=None):
+    return run.command(cmd, cluster_name, api_key)

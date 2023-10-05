@@ -1,0 +1,2 @@
+environment_args:
+  bootstrap: bootstrap.sh

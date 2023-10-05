@@ -5,6 +5,7 @@ import traceback
 import uuid
 from threading import Thread
 
+import fedml
 from fedml.core.distributed.communication.message import Message
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
@@ -30,10 +31,20 @@ class ClientDiagnosis(Singleton):
         self.test_mqtt_s3_com_manager_client = None
         self.test_mqtt_s3_com_manager_server = None
 
+    def _default_args(rank=0):
+        version = fedml.get_env_version()
+        parser = argparse.ArgumentParser(description="FedML")
+        parser.add_argument("--config_version", type=str, default=version)
+        parser.add_argument("--client_id_list", type=str, default="[1]")
+        parser.add_argument("--dataset", type=str, default="default")
+        parser.add_argument("--rank", type=int, default=rank)
+        args, unknown = parser.parse_known_args()
+        return args
+
     @staticmethod
     def check_open_connection(args=None):
         if args is None:
-            args = {"config_version": "release"}
+            args = ClientDiagnosis._default_args()
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         except Exception as e:
@@ -45,7 +56,7 @@ class ClientDiagnosis(Singleton):
     @staticmethod
     def check_s3_connection(args=None):
         if args is None:
-            args = {"config_version": "release"}
+            args = ClientDiagnosis._default_args()
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             s3_storage = S3Storage(s3_config)
@@ -61,7 +72,7 @@ class ClientDiagnosis(Singleton):
     @staticmethod
     def check_mqtt_connection(args=None):
         if args is None:
-            args = {"config_version": "release"}
+            args = ClientDiagnosis._default_args()
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             mqtt_mgr = MqttManager(
@@ -97,12 +108,7 @@ class ClientDiagnosis(Singleton):
     @staticmethod
     def check_mqtt_s3_communication_backend_server(run_id, args=None):
         if args is None:
-            parser = argparse.ArgumentParser(description="FedML")
-            parser.add_argument("--config_version", type=str, default="release")
-            parser.add_argument("--client_id_list", type=str, default="[1]")
-            parser.add_argument("--dataset", type=str, default="default")
-            parser.add_argument("--rank", type=int, default=0)
-            args, unknown = parser.parse_known_args()
+            args = ClientDiagnosis._default_args(rank=0)
             setattr(args, "run_id", run_id)
         try:
             diagnosis = ClientDiagnosis()
@@ -133,12 +139,7 @@ class ClientDiagnosis(Singleton):
     @staticmethod
     def check_mqtt_s3_communication_backend_client(run_id, args=None):
         if args is None:
-            parser = argparse.ArgumentParser(description="FedML")
-            parser.add_argument("--config_version", type=str, default="release")
-            parser.add_argument("--client_id_list", type=str, default="[1]")
-            parser.add_argument("--dataset", type=str, default="default")
-            parser.add_argument("--rank", type=int, default=1)
-            args, unknown = parser.parse_known_args()
+            args = ClientDiagnosis._default_args(rank=1)
             setattr(args, "run_id", run_id)
         try:
             diagnosis = ClientDiagnosis()
@@ -171,7 +172,7 @@ class ClientDiagnosis(Singleton):
     @staticmethod
     def check_mqtt_connection_with_daemon_mode(args=None):
         if args is None:
-            args = {"config_version": "release"}
+            args = ClientDiagnosis._default_args(rank=0)
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             mqtt_mgr = MqttManager(

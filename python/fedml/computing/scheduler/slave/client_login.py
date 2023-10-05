@@ -9,6 +9,7 @@ import time
 import traceback
 
 import click
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_runner import FedMLClientRunner
@@ -28,7 +29,7 @@ def init_logs(args, edge_id):
     # logging.info("client ids:{}".format(args.client_id_list))
 
 
-def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suffix=None, role="client"):
+def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None, role="client"):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -39,6 +40,7 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
         pass
     else:
         setattr(args, "os_name", sys_name)
+    version = fedml.get_env_version()
     setattr(args, "version", version)
     setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
     is_from_docker = False
@@ -148,7 +150,7 @@ def __login_as_client(args, userid, version, api_key="", use_extra_device_id_suf
     runner.start_agent_mqtt_loop()
 
 
-def __login_as_simulator(args, userid, version, mqtt_connection=True):
+def __login_as_simulator(args, userid, mqtt_connection=True):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -156,6 +158,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
+    version = fedml.get_env_version()
     setattr(args, "version", version)
     setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
@@ -244,6 +247,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
         # Open simulator daemon process to process run status.
         simulator_daemon_cmd = os.path.join(os.path.dirname(__file__), "simulator_daemon.py")
+        env_version = fedml.get_env_version()
         simulator_daemon_process = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
@@ -253,9 +257,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
                 "-u",
                 str(args.user),
                 "-v",
-                args.version,
-                "-ls",
-                args.local_server,
+                env_version,
                 "-r",
                 args.role,
                 "-id",
@@ -267,7 +269,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
                 "-lfd",
                 args.log_file_dir,
                 "-cf",
-                args.config_version,
+                env_version,
                 "-ci",
                 str(edge_id)
             ]
@@ -280,8 +282,8 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
 
 def login(args):
-    if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]:
-        __login_as_client(args, args.user, args.version, api_key=args.api_key)
+    if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIENT_INDEX]:
+        __login_as_client(args, args.user, api_key=args.api_key)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]:
         if args.no_gpu_check == 0:
             gpu_count, _ = sys_utils.get_gpu_count_vendor()
@@ -290,10 +292,10 @@ def login(args):
                            "With the gpu_supplier(-g) option, you need to check if your machine "
                            "has nvidia GPUs and installs CUDA related drivers.")
                 return
-        __login_as_client(args, args.user, args.version, api_key=args.api_key,
+        __login_as_client(args, args.user, api_key=args.api_key,
                           use_extra_device_id_suffix=".Edge.GPU.Supplier", role=args.role)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:
-        __login_as_simulator(args, args.user, args.version)
+        __login_as_simulator(args, args.user)
 
 
 def logout():
@@ -309,7 +311,6 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
-    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
@@ -318,6 +319,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.user = args.user
+    
+    fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)
     else:
