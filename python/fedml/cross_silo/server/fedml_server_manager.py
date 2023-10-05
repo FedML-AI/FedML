@@ -48,10 +48,17 @@ class FedMLServerManager(FedMLCommManager):
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
-            global_model_url, global_model_key = self.send_message_init_config(
-                client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
-                global_model_url, global_model_key
-            )
+            if type(global_model_params) is dict:
+                client_index = self.data_silo_index_list[client_idx_in_this_round]
+                global_model_url, global_model_key = self.send_message_init_config(
+                    client_id, global_model_params[client_index], client_index,
+                    None, None
+                )
+            else:
+                global_model_url, global_model_key = self.send_message_init_config(
+                    client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
+                    global_model_url, global_model_key
+                )
             client_idx_in_this_round += 1
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
