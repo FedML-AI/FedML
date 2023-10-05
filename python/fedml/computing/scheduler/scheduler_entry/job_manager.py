@@ -95,30 +95,6 @@ class FedMLJobManager(Singleton):
                       f"response.content: {response.content}")
                 return None
             job_start_result = FedMLJobStartedModel(data, job_type, response=resp_data)
-            print("resp_data:", resp_data)
-
-            # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
-            # if job_obj is None:
-            #     job_obj = FedMLLaunchJobDataInterface()
-            #     job_obj.status = job_start_result.status
-            #     job_obj.started_time = job_start_result.started_time
-            #     job_obj.app_name = application_name
-            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
-            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
-            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
-            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
-            #     job_obj.updated_time = str(time.time())
-            #     FedMLLaunchJobDataInterface.insert_job_to_db(job_obj)
-            # else:
-            #     job_obj.status = job_start_result.status
-            #     job_obj.started_time = job_start_result.started_time
-            #     job_obj.app_name = application_name
-            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
-            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
-            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
-            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
-            #     job_obj.updated_time = str(time.time())
-            #     FedMLLaunchJobDataInterface.update_job_to_db(job_obj)
 
         return job_start_result
 
@@ -292,7 +268,6 @@ class FedMLGpuDevices(object):
         self.cpu_count = gpu_device_json.get("cpu_count", None)
         self.cpu_count = None if self.cpu_count is not None and int(self.cpu_count) <= 0 else self.cpu_count
         self.gpu_count = gpu_device_json.get("got_gpu_count", -1)
-        print("self.gpu_count = ", self.gpu_count)
         self.gpu_name = gpu_device_json.get("gpu_name", None)
         self.gpu_instance = self.gpu_name
         self.gpu_provider = gpu_device_json.get("gpu_provider", None)

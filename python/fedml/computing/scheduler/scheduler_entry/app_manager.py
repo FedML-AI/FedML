@@ -111,6 +111,7 @@ class FedMLAppManager(Singleton):
     def update_app_api(self, platform, application_name, app_config,
                        client_package_url, client_package_file, server_package_url, server_package_file,
                        user_api_key):
+        platform_id = Constants.platform_str_to_type(platform)
         app_update_result = None
         app_update_url = ServerConstants.get_app_update_url()
         app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -121,7 +122,7 @@ class FedMLAppManager(Singleton):
             "applicationName": application_name,
             "privateLocalData": "",
             "pictureUrl": "",
-            "platformId": platform,
+            "platformId": platform_id,
             "dataType": 1,
             "dataId": 1,
             "description": "# Please describe your application with this markdown editor\n"
