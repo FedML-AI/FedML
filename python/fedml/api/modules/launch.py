@@ -26,23 +26,17 @@ def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
         # Prepare the application for launch.
         job_config = _prepare_launch_app(yaml_file)
 
-        # Get the user API key from launch_secret file.
-        user_api_key = get_api_key()
-
         # Start the job with the above application.
         schedule_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.project_name,
                                     job_config.application_name,
-                                    device_server, device_edges, user_api_key, no_confirmation=False,
+                                    device_server, device_edges, get_api_key(), no_confirmation=False,
                                     model_name=job_config.serving_model_name,
                                     model_endpoint=job_config.serving_endpoint_name,
                                     job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
 
-        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file, user_api_key)
-
-        if result_code != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
-            return result_code, result_message, schedule_result
-
         _post_process_launch_result(schedule_result, job_config)
+
+        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file)
 
         # TODO (alaydshah): Revisit if this is appropriate here or not.
         FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id, schedule_result)
@@ -63,24 +57,18 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
         # Prepare the application for launch.
         job_config = _prepare_launch_app(yaml_file)
 
-        # Get the user API key from launch_secret file.
-        user_api_key = get_api_key()
-
         # Start the job with the above application.
         schedule_result = start_on_cluster(SchedulerConstants.PLATFORM_TYPE_FALCON, cluster,
                                                job_config.project_name,
                                                job_config.application_name,
-                                               device_server, device_edges, user_api_key, no_confirmation=False,
+                                               device_server, device_edges, get_api_key(), no_confirmation=False,
                                                model_name=job_config.serving_model_name,
                                                model_endpoint=job_config.serving_endpoint_name,
                                                job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
 
-        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file, user_api_key)
-
-        if result_code != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
-            return result_code, result_message, schedule_result
-
         _post_process_launch_result(schedule_result, job_config)
+
+        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file)
 
         # TODO (alaydshah): Revisit if this is appropriate here or not.
         FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id, schedule_result)
@@ -91,14 +79,11 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
 def run_job(schedule_result, api_key, device_server, device_edges):
     authenticate(api_key)
 
-    # Get the user API key from launch_secret file.
-    user_api_key = get_api_key()
-
     # Start the job
     launch_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON,
                               schedule_result.project_name,
                               schedule_result.application_name,
-                              device_server, device_edges, user_api_key,
+                              device_server, device_edges, get_api_key(),
                               no_confirmation=True, job_id=schedule_result.job_id,
                               job_type=schedule_result.job_type)
 
@@ -114,7 +99,7 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
                                                               device_edges)
 
-    if result_code != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
+    if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         return None, None, result_code, result_message
 
     job_id = schedule_result.job_id
@@ -141,7 +126,7 @@ def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, devi
     result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id,
                                                                            device_server, device_edges)
 
-    if result_code != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
+    if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         return None, None, result_code, result_message
 
     cluster_id = getattr(schedule_result, "cluster_id", None)
@@ -175,11 +160,10 @@ def _post_process_launch_result(launch_result, job_config):
 def _prepare_launch_app(yaml_file):
     job_config, app_config, client_package, server_package = FedMLLaunchManager.get_instance().prepare_launch(
         yaml_file)
-    user_api_key = get_api_key()
 
     # Create and update an application with the built packages.
     app_updated_result = FedMLAppManager.get_instance().update_app(
-        SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, user_api_key,
+        SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
         client_package_file=client_package, server_package_file=server_package,
         workspace=job_config.workspace, model_name=job_config.serving_model_name,
         model_version=job_config.serving_model_version,
@@ -188,7 +172,7 @@ def _prepare_launch_app(yaml_file):
     return job_config
 
 
-def _parse_schedule_result(result, yaml_file, api_key):
+def _parse_schedule_result(result, yaml_file):
     if result.job_url == "":
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
@@ -202,9 +186,8 @@ def _parse_schedule_result(result, yaml_file, api_key):
                 f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
                 f"for your job. \n")
     elif result.status == Constants.JOB_START_STATUS_QUEUED:
-        stop(result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_FAILED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_FAILED, None)
+        return(ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
+               f"\nNo resource available now, job queued in waiting queue.")
     elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
                 ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)

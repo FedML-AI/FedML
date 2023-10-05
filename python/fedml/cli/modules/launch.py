@@ -3,6 +3,7 @@ import os
 
 from prettytable import PrettyTable
 
+import fedml
 from fedml.cli.modules.utils import DefaultCommandGroup
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
@@ -133,6 +134,7 @@ def _check_match_result(result, yaml_file):
             click.echo("You have confirmed to keep your job in the waiting list.")
             return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
         else:
+            click.echo("Cancelling launch as no resources are available. Please try again later.")
             return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
     elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
         click.echo("Please bind your credit card before launching the job.")
@@ -213,3 +215,13 @@ def process_job_result(result):
         click.echo(job_list_table)
     else:
         click.echo("")
+
+    # Show the job url
+    click.echo("\nYou can track your job running details at this URL:")
+    click.echo(f"{result.job_url}")
+
+    # Show querying infos for getting job logs
+    click.echo("")
+    click.echo(f"For querying the realtime status of your job, please run the following command.")
+    click.echo(f"fedml job logs -jid {result.job_id}" +
+               "{}".format(f" -v {fedml.get_env_version()}"))
