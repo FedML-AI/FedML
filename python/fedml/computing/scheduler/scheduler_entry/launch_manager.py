@@ -8,13 +8,13 @@ import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from fedml.computing.scheduler.comm_utils.sys_utils import upgrade_if_not_latest
-from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
-from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLJobManager
+from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
 from fedml.api.modules.utils import build_mlops_package
 
@@ -87,7 +87,7 @@ class FedMLLaunchManager(object):
             if models is None or len(models.model_list) <= 0:
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
                     print(f"Please make sure fedml_model_config.yaml exists in your workspace."
-                               f"{self.job_config.workspace}")
+                          f"{self.job_config.workspace}")
                     exit(-1)
 
                 model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,
@@ -115,9 +115,9 @@ class FedMLLaunchManager(object):
             self._parse_job_yaml(yaml_file, should_use_default_workspace=True)
 
             # Apply model endpoint id and act as job id
-            self.job_config.serving_endpoint_id = FedMLJobManager.get_instance().apply_endpoint_id(
+            self.job_config.serving_endpoint_id = FedMLModelCards.get_instance().apply_endpoint_api(
                 user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
-                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version, )
+                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version)
             if self.job_config.serving_endpoint_id is None:
                 print("Failed to apply endpoint for your model.")
                 exit(-1)
@@ -396,14 +396,14 @@ class FedMLJobConfig(object):
             self.serving_endpoint_name = f"Endpoint-{str(uuid.uuid4())}"
         self.serving_endpoint_id = None
 
-        self.application_name = FedMLJobConfig.generate_application_name(
+        self.application_name = FedMLJobConfig._generate_application_name(
             self.executable_file_folder if workspace is None or workspace == "" else workspace)
 
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
     @staticmethod
-    def generate_application_name(workspace):
+    def _generate_application_name(workspace):
         return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)
 
 

@@ -17,7 +17,7 @@ def fedml_login(api_key):
     return -1, "Login failed"
 
 
-def _check_api_key(self, api_key=None):
+def _check_api_key(api_key=None):
     if api_key is None or api_key == "":
         saved_api_key = get_api_key()
         if saved_api_key is None or saved_api_key == "":
@@ -31,7 +31,6 @@ def _check_api_key(self, api_key=None):
     else:
         save_api_key(api_key)
         return True
-
 
 
 def authenticate(api_key):
@@ -152,4 +151,3 @@ def build_mlops_package(
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
-
