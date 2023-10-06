@@ -49,7 +49,7 @@ class FedMLJobManager(Singleton):
         }
 
         if cluster is not None:
-            job_start_json["cluster"] = cluster
+            job_start_json["clusterName"] = cluster
 
         if project_name is not None and len(str(project_name).strip(' ')) > 0:
             job_start_json["projectName"] = project_name

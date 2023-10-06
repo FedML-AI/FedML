@@ -80,7 +80,7 @@ class FedMLClusterManager(Singleton):
 
     def confirm_and_start(self, job_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
         confirm_cluster_url = ServerConstants.get_cluster_confirm_url()
-        confirm_cluster_json = self._get_cluster_confirm_json(self, job_id, cluster_id, gpu_matched)
+        confirm_cluster_json = self._get_cluster_confirm_json(job_id, cluster_id, gpu_matched)
         response = self._request(confirm_cluster_url, confirm_cluster_json, self.config_version)
         data = self._get_data_from_response(command="Confirm", response=response)
         return True if data is not None else False
