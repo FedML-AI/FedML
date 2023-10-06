@@ -178,8 +178,9 @@ def _match_and_show_resources(result):
 
 
 def _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED]:
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or schedule_result is None:
         click.echo(f"{result_message}. Please double check the input arguments are valid.")
+        return False
     match_result = _check_match_result(schedule_result, yaml_file)
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED:
         job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
