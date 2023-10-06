@@ -244,6 +244,7 @@ class FedMLJobStartedModel(object):
                 for gpu_dev_json in gpu_list_json:
                     self.gpu_matched.append(FedMLGpuDevices(gpu_dev_json))
             self.started_time = job_started_json.get("started_time", time.time())
+            self.user_check = job_started_json.get("user_check", True)
         else:
             self.job_id = "0"
             self.job_name = job_name
@@ -253,6 +254,7 @@ class FedMLJobStartedModel(object):
             self.started_time = time.time()
             self.message = response.get("message")
             self.job_type = None
+            self.user_check = True
 
 
 class FedMLGpuDevices(object):

@@ -184,7 +184,8 @@ def _resources_matched_and_confirmed(result_code, result_message, schedule_resul
         if gpu_matched is None:
             return False
 
-        if not click.confirm("Do you want to launch the job with the above matched GPU resource?", abort=False):
+        if schedule_result.user_check and click.confirm("Do you want to launch the job with the above matched GPU "
+                                                        "resource?", abort=False):
             click.echo("Cancelling the job with the above matched GPU resource.")
             job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
             return False
