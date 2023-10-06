@@ -109,10 +109,12 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
             if cluster_confirmed:
                 click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
                 _print_job_list_details(schedule_result)
+                _print_job_log_details(schedule_result)
             else:
                 click.echo("Cluster confirmation failed. Please check if the cli arguments are valid")
         else:
             _print_job_list_details(schedule_result)
+            _print_job_log_details(schedule_result)
 
 
 def _check_match_result(result, yaml_file):
