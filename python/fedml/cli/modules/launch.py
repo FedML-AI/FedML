@@ -9,7 +9,8 @@ from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
-from fedml.api import (schedule_job, schedule_job_on_cluster, run_scheduled_job, confirm_cluster_and_start_job, job_stop,
+from fedml.api import (schedule_job, schedule_job_on_cluster, run_scheduled_job, confirm_cluster_and_start_job,
+                       job_stop,
                        job_list)
 
 
@@ -84,17 +85,18 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
 
 
 def _launch_job(yaml_file, api_key):
-    _, _, schedule_result = schedule_job(yaml_file, api_key=api_key)
+    result_code, result_message, schedule_result = schedule_job(yaml_file, api_key=api_key)
 
-    if _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
+    if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
         result = run_scheduled_job(schedule_result=schedule_result, api_key=api_key)
-        process_job_result(result)
+        _print_job_list_details(result)
+        _print_job_log_details(result)
 
 
 def _launch_job_with_cluster(yaml_file, api_key, cluster):
-    _, _, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
+    result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
 
-    if _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
+    if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
         cluster_id = getattr(schedule_result, "cluster_id", None)
 
         if cluster_id is None or cluster_id == "":
@@ -105,6 +107,7 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
 
         if cluster_confirmed:
             click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
+            _print_job_list_details(schedule_result)
         else:
             click.echo("Cluster confirmation failed. Please check if the cli arguments are valid")
 
@@ -132,6 +135,7 @@ def _check_match_result(result, yaml_file):
         click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
         if click.confirm("Do you want to join the queue?", abort=False):
             click.echo("You have confirmed to keep your job in the waiting list.")
+            _print_job_list_details(result)
             return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
         else:
             click.echo("Cancelling launch as no resources are available. Please try again later.")
@@ -157,7 +161,7 @@ def _match_and_show_resources(result):
                                gpu_device.mem_size,
                                f"{gpu_device.gpu_type}:{gpu_device.gpu_num}",
                                gpu_device.gpu_region, gpu_device.cost, Constants.CHECK_MARK_STRING])
-        print(gpu_table)
+        click.echo(gpu_table)
         click.echo("")
 
         click.echo(f"You can also view the matched GPU resource with Web UI at: ")
@@ -168,7 +172,9 @@ def _match_and_show_resources(result):
     return None
 
 
-def _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
+def _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED]:
+        click.echo(f"{result_message}. Please double check the input arguments are valid.")
     match_result = _check_match_result(schedule_result, yaml_file)
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED:
         job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
@@ -188,7 +194,7 @@ def _resources_matched_and_confirmed(schedule_result, yaml_file, api_key):
     return False
 
 
-def process_job_result(result):
+def _print_job_list_details(result):
     if result is None:
         click.echo("Failed to launch the job")
         return
@@ -201,10 +207,10 @@ def process_job_result(result):
 
     # List the job status
     job_list_obj = job_list(job_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
-                                      job_id=result.job_id)
+                            job_id=result.job_id)
     if job_list_obj is not None and len(job_list_obj.job_list) > 0:
         click.echo("")
-        click.echo("Your launch result is as follows:")
+        click.echo("Your job result is as follows:")
         job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
                                       'Spend Time(hour)', 'Cost'])
         jobs_count = 0
@@ -217,7 +223,13 @@ def process_job_result(result):
         click.echo("")
 
     # Show the job url
-    click.echo("\nYou can track your job running details at this URL:")
+    click.echo("\nYou can track your job details at this URL:")
+    click.echo(f"{result.job_url}")
+
+
+def _print_job_log_details(result):
+    # Show the job url
+    click.echo("\nYou can track your job details at this URL:")
     click.echo(f"{result.job_url}")
 
     # Show querying infos for getting job logs

@@ -77,7 +77,7 @@ class FedMLClusterManager(Singleton):
         data = self._get_data_from_response(command="List", response=response)
         return FedMLClusterModelList(data) if data is not None else data
 
-    def confirm_cluster(self, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
+    def confirm_and_start(self, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
         confirm_cluster_url = ServerConstants.get_cluster_confirm_url()
         selected_machines_list = list()
         for gpu_machine in gpu_matched:

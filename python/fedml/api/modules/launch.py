@@ -24,15 +24,19 @@ def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
 
     if schedule_result is None:
         # Prepare the application for launch.
-        job_config = _prepare_launch_app(yaml_file)
+        job_config, app_updated_result = _prepare_launch_app(yaml_file)
+
+        if not app_updated_result:
+            return ApiConstants.ERROR_CODE[
+                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, schedule_result
 
         # Start the job with the above application.
         schedule_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.project_name,
-                                    job_config.application_name,
-                                    device_server, device_edges, get_api_key(), no_confirmation=False,
-                                    model_name=job_config.serving_model_name,
-                                    model_endpoint=job_config.serving_endpoint_name,
-                                    job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+                                job_config.application_name,
+                                device_server, device_edges, get_api_key(), no_confirmation=False,
+                                model_name=job_config.serving_model_name,
+                                model_endpoint=job_config.serving_endpoint_name,
+                                job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -55,16 +59,20 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
 
     if schedule_result is None:
         # Prepare the application for launch.
-        job_config = _prepare_launch_app(yaml_file)
+        job_config, app_updated_result = _prepare_launch_app(yaml_file)
+
+        if not app_updated_result:
+            return ApiConstants.ERROR_CODE[
+                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, schedule_result
 
         # Start the job with the above application.
         schedule_result = start_on_cluster(SchedulerConstants.PLATFORM_TYPE_FALCON, cluster,
-                                               job_config.project_name,
-                                               job_config.application_name,
-                                               device_server, device_edges, get_api_key(), no_confirmation=False,
-                                               model_name=job_config.serving_model_name,
-                                               model_endpoint=job_config.serving_endpoint_name,
-                                               job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+                                           job_config.project_name,
+                                           job_config.application_name,
+                                           device_server, device_edges, get_api_key(), no_confirmation=False,
+                                           model_name=job_config.serving_model_name,
+                                           model_endpoint=job_config.serving_endpoint_name,
+                                           job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -81,11 +89,11 @@ def run_job(schedule_result, api_key, device_server, device_edges):
 
     # Start the job
     launch_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON,
-                              schedule_result.project_name,
-                              schedule_result.application_name,
-                              device_server, device_edges, get_api_key(),
-                              no_confirmation=True, job_id=schedule_result.job_id,
-                              job_type=schedule_result.job_type)
+                          schedule_result.project_name,
+                          schedule_result.application_name,
+                          device_server, device_edges, get_api_key(),
+                          no_confirmation=True, job_id=schedule_result.job_id,
+                          job_type=schedule_result.job_type)
 
     if launch_result is not None:
         launch_result.project_name = schedule_result.project_name
@@ -97,7 +105,7 @@ def run_job(schedule_result, api_key, device_server, device_edges):
 def job(yaml_file, api_key, resource_id, device_server, device_edges):
     # Schedule Job
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
-                                                              device_edges)
+                                                                device_edges)
 
     if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         return None, None, result_code, result_message
@@ -169,7 +177,7 @@ def _prepare_launch_app(yaml_file):
         model_version=job_config.serving_model_version,
         model_url=job_config.serving_model_s3_url)
 
-    return job_config
+    return job_config, app_updated_result
 
 
 def _parse_schedule_result(result, yaml_file):
@@ -186,8 +194,8 @@ def _parse_schedule_result(result, yaml_file):
                 f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
                 f"for your job. \n")
     elif result.status == Constants.JOB_START_STATUS_QUEUED:
-        return(ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
-               f"\nNo resource available now, job queued in waiting queue.")
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
+                f"\nNo resource available now, job queued in waiting queue.")
     elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
                 ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
