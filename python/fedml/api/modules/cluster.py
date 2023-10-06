@@ -48,4 +48,4 @@ def exists(cluster_name, api_key) -> bool:
 
 def confirm_and_start(cluster_id, gpu_matched, api_key):
     authenticate(api_key)
-    return FedMLClusterManager.get_instance().confirm_and_start(cluster_id, gpu_matched)
+    return FedMLClusterManager.get_instance().confirm_and_start(job_id, cluster_id, gpu_matched)

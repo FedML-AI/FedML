@@ -147,8 +147,8 @@ def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
 
 
-def confirm_cluster_and_start_job(cluster_id, gpu_matched, api_key=None):
-    return cluster.confirm_and_start(cluster_id, gpu_matched, api_key)
+def confirm_cluster_and_start_job(job_id, cluster_id, gpu_matched, api_key=None):
+    return cluster.confirm_and_start(job_id, cluster_id, gpu_matched, api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

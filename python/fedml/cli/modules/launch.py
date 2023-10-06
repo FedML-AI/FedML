@@ -104,7 +104,7 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
                 click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
                 return
 
-            cluster_confirmed = confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
+            cluster_confirmed = confirm_cluster_and_start_job(schedule_result.job_id, cluster_id, schedule_result.gpu_matched)
 
             if cluster_confirmed:
                 click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
