@@ -97,19 +97,22 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
     result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
 
     if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
-        cluster_id = getattr(schedule_result, "cluster_id", None)
+        if schedule_result.user_check:
+            cluster_id = getattr(schedule_result, "cluster_id", None)
 
-        if cluster_id is None or cluster_id == "":
-            click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
-            return
+            if cluster_id is None or cluster_id == "":
+                click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
+                return
 
-        cluster_confirmed = confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
+            cluster_confirmed = confirm_cluster_and_start_job(cluster_id, schedule_result.gpu_matched)
 
-        if cluster_confirmed:
-            click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
-            _print_job_list_details(schedule_result)
+            if cluster_confirmed:
+                click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
+                _print_job_list_details(schedule_result)
+            else:
+                click.echo("Cluster confirmation failed. Please check if the cli arguments are valid")
         else:
-            click.echo("Cluster confirmation failed. Please check if the cli arguments are valid")
+            _print_job_list_details(schedule_result)
 
 
 def _check_match_result(result, yaml_file):
