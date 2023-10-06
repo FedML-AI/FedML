@@ -181,6 +181,9 @@ def _prepare_launch_app(yaml_file):
 
 
 def _parse_schedule_result(result, yaml_file):
+    if result is None:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
+                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
     if result.job_url == "":
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
