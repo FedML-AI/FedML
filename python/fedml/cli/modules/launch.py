@@ -236,10 +236,8 @@ def _print_job_list_details(result):
 
 def _print_job_log_details(result):
     # Show the job url
-    if result is None or result.job_id is None or result.job_url is None:
+    if result is None or result.job_id is None:
         return
-    click.echo("\nYou can track your job details at this URL:")
-    click.echo(f"{result.job_url}")
 
     # Show querying infos for getting job logs
     click.echo("")
