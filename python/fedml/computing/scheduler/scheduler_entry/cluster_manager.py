@@ -87,7 +87,7 @@ class FedMLClusterManager(Singleton):
 
     @staticmethod
     def _request(url: str, json_data: dict, config_version: str):
-        print("json_data = ", json_data)
+        # print("json_data = ", json_data)
         args = {"config_version": config_version}
         cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:
@@ -133,7 +133,7 @@ class FedMLClusterManager(Singleton):
                 "gotGpuCount": int(gpu_machine.gpu_count),
                 ClusterConstants.ID: gpu_machine.gpu_id
             }
-            print(f"gotGpuCount = {gpu_machine.gpu_count}")
+            # print(f"gotGpuCount = {gpu_machine.gpu_count}")
             selected_machines_list.append(selected_machine_json)
 
         confirm_cluster_dict = {ClusterConstants.JOB_ID: str(job_id),
