@@ -24,13 +24,13 @@ if error_code != 0:
 
 # Launch job
 job_id, project_id, error_code, error_msg = fedml.api.launch_job(
-    yaml_file, version=current_version, resource_id=resource_id, prompt=False)
+    yaml_file, resource_id=resource_id, prompt=False)
 if error_code != 0:
     print(f"Failed to launch job. Reason: {error_msg}")
     exit(1)
 
 # Get job status
-job_status, total_num, total_pages, job_logs = fedml.api.launch_log(job_id, 1, 100, version=current_version)
+job_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.job_logs(job_id, 1, 100)
 if job_status is None:
     print(f"Failed to get job status. Reason: {error_msg}")
     exit(1)
@@ -38,9 +38,9 @@ print(f"Job status {job_status}")
 
 # Get job logs
 time.sleep(30)
-job_status, total_num, total_pages, job_logs = fedml.api.launch_log(job_id, 1, 100, version=current_version)
+job_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.job_logs(job_id, 1, 100)
 if job_status is None:
     print(f"Failed to get job logs. Reason: {error_msg}")
     exit(1)
-print(f"Job logs {job_logs}")
+print(f"Job logs {log_line_list}")
 
