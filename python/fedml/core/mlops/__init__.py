@@ -160,6 +160,10 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 
 def log(metrics: dict, commit=True):
+    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CHEETAH:
+        log_metric(metrics)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
