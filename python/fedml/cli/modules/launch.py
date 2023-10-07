@@ -126,6 +126,10 @@ def _check_match_result(result, yaml_file):
 
         return ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR
 
+    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
+        _print_job_list_details(result)
+        _print_job_log_details(result)
+        return ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
     if result.status == Constants.JOB_START_STATUS_INVALID:
         click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
                    f"to make sure the syntax is valid, e.g. "

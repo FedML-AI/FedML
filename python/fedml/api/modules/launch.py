@@ -107,6 +107,9 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
                                                                 device_edges)
 
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS]:
+        return schedule_result.job_id, schedule_result.project_id, 0, ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
+
     if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         return None, None, result_code, result_message
 
@@ -133,6 +136,9 @@ def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, devi
     # Schedule Job
     result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id,
                                                                            device_server, device_edges)
+
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS]:
+        return schedule_result.job_id, schedule_result.project_id, 0, ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
 
     if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         return None, None, result_code, result_message
@@ -187,6 +193,9 @@ def _parse_schedule_result(result, yaml_file):
     if result.job_url == "":
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
+    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
+                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "
