@@ -206,7 +206,8 @@ class FedMLLaunchManager(object):
         # Build the client package.
         build_client_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
                                                                     source_full_folder,
-                                                                    entry_point, config_full_folder, dest_folder, "")
+                                                                    entry_point, config_full_folder, dest_folder,
+                                                                    self.job_config.ignore_list_str)
         self.job_config.cleanup_temp_files()
         if build_client_package is None:
             shutil.rmtree(dest_folder, ignore_errors=True)
@@ -795,6 +796,10 @@ class FedMLJobConfig(object):
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
+        self.gitignore_file = os.path.join(self.base_dir, workspace, ".gitignore")
+        self.ignore_list_str = Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
+        self.read_gitignore_file()
+
     @staticmethod
     def generate_application_name(workspace):
         return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)
@@ -824,3 +829,23 @@ class FedMLJobConfig(object):
         server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder, self.server_executable_file)
         if os.path.exists(source_full_path_to_base):
             os.remove(source_full_path_to_base)
+
+    def read_gitignore_file(self):
+        try:
+            ignore_list = list()
+            with open(self.gitignore_file, "r") as ignore_file_handle:
+                while True:
+                    ignore_line = ignore_file_handle.readline()
+                    if not ignore_line:
+                        break
+                    ignore_line = ignore_line.replace('\n', '')
+                    if ignore_line.startswith("#") or len(ignore_line.lstrip(' ').rstrip(' ')) == 0:
+                        continue
+                    ignore_list.append(ignore_line)
+
+                if len(ignore_list) > 0:
+                    self.ignore_list_str = ','.join(ignore_list)
+                    self.ignore_list_str = self.ignore_list_str.replace("\n", "")
+                ignore_file_handle.close()
+        except Exception as e:
+            pass
