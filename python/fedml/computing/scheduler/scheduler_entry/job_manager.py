@@ -5,9 +5,7 @@ import fedml
 
 import requests
 
-from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
-from fedml.computing.scheduler.scheduler_entry.launch_job_interface import FedMLLaunchJobDataInterface
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
@@ -24,7 +22,7 @@ class FedMLJobManager(Singleton):
         return FedMLJobManager()
 
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
-                  user_api_key, cluster="", no_confirmation=False, job_id=None,
+                  user_api_key, cluster=None, no_confirmation=False, job_id=None,
                   model_name=None, model_endpoint=None, job_yaml=None,
                   job_type=None):
         job_start_result = None
@@ -45,11 +43,14 @@ class FedMLJobManager(Singleton):
             "applicationName": application_name,
             "applicationConfigId": 0,
             "devices": device_lists,
-            "clusterName": cluster,
             "urls": [],
             "apiKey": user_api_key,
             "needConfirmation": True if user_api_key is None or user_api_key == "" else not no_confirmation
         }
+
+        if cluster is not None:
+            job_start_json["clusterName"] = cluster
+
         if project_name is not None and len(str(project_name).strip(' ')) > 0:
             job_start_json["projectName"] = project_name
         else:
@@ -93,31 +94,7 @@ class FedMLJobManager(Singleton):
                 print(f"Launch job with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return None
-            job_start_result = FedMLJobStartedModel(data, response=resp_data)
-            print("resp_data:", resp_data)
-
-            # job_obj = FedMLLaunchJobDataInterface.get_job_by_id(job_id)
-            # if job_obj is None:
-            #     job_obj = FedMLLaunchJobDataInterface()
-            #     job_obj.status = job_start_result.status
-            #     job_obj.started_time = job_start_result.started_time
-            #     job_obj.app_name = application_name
-            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
-            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
-            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
-            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
-            #     job_obj.updated_time = str(time.time())
-            #     FedMLLaunchJobDataInterface.insert_job_to_db(job_obj)
-            # else:
-            #     job_obj.status = job_start_result.status
-            #     job_obj.started_time = job_start_result.started_time
-            #     job_obj.app_name = application_name
-            #     job_obj.model_name = model_name if model_name is not None else job_obj.model_name
-            #     job_obj.model_endpoint = model_endpoint if model_endpoint is not None else job_obj.model_endpoint
-            #     job_obj.msg = f"job url {job_start_result.job_url}, message: {job_start_result.message}"
-            #     job_obj.running_json = job_yaml if job_yaml is not None else job_obj.running_json
-            #     job_obj.updated_time = str(time.time())
-            #     FedMLLaunchJobDataInterface.update_job_to_db(job_obj)
+            job_start_result = FedMLJobStartedModel(data, job_type, response=resp_data)
 
         return job_start_result
 
@@ -249,92 +226,13 @@ class FedMLJobManager(Singleton):
 
         return job_log_list_result
 
-    def check_heartbeat(self, api_key):
-        heartbeat_url = ServerConstants.get_heartbeat_url()
-        heartbeat_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-        heartbeat_json = {
-            "apiKey": api_key
-        }
-
-        args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    heartbeat_url, verify=True, headers=heartbeat_api_headers, json=heartbeat_json
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    heartbeat_url, verify=True, headers=heartbeat_api_headers, json=heartbeat_json
-                )
-        else:
-            response = requests.post(heartbeat_url, headers=heartbeat_api_headers, json=heartbeat_json)
-        if response.status_code != 200:
-            print(f"Check heartbeat with response.status_code = {response.status_code}, "
-                  f"response.content: {response.content}")
-            return False
-        else:
-            resp_data = response.json()
-            code = resp_data.get("code", "")
-            message = resp_data.get("message", "")
-            data = resp_data.get("data", False)
-            if code == "SUCCESS" and data is True:
-                return True
-
-        return False
-
-    def show_resource_type(self):
-        resource_url = ServerConstants.get_resource_url()
-        args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.get(
-                    resource_url, verify=True)
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.get(
-                    resource_url, verify=True)
-        else:
-            # the server only allows GET
-            response = requests.get(resource_url)
-        if response.status_code != 200:
-            print(f"Get resource type with response.status_code = {response.status_code}, "
-                  f"response.content: {response.content}")
-            pass
-        else:
-            resp_data = response.json()
-            code = resp_data.get("code", "")
-            message = resp_data.get("message", "")
-            data = resp_data.get("data", None)
-            if code == "SUCCESS" and data is not None:
-                resource_list = list()
-                for resource_item in data:
-                    gpu_type = resource_item.get("gpuType", None)
-                    resource_type = resource_item.get("resourceType", None)
-                    resource_list.append((resource_type, gpu_type))
-                return resource_list
-            else:
-                print(f"Get resource type with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
-
-        return None
-
-    def apply_endpoint_id(self, api_key, endpoint_name,
-                          model_id=None, model_name=None, model_version=None):
-        return FedMLModelCards.get_instance().apply_endpoint_api(
-            api_key, endpoint_name, model_id=model_id,
-            model_name=model_name, model_version=model_version)
-
 
 class FedMLJobStartedModel(object):
-    def __init__(self, job_started_json, job_name=None, response=None):
+    def __init__(self, job_started_json, job_type=None, job_name=None, response=None):
         if isinstance(job_started_json, dict):
             self.job_id = job_started_json.get("job_id", "0")
             self.job_name = job_started_json.get("job_name", job_name)
+            self.job_type = job_type
             self.project_id = job_started_json.get("project_id", job_name)
             self.status = job_started_json.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
             self.job_url = job_started_json.get("job_url", job_started_json)
@@ -346,6 +244,7 @@ class FedMLJobStartedModel(object):
                 for gpu_dev_json in gpu_list_json:
                     self.gpu_matched.append(FedMLGpuDevices(gpu_dev_json))
             self.started_time = job_started_json.get("started_time", time.time())
+            self.user_check = job_started_json.get("user_check", True)
         else:
             self.job_id = "0"
             self.job_name = job_name
@@ -354,6 +253,8 @@ class FedMLJobStartedModel(object):
             self.job_url = job_started_json
             self.started_time = time.time()
             self.message = response.get("message")
+            self.job_type = None
+            self.user_check = True
 
 
 class FedMLGpuDevices(object):
@@ -369,7 +270,6 @@ class FedMLGpuDevices(object):
         self.cpu_count = gpu_device_json.get("cpu_count", None)
         self.cpu_count = None if self.cpu_count is not None and int(self.cpu_count) <= 0 else self.cpu_count
         self.gpu_count = gpu_device_json.get("got_gpu_count", -1)
-        print("self.gpu_count = ", self.gpu_count)
         self.gpu_name = gpu_device_json.get("gpu_name", None)
         self.gpu_instance = self.gpu_name
         self.gpu_provider = gpu_device_json.get("gpu_provider", None)
@@ -414,9 +314,6 @@ class FedMLJobModel(object):
                 os_version = gpu_dev.get("osVersion", "")
                 self.device_infos.append(f"Device Name: {device_id}, OS Type: {os_type}, OS Version: {os_version}, "
                                          f"Brand: {brand}, gpu count: {gpu_count}")
-
-    def parse(self, job_json):
-        pass
 
 
 class FedMLJobLogModelList(object):

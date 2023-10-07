@@ -44,3 +44,8 @@ def exists(cluster_name, api_key) -> bool:
         return False
     clusters = set(map(lambda x: x.cluster_name, cluster_list_obj.cluster_list))
     return cluster_name in clusters
+
+
+def confirm_and_start(job_id, cluster_id, gpu_matched, api_key):
+    authenticate(api_key)
+    return FedMLClusterManager.get_instance().confirm_and_start(job_id, cluster_id, gpu_matched)

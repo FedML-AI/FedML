@@ -35,6 +35,7 @@ _global_comm_backend = None
 
 __version__ = "0.8.8a123"
 
+
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
 # three ways to set _global_env_version:
 # 1. set the Linux environment variable FEDML_ENV_VERSION by calling: 
@@ -113,15 +114,17 @@ def init(args=None, check_env=True, should_init_logs=True):
         setattr(args, "backend", fedml._global_comm_backend)
 
     if hasattr(args, "training_type"):
-        if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "MPI":
+        if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
+                                                                                "backend") and args.backend == "MPI":
             args = init_simulation_mpi(args)
 
-        elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "sp":
+        elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
+                                                                                  "backend") and args.backend == "sp":
             args = init_simulation_sp(args)
         elif (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+                args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and hasattr(args, "backend")
+                and args.backend == FEDML_SIMULATION_TYPE_NCCL
         ):
             from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
 
@@ -142,7 +145,8 @@ def init(args=None, check_env=True, should_init_logs=True):
         elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
             args = init_model_serving(args)
         else:
-            raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
+            raise Exception(
+                "no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
     manage_profiling_args(args)
 
@@ -152,7 +156,8 @@ def init(args=None, check_env=True, should_init_logs=True):
 
     if hasattr(args, "rank") and hasattr(args, "worker_num"):
         if hasattr(args, "process_id") and args.process_id is not None:
-            logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+            logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id,
+                                                                                             args.worker_num))
         else:
             logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
 
@@ -194,7 +199,7 @@ def update_client_specific_args(args):
             data_silo_1_config.yaml contains some client client speicifc arguments.
     """
     if (
-        hasattr(args, "data_silo_config")
+            hasattr(args, "data_silo_config")
     ):
         # reading the clients file
         logging.info("data_silo_config is defined in fedml_config.yaml")
@@ -279,7 +284,6 @@ def manage_profiling_args(args):
 
 
 def manage_cuda_rpc_args(args):
-
     if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
         args.enable_cuda_rpc = False
 
@@ -299,7 +303,7 @@ def manage_cuda_rpc_args(args):
             raise Exception("Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True")
         assert type(args.cuda_rpc_gpu_mapping) is dict, "Invalid cuda_rpc_gpu_mapping type. Expected dict"
         assert (
-            len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
+                len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
 
     print(f"cpu_transfer: {args.cpu_transfer}")
@@ -323,6 +327,7 @@ def manage_mpi_args(args):
         assert args.worker_num + 1 == world_size, f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
+
 
 def init_cross_silo_horizontal(args):
     args.n_proc_in_silo = 1
@@ -404,16 +409,16 @@ def init_model_serving(args):
 
 
 def update_client_id_list(args):
-
     """
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
     if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
-        if not hasattr(args, "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
+        if not hasattr(args,
+                       "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
-                args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-                or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
+                    args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+                    or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
             ):
                 if args.rank == 0:
                     client_id_list = []
@@ -451,8 +456,10 @@ def run_distributed():
 def set_env_version(version):
     os.environ['FEDML_ENV_VERSION'] = version
 
+
 def get_env_version():
     return "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
+
 
 def _get_backend_service():
     version = get_env_version()
@@ -467,6 +474,7 @@ def _get_backend_service():
         return FEDML_BACKEND_SERVICE_URL_TEST
     else:
         return FEDML_BACKEND_SERVICE_URL_RELEASE
+
 
 def _get_mqtt_service():
     version = get_env_version()

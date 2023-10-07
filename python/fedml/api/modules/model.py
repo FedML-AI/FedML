@@ -3,7 +3,10 @@ import os
 import click
 
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
+from fedml.api.modules.utils import fedml_login
+from fedml.api.modules.launch import job as launch_job
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
+
 
 def create(name, config_file):
     if config_file is None:
@@ -20,6 +23,7 @@ def create(name, config_file):
             click.echo("Failed to create model {} using config file {}.".format(name, config_file))
 
     package(name)
+
 
 def delete(name):
     if FedMLModelCards.get_instance().delete_model(name):
@@ -57,6 +61,7 @@ def list_models(name):
     else:
         if len(models) <= 0:
             click.echo("Cannot locate model {}.".format(name))
+
 
 def list_remote(name, user, api_key):
     if user is None or api_key is None:
@@ -139,20 +144,19 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                        Do you want to use fedml® launch platform to find GPU Resources deploy your model?")
             answer = click.prompt("Please input your answer: (y/n)")
             if answer == "y" or answer == "Y":
-                from .launch import FedMLLaunchManager
                 api_key = get_api_key()
-                # Find the config yaml file in local model cards directory ~/fedml-model-client/fedml/models
                 yaml_file = FedMLModelCards.get_instance().prepare_yaml_for_launch(name)
                 if yaml_file == "":
                     click.echo("Cannot find the config yaml file for model {}.".format(name))
                     return False
                 else:
-                    os.chdir(os.path.dirname(yaml_file))    # Set the execution path to the yaml folder
-                    error_code, _ = FedMLLaunchManager.get_instance().fedml_login(api_key=api_key)
+                    os.chdir(os.path.dirname(yaml_file))  # Set the execution path to the yaml folder
+                    error_code, _ = fedml_login(api_key=api_key)
                     if error_code != 0:
                         click.echo("Please check if your API key is valid.")
                         return
-                    FedMLLaunchManager.get_instance().api_launch_job(yaml_file, None)
+
+                    launch_job(yaml_file, None)
             else:
                 click.echo("Please specify both the master device id and worker device ids in the config file.")
                 return False
@@ -180,4 +184,3 @@ def run(name, data):
         click.echo("Result: {}.".format(infer_out_json))
     else:
         click.echo("Failed to inference model {}.".format(name))
-

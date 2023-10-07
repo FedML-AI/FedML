@@ -28,20 +28,9 @@ def fedml_login(api_key=None):
     return utils.login(api_key)
 
 
-# inputs: yaml file
-# return: resource_id, error_code (0 means successful), error_message,
-def match_resources(yaml_file, cluster=""):
-    """
-    launch a job
-    :param yaml_file: full path of your job yaml file
-    :returns: str: resource id, int: error code (0 means successful), str: error message
-    """
-    return utils.match_resources(yaml_file, cluster, prompt=False)
-
-
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, cluster="", api_key=None, resource_id=None, prompt=True):
+def launch_job(yaml_file, api_key=None, resource_id=None):
     """
     launch a job
     :param yaml_file: full path of your job yaml file
@@ -49,7 +38,45 @@ def launch_job(yaml_file, cluster="", api_key=None, resource_id=None, prompt=Tru
            we will match resources based on your job yaml, and then automatically launch the job using matched resources
     :returns: str: job id, int: error code (0 means successful), str: error message
     """
-    return launch.job(yaml_file, api_key, resource_id, cluster, prompt=prompt)
+    return launch.job(yaml_file, api_key, resource_id, device_server="", device_edges="")
+
+
+def launch_job_with_cluster(yaml_file, cluster, api_key=None, resource_id=None, prompt=True):
+    return launch.job_on_cluster(yaml_file=yaml_file, cluster=cluster, api_key=api_key, resource_id=resource_id)
+
+
+def schedule_job(yaml_file, api_key=None, resource_id=None, device_server="", device_edges=""):
+    return launch.schedule_job(yaml_file, api_key, resource_id, device_server, device_edges)
+
+
+def schedule_job_on_cluster(yaml_file, cluster, api_key=None, resource_id=None, device_server="", device_edges=""):
+    return launch.schedule_job_on_cluster(yaml_file=yaml_file, cluster=cluster, api_key=api_key,
+                                          resource_id=resource_id, device_server=device_server,
+                                          device_edges=device_edges)
+
+
+def run_scheduled_job(schedule_result, api_key=None, device_server="", device_edges=""):
+    return launch.run_job(schedule_result, api_key, device_server, device_edges)
+
+
+def job_start(platform, project_name, application_name, device_server, device_edges,
+              user_api_key, no_confirmation=False, job_id=None,
+              model_name=None, model_endpoint=None, job_yaml=None,
+              job_type=None):
+    return job.start(platform, project_name, application_name, device_server, device_edges,
+                     user_api_key, no_confirmation, job_id,
+                     model_name, model_endpoint, job_yaml,
+                     job_type)
+
+
+def job_start_on_cluster(platform, cluster, project_name, application_name, device_server, device_edges,
+                         user_api_key, no_confirmation=False, job_id=None, model_name=None,
+                         model_endpoint=None,
+                         job_yaml=None, job_type=None):
+    return job.start_on_cluster(platform, cluster, project_name, application_name, device_server, device_edges,
+                                user_api_key, no_confirmation, job_id, model_name,
+                                model_endpoint,
+                                job_yaml, job_type)
 
 
 def job_stop(job_id, platform="falcon", api_key=None):
@@ -87,8 +114,10 @@ def job_logs(job_id, page_num, page_size, need_all_logs=False, platform="falcon"
 def cluster_list(cluster_names=(), api_key=None) -> FedMLClusterModelList:
     return cluster.list_clusters(cluster_names=cluster_names, api_key=api_key)
 
-def cluster_exists(cluster_name:str, api_key:str=None) -> bool:
+
+def cluster_exists(cluster_name: str, api_key: str = None) -> bool:
     return cluster.exists(cluster_name=cluster_name, api_key=api_key)
+
 
 def cluster_status(cluster_name, api_key=None) -> FedMLClusterModelList:
     return cluster.status(cluster_name=cluster_name, api_key=api_key)
@@ -116,6 +145,10 @@ def cluster_kill(cluster_names, api_key=None) -> bool:
 
 def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
+
+
+def confirm_cluster_and_start_job(job_id, cluster_id, gpu_matched, api_key=None):
+    return cluster.confirm_and_start(job_id, cluster_id, gpu_matched, api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
@@ -148,6 +181,7 @@ def device_unbind(client, server, docker, docker_rank):
 
 def resource_type():
     device.resource_type()
+
 
 def fedml_logs(client, server, docker, docker_rank):
     logs.log(client, server, docker, docker_rank)

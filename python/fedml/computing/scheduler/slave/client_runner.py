@@ -1262,6 +1262,7 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
+        edge_id, user_name, extra_url = -1, None, None
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
