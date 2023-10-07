@@ -423,6 +423,7 @@ class S3Storage:
             logging.error(f"Download zip failed after max retry.")
 
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
+                                  show_progress=True,
                                   out_progress_to_err=True, progress_desc=None):
         """
         upload file
@@ -443,12 +444,17 @@ class S3Storage:
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
                 f.seek(old_file_position, os.SEEK_SET)
-                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
-                               file=sys.stderr if out_progress_to_err else sys.stdout,
-                               desc=progress_desc_text) as pbar:
+                if show_progress:
+                    with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
+                                   file=sys.stderr if out_progress_to_err else sys.stdout,
+                                   desc=progress_desc_text) as pbar:
+                        aws_s3_client.upload_fileobj(
+                            f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
+                            Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                        )
+                else:
                     aws_s3_client.upload_fileobj(
-                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
-                        Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
                     )
 
                 file_uploaded_url = aws_s3_client.generate_presigned_url(
