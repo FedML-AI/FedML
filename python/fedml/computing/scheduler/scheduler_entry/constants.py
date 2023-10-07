@@ -4,6 +4,7 @@ from os.path import expanduser
 
 import yaml
 from fedml.core.common.singleton import Singleton
+from tempfile import gettempdir
 
 
 class Constants(Singleton):
@@ -175,3 +176,9 @@ class Constants(Singleton):
         except Exception as e:
             pass
         return str(tz_info)
+
+    @staticmethod
+    def get_temp_dir():
+        tmp = os.path.join(gettempdir(), 'fedml_{}'.format(hash(os.times())))
+        os.makedirs(tmp, exist_ok=True)
+        return tmp
