@@ -528,41 +528,49 @@ class FedMLLaunchManager(object):
 
     def check_match_result(self, result, yaml_file, prompt=True):
         if result.status == Constants.JOB_START_STATUS_INVALID:
-            click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
-                       f"to make sure the syntax is valid, e.g. "
-                       f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
-            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+            result_message = f"\nPlease check your {os.path.basename(yaml_file)} file "\
+                             f"to make sure the syntax is valid, e.g. " \
+                             f"whether minimum_num_gpus or maximum_cost_per_hour is valid."
+            click.echo(result_message)
+            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED, result_message
         elif result.status == Constants.JOB_START_STATUS_BLOCKED:
-            click.echo("\nBecause the value of maximum_cost_per_hour is too low,"
-                       "we can not find exactly matched machines for your job. \n"
-                       "But here we still present machines closest to your expected price as below.")
-            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+            result_message = "\nBecause the value of maximum_cost_per_hour is too low," \
+                             "we can not find exactly matched machines for your job. \n" \
+                             "But here we still present machines closest to your expected price as below."
+            click.echo(result_message)
+            return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED, result_message
         elif result.status == Constants.JOB_START_STATUS_QUEUED:
-            click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
+            result_message = "\nNo resource available now, but we can keep your job in the waiting queue."
+            click.echo(result_message)
             if not prompt:
-                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED, result_message
             if click.confirm("Do you want to join the queue?", abort=False):
-                click.echo("You have confirmed to keep your job in the waiting list.")
-                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
+                result_message2 = "You have confirmed to keep your job in the waiting list."
+                click.echo(result_message2)
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED, result_message + result_message2
             else:
+                result_message += "You have confirmed to remove your job from the waiting list."
                 FedMLJobManager.get_instance().stop_job(
                     self.platform_type, get_api_key(), result.job_id)
-                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED
+                return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED, result_message
         elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
-            click.echo("Please bind your credit card before launching the job.")
-            return ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST
+            result_message = "Please bind your credit card before launching the job."
+            click.echo(result_message)
+            return ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST, result_message
         elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
-            click.echo("Failed to query credit card binding status. Please try again later.")
-            return ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED
+            result_message = "Failed to query credit card binding status. Please try again later."
+            return ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED, result_message
 
         if result.job_url == "":
             if result.message is not None:
-                click.echo(f"Failed to launch the job with response messages: {result.message}")
+                result_message = f"Failed to launch the job with response messages: {result.message}"
+                click.echo(result_message)
             else:
-                click.echo(f"Failed to launch the job. Please check if the network is available.")
-            return ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR
+                result_message = f"Failed to launch the job. Please check if the network is available."
+                click.echo(result_message)
+            return ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR, result_message
 
-        return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+        return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED, "Successfully"
 
     def show_matched_resource(self, result):
         gpu_matched = getattr(result, "gpu_matched", None)
@@ -600,9 +608,9 @@ class FedMLLaunchManager(object):
                                                               self.platform_type,
                                                               self.device_server, self.device_edges)
         if result is not None:
-            checked_result = self.check_match_result(result, yaml_file, prompt=prompt)
+            checked_result, result_message = self.check_match_result(result, yaml_file, prompt=prompt)
             if checked_result != ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
-                return result.job_id, result.project_id, ApiConstants.ERROR_CODE[checked_result], checked_result
+                return result.job_id, result.project_id, ApiConstants.ERROR_CODE[checked_result], result_message
 
             gpu_matched = self.show_matched_resource(result)
             if gpu_matched is None:
