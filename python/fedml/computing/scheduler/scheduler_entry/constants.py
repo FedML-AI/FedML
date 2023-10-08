@@ -49,6 +49,7 @@ class Constants(Singleton):
     LAUNCH_JOB_DEFAULT_ENTRY_NAME = "fedml_job_entry_pack.sh"
     LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = "fedml_server_job_entry_pack.sh"
     LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME = "config"
+    LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME = "launch_config"
     LAUNCH_JOB_DEFAULT_CONF_NAME = "fedml_config.yaml"
 
     GPU_BRAND_MAPPING_INDEX_NVIDIA = 0

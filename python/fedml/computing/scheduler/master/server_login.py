@@ -6,6 +6,7 @@ import time
 import traceback
 
 import click
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.master.server_runner import FedMLServerRunner
@@ -378,6 +379,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args.user = args.user
+    fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)
     else:
