@@ -589,7 +589,7 @@ class FedMLModelCards(Singleton):
         model_dst_key = "{}@{}@{}".format(user_id, model_name, str(uuid.uuid4()))
         model_storage_url = s3_storage.upload_file_with_progress(model_zip_path, model_dst_key,
                                                                  show_progress=show_progress,
-                                                                 out_progress_to_err=False,
+                                                                 out_progress_to_err=True,
                                                                  progress_desc=progress_desc)
         return model_storage_url
 

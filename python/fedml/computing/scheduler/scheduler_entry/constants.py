@@ -65,7 +65,7 @@ class Constants(Singleton):
     SEC_KEY_DIR = "secret"
     SEC_KEY_FILE = "launch_secret"
 
-    LAUNCH_APP_NAME_PREFIX = "FedMLLaunchApp"
+    LAUNCH_APP_NAME_SUFFIX = "FedMLLaunchApp"
     LAUNCH_PROJECT_NAME_DEFAULT = "default"
 
     JOB_START_STATUS_LAUNCHED = "LAUNCHED"

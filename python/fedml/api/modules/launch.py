@@ -182,8 +182,8 @@ def _prepare_launch_app(yaml_file):
         model_version=job_config.serving_model_version,
         model_url=job_config.serving_model_s3_url)
 
-    # Post processor to cleanup local temporary launch package and do other things.
-    FedMLLaunchManager.get_instance().post_launch()
+    # Post processor to clean up local temporary launch package and do other things.
+    FedMLLaunchManager.get_instance().post_launch(job_config)
 
     return job_config, app_updated_result
 
@@ -196,8 +196,8 @@ def _parse_schedule_result(result, yaml_file):
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
-                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS)
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "

@@ -603,7 +603,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_archive_zip_file = artifact_archive_name + ".zip"
     try:
         artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
-                                                                    out_progress_to_err=False,
+                                                                    out_progress_to_err=True,
                                                                     progress_desc="Submitting your artifact to "
                                                                                   "FedML® Launch platform")
     except Exception as e:
