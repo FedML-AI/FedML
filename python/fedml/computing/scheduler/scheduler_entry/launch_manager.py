@@ -116,6 +116,7 @@ class FedMLLaunchManager(object):
 
             model_update_result.endpoint_id = self.job_config.serving_endpoint_id
 
+<<<<<<< Updated upstream
         # Generate source, config and bootstrap related paths.
         platform_str = mlops_platform_type
         platform_type = Constants.platform_str_to_type(mlops_platform_type)
@@ -228,22 +229,113 @@ class FedMLLaunchManager(object):
         if build_client_package is None:
             shutil.rmtree(dest_folder, ignore_errors=True)
             click.echo("Failed to build the application package for the client executable file.")
+=======
+    def _parse_job_yaml(self, yaml_file, should_use_default_workspace=False):
+        self.job_config = FedMLJobConfig(yaml_file, should_use_default_workspace=should_use_default_workspace)
+
+    @staticmethod
+    def _write_bootstrap_file(job_config, fedml_launch_paths):
+        configs = load_yaml_config(fedml_launch_paths.config_launch_full_path)
+        if os.path.exists(fedml_launch_paths.bootstrap_full_path):
+            with open(fedml_launch_paths.bootstrap_full_path, 'r') as bootstrap_file_handle:
+                bootstrap_lines = bootstrap_file_handle.readlines()
+                job_config.bootstrap += "".join(bootstrap_lines)
+                bootstrap_file_handle.close()
+        fedml_launch_paths.tmp_bootstrap_file = os.path.join(job_config.tmp_dir, os.path.basename(fedml_launch_paths.bootstrap_file))
+        if os.path.exists(fedml_launch_paths.bootstrap_full_path):
+            shutil.copyfile(fedml_launch_paths.bootstrap_full_path, fedml_launch_paths.tmp_bootstrap_file)
+        with open(fedml_launch_paths.bootstrap_full_path, 'w') as bootstrap_file_handle:
+            bootstrap_file_handle.writelines(job_config.bootstrap)
+            bootstrap_file_handle.close()
+        configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = job_config.job_config_dict
+
+        return configs
+
+    @staticmethod
+    def _check_paths(fedml_launch_paths, job_config, model_update_result, user_api_key):
+        if not os.path.exists(fedml_launch_paths.source_full_path) or job_config.using_easy_mode:
+            os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
+            with open(fedml_launch_paths.source_full_path, 'w') as source_file_handle:
+                if job_config.using_easy_mode:
+                    source_file_handle.writelines(job_config.executable_commands)
+                source_file_handle.close()
+        if not os.path.exists(fedml_launch_paths.server_source_full_path) or job_config.using_easy_mode:
+            if job_config.server_job is not None:
+                os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
+                with open(fedml_launch_paths.server_source_full_path, 'w') as server_source_file_handle:
+                    if job_config.using_easy_mode:
+                        server_source_file_handle.writelines(job_config.server_job)
+                    server_source_file_handle.close()
+        config_launch_full_path = os.path.join(os.path.dirname(os.path.dirname(fedml_launch_paths.config_full_path)),
+                                               Constants.LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME,
+                                               Constants.LAUNCH_JOB_DEFAULT_CONF_NAME)
+        config_launch_full_folder = os.path.dirname(config_launch_full_path)
+        os.makedirs(config_launch_full_folder, exist_ok=True)
+        if job_config.using_easy_mode:
+            os.makedirs(fedml_launch_paths.config_full_folder, exist_ok=True)
+            config_dict = load_yaml_config(fedml_launch_paths.config_full_path) if os.path.exists(fedml_launch_paths.config_full_path) else dict()
+            if config_dict.get("environment_args", None) is None:
+                config_dict["environment_args"] = dict()
+            if config_dict["environment_args"].get("bootstrap", None) is None:
+                config_dict["environment_args"]["bootstrap"] = Constants.BOOTSTRAP_FILE_NAME
+            else:
+                bootstrap_file = config_dict["environment_args"]["bootstrap"]
+                bootstrap_full_path = os.path.join(fedml_launch_paths.source_full_folder, bootstrap_file)
+            if model_update_result is not None:
+                random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
+                config_dict["serving_args"] = dict()
+                config_dict["serving_args"]["model_id"] = model_update_result.model_id
+                config_dict["serving_args"]["model_name"] = model_update_result.model_name
+                config_dict["serving_args"]["model_version"] = model_update_result.model_version
+                config_dict["serving_args"]["model_storage_url"] = model_update_result.model_storage_url
+                config_dict["serving_args"]["endpoint_name"] = model_update_result.endpoint_name
+                config_dict["serving_args"]["endpoint_id"] = model_update_result.endpoint_id
+                config_dict["serving_args"]["random"] =random
+            Constants.generate_yaml_doc(config_dict, config_launch_full_path)
+
+
+    @staticmethod
+    def _build_client_package(platform_type, fedml_launch_paths, job_config):
+        client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
+        build_client_package = FedMLLaunchManager._build_job_package(platform_type, client_server_type,
+                                                                     fedml_launch_paths.source_full_folder,
+                                                                     fedml_launch_paths.entry_point,
+                                                                     fedml_launch_paths.config_full_folder,
+                                                                     fedml_launch_paths.dest_folder,
+                                                                     job_config.ignore_list_str)
+        if os.path.exists(fedml_launch_paths.tmp_bootstrap_file):
+            shutil.copyfile(fedml_launch_paths.tmp_bootstrap_file, fedml_launch_paths.bootstrap_full_path)
+        if build_client_package is None:
+            shutil.rmtree(fedml_launch_paths.dest_folder, ignore_errors=True)
+            print("Failed to build the application package for the client executable file.")
+>>>>>>> Stashed changes
             exit(-1)
 
         # Build the server package.
         if self.job_config.server_job is not None:
             client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_SERVER
+<<<<<<< Updated upstream
             server_entry_point = os.path.basename(self.job_config.server_executable_file)
             build_server_package = FedMLLaunchManager.build_job_package(platform_str, client_server_type,
                                                                         source_full_folder,
                                                                         server_entry_point, config_full_folder,
                                                                         dest_folder, "")
             self.job_config.cleanup_temp_files()
+=======
+            server_entry_point = os.path.basename(job_config.server_executable_file)
+            build_server_package = FedMLLaunchManager._build_job_package(platform_type, client_server_type,
+                                                                         fedml_launch_paths.source_full_folder,
+                                                                         server_entry_point,
+                                                                         fedml_launch_paths.config_full_folder,
+                                                                         fedml_launch_paths.dest_folder, "")
+            job_config.cleanup_temp_files()
+>>>>>>> Stashed changes
             if build_server_package is None:
                 click.echo("Failed to build the application package for the server executable file.")
                 exit(-1)
         else:
             build_server_package = None
+<<<<<<< Updated upstream
             self.job_config.cleanup_temp_files()
 
         # Create and update an application with the built packages.
@@ -286,6 +378,10 @@ class FedMLLaunchManager(object):
 
     def parse_job_yaml(self, yaml_file, should_use_default_workspace=False):
         self.job_config = FedMLJobConfig(yaml_file, should_use_default_workspace=should_use_default_workspace)
+=======
+            job_config.cleanup_temp_files()
+        return build_server_package
+>>>>>>> Stashed changes
 
     @staticmethod
     def build_job_package(platform, client_server_type, source_folder, entry_point,
