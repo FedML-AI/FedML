@@ -68,7 +68,7 @@ class FedMLLaunchManager(Singleton):
         app_config = self._write_bootstrap_file(self.job_config, fedml_launch_paths)
 
         # Build the client package.
-        client_package = self._build_client_package(self.platform_type, fedml_launch_paths)
+        client_package = self._build_client_package(self.platform_type, fedml_launch_paths, self.job_config)
 
         # Build the server package.
         server_package = self._build_server_package(self.platform_type, fedml_launch_paths, self.job_config)
@@ -171,14 +171,16 @@ class FedMLLaunchManager(Singleton):
                 config_file_handle.close()
 
     @staticmethod
-    def _build_client_package(platform_type, fedml_launch_paths):
+    def _build_client_package(platform_type, fedml_launch_paths, job_config):
         client_server_type = Constants.FEDML_PACKAGE_BUILD_TARGET_TYPE_CLIENT
         build_client_package = FedMLLaunchManager._build_job_package(platform_type, client_server_type,
                                                                      fedml_launch_paths.source_full_folder,
                                                                      fedml_launch_paths.entry_point,
                                                                      fedml_launch_paths.config_full_folder,
                                                                      fedml_launch_paths.dest_folder, "")
+        job_config.cleanup_temp_files()
         if build_client_package is None:
+            shutil.rmtree(dest_folder, ignore_errors=True)
             print("Failed to build the application package for the client executable file.")
             exit(-1)
         return build_client_package
@@ -344,19 +346,20 @@ class FedMLJobConfig(object):
             self.data_location = expert_mode.get("data_location", None)
 
         default_example_job_dir_name = Constants.LAUNCH_JOB_DEFAULT_FOLDER_NAME
-        default_example_job_dir = os.path.join(self.base_dir, default_example_job_dir_name)
+        self.tmp_dir = Constants.get_temp_dir()
+        default_example_job_dir = os.path.join(self.tmp_dir, default_example_job_dir_name)
         default_example_job_conf_dir_name = os.path.join(default_example_job_dir_name,
                                                          Constants.LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME)
-        default_example_job_conf_dir = os.path.join(self.base_dir, default_example_job_conf_dir_name)
+        default_example_job_conf_dir = os.path.join(self.tmp_dir, default_example_job_conf_dir_name)
         if self.executable_file is None or self.executable_file == "":
             if self.executable_file_folder is None:
                 self.executable_file_folder = default_example_job_dir
             else:
                 if not os.path.exists(self.executable_file_folder):
-                    self.executable_file_folder = os.path.join(self.base_dir, self.executable_file_folder)
+                    self.executable_file_folder = default_example_job_dir
             os.makedirs(self.executable_file_folder, exist_ok=True)
             self.executable_file = Constants.LAUNCH_JOB_DEFAULT_ENTRY_NAME
-
+            
         self.server_executable_file = Constants.LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME
 
         if self.executable_conf_file is None or self.executable_conf_file == "":
@@ -403,6 +406,32 @@ class FedMLJobConfig(object):
     @staticmethod
     def _generate_application_name(workspace):
         return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)
+    
+    def cleanup_temp_files(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        shutil.rmtree(self.executable_conf_file_folder, ignore_errors=True)
+
+        source_full_path = os.path.join(self.executable_file_folder, self.executable_file)
+        if os.path.exists(source_full_path):
+            os.remove(source_full_path)
+            boostrap_path= os.path.join(self.executable_file_folder, Constants.BOOTSTRAP_FILE_NAME)
+            if os.path.exists(boostrap_path):
+                os.remove(boostrap_path)
+
+        server_source_full_path = os.path.join(self.executable_file_folder, self.server_executable_file)
+        if os.path.exists(server_source_full_path):
+            os.remove(server_source_full_path)
+
+        source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder, self.executable_file)
+        if os.path.exists(source_full_path_to_base):
+            os.remove(source_full_path_to_base)
+            boostrap_path= os.path.join(self.base_dir, self.executable_file_folder, Constants.BOOTSTRAP_FILE_NAME)
+            if os.path.exists(boostrap_path):
+                os.remove(boostrap_path)
+
+        server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder, self.server_executable_file)
+        if os.path.exists(source_full_path_to_base):
+            os.remove(source_full_path_to_base)
 
 
 class FedMLLaunchPath(object):
