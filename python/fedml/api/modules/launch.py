@@ -107,13 +107,13 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
                                                                 device_edges)
 
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS]:
-        return schedule_result.job_id, schedule_result.project_id, 0, ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
+    job_id = getattr(schedule_result, "job_id", None)
+    project_id = getattr(schedule_result, "project_id", None)
 
-    if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
-        return None, None, result_code, result_message
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
+            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+        return job_id, project_id, result_code, result_message
 
-    job_id = schedule_result.job_id
     ret_job_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
     project_id = schedule_result.project_id
 
@@ -137,15 +137,14 @@ def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, devi
     result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id,
                                                                            device_server, device_edges)
 
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS]:
-        return schedule_result.job_id, schedule_result.project_id, 0, ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
-
-    if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
-        return None, None, result_code, result_message
-
-    cluster_id = getattr(schedule_result, "cluster_id", None)
     job_id = getattr(schedule_result, "job_id", None)
     project_id = getattr(schedule_result, "project_id", None)
+
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
+            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+        return job_id, project_id, result_code, result_message
+
+    cluster_id = getattr(schedule_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
         return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],

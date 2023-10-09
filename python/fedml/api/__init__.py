@@ -25,7 +25,7 @@ def fedml_login(api_key=None):
     :param api_key: API Key from MLOPs
     :return int: error code (0 means successful), str: error message
     """
-    return utils.login(api_key)
+    return utils.fedml_login(api_key)
 
 
 # inputs: yaml file, resource id
