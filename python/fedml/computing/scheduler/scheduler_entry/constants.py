@@ -6,7 +6,6 @@ import yaml
 from fedml.core.common.singleton import Singleton
 from tempfile import gettempdir
 
-
 class Constants(Singleton):
     FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git, *venv'
     FEDML_PLATFORM_OCTOPUS_STR = "octopus"
@@ -69,6 +68,7 @@ class Constants(Singleton):
     LAUNCH_APP_NAME_PREFIX = "FedMLLaunchApp"
     LAUNCH_PROJECT_NAME_DEFAULT = "default"
 
+    JOB_START_STATUS_LAUNCHED = "LAUNCHED"
     JOB_START_STATUS_MATCHED = "MATCHED"
     JOB_START_STATUS_JOB_URL_ERROR = "ERROR_JOB_URL"
     JOB_START_STATUS_INVALID = "INVALID"

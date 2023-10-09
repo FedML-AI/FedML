@@ -619,6 +619,18 @@ def versions(configuration_env, pkg_name):
     return sorted(releases, key=parse_version, reverse=True)
 
 
+def upgrade_if_not_latest():
+    try:
+        config_version = fedml.get_env_version()
+        is_latest_version, _, _ = check_fedml_is_latest_version()
+        if not is_latest_version:
+            daemon_ota_upgrade_with_version(config_version)
+            print("Completed upgrading, please launch your job again.")
+            exit(-1)
+    except Exception as e:
+        pass
+
+
 def check_fedml_is_latest_version(configuration_env="release"):
     fedml_version_list = versions(configuration_env, "fedml")
     local_fedml_version = fedml.__version__

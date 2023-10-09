@@ -14,7 +14,7 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
 from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
 
 
 def bind(
@@ -208,7 +208,7 @@ def unbind(client, server, docker, docker_rank):
 
 
 def resource_type():
-    resource_type_list = FedMLLaunchManager.get_instance().show_resource_type()
+    resource_type_list = FedMLResourceManager.get_instance().show_resource_type()
     if resource_type_list is not None and len(resource_type_list) > 0:
         click.echo("All available resource type is as follows.")
         resource_table = PrettyTable(['Resource Type', 'GPU Type'])
