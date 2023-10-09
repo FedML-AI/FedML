@@ -177,7 +177,8 @@ class FedMLLaunchManager(Singleton):
                                                                      fedml_launch_paths.source_full_folder,
                                                                      fedml_launch_paths.entry_point,
                                                                      fedml_launch_paths.config_full_folder,
-                                                                     fedml_launch_paths.dest_folder, "")
+                                                                     fedml_launch_paths.dest_folder,
+                                                                     job_config.ignore_list_str)
         job_config.cleanup_temp_files()
         if build_client_package is None:
             shutil.rmtree(dest_folder, ignore_errors=True)
@@ -403,6 +404,10 @@ class FedMLJobConfig(object):
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
+        self.gitignore_file = os.path.join(self.base_dir, workspace, ".gitignore")
+        self.ignore_list_str = Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
+        self.read_gitignore_file()
+        
     @staticmethod
     def _generate_application_name(workspace):
         return "{}_{}".format(os.path.basename(workspace), Constants.LAUNCH_APP_NAME_PREFIX)
@@ -432,6 +437,26 @@ class FedMLJobConfig(object):
         server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder, self.server_executable_file)
         if os.path.exists(source_full_path_to_base):
             os.remove(source_full_path_to_base)
+    def read_gitignore_file(self):
+        try:
+            ignore_list = list()
+            with open(self.gitignore_file, "r") as ignore_file_handle:
+                while True:
+                    ignore_line = ignore_file_handle.readline()
+                    if not ignore_line:
+                        break
+                    ignore_line = ignore_line.replace('\n', '')
+                    if ignore_line.startswith("#") or len(ignore_line.lstrip(' ').rstrip(' ')) == 0:
+                        continue
+                    ignore_list.append(ignore_line)
+
+                if len(ignore_list) > 0:
+                    self.ignore_list_str = ','.join(ignore_list)
+                    self.ignore_list_str = self.ignore_list_str.replace("\n", "")
+                ignore_file_handle.close()
+        except Exception as e:
+            pass
+
 
 
 class FedMLLaunchPath(object):
