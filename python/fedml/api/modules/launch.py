@@ -196,8 +196,8 @@ def _parse_schedule_result(result, yaml_file):
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
-                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS)
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "

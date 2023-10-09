@@ -223,7 +223,7 @@ class FedMLAppManager(Singleton):
         s3_storage = S3Storage(s3_config)
         app_dst_key = "{}@{}".format(app_name, str(uuid.uuid4()))
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
-                                                               out_progress_to_err=False,
+                                                               out_progress_to_err=True,
                                                                progress_desc="Submitting your job to "
                                                                              "FedML® Launch platform")
         return app_storage_url
