@@ -621,7 +621,12 @@ class FedMLServerRunner:
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         framework_type = job_yaml.get("framework_type", None)
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         if job_yaml_default_none is not None:
+            if job_type == Constants.JOB_TASK_TYPE_FEDERATE:
+                return True
+
             if framework_type is None or framework_type != Constants.JOB_FRAMEWORK_TYPE_FEDML:
                 self.mlops_metrics.report_server_training_status(run_id,
                                                                  ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING,
@@ -698,6 +703,7 @@ class FedMLServerRunner:
                     entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_SERVER_RANK=0\n")
 
                 entry_commands_filled = list()
                 if platform.system() == "Windows":
@@ -724,6 +730,8 @@ class FedMLServerRunner:
                 shell_cmd_list.append(executable_args)
                 shell_cmd_list.append(f"--run_id {self.run_id}")
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+                shell_cmd_list.append(f"--rank 0")
+                shell_cmd_list.append(f"--role server")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
             process, error_list = ServerConstants.execute_commands_with_live_logs(
@@ -979,10 +987,14 @@ class FedMLServerRunner:
         edge_id_list = self.request_json["edgeids"]
         logging.info("Send training request to Edge ids: " + str(edge_id_list))
 
+        client_rank = 1
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
-            self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
+            request_json = self.request_json
+            request_json["client_rank"] = client_rank
+            client_rank += 1
+            self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
         self.client_agent_active_list[f"{run_id}"] = dict()

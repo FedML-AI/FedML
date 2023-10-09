@@ -261,6 +261,7 @@ class FedMLAppManager(Singleton):
     def push_model_to_s3(self, model_name, model_zip_path):
         return FedMLModelCards.get_instance().push_model_to_s3(
             model_name, model_zip_path, "FedMLLaunchServe",
+            show_progress=False,
             progress_desc="Submitting your job to FedML® Launch platform")
 
     def check_model_package(self, workspace):

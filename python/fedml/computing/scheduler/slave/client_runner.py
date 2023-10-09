@@ -560,11 +560,14 @@ class FedMLClientRunner:
     def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
+        client_rank = self.request_json.get("client_rank", 1)
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         using_easy_mode = True
         expert_mode = job_yaml.get("expert_mode", None)
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
@@ -624,6 +627,7 @@ class FedMLClientRunner:
                     entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
 
                 entry_commands_filled = list()
                 if platform.system() == "Windows":
@@ -650,11 +654,14 @@ class FedMLClientRunner:
                 shell_cmd_list.append(executable_args)
                 shell_cmd_list.append(f"--run_id {self.run_id}")
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+                shell_cmd_list.append(f"--rank {client_rank}")
+                shell_cmd_list.append(f"--role client")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
             process, error_list = ClientConstants.execute_commands_with_live_logs(
-                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor)
-            is_launch_task = True
+                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor,
+                should_write_log_file=False if job_type == Constants.JOB_TASK_TYPE_FEDERATE else True)
+            is_launch_task = False if job_type == Constants.JOB_TASK_TYPE_FEDERATE else True
 
         return process, is_launch_task, error_list
 
