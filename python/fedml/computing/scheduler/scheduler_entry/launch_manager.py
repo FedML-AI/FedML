@@ -75,6 +75,10 @@ class FedMLLaunchManager(Singleton):
 
         return self.job_config, app_config, client_package, server_package
 
+    def post_launch(self):
+        package_dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR)
+        shutil.rmtree(package_dest_folder)
+
     def _create_and_update_model_card(self, yaml_file, user_api_key):
         if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
                 self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:
@@ -159,11 +163,7 @@ class FedMLLaunchManager(Singleton):
                     if job_config.using_easy_mode:
                         server_source_file_handle.writelines(job_config.server_job)
                     server_source_file_handle.close()
-        config_launch_full_path = os.path.join(os.path.dirname(os.path.dirname(fedml_launch_paths.config_full_path)),
-                                               Constants.LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME,
-                                               Constants.LAUNCH_JOB_DEFAULT_CONF_NAME)
-        config_launch_full_folder = os.path.dirname(config_launch_full_path)
-        os.makedirs(config_launch_full_folder, exist_ok=True)
+
         if job_config.using_easy_mode:
             os.makedirs(fedml_launch_paths.config_full_folder, exist_ok=True)
             config_dict = load_yaml_config(fedml_launch_paths.config_full_path) if os.path.exists(fedml_launch_paths.config_full_path) else dict()
@@ -184,7 +184,7 @@ class FedMLLaunchManager(Singleton):
                 config_dict["serving_args"]["endpoint_name"] = model_update_result.endpoint_name
                 config_dict["serving_args"]["endpoint_id"] = model_update_result.endpoint_id
                 config_dict["serving_args"]["random"] =random
-            Constants.generate_yaml_doc(config_dict, config_launch_full_path)
+            Constants.generate_yaml_doc(config_dict, fedml_launch_paths.config_launch_full_path)
 
 
     @staticmethod
@@ -213,7 +213,8 @@ class FedMLLaunchManager(Singleton):
                                                                          fedml_launch_paths.source_full_folder,
                                                                          server_entry_point,
                                                                          fedml_launch_paths.config_full_folder,
-                                                                         fedml_launch_paths.dest_folder, "")
+                                                                         fedml_launch_paths.dest_folder,
+                                                                         job_config.ignore_list_str)
             job_config.cleanup_temp_files()
             if build_server_package is None:
                 print("Failed to build the application package for the server executable file.")
@@ -508,6 +509,11 @@ class FedMLLaunchPath(object):
             job_config.executable_conf_file_folder = os.path.join(job_config.executable_conf_file_folder,
                                                                   "config")
         self.config_full_folder = os.path.dirname(self.config_full_path)
+        self.config_launch_full_path = os.path.join(os.path.dirname(os.path.dirname(self.config_full_path)),
+                                               Constants.LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME,
+                                               Constants.LAUNCH_JOB_DEFAULT_CONF_NAME)
+        self.config_launch_full_folder = os.path.dirname(self.config_launch_full_path)
+        os.makedirs(self.config_launch_full_folder, exist_ok=True)
         os.makedirs(self.source_full_folder, exist_ok=True)
         os.makedirs(self.config_full_folder, exist_ok=True)
         if not os.path.exists(self.config_full_folder):

@@ -182,6 +182,9 @@ def _prepare_launch_app(yaml_file):
         model_version=job_config.serving_model_version,
         model_url=job_config.serving_model_s3_url)
 
+    # Post processor to cleanup local temporary launch package and do other things.
+    FedMLLaunchManager.get_instance().post_launch()
+
     return job_config, app_updated_result
 
 

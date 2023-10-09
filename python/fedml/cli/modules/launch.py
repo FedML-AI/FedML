@@ -12,6 +12,7 @@ from fedml import set_env_version
 from fedml.api import (schedule_job, schedule_job_on_cluster, run_scheduled_job, confirm_cluster_and_start_job,
                        job_stop,
                        job_list)
+from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 
 
 @click.group("launch", cls=DefaultCommandGroup, default_command='default')
@@ -129,7 +130,7 @@ def _check_match_result(result, yaml_file):
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
         _print_job_list_details(result)
         _print_job_log_details(result)
-        return ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
+        return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
     if result.status == Constants.JOB_START_STATUS_INVALID:
         click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
                    f"to make sure the syntax is valid, e.g. "
@@ -249,3 +250,4 @@ def _print_job_log_details(result):
     click.echo(f"For querying the realtime status of your job, please run the following command.")
     click.echo(f"fedml job logs -jid {result.job_id}" +
                "{}".format(f" -v {fedml.get_env_version()}"))
+
