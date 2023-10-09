@@ -87,11 +87,20 @@ def build_mlops_package(
     dist_package_file = os.path.join(dist_package_dir, mlops_package_file_name)
     ignore_list = tuple(ignore.split(','))
 
-    shutil.rmtree(mlops_dest_conf, ignore_errors=True)
     shutil.rmtree(mlops_dest, ignore_errors=True)
+    try:
+        os.rmdir(mlops_dest)
+    except Exception as e:
+        pass
     try:
         shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy,
                         ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
+    except Exception as e:
+        pass
+
+    shutil.rmtree(mlops_dest_conf, ignore_errors=True)
+    try:
+        os.rmdir(mlops_dest_conf)
     except Exception as e:
         pass
     try:
