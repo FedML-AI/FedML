@@ -89,6 +89,14 @@ def _launch_job(yaml_file, api_key):
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key=api_key)
 
     if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
+        if schedule_result.user_check:
+            if not click.confirm("Do you want to launch the job with the above matched GPU "
+                                                        "resource?", abort=False):
+                click.echo("Cancelling the job with the above matched GPU resource.")
+                job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                return False
+
+        click.echo("Launching the job with the above matched GPU resource.")
         result = run_scheduled_job(schedule_result=schedule_result, api_key=api_key)
         _print_job_list_details(result)
         _print_job_log_details(result)
@@ -96,9 +104,15 @@ def _launch_job(yaml_file, api_key):
 
 def _launch_job_with_cluster(yaml_file, api_key, cluster):
     result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
-
+    cluster_confirmed = True
     if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
         if schedule_result.user_check:
+            if not click.confirm("Do you want to launch the job with the above matched GPU "
+                                                        "resource?", abort=False):
+                click.echo("Cancelling the job with the above matched GPU resource.")
+                job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                return False
+
             cluster_id = getattr(schedule_result, "cluster_id", None)
 
             if cluster_id is None or cluster_id == "":
@@ -107,13 +121,7 @@ def _launch_job_with_cluster(yaml_file, api_key, cluster):
 
             cluster_confirmed = confirm_cluster_and_start_job(schedule_result.job_id, cluster_id, schedule_result.gpu_matched)
 
-            if cluster_confirmed:
-                click.echo("Cluster successfully confirmed and job will be started on cluster soon.")
-                _print_job_list_details(schedule_result)
-                _print_job_log_details(schedule_result)
-            else:
-                click.echo("Cluster confirmation failed. Please check if the cli arguments are valid")
-        else:
+        if cluster_confirmed:
             _print_job_list_details(schedule_result)
             _print_job_log_details(schedule_result)
 
@@ -128,9 +136,7 @@ def _check_match_result(result, yaml_file):
         return ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR
 
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        _print_job_list_details(result)
-        _print_job_log_details(result)
-        return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
+        return ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS
     if result.status == Constants.JOB_START_STATUS_INVALID:
         click.echo(f"\nPlease check your {os.path.basename(yaml_file)} file "
                    f"to make sure the syntax is valid, e.g. "
@@ -177,10 +183,6 @@ def _match_and_show_resources(result):
         click.echo(f"You can also view the matched GPU resource with Web UI at: ")
         click.echo(f"{result.job_url}")
 
-        return gpu_matched
-
-    return None
-
 
 def _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or schedule_result is None:
@@ -190,19 +192,9 @@ def _resources_matched_and_confirmed(result_code, result_message, schedule_resul
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED:
         job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
         return False
-    if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED:
-        gpu_matched = _match_and_show_resources(schedule_result)
-        if gpu_matched is None:
-            return False
-
-        if schedule_result.user_check:
-            if not click.confirm("Do you want to launch the job with the above matched GPU "
-                                                        "resource?", abort=False):
-                click.echo("Cancelling the job with the above matched GPU resource.")
-                job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
-                return False
-
-        click.echo("Launching the job with the above matched GPU resource.")
+    if (match_result == ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED or
+            match_result == ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS):
+        _match_and_show_resources(schedule_result)
         return True
     return False
 

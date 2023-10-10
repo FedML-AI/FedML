@@ -7,6 +7,13 @@ bootstrap: |
   sh ./config/bootstrap.sh
   echo "Bootstrap finished"
 
+program_args:
+  batch_size: 32
+
+environment_variables:
+# Environment variables must be strings
+  LOCAL_RANK: "0"
+
 # If you do not have any GPU resource but want to serve the model
 # Try fedml® launch platform, and Uncomment the following lines.
 # ------------------------------------------------------------
@@ -15,7 +22,7 @@ computing:
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
   #device_type: CPU              # options: GPU, CPU, hybrid
-  resource_type: A100-80G       # e.g., A100-80G,
+  resource_type: A6000      # e.g., A100-80G,
   # please check the resource type list by "fedml show-resource-type"
   # or visiting URL: https://open.fedml.ai/accelerator_resource_type
-------------------------------------------------------------
+# ------------------------------------------------------------

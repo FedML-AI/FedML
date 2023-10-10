@@ -2,9 +2,10 @@ import os
 
 import click
 
+import fedml.api
+
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.api.modules.utils import fedml_login
-from fedml.api.modules.launch import job as launch_job
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
@@ -13,16 +14,16 @@ def create(name, config_file):
         # Just create a model folder
         if FedMLModelCards.get_instance().create_model(name):
             click.echo("Create model {} successfully.".format(name))
+            package(name)
         else:
             click.echo("Failed to create model {}.".format(name))
     else:
         # Adding related workspace codes to the model folder
         if FedMLModelCards.get_instance().create_model_use_config(name, config_file):
             click.echo("Create model {} using config successfully.".format(name))
+            package(name)
         else:
             click.echo("Failed to create model {} using config file {}.".format(name, config_file))
-
-    package(name)
 
 
 def delete(name):
@@ -88,12 +89,13 @@ def package(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-def push(name, model_storage_url, model_net_url, user, api_key):
-    if user is None or api_key is None:
-        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
-        return
+def push(name, model_storage_url, model_net_url, api_key):
+    if api_key == "":
+        api_key = get_api_key()
+
     model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
-    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
+
+    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, "", api_key,
                                                                              model_storage_url=model_storage_url,
                                                                              model_net_url=model_net_url)
     if model_is_from_open:
@@ -117,9 +119,9 @@ def pull(name, user, api_key):
         click.echo("Failed to pull model {}.".format(name))
 
 
-def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
+def deploy(local, name, master_ids, worker_ids):
     if local:
-        FedMLModelCards.get_instance().local_serve_model(name, config_file)
+        FedMLModelCards.get_instance().local_serve_model(name)
     else:
         if master_ids != "" or worker_ids != "":
             # On-Premise deploy mode
@@ -127,17 +129,8 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                 click.echo("You must provide both master and worker device id(s).")
                 return
             click.echo("Enter the on-premise deployment mode...")
-            if user_id == "" and os.environ.get("FEDML_USER_ID", None) is None:
-                # Let user enter through command line
-                user_id = click.prompt("Please input your user id")
-                os.environ["FEDML_USER_ID"] = user_id
-            if api_key == "" and os.environ.get("FEDML_API_KEY", None) is None:
-                # Let user enter through command line
-                api_key = click.prompt("Please input your api key", hide_input=True)
-                os.environ["FEDML_API_KEY"] = api_key
-            os.environ["FEDML_MODEL_SERVE_MASTER_DEVICE_IDS"] = master_ids
-            os.environ["FEDML_MODEL_SERVE_WORKER_DEVICE_IDS"] = worker_ids
-            FedMLModelCards.get_instance().serve_model(name, config_file)
+
+            FedMLModelCards.get_instance().serve_model_on_premise(name, master_ids, worker_ids)
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\
@@ -156,7 +149,7 @@ def deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
                         click.echo("Please check if your API key is valid.")
                         return
 
-                    launch_job(yaml_file, None)
+                    fedml.api.launch_job(yaml_file)
             else:
                 click.echo("Please specify both the master device id and worker device ids in the config file.")
                 return False

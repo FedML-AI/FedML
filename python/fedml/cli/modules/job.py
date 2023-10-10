@@ -43,7 +43,11 @@ def fedml_jobs():
 )
 def stop_job(platform, job_id, api_key, version):
     fedml.set_env_version(version)
-    fedml.api.job_stop(job_id=job_id, platform=platform, api_key=api_key)
+    is_stopped = fedml.api.job_stop(job_id=job_id, platform=platform, api_key=api_key)
+    if is_stopped:
+        click.echo(f"Job {job_id} is stopped successfully.")
+    else:
+        click.echo(f"Failed to stop Job {job_id}. Please check if the job id is valid.")
 
 
 @fedml_jobs.command("list", help="List jobs from the MLOps platform.")

@@ -64,7 +64,28 @@ class ClientSlaveManager:
             self.finish()
             return
 
+        if self.round_idx > 0:
+            # Skip the first round. For all subsequent rounds, evaluate model right after aggregation
+            self.test(is_before_aggregation=False)  # After aggregation
         self.trainer_dist_adapter.train(self.round_idx)
+        self.test(is_before_aggregation=True)
+
+    def test(self, is_before_aggregation: bool = False) -> None:
+        if getattr(self.args, "test_on_clients", "no") == "no":
+            return
+
+        if self.args.test_on_clients not in ("before_aggregation", "after_aggregation", "both"):
+            raise ValueError(
+                f"test_on_clients should be set to 'no' | 'before_aggregation' | 'after_aggregation' | 'both', "
+                f"got {self.args.test_on_clients} instead"
+            )
+
+        if (
+                self.args.test_on_clients == "both" or
+                (self.args.test_on_clients == "before_aggregation" and is_before_aggregation) or
+                (self.args.test_on_clients == "after_aggregation" and not is_before_aggregation)
+        ):
+            self.trainer_dist_adapter.test(self.round_idx)
 
     def finish(self):
         if self.use_customized_hierarchical:
