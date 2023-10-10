@@ -105,6 +105,8 @@ class ClientConstants(object):
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
     MODEL_REQUIRED_MODEL_README_FILE = "README.md"
 
+    ORIGINAL_YAML_FILE_LOCATION = "origin_yaml_file_loc_record.txt"
+
     CMD_TYPE_CONVERT_MODEL = "convert_model"
     CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
     FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"

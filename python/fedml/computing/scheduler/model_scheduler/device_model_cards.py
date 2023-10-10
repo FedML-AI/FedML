@@ -19,7 +19,7 @@ from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList
 from .device_client_constants import ClientConstants
-
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 class FedMLModelCards(Singleton):
 
@@ -34,67 +34,62 @@ class FedMLModelCards(Singleton):
     def get_instance():
         return FedMLModelCards()
 
-    def serve_model(self, model_name, config_file_path=""):
-        src_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
-        if not os.path.exists(src_folder):
-            print("Local Model {} doesn't exist. Will Create it First...".format(model_name))
-            if not self.create_model_use_config(model_name, config_file_path):
-                return False
-            else:
-                print("Local Model {} is created!".format(model_name))
-        else:
-            # Exist a local model
-            if config_file_path != "":
-                # User indicate a config file to create model
-                print("Local Model {} already exists. Will recreate it using this config file...".format(
-                    model_name))
-                if not self.create_model_use_config(model_name, config_file_path):
-                    return False
-                else:
-                    print("Local Model {} has been recreated.".format(model_name))
-            else:
-                print("Using existing local model {}.".format(model_name))
-
-        config_file_path = os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
-        parms_dict = self.parse_config_yaml(config_file_path)
-
-        user_id = parms_dict.get("FEDML_USER_ID", os.environ.get("FEDML_USER_ID", None))
-        user_api_key = parms_dict.get("FEDML_API_KEY", os.environ.get("FEDML_API_KEY", None))
-        device_type = parms_dict.get("device_type", "md.on_premise_device")
-        master_device_id = parms_dict.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS",
-                                          os.environ.get("FEDML_MODEL_SERVE_MASTER_DEVICE_IDS", None))
-        worker_device_ids = parms_dict.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS",
-                                           os.environ.get("FEDML_MODEL_SERVE_WORKER_DEVICE_IDS", None))
-        additional_parms_dict = parms_dict.get("default_parms_dict", {})
-        use_local_deployment = parms_dict.get("default_use_local", False)
-        mlops_version = parms_dict.get("mlops_version", "release")
-
-        if master_device_id is None or worker_device_ids is None:
-            print("Please specify the master device id and worker device ids in the config file.")
+    def serve_model_on_premise(self, model_name, master_device_ids, worker_device_ids):
+        local_model_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(local_model_folder):
+            print("[Error] Model {} doesn't exist. Please Create it First...".format(model_name))
             return False
-        if not (type(worker_device_ids) in [str, list, int] and type(master_device_id) in [str, int, list]):
+        else:
+            # Exist a local model folder, recreate the model
+            if not self.recreate_model(model_name):
+                print("[Error] Failed to recreate model {}.".format(model_name))
+
+        config_file_path = os.path.join(local_model_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        params_dict = self.parse_config_yaml(config_file_path)
+        additional_params_dict = params_dict.get("default_params_dict", {})
+        use_local_deployment = params_dict.get("default_use_local", False)
+        device_type = params_dict.get("device_type", "md.on_premise_device")
+
+        user_api_key = get_api_key()
+        if user_api_key is None:
+            print("[Error] Please specify using fedml login or using -k.")
+            return False
+
+        target_devices = self.concat_device_ids(master_device_ids, worker_device_ids)
+        if len(target_devices) == 0:
+            print("[Error] Please specify both the master device id and worker device ids")
+            return False
+
+        self.build_model(model_name)
+
+        self.push_model(model_name, "", user_api_key)
+
+        if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
+                                 additional_params_dict, use_local_deployment):
+            print("Failed to deploy model")
+            return False
+        return True
+
+    def concat_device_ids(self, master_device_ids, worker_device_ids) -> list:
+        if master_device_ids is None or worker_device_ids is None:
+            print("Please specify the master device id and worker device ids in the config file.")
+            return []
+        if not (type(worker_device_ids) in [str, list, int] and type(master_device_ids) in [str, int, list]):
             print('''The format of worker_device_ids is wrong, 
                   please use formate like 1,2,3 or 1,
                   E.g. export FEDML_MODEL_SERVE_WORKER_DEVICE_IDS=1,2,3
                   ''')
-            return False
+            return []
 
         if type(worker_device_ids) is not list:
             if type(worker_device_ids) is int:
                 worker_device_ids = [worker_device_ids]
             else:
                 worker_device_ids = worker_device_ids.split(",")
-        if type(master_device_id) is not list:
-            master_device_id = [str(master_device_id)]
-        devices = master_device_id + worker_device_ids
-
-        self.build_model(model_name)
-        self.push_model(model_name, user_id, user_api_key)
-        res = self.deploy_model(model_name, device_type, devices, user_id, user_api_key,
-                                additional_parms_dict, use_local_deployment)
-        if not res:
-            print("Failed to deploy model")
-            return False
+        if type(master_device_ids) is not list:
+            master_device_ids = [str(master_device_ids)]
+        devices = master_device_ids + worker_device_ids
+        return devices
 
     def parse_config_yaml(self, yaml_file):
         with open(yaml_file, 'r') as f:
@@ -103,38 +98,88 @@ class FedMLModelCards(Singleton):
 
     def copy_config_yaml_to_src_folder(self, src_folder, yaml_file):
         shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
-        # Change the workspace to "./"
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'r') as f:
             launch_params = yaml.safe_load(f)
-            launch_params["workspace"] = "./"
+            launch_params["workspace"] = "./"   # Since it is inside the src folder, the workspace is "./"
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'w') as f:
             yaml.dump(launch_params, f, sort_keys=False)
         return True
 
     def create_model_use_config(self, model_name, config_file) -> bool:
+        """
+        config_file: the config file path, could be a relative path or absolute path
+        workspace: the workspace of the model, could be a relative path or absolute path
+        """
         if config_file is None or config_file == "":
             print("[Error] Please specify your config file using --config_file or -cf.")
             return False
+
+        if not os.path.isabs(config_file):
+            # Current working directory + config_file if config_file is a relative path
+            config_file = os.path.normpath(os.path.join(os.getcwd(), config_file))
 
         if not os.path.exists(config_file):
             print("[Error] The config file {} doesn't exist.".format(config_file))
             return False
 
         model_config = self.parse_config_yaml(config_file)
-        # Copy workspace dir to local model cards dir
         if "workspace" not in model_config:
             print("Please specify the workspace in the config file.")
             return False
 
-        if self.add_model_files(model_name, model_config["workspace"]):
+        if not os.path.isabs(model_config["workspace"]):
+            # Use config_file_path + workspace if workspace is a relative path
+            base_path = os.path.dirname(config_file)   # Avoid scene like: ./src
+            workspace_abs_path = os.path.join(base_path, model_config["workspace"])
+        else:
+            workspace_abs_path = model_config["workspace"]
+        workspace_abs_path = os.path.normpath(workspace_abs_path)
+
+        if self.add_model_files(model_name, workspace_abs_path):
             model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
             if self.copy_config_yaml_to_src_folder(model_dir, config_file):
+                # Record the current yaml location and write it to a file in the model dir,
+                # So that we can auto-recreate the model next time.
+                abs_path_to_config_file = os.path.abspath(config_file)
+                with open(os.path.join(model_dir, ClientConstants.ORIGINAL_YAML_FILE_LOCATION), 'w') as f:
+                    f.write(abs_path_to_config_file)
                 return True
             else:
                 print(f"Failed to add your config file {config_file} to the model {model_name}.")
                 return False
         else:
-            print(f"Failed to add your workspace {model_config['workspace']} to the model {model_name}.")
+            print(f"Failed to add your workspace {workspace_abs_path} to the model {model_name}.")
+            return False
+
+    def recreate_model(self, model_name):
+        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+        if not os.path.exists(model_dir):
+            print(f"[Error] The model {model_name} doesn't exist. Please create it first.")
+            return False
+
+        if not os.path.exists(os.path.join(model_dir, ClientConstants.ORIGINAL_YAML_FILE_LOCATION)):
+            print(f"The model {model_name} doesn't created by a yaml file, cannot recreate it.")
+            return False
+
+        with open(os.path.join(model_dir, ClientConstants.ORIGINAL_YAML_FILE_LOCATION), 'r') as f:
+            original_config_file_path = f.read()
+
+        if not os.path.exists(original_config_file_path) or not os.path.isfile(original_config_file_path)\
+                or not os.path.isabs(original_config_file_path):
+            print(f"The original config file {original_config_file_path} doesn't exist, cannot recreate the model.")
+            return False
+
+        # tmp rename the original model cards to avoid conflict
+        tmp_model_name = model_name + "_tmp_" + str(int(time.time()))
+        shutil.move(model_dir, os.path.join(ClientConstants.get_model_dir(), tmp_model_name))
+
+        if self.create_model_use_config(model_name, original_config_file_path):
+            shutil.rmtree(os.path.join(ClientConstants.get_model_dir(), tmp_model_name))
+            return True
+        else:
+            # Rollback
+            shutil.move(os.path.join(ClientConstants.get_model_dir(), tmp_model_name),
+                        os.path.join(ClientConstants.get_model_dir(), model_name))
             return False
 
     def create_model(self, model_name):
@@ -149,6 +194,7 @@ class FedMLModelCards(Singleton):
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir, ignore_errors=True)
         else:
+            print(f"[Error] The model {model_name} doesn't exist.")
             return False
         return True
 
@@ -158,6 +204,10 @@ class FedMLModelCards(Singleton):
             self.create_model(model_name)
 
         if not os.path.exists(model_dir):
+            return False
+
+        if not os.path.exists(file_path):
+            print(f"[Error] The file {file_path} doesn't exist.")
             return False
 
         if os.path.isdir(file_path):
@@ -401,45 +451,51 @@ class FedMLModelCards(Singleton):
     def prepare_yaml_for_launch(self, model_name) -> str:
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
-            print("Model {} doesn't exist. Please Create it First".format(model_name))
+            print("[Error] Model {} doesn't exist. Please create it first.".format(model_name))
             return ""
+
+        if not self.recreate_model(model_name):
+            print("[Error] Failed to recreate model {}".format(model_name))
+            return ""
+        else:
+            print("Automatically recreate model {}.".format(model_name))
 
         config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         if not os.path.exists(config_file_path):
-            print("Model {} doesn't have config file. Please Create it First".format(model_name))
+            print("[Error] Model {} doesn't have config file. Please create it first.".format(model_name))
             return ""
 
-        # add some default parameters for fedml®launch to read
-        addtional_parms = {
+        # Rewrite the config file with task_type = serve added
+        additional_parms = {
             "task_type": "serve"
         }
         with open(config_file_path, 'r') as f:
-            config_parms = yaml.safe_load(f)
-            config_parms.update(addtional_parms)
-        # Keep the same file name
+            config_params = yaml.safe_load(f)
+            config_params.update(additional_parms)
         with open(config_file_path, 'w') as f:
-            yaml.dump(config_parms, f, sort_keys=False)
+            yaml.dump(config_params, f, sort_keys=False)
+        print("The local config file {} will be used for fedml®launch.".format(config_file_path))
 
-        print("The config file {} is used for launching.".format(config_file_path))
         return config_file_path
 
-    def local_serve_model(self, model_name, config_file_path=""):
-        # Check local model card existance
+    def local_serve_model(self, model_name):
+        # Check local model card existence
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
-            print("Local Model {} doesn't exist. Will Create it First".format(model_name))
-            time.sleep(1)
-            if self.create_model_use_config(model_name, config_file_path):
-                print("Local Model {} is created successfully. Using \"fedml model list -n\" {} to check later"\
-                      .format(model_name, model_name))
-                time.sleep(2)
-            else:
-                return False
+            print(f"[Error] Model cards {model_name} doesn't exist. Please create it first.")
+            return False
 
-        # Execute bootstrap script
+        # Dynamically Recreate Model Cards
+        if not self.recreate_model(model_name):
+            print("[Error] Failed to recreate model {}".format(model_name))
+            return False
+
+        # Parse the config file
         config_file_path = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
-        config_parms = self.parse_config_yaml(config_file_path)
-        bootstrap_exec_str = config_parms.get("bootstrap", "")
+        config_params = self.parse_config_yaml(config_file_path)
+        bootstrap_exec_str = config_params.get("bootstrap", "")
+        program_args = config_params.get("program_args", {})
+        new_environment_vars = config_params.get("environment_variables", {})
 
         # Change the execution path to the model dir
         os.chdir(model_dir)
@@ -453,7 +509,7 @@ class FedMLModelCards(Singleton):
             time.sleep(2)
 
         # Enter main_entry
-        main_entry_file = config_parms.get("entry_point", "")
+        main_entry_file = config_params.get("entry_point", "")
         if main_entry_file == "":
             print("The entry_point is missing in the model config file.")
             return False
@@ -461,8 +517,23 @@ class FedMLModelCards(Singleton):
         if not os.path.exists(main_entry_file):
             print("The entry_point {} doesn't exist.".format(main_entry_file))
             return False
+
         import subprocess
-        process = subprocess.Popen(["python3", main_entry_file])
+        all_env_vars = os.environ.copy()
+        for k, v in new_environment_vars.items():
+            all_env_vars[k] = v
+
+        print(f"Entering the main entry file {main_entry_file} ...")
+
+        extra_args = []
+        for k, v in program_args.items():
+            extra_args.append(f"--{k}={v}")
+
+        process = subprocess.Popen(
+            ["python3", main_entry_file] + extra_args,
+            env=all_env_vars,
+        )
+
         print("Local deployment is started. Use Ctrl+C to stop it.")
         try:
             process.wait()
