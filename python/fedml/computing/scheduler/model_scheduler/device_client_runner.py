@@ -300,7 +300,7 @@ class FedMLClientRunner:
 
         logging.info("model deployment request: {}".format(self.request_json))
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         # Initiate an FedMLInferenceClient object
         # client_runner = FedMLClientRunner(
