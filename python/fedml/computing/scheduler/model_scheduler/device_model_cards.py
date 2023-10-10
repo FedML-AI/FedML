@@ -625,7 +625,8 @@ class FedMLModelCards(Singleton):
             "userId": str(user_id),
             "apiKey": user_api_key,
             "isFromOpen": int(is_from_open),
-            "modelNetUrl": model_net_url
+            "modelNetUrl": model_net_url,
+            "tagList": []
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
