@@ -110,23 +110,22 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     job_id = getattr(schedule_result, "job_id", None)
     project_id = getattr(schedule_result, "project_id", None)
 
+    ret_job_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
+
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return job_id, project_id, result_code, result_message
-
-    ret_job_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
-    project_id = schedule_result.project_id
+        return ret_job_id, project_id, result_code, result_message
 
     # Run Job
     run_result = run_job(schedule_result, api_key, device_server, device_edges)
 
     # Return Result
     if run_result is None:
-        return job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
+        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
             ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
 
     if run_result.job_url == "":
-        return run_result.job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
+        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
             ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR
 
     return ret_job_id, project_id, 0, ""
