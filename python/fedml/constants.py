@@ -70,7 +70,9 @@ FEDML_BACKEND_SERVICE_URL_TEST = "https://open-test.fedml.ai"
 
 FEDML_BACKEND_SERVICE_URL_RELEASE = "https://open.fedml.ai"
 
-FEDML_MQTT_DOMAIN_LOCAL = "mqtt-dev.fedml.ai"
+FEDML_MQTT_DOMAIN_LOCAL = "66.128.148.198"
 FEDML_MQTT_DOMAIN_DEV = "mqtt-dev.fedml.ai"
 FEDML_MQTT_DOMAIN_TEST = "mqtt.fedml.ai"
 FEDML_MQTT_DOMAIN_RELEASE = "mqtt.fedml.ai"
+
+FEDML_S3_DOMAIN_LOCAL = "http://66.128.148.198:9000"

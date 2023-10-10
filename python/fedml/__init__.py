@@ -19,6 +19,7 @@ from .constants import (
     FEDML_MQTT_DOMAIN_LOCAL,
     FEDML_MQTT_DOMAIN_TEST,
     FEDML_MQTT_DOMAIN_RELEASE,
+    FEDML_S3_DOMAIN_LOCAL,
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
     FEDML_SIMULATION_TYPE_MPI,
@@ -490,6 +491,10 @@ def _get_mqtt_service():
     else:
         return FEDML_MQTT_DOMAIN_RELEASE
 
+
+def _get_local_s3_like_service_url():
+    return FEDML_S3_DOMAIN_LOCAL
+    
 
 from fedml import device
 from fedml import data

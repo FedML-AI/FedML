@@ -89,7 +89,7 @@ def collect_env():
     if is_open_connected:
         print(f"The connection to {url} is OK.\n")
     else:
-        print(f"You can not connect to {url} is OK.\n")
+        print(f"You can not connect to {url}.\n")
 
     is_s3_connected = ClientDiagnosis.check_s3_connection(None)
     if is_s3_connected:
@@ -102,4 +102,4 @@ def collect_env():
     if is_mqtt_connected:
         print(f"The connection to {mqtt_url} (port:1883) is OK.\n")
     else:
-        print(f"You can not connect to {mqtt_url} (port:1883) is OK.\n")
+        print(f"You can not connect to {mqtt_url}.\n")
