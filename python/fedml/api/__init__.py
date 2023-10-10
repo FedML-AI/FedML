@@ -213,16 +213,16 @@ def model_package(name):
     model.package(name)
 
 
-def model_push(name, model_storage_url, model_net_url, user, api_key):
-    model.push(name, model_storage_url, model_net_url, user, api_key)
+def model_push(name, model_storage_url, model_net_url, api_key):
+    model.push(name, model_storage_url, model_net_url, api_key)
 
 
 def model_pull(name, user, api_key):
     model.pull(name, user, api_key)
 
 
-def model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file):
-    model.deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
+def model_deploy(local, name, master_ids, worker_ids):
+    model.deploy(local, name, master_ids, worker_ids)
 
 
 def model_info(name):

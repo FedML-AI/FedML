@@ -22,10 +22,10 @@ def fedml_model():
     default="release"
 )
 @click.option(
-    "--name", "-n", type=str, help="model name.",
+    "--name", "-n", type=str, help="model name.", required=True
 )
 @click.option(
-    "--config_file", "-cf", default = None,type=str, help="Model config file (.yaml)",
+    "--config_file", "-cf", default=None,type=str, help="Model config file (.yaml)",
 )
 def fedml_model_create(version, name, config_file):
     fedml.set_env_version(version)
@@ -44,7 +44,7 @@ def fedml_model_create(version, name, config_file):
     default="release"
 )
 @click.option(
-    "--name", "-n", type=str, help="model name.",
+    "--name", "-n", type=str, help="model name.", required=True
 )
 @click.option(
     "--model_storage_url", "-s", type=str, help="model storage url.",
@@ -53,17 +53,14 @@ def fedml_model_create(version, name, config_file):
     "--model_net_url", "-mn", type=str, help="model net url.",
 )
 @click.option(
-    "--user", "-u", type=str, help="user id.",
+    "--api_key", "-k", default="", type=str, help="user api key.",
 )
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, version):
+def fedml_model_push(name, model_storage_url, model_net_url, api_key, version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_push(name, model_storage_url, model_net_url, user, api_key)
+    fedml.api.model_push(name, model_storage_url, model_net_url, api_key)
 
 
 @fedml_model.command("deploy", help="Deploy model to the local machine or MLOps platform (cloud)")
@@ -81,26 +78,19 @@ def fedml_model_push(name, model_storage_url, model_net_url, user, api_key, vers
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
-    "--master_ids", "-m", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate master device id(s), seperated with ','"
+    "--master_ids", "-m", type=str, default="", help="[Optional] For on-premise deploy mode,"
+                                                     " Please indicate master device id(s), seperated with ','"
 )
 @click.option(
-    "--worker_ids", "-w", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate worker device id(s), seperated with ','"
+    "--worker_ids", "-w", type=str, default="", help="[Optional] For on-premise deploy mode,"
+                                                     " Please indicate worker device id(s), seperated with ','"
 )
-@click.option(
-    "--user_id", "-u", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate user id"
-)
-@click.option(
-    "--api_key", "-k", type=str, default="", help="[Optional] For on-premise deploy mode, Please indicate api key"
-)
-@click.option(
-    "--config_file", "-cf", default = "", type=str, help="Model config file (.yaml)"
-)
-def fedml_model_deploy(version, local, name, master_ids, worker_ids, user_id, api_key, config_file):
+def fedml_model_deploy(version, local, name, master_ids, worker_ids):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_deploy(local, name, master_ids, worker_ids, user_id, api_key, config_file)
+    fedml.api.model_deploy(local, name, master_ids, worker_ids)
 
 
 

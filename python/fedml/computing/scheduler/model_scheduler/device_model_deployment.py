@@ -278,7 +278,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             raise Exception("Failed to get the container object")
 
         if exist_container_obj is not None:
-            client.api.remove_container(exist_container_obj.id, v=False, force=True)
+            client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
             device_requests.append(
@@ -320,7 +320,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             host_config=client.api.create_host_config(
                 binds=binds,
                 port_bindings={
-                    2345: None  # randomlly open a port on the host
+                    2345: None  # randomly open a port on the host
                 },
                 device_requests=device_requests,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
