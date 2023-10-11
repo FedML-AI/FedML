@@ -36,7 +36,9 @@ def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
                                 device_server, device_edges, get_api_key(), no_confirmation=False,
                                 model_name=job_config.serving_model_name,
                                 model_endpoint=job_config.serving_endpoint_name,
-                                job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+                                job_yaml=job_config.job_config_dict, job_type=job_config.task_type,
+                                app_job_id=job_config.job_id,
+                                app_job_name=job_config.job_name)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -72,7 +74,9 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
                                            device_server, device_edges, get_api_key(), no_confirmation=False,
                                            model_name=job_config.serving_model_name,
                                            model_endpoint=job_config.serving_endpoint_name,
-                                           job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+                                           job_yaml=job_config.job_config_dict, job_type=job_config.task_type,
+                                           app_job_id=job_config.job_id,
+                                           app_job_name=job_config.job_name)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -93,7 +97,9 @@ def run_job(schedule_result, api_key, device_server, device_edges):
                           schedule_result.application_name,
                           device_server, device_edges, get_api_key(),
                           no_confirmation=True, job_id=schedule_result.job_id,
-                          job_type=schedule_result.job_type)
+                          job_type=schedule_result.job_type,
+                          app_job_id=schedule_result.app_job_id,
+                          app_job_name=schedule_result.app_job_name)
 
     if launch_result is not None:
         launch_result.project_name = schedule_result.project_name
@@ -176,12 +182,15 @@ def _prepare_launch_app(yaml_file):
         yaml_file)
 
     # Create and update an application with the built packages.
-    app_updated_result = FedMLAppManager.get_instance().update_app(
-        SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
-        client_package_file=client_package, server_package_file=server_package,
-        workspace=job_config.workspace, model_name=job_config.serving_model_name,
-        model_version=job_config.serving_model_version,
-        model_url=job_config.serving_model_s3_url)
+    if job_config.job_id is None:
+        app_updated_result = FedMLAppManager.get_instance().update_app(
+            SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
+            client_package_file=client_package, server_package_file=server_package,
+            workspace=job_config.workspace, model_name=job_config.serving_model_name,
+            model_version=job_config.serving_model_version,
+            model_url=job_config.serving_model_s3_url)
+    else:
+        app_updated_result = object()
 
     # Post processor to clean up local temporary launch package and do other things.
     FedMLLaunchManager.get_instance().post_launch(job_config)
