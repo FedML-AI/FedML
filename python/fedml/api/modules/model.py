@@ -143,6 +143,7 @@ def deploy(local, name, master_ids, worker_ids):
                     click.echo("Cannot find the config yaml file for model {}.".format(name))
                     return False
                 else:
+                    saved_original_path = os.getcwd()
                     os.chdir(os.path.dirname(yaml_file))  # Set the execution path to the yaml folder
                     error_code, _ = fedml_login(api_key=api_key)
                     if error_code != 0:
@@ -150,6 +151,8 @@ def deploy(local, name, master_ids, worker_ids):
                         return
 
                     fedml.api.launch_job(yaml_file)
+                    os.remove(yaml_file)
+                    os.chdir(saved_original_path)
             else:
                 click.echo("Please specify both the master device id and worker device ids in the config file.")
                 return False
