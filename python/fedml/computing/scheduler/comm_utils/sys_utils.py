@@ -630,6 +630,7 @@ def upgrade_if_not_latest():
     except Exception as e:
         pass
 
+
 # Policy for version checking.
 # Dev: keep tracking the latest alpha, beta version
 # Test: don't check, keep the local version
