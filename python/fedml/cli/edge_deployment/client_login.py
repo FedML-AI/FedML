@@ -1,6 +1,7 @@
 
 import argparse
 import os
+import fedml
 
 from fedml.computing.scheduler.slave.client_login import login, logout
 
