@@ -118,7 +118,7 @@ class FedMLServerManager(FedMLCommManager):
 
     def process_online_status(self, client_status, msg_params):
         self.client_online_mapping[str(msg_params.get_sender_id())] = True
-
+        self.aggregator.log_client_start_time(str(msg_params.get_sender_id()))
         logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         all_client_is_online = True
@@ -175,6 +175,9 @@ class FedMLServerManager(FedMLCommManager):
 
         self.aggregator.add_local_trained_result(
             self.client_real_ids.index(sender_id), model_params, local_sample_number
+        )
+        self.aggregator.assess_local_contributions(
+            str(sender_id), model_params, self.args.round_idx, str(self.args.run_id)
         )
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))

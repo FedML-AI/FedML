@@ -8,7 +8,7 @@ import torch
 from fedml import mlops
 from ...core import Context
 from ...ml.engine import ml_engine_adapter
-
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 class FedMLAggregator(object):
     def __init__(
@@ -47,7 +47,8 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
-
+        self.client_contribution_mapping = dict()
+    
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
 
@@ -104,9 +105,26 @@ class FedMLAggregator(object):
         return averaged_params, model_list, model_list_idxes
 
     def assess_contribution(self):
+    #     if hasattr(self.args, "enable_contribution") and \
+    #             self.args.enable_contribution is not None and self.args.enable_contribution:
+    #         self.aggregator.assess_contribution()
+        pass
+    
+    def log_client_start_time(self, client_real_id:str):
         if hasattr(self.args, "enable_contribution") and \
                 self.args.enable_contribution is not None and self.args.enable_contribution:
-            self.aggregator.assess_contribution()
+            self.client_contribution_mapping[client_real_id] = self.client_contribution_mapping.get(client_real_id, {})
+            self.client_contribution_mapping[client_real_id]["client_start_timestamp"] = MLOpsUtils.get_ntp_time()
+            logging.info(f"Logged client_start_timestamp {MLOpsUtils.get_ntp_time()} for client {client_real_id}")
+
+    def assess_local_contributions(self, client_real_id:str, model_params, round_idx, run_id:str):
+        if hasattr(self.args, "enable_contribution") and \
+                self.args.enable_contribution is not None and self.args.enable_contribution:
+            self.client_contribution_mapping[client_real_id]["client_end_timestamp"] = MLOpsUtils.get_ntp_time()
+            if round_idx == self.args.comm_round - 1 or (hasattr(self.args, "contribution_access_frequency") and \
+                self.args.contribution_access_frequency is not None and \
+                    round_idx % self.args.contribution_access_frequency == 0):
+                self.aggregator.assess_local_contributions(self.client_contribution_mapping, client_real_id, model_params, run_id)
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
