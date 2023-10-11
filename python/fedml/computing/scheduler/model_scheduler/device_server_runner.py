@@ -300,7 +300,7 @@ class FedMLServerRunner:
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE4["text"])
 
         self.args.run_id = self.run_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         # report server running status
         logging.info("report deployment status...")

@@ -24,7 +24,7 @@ class FedMLJobManager(Singleton):
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
                   user_api_key, cluster=None, no_confirmation=False, job_id=None,
                   model_name=None, model_endpoint=None, job_yaml=None,
-                  job_type=None):
+                  job_type=None, app_job_id=None, app_job_name=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url()
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -68,6 +68,13 @@ class FedMLJobManager(Singleton):
 
         if job_id is not None:
             job_start_json["jobId"] = job_id
+
+        if app_job_id is not None:
+            job_start_json["applicationId"] = app_job_id
+
+        if app_job_name is not None:
+            job_start_json["applicationName"] = app_job_name
+
         args = {"config_version": self.config_version}
         cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:
@@ -95,6 +102,8 @@ class FedMLJobManager(Singleton):
                       f"response.content: {response.content}")
                 return None
             job_start_result = FedMLJobStartedModel(data, job_type, response=resp_data)
+            job_start_result.app_job_id = app_job_id
+            job_start_result.app_job_name = app_job_name
 
         return job_start_result
 

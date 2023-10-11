@@ -425,8 +425,13 @@ class FedMLJobConfig(object):
             self.serving_endpoint_name = f"Endpoint-{str(uuid.uuid4())}"
         self.serving_endpoint_id = None
 
+        job_args = self.job_config_dict.get("job_args", {})
+        self.job_id = job_args.get("job_id", None)
+        self.job_name = job_args.get("job_name", None)
+
         self.application_name = FedMLJobConfig._generate_application_name(
             self.executable_file_folder if workspace is None or workspace == "" else workspace)
+        self.application_name = self.job_name if self.job_name is not None else self.application_name
 
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name

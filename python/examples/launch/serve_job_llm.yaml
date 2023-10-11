@@ -20,4 +20,3 @@ task_type: serve
 
 serving_args:
     model_name: demo-pythia-70m
-    endpoint_name: test-ep-2023-0927-203

@@ -631,30 +631,34 @@ def upgrade_if_not_latest():
         pass
 
 
+# Policy for version checking.
+# Dev: keep tracking the latest alpha, beta version
+# Test: don't check, keep the local version
+# Release: keep tracking the latest release version
 def check_fedml_is_latest_version(configuration_env="release"):
+    if configuration_env == "test":
+        return True
+
     fedml_version_list = versions(configuration_env, "fedml")
     local_fedml_version = fedml.__version__
-    if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
-        return True, local_fedml_version, fedml_version_list[0]
 
-    return False, local_fedml_version, fedml_version_list[0]
-    # if configuration_env != "release":
-    #     if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
-    #         return True, local_fedml_version, fedml_version_list[0]
-    #
-    #     return False, local_fedml_version, fedml_version_list[0]
-    # else:
-    #     local_fedml_ver_info = version.parse(local_fedml_version)
-    #     for remote_ver_item in fedml_version_list:
-    #         remote_fedml_ver_info = version.parse(remote_ver_item)
-    #         if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
-    #                 remote_fedml_ver_info.is_devrelease:
-    #             continue
-    #
-    #         if local_fedml_ver_info < remote_fedml_ver_info:
-    #             return False, local_fedml_version, remote_ver_item
-    #         else:
-    #             return True, local_fedml_version, fedml_version_list[0]
+    if configuration_env != "release":
+        if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
+            return True, local_fedml_version, fedml_version_list[0]
+
+        return False, local_fedml_version, fedml_version_list[0]
+    else:
+        local_fedml_ver_info = version.parse(local_fedml_version)
+        for remote_ver_item in fedml_version_list:
+            remote_fedml_ver_info = version.parse(remote_ver_item)
+            if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
+                    remote_fedml_ver_info.is_devrelease:
+                continue
+
+            if local_fedml_ver_info < remote_fedml_ver_info:
+                return False, local_fedml_version, remote_ver_item
+            else:
+                return True, local_fedml_version, fedml_version_list[0]
 
 
 def daemon_ota_upgrade(in_args):

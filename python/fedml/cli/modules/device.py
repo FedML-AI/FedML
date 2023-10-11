@@ -58,15 +58,28 @@ def fedml_device():
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
+@click.option(
+    "--infer_host", "-ih", default="127.0.0.1", help="inference host address.",
+)
+@click.option(
+    "--redis_addr", "-ra", default="local", help="inference redis address.",
+)
+@click.option(
+    "--redis_port", "-rp", default="6379", help="inference redis port.",
+)
+@click.option(
+    "--redis_password", "-rpw", default="fedml_default", help="inference redis password.",
+)
 def fedml_device_bind(
         version, userid, client, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank
-):
+        docker, docker_rank, infer_host,
+        redis_addr, redis_port, redis_password):
     fedml.set_env_version(version)
     fedml.api.device_bind(userid, client, server,
                           api_key, role, runner_cmd, device_id, os_name,
-                          docker, docker_rank)
+                          docker, docker_rank, infer_host,
+                          redis_addr, redis_port, redis_password)
 
 
 @fedml_device.command("unbind", help="Logout from the FedML AI Platform")

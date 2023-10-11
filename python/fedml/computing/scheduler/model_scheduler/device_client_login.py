@@ -165,12 +165,16 @@ if __name__ == "__main__":
     parser.add_argument("--type", "-t", help="Login or logout to ModelOps platform")
     parser.add_argument("--user", "-u", type=str, help="account id at ModelOps platform")
     parser.add_argument("--version", "-v", type=str, default="release")
+    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="md.on_premise_device")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
     args = parser.parse_args()
     args.user = args.user
+    infer_host = os.getenv("FEDML_INFER_HOST", None)
+    if infer_host is not None:
+        args.infer_host = infer_host
     if args.type == 'login':
         login(args)
     else:

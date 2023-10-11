@@ -14,7 +14,7 @@ from fedml.computing.scheduler.model_scheduler import device_client_constants
 
 
 class FedMLModelDeviceClientRunner:
-    def __init__(self, args, current_device_id, os_name, is_from_docker, service_config):
+    def __init__(self, args, current_device_id, os_name, is_from_docker, service_config, infer_host="127.0.0.1"):
         self.agent_process = None
         self.agent_runner = None
         self.agent_process_event = None
@@ -26,7 +26,7 @@ class FedMLModelDeviceClientRunner:
         self.os_name = os_name
         self.is_from_docker = is_from_docker
         self.edge_id = None
-        self.infer_host = "127.0.0.1"
+        self.infer_host = infer_host
 
         self.agent_runner = None
 
@@ -36,6 +36,7 @@ class FedMLModelDeviceClientRunner:
     def start(self):
         self.agent_runner = FedMLModelDeviceClientRunner(self.args, self.current_device_id, self.os_name,
                                                          self.is_from_docker, self.service_config)
+        self.agent_runner.infer_host = self.infer_host
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))

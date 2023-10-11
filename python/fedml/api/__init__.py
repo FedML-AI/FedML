@@ -33,6 +33,7 @@ def fedml_login(api_key=None):
 def launch_job(yaml_file, api_key=None, resource_id=None):
     """
     launch a job
+    :param api_key:
     :param yaml_file: full path of your job yaml file
     :param resource_id: resource id returned from matching resources api, if you do not specify resource id,
            we will match resources based on your job yaml, and then automatically launch the job using matched resources
@@ -157,10 +158,12 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
 
 def login(userid, client, server,
           api_key, role, runner_cmd, device_id, os_name,
-          docker, docker_rank):
+          docker, docker_rank, infer_host,
+          redis_addr, redis_port, redis_password):
     device_bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank)
+                docker, docker_rank, infer_host,
+                redis_addr, redis_port, redis_password)
 
 
 def logout(client, server, docker, docker_rank):
@@ -169,10 +172,12 @@ def logout(client, server, docker, docker_rank):
 
 def device_bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank):
+                docker, docker_rank, infer_host,
+                redis_addr, redis_port, redis_password):
     device.bind(userid, client, server,
                 api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank)
+                docker, docker_rank, infer_host,
+                redis_addr, redis_port, redis_password)
 
 
 def device_unbind(client, server, docker, docker_rank):

@@ -20,8 +20,14 @@ from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLReso
 def bind(
         userid, client, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank
+        docker, docker_rank, infer_host,
+        redis_addr, redis_port, redis_password
 ):
+    os.environ["FEDML_INFER_HOST"] = infer_host
+    os.environ["FEDML_INFER_REDIS_ADDR"] = redis_addr
+    os.environ["FEDML_INFER_REDIS_PORT"] = redis_port
+    os.environ["FEDML_INFER_REDIS_PASSWORD"] = redis_password
+
     url = fedml._get_backend_service()
     print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
     if userid is None or len(userid) <= 0:

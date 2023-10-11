@@ -19,6 +19,7 @@ from .constants import (
     FEDML_MQTT_DOMAIN_LOCAL,
     FEDML_MQTT_DOMAIN_TEST,
     FEDML_MQTT_DOMAIN_RELEASE,
+    FEDML_S3_DOMAIN_LOCAL,
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
     FEDML_SIMULATION_TYPE_MPI,
@@ -33,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a129"
+__version__ = "0.8.8a132"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -490,6 +491,10 @@ def _get_mqtt_service():
     else:
         return FEDML_MQTT_DOMAIN_RELEASE
 
+
+def _get_local_s3_like_service_url():
+    return FEDML_S3_DOMAIN_LOCAL
+    
 
 from fedml import device
 from fedml import data

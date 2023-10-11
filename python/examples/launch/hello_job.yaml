@@ -26,6 +26,12 @@ job: |
     # echo "Training the vision transformer model using PyTorch..."
     # python vision_transformer.py --epochs 1
 
+# If you want to use the job created by the MLOps platform or create your own job with a specified name,
+# just uncomment the following three lines, then set job_id or job_name to your desired job id or job name
+#job_args:
+#  job_id: 1111
+#  job_name: cv_job
+
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
@@ -37,4 +43,4 @@ computing:
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
   #device_type: CPU              # options: GPU, CPU, hybrid
-  resource_type: RTX_A6000       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
