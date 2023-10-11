@@ -33,6 +33,7 @@ def fedml_login(api_key=None):
 def launch_job(yaml_file, api_key=None, resource_id=None):
     """
     launch a job
+    :param api_key:
     :param yaml_file: full path of your job yaml file
     :param resource_id: resource id returned from matching resources api, if you do not specify resource id,
            we will match resources based on your job yaml, and then automatically launch the job using matched resources

@@ -110,25 +110,25 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     job_id = getattr(schedule_result, "job_id", None)
     project_id = getattr(schedule_result, "project_id", None)
 
-    ret_job_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
+    inner_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return ret_job_id, project_id, result_code, result_message
+        return job_id, project_id, inner_id, result_code, result_message
 
     # Run Job
     run_result = run_job(schedule_result, api_key, device_server, device_edges)
 
     # Return Result
     if run_result is None:
-        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
+        return job_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
             ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
 
     if run_result.job_url == "":
-        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
+        return job_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
             ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR
 
-    return ret_job_id, project_id, 0, ""
+    return job_id, project_id, inner_id, 0, ""
 
 
 def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, device_edges):
@@ -139,24 +139,26 @@ def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, devi
     job_id = getattr(schedule_result, "job_id", None)
     project_id = getattr(schedule_result, "project_id", None)
 
+    inner_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
+
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return job_id, project_id, result_code, result_message
+        return job_id, project_id, inner_id, result_code, result_message
 
     cluster_id = getattr(schedule_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
+        return (job_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
                 ApiConstants.CLUSTER_CREATION_FAILED)
 
     # Confirm cluster and start job
     cluster_confirmed = confirm_and_start(cluster_id, schedule_result.gpu_matched)
 
     if cluster_confirmed:
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
+        return (job_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
                 ApiConstants.CLUSTER_CONFIRM_SUCCESS)
     else:
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
+        return (job_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
                 ApiConstants.CLUSTER_CONFIRM_FAILED)
 
 

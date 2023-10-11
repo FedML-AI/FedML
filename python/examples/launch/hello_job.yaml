@@ -26,6 +26,12 @@ job: |
     # echo "Training the vision transformer model using PyTorch..."
     # python vision_transformer.py --epochs 1
 
+# If you want to use the job created by the MLOps platform or create your own job with a specified name,
+# just uncomment the following three lines, then set job_id or job_name to your desired job id or job name
+#job_args:
+#  job_id: 1111
+#  job_name: cv_job
+
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
