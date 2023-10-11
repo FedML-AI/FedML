@@ -172,6 +172,9 @@ if __name__ == "__main__":
     parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
     args = parser.parse_args()
     args.user = args.user
+    infer_host = os.getenv("FEDML_INFER_HOST", None)
+    if infer_host is not None:
+        args.infer_host = infer_host
     if args.type == 'login':
         login(args)
     else:

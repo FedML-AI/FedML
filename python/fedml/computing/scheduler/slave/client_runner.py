@@ -1435,16 +1435,33 @@ class FedMLClientRunner:
 
         self.recover_start_train_msg_after_upgrading()
 
+        infer_host = os.getenv("FEDML_INFER_HOST", None)
+        infer_redis_addr = os.getenv("FEDML_INFER_REDIS_ADDR", None)
+        infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
+        infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
+
         if self.model_device_client is None:
             self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
+            if infer_host is not None:
+                self.model_device_client.infer_host = infer_host
+
             self.model_device_client.start()
 
         if self.model_device_server is None:
             self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
+            if infer_host is not None:
+                self.model_device_server.infer_host = infer_host
+            if infer_redis_addr is not None:
+                self.model_device_server.redis_addr = infer_redis_addr
+            if infer_redis_port is not None:
+                self.model_device_server.redis_port = infer_redis_port
+            if infer_redis_password is not None:
+                self.model_device_server.redis_password = infer_redis_password
+
             self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
