@@ -104,6 +104,7 @@ class ClientConstants(object):
     MODEL_REQUIRED_MODEL_CONFIG_FILE = "fedml_model_config.yaml"
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
     MODEL_REQUIRED_MODEL_README_FILE = "README.md"
+    MODEL_AUTO_GEN_LAUNCH_FILE = "deploy_cmd_auto_generated_launch.yaml"
 
     ORIGINAL_YAML_FILE_LOCATION = "origin_yaml_file_loc_record.txt"
 

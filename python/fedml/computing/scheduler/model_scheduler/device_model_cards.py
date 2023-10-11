@@ -269,6 +269,7 @@ class FedMLModelCards(Singleton):
 
             models = os.listdir(model_home_dir)
             if model_name == "*":
+                models = [model for model in models if not model.startswith('.DS_Store')]
                 return models
             else:
                 for model in models:
@@ -325,7 +326,7 @@ class FedMLModelCards(Singleton):
 
         model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
         if not os.path.exists(model_readme_file):
-            print("You model repository is missing file {}, we've created an empty README.md for you.".format(
+            print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
                 ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
             # create a empty readme file called README.md
             with open(model_readme_file, 'w') as f:
@@ -386,7 +387,7 @@ class FedMLModelCards(Singleton):
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("You model repository is missing file {}, we've created an empty README.md for you.".format(
+                print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
                 # create a empty readme file called README.md
                 with open(model_readme_file, 'w') as f:
@@ -465,18 +466,30 @@ class FedMLModelCards(Singleton):
             print("[Error] Model {} doesn't have config file. Please create it first.".format(model_name))
             return ""
 
-        # Rewrite the config file with task_type = serve added
-        additional_parms = {
-            "task_type": "serve"
-        }
+        # Build a tmp launch yaml file
         with open(config_file_path, 'r') as f:
-            config_params = yaml.safe_load(f)
-            config_params.update(additional_parms)
-        with open(config_file_path, 'w') as f:
-            yaml.dump(config_params, f, sort_keys=False)
-        print("The local config file {} will be used for fedml®launch.".format(config_file_path))
+            usr_config_total_params = yaml.safe_load(f)
+            usr_resource_req = usr_config_total_params.get("computing", {})
 
-        return config_file_path
+        if usr_resource_req == {}:
+            print("[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
+            return ""
+
+        launch_params = {
+            "workspace": model_name,
+            "task_type": "serve",
+            "job": "",
+            "bootstrap": "",
+            "computing": usr_resource_req,
+        }
+
+        # Dumps a yaml file in the parent directory
+        parent_dir = os.path.dirname(model_dir)
+        dst_launch_file_name = ClientConstants.MODEL_AUTO_GEN_LAUNCH_FILE
+        dst_launch_file_pth = os.path.join(parent_dir, dst_launch_file_name)
+        with open(dst_launch_file_pth, 'w') as f:
+            yaml.dump(launch_params, f, sort_keys=False)
+        return dst_launch_file_pth
 
     def local_serve_model(self, model_name):
         # Check local model card existence
