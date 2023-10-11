@@ -11,6 +11,15 @@ from ....ml.trainer.trainer_creator import create_model_trainer
 
 
 class VflFedAvgAPI(object):
+    """
+    Federated Learning using the FedAvg algorithm.
+
+    Args:
+        args (Namespace): Command-line arguments and settings.
+        device (str): The device (e.g., 'cpu', 'cuda') for model training.
+        dataset (tuple): A tuple containing dataset information.
+        model (torch.nn.Module): The machine learning model used for federated learning.
+    """
     def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
@@ -46,6 +55,15 @@ class VflFedAvgAPI(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up client instances for federated learning.
+
+        Args:
+            train_data_local_num_dict (dict): A dictionary mapping client indexes to the number of local training samples.
+            train_data_local_dict (dict): A dictionary mapping client indexes to local training data.
+            test_data_local_dict (dict): A dictionary mapping client indexes to local test data.
+            model_trainer (ModelTrainer): The model trainer used for local client training.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -61,6 +79,9 @@ class VflFedAvgAPI(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Perform federated learning using the FedAvg algorithm.
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         for round_idx in range(self.args.comm_round):
@@ -109,6 +130,17 @@ class VflFedAvgAPI(object):
                     self._local_test_on_all_clients(round_idx)
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly sample a subset of clients for the federated learning round.
+
+        Args:
+            round_idx (int): The current round index.
+            client_num_in_total (int): The total number of clients in the dataset.
+            client_num_per_round (int): The number of clients to sample per round.
+
+        Returns:
+            list: List of client indexes for the current round.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -119,6 +151,12 @@ class VflFedAvgAPI(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation dataset subset for testing.
+
+        Args:
+            num_samples (int): The number of samples to include in the validation set.
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -126,6 +164,15 @@ class VflFedAvgAPI(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate model weights from all clients using Federated Averaging (FedAvg).
+
+        Args:
+            w_locals (list): List of local model weights and sample numbers for each client.
+
+        Returns:
+            dict: Averaged global model weights.
+        """
         training_num = 0
         for idx in range(len(w_locals)):
             (sample_num, averaged_params) = w_locals[idx]
@@ -144,10 +191,13 @@ class VflFedAvgAPI(object):
 
     def _aggregate_noniid_avg(self, w_locals):
         """
-        The old aggregate method will impact the model performance when it comes to Non-IID setting
+        Aggregate model weights from all clients using non-IID averaging.
+
         Args:
-            w_locals:
+            w_locals (list): List of local model weights for each client.
+
         Returns:
+            dict: Averaged global model weights.
         """
         (_, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
@@ -158,6 +208,12 @@ class VflFedAvgAPI(object):
         return averaged_params
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients and log the results.
+
+        Args:
+            round_idx (int): The current round index.
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -213,6 +269,12 @@ class VflFedAvgAPI(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on a validation set and log the results.
+
+        Args:
+            round_idx (int): The current round index.
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 

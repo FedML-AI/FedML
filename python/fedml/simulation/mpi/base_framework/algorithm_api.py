@@ -7,6 +7,14 @@ from .client_worker import BaseClientWorker
 
 
 def FedML_init():
+    """
+    Initialize the MPI communication and retrieve process information.
+
+    Returns:
+        comm (object): MPI communication object.
+        process_id (int): Unique ID of the current process.
+        worker_number (int): Total number of worker processes.
+    """
     comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()
@@ -14,6 +22,18 @@ def FedML_init():
 
 
 def FedML_Base_distributed(args, process_id, worker_number, comm):
+    """
+    Run the base distributed federated learning process.
+
+    Args:
+        args (object): An object containing the configuration parameters.
+        process_id (int): Unique ID of the current process.
+        worker_number (int): Total number of worker processes.
+        comm (object): MPI communication object.
+
+    Returns:
+        None
+    """
     if process_id == 0:
         init_central_worker(args, comm, process_id, worker_number)
     else:
@@ -21,6 +41,18 @@ def FedML_Base_distributed(args, process_id, worker_number, comm):
 
 
 def init_central_worker(args, comm, process_id, size):
+    """
+    Initialize the central worker for distributed federated learning.
+
+    Args:
+        args (object): An object containing the configuration parameters.
+        comm (object): MPI communication object.
+        process_id (int): Unique ID of the current process.
+        size (int): Total number of processes.
+
+    Returns:
+        None
+    """
     # aggregator
     client_num = size - 1
     aggregator = BaseCentralWorker(client_num, args)
@@ -31,6 +63,18 @@ def init_central_worker(args, comm, process_id, size):
 
 
 def init_client_worker(args, comm, process_id, size):
+    """
+    Initialize a client worker for distributed federated learning.
+
+    Args:
+        args (object): An object containing the configuration parameters.
+        comm (object): MPI communication object.
+        process_id (int): Unique ID of the current process.
+        size (int): Total number of processes.
+
+    Returns:
+        None
+    """
     # trainer
     client_ID = process_id - 1
     trainer = BaseClientWorker(client_ID)

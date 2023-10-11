@@ -7,6 +7,19 @@ from ..fedavg.client import Client
 
 
 class HFLClient(Client):
+    """
+    Represents a High-Frequency Learning (HFL) client in a federated learning setting.
+
+    Args:
+        client_idx (int): Index of the client.
+        local_training_data: Local training data for the client.
+        local_test_data: Local test data for the client.
+        local_sample_number: Number of local samples.
+        args: Arguments for client configuration.
+        device: Device (e.g., 'cuda' or 'cpu') to perform computations.
+        model: The client's model.
+        model_trainer: Trainer for the client's model.
+    """
     def __init__(self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model,
                  model_trainer):
 
@@ -24,6 +37,17 @@ class HFLClient(Client):
         self.criterion = nn.CrossEntropyLoss().to(device)
 
     def train(self, global_round_idx, group_round_idx, w):
+        """
+        Train the client's model using High-Frequency Learning (HFL) approach.
+
+        Args:
+            global_round_idx (int): Global round index.
+            group_round_idx (int): Group round index.
+            w: Model weights to initialize training.
+
+        Returns:
+            list: A list of tuples containing global epoch and model state dictionaries.
+        """
         self.model.load_state_dict(w)
         self.model.to(self.device)
 

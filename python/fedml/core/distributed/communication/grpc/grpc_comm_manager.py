@@ -1,3 +1,12 @@
+import csv
+import logging
+from ...communication.grpc.grpc_server import GRPCCOMMServicer
+import time
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from ..constants import CommunicationConstants
+from ...communication.observer import Observer
+from ...communication.message import Message
+from ...communication.base_com_manager import BaseCommunicationManager
 import os
 import pickle
 import threading
@@ -10,21 +19,8 @@ from ..grpc import grpc_comm_manager_pb2_grpc, grpc_comm_manager_pb2
 
 lock = threading.Lock()
 
-from ...communication.base_com_manager import BaseCommunicationManager
-from ...communication.message import Message
-from ...communication.observer import Observer
-from ..constants import CommunicationConstants
-
-from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-
-import time
 
 # Check Service or serve?
-from ...communication.grpc.grpc_server import GRPCCOMMServicer
-
-import logging
-
-import csv
 
 
 class GRPCCommManager(BaseCommunicationManager):
@@ -37,6 +33,17 @@ class GRPCCommManager(BaseCommunicationManager):
         client_id=0,
         client_num=0,
     ):
+        """
+        Initialize the GRPCCommManager.
+
+        Args:
+            host (str): The IP address of the server.
+            port (int): The port number to listen on.
+            ip_config_path (str): The path to the IP configuration file.
+            topic (str, optional): The communication topic. Default is "fedml".
+            client_id (int, optional): The client's ID. Default is 0.
+            client_num (int, optional): The number of clients. Default is 0.
+        """
         # host is the ip address of server
         self.host = host
         self.port = str(port)
@@ -61,7 +68,8 @@ class GRPCCommManager(BaseCommunicationManager):
             futures.ThreadPoolExecutor(max_workers=client_num),
             options=self.opts,
         )
-        self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
+        self.grpc_servicer = GRPCCOMMServicer(
+            host, port, client_num, client_id)
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(
             self.grpc_servicer, self.grpc_server
         )
@@ -76,13 +84,23 @@ class GRPCCommManager(BaseCommunicationManager):
         logging.info("grpc server started. Listening on port " + str(port))
 
     def send_message(self, msg: Message):
+        """
+        Send a message using gRPC to a specified receiver.
+
+        Args:
+            msg (Message): The message to send.
+
+        Returns:
+            None
+        """
         logging.info("msg = {}".format(msg))
         # payload = msg.to_json()
 
         logging.info("pickle.dumps(msg) START")
         pickle_dump_start_time = time.time()
         msg_pkl = pickle.dumps(msg)
-        MLOpsProfilerEvent.log_to_wandb({"PickleDumpsTime": time.time() - pickle_dump_start_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"PickleDumpsTime": time.time() - pickle_dump_start_time})
         logging.info("pickle.dumps(msg) END")
 
         receiver_id = msg.get_receiver_id()
@@ -103,27 +121,62 @@ class GRPCCommManager(BaseCommunicationManager):
 
         tick = time.time()
         stub.sendMessage(request)
-        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/send_delay": time.time() - tick})
         logging.debug("sent successfully")
         channel.close()
 
     def add_observer(self, observer: Observer):
+        """
+        Add an observer to the communication manager.
+
+        Args:
+            observer (Observer): The observer to add.
+
+        Returns:
+            None
+        """
         self._observers.append(observer)
 
     def remove_observer(self, observer: Observer):
+        """
+        Remove an observer from the communication manager.
+
+        Args:
+            observer (Observer): The observer to remove.
+
+        Returns:
+            None
+        """
         self._observers.remove(observer)
 
     def handle_receive_message(self):
+        """
+        Start handling received messages.
+
+        This method initiates the process of receiving and handling messages.
+
+        Returns:
+            None
+        """
         self._notify_connection_ready()
         self.message_handling_subroutine()
 
         # Cannont run message_handling_subroutine in new thread
         # Related https://stackoverflow.com/a/70705165
-        
+
         # thread = threading.Thread(target=self.message_handling_subroutine)
         # thread.start()
 
     def message_handling_subroutine(self):
+        """
+        Message handling subroutine.
+
+        This method continuously processes received messages.
+
+        Returns:
+            None
+        """
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
@@ -134,29 +187,58 @@ class GRPCCommManager(BaseCommunicationManager):
                 logging.info("unpickle START")
                 unpickle_start_time = time.time()
                 msg = pickle.loads(msg_pkl)
-                MLOpsProfilerEvent.log_to_wandb({"UnpickleTime": time.time() - unpickle_start_time})
+                MLOpsProfilerEvent.log_to_wandb(
+                    {"UnpickleTime": time.time() - unpickle_start_time})
                 logging.info("unpickle END")
                 msg_type = msg.get_type()
                 for observer in self._observers:
                     _message_handler_start_time = time.time()
                     observer.receive_message(msg_type, msg)
-                    MLOpsProfilerEvent.log_to_wandb({"MessageHandlerTime": time.time() - _message_handler_start_time})
-                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - busy_time_start_time})
+                    MLOpsProfilerEvent.log_to_wandb(
+                        {"MessageHandlerTime": time.time() - _message_handler_start_time})
+                MLOpsProfilerEvent.log_to_wandb(
+                    {"BusyTime": time.time() - busy_time_start_time})
                 lock.release()
             time.sleep(0.0001)
-        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"TotalTime": time.time() - start_listening_time})
         return
 
     def stop_receive_message(self):
+        """
+        Stop receiving and processing messages.
+
+        This method stops the communication manager.
+
+        Returns:
+            None
+        """
         self.grpc_server.stop(None)
         self.is_running = False
 
     def notify(self, message: Message):
+        """
+        Notify observers with a message.
+
+        Args:
+            message (Message): The message to notify observers with.
+
+        Returns:
+            None
+        """
         msg_type = message.get_type()
         for observer in self._observers:
             observer.receive_message(msg_type, message)
 
     def _notify_connection_ready(self):
+        """
+        Notify observers that the connection is ready.
+
+        This method notifies observers that the communication connection is ready.
+
+        Returns:
+            None
+        """
         msg_params = Message()
         msg_params.sender_id = self.rank
         msg_params.receiver_id = self.rank
@@ -165,6 +247,15 @@ class GRPCCommManager(BaseCommunicationManager):
             observer.receive_message(msg_type, msg_params)
 
     def _build_ip_table(self, path):
+        """
+        Build an IP configuration table from a CSV file.
+
+        Args:
+            path (str): The path to the CSV file containing IP configuration data.
+
+        Returns:
+            dict: A dictionary mapping receiver IDs to their corresponding IP addresses.
+        """
         ip_config = dict()
         with open(path, newline="") as csv_file:
             csv_reader = csv.reader(csv_file)

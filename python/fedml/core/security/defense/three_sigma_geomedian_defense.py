@@ -9,7 +9,42 @@ import torch
 
 
 class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
+    """
+    Three-Sigma Defense with Geometric Median for Federated Learning.
+
+    This defense method performs a Three-Sigma-based defense with geometric median for federated learning.
+
+    Args:
+        config: Configuration object for defense parameters.
+
+    Methods:
+        defend_before_aggregation(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
+        ) -> List[Tuple[float, OrderedDict]]:
+        Perform defense before aggregation.
+
+        compute_gaussian_distribution() -> Tuple[float, float]:
+        Compute the Gaussian distribution parameters.
+
+        compute_client_scores(raw_client_grad_list) -> List[float]:
+        Compute client scores.
+
+        fools_gold_score(feature_vec_list) -> List[float]:
+        Compute Fool's Gold scores.
+
+        l2_scores(importance_feature_list) -> List[float]:
+        Compute L2 scores.
+
+    """
+
     def __init__(self, config):
+        """
+        Initialize the ThreeSigmaGeoMedianDefense.
+
+        Args:
+            config: Configuration object for defense parameters.
+        """
         self.memory = None
         self.iteration_num = 1
         self.score_list = []
@@ -39,6 +74,18 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform defense before aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Gradient list after defense.
+        """
         # grad_list = [grad for (_, grad) in raw_client_grad_list]
         client_scores = self.compute_client_scores(raw_client_grad_list)
         print(f"client scores = {client_scores}")
@@ -64,6 +111,13 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         return raw_client_grad_list
 
     def compute_gaussian_distribution(self):
+        """
+        Compute the Gaussian distribution parameters.
+
+        Returns:
+            Tuple[float, float]: Mean (mu) and standard deviation (sigma).
+        """
+
         n = len(self.score_list)
         mu = sum(list(self.score_list)) / n
         temp = 0
@@ -75,7 +129,17 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         return mu, sigma
 
     def compute_client_scores(self, raw_client_grad_list):
-        importance_feature_list = self._get_importance_feature(raw_client_grad_list)
+        """
+        Compute client scores.
+
+        Args:
+            raw_client_grad_list: List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of client scores.
+        """
+        importance_feature_list = self._get_importance_feature(
+            raw_client_grad_list)
         if self.score_function == "foolsgold":
             if self.memory is None:
                 self.memory = importance_feature_list
@@ -88,19 +152,39 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
                 # (num0, avg_params) = raw_client_grad_list[0]
                 # alphas = {alpha for (alpha, params) in raw_client_grad_list}
                 # alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
-                alphas = [1/len(raw_client_grad_list)] * len(raw_client_grad_list)
-                self.geo_median = compute_geometric_median(alphas, importance_feature_list)
+                alphas = [1/len(raw_client_grad_list)] * \
+                    len(raw_client_grad_list)
+                self.geo_median = compute_geometric_median(
+                    alphas, importance_feature_list)
             return self.l2_scores(importance_feature_list)
 
     def l2_scores(self, importance_feature_list):
+        """
+        Compute L2 scores.
+
+        Args:
+            importance_feature_list: List of importance features.
+
+        Returns:
+            List[float]: List of L2 scores.
+        """
         scores = []
         for feature in importance_feature_list:
-            score = compute_euclidean_distance(torch.Tensor(feature), self.geo_median)
+            score = compute_euclidean_distance(
+                torch.Tensor(feature), self.geo_median)
             scores.append(score)
         return scores
 
-
     def _get_importance_feature(self, raw_client_grad_list):
+        """
+        Get importance features for score computation.
+
+        Args:
+            raw_client_grad_list: List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of importance features.
+        """
         # print(f"raw_client_grad_list = {raw_client_grad_list}")
         # Foolsgold uses the last layer's gradient/weights as the importance feature.
         ret_feature_vector_list = []
@@ -122,6 +206,15 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
 
     @staticmethod
     def fools_gold_score(feature_vec_list):
+        """
+        Compute Fool's Gold scores.
+
+        Args:
+            feature_vec_list: List of importance features.
+
+        Returns:
+            List[float]: List of Fool's Gold scores.
+        """
         n_clients = len(feature_vec_list)
         cs = np.zeros((n_clients, n_clients))
         for i in range(n_clients):
@@ -143,7 +236,7 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
-         # print(np.max(alpha))
+        # print(np.max(alpha))
         alpha = alpha / np.max(alpha)
         alpha[(alpha == 1.0)] = 0.999999
 

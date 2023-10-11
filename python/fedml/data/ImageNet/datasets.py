@@ -19,6 +19,15 @@ def has_file_allowed_extension(filename, extensions):
 
 
 def find_classes(dir):
+    """Find class names from subdirectories in a given directory.
+
+    Args:
+        dir (str): The root directory containing subdirectories, each representing a class.
+
+    Returns:
+        list: A sorted list of class names.
+        dict: A dictionary mapping class names to their respective indices.
+    """
     classes = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
     classes.sort()
     class_to_idx = {classes[i]: i for i in range(len(classes))}
@@ -26,6 +35,18 @@ def find_classes(dir):
 
 
 def make_dataset(dir, class_to_idx, extensions):
+    """Create a dataset of image file paths and their corresponding class indices.
+
+    Args:
+        dir (str): The root directory containing subdirectories, each representing a class.
+        class_to_idx (dict): A dictionary mapping class names to their respective indices.
+        extensions (tuple): A tuple of allowed file extensions.
+
+    Returns:
+        list: A list of tuples, each containing the file path and class index.
+        dict: A dictionary mapping class indices to the number of samples per class.
+        dict: A dictionary mapping class indices to data index ranges.
+    """
     images = []
 
     data_local_num_dict = dict()
@@ -55,14 +76,29 @@ def make_dataset(dir, class_to_idx, extensions):
 
 
 def pil_loader(path):
-    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    """Load an image using PIL (Python Imaging Library).
+
+    Args:
+        path (str): The path to the image file.
+
+    Returns:
+        PIL.Image.Image: The loaded image in RGB format.
+    """
     with open(path, "rb") as f:
         img = Image.open(f)
         return img.convert("RGB")
 
 
 def accimage_loader(path):
-    import accimage  # pylint: disable=E0401
+    """Load an image using AccImage (optimized for CUDA).
+
+    Args:
+        path (str): The path to the image file.
+
+    Returns:
+        accimage.Image: The loaded image using AccImage.
+    """
+    import accimage
 
     try:
         return accimage.Image(path)
@@ -72,6 +108,14 @@ def accimage_loader(path):
 
 
 def default_loader(path):
+    """Load an image using the default loader (PIL or AccImage).
+
+    Args:
+        path (str): The path to the image file.
+
+    Returns:
+        PIL.Image.Image or accimage.Image: The loaded image.
+    """
     from torchvision import get_image_backend
 
     if get_image_backend() == "accimage":
@@ -91,8 +135,20 @@ class ImageNet(data.Dataset):
         download=False,
     ):
         """
-        Generating this class too many times will be time-consuming.
-        So it will be better calling this once and put it into ImageNet_truncated.
+        Initialize the ImageNet dataset.
+
+        Args:
+            data_dir (str): Root directory of the dataset.
+            dataidxs (int or list, optional): List of indices to select specific data subsets.
+            train (bool, optional): If True, loads the training dataset; otherwise, loads the validation dataset.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the labels.
+            download (bool, optional): Whether to download the dataset if it's not found locally.
+
+        Note:
+            Generating this class too many times will be time-consuming.
+            It's better to call this once and use ImageNet_truncated.
+
         """
         self.dataidxs = dataidxs
         self.train = train
@@ -110,9 +166,10 @@ class ImageNet(data.Dataset):
             self.data_local_num_dict,
             self.net_dataidx_map,
         ) = self.__getdatasets__()
-        if dataidxs == None:
+
+        if dataidxs is None:
             self.local_data = self.all_data
-        elif type(dataidxs) == int:
+        elif isinstance(dataidxs, int):
             (begin, end) = self.net_dataidx_map[dataidxs]
             self.local_data = self.all_data[begin:end]
         else:
@@ -130,20 +187,18 @@ class ImageNet(data.Dataset):
     def get_data_local_num_dict(self):
         return self.data_local_num_dict
 
+
     def __getdatasets__(self):
-        # all_data = datasets.ImageFolder(data_dir, self.transform, self.target_transform)
 
         classes, class_to_idx = find_classes(self.data_dir)
-        IMG_EXTENSIONS = [".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif"]
+
         all_data, data_local_num_dict, net_dataidx_map = make_dataset(
             self.data_dir, class_to_idx, IMG_EXTENSIONS
         )
         if len(all_data) == 0:
-            raise (
-                RuntimeError(
-                    "Found 0 files in subfolders of: " + self.data_dir + "\n"
-                    "Supported extensions are: " + ",".join(IMG_EXTENSIONS)
-                )
+            raise RuntimeError(
+                f"Found 0 files in subfolders of: {self.data_dir}\n"
+                f"Supported extensions are: {','.join(IMG_EXTENSIONS)}"
             )
         return all_data, data_local_num_dict, net_dataidx_map
 
@@ -153,9 +208,8 @@ class ImageNet(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the index of the target class.
         """
-        # img, target = self.data[index], self.target[index]
 
         path, target = self.local_data[index]
         img = self.loader(path)
@@ -174,7 +228,7 @@ class ImageNet(data.Dataset):
 class ImageNet_truncated(data.Dataset):
     def __init__(
         self,
-        imagenet_dataset: ImageNet,
+        imagenet_dataset,
         dataidxs,
         net_dataidx_map,
         train=True,
@@ -182,7 +236,19 @@ class ImageNet_truncated(data.Dataset):
         target_transform=None,
         download=False,
     ):
+        """
+        Initialize a truncated version of the ImageNet dataset.
 
+        Args:
+            imagenet_dataset (ImageNet): The original ImageNet dataset.
+            dataidxs (int or list): List of indices to select specific data subsets.
+            net_dataidx_map (dict): Mapping of data indices in the original dataset.
+            train (bool, optional): If True, loads the training dataset; otherwise, loads the validation dataset.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the labels.
+            download (bool, optional): Whether to download the dataset if it's not found locally.
+
+        """
         self.dataidxs = dataidxs
         self.train = train
         self.transform = transform
@@ -191,9 +257,10 @@ class ImageNet_truncated(data.Dataset):
         self.net_dataidx_map = net_dataidx_map
         self.loader = default_loader
         self.all_data = imagenet_dataset.get_local_data()
-        if dataidxs == None:
+
+        if dataidxs is None:
             self.local_data = self.all_data
-        elif type(dataidxs) == int:
+        elif isinstance(dataidxs, int):
             (begin, end) = self.net_dataidx_map[dataidxs]
             self.local_data = self.all_data[begin:end]
         else:
@@ -208,10 +275,9 @@ class ImageNet_truncated(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the index of the target class.
         """
-        # img, target = self.data[index], self.target[index]
-
+        
         path, target = self.local_data[index]
         img = self.loader(path)
         if self.transform is not None:
@@ -224,3 +290,4 @@ class ImageNet_truncated(data.Dataset):
 
     def __len__(self):
         return len(self.local_data)
+    

@@ -4,8 +4,20 @@ from typing import List, Tuple, Dict, Any, Callable
 
 
 class BaseDefenseMethod(ABC):
+    """
+    Base class for defense methods in Federated Learning.
+
+    Attributes:
+        config: Configuration parameters for the defense method.
+    """
     @abstractmethod
     def __init__(self, config):
+        """
+        Initialize the defense method with the specified configuration.
+
+        Args:
+            config: Configuration parameters for the defense method.
+        """
         pass
 
     def defend_before_aggregation(
@@ -14,12 +26,14 @@ class BaseDefenseMethod(ABC):
             extra_auxiliary_info: Any = None,
     ) -> List[Tuple[float, OrderedDict]]:
         """
-        args:
-            client_grad_list: client_grad_list is a list, each item is (sample_num, gradients)
-            extra_auxiliary_info: for methods which need extra info (e.g., data, previous model/gradient),
-                                please use this variable.
-        return:
-            Note: the data type of the return variable should be the same as the input
+        Apply defense before model aggregation.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients for the current round.
+            extra_auxiliary_info: Additional information required for defense.
+
+        Returns:
+            list: List of defended client gradients.
         """
         pass
 
@@ -41,4 +55,10 @@ class BaseDefenseMethod(ABC):
         pass
 
     def get_malicious_client_idxs(self):
+        """
+        Get the indices of potentially malicious clients.
+
+        Returns:
+            list: List of indices of potentially malicious clients.
+        """
         return []

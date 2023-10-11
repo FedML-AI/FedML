@@ -39,6 +39,13 @@ class MLOpsConfigs(object):
         return MLOpsConfigs._config_instance
 
     def get_request_params(self):
+        """
+        Get the request parameters for fetching configurations.
+
+        Returns:
+            str: The URL for configuration retrieval.
+            str: The path to the certificate file, if applicable.
+        """
         url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
         config_version = "release"
         if (
@@ -55,7 +62,8 @@ class MLOpsConfigs(object):
                 url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
             elif self.args.config_version == "local":
                 if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                    url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
+                    url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(
+                        self.args.local_server)
                 else:
                     url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
 
@@ -78,7 +86,8 @@ class MLOpsConfigs(object):
             url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
         elif version == "local":
             if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
+                url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(
+                    self.args.local_server)
             else:
                 url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
 
@@ -93,6 +102,12 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def get_root_ca_path():
+        """
+        Get the file path to the root CA certificate.
+
+        Returns:
+            str: The file path to the root CA certificate.
+        """
         cur_source_dir = os.path.dirname(__file__)
         cert_path = os.path.join(
             cur_source_dir, "ssl", "open-root-ca.crt"
@@ -101,6 +116,14 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def install_root_ca_file():
+        """
+        Install the root CA certificate file.
+
+        This method appends the root CA certificate to the CA file used by the requests library.
+
+        Raises:
+            FileNotFoundError: If the root CA certificate file is not found.
+        """
         ca_file = certifi.where()
         open_root_ca_path = MLOpsConfigs.get_root_ca_path()
         with open(open_root_ca_path, 'rb') as infile:
@@ -109,6 +132,16 @@ class MLOpsConfigs(object):
             outfile.write(open_root_ca_file)
 
     def fetch_configs(self):
+        """
+        Fetch device configurations.
+
+        Returns:
+            dict: MQTT configuration.
+            dict: S3 configuration.
+
+        Raises:
+            Exception: If fetching device configurations fails.
+        """
         url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
@@ -126,7 +159,8 @@ class MLOpsConfigs(object):
                 )
         else:
             response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+                url, json=json_params, headers={
+                    "content-type": "application/json", "Connection": "close"}
             )
 
         status_code = response.json().get("code")
@@ -140,6 +174,16 @@ class MLOpsConfigs(object):
         return mqtt_config, s3_config
 
     def fetch_web3_configs(self):
+        """
+        Fetch MQTT, Web3, and ML Ops configurations.
+
+        Returns:
+            dict: MQTT configuration.
+            dict: Web3 configuration.
+
+        Raises:
+            Exception: If fetching device configurations fails.
+        """
         url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "web3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
@@ -157,7 +201,8 @@ class MLOpsConfigs(object):
                 )
         else:
             response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+                url, json=json_params, headers={
+                    "content-type": "application/json", "Connection": "close"}
             )
 
         status_code = response.json().get("code")
@@ -171,6 +216,17 @@ class MLOpsConfigs(object):
         return mqtt_config, web3_config
 
     def fetch_thetastore_configs(self):
+        """
+        Fetch MQTT, ThetaStore, and ML Ops configurations.
+
+        Returns:
+            dict: MQTT configuration.
+            dict: ThetaStore configuration.
+
+        Raises:
+            Exception: If fetching device configurations fails.
+        """
+
         url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "thetastore_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
@@ -188,7 +244,8 @@ class MLOpsConfigs(object):
                 )
         else:
             response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+                url, json=json_params, headers={
+                    "content-type": "application/json", "Connection": "close"}
             )
 
         status_code = response.json().get("code")
@@ -202,6 +259,18 @@ class MLOpsConfigs(object):
         return mqtt_config, thetastore_config
 
     def fetch_all_configs(self):
+        """
+        Fetch all configurations including MQTT, S3, ML Ops, and Docker configurations.
+
+        Returns:
+            dict: MQTT configuration.
+            dict: S3 configuration.
+            dict: ML Ops configuration.
+            dict: Docker configuration.
+
+        Raises:
+            Exception: If fetching device configurations fails.
+        """
         url, cert_path = self.get_request_params()
         json_params = {
             "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
@@ -221,7 +290,8 @@ class MLOpsConfigs(object):
                 )
         else:
             response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+                url, json=json_params, headers={
+                    "content-type": "application/json", "Connection": "close"}
             )
 
         status_code = response.json().get("code")
@@ -238,6 +308,21 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def fetch_all_configs_with_version(version):
+        """
+        Fetch all configurations with a specific version.
+
+        Args:
+            version (str): The version to fetch configurations for.
+
+        Returns:
+            dict: MQTT configuration.
+            dict: S3 configuration.
+            dict: ML Ops configuration.
+            dict: Docker configuration.
+
+        Raises:
+            Exception: If fetching device configurations fails.
+        """
         url = "https://open{}.fedml.ai/fedmlOpsServer/configs/fetch".format(
             "" if version == "release" else "-"+version)
         cert_path = None
@@ -265,7 +350,8 @@ class MLOpsConfigs(object):
                 )
         else:
             response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+                url, json=json_params, headers={
+                    "content-type": "application/json", "Connection": "close"}
             )
 
         status_code = response.json().get("code")

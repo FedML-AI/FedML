@@ -17,6 +17,7 @@ import six
 
 class Progbar(object):
     """Displays a progress bar.
+
     Arguments:
         target: Total number of steps expected, None if unknown.
         width: Progress bar width on screen.
@@ -242,6 +243,7 @@ else:
 
 def _extract_archive(file_path, path=".", archive_format="auto"):
     """Extracts an archive if it matches tar, tar.gz, tar.bz, or zip formats.
+
     Arguments:
         file_path: path to the archive file
         path: path to extract the archive file
@@ -251,6 +253,7 @@ def _extract_archive(file_path, path=".", archive_format="auto"):
             The default 'auto' is ['tar', 'zip'].
             None or an empty list will return no matches found.
     Returns:
+
         True if a match was found and an archive extraction was completed,
         False otherwise.
     """
@@ -301,6 +304,7 @@ def get_file(
     Files in tar, tar.gz, tar.bz, and zip formats can also be extracted.
     Passing a hash will verify the file after download. The command line
     programs `shasum` and `sha256sum` can compute the hash.
+
     Arguments:
         fname: Name of the file. If an absolute path `/path/to/file.txt` is
             specified the file will be saved at that location.
@@ -320,6 +324,7 @@ def get_file(
             defaults to the [Keras
               Directory](/faq/#where-is-the-keras-configuration-filed-stored).
     Returns:
+    
         Path to the downloaded file
     """
     if cache_dir is None:

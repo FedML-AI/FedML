@@ -17,6 +17,16 @@ todo: do not converge..
 
 class KPercentileElementAggregatorFA(FAServerAggregator):
     def __init__(self, args, train_data_num):
+        """
+        Initialize the KPercentileElementAggregatorFA.
+
+        Args:
+            args: Configuration arguments.
+            train_data_num (int): The total number of training data samples.
+
+        Returns:
+            None
+        """
         super().__init__(args)
         self.total_sample_num = 0
         self.set_server_data(server_data=[])
@@ -24,46 +34,63 @@ class KPercentileElementAggregatorFA(FAServerAggregator):
         self.total_sample_num = 0
         self.train_data_num_in_total = train_data_num
         self.percentage = args.k / 100
+
+        # Initialize server_data and previous_server_data
         if hasattr(args, "flag"):
             self.server_data = args.flag
             self.previous_server_data = args.flag
         else:
             self.server_data = 100
             self.previous_server_data = 100
+
+        # Check if use_all_data attribute is specified in args
         if hasattr(args, "use_all_data") and args.use_all_data in [False]:
-            self.use_all_data = False  # in each iteration, each client randomly sample some data to compute
+            self.use_all_data = False  # In each iteration, each client randomly samples some data to compute
         else:
-            self.use_all_data = True  # in each iteration, each client uses its all local data to compute
+            self.use_all_data = True  # In each iteration, each client uses all its local data to compute
+
+        # Initialize max_val and min_val
         self.max_val = self.previous_server_data
         self.min_val = self.previous_server_data
 
     def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
+        """
+        Aggregate local submissions from clients.
+
+        Args:
+            local_submission_list (List[Tuple[float, Any]]): A list of tuples containing local submissions and weights.
+
+        Returns:
+            float: The aggregated result.
+        """
         if self.quit:
             return self.server_data
+
         total_sample_num_this_round = 0
         local_satisfied_data_num_current_round = 0
-        logging.info(f"flag={self.server_data}, local_submission_list={local_submission_list}")
+
         for (sample_num, satisfied_counter) in local_submission_list:
             total_sample_num_this_round += sample_num
             local_satisfied_data_num_current_round += satisfied_counter
+
         if total_sample_num_this_round * self.percentage == local_satisfied_data_num_current_round:
             self.quit = True
             self.previous_server_data = self.server_data
         elif total_sample_num_this_round * self.percentage > local_satisfied_data_num_current_round:
-            # decrease server_data
+            # Decrease server_data
             self.max_val = self.server_data
             if self.previous_server_data >= self.server_data:
                 self.previous_server_data = self.server_data
                 if self.server_data / 2 < self.min_val < self.max_val:
-                    self.server_data = (self.server_data + self.min_val)/2
+                    self.server_data = (self.server_data + self.min_val) / 2
                 else:
                     self.server_data = self.server_data / 2
-                    self.min_val = self.server_data  # set lower bound for flag
+                    self.min_val = self.server_data  # Set lower bound for flag
             else:
                 new_server_data = (self.previous_server_data + self.server_data) / 2
                 self.previous_server_data = self.server_data
                 self.server_data = new_server_data
-        else:  # increase server_data
+        else:  # Increase server_data
             self.min_val = self.server_data
             if self.previous_server_data <= self.server_data:
                 self.previous_server_data = self.server_data
@@ -76,4 +103,6 @@ class KPercentileElementAggregatorFA(FAServerAggregator):
                 new_server_data = (self.previous_server_data + self.server_data) / 2
                 self.previous_server_data = self.server_data
                 self.server_data = new_server_data
+
         return self.server_data
+    

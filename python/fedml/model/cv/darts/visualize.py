@@ -4,6 +4,19 @@ from graphviz import Digraph
 
 
 def plot(genotype, filename):
+    """
+    Generate a visualization of a given genotype and save it as a PDF file.
+
+    Args:
+        genotype (list of tuples): The genotype to visualize, specifying operations and connections.
+        filename (str): The name of the PDF file to save the visualization.
+
+    Example usage:
+        ```python
+        >>> genotype = [("conv3x3", 0), ("conv3x3", 1), ("maxpool3x3", 0), ("conv1x1", 2), ...]
+        >>> plot(genotype, "genotype_visualization.pdf")
+        ``` 
+    """
     g = Digraph(
         format="pdf",
         edge_attr=dict(fontsize="20", fontname="times"),

@@ -11,14 +11,46 @@ from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 
 class GatMoleculeNetTrainer(ClientTrainer):
+    """
+    Trainer for the GatMoleculeNet model.
+
+    This trainer is responsible for training and testing the GatMoleculeNet model on client devices. It implements methods for setting and retrieving model parameters, training the model, and evaluating its performance.
+
+    Args:
+        model (GatMoleculeNet): The GatMoleculeNet model to be trained.
+        test_data (list of torch.Tensor): The test data for evaluating model performance.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            dict: The model parameters.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (dict): The model parameters to be set.
+        """
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data (list of torch.Tensor): The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Additional training arguments.
+
+        Returns:
+            Tuple[float, dict]: A tuple containing the minimum test score and the best model parameters.
+        """
         model = self.model
 
         model.to(device)
@@ -93,6 +125,17 @@ class GatMoleculeNetTrainer(ClientTrainer):
         return min_score, best_model_params
 
     def test(self, test_data, device, args):
+        """
+        Test the model.
+
+        Args:
+            test_data (list of torch.Tensor): The test data.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            Tuple[float, model]: A tuple containing the test score and the model used for testing.
+        """
         logging.info("----------test--------")
         model = self.model
         model.eval()
@@ -129,6 +172,18 @@ class GatMoleculeNetTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Test the model on the server.
+
+        Args:
+            train_data_local_dict (dict): A dictionary of training data for each client.
+            test_data_local_dict (dict): A dictionary of test data for each client.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            bool: True if testing on the server is successful.
+        """
         logging.info("----------test_on_the_server--------")
         # for client_idx in train_data_local_dict.keys():
         #     train_data = train_data_local_dict[client_idx]
@@ -158,6 +213,16 @@ class GatMoleculeNetTrainer(ClientTrainer):
         return True
 
     def _compare_models(self, model_1, model_2):
+        """
+        Compare two models to check if they match.
+
+        Args:
+            model_1 (torch.nn.Module): The first model to compare.
+            model_2 (torch.nn.Module): The second model to compare.
+
+        Raises:
+            Exception: If a mismatch is found between the two models.
+        """
         models_differ = 0
         for key_item_1, key_item_2 in zip(
             model_1.state_dict().items(), model_2.state_dict().items()

@@ -9,6 +9,18 @@ class TRPCCOMMServicer:
     _instance = None
 
     def __new__(cls, master_address, master_port, client_num, client_id):
+        """
+        Create a new instance of the TRPCCOMMServicer class if it does not exist, otherwise return the existing instance.
+
+        Args:
+            master_address (str): The address of the RPC master.
+            master_port (str): The port of the RPC master.
+            client_num (int): The total number of clients.
+            client_id (int): The ID of the current client.
+
+        Returns:
+            TRPCCOMMServicer: An instance of the TRPCCOMMServicer class.
+        """
         cls.master_address = None
         cls.master_port = None
         cls.client_num = None
@@ -31,6 +43,16 @@ class TRPCCOMMServicer:
         return cls._instance
 
     def receiveMessage(self, client_id, message):
+        """
+        Receive a message from another client.
+
+        Args:
+            client_id (int): The ID of the client sending the message.
+            message (Message): The received message.
+
+        Returns:
+            str: A response indicating that the message was received.
+        """
         logging.info(
             "client_{} got something from client_{}".format(
                 self.client_id,
@@ -51,4 +73,14 @@ class TRPCCOMMServicer:
 
     @classmethod
     def sendMessage(cls, clint_id, message):
+        """
+        Send a message to another client.
+
+        Args:
+            clint_id (int): The ID of the target client.
+            message (Message): The message to be sent.
+
+        Returns:
+            None
+        """
         cls._instance.receiveMessage(clint_id, message)

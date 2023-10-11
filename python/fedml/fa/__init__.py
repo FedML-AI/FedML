@@ -4,8 +4,25 @@ import fedml
 from .. import load_arguments, run_simulation, FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_CROSS_SILO, \
     collect_env, mlops
 
+from .runner import FARunner
+
+__all__ = [
+    "FARunner",
+    "run_simulation",
+    "init"
+]
+
 
 def init(args=None):
+    """
+    Initialize FedML Engine.
+
+    Args:
+        args (object, optional): Arguments for initialization. If None, load default arguments.
+
+    Returns:
+        object: Initialized arguments.
+    """
     print(f"args={args}")
     if args is None:
         args = load_arguments(training_type=None, comm_backend=None)
@@ -31,6 +48,12 @@ def init(args=None):
     return args
 
 def manage_mpi_args(args):
+    """
+    Manage MPI-related arguments.
+
+    Args:
+        args (object): Initialized arguments.
+    """
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
 
@@ -48,6 +71,15 @@ def manage_mpi_args(args):
         args.comm = None
 
 def init_cross_silo(args):
+    """
+    Initialize arguments for cross-silo training.
+
+    Args:
+        args (object): Initialized arguments.
+
+    Returns:
+        object: Updated arguments.
+    """
     manage_mpi_args(args)
 
     # Set intra-silo arguments
@@ -82,13 +114,13 @@ def init_cross_silo(args):
 
 
 def init_simulation_sp(args):
+    """
+    Initialize arguments for simulation with SP backend.
+
+    Args:
+        args (object): Initialized arguments.
+
+    Returns:
+        object: Updated arguments.
+    """
     return args
-
-
-from .runner import FARunner
-
-__all__ = [
-    "FARunner",
-    "run_simulation",
-    "init"
-]

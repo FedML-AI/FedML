@@ -17,8 +17,21 @@ class FedMLTrainer(object):
         args,
         model_trainer,
     ):
-        self.trainer = model_trainer
+        """
+        Initialize the Federated Learning Trainer.
 
+        Args:
+            client_index: Index of the client.
+            train_data_local_dict: Dictionary mapping client IDs to local training datasets.
+            train_data_local_num_dict: Dictionary mapping client IDs to local training data counts.
+            test_data_local_dict: Dictionary mapping client IDs to local test datasets.
+            train_data_num: Number of training data samples.
+            device: Torch device for training.
+            args: Command-line arguments.
+            model_trainer: Trainer for the model.
+
+        """
+        self.trainer = model_trainer
         self.client_index = client_index
 
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
@@ -32,15 +45,28 @@ class FedMLTrainer(object):
         self.train_local = None
         self.local_sample_number = None
         self.test_local = None
-
         self.device = device
         self.args = args
         self.args.device = device
 
     def update_model(self, weights):
+        """
+        Update the model with new parameters.
+
+        Args:
+            weights: Updated model parameters.
+
+        """
         self.trainer.set_model_params(weights)
 
     def update_dataset(self, client_index):
+        """
+        Update the local dataset for training.
+
+        Args:
+            client_index: Index of the client to update the dataset for.
+
+        """
         self.client_index = client_index
 
         if self.train_data_local_dict is not None:
@@ -64,6 +90,16 @@ class FedMLTrainer(object):
         self.trainer.update_dataset(self.train_local, self.test_local, self.local_sample_number)
 
     def train(self, round_idx=None):
+        """
+        Perform federated training for the specified round.
+
+        Args:
+            round_idx (Optional): Index of the current training round (default is None).
+
+        Returns:
+            Tuple: A tuple containing the updated model weights and the number of local training samples.
+
+        """
         self.args.round_idx = round_idx
         tick = time.time()
 
@@ -77,6 +113,14 @@ class FedMLTrainer(object):
         return weights, self.local_sample_number
 
     def test(self):
+        """
+        Test the model on local data.
+
+        Returns:
+            Tuple: A tuple containing training accuracy, training loss, number of training samples,
+                   test accuracy, test loss, and number of test samples.
+
+        """
         # train data
         train_metrics = self.trainer.test(self.train_local, self.device, self.args)
         train_tot_correct, train_num_sample, train_loss = (

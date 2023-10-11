@@ -16,6 +16,12 @@ code refactoring
 
 class ResidualBasedReweightingDefense(BaseDefenseMethod):
     def __init__(self, config):
+        """
+        Initialize the ResidualBasedReweightingDefense method.
+
+        Args:
+            config (object): Configuration object containing defense parameters.
+        """
         if hasattr(config, "lambda_param"):
             self.lambda_param = config.lambda_param
         else:
@@ -31,16 +37,36 @@ class ResidualBasedReweightingDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform defense before aggregation using residual-based reweighting.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Additional information (optional).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of defended client gradients.
+        """
         return self.IRLS_other_split_restricted(raw_client_grad_list)
 
     def IRLS_other_split_restricted(self, raw_client_grad_list):
+        """
+        Perform the Iteratively Reweighted Least Squares (IRLS) defense with restricted mode.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: List of defended client gradients.
+        """
         reweight_algorithm = median_reweight_algorithm_restricted
         if self.mode == "median":
             reweight_algorithm = median_reweight_algorithm_restricted
         elif self.mode == "theilsen":
             reweight_algorithm = theilsen_reweight_algorithm_restricted
         elif self.mode == "gaussian":
-            reweight_algorithm = gaussian_reweight_algorithm_restricted  # in gaussian reweight algorithm, lambda is sigma
+            # in gaussian reweight algorithm, lambda is sigma
+            reweight_algorithm = gaussian_reweight_algorithm_restricted
 
         SHARD_SIZE = 2000
         w = [grad for (_, grad) in raw_client_grad_list]
@@ -70,13 +96,15 @@ class ResidualBasedReweightingDefense(BaseDefenseMethod):
             else:
                 num_shards = int(math.ceil(total_num / SHARD_SIZE))
                 for i in range(num_shards):
-                    y = transposed_y_list[i * SHARD_SIZE : (i + 1) * SHARD_SIZE, ...]
+                    y = transposed_y_list[i *
+                                          SHARD_SIZE: (i + 1) * SHARD_SIZE, ...]
                     reweight, restricted_y = reweight_algorithm(
                         y, self.lambda_param, self.thresh
                     )
                     print(reweight.sum(dim=0))
                     reweight_sum += reweight.sum(dim=0)
-                    y_result[i * SHARD_SIZE : (i + 1) * SHARD_SIZE, ...] = restricted_y
+                    y_result[i * SHARD_SIZE: (i + 1)
+                             * SHARD_SIZE, ...] = restricted_y
 
             # put restricted y back to w
             y_result = torch.t(y_result)
@@ -89,13 +117,25 @@ class ResidualBasedReweightingDefense(BaseDefenseMethod):
 
 
 def median_reweight_algorithm_restricted(y, LAMBDA, thresh):
+    """
+    Perform reweighting using the Median Reweight Algorithm with restricted mode.
+
+    Args:
+        y (torch.Tensor): Input data.
+        LAMBDA (float): Lambda parameter.
+        thresh (float): Threshold value.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing reweight values and restricted data.
+    """
     num_models = y.shape[1]
     total_num = y.shape[0]
     X_pure = y.sort()[1].sort()[1].type(torch.float)
 
     # calculate H matrix
     X_pure = X_pure.unsqueeze(2)
-    X = torch.cat((torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
+    X = torch.cat(
+        (torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
     X_X = torch.matmul(X.transpose(1, 2), X)
     X_X = torch.matmul(X, torch.inverse(X_X))
     H = torch.matmul(X_X, X.transpose(1, 2))
@@ -121,6 +161,16 @@ def median_reweight_algorithm_restricted(y, LAMBDA, thresh):
 
 
 def median(input):
+    """
+    Calculate the median of the input data.
+
+    Args:
+        input (torch.Tensor): Input data.
+
+    Returns:
+        torch.Tensor: Median value.
+    """
+
     shape = input.shape
     input = input.sort()[0]
     if shape[-1] % 2 != 0:
@@ -133,6 +183,17 @@ def median(input):
 
 
 def theilsen_reweight_algorithm_restricted(y, LAMBDA, thresh):
+    """
+    Perform reweighting using the Theil-Sen Reweight Algorithm with restricted mode.
+
+    Args:
+        y (torch.Tensor): Input data.
+        LAMBDA (float): Lambda parameter.
+        thresh (float): Threshold value.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing reweight values and restricted data.
+    """
     num_models = y.shape[1]
     total_num = y.shape[0]
     slopes, intercepts = theilsen(y)
@@ -140,7 +201,8 @@ def theilsen_reweight_algorithm_restricted(y, LAMBDA, thresh):
 
     # calculate H matrix
     X_pure = X_pure.unsqueeze(2)
-    X = torch.cat((torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
+    X = torch.cat(
+        (torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
     X_X = torch.matmul(X.transpose(1, 2), X)
     X_X = torch.matmul(X, torch.inverse(X_X))
     H = torch.matmul(X_X, X.transpose(1, 2))
@@ -173,12 +235,24 @@ def theilsen_reweight_algorithm_restricted(y, LAMBDA, thresh):
 
 
 def gaussian_reweight_algorithm_restricted(y, sig, thresh):
+    """
+    Perform reweighting using the Gaussian Reweight Algorithm with restricted mode.
+
+    Args:
+        y (torch.Tensor): Input data.
+        sig (float): Sigma parameter for the Gaussian distribution.
+        thresh (float): Threshold value.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing reweight values and restricted data.
+    """
     num_models = y.shape[1]
     total_num = y.shape[0]
     slopes, intercepts = repeated_median(y)
     X_pure = y.sort()[1].sort()[1].type(torch.float)
     X_pure = X_pure.unsqueeze(2)
-    X = torch.cat((torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
+    X = torch.cat(
+        (torch.ones(total_num, num_models, 1).to(y.device), X_pure), dim=-1)
 
     beta = torch.cat(
         (
@@ -205,10 +279,29 @@ def gaussian_reweight_algorithm_restricted(y, sig, thresh):
 
 
 def gaussian_zero_mean(x, sig=1):
+    """
+    Compute the Gaussian reweighting with zero mean.
+
+    Args:
+        x (torch.Tensor): Input data.
+        sig (float, optional): Sigma parameter for the Gaussian distribution. Default is 1.
+
+    Returns:
+        torch.Tensor: Reweighted data.
+    """
     return torch.exp(-x * x / (2 * sig * sig))
 
 
 def repeated_median(y):
+    """
+    Compute the repeated median and intercepts for the Theil-Sen Reweight Algorithm.
+
+    Args:
+        y (torch.Tensor): Input data.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing slopes and intercepts.
+    """
     num_models = y.shape[1]
     total_num = y.shape[0]
     y = y.sort()[0]
@@ -238,6 +331,15 @@ def repeated_median(y):
 
 
 def theilsen(y):
+    """
+    Compute the Theil-Sen estimator for slopes and intercepts.
+
+    Args:
+        y (torch.Tensor): Input data.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing slopes and intercepts.
+    """
     num_models = y.shape[1]
     total_num = y.shape[0]
     y = y.sort()[0]

@@ -13,6 +13,12 @@ a_local_w["linear.bias"] = torch.FloatTensor([0.01, 0.19, 0.21])
 
 
 def add_gaussian_args():
+    """
+    Define and parse command-line arguments for Gaussian differential privacy mechanism.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
         "--yaml_config_file",
@@ -34,6 +40,12 @@ def add_gaussian_args():
 
 
 def add_laplace_args():
+    """
+    Define and parse command-line arguments for Laplace differential privacy mechanism.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
         "--yaml_config_file",
@@ -53,6 +65,9 @@ def add_laplace_args():
 
 
 def test_FedMLDifferentialPrivacy_gaussian():
+    """
+    Test the FedMLDifferentialPrivacy class with the Gaussian mechanism.
+    """
     print("----------- test_FedMLDifferentialPrivacy - gaussian mechanism -----------")
     FedMLDifferentialPrivacy.get_instance().init(add_gaussian_args())
     print(f"grad = {a_local_w}")
@@ -60,6 +75,9 @@ def test_FedMLDifferentialPrivacy_gaussian():
 
 
 def test_FedMLDifferentialPrivacy_laplace():
+    """
+    Test the FedMLDifferentialPrivacy class with the Laplace mechanism.
+    """
     print("----------- test_FedMLDifferentialPrivacy - laplace mechanism -----------")
     FedMLDifferentialPrivacy.get_instance().init(add_laplace_args())
     print(f"grad = {a_local_w}")

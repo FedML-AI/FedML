@@ -16,6 +16,25 @@ def init_client(
     test_data_local_dict,
     model_trainer=None,
 ):
+    """
+    Initialize and run a federated learning client.
+
+    Args:
+        args: Arguments and configuration for the client.
+        device: The device on which the client should run (e.g., 'cpu' or 'cuda').
+        comm: The communication backend for distributed training.
+        client_rank: The rank or identifier of this client.
+        client_num: The total number of clients in the federated learning scenario.
+        model: The machine learning model to be trained.
+        train_data_num: The number of training data points.
+        train_data_local_num_dict: A dictionary mapping client IDs to the number of local training data points.
+        train_data_local_dict: A dictionary mapping client IDs to their local training data.
+        test_data_local_dict: A dictionary mapping client IDs to their local testing data.
+        model_trainer: An optional custom model trainer.
+
+    Returns:
+        None
+    """
     backend = args.backend
 
     trainer_dist_adapter = get_trainer_dist_adapter(
@@ -60,6 +79,23 @@ def get_trainer_dist_adapter(
     test_data_local_dict,
     model_trainer,
 ):
+    """
+    Get a distributed trainer adapter for the federated learning client.
+
+    Args:
+        args: Arguments and configuration for the client.
+        device: The device on which the client should run (e.g., 'cpu' or 'cuda').
+        client_rank: The rank or identifier of this client.
+        model: The machine learning model to be trained.
+        train_data_num: The number of training data points.
+        train_data_local_num_dict: A dictionary mapping client IDs to the number of local training data points.
+        train_data_local_dict: A dictionary mapping client IDs to their local training data.
+        test_data_local_dict: A dictionary mapping client IDs to their local testing data.
+        model_trainer: An optional custom model trainer.
+
+    Returns:
+        TrainerDistAdapter: A distributed trainer adapter.
+    """
     return TrainerDistAdapter(
         args,
         device,
@@ -74,10 +110,34 @@ def get_trainer_dist_adapter(
 
 
 def get_client_manager_master(args, trainer_dist_adapter, comm, client_rank, client_num, backend):
+    """
+    Get a federated learning client manager for the master client in the hierarchical scenario.
+
+    Args:
+        args: Arguments and configuration for the client.
+        trainer_dist_adapter: A distributed trainer adapter.
+        comm: The communication backend for distributed training.
+        client_rank: The rank or identifier of this client.
+        client_num: The total number of clients in the federated learning scenario.
+        backend: The backend for distributed training (e.g., 'nccl' or 'gloo').
+
+    Returns:
+        ClientMasterManager: A federated learning client manager for the master client.
+    """
     return ClientMasterManager(args, trainer_dist_adapter, comm, client_rank, client_num, backend)
 
 
 def get_client_manager_salve(args, trainer_dist_adapter):
+    """
+    Get a federated learning client manager for a slave client in the hierarchical scenario.
+
+    Args:
+        args: Arguments and configuration for the client.
+        trainer_dist_adapter: A distributed trainer adapter.
+
+    Returns:
+        ClientSlaveManager: A federated learning client manager for a slave client.
+    """
     from .fedml_client_slave_manager import ClientSlaveManager
 
     return ClientSlaveManager(args, trainer_dist_adapter)

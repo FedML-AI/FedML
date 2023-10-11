@@ -7,13 +7,50 @@ from ....core.alg_frame.client_trainer import ClientTrainer
 
 
 class MyModelTrainer(ClientTrainer):
+    """
+    Custom client model trainer for federated learning.
+
+    Args:
+        None
+
+    Methods:
+        get_model_params(): Get the model parameters.
+        set_model_params(model_parameters): Set the model parameters.
+        train(train_data, device, args): Train the model on the client.
+        test(test_data, device, args): Test the model on the client.
+        test_on_the_server(train_data_local_dict, test_data_local_dict, device, args=None): 
+            Test the model on the server (not implemented in this class).
+    """
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            dict: The model parameters as a dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (dict): A dictionary containing the model parameters to set.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model on the client.
+
+        Args:
+            train_data (torch.utils.data.DataLoader): DataLoader containing training data.
+            device (torch.device): The device (CPU or GPU) to train on.
+            args: Additional training arguments.
+
+        Returns:
+            None
+        """
         model = self.model
 
         model.to(device)
@@ -50,6 +87,17 @@ class MyModelTrainer(ClientTrainer):
                 )
 
     def test(self, test_data, device, args):
+        """
+        Test the model on the client.
+
+        Args:
+            test_data (torch.utils.data.DataLoader): DataLoader containing test data.
+            device (torch.device): The device (CPU or GPU) to test on.
+            args: Additional testing arguments.
+
+        Returns:
+            dict: A dictionary containing test metrics.
+        """
         model = self.model
 
         model.eval()
@@ -91,4 +139,16 @@ class MyModelTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Test the model on the server (not implemented in this class).
+
+        Args:
+            train_data_local_dict (dict): Dictionary containing local training data.
+            test_data_local_dict (dict): Dictionary containing local test data.
+            device (torch.device): The device (CPU or GPU) to test on.
+            args: Additional testing arguments.
+
+        Returns:
+            bool: Always returns False in this implementation.
+        """
         return False

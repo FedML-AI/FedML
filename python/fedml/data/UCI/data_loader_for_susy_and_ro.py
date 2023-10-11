@@ -5,7 +5,60 @@ from sklearn.cluster import KMeans
 
 
 class DataLoader(object):
+    """
+    DataLoader class for managing data loading and preprocessing.
+
+    Args:
+        data_name (str): The name of the dataset.
+        data_path (str): The path to the dataset CSV file.
+        client_list (list): A list of client IDs.
+        sample_num_in_total (int): The total number of data samples.
+        beta (float): A parameter for data loading.
+
+    Attributes:
+        data_name (str): The name of the dataset.
+        data_path (str): The path to the dataset CSV file.
+        client_list (list): A list of client IDs.
+        sample_num_in_total (int): The total number of data samples.
+        beta (float): A parameter for data loading.
+        streaming_full_dataset_X (list): A list to store data samples.
+        streaming_full_dataset_Y (list): A list to store data labels.
+        StreamingDataDict (dict): A dictionary to store streaming data for clients.
+
+    Methods:
+        load_datastream():
+            Load and preprocess the data for streaming and return it as a dictionary.
+        load_adversarial_data():
+            Load adversarial data based on the beta parameter.
+        load_stochastic_data():
+            Load stochastic data based on the beta parameter.
+        read_csv_file(percent):
+            Read and return data samples and labels from a CSV file.
+        read_csv_file_for_cluster(percent):
+            Read and cluster data samples based on the beta parameter.
+        kMeans(X):
+            Perform K-means clustering on the data.
+        preprocessing():
+            Perform preprocessing on the data.
+
+    """
     def __init__(self, data_name, data_path, client_list, sample_num_in_total, beta):
+        """
+        Initialize the DataLoader with dataset information and parameters.
+
+        Args:
+            data_name (str): The name of the dataset.
+            data_path (str): The path to the dataset CSV file.
+            client_list (list): A list of client IDs.
+            sample_num_in_total (int): The total number of data samples.
+            beta (float): A parameter for data loading.
+
+        Note:
+            This constructor initializes the DataLoader with dataset details and parameters.
+
+        Returns:
+            None
+        """
         # SUSY, Room Occupancy;
         self.data_name = data_name
         self.data_path = data_path
@@ -24,6 +77,12 @@ class DataLoader(object):
     """
 
     def load_datastream(self):
+        """
+        Load and preprocess the data for streaming and return it as a dictionary.
+
+        Returns:
+            dict: A dictionary containing streaming data for clients.
+        """
         self.preprocessing()
         self.load_adversarial_data()
         self.load_stochastic_data()
@@ -37,14 +96,35 @@ class DataLoader(object):
 
     # beta (clustering, GMM)
     def load_adversarial_data(self):
+        """
+        Load adversarial data based on the beta parameter.
+
+        Returns:
+            dict: A dictionary containing adversarial streaming data for clients.
+        """
         streaming_data = self.read_csv_file_for_cluster(self.beta)
         return streaming_data
 
     def load_stochastic_data(self):
+        """
+        Load stochastic data based on the beta parameter.
+
+        Returns:
+            dict: A dictionary containing stochastic streaming data for clients.
+        """
         streaming_data = self.read_csv_file(self.beta)
         return streaming_data
 
     def read_csv_file(self, percent):
+        """
+        Read and return data samples and labels from a CSV file.
+
+        Args:
+            percent (float): The percentage of data to read.
+
+        Returns:
+            dict: A dictionary containing streaming data for clients.
+        """
 
         # print("start from:")
         iteration_number = int(self.sample_num_in_total / len(self.client_list))
@@ -105,6 +185,15 @@ class DataLoader(object):
         return self.StreamingDataDict
 
     def read_csv_file_for_cluster(self, percent):
+        """
+        Read and cluster data samples based on the beta parameter.
+
+        Args:
+            percent (float): The percentage of data to read and cluster.
+
+        Returns:
+            dict: A dictionary containing clustered streaming data for clients.
+        """
         data = []
         label = []
         for client_id in self.client_list:
@@ -134,11 +223,26 @@ class DataLoader(object):
         return self.StreamingDataDict
 
     def kMeans(self, X):
+        """
+        Perform K-means clustering on the data.
+
+        Args:
+            X (list): List of data samples.
+
+        Returns:
+            array: Cluster labels for data samples.
+        """
         kmeans = KMeans(n_clusters=len(self.client_list))
         kmeans.fit(X)
         return kmeans.labels_
 
     def preprocessing(self):
+        """
+        Perform preprocessing on the data.
+
+        Returns:
+            None
+        """
         # print("sample_num_in_total = " + str(self.sample_num_in_total))
         data = []
         with open(self.data_path) as csvfile:

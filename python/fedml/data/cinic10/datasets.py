@@ -16,11 +16,29 @@ IMG_EXTENSIONS = (
 
 
 def default_loader(path):
+    """
+    Default image loader function.
+
+    Args:
+        path (str): The file path to the image.
+
+    Returns:
+        PIL.Image.Image: An RGB image loaded from the specified path.
+    """
     return pil_loader(path)
 
 
 def pil_loader(path):
-    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    """
+    Image loader function using the PIL library.
+
+    Args:
+        path (str): The file path to the image.
+
+    Returns:
+        PIL.Image.Image: An RGB image loaded from the specified path.
+    """
+    # Open the path as a file to avoid ResourceWarning
     with open(path, "rb") as f:
         img = Image.open(f)
         return img.convert("RGB")

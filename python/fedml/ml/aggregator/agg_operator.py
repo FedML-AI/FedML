@@ -8,6 +8,17 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 class FedMLAggOperator:
     @staticmethod
     def agg(args, raw_grad_list: List[Tuple[float, OrderedDict]]) -> OrderedDict:
+        """
+        Aggregate gradients from multiple clients using a federated learning aggregator.
+
+        Args:
+            args: A dictionary containing training configuration parameters.
+            raw_grad_list (List[Tuple[float, OrderedDict]]): A list of tuples containing
+                local sample counts and gradient updates from client models.
+
+        Returns:
+            OrderedDict: The aggregated model parameters.
+        """
         training_num = 0
         if args.federated_optimizer == "SCAFFOLD":
             for i in range(len(raw_grad_list)):
@@ -31,6 +42,20 @@ class FedMLAggOperator:
 
 
 def torch_aggregator(args, raw_grad_list, training_num):
+    """
+    Aggregate gradients or parameters from multiple clients using a federated learning aggregator.
+
+    Args:
+        args: A dictionary containing training configuration parameters.
+        raw_grad_list (List[Union[Tuple[float, OrderedDict], Tuple[float, OrderedDict, OrderedDict]]]):
+            A list of tuples containing local sample counts and gradient updates from client models.
+            For some optimizers, it also includes an additional tuple element with local gradients.
+        training_num (int): The total number of training samples used for aggregation.
+
+    Returns:
+        Union[OrderedDict, Tuple[OrderedDict, OrderedDict]]: The aggregated model parameters or a tuple
+            containing aggregated model parameters and aggregated local gradients, depending on the optimizer.
+    """
 
     if args.federated_optimizer == "FedAvg":
         (num0, avg_params) = raw_grad_list[0]
@@ -135,6 +160,18 @@ def torch_aggregator(args, raw_grad_list, training_num):
 
 
 def tf_aggregator(args, raw_grad_list, training_num):
+    """
+    Aggregate gradients or parameters from multiple clients using a TensorFlow-based federated learning aggregator.
+
+    Args:
+        args: A dictionary containing training configuration parameters.
+        raw_grad_list (List[Tuple[float, List[float]]]): A list of tuples containing local sample counts and
+            gradient updates from client models.
+        training_num (int): The total number of training samples used for aggregation.
+
+    Returns:
+        List[float]: The aggregated model parameters.
+    """
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -161,6 +198,17 @@ def tf_aggregator(args, raw_grad_list, training_num):
 
 
 def jax_aggregator(args, raw_grad_list, training_num):
+    """
+    Aggregate gradients or parameters from multiple clients using a JAX-based federated learning aggregator.
+
+    Args:
+        args: A dictionary containing training configuration parameters.
+        raw_grad_list (List[Tuple[float, Dict[str, Dict[str, float]]]]): A list of tuples containing local sample counts
+            and gradient updates from client models. Each update is a dictionary containing 'w' and 'b' keys.
+
+    Returns:
+        Dict[str, Dict[str, float]]: The aggregated model parameters containing 'w' and 'b' keys.
+    """
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -191,6 +239,17 @@ def jax_aggregator(args, raw_grad_list, training_num):
 
 
 def mxnet_aggregator(args, raw_grad_list, training_num):
+    """
+    Aggregate gradients or parameters from multiple clients using a MXNet-based federated learning aggregator.
+
+    Args:
+        args: A dictionary containing training configuration parameters.
+        raw_grad_list (List[Tuple[float, Dict[str, List[float]]]]): A list of tuples containing local sample counts
+            and gradient updates from client models. Each update is a dictionary containing lists of parameters.
+
+    Returns:
+        Dict[str, List[float]]: The aggregated model parameters.
+    """
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -221,6 +280,20 @@ def mxnet_aggregator(args, raw_grad_list, training_num):
 
 
 def model_aggregator(args, raw_grad_list, training_num):
+    """
+    Aggregate gradients or parameters from multiple clients using a federated learning aggregator based on the
+    specified machine learning engine.
+
+    Args:
+        args: A dictionary containing training configuration parameters.
+        raw_grad_list (List[Union[Tuple[float, Dict[str, Dict[str, float]]], Tuple[float, Dict[str, List[float]]]]]):
+            A list of tuples containing local sample counts and gradient updates from client models. The format of
+            updates varies based on the machine learning engine.
+
+    Returns:
+        Union[Dict[str, Dict[str, float]], Dict[str, List[float]]]: The aggregated model parameters or gradients
+            based on the selected machine learning engine.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             return tf_aggregator(args, raw_grad_list, training_num)

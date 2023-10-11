@@ -26,6 +26,17 @@ from ..core import ClientTrainer, ServerAggregator
 
 class SimulatorSingleProcess:
     def __init__(self, args, device, dataset, model, client_trainer=None, server_aggregator=None):
+        """
+        Initialize the SimulatorSingleProcess.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            device (torch.device): The device to run simulations on.
+            dataset (object): The dataset used for training.
+            model (nn.Module): The machine learning model.
+            client_trainer (ClientTrainer, optional): The client trainer to use. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator to use. Defaults to None.
+        """
         from .sp.classical_vertical_fl.vfl_api import VflFedAvgAPI
         from .sp.fedavg import FedAvgAPI
         from .sp.fedprox.fedprox_trainer import FedProxTrainer
@@ -64,6 +75,9 @@ class SimulatorSingleProcess:
             raise Exception("Exception")
 
     def run(self):
+        """
+        Run the federated training simulation.
+        """
         self.fl_trainer.train()
 
 
@@ -77,6 +91,18 @@ class SimulatorMPI:
         client_trainer: ClientTrainer = None,
         server_aggregator: ServerAggregator = None,
     ):
+        """
+        Initialize the SimulatorMPI.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            device (torch.device): The device to run simulations on.
+            dataset (object): The dataset used for training.
+            model (nn.Module): The machine learning model.
+            client_trainer (ClientTrainer, optional): The client trainer to use. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator to use. Defaults to None.
+        """
+        # Import various trainer classes based on the selected federated optimizer
         from .mpi.base_framework.algorithm_api import FedML_Base_distributed
         from .mpi.decentralized_framework.algorithm_api import FedML_Decentralized_Demo_distributed
         from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
@@ -217,6 +243,17 @@ class SimulatorMPI:
 
 class SimulatorNCCL:
     def __init__(self, args, device, dataset, model, client_trainer=None, server_aggregator=None):
+        """
+        Initialize the SimulatorNCCL.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            device (torch.device): The device to run simulations on.
+            dataset (object): The dataset used for training.
+            model (nn.Module): The machine learning model.
+            client_trainer (ClientTrainer, optional): The client trainer to use. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator to use. Defaults to None.
+        """
         from .nccl.fedavg.FedAvgAPI import FedML_FedAvg_NCCL
 
         if args.federated_optimizer == "FedAvg":

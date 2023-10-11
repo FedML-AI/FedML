@@ -9,7 +9,28 @@ from ....core.alg_frame.client_trainer import ClientTrainer
 
 
 class MyModelTrainer(ClientTrainer):
+    """
+    A custom model trainer for federated learning clients.
+
+    This trainer is designed for training and evaluating a segmentation model in a federated learning setting.
+
+    Attributes:
+        model (nn.Module): The segmentation model to be trained and evaluated.
+        args: Additional configuration arguments for training and evaluation.
+
+    Methods:
+        get_model_params(): Get the model parameters for the current trainer.
+        set_model_params(model_parameters): Set the model parameters for the current trainer.
+        train(train_data, device, args): Train the model on the provided training data.
+        test(test_data, device, args): Evaluate the model on the provided test data.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters for the current trainer.
+
+        Returns:
+            dict: A dictionary containing the model parameters.
+        """
         if self.args.backbone_freezed:
             logging.info("Initializing model; Backbone Freezed")
             return self.model.encoder_decoder.cpu().state_dict()
@@ -18,6 +39,12 @@ class MyModelTrainer(ClientTrainer):
             return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters for the current trainer.
+
+        Args:
+            model_parameters (dict): A dictionary containing the model parameters to be set.
+        """
         if self.args.backbone_freezed:
             logging.info("Updating Global model; Backbone Freezed")
             self.model.encoder_decoder.load_state_dict(model_parameters)
@@ -26,6 +53,17 @@ class MyModelTrainer(ClientTrainer):
             self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model on the provided training data.
+
+        Args:
+            train_data (DataLoader): DataLoader containing the training data.
+            device (torch.device): The device on which to perform training.
+            args: Additional arguments for training.
+
+        Notes:
+            This function trains the model using the provided data and updates its parameters.
+        """
         model = self.model
         args = self.args
 
@@ -100,6 +138,17 @@ class MyModelTrainer(ClientTrainer):
                 )
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on the provided test data.
+
+        Args:
+            test_data (DataLoader): DataLoader containing the test data.
+            device (torch.device): The device on which to perform evaluation.
+            args: Additional arguments for evaluation.
+
+        Returns:
+            EvaluationMetricsKeeper: An object containing various evaluation metrics.
+        """
         logging.info("Evaluation on trainer ID:{}".format(self.id))
         model = self.model
         args = self.args

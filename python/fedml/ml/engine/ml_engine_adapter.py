@@ -5,11 +5,23 @@ import torch
 from .torch_process_group_manager import TorchProcessGroupManager
 from ...core.common.ml_engine_backend import MLEngineBackend
 
+import tensorflow as tf
+import numpy as np
+from mxnet import np as mx_np
 
 def convert_numpy_to_torch_data_format(args, batched_x, batched_y):
-    import torch
-    import numpy as np
+    """
+    Convert batched data from NumPy format to PyTorch format.
 
+    Args:
+        args: Model-specific arguments or configuration.
+        batched_x (numpy.ndarray): Batched input data.
+        batched_y (numpy.ndarray): Batched output data.
+
+    Returns:
+        torch.Tensor: Batched input data in PyTorch format.
+        torch.Tensor: Batched output data in PyTorch format.
+    """
     if args.model == "cnn":
         batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28)  # CNN_MINST
     else:
@@ -20,10 +32,18 @@ def convert_numpy_to_torch_data_format(args, batched_x, batched_y):
 
 
 def convert_numpy_to_tf_data_format(args, batched_x, batched_y):
-    # https://www.tensorflow.org/api_docs/python/tf/convert_to_tensor
-    import tensorflow as tf
-    import numpy as np
+    """
+    Convert batched data from NumPy format to TensorFlow format.
 
+    Args:
+        args: Model-specific arguments or configuration.
+        batched_x (numpy.ndarray): Batched input data.
+        batched_y (numpy.ndarray): Batched output data.
+
+    Returns:
+        tf.Tensor: Batched input data in TensorFlow format.
+        tf.Tensor: Batched output data in TensorFlow format.
+    """
     if args.model == "cnn":
         batched_x = tf.convert_to_tensor(np.asarray(batched_x), dtype=tf.float32)  # CNN_MINST
         batched_x = tf.reshape(batched_x, [-1, 28, 28])
@@ -35,8 +55,18 @@ def convert_numpy_to_tf_data_format(args, batched_x, batched_y):
 
 
 def convert_numpy_to_jax_data_format(args, batched_x, batched_y):
-    import numpy as np
+    """
+    Convert batched data from NumPy format to JAX format.
 
+    Args:
+        args: Model-specific arguments or configuration.
+        batched_x (numpy.ndarray): Batched input data.
+        batched_y (numpy.ndarray): Batched output data.
+
+    Returns:
+        numpy.ndarray: Batched input data in JAX format.
+        numpy.ndarray: Batched output data in JAX format.
+    """
     if args.model == "cnn":
         batched_x = np.asarray(batched_x, dtype=np.float32)  # CNN_MINST
         batched_x = np.reshape(batched_x, [-1, 28, 28])
@@ -48,8 +78,18 @@ def convert_numpy_to_jax_data_format(args, batched_x, batched_y):
 
 
 def convert_numpy_to_mxnet_data_format(args, batched_x, batched_y):
-    from mxnet import np as mx_np
+    """
+    Convert batched data from NumPy format to MXNet format.
 
+    Args:
+        args: Model-specific arguments or configuration.
+        batched_x (numpy.ndarray): Batched input data.
+        batched_y (numpy.ndarray): Batched output data.
+
+    Returns:
+        mxnet.numpy.ndarray: Batched input data in MXNet format.
+        mxnet.numpy.ndarray: Batched output data in MXNet format.
+    """
     if args.model == "cnn":
         batched_x = mx_np.array(batched_x)
         batched_x = mx_np.reshape(batched_x, [-1, 28, 28])  # pylint: disable=E1101
@@ -61,6 +101,17 @@ def convert_numpy_to_mxnet_data_format(args, batched_x, batched_y):
 
 
 def convert_numpy_to_ml_engine_data_format(args, batched_x, batched_y):
+    """
+    Convert batched data from NumPy format to the format required by a specified machine learning engine.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        batched_x (numpy.ndarray): Batched input data.
+        batched_y (numpy.ndarray): Batched output data.
+
+    Returns:
+        Data in the format required by the specified machine learning engine.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             return convert_numpy_to_tf_data_format(args, batched_x, batched_y)
@@ -75,6 +126,16 @@ def convert_numpy_to_ml_engine_data_format(args, batched_x, batched_y):
 
 
 def is_torch_device_available(args, device_type):
+    """
+    Check if a Torch device of the specified type is available.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        device_type (str): The type of Torch device to check (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        bool: True if the Torch device is available, False otherwise.
+    """
     if device_type == MLEngineBackend.ml_device_type_gpu:
         if torch.cuda.is_available():
             return True
@@ -99,6 +160,16 @@ def is_torch_device_available(args, device_type):
 
 
 def is_mxnet_device_available(args, device_type):
+    """
+    Check if a MXNet device of the specified type is available.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        device_type (str): The type of MXNet device to check (e.g., "cpu", "gpu").
+
+    Returns:
+        bool: True if the MXNet device is available, False otherwise.
+    """
     if device_type == MLEngineBackend.ml_device_type_cpu:
         return True
     elif device_type == MLEngineBackend.ml_device_type_gpu:
@@ -116,6 +187,16 @@ def is_mxnet_device_available(args, device_type):
 
 
 def is_device_available(args, device_type=MLEngineBackend.ml_device_type_gpu):
+    """
+    Check if a specified device type is available based on the provided arguments and ML engine.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        device_type (str): The type of device to check (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        bool: True if the device is available, False otherwise.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             import tensorflow as tf
@@ -144,6 +225,19 @@ def is_device_available(args, device_type=MLEngineBackend.ml_device_type_gpu):
 
 
 def get_torch_device(args, using_gpu, device_id, device_type):
+    """
+    Get a Torch device based on the provided arguments and configuration.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        using_gpu (bool): Indicates whether a GPU should be used.
+        device_id (int): The ID of the GPU device.
+        device_type (str): The type of device (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        torch.device: The Torch device.
+    """
+
     logging.info(
         "args = {}, using_gpu = {}, device_id = {}, device_type = {}".format(args, using_gpu, device_id, device_type)
     )
@@ -165,6 +259,18 @@ def get_torch_device(args, using_gpu, device_id, device_type):
 
 
 def get_tf_device(args, using_gpu, device_id, device_type):
+    """
+    Get a TensorFlow device based on the provided arguments and configuration.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        using_gpu (bool): Indicates whether a GPU should be used.
+        device_id (int): The ID of the GPU device.
+        device_type (str): The type of device (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        tf.device: The TensorFlow device.
+    """
     import tensorflow as tf
 
     if using_gpu:
@@ -174,6 +280,18 @@ def get_tf_device(args, using_gpu, device_id, device_type):
 
 
 def get_jax_device(args, using_gpu, device_id, device_type):
+    """
+    Get a JAX device based on the provided arguments and configuration.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        using_gpu (bool): Indicates whether a GPU should be used.
+        device_id (int): The ID of the GPU device.
+        device_type (str): The type of device (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        jax.devices.Device: The JAX device.
+    """
     import jax
 
     devices = jax.devices(None)
@@ -187,6 +305,18 @@ def get_jax_device(args, using_gpu, device_id, device_type):
 
 
 def get_mxnet_device(args, using_gpu, device_id, device_type):
+    """
+    Get an MXNet device based on the provided arguments and configuration.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        using_gpu (bool): Indicates whether a GPU should be used.
+        device_id (int): The ID of the GPU device.
+        device_type (str): The type of device (e.g., "gpu", "mps", "cpu").
+
+    Returns:
+        mxnet.context.Context: The MXNet device.
+    """
     import mxnet as mx
 
     if using_gpu:
@@ -196,6 +326,17 @@ def get_mxnet_device(args, using_gpu, device_id, device_type):
 
 
 def get_device(args, device_id=None, device_type="cpu"):
+    """
+    Get the appropriate device based on the provided arguments and configuration.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        device_id (int, optional): The ID of the GPU device. Defaults to None.
+        device_type (str, optional): The type of device (e.g., "cpu"). Defaults to "cpu".
+
+    Returns:
+        torch.device, tf.device, jax.devices.Device, mxnet.context.Context: The selected device.
+    """
     using_gpu = True if (hasattr(args, "using_gpu") and args.using_gpu is True) else False
 
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
@@ -212,6 +353,17 @@ def get_device(args, device_id=None, device_type="cpu"):
 
 
 def dict_to_device(args, dict_obj, device):
+    """
+    Move a dictionary of objects to the specified device.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        dict_obj (dict): A dictionary of objects.
+        device (torch.device, tf.device, jax.devices.Device, mxnet.context.Context): The target device.
+
+    Returns:
+        dict: The dictionary with objects on the target device.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             with device:
@@ -232,6 +384,17 @@ def dict_to_device(args, dict_obj, device):
 
 
 def model_params_to_device(args, params_obj, device):
+    """
+    Move model parameters to the specified device.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        params_obj (dict): A dictionary of model parameters.
+        device (torch.device, tf.device, jax.devices.Device, mxnet.context.Context): The target device.
+
+    Returns:
+        dict: The dictionary of model parameters on the target device.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             with device:
@@ -255,6 +418,17 @@ def model_params_to_device(args, params_obj, device):
 
 
 def model_to_device(args, model_obj, device):
+    """
+    Move a model to the specified device.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The model to be moved to the device.
+        device: The target device (e.g., torch.device, tf.device, jax.devices.Device, mxnet.context.Context).
+
+    Returns:
+        The model on the target device.
+    """
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             with device:
@@ -271,6 +445,17 @@ def model_to_device(args, model_obj, device):
 
 
 def torch_model_ddp(args, model_obj, device):
+    """
+    Create a Distributed Data Parallel (DDP) model for PyTorch.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The PyTorch model.
+        device: The target device (e.g., torch.device).
+
+    Returns:
+        TorchProcessGroupManager, torch.nn.parallel.DistributedDataParallel: The process group manager and DDP model.
+    """
     from torch.nn.parallel import DistributedDataParallel as DDP
 
     only_gpu = args.using_gpu
@@ -283,23 +468,68 @@ def torch_model_ddp(args, model_obj, device):
 
 # Todo: add tf ddp
 def tf_model_ddp(args, model_obj, device):
+    """
+    Create a Distributed Data Parallel (DDP) model for TensorFlow.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The TensorFlow model.
+        device: The target device (e.g., tf.device).
+
+    Returns:
+        None, Model: The process group manager (None for TensorFlow) and DDP model.
+    """
     process_group_manager, model = None, model_obj
     return process_group_manager, model
 
 
 # Todo: add jax ddp
 def jax_model_ddp(args, model_obj, device):
+    """
+    Create a Distributed Data Parallel (DDP) model for JAX.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The JAX model.
+        device: The target device (e.g., jax.devices.Device).
+
+    Returns:
+        None, Model: The process group manager (None for JAX) and DDP model.
+    """
     process_group_manager, model = None, model_obj
     return process_group_manager, model
 
 
 # Todo: add mxnet ddp
 def mxnet_model_ddp(args, model_obj, device):
+    """
+    Create a Distributed Data Parallel (DDP) model for MXNet.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The MXNet model.
+        device: The target device (e.g., mxnet.context.Context).
+
+    Returns:
+        None, Model: The process group manager (None for MXNet) and DDP model.
+    """
     process_group_manager, model = None, model_obj
     return process_group_manager, model
 
 
 def model_ddp(args, model_obj, device):
+    """
+    Create a Distributed Data Parallel (DDP) model based on the selected ML engine.
+
+    Args:
+        args: Model-specific arguments or configuration.
+        model_obj: The model to be wrapped with DDP.
+        device: The target device (e.g., torch.device, tf.device, jax.devices.Device, mxnet.context.Context).
+
+    Returns:
+        TorchProcessGroupManager, torch.nn.parallel.DistributedDataParallel or
+        None, Model: The process group manager and DDP model (or None for non-Torch engines).
+    """
     process_group_manager, model = None, model_obj
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:

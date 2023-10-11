@@ -9,6 +9,16 @@ from fedml.fa.constants import FA_TASK_AVG, FA_TASK_INTERSECTION, FA_TASK_CARDIN
 
 
 def create_global_analyzer(args, train_data_num):
+    """
+    Create a global analyzer based on the specified federated aggregation task.
+
+    Args:
+        args: Additional arguments for creating the global analyzer.
+        train_data_num (int): The number of training data samples.
+
+    Returns:
+        FAServerAggregator: An instance of a global analyzer based on the specified task.
+    """
     task_type = args.fa_task
     if task_type == FA_TASK_AVG:
         return AVGAggregatorFA(args)

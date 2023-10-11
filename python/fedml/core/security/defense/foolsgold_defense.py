@@ -12,7 +12,21 @@ potential bugs when using memory: when only some of clients participate in compu
 
 
 class FoolsGoldDefense(BaseDefenseMethod):
+    """
+    Defense method using FoolsGold for federated learning.
+
+    Attributes:
+        config: Configuration parameters for the defense method.
+        memory: Memory for storing client importance features.
+    """
+
     def __init__(self, config):
+        """
+        Initialize the FoolsGoldDefense.
+
+        Args:
+            config: Configuration parameters for the defense method.
+        """
         super().__init__(config)
         self.config = config
         self.memory = None
@@ -22,6 +36,16 @@ class FoolsGoldDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Apply FoolsGold defense before model aggregation.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients for the current round.
+            extra_auxiliary_info: Additional information required for defense.
+
+        Returns:
+            list: List of defended client gradients.
+        """
         client_num = len(raw_client_grad_list)
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         # print(len(importance_feature_list))
@@ -47,6 +71,15 @@ class FoolsGoldDefense(BaseDefenseMethod):
     # Takes in grad, compute similarity, get weightings
     @classmethod
     def fools_gold_score(cls, feature_vec_list):
+        """
+        Compute FoolsGold scores for client importance features.
+
+        Args:
+            feature_vec_list (list): List of client importance features.
+
+        Returns:
+            list: List of FoolsGold scores.
+        """
         import sklearn.metrics.pairwise as smp
         n_clients = len(feature_vec_list)
         cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
@@ -75,6 +108,15 @@ class FoolsGoldDefense(BaseDefenseMethod):
         return alpha
 
     def _get_importance_feature(self, raw_client_grad_list):
+        """
+        Get the importance feature from client gradients.
+
+        Args:
+            raw_client_grad_list (list): List of client gradients.
+
+        Returns:
+            list: List of importance features.
+        """
         # Foolsgold uses the last layer's gradient/weights as the importance feature.
         ret_feature_vector_list = []
         for idx in range(len(raw_client_grad_list)):

@@ -8,6 +8,44 @@ from .utils import transform_list_to_tensor, Saver, EvaluationMetricsKeeper
 
 
 class FedSegAggregator(object):
+    """
+    Federated Segmentation Aggregator for collecting and managing model updates and statistics from clients.
+
+    Args:
+        worker_num (int): Number of worker (client) nodes.
+        device: The computing device (e.g., GPU) for training.
+        model: The segmentation model used in federated learning.
+        args: Additional configuration arguments.
+        model_trainer: Trainer for the segmentation model.
+
+    Attributes:
+        trainer: The model trainer for training and evaluation.
+        worker_num (int): Number of worker (client) nodes.
+        device: The computing device for training.
+        args: Additional configuration arguments.
+        model_dict (dict): Dictionary to store model parameters received from clients.
+        sample_num_dict (dict): Dictionary to store the number of training samples from clients.
+        flag_client_model_uploaded_dict (dict): Dictionary to track whether each client has uploaded its model.
+        train_acc_client_dict (dict): Dictionary to store training accuracy for each client.
+        train_acc_class_client_dict (dict): Dictionary to store training class-wise accuracy for each client.
+        train_mIoU_client_dict (dict): Dictionary to store training mean Intersection over Union (mIoU) for each client.
+        train_FWIoU_client_dict (dict): Dictionary to store training frequency-weighted IoU (FWIoU) for each client.
+        train_loss_client_dict (dict): Dictionary to store training loss for each client.
+        test_acc_client_dict (dict): Dictionary to store test accuracy for each client.
+        test_acc_class_client_dict (dict): Dictionary to store test class-wise accuracy for each client.
+        test_mIoU_client_dict (dict): Dictionary to store test mean Intersection over Union (mIoU) for each client.
+        test_FWIoU_client_dict (dict): Dictionary to store test frequency-weighted IoU (FWIoU) for each client.
+        test_loss_client_dict (dict): Dictionary to store test loss for each client.
+        best_mIoU (float): Best mIoU value among all clients.
+        best_mIoU_clients (dict): Dictionary to store the clients with the best mIoU.
+        saver: Saver for saving experiment configurations and results.
+
+    Methods:
+        get_global_model_params: Get the global model parameters.
+        set_global_model_params: Set the global model parameters.
+        add_local_trained_result: Add model parameters and sample count from a client.
+        check_whether_all_receive: Check if all clients have uploaded their models.
+    """
     def __init__(self, worker_num, device, model, args, model_trainer):
         self.trainer = model_trainer
         self.worker_num = worker_num
@@ -43,18 +81,44 @@ class FedSegAggregator(object):
         )
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters.
+
+        Returns:
+            Global model parameters.
+        """
         return self.trainer.get_model_params()
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters.
+
+        Args:
+            model_parameters: Global model parameters to set.
+        """
         self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
+        """
+        Add the model parameters and sample count from a client.
+
+        Args:
+            index (int): Index or identifier of the client.
+            model_params: Model parameters trained by the client.
+            sample_num (int): Number of training samples used by the client.
+        """
         logging.info("Add model index: {}".format(index))
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check whether all clients have uploaded their models.
+
+        Returns:
+            True if all clients have uploaded their models, False otherwise.
+        """
         for idx in range(self.worker_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -63,6 +127,12 @@ class FedSegAggregator(object):
         return True
 
     def aggregate(self):
+        """
+        Aggregate model updates from multiple clients.
+
+        Returns:
+            Averaged model parameters after aggregation.
+        """
         start_time = time.time()
         model_list = []
         training_num = 0
@@ -93,6 +163,17 @@ class FedSegAggregator(object):
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly select a subset of clients for federated learning.
+
+        Args:
+            round_idx (int): Current federated learning round index.
+            client_num_in_total (int): Total number of available clients.
+            client_num_per_round (int): Number of clients to select for the current round.
+
+        Returns:
+            List of selected client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [
                 client_index for client_index in range(client_num_in_total)
@@ -115,6 +196,15 @@ class FedSegAggregator(object):
         train_eval_metrics: EvaluationMetricsKeeper,
         test_eval_metrics: EvaluationMetricsKeeper,
     ):
+        """
+        Add evaluation metrics and results from a client.
+
+        Args:
+            round_idx (int): Current federated learning round index.
+            client_idx (int): Index or identifier of the client.
+            train_eval_metrics (EvaluationMetricsKeeper): Evaluation metrics for training data.
+            test_eval_metrics (EvaluationMetricsKeeper): Evaluation metrics for testing data.
+        """
         logging.info("Adding client test result : {}".format(client_idx))
 
         # Populating Training Dictionary
@@ -176,6 +266,12 @@ class FedSegAggregator(object):
                 self.saver.save_checkpoint(saver_state, is_best, filename)
 
     def output_global_acc_and_loss(self, round_idx):
+        """
+        Output global accuracy and loss statistics for the current federated learning round.
+
+        Args:
+            round_idx (int): Current federated learning round index.
+        """
         logging.info(
             "################## Output global accuracy and loss for round {} :".format(
                 round_idx

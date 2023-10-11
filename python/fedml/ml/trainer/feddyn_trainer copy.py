@@ -7,24 +7,84 @@ import logging
 
 
 
-def model_parameter_vector(model):
-    param = [p.view(-1) for p in model.parameters()]
-    return torch.concat(param, dim=0)
+import torch
 
+def model_parameter_vector(model):
+    """
+    Flatten the parameters of a PyTorch model into a single 1D tensor.
+
+    Args:
+        model (torch.nn.Module): The PyTorch model.
+
+    Returns:
+        torch.Tensor: A 1D tensor containing all the flattened model parameters.
+    """
+    param = [p.view(-1) for p in model.parameters()]
+    return torch.cat(param, dim=0)  # Use torch.cat to concatenate tensors
 
 def parameter_vector(parameters):
+    """
+    Flatten a dictionary of PyTorch parameters into a single 1D tensor.
+
+    Args:
+        parameters (dict): A dictionary of PyTorch parameters.
+
+    Returns:
+        torch.Tensor: A 1D tensor containing all the flattened parameters.
+    """
     param = [p.view(-1) for p in parameters.values()]
-    return torch.concat(param, dim=0)
+    return torch.cat(param, dim=0)  # Use torch.cat to concatenate tensors
+
 
 
 class FedDynModelTrainer(ClientTrainer):
+    """
+    A federated dynamic model trainer that implements training and testing methods.
+
+    Args:
+        ClientTrainer: The base class for client trainers.
+
+    Attributes:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        id (int): The identifier of the client.
+
+    Methods:
+        get_model_params(): Get the model parameters as a state dictionary.
+        set_model_params(model_parameters): Set the model parameters from a state dictionary.
+        train(train_data, device, args, old_grad): Train the model with federated dynamic regularization.
+        test(test_data, device, args): Evaluate the model on test data and return evaluation metrics.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: The model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): The model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args, old_grad):
+        """
+        Train the model with federated dynamic regularization.
+
+        Args:
+            train_data: The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Training arguments.
+            old_grad (torch.Tensor): The previous gradient.
+
+        Returns:
+            torch.Tensor: The updated gradient.
+        """
         model = self.model
         for params in model.parameters():
             params.requires_grad = True
@@ -137,6 +197,18 @@ class FedDynModelTrainer(ClientTrainer):
 
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on test data and return evaluation metrics.
+
+        Args:
+            test_data: The test data.
+            device (torch.device): The device (CPU or GPU) to use for evaluation.
+            args: Training arguments.
+
+        Returns:
+            dict: Evaluation metrics including test accuracy and test loss.
+        """
+
         model = self.model
 
         model.to(device)

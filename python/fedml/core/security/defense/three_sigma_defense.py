@@ -6,7 +6,7 @@ from typing import Callable, List, Tuple, Dict, Any
 from ..common import utils
 from scipy import spatial
 
-### Original paper: https://arxiv.org/pdf/2107.05252.pdf
+# Original paper: https://arxiv.org/pdf/2107.05252.pdf
 # training: In each iteration, each client k splits its local dataset into batches of size B,
 # and runs for E local epochs batched-gradient descent through the local dataset
 # to obtain local model, and sends it to the server.
@@ -41,7 +41,39 @@ from ..common.utils import compute_geometric_median
 
 
 class ThreeSigmaDefense(BaseDefenseMethod):
+    """
+    Three-Sigma Defense for Federated Learning.
+
+    This defense method performs a Three-Sigma-based defense for federated learning.
+
+    Args:
+        config: Configuration object for defense parameters.
+
+    Methods:
+        defend_before_aggregation(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
+        ) -> List[Tuple[float, OrderedDict]]:
+        Perform defense before aggregation.
+
+        compute_gaussian_distribution() -> Tuple[float, float]:
+        Compute the Gaussian distribution parameters.
+
+        compute_client_scores(raw_client_grad_list) -> List[float]:
+        Compute client scores.
+
+        fools_gold_score(feature_vec_list) -> List[float]:
+        Compute Fool's Gold scores.
+
+    """
+
     def __init__(self, config):
+        """
+        Initialize the ThreeSigmaDefense.
+
+        Args:
+            config: Configuration object for defense parameters.
+        """
         self.memory = None
         self.iteration_num = 1
         self.score_list = []
@@ -74,6 +106,18 @@ class ThreeSigmaDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform defense before aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Batched gradient list after defense.
+        """
         # grad_list = [grad for (_, grad) in raw_client_grad_list]
         client_scores = self.compute_client_scores(raw_client_grad_list)
         if self.iteration_num < self.pretraining_round_number:
@@ -95,8 +139,6 @@ class ThreeSigmaDefense(BaseDefenseMethod):
                 # due to severe non-iid among clients
                 raw_client_grad_list.pop(i)
                 print(f"pop -- i = {i}")
-
-
 
         batch_grad_list = Bucket.bucketization(
             raw_client_grad_list, self.bucketing_batch_size
@@ -120,6 +162,12 @@ class ThreeSigmaDefense(BaseDefenseMethod):
     #     return avg_params
 
     def compute_gaussian_distribution(self):
+        """
+        Compute the Gaussian distribution parameters.
+
+        Returns:
+            Tuple[float, float]: Mean (mu) and standard deviation (sigma).
+        """
         n = len(self.score_list)
         mu = sum(list(self.score_list)) / n
         temp = 0
@@ -131,8 +179,18 @@ class ThreeSigmaDefense(BaseDefenseMethod):
         return mu, sigma
 
     def compute_client_scores(self, raw_client_grad_list):
+        """
+        Compute client scores.
+
+        Args:
+            raw_client_grad_list: List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of client scores.
+        """
         if self.score_function == "foolsgold":
-            importance_feature_list = self._get_importance_feature(raw_client_grad_list)
+            importance_feature_list = self._get_importance_feature(
+                raw_client_grad_list)
             if self.memory is None:
                 self.memory = importance_feature_list
             else:  # memory: potential bugs: grads in different iterations may be from different clients
@@ -141,6 +199,15 @@ class ThreeSigmaDefense(BaseDefenseMethod):
             return self.fools_gold_score(self.memory)
 
     def _get_importance_feature(self, raw_client_grad_list):
+        """
+        Get importance features for Fool's Gold score computation.
+
+        Args:
+            raw_client_grad_list: List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of importance features.
+        """
         # print(f"raw_client_grad_list = {raw_client_grad_list}")
         # Foolsgold uses the last layer's gradient/weights as the importance feature.
         ret_feature_vector_list = []
@@ -162,6 +229,15 @@ class ThreeSigmaDefense(BaseDefenseMethod):
 
     @staticmethod
     def fools_gold_score(feature_vec_list):
+        """
+        Compute Fool's Gold scores.
+
+        Args:
+            feature_vec_list: List of importance features.
+
+        Returns:
+            List[float]: List of Fool's Gold scores.
+        """
         n_clients = len(feature_vec_list)
         cs = np.zeros((n_clients, n_clients))
         for i in range(n_clients):
@@ -183,7 +259,7 @@ class ThreeSigmaDefense(BaseDefenseMethod):
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
-         # print(np.max(alpha))
+        # print(np.max(alpha))
         alpha = alpha / np.max(alpha)
         alpha[(alpha == 1.0)] = 0.999999
 

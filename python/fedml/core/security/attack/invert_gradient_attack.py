@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 import math
 import time
@@ -37,6 +38,16 @@ class InvertAttack(BaseAttackMethod):
     def __init__(
         self, attack_client_idx=0, trained_model=False, model=None, num_images=1, use_updates=False,
     ):
+        """
+        Initialize the Invert Attack.
+
+        Args:
+            attack_client_idx (int): Index of the target client for the attack.
+            trained_model (bool): Whether the model is already trained.
+            model: The model used for the attack.
+            num_images (int): Number of images to use for the attack.
+            use_updates (bool): Whether to use model updates for the attack.
+        """
         defs = ConservativeStrategy()
         loss_fn = Classification()
         self.use_updates = use_updates
@@ -48,15 +59,27 @@ class InvertAttack(BaseAttackMethod):
         self.num_images = num_images  # = batch_size in local training
 
     def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+        """
+        Reconstruct the data after the attack.
+
+        Args:
+            a_gradient (dict): Gradient information.
+            extra_auxiliary_info: Additional auxiliary information.
+
+        Returns:
+            tuple: A tuple containing the reconstructed data and statistics.
+        """
         self.ground_truth = extra_auxiliary_info[0][0]
         self.labels = extra_auxiliary_info[0][1]
 
         if not self.use_updates:
             rec_machine = GradientReconstructor(
-                self.model, (self.dm, self.ds), config=extra_auxiliary_info[1], num_images=self.num_images,
+                self.model, (self.dm,
+                             self.ds), config=extra_auxiliary_info[1], num_images=self.num_images,
             )
             self.input_gradient = a_gradient
-            output, stats = rec_machine.reconstruct(self.input_gradient, self.labels, self.img_shape)
+            output, stats = rec_machine.reconstruct(
+                self.input_gradient, self.labels, self.img_shape)
         else:
             rec_machine = FedAvgReconstructor(
                 self.model,
@@ -67,10 +90,12 @@ class InvertAttack(BaseAttackMethod):
                 use_updates=self.use_updates,
             )
             self.input_parameters = a_gradient
-            output, stats = rec_machine.reconstruct(self.input_parameters, self.labels, self.img_shape)
+            output, stats = rec_machine.reconstruct(
+                self.input_parameters, self.labels, self.img_shape)
 
         test_mse = (output.detach() - self.ground_truth).pow(2).mean()
-        feat_mse = (self.model(output.detach()) - self.model(self.ground_truth)).pow(2).mean()
+        feat_mse = (self.model(output.detach()) -
+                    self.model(self.ground_truth)).pow(2).mean()
         test_psnr = psnr(output, self.ground_truth, factor=1 / self.ds)
         logging.info(
             f"Rec. loss: {stats['opt']:2.4f} | MSE: {test_mse:2.4f} | PSNR: {test_psnr:4.2f} | FMSE: {feat_mse:2.4e} |"
@@ -82,8 +107,6 @@ Train Reconstructor for recovering original images from a client
 """
 
 """Optimization setups."""
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -108,8 +131,10 @@ class ConservativeStrategy:
 
 class Loss:
     """Abstract class, containing necessary methods.
-    Abstract class to collect information about the 'higher-level' loss function, used to train an energy-based model
-    containing the evaluation of the loss function, its gradients w.r.t. to first and second argument and evaluations
+
+    Abstract class to collect information about the 'higher-level' loss function,
+    used to train an energy-based model containing the evaluation of the loss
+    function, its gradients w.r.t. to first and second argument and evaluations
     of the actual metric that is targeted.
     """
 
@@ -181,13 +206,34 @@ DEFAULT_CONFIG = dict(
 
 
 def _label_to_onehot(target, num_classes=100):
+    """Convert class labels to one-hot encoded tensors.
+
+    Args:
+        target (torch.Tensor): Class labels.
+        num_classes (int): Number of classes.
+
+    Returns:
+        torch.Tensor: One-hot encoded tensor with shape (target.size(0), num_classes).
+    """
     target = torch.unsqueeze(target, 1)
-    onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
+    onehot_target = torch.zeros(target.size(
+        0), num_classes, device=target.device)
     onehot_target.scatter_(1, target, 1)
     return onehot_target
 
 
 def _validate_config(config):
+    """Validate and fill in missing configuration values with defaults.
+
+    Args:
+        config (dict): Configuration dictionary.
+
+    Returns:
+        dict: Validated configuration dictionary with missing keys filled in with defaults.
+
+    Raises:
+        ValueError: If deprecated keys are found in the configuration.
+    """
     for key in DEFAULT_CONFIG.keys():
         if config.get(key) is None:
             config[key] = DEFAULT_CONFIG[key]
@@ -198,13 +244,32 @@ def _validate_config(config):
 
 
 class GradientReconstructor:
-    """Instantiate a reconstruction algorithm."""
+    """
+    Instantiate a reconstruction algorithm for gradients.
+
+    Args:
+        model: The PyTorch model used for the reconstruction.
+        mean_std: Tuple of mean and standard deviation used for normalization.
+        config: Configuration dictionary for algorithm setup.
+        num_images: Number of images to use for reconstruction.
+
+    Attributes:
+        config (dict): Algorithm configuration parameters.
+        model: The PyTorch model used for reconstruction.
+        setup (dict): Device and data type setup for the model.
+        mean_std (tuple): Mean and standard deviation used for normalization.
+        num_images (int): Number of images to use for reconstruction.
+        inception (InceptionScore): Inception score calculator (optional).
+        loss_fn (torch.nn.Module): Loss function used for reconstruction.
+        iDLG (bool): Flag indicating whether to use the iDLG trick.
+    """
 
     def __init__(self, model, mean_std=(0.0, 1.0), config=DEFAULT_CONFIG, num_images=1):
         """Initialize with algorithm setup."""
         self.config = _validate_config(config)
         self.model = model
-        self.setup = dict(device=next(model.parameters()).device, dtype=next(model.parameters()).dtype)
+        self.setup = dict(device=next(model.parameters()).device,
+                          dtype=next(model.parameters()).dtype)
 
         self.mean_std = mean_std
         self.num_images = num_images
@@ -218,7 +283,20 @@ class GradientReconstructor:
     def reconstruct(
         self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, eval=True, tol=None,
     ):
-        """Reconstruct image from gradient."""
+        """
+        Reconstruct images from gradients.
+
+        Args:
+            input_data (torch.Tensor): Input gradient data.
+            labels (torch.Tensor): Labels associated with the input data.
+            img_shape (tuple): Image shape (channels, height, width).
+            dryrun (bool): Whether to perform a dry run.
+            eval (bool): Whether to set the model to evaluation mode.
+            tol (float): Tolerance threshold for reconstruction.
+
+        Returns:
+            tuple: A tuple containing the reconstructed data and statistics.
+        """
         start_time = time.time()
         if eval:
             self.model.eval()
@@ -230,7 +308,8 @@ class GradientReconstructor:
         if labels is None:
             if self.num_images == 1 and self.iDLG:
                 # iDLG trick:
-                last_weight_min = torch.argmin(torch.sum(input_data[-2], dim=-1), dim=-1)
+                last_weight_min = torch.argmin(
+                    torch.sum(input_data[-2], dim=-1), dim=-1)
                 labels = last_weight_min.detach().reshape((1,)).requires_grad_(False)
                 self.reconstruct_label = False
             else:
@@ -249,7 +328,8 @@ class GradientReconstructor:
 
         try:
             for trial in range(self.config["restarts"]):
-                x_trial, labels = self._run_trial(x[trial], input_data, labels, dryrun=dryrun)
+                x_trial, labels = self._run_trial(
+                    x[trial], input_data, labels, dryrun=dryrun)
                 # Finalize
                 scores[trial] = self._score_trial(x_trial, input_data, labels)
                 x[trial] = x_trial
@@ -263,7 +343,8 @@ class GradientReconstructor:
 
         # Choose optimal result:
         print("Choosing optimal result ...")
-        scores = scores[torch.isfinite(scores)]  # guard against NaN/-Inf scores?
+        # guard against NaN/-Inf scores?
+        scores = scores[torch.isfinite(scores)]
         optimal_index = torch.argmin(scores)
         print(f"Optimal result score: {scores[optimal_index]:2.4f}")
         stats["opt"] = scores[optimal_index].item()
@@ -273,26 +354,50 @@ class GradientReconstructor:
         return x_optimal.detach(), stats
 
     def _init_images(self, img_shape):
+        """
+        Initialize images for reconstruction.
+
+        Args:
+            img_shape (tuple): Image shape (channels, height, width).
+
+        Returns:
+            torch.Tensor: Initialized image data.
+        """
         if self.config["init"] == "randn":
             return torch.randn((self.config["restarts"], self.num_images, *img_shape))
         else:
             raise ValueError()
 
     def _run_trial(self, x_trial, input_data, labels, dryrun=False):
+        """
+        Run a reconstruction trial.
+
+        Args:
+            x_trial (torch.Tensor): Image data for the trial.
+            input_data (torch.Tensor): Input gradient data.
+            labels (torch.Tensor): Labels associated with the input data.
+            dryrun (bool): Whether to perform a dry run.
+
+        Returns:
+            tuple: A tuple containing the reconstructed image data and labels.
+        """
         x_trial.requires_grad = True
         if self.reconstruct_label:
             output_test = self.model(x_trial)
-            labels = torch.randn(output_test.shape[1]).to(**self.setup).requires_grad_(True)
+            labels = torch.randn(output_test.shape[1]).to(
+                **self.setup).requires_grad_(True)
 
             if self.config["optim"] == "adam":
-                optimizer = torch.optim.Adam([x_trial, labels], lr=self.config["lr"])
+                optimizer = torch.optim.Adam(
+                    [x_trial, labels], lr=self.config["lr"])
             else:
                 raise ValueError()
         else:
             if self.config["optim"] == "adam":
                 optimizer = torch.optim.Adam([x_trial], lr=self.config["lr"])
             elif self.config["optim"] == "sgd":  # actually gd
-                optimizer = torch.optim.SGD([x_trial], lr=0.01, momentum=0.9, nesterov=True)
+                optimizer = torch.optim.SGD(
+                    [x_trial], lr=0.01, momentum=0.9, nesterov=True)
             elif self.config["optim"] == "LBFGS":
                 optimizer = torch.optim.LBFGS([x_trial])
             else:
@@ -303,12 +408,14 @@ class GradientReconstructor:
         if self.config["lr_decay"]:
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer,
-                milestones=[max_iterations // 2.667, max_iterations // 1.6, max_iterations // 1.142,],
+                milestones=[max_iterations // 2.667,
+                            max_iterations // 1.6, max_iterations // 1.142,],
                 gamma=0.1,
             )  # 3/8 5/8 7/8
         try:
             for iteration in range(max_iterations):
-                closure = self._gradient_closure(optimizer, x_trial, input_data, labels)
+                closure = self._gradient_closure(
+                    optimizer, x_trial, input_data, labels)
                 rec_loss = optimizer.step(closure)
                 if self.config["lr_decay"]:
                     scheduler.step()
@@ -316,16 +423,19 @@ class GradientReconstructor:
                 with torch.no_grad():
                     # Project into image space
                     if self.config["boxed"]:
-                        x_trial.data = torch.max(torch.min(x_trial, (1 - dm) / ds), -dm / ds)
+                        x_trial.data = torch.max(
+                            torch.min(x_trial, (1 - dm) / ds), -dm / ds)
 
                     if (iteration + 1 == max_iterations) or iteration % 500 == 0:
-                        print(f"It: {iteration}. Rec. loss: {rec_loss.item():2.4f}.")
+                        print(
+                            f"It: {iteration}. Rec. loss: {rec_loss.item():2.4f}.")
 
                     if (iteration + 1) % 500 == 0:
                         if self.config["filter"] == "none":
                             pass
                         elif self.config["filter"] == "median":
-                            x_trial.data = MedianPool2d(kernel_size=3, stride=1, padding=1, same=False)(x_trial)
+                            x_trial.data = MedianPool2d(
+                                kernel_size=3, stride=1, padding=1, same=False)(x_trial)
                         else:
                             raise ValueError()
 
@@ -337,11 +447,24 @@ class GradientReconstructor:
         return x_trial.detach(), labels
 
     def _gradient_closure(self, optimizer, x_trial, input_gradient, label):
+        """
+        Create a closure for gradient computation.
+
+        Args:
+            optimizer: The optimizer used for reconstruction.
+            x_trial (torch.Tensor): Image data for the trial.
+            input_gradient (torch.Tensor): Input gradient data.
+            label (torch.Tensor): Labels associated with the input data.
+
+        Returns:
+            function: A closure for gradient computation.
+        """
         def closure():
             optimizer.zero_grad()
             self.model.zero_grad()
             loss = self.loss_fn(self.model(x_trial), label)
-            gradient = torch.autograd.grad(loss, self.model.parameters(), create_graph=True)
+            gradient = torch.autograd.grad(
+                loss, self.model.parameters(), create_graph=True)
             rec_loss = reconstruction_costs(
                 [gradient],
                 input_gradient,
@@ -351,7 +474,8 @@ class GradientReconstructor:
             )
 
             if self.config["total_variation"] > 0:
-                rec_loss += self.config["total_variation"] * total_variation(x_trial)
+                rec_loss += self.config["total_variation"] * \
+                    total_variation(x_trial)
             rec_loss.backward()
             if self.config["signed"]:
                 x_trial.grad.sign_()
@@ -360,11 +484,23 @@ class GradientReconstructor:
         return closure
 
     def _score_trial(self, x_trial, input_gradient, label):
+        """
+        Score a reconstruction trial.
+
+        Args:
+            x_trial (torch.Tensor): Reconstructed image data.
+            input_gradient (torch.Tensor): Input gradient data.
+            label (torch.Tensor): Labels associated with the input data.
+
+        Returns:
+            float: The score for the reconstruction trial.
+        """
         if self.config["scoring_choice"] == "loss":
             self.model.zero_grad()
             x_trial.grad = None
             loss = self.loss_fn(self.model(x_trial), label)
-            gradient = torch.autograd.grad(loss, self.model.parameters(), create_graph=False)
+            gradient = torch.autograd.grad(
+                loss, self.model.parameters(), create_graph=False)
             return reconstruction_costs(
                 [gradient],
                 input_gradient,
@@ -377,7 +513,33 @@ class GradientReconstructor:
 
 
 class FedAvgReconstructor(GradientReconstructor):
-    """Reconstruct an image from weights after n gradient descent steps."""
+    """
+    Reconstruct an image from model weights after performing gradient descent steps.
+
+    Args:
+        model: The PyTorch model used for the reconstruction.
+        mean_std: Tuple of mean and standard deviation used for normalization.
+        local_steps: Number of local gradient descent steps.
+        local_lr: Learning rate for local gradient descent.
+        config: Configuration dictionary for algorithm setup.
+        num_images: Number of images to use for reconstruction.
+        use_updates: Flag indicating whether to use weight updates.
+        batch_size: Batch size for local gradient descent.
+
+    Attributes:
+        config (dict): Algorithm configuration parameters.
+        model: The PyTorch model used for reconstruction.
+        setup (dict): Device and data type setup for the model.
+        mean_std (tuple): Mean and standard deviation used for normalization.
+        num_images (int): Number of images to use for reconstruction.
+        inception (InceptionScore): Inception score calculator (optional).
+        loss_fn (torch.nn.Module): Loss function used for reconstruction.
+        iDLG (bool): Flag indicating whether to use the iDLG trick.
+        local_steps (int): Number of local gradient descent steps.
+        local_lr (float): Learning rate for local gradient descent.
+        use_updates (bool): Flag indicating whether to use weight updates.
+        batch_size (int): Batch size for local gradient descent.
+    """
 
     def __init__(
         self,
@@ -390,7 +552,19 @@ class FedAvgReconstructor(GradientReconstructor):
         use_updates=True,
         batch_size=0,
     ):
-        """Initialize with model, (mean, std) and config."""
+        """
+        Initialize the FedAvgReconstructor with the given parameters.
+
+        Args:
+            model: The PyTorch model used for the reconstruction.
+            mean_std: Tuple of mean and standard deviation used for normalization.
+            local_steps: Number of local gradient descent steps.
+            local_lr: Learning rate for local gradient descent.
+            config: Configuration dictionary for algorithm setup.
+            num_images: Number of images to use for reconstruction.
+            use_updates: Flag indicating whether to use weight updates.
+            batch_size: Batch size for local gradient descent.
+        """
         super().__init__(model, mean_std, config, num_images)
         self.local_steps = local_steps
         self.local_lr = local_lr
@@ -398,6 +572,18 @@ class FedAvgReconstructor(GradientReconstructor):
         self.batch_size = batch_size
 
     def _gradient_closure(self, optimizer, x_trial, input_parameters, labels):
+        """
+        Closure function for computing gradients during optimization.
+
+        Args:
+            optimizer (torch.optim.Optimizer): The optimizer used for gradient descent.
+            x_trial (torch.Tensor): The input image to be optimized.
+            input_parameters (torch.Tensor): The ground truth model weights.
+            labels (torch.Tensor): The labels used for reconstruction.
+
+        Returns:
+            Callable: A closure function for computing gradients and loss.
+        """
         def closure():
             optimizer.zero_grad()
             self.model.zero_grad()
@@ -419,7 +605,8 @@ class FedAvgReconstructor(GradientReconstructor):
                 weights=self.config["weights"],
             )
             if self.config["total_variation"] > 0:
-                rec_loss += self.config["total_variation"] * total_variation(x_trial)
+                rec_loss += self.config["total_variation"] * \
+                    total_variation(x_trial)
             rec_loss.backward()
             if self.config["signed"]:
                 x_trial.grad.sign_()
@@ -428,6 +615,17 @@ class FedAvgReconstructor(GradientReconstructor):
         return closure
 
     def _score_trial(self, x_trial, input_parameters, labels):
+        """
+        Compute the score of a trial reconstruction.
+
+        Args:
+            x_trial (torch.Tensor): The reconstructed image.
+            input_parameters (torch.Tensor): The ground truth model weights.
+            labels (torch.Tensor): The labels used for reconstruction.
+
+        Returns:
+            float: The score of the trial reconstruction.
+        """
         if self.config["scoring_choice"] == "loss":
             self.model.zero_grad()
             parameters = loss_steps(
@@ -451,7 +649,22 @@ class FedAvgReconstructor(GradientReconstructor):
 def loss_steps(
     model, inputs, labels, loss_fn=torch.nn.CrossEntropyLoss(), lr=1e-4, local_steps=4, use_updates=True, batch_size=0,
 ):
-    """Take a few gradient descent steps to fit the model to the given input."""
+    """
+    Perform gradient descent steps to fit the model to the given input data.
+
+    Args:
+        model (nn.Module): The neural network model to be optimized.
+        inputs (torch.Tensor): The input data for optimization.
+        labels (torch.Tensor): The labels for the input data.
+        loss_fn (torch.nn.Module, optional): The loss function used for optimization. Default is CrossEntropyLoss.
+        lr (float, optional): The learning rate for gradient descent. Default is 1e-4.
+        local_steps (int, optional): The number of gradient descent steps to perform. Default is 4.
+        use_updates (bool, optional): Whether to use parameter updates during optimization. Default is True.
+        batch_size (int, optional): Batch size for mini-batch gradient descent. Default is 0 (full batch).
+
+    Returns:
+        List[torch.Tensor]: A list of model parameter tensors after optimization.
+    """
     patched_model = MetaMonkey(model)
     if use_updates:
         patched_model_origin = deepcopy(patched_model)
@@ -461,8 +674,9 @@ def loss_steps(
             labels_ = labels
         else:
             idx = i % (inputs.shape[0] // batch_size)
-            outputs = patched_model(inputs[idx * batch_size : (idx + 1) * batch_size], patched_model.parameters,)
-            labels_ = labels[idx * batch_size : (idx + 1) * batch_size]
+            outputs = patched_model(
+                inputs[idx * batch_size: (idx + 1) * batch_size], patched_model.parameters,)
+            labels_ = labels[idx * batch_size: (idx + 1) * batch_size]
         loss = loss_fn(outputs, labels_).sum()
         grad = torch.autograd.grad(
             loss, patched_model.parameters.values(), retain_graph=True, create_graph=True, only_inputs=True,
@@ -483,21 +697,38 @@ def loss_steps(
 
 
 def reconstruction_costs(gradients, input_gradient, cost_fn="l2", indices="def", weights="equal"):
-    """Input gradient is given data."""
+    """
+    Calculate reconstruction costs between gradients and input gradient.
+
+    Args:
+        gradients (List[torch.Tensor]): List of gradients to be compared with the input gradient.
+        input_gradient (torch.Tensor): The input gradient (data).
+        cost_fn (str, optional): The reconstruction cost function to use ("l2" or "sim"). Default is "l2".
+        indices (Union[str, List[int]], optional): The indices of gradients to consider or method to choose them.
+            Default is "def" (all gradients).
+        weights (Union[str, List[float]], optional): The weights for each gradient during reconstruction cost calculation.
+            Default is "equal" (equal weights).
+
+    Returns:
+        float: The total reconstruction cost averaged over the provided gradients.
+    """
     if isinstance(indices, list):
         pass
     elif indices == "def":
         indices = torch.arange(len(input_gradient))
     elif indices == "top10":
-        _, indices = torch.topk(torch.stack([p.norm() for p in input_gradient], dim=0), 10)
+        _, indices = torch.topk(torch.stack(
+            [p.norm() for p in input_gradient], dim=0), 10)
     else:
         raise ValueError()
 
     ex = input_gradient[0]
     if weights == "linear":
-        weights = torch.arange(len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device) / len(input_gradient)
+        weights = torch.arange(len(
+            input_gradient), 0, -1, dtype=ex.dtype, device=ex.device) / len(input_gradient)
     elif weights == "exp":
-        weights = torch.arange(len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device)
+        weights = torch.arange(len(input_gradient), 0, -1,
+                               dtype=ex.dtype, device=ex.device)
         weights = weights.softmax(dim=0)
         weights = weights / weights[0]
     else:
@@ -509,7 +740,8 @@ def reconstruction_costs(gradients, input_gradient, cost_fn="l2", indices="def",
         costs = 0
         for i in indices:
             if cost_fn == "sim":
-                costs -= (trial_gradient[i] * input_gradient[i]).sum() * weights[i]
+                costs -= (trial_gradient[i] *
+                          input_gradient[i]).sum() * weights[i]
                 pnorm[0] += trial_gradient[i].pow(2).sum() * weights[i]
                 pnorm[1] += input_gradient[i].pow(2).sum() * weights[i]
         if cost_fn == "sim":
@@ -529,13 +761,27 @@ class MetaMonkey(torch.nn.Module):
     """
 
     def __init__(self, net):
-        """Init with network."""
+        """
+        Initialize MetaMonkey with a neural network.
+
+        Args:
+            net (torch.nn.Module): The neural network to be patched.
+        """
         super().__init__()
         self.net = net
         self.parameters = OrderedDict(net.named_parameters())
 
     def forward(self, inputs, parameters=None):
-        """Live Patch ... :> ..."""
+        """
+        Forward pass through the network with optional live patching of modules.
+
+        Args:
+            inputs (torch.Tensor): The input data.
+            parameters (OrderedDict, optional): Dictionary of parameters to be used for live patching.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
         # If no parameter dictionary is given, everything is normal
         if parameters is None:
             return self.net(inputs)
@@ -573,7 +819,8 @@ class MetaMonkey(torch.nn.Module):
                     if module.num_batches_tracked is not None:
                         module.num_batches_tracked += 1
                         if module.momentum is None:  # use cumulative moving average
-                            exponential_average_factor = 1.0 / float(module.num_batches_tracked)
+                            exponential_average_factor = 1.0 / \
+                                float(module.num_batches_tracked)
                         else:  # use exponential moving average
                             exponential_average_factor = module.momentum
 
@@ -595,7 +842,8 @@ class MetaMonkey(torch.nn.Module):
                 lin_weights = next(param_gen)
                 lin_bias = next(param_gen)
                 method_pile.append(module.forward)
-                module.forward = partial(F.linear, weight=lin_weights, bias=lin_bias)
+                module.forward = partial(
+                    F.linear, weight=lin_weights, bias=lin_bias)
 
             elif next(module.parameters(), None) is None:
                 # Pass over modules that do not contain parameters
@@ -605,7 +853,8 @@ class MetaMonkey(torch.nn.Module):
                 pass
             else:
                 # Warn for other containers
-                warnings.warn(f"Patching for module {module.__class__} is not implemented.")
+                warnings.warn(
+                    f"Patching for module {module.__class__} is not implemented.")
 
         output = self.net(inputs)
 
@@ -622,13 +871,15 @@ class MetaMonkey(torch.nn.Module):
 
 
 class MedianPool2d(nn.Module):
-    """Median pool (usable as median filter when stride=1) module.
-    Args:
-         kernel_size: size of pooling kernel, int or 2-tuple
-         stride: pool stride, int or 2-tuple
-         padding: pool padding, int or 4-tuple (l, r, t, b) as in pytorch F.pad
-         same: override padding and enforce same padding, boolean
     """
+        Initialize the MedianPool2d module.
+
+        Args:
+            kernel_size: Size of the pooling kernel, can be an integer or a 2-tuple.
+            stride: Pooling stride, can be an integer or a 2-tuple.
+            padding: Pooling padding, can be an integer or a 4-tuple (left, right, top, bottom).
+            same: If True, override padding and enforce "same" padding. If False, use the specified padding.
+        """
 
     def __init__(self, kernel_size=3, stride=1, padding=0, same=True):
         """Initialize with kernel_size, stride, padding."""
@@ -639,6 +890,15 @@ class MedianPool2d(nn.Module):
         self.same = same
 
     def _padding(self, x):
+        """
+        Calculate the padding required based on the 'same' attribute and input size.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Tuple (pl, pr, pt, pb): Padding values for left, right, top, and bottom.
+        """
         if self.same:
             ih, iw = x.size()[2:]
             if ih % self.stride[0] == 0:
@@ -659,44 +919,88 @@ class MedianPool2d(nn.Module):
         return padding
 
     def forward(self, x):
+        """
+        Perform median pooling on the input tensor.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after median pooling.
+        """
         # using existing pytorch functions and tensor ops so that we get autograd,
         # would likely be more efficient to implement from scratch at C/Cuda level
         x = F.pad(x, self._padding(x), mode="reflect")
-        x = x.unfold(2, self.k[0], self.stride[0]).unfold(3, self.k[1], self.stride[1])
+        x = x.unfold(2, self.k[0], self.stride[0]).unfold(
+            3, self.k[1], self.stride[1])
         x = x.contiguous().view(x.size()[:4] + (-1,)).median(dim=-1)[0]
         return x
 
 
 class InceptionScore(torch.nn.Module):
-    """Class that manages and returns the inception score of images."""
+    """Class that manages and returns the inception score of images.
+
+    Args:
+        batch_size (int): Batch size for calculating the Inception Score.
+        setup (dict): A dictionary containing device and dtype setup for the model.
+
+    Attributes:
+        preprocessing (torch.nn.Module): Preprocessing module to resize images to (299, 299).
+        model (torch.nn.Module): Inception V3 model used for scoring.
+        batch_size (int): Batch size for scoring.
+
+    Note:
+        The input image batch should have dimensions BCHW and should be normalized.
+        B should be divisible by self.batch_size.
+    """
 
     def __init__(self, batch_size=32, setup=dict(device=torch.device("cpu"), dtype=torch.float)):
         """Initialize with setup and target inception batch size."""
         super().__init__()
-        self.preprocessing = torch.nn.Upsample(size=(299, 299), mode="bilinear", align_corners=False)
-        self.model = torchvision.models.inception_v3(pretrained=True).to(**setup)
+        self.preprocessing = torch.nn.Upsample(
+            size=(299, 299), mode="bilinear", align_corners=False)
+        self.model = torchvision.models.inception_v3(
+            pretrained=True).to(**setup)
         self.model.eval()
         self.batch_size = batch_size
 
     def forward(self, image_batch):
-        """Image batch should have dimensions BCHW and should be normalized.
-        B should be divisible by self.batch_size.
+        """Calculate the Inception Score for an image batch.
+
+        Args:
+            image_batch (torch.Tensor): Input image batch with dimensions BCHW.
+
+        Returns:
+            torch.Tensor: Inception Score.
         """
         B, C, H, W = image_batch.shape
         batches = B // self.batch_size
         scores = []
         for batch in range(batches):
-            input = self.preprocessing(image_batch[batch * self.batch_size : (batch + 1) * self.batch_size])
+            input = self.preprocessing(
+                image_batch[batch * self.batch_size: (batch + 1) * self.batch_size])
             scores.append(self.model(input))  # pylint: disable=E1102
         prob_yx = torch.nn.functional.softmax(torch.cat(scores, 0), dim=1)
-        entropy = torch.where(prob_yx > 0, -prob_yx * prob_yx.log(), torch.zeros_like(prob_yx))
+        entropy = torch.where(prob_yx > 0, -prob_yx *
+                              prob_yx.log(), torch.zeros_like(prob_yx))
         return entropy.sum()
 
 
 def psnr(img_batch, ref_batch, batched=False, factor=1.0):
-    """Standard PSNR."""
+    """Calculate the Peak Signal-to-Noise Ratio (PSNR) between two image batches.
+
+    Args:
+        img_batch (torch.Tensor): Input image batch.
+        ref_batch (torch.Tensor): Reference image batch.
+        batched (bool): If True, compute PSNR for the entire batch. If False, compute individual PSNRs.
+        factor (float): Scaling factor for PSNR computation.
+
+    Returns:
+        float or torch.Tensor: PSNR value(s).
+    """
 
     def get_psnr(img_in, img_ref):
+
         mse = ((img_in - img_ref) ** 2).mean()
         if mse > 0 and torch.isfinite(mse):
             return 10 * torch.log10(factor ** 2 / mse)
@@ -711,14 +1015,22 @@ def psnr(img_batch, ref_batch, batched=False, factor=1.0):
         [B, C, m, n] = img_batch.shape
         psnrs = []
         for sample in range(B):
-            psnrs.append(get_psnr(img_batch.detach()[sample, :, :, :], ref_batch[sample, :, :, :]))
+            psnrs.append(get_psnr(img_batch.detach()[
+                         sample, :, :, :], ref_batch[sample, :, :, :]))
         psnr = torch.stack(psnrs, dim=0).mean()
 
     return psnr.item()
 
 
 def total_variation(x):
-    """Anisotropic TV."""
+    """"Calculate the Anisotropic Total Variation (TV) of an image.
+
+    Args:
+        x (torch.Tensor): Input image.
+
+    Returns:
+        torch.Tensor: Total Variation value.
+    """
     dx = torch.mean(torch.abs(x[:, :, :, :-1] - x[:, :, :, 1:]))
     dy = torch.mean(torch.abs(x[:, :, :-1, :] - x[:, :, 1:, :]))
     return dx + dy

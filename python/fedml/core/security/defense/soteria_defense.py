@@ -26,6 +26,29 @@ Steps:
 
 
 class SoteriaDefense(BaseDefenseMethod):
+    """
+    Soteria Defense for Federated Learning.
+
+    This defense method performs a Soteria-based defense for federated learning.
+
+    Args:
+        num_class (int): Number of classes in the dataset.
+        model: The federated learning model.
+        defense_data: Defense data for the model.
+        defense_label (int): Defense label.
+
+    Methods:
+        run(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
+        ) -> Dict:
+        Perform Soteria-based defense on the federated learning model.
+
+        label_to_onehot(target, num_classes=100) -> torch.Tensor:
+        Convert labels to one-hot encoding.
+
+    """
     def __init__(
         self,
         num_class,
@@ -33,6 +56,15 @@ class SoteriaDefense(BaseDefenseMethod):
         defense_data,
         defense_label=84,
     ):
+        """
+        Initialize the SoteriaDefense.
+
+        Args:
+            num_class (int): Number of classes in the dataset.
+            model: The federated learning model.
+            defense_data: Defense data for the model.
+            defense_label (int): Defense label.
+        """
         self.num_class = num_class  # number of classess of the dataset
         self.model = model
         self.defense_data = defense_data
@@ -46,6 +78,21 @@ class SoteriaDefense(BaseDefenseMethod):
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ) -> Dict:
+        """
+        Perform Soteria-based defense on the federated learning model.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            base_aggregation_func (Callable, optional):
+                Base aggregation function (currently unused).
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            Dict:
+                Aggregation result after Soteria-based defense.
+        """
         # load local model
         self.model.load_state_dict(raw_client_grad_list, strict=True)
         original_dy_dx = extra_auxiliary_info # refs for local gradient

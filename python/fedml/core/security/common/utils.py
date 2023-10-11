@@ -6,6 +6,15 @@ import torch.nn.functional as F
 
 
 def vectorize_weight(state_dict):
+    """
+    Vectorizes the weight tensors in the given state_dict.
+
+    Args:
+        state_dict (OrderedDict): The state_dict containing model weights.
+
+    Returns:
+        torch.Tensor: A concatenated tensor of flattened weights.
+    """
     weight_list = []
     for (k, v) in state_dict.items():
         if is_weight_param(k):
@@ -14,27 +23,62 @@ def vectorize_weight(state_dict):
 
 
 def is_weight_param(k):
+    """
+    Checks if a parameter key is a weight parameter.
+
+    Args:
+        k (str): The parameter key.
+
+    Returns:
+        bool: True if the key corresponds to a weight parameter, False otherwise.
+    """
     return (
-            "running_mean" not in k
-            and "running_var" not in k
-            and "num_batches_tracked" not in k
+        "running_mean" not in k
+        and "running_var" not in k
+        and "num_batches_tracked" not in k
     )
 
 
 def compute_euclidean_distance(v1, v2, device='cpu'):
+    """
+    Computes the Euclidean distance between two tensors.
+
+    Args:
+        v1 (torch.Tensor): The first tensor.
+        v2 (torch.Tensor): The second tensor.
+        device (str): The device for computation (default is 'cpu').
+
+    Returns:
+        torch.Tensor: The Euclidean distance between the two tensors.
+    """
     v1 = v1.to(device)
     v2 = v2.to(device)
     return (v1 - v2).norm()
 
 
 def compute_model_norm(model):
+    """
+    Computes the norm of a model's weights.
+
+    Args:
+        model: The model.
+
+    Returns:
+        torch.Tensor: The norm of the model's weights.
+    """
     return vectorize_weight(model).norm()
 
 
 def compute_middle_point(alphas, model_list):
     """
-    alphas: weights of model_dict
-    model_dict: a model submitted by a user
+    Computes the weighted sum of model weights.
+
+    Args:
+        alphas (list): List of weights.
+        model_list (list): List of model weights.
+
+    Returns:
+        numpy.ndarray: The weighted sum of model weights.
     """
     sum_batch = torch.zeros(model_list[0].shape)
     for a, a_batch_w in zip(alphas, model_list):
@@ -88,6 +132,15 @@ def compute_geometric_median(weights, client_grads):
 
 
 def get_total_sample_num(model_list):
+    """
+    Calculates the total number of samples across multiple clients.
+
+    Args:
+        model_list (list): List of tuples containing local sample numbers and model parameters.
+
+    Returns:
+        int: Total number of samples.
+    """
     sample_num = 0
     for i in range(len(model_list)):
         local_sample_num, local_model_params = model_list[i]
@@ -96,6 +149,17 @@ def get_total_sample_num(model_list):
 
 
 def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
+    """
+    Generates a list of malicious client IDs.
+
+    Args:
+        random_seed (int): Random seed for reproducibility.
+        client_num (int): Total number of clients.
+        malicious_client_num (int): Number of malicious clients to generate.
+
+    Returns:
+        list: List of malicious client IDs.
+    """
     if client_num == malicious_client_num:
         client_indexes = [client_index for client_index in range(client_num)]
     else:
@@ -103,7 +167,8 @@ def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
         np.random.seed(
             random_seed
         )  # make sure for each comparison, we are selecting the same clients each round
-        client_indexes = np.random.choice(range(client_num), num_clients, replace=False)
+        client_indexes = np.random.choice(
+            range(client_num), num_clients, replace=False)
     print("malicious client_indexes = %s" % str(client_indexes))
     return client_indexes
 
@@ -112,9 +177,15 @@ def replace_original_class_with_target_class(
         data_labels, original_class_list=None, target_class_list=None
 ):
     """
-    :param targets: Target class IDs
-    :type targets: list
-    :return: new class IDs
+    Replaces original class labels in data_labels with corresponding target class labels.
+
+    Args:
+        data_labels (list): List of class labels.
+        original_class_list (list): List of original class labels to be replaced.
+        target_class_list (list): List of target class labels to replace with.
+
+    Returns:
+        list: Updated list of class labels.
     """
     if (
             len(original_class_list) == 0
@@ -141,12 +212,11 @@ def replace_original_class_with_target_class(
 
 def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
     """
-    Logs all client data statistics.
+    Logs data distribution statistics for each client in the dataset.
 
-    :param poisoned_client_ids: list of malicious clients
-    :type poisoned_client_ids: list
-    :param train_data_local_dict: distributed dataset
-    :type train_data_local_dict: list(tuple)
+    Args:
+        poisoned_client_ids (list): List of malicious client IDs.
+        train_data_local_dict (list): Distributed dataset.
     """
     for client_idx in range(len(train_data_local_dict)):
         if client_idx in poisoned_client_ids:
@@ -163,6 +233,13 @@ def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
 
 
 def get_client_data_stat(local_dataset):
+    """
+    Prints data distribution statistics for a local dataset.
+
+    Args:
+        local_dataset (Iterable): Local dataset.
+
+    """
     print("-==========================")
     targets_set = {}
     for batch_idx, (data, targets) in enumerate(local_dataset):
@@ -200,17 +277,51 @@ def get_client_data_stat(local_dataset):
 
 
 def cross_entropy_for_onehot(pred, target):
+    """
+    Computes the cross-entropy loss between predicted and target one-hot encoded vectors.
+
+    Args:
+        pred (torch.Tensor): Predicted logit values.
+        target (torch.Tensor): Target one-hot encoded vectors.
+
+    Returns:
+        torch.Tensor: Cross-entropy loss.
+
+    """
     return torch.mean(torch.sum(-target * F.log_softmax(pred, dim=-1), 1))
 
 
 def label_to_onehot(target, num_classes=100):
+    """
+    Converts class labels to one-hot encoded vectors.
+
+    Args:
+        target (torch.Tensor): Class labels.
+        num_classes (int, optional): Number of classes. Defaults to 100.
+
+    Returns:
+        torch.Tensor: One-hot encoded vectors.
+
+    """
     target = torch.unsqueeze(target, 1)
-    onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
+    onehot_target = torch.zeros(target.size(
+        0), num_classes, device=target.device)
     onehot_target.scatter_(1, target, 1)
     return onehot_target
 
 
 def trimmed_mean(model_list, trimmed_num):
+    """
+    Trims the list of models by removing a specified number of models from both ends.
+
+    Args:
+        model_list (list): List of model tuples containing local sample numbers and gradients.
+        trimmed_num (int): Number of models to trim from each end.
+
+    Returns:
+        list: Trimmed list of models.
+
+    """
     temp_model_list = []
     for i in range(0, len(model_list)):
         local_sample_num, client_grad = model_list[i]
@@ -221,18 +332,42 @@ def trimmed_mean(model_list, trimmed_num):
                 compute_a_score(local_sample_num),
             )
         )
-    temp_model_list.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
-    temp_model_list = temp_model_list[trimmed_num: len(model_list) - trimmed_num]
+    # sort by coordinate-wise scores
+    temp_model_list.sort(key=lambda grad: grad[2])
+    temp_model_list = temp_model_list[trimmed_num: len(
+        model_list) - trimmed_num]
     model_list = [(t[0], t[1]) for t in temp_model_list]
     return model_list
 
 
 def compute_a_score(local_sample_number):
+    """
+    Compute a score for a client based on its local sample number.
+
+    Args:
+        local_sample_number (int): Number of local samples for a client.
+
+    Returns:
+        int: A score for the client.
+
+    """
     # todo: change to coordinate-wise score
     return local_sample_number
 
 
 def compute_krum_score(vec_grad_list, client_num_after_trim, p=2):
+    """
+    Compute Krum scores for clients based on their gradients.
+
+    Args:
+        vec_grad_list (list): List of gradient vectors for each client.
+        client_num_after_trim (int): Number of clients to consider.
+        p (int, optional): Power parameter for distance calculation. Defaults to 2.
+
+    Returns:
+        list: List of Krum scores for each client.
+
+    """
     krum_scores = []
     num_client = len(vec_grad_list)
     for i in range(0, num_client):
@@ -252,6 +387,16 @@ def compute_krum_score(vec_grad_list, client_num_after_trim, p=2):
 
 
 def compute_gaussian_distribution(score_list):
+    """
+    Compute the mean (mu) and standard deviation (sigma) of a list of scores.
+
+    Args:
+        score_list (list): List of scores.
+
+    Returns:
+        Tuple[float, float]: Mean (mu) and standard deviation (sigma).
+
+    """
     n = len(score_list)
     mu = sum(list(score_list)) / n
     temp = 0
@@ -263,4 +408,15 @@ def compute_gaussian_distribution(score_list):
 
 
 def sample_some_clients(client_num, sampled_client_num):
+    """
+    Sample a specified number of clients from the total number of clients.
+
+    Args:
+        client_num (int): Total number of clients.
+        sampled_client_num (int): Number of clients to sample.
+
+    Returns:
+        list: List of sampled client indices.
+
+    """
     return random.sample(range(client_num), sampled_client_num)

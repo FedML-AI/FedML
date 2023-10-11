@@ -6,6 +6,16 @@ from sklearn.preprocessing import StandardScaler
 
 
 def get_top_k_labels(data_dir, top_k=5):
+    """
+    Get the top k labels based on their frequency in the dataset.
+
+    Args:
+        data_dir (str): The directory containing the dataset.
+        top_k (int): The number of top labels to retrieve.
+
+    Returns:
+        list: A list of the top k labels.
+    """
     data_path = "Groundtruth/AllLabels"
     label_counts = {}
     for filename in os.listdir(os.path.join(data_dir, data_path)):
@@ -21,6 +31,18 @@ def get_top_k_labels(data_dir, top_k=5):
 
 
 def get_labeled_data_with_2_party(data_dir, selected_labels, n_samples, dtype="Train"):
+    """
+    Load labeled data for a two-party scenario.
+
+    Args:
+        data_dir (str): The directory containing the dataset.
+        selected_labels (list): The selected labels for the data.
+        n_samples (int): The number of samples to load.
+        dtype (str): The data type (e.g., 'Train' or 'Test').
+
+    Returns:
+        tuple: A tuple containing XA (image features), XB (tags), and Y (labels).
+    """
     # get labels
     data_path = "Groundtruth/TrainTestLabels/"
     dfs = []
@@ -71,6 +93,18 @@ def get_labeled_data_with_2_party(data_dir, selected_labels, n_samples, dtype="T
 
 
 def get_labeled_data_with_3_party(data_dir, selected_labels, n_samples, dtype="Train"):
+    """
+    Load labeled data for a three-party scenario.
+
+    Args:
+        data_dir (str): The directory containing the dataset.
+        selected_labels (list): The selected labels for the data.
+        n_samples (int): The number of samples to load.
+        dtype (str): The data type (e.g., 'Train' or 'Test').
+
+    Returns:
+        tuple: A tuple containing XA (image features), XB1 (tags for party 1), XB2 (tags for party 2), and Y (labels).
+    """
     Xa, Xb, Y = get_labeled_data_with_2_party(
         data_dir=data_dir,
         selected_labels=selected_labels,
@@ -83,6 +117,18 @@ def get_labeled_data_with_3_party(data_dir, selected_labels, n_samples, dtype="T
 
 
 def NUS_WIDE_load_two_party_data(data_dir, selected_labels, neg_label=-1, n_samples=-1):
+    """
+    Load two-party data for NUS-WIDE dataset.
+
+    Args:
+        data_dir (str): The directory containing the dataset.
+        selected_labels (list): The selected labels for the data.
+        neg_label (int): The negative label value.
+        n_samples (int): The number of samples to load.
+
+    Returns:
+        tuple: A tuple containing training data and testing data for two parties.
+    """
     print("# load_two_party_data")
 
     Xa, Xb, y = get_labeled_data_with_2_party(
@@ -134,6 +180,19 @@ def NUS_WIDE_load_two_party_data(data_dir, selected_labels, neg_label=-1, n_samp
 def NUS_WIDE_load_three_party_data(
     data_dir, selected_labels, neg_label=-1, n_samples=-1
 ):
+    """
+    Load three-party data for NUS-WIDE dataset.
+
+    Args:
+        data_dir (str): The directory containing the dataset.
+        selected_labels (list): The selected labels for the data.
+        neg_label (int): The negative label value.
+        n_samples (int): The number of samples to load.
+
+    Returns:
+        tuple: A tuple containing training data and testing data for three parties.
+    """
+
     print("# load_three_party_data")
     Xa, Xb, Xc, y = get_labeled_data_with_3_party(
         data_dir=data_dir, selected_labels=selected_labels, n_samples=n_samples
@@ -185,6 +244,20 @@ def prepare_party_data(
     n_samples,
     is_three_party=False,
 ):
+    """
+    Prepare data for a federated learning scenario.
+
+    Args:
+        src_data_folder (str): The source data folder.
+        des_data_folder (str): The destination data folder.
+        selected_labels (list): The selected labels for the data.
+        neg_label (int): The negative label value.
+        n_samples (int): The number of samples to load.
+        is_three_party (bool): Whether it's a three-party scenario.
+
+    Returns:
+        None
+    """
     print("# preparing data ...")
 
     train_data_list, test_data_list = (
@@ -235,6 +308,16 @@ def prepare_party_data(
 
 
 def get_data_folder_name(sel_lbls, is_three_party):
+    """
+    Generate a folder name based on selected labels and party type.
+
+    Args:
+        sel_lbls (list): List of selected labels.
+        is_three_party (bool): Indicates whether it's a three-party scenario.
+
+    Returns:
+        str: Generated folder name.
+    """
     folder_name = sel_lbls[0]
     for idx, lbl in enumerate(sel_lbls):
         if idx == 0:
@@ -246,6 +329,17 @@ def get_data_folder_name(sel_lbls, is_three_party):
 
 
 def load_prepared_parties_data(data_dir, sel_lbls, load_three_party):
+    """
+    Load prepared party data from a specific directory.
+
+    Args:
+        data_dir (str): The directory containing the prepared data.
+        sel_lbls (list): List of selected labels.
+        load_three_party (bool): Indicates whether to load three-party data.
+
+    Returns:
+        tuple: A tuple containing training and testing data lists.
+    """
     print(
         "# load prepared {0} party data".format("three" if load_three_party else "two")
     )

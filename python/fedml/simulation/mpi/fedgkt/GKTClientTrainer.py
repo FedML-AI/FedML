@@ -7,6 +7,40 @@ from .utils import bnwd_optim_params, KL_Loss
 
 
 class GKTClientTrainer(object):
+    """
+    A class representing the client-side trainer for Global Knowledge Transfer (GKT).
+
+    This trainer is responsible for training a client model and exchanging knowledge with the server.
+
+    Args:
+        client_index (int): The index of the client.
+        local_training_data (list): Local training data for the client.
+        local_test_data (list): Local test data for the client.
+        local_sample_number (int): The number of local training samples.
+        device (torch.device): The device (e.g., GPU) on which the client model is located.
+        client_model (torch.nn.Module): The client model.
+        args (argparse.Namespace): Additional arguments and settings.
+
+    Attributes:
+        client_index (int): The index of the client.
+        local_training_data (list): Local training data for the client.
+        local_test_data (list): Local test data for the client.
+        local_sample_number (int): The number of local training samples.
+        args (argparse.Namespace): Additional arguments and settings.
+        device (torch.device): The device (e.g., GPU) on which the client model is located.
+        client_model (torch.nn.Module): The client model.
+        model_params (iterable): The parameters of the client model.
+        master_params (iterable): The master parameters of the client model.
+        optimizer (torch.optim.Optimizer): The optimizer used for training.
+        criterion_CE (torch.nn.CrossEntropyLoss): The cross-entropy loss criterion.
+        criterion_KL (KL_Loss): The KL divergence loss criterion for knowledge distillation.
+        server_logits_dict (dict): A dictionary to store logits received from the server.
+
+    Methods:
+        get_sample_number(): Get the number of local training samples.
+        update_large_model_logits(logits): Update the logits received from the server.
+        train(): Train the client model and return extracted features, logits, and labels for training and test data.
+    """
     def __init__(
         self,
         client_index,
@@ -17,6 +51,21 @@ class GKTClientTrainer(object):
         client_model,
         args,
     ):
+        """
+        Initialize the GKT (Global Knowledge Transfer) client trainer.
+
+        Args:
+            client_index (int): The index of the client.
+            local_training_data (list): Local training data for the client.
+            local_test_data (list): Local test data for the client.
+            local_sample_number (int): The number of local training samples.
+            device (torch.device): The device (e.g., GPU) on which the client model is located.
+            client_model (torch.nn.Module): The client model.
+            args (argparse.Namespace): Additional arguments and settings.
+
+        Returns:
+            None
+        """
         self.client_index = client_index
         self.local_training_data = local_training_data[client_index]
         self.local_test_data = local_test_data[client_index]
@@ -60,12 +109,37 @@ class GKTClientTrainer(object):
         self.server_logits_dict = dict()
 
     def get_sample_number(self):
+        """
+        Get the number of local training samples.
+
+        Returns:
+            int: The number of local training samples.
+        """
         return self.local_sample_number
 
     def update_large_model_logits(self, logits):
+        """
+        Update the logits received from the server.
+
+        Args:
+            logits (dict): Logits received from the server.
+
+        Returns:
+            None
+        """
         self.server_logits_dict = logits
 
     def train(self):
+        """
+        Train the client model.
+
+        Returns:
+            dict: Extracted features for training data.
+            dict: Logits for training data.
+            dict: Labels for training data.
+            dict: Extracted features for test data.
+            dict: Labels for test data.
+        """
         # key: batch_index; value: extracted_feature_map
         extracted_feature_dict = dict()
 

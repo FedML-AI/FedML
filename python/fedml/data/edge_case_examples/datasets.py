@@ -37,6 +37,18 @@ class MNIST_truncated(data.Dataset):
     def __init__(
         self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
+        """
+        Initialize the MNIST_truncated dataset.
+
+        Args:
+            root (str): Root directory where the dataset is stored.
+            dataidxs (list, optional): List of data indices to include in the dataset.
+            train (bool, optional): Whether to load the training or testing data.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the target.
+            download (bool, optional): Whether to download the dataset if it's not found.
+        """
+
 
         self.root = root
         self.dataidxs = dataidxs
@@ -48,6 +60,13 @@ class MNIST_truncated(data.Dataset):
         self.data, self.target = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
+        """
+        Build the truncated dataset based on the provided data indices.
+
+        Returns:
+            torch.Tensor: The truncated data.
+            torch.Tensor: The corresponding labels/targets.
+        """
 
         mnist_dataobj = MNIST(self.root, self.train, self.transform, self.target_transform, self.download)
 
@@ -94,6 +113,17 @@ class EMNIST_truncated(data.Dataset):
     def __init__(
         self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
+        """
+        Initialize the EMNIST_truncated dataset.
+
+        Args:
+            root (str): Root directory where the dataset is stored.
+            dataidxs (list, optional): List of data indices to include in the dataset.
+            train (bool, optional): Whether to load the training or testing data.
+            transform (callable, optional): A function/transform to apply to the data.
+            target_transform (callable, optional): A function/transform to apply to the target.
+            download (bool, optional): Whether to download the dataset if it's not found.
+        """
 
         self.root = root
         self.dataidxs = dataidxs
@@ -105,6 +135,13 @@ class EMNIST_truncated(data.Dataset):
         self.data, self.target = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
+        """
+        Build the truncated dataset based on the provided data indices.
+
+        Returns:
+            torch.Tensor: The truncated data.
+            torch.Tensor: The corresponding labels/targets.
+        """
         emnist_dataobj = EMNIST(
             self.root,
             split="digits",
@@ -154,20 +191,28 @@ class EMNIST_truncated(data.Dataset):
 
 
 def get_ardis_dataset():
-    # load the data from csv's
+    """Load the ARDIS dataset and prepare it for training.
+
+    This function loads the ARDIS dataset from CSV files, reshapes the images,
+    and prepares the dataset for training.
+
+    Returns:
+        torch.utils.data.Dataset: The ARDIS dataset prepared for training.
+    """
+    # Load the data from CSV files
     ardis_images = np.loadtxt("./../../../data/edge_case_examples/ARDIS/ARDIS_train_2828.csv", dtype="float")
     ardis_labels = np.loadtxt("./../../../data/edge_case_examples/ARDIS/ARDIS_train_labels.csv", dtype="float")
 
-    #### reshape to be [samples][width][height]
+    # Reshape the images to [samples][width][height]
     ardis_images = ardis_images.reshape(ardis_images.shape[0], 28, 28).astype("float32")
 
-    # labels are one-hot encoded
+    # Labels are one-hot encoded; extract images and labels for digit 7
     indices_seven = np.where(ardis_labels[:, 7] == 1)[0]
     images_seven = ardis_images[indices_seven, :]
     images_seven = torch.tensor(images_seven).type(torch.uint8)
+    labels_seven = torch.tensor([7 for _ in ardis_labels])
 
-    labels_seven = torch.tensor([7 for y in ardis_labels])
-
+    # Create an EMNIST dataset for digit 7
     ardis_dataset = EMNIST(
         "./../../../data",
         split="digits",
@@ -176,13 +221,23 @@ def get_ardis_dataset():
         transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
     )
 
+    # Set the data and targets to the extracted images and labels
     ardis_dataset.data = images_seven
     ardis_dataset.targets = labels_seven
 
     return ardis_dataset
 
-
 def get_southwest_dataset(attack_case="normal-case"):
+    """Load the Southwest dataset for a specified attack case.
+
+    This function loads the Southwest dataset for a given attack case.
+
+    Args:
+        attack_case (str): The attack case to load. Options are "normal-case" and "almost-edge-case".
+
+    Returns:
+        pickle.Unpickler: The loaded Southwest dataset for the specified attack case.
+    """
     if attack_case == "normal-case":
         with open(
             "./../../../data/edge_case_examples/southwest_cifar10/southwest_images_honest_full_normal.pkl", "rb",
@@ -200,8 +255,8 @@ def get_southwest_dataset(attack_case="normal-case"):
 
 class EMNIST_NormalCase_truncated(data.Dataset):
     """
-    we use this class for normal case attack where normal
-    users also hold the poisoned data point with true label
+    Dataset class for normal case attack where normal
+    users also hold the poisoned data point with true label.
     """
 
     def __init__(
@@ -218,7 +273,22 @@ class EMNIST_NormalCase_truncated(data.Dataset):
         ardis_dataset_train=None,
         attack_case="normal-case",
     ):
+        """
+        Initializes the EMNIST_NormalCase_truncated dataset.
 
+        Args:
+            root (str): Root directory where the dataset is stored.
+            dataidxs (list, optional): List of indices to select specific data points. Default is None.
+            train (bool): True for training dataset, False for testing dataset.
+            transform (callable, optional): A function/transform to apply to the data. Default is None.
+            target_transform (callable, optional): A function/transform to apply to the target. Default is None.
+            download (bool): Whether to download the dataset if it's not found in the root directory. Default is False.
+            user_id (int): ID of the user accessing the dataset.
+            num_total_users (int): Total number of users in the scenario.
+            poison_type (str): Type of poisoning data. Default is "ardis".
+            ardis_dataset_train (torch.utils.data.Dataset): ARDIS dataset used for poisoning. Default is None.
+            attack_case (str): The type of attack case. Options are "normal-case" and "almost-edge-case". Default is "normal-case".
+        """
         self.root = root
         self.dataidxs = dataidxs
         self.train = train
@@ -229,9 +299,9 @@ class EMNIST_NormalCase_truncated(data.Dataset):
         if attack_case == "normal-case":
             self._num_users_hold_edge_data = int(
                 3383 / 20
-            )  # we allow 1/20 of the users (other than the attacker) to hold the edge data.
+            )  # We allow 1/20 of the users (other than the attacker) to hold the edge data.
         else:
-            # almost edge case
+            # Almost edge case
             self._num_users_hold_edge_data = 66  # ~2% of users hold data
 
         if poison_type == "ardis":
@@ -249,17 +319,18 @@ class EMNIST_NormalCase_truncated(data.Dataset):
                 self.saved_ardis_dataset_train = self.ardis_dataset_train.data[user_partition]
                 self.saved_ardis_label_train = self.ardis_dataset_train.targets[user_partition]
         else:
-            NotImplementedError("Unsupported poison type for normal case attack ...")
+            raise NotImplementedError("Unsupported poison type for normal case attack ...")
 
-        # logging.info("USER: {} got {} points".format(user_id, len(self.saved_ardis_dataset_train.data)))
         self.data, self.target = self.__build_truncated_dataset__()
 
-        # if self.dataidxs is not None:
-        #    print("$$$$$$$$ Inside data loader: user ID: {}, Combined data: {}, Ori data shape: {}".format(
-        #                user_id, self.data.shape, len(dataidxs)))
-
     def __build_truncated_dataset__(self):
+        """
+        Builds the truncated dataset by combining the EMNIST dataset with the ARDIS dataset.
 
+        Returns:
+            np.ndarray: Combined data.
+            np.ndarray: Combined target labels.
+        """
         emnist_dataobj = EMNIST(
             self.root,
             split="digits",
@@ -290,7 +361,7 @@ class EMNIST_NormalCase_truncated(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the index of the target class.
         """
         img, target = self.data[index], self.target[index]
 
@@ -307,6 +378,21 @@ class EMNIST_NormalCase_truncated(data.Dataset):
 
 
 class CIFAR10_truncated(data.Dataset):
+    """
+    Dataset class for a truncated version of the CIFAR-10 dataset.
+
+    This class allows you to create a truncated version of the CIFAR-10 dataset
+    by selecting specific data indices.
+
+    Args:
+        root (str): Root directory where the dataset is stored.
+        dataidxs (list, optional): List of indices to select specific data points. Default is None.
+        train (bool): True for training dataset, False for testing dataset.
+        transform (callable, optional): A function/transform to apply to the data. Default is None.
+        target_transform (callable, optional): A function/transform to apply to the target. Default is None.
+        download (bool): Whether to download the dataset if it's not found in the root directory. Default is False.
+    """
+
     def __init__(
         self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
@@ -321,12 +407,16 @@ class CIFAR10_truncated(data.Dataset):
         self.data, self.target = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
+        """
+        Builds the truncated dataset by selecting specific data indices.
 
+        Returns:
+            np.ndarray: Combined data.
+            np.ndarray: Combined target labels.
+        """
         cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
-            # print("train member of the class: {}".format(self.train))
-            # data = cifar_dataobj.train_data
             data = cifar_dataobj.data
             target = np.array(cifar_dataobj.targets)
         else:
@@ -345,7 +435,7 @@ class CIFAR10_truncated(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (image, target) where target is index of the target class.
+            tuple: (image, target) where target is the index of the target class.
         """
         img, target = self.data[index], self.target[index]
 
@@ -363,8 +453,8 @@ class CIFAR10_truncated(data.Dataset):
 
 class CIFAR10NormalCase_truncated(data.Dataset):
     """
-    we use this class for normal case attack where normal
-    users also hold the poisoned data point with true label
+    Dataset class for normal case attack where normal
+    users also hold the poisoned data point with true label.
     """
 
     def __init__(
@@ -381,6 +471,22 @@ class CIFAR10NormalCase_truncated(data.Dataset):
         ardis_dataset_train=None,
         attack_case="normal-case",
     ):
+        """
+        Initializes the CIFAR10NormalCase_truncated dataset.
+
+        Args:
+            root (str): Root directory where the dataset is stored.
+            dataidxs (list, optional): List of indices to select specific data points. Default is None.
+            train (bool): True for training dataset, False for testing dataset.
+            transform (callable, optional): A function/transform to apply to the data. Default is None.
+            target_transform (callable, optional): A function/transform to apply to the target. Default is None.
+            download (bool): Whether to download the dataset if it's not found in the root directory. Default is False.
+            user_id (int): ID of the user accessing the dataset.
+            num_total_users (int): Total number of users in the scenario.
+            poison_type (str): Type of poisoning data. Default is "southwest".
+            ardis_dataset_train (np.ndarray): ARDIS dataset used for poisoning. Default is None.
+            attack_case (str): The type of attack case. Options are "normal-case" and "almost-edge-case". Default is "normal-case".
+        """
 
         self.root = root
         self.dataidxs = dataidxs
@@ -447,6 +553,13 @@ class CIFAR10NormalCase_truncated(data.Dataset):
         #                user_id, self.data.shape, len(dataidxs)))
 
     def __build_truncated_dataset__(self):
+        """
+        Builds the truncated dataset by combining the CIFAR-10 dataset with the poisoned ARDIS dataset.
+
+        Returns:
+            np.ndarray: Combined data.
+            np.ndarray: Combined target labels.
+        """
 
         cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 

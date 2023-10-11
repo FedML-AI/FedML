@@ -12,14 +12,44 @@ from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 
 class SageMoleculeNetTrainer(ClientTrainer):
+    """
+    Trainer for the MoleculeNet model. This trainer is responsible for training and testing the MoleculeNet model on client devices.
+    
+    Args:
+        model (nn.Module): The MoleculeNet model to be trained.
+        test_data (list): The test data for evaluating model performance.
+    """
     def get_model_params(self):
+        """
+        Get the model parameters.
+
+        Returns:
+            dict: The model parameters.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters.
+
+        Args:
+            model_parameters (dict): The model parameters to be set.
+        """
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        """
+        Train the model.
+
+        Args:
+            train_data (list): The training data.
+            device (torch.device): The device (CPU or GPU) to use for training.
+            args: Additional training arguments.
+
+        Returns:
+            Tuple[float, dict]: A tuple containing the minimum test score and the best model parameters.
+        """
         model = self.model
 
         model.to(device)
@@ -94,6 +124,17 @@ class SageMoleculeNetTrainer(ClientTrainer):
         return min_score, best_model_params
 
     def test(self, test_data, device, args):
+        """
+        Test the model.
+
+        Args:
+            test_data (list): The test data.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            Tuple[float, model]: A tuple containing the test score and the model used for testing.
+        """
         logging.info("----------test--------")
         model = self.model
         model.eval()
@@ -131,6 +172,18 @@ class SageMoleculeNetTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Test the model on the server.
+
+        Args:
+            train_data_local_dict (dict): A dictionary of training data for each client.
+            test_data_local_dict (dict): A dictionary of test data for each client.
+            device (torch.device): The device (CPU or GPU) to use for testing.
+            args: Additional testing arguments.
+
+        Returns:
+            bool: True if testing on the server is successful.
+        """
         logging.info("----------test_on_the_server--------")
         # for client_idx in train_data_local_dict.keys():
         #     train_data = train_data_local_dict[client_idx]

@@ -11,12 +11,31 @@ from fedml.fa.data.twitter_Sentiment140.twitter_data_processing import preproces
 
 
 def fa_load_data(args):
+    """
+    Load synthetic data based on the specified dataset.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        list: A list containing dataset information.
+    """
     return load_synthetic_data(args)
 
 
 def load_synthetic_data(args):
+    """
+    Load synthetic data based on the specified dataset name.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        list: A list containing dataset information.
+    """
     dataset_name = args.dataset
     if dataset_name == "fake":
+        # Load fake numeric data
         data_cache_dir = os.path.join(args.data_cache_dir, "fake_numeric_data")
         if not os.path.exists(data_cache_dir):
             os.makedirs(data_cache_dir, exist_ok=True)
@@ -33,7 +52,7 @@ def load_synthetic_data(args):
             train_data_local_num_dict,
             local_data_dict,
         ]
-        # print(f"datasize, train_data_local_num_dict, local_data_dict,{dataset}")
+
     elif dataset_name == "twitter":
         path = os.path.join(args.data_cache_dir, "twitter_Sentiment140")
         download_twitter_Sentiment140(data_cache_dir=path)
@@ -70,7 +89,7 @@ def load_synthetic_data(args):
             if hasattr(args, "seperator"):
                 separator = args.seperator
             else:
-                separator = ","  # default seperator = ","
+                separator = ","  # default separator = ","
             (
                 datasize,
                 train_data_local_num_dict,
@@ -108,6 +127,7 @@ def load_synthetic_data_test():
     args, unknown = parser.parse_known_args()
 
     load_synthetic_data(args=args)
+
 
 
 if __name__ == '__main__':

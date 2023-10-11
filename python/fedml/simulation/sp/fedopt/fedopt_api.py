@@ -12,6 +12,18 @@ from .optrepo import OptRepo
 
 
 class FedOptAPI(object):
+    """
+    Base class for Federated Optimization.
+
+    This class provides the foundation for federated optimization techniques. It sets up clients,
+    handles client sampling, and manages the global model and optimizer.
+
+    Args:
+        args (object): Arguments containing configuration options.
+        device (str): Device (e.g., 'cpu' or 'cuda') to run computations on.
+        dataset (tuple): A tuple containing dataset information.
+        model (torch.nn.Module): The global model used for federated optimization.
+    """
     def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
@@ -44,6 +56,14 @@ class FedOptAPI(object):
         self._setup_clients(train_data_local_num_dict, train_data_local_dict, test_data_local_dict)
 
     def _setup_clients(self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict):
+        """
+        Set up client instances for federated optimization.
+
+        Args:
+            train_data_local_num_dict (dict): A dictionary mapping client indices to the number of local training samples.
+            train_data_local_dict (dict): A dictionary mapping client indices to their local training datasets.
+            test_data_local_dict (dict): A dictionary mapping client indices to their local test datasets.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -59,6 +79,17 @@ class FedOptAPI(object):
         logging.info("############setup_clients (END)#############")
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Sample a set of clients for a communication round.
+
+        Args:
+            round_idx (int): The current communication round index.
+            client_num_in_total (int): Total number of clients in the system.
+            client_num_per_round (int): Number of clients to sample for the current round.
+
+        Returns:
+            List[int]: A list of sampled client indices.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -69,6 +100,15 @@ class FedOptAPI(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set from the global test dataset.
+
+        Args:
+            num_samples (int): Number of samples to include in the validation set.
+
+        Notes:
+            This method updates the `val_global` attribute with the generated validation set.
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -76,6 +116,11 @@ class FedOptAPI(object):
         self.val_global = sample/home/chaoyanghe/zhtang_FedML/python/fedml/simulation/sp/fedopt/__pycache___testset
 
     def _instanciate_opt(self):
+        """
+        Initialize the server optimizer.
+
+        This method initializes the server optimizer based on the specified server optimizer type and learning rate.
+        """
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
             # self.model_global.parameters(), lr=self.args.server_lr
             self.model_trainer.model.parameters(),
@@ -85,6 +130,11 @@ class FedOptAPI(object):
         )
 
     def train(self):
+        """
+        Train the global model using federated optimization.
+
+        This method trains the global model using federated optimization over multiple communication rounds.
+        """
         for round_idx in range(self.args.comm_round):
             w_global = self.model_trainer.get_model_params()
             logging.info("################ Communication round : {}".format(round_idx))
@@ -141,6 +191,15 @@ class FedOptAPI(object):
                     self._local_test_on_all_clients(round_idx)
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate local model weights to compute global model weights.
+
+        Args:
+            w_locals (list): A list of tuples containing local sample numbers and local model weights.
+
+        Returns:
+            dict: A dictionary containing aggregated global model weights.
+        """ 
         training_num = 0
         for idx in range(len(w_locals)):
             (sample_num, averaged_params) = w_locals[idx]
@@ -158,6 +217,12 @@ class FedOptAPI(object):
         return averaged_params
 
     def _set_model_global_grads(self, new_state):
+        """
+        Set the gradients of the global model based on the difference between new and current model states.
+
+        Args:
+            new_state (dict): The new state of the global model.
+        """
         new_model = copy.deepcopy(self.model_trainer.model)
         new_model.load_state_dict(new_state)
         with torch.no_grad():
@@ -171,6 +236,12 @@ class FedOptAPI(object):
         self.model_trainer.set_model_params(new_model_state_dict)
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients.
+
+        Args:
+            round_idx (int): The current communication round index.
+        """
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
         train_metrics = {"num_samples": [], "num_correct": [], "losses": []}
 
@@ -231,6 +302,12 @@ class FedOptAPI(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on the validation set.
+
+        Args:
+            round_idx (int): The current communication round index.
+        """
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
         if self.val_global is None:

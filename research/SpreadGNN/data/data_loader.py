@@ -10,6 +10,21 @@ from .utils import *
 
 
 def get_data(path):
+    """
+    Load data from the specified path.
+
+    Args:
+        path (str): The path to the directory containing data files.
+
+    Returns:
+        tuple: A tuple containing the following elements:
+            - adj_matrices (list): A list of adjacency matrices.
+            - feature_matrices (list): A list of feature matrices.
+            - labels (numpy.ndarray): An array of labels.
+
+    Raises:
+        FileNotFoundError: If any of the required data files are not found.
+    """
     with open(path + "/adjacency_matrices.pkl", "rb") as f:
         adj_matrices = pickle.load(f)
 
@@ -21,6 +36,27 @@ def get_data(path):
     return adj_matrices, feature_matrices, labels
 
 def create_random_split(path):
+    """
+    Create a random 80/10/10 split of data from the specified path.
+
+    Args:
+        path (str): The path to the directory containing data files.
+
+    Returns:
+        tuple: A tuple containing the following elements for training, validation, and testing sets:
+            - train_adj_matrices (list): A list of adjacency matrices for training.
+            - train_feature_matrices (list): A list of feature matrices for training.
+            - train_labels (list): A list of labels for training.
+            - val_adj_matrices (list): A list of adjacency matrices for validation.
+            - val_feature_matrices (list): A list of feature matrices for validation.
+            - val_labels (list): A list of labels for validation.
+            - test_adj_matrices (list): A list of adjacency matrices for testing.
+            - test_feature_matrices (list): A list of feature matrices for testing.
+            - test_labels (list): A list of labels for testing.
+
+    Raises:
+        FileNotFoundError: If any of the required data files are not found.
+    """
     adj_matrices, feature_matrices, labels = get_data(path)
 
     # Random 80/10/10 split as suggested in the MoleculeNet whitepaper
@@ -74,6 +110,27 @@ def create_random_split(path):
     )
 
 def create_non_uniform_split(args, idxs, client_number, is_train=True):
+    """
+    Create a non-uniform split of data indices among clients based on the Dirichlet distribution.
+
+    Args:
+        args: An object containing relevant parameters.
+        idxs (list): A list of data indices to be split.
+        client_number (int): The number of clients.
+        is_train (bool): A flag indicating whether the split is for training data.
+
+    Returns:
+        list: A list of lists where each sublist contains data indices assigned to a client.
+
+    Logging:
+        This function logs information about the data split process.
+
+    Note:
+        This function relies on the `partition_class_samples_with_dirichlet_distribution` function.
+
+    Raises:
+        None
+    """
     logging.info("create_non_uniform_split------------------------------------------")
     N = len(idxs)
     alpha = args.partition_alpha
@@ -102,6 +159,22 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
 def partition_data_by_sample_size(
     args, path, client_number, uniform=True, compact=True
 ):
+    """
+    Partition dataset into multiple clients based on sample size.
+
+    Args:
+        args (list): Arguments.
+        path (str): Path to the dataset.
+        client_number (int): Number of clients to partition the dataset into.
+        uniform (bool, optional): If True, create uniform partitions. If False, create non-uniform partitions.
+        compact (bool, optional): Whether to use compact representation.
+
+    Returns:
+        tuple: A tuple containing global_data_dict and partition_dicts.
+
+        global_data_dict (dict): A dictionary containing global datasets (train, val, test).
+        partition_dicts (list): A list of dictionaries containing partitioned datasets for each client.
+    """
     (
         train_adj_matrices,
         train_feature_matrices,
@@ -233,6 +306,25 @@ def partition_data_by_sample_size(
 
 # For centralized training
 def get_dataloader(path, compact=True, normalize_features=False, normalize_adj=False):
+    """
+    Get data loaders for training, validation, and testing sets.
+
+    Args:
+        path (str): The path to the directory containing data files.
+        compact (bool, optional): Whether to use compact data format. Defaults to True.
+        normalize_features (bool, optional): Whether to normalize features. Defaults to False.
+        normalize_adj (bool, optional): Whether to normalize adjacency matrices. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing data loaders for training, validation, and testing sets.
+
+    Note:
+        This function utilizes the `MoleculesDataset` class and data collators to create data loaders.
+        Each batch size is set to 1 to ensure that each batch represents an entire molecule.
+
+    Raises:
+        None
+    """
     (
         train_adj_matrices,
         train_feature_matrices,
@@ -302,6 +394,39 @@ def load_partition_data(
     normalize_features=False,
     normalize_adj=False,
 ):
+    """
+    Load and partition data for federated learning among multiple clients.
+
+    Args:
+        args: An object containing relevant parameters.
+        path (str): The path to the directory containing data files.
+        client_number (int): The number of clients.
+        uniform (bool, optional): Whether to use uniform data partitioning. Defaults to True.
+        global_test (bool, optional): Whether to use a global test dataset. Defaults to True.
+        compact (bool, optional): Whether to use compact data format. Defaults to True.
+        normalize_features (bool, optional): Whether to normalize features. Defaults to False.
+        normalize_adj (bool, optional): Whether to normalize adjacency matrices. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing information about the loaded data for federated learning. The tuple includes:
+            - train_data_num (int): Total number of training samples in the global dataset.
+            - val_data_num (int): Total number of validation samples in the global dataset.
+            - test_data_num (int): Total number of testing samples in the global dataset.
+            - train_data_global (data.DataLoader): DataLoader for the global training dataset.
+            - val_data_global (data.DataLoader): DataLoader for the global validation dataset.
+            - test_data_global (data.DataLoader): DataLoader for the global testing dataset.
+            - data_local_num_dict (dict): A dictionary mapping client IDs to the number of local samples.
+            - train_data_local_dict (dict): A dictionary mapping client IDs to their DataLoader for training.
+            - val_data_local_dict (dict): A dictionary mapping client IDs to their DataLoader for validation.
+            - test_data_local_dict (dict): A dictionary mapping client IDs to their DataLoader for testing.
+
+    Note:
+        This function relies on data partitioning using the `partition_data_by_sample_size` function.
+        Each batch size is set to 1 to represent each molecule as a batch.
+
+    Raises:
+        None
+    """
     global_data_dict, partition_dicts = partition_data_by_sample_size(
         args, path, client_number, uniform, compact=compact
     )
@@ -399,6 +524,33 @@ def load_partition_data(
 
 
 def load_partition_data_distributed(process_id, path, client_number, uniform=True):
+    """
+    Load and partition data for distributed federated learning.
+
+    Args:
+        process_id (int): The ID of the current process.
+        path (str): The path to the directory containing data files.
+        client_number (int): The number of clients.
+        uniform (bool, optional): Whether to use uniform data partitioning. Defaults to True.
+
+    Returns:
+        tuple: A tuple containing information about the loaded data for distributed federated learning. The tuple includes:
+            - train_data_num (int): Total number of training samples in the global dataset.
+            - train_data_global (data.DataLoader): DataLoader for the global training dataset (for process_id 0).
+            - val_data_global (data.DataLoader): DataLoader for the global validation dataset (for process_id 0).
+            - test_data_global (data.DataLoader): DataLoader for the global testing dataset (for process_id 0).
+            - local_data_num (int): Total number of local samples for the current process.
+            - train_data_local (data.DataLoader): DataLoader for the local training dataset (for process_id > 0).
+            - val_data_local (data.DataLoader): DataLoader for the local validation dataset (for process_id > 0).
+            - test_data_local (data.DataLoader): DataLoader for the local testing dataset (for process_id > 0).
+
+    Note:
+        This function relies on data partitioning using the `partition_data_by_sample_size` function.
+        Each batch size is set to 1 to represent each molecule as a batch.
+
+    Raises:
+        None
+    """
     global_data_dict, partition_dicts = partition_data_by_sample_size(
         path, client_number, uniform
     )
@@ -474,6 +626,33 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
 
 
 def load_moleculenet(args, dataset_name):
+    """
+    Load and partition data for distributed federated learning.
+
+    Args:
+        process_id (int): The ID of the current process.
+        path (str): The path to the directory containing data files.
+        client_number (int): The number of clients.
+        uniform (bool, optional): Whether to use uniform data partitioning. Defaults to True.
+
+    Returns:
+        tuple: A tuple containing information about the loaded data for distributed federated learning. The tuple includes:
+            - train_data_num (int): Total number of training samples in the global dataset.
+            - train_data_global (data.DataLoader): DataLoader for the global training dataset (for process_id 0).
+            - val_data_global (data.DataLoader): DataLoader for the global validation dataset (for process_id 0).
+            - test_data_global (data.DataLoader): DataLoader for the global testing dataset (for process_id 0).
+            - local_data_num (int): Total number of local samples for the current process.
+            - train_data_local (data.DataLoader): DataLoader for the local training dataset (for process_id > 0).
+            - val_data_local (data.DataLoader): DataLoader for the local validation dataset (for process_id > 0).
+            - test_data_local (data.DataLoader): DataLoader for the local testing dataset (for process_id > 0).
+
+    Note:
+        This function relies on data partitioning using the `partition_data_by_sample_size` function.
+        Each batch size is set to 1 to represent each molecule as a batch.
+
+    Raises:
+        None
+    """
     num_cats, feat_dim = 0, 0
     if dataset_name not in ["sider", "tox21", "muv","qm8" ]:
         raise Exception("no such dataset!")

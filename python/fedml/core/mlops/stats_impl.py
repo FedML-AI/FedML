@@ -28,6 +28,16 @@ M1_MAX_POWER_WATTS = 16.5
 
 
 def gpu_in_use_by_this_process(gpu_handle: GPUHandle, pid: int) -> bool:
+    """
+    Check if a GPU is in use by a specified process.
+
+    Args:
+        gpu_handle (GPUHandle): Handle to the GPU to check.
+        pid (int): The process ID of the target process.
+
+    Returns:
+        bool: True if the GPU is in use by the specified process; False otherwise.
+    """
     if not psutil:
         return False
 
@@ -67,6 +77,16 @@ class WandbSystemStats:
     gpu_count: int
 
     def __init__(self, settings: SettingsStatic, interface: InterfaceQueue) -> None:
+        """
+        Initialize the WandbSystemStats instance.
+
+        Args:
+            settings (SettingsStatic): Settings for system stats tracking.
+            interface (InterfaceQueue): Interface for publishing stats.
+
+        Raises:
+            Exception: An exception is raised if GPU initialization fails.
+        """
         try:
             pynvml.nvmlInit()
             self.gpu_count = pynvml.nvmlDeviceGetCount()
@@ -82,7 +102,8 @@ class WandbSystemStats:
         self._telem = telemetry.TelemetryRecord()
         if psutil:
             net = psutil.net_io_counters()
-            self.network_init = {"sent": net.bytes_sent, "recv": net.bytes_recv}
+            self.network_init = {
+                "sent": net.bytes_sent, "recv": net.bytes_recv}
         else:
             wandb.termlog(
                 "psutil not installed, only GPU stats will be reported.  Install with pip install psutil"
@@ -105,6 +126,9 @@ class WandbSystemStats:
                 wandb.termlog("Error initializing IPUProfiler: " + str(e))
 
     def start(self) -> None:
+        """
+        Start the system stats tracking thread.
+        """
         if self._thread is None:
             self._shutdown = False
             self._thread = threading.Thread(target=self._thread_body)
@@ -117,23 +141,42 @@ class WandbSystemStats:
 
     @property
     def proc(self) -> psutil.Process:
+        """
+        Get the process associated with the current PID.
+
+        Returns:
+            psutil.Process: A process object for the current PID.
+        """
         return psutil.Process(pid=self._pid)
 
     @property
     def sample_rate_seconds(self) -> float:
-        """Sample system stats every this many seconds, defaults to 2, min is 0.5"""
+        """
+        Get the system stats sampling rate in seconds.
+
+        Returns:
+            float: The system stats sampling rate in seconds.
+        """
         sample_rate = self._settings._stats_sample_rate_seconds
         # TODO: handle self._api.dynamic_settings["system_sample_seconds"]
         return max(0.5, sample_rate)
 
     @property
     def samples_to_average(self) -> int:
-        """The number of samples to average before pushing, defaults to 15 valid range (2:30)"""
+        """
+        Get the number of samples to average before pushing.
+
+        Returns:
+            int: The number of samples to average.
+        """
         samples = self._settings._stats_samples_to_average
         # TODO: handle self._api.dynamic_settings["system_samples"]
         return min(30, max(2, samples))
 
     def _thread_body(self) -> None:
+        """
+        Body of the system stats tracking thread.
+        """
         while True:
             stats = self.stats()
             for stat, value in stats.items():
@@ -154,6 +197,9 @@ class WandbSystemStats:
                     return
 
     def shutdown(self) -> None:
+        """
+        Shutdown the system stats tracking thread.
+        """
         self._shutdown = True
         try:
             if self._thread is not None:
@@ -164,6 +210,9 @@ class WandbSystemStats:
             self._tpu_profiler.stop()
 
     def flush(self) -> None:
+        """
+        Flush and publish system stats.
+        """
         stats = self.stats()
         for stat, value in stats.items():
             # TODO: a bit hacky, we assume all numbers should be averaged.  If you want
@@ -189,7 +238,8 @@ class WandbSystemStats:
                     temp = pynvml.nvmlDeviceGetTemperature(
                         handle, pynvml.NVML_TEMPERATURE_GPU
                     )
-                    in_use_by_us = gpu_in_use_by_this_process(handle, pid=self._pid)
+                    in_use_by_us = gpu_in_use_by_this_process(
+                        handle, pid=self._pid)
 
                     stats["gpu.{}.{}".format(i, "gpu")] = utilz.gpu
                     stats["gpu.{}.{}".format(i, "memory")] = utilz.memory
@@ -200,7 +250,8 @@ class WandbSystemStats:
 
                     if in_use_by_us:
                         stats["gpu.process.{}.{}".format(i, "gpu")] = utilz.gpu
-                        stats["gpu.process.{}.{}".format(i, "memory")] = utilz.memory
+                        stats["gpu.process.{}.{}".format(
+                            i, "memory")] = utilz.memory
                         stats["gpu.process.{}.{}".format(i, "memoryAllocated")] = (
                             memory.used / float(memory.total)
                         ) * 100
@@ -208,17 +259,23 @@ class WandbSystemStats:
 
                         # Some GPUs don't provide information about power usage
                     try:
-                        power_watts = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
+                        power_watts = pynvml.nvmlDeviceGetPowerUsage(
+                            handle) / 1000.0
                         power_capacity_watts = (
-                            pynvml.nvmlDeviceGetEnforcedPowerLimit(handle) / 1000.0
+                            pynvml.nvmlDeviceGetEnforcedPowerLimit(
+                                handle) / 1000.0
                         )
-                        power_usage = (power_watts / power_capacity_watts) * 100
+                        power_usage = (
+                            power_watts / power_capacity_watts) * 100
 
-                        stats["gpu.{}.{}".format(i, "powerWatts")] = power_watts
-                        stats["gpu.{}.{}".format(i, "powerPercent")] = power_usage
+                        stats["gpu.{}.{}".format(
+                            i, "powerWatts")] = power_watts
+                        stats["gpu.{}.{}".format(
+                            i, "powerPercent")] = power_usage
 
                         if in_use_by_us:
-                            stats["gpu.process.{}.{}".format(i, "powerWatts")] = power_watts
+                            stats["gpu.process.{}.{}".format(
+                                i, "powerWatts")] = power_watts
                             stats[
                                 "gpu.process.{}.{}".format(i, "powerPercent")
                             ] = power_usage
@@ -238,9 +295,11 @@ class WandbSystemStats:
             and self.gpu_count == 0
         ):
             try:
-                out = subprocess.check_output([util.apple_gpu_stats_binary(), "--json"])
+                out = subprocess.check_output(
+                    [util.apple_gpu_stats_binary(), "--json"])
                 m1_stats = json.loads(out.split(b"\n")[0])
-                stats["gpu.0.memory"] = m1_stats["mem_used"] / float(m1_stats["utilization"]/100)
+                stats["gpu.0.memory"] = m1_stats["mem_used"] / \
+                    float(m1_stats["utilization"]/100)
                 stats["gpu.0.gpu"] = m1_stats["utilization"]
                 stats["gpu.0.memoryAllocated"] = m1_stats["mem_used"]
                 stats["gpu.0.temp"] = m1_stats["temperature"]
@@ -274,7 +333,8 @@ class WandbSystemStats:
             stats["disk"] = psutil.disk_usage("/").percent
             stats["proc.memory.availableMB"] = sysmem.available / 1048576.0
             try:
-                stats["proc.memory.rssMB"] = self.proc.memory_info().rss / 1048576.0
+                stats["proc.memory.rssMB"] = self.proc.memory_info().rss / \
+                    1048576.0
                 stats["proc.memory.percent"] = self.proc.memory_percent()
                 stats["proc.cpu.threads"] = self.proc.num_threads()
             except psutil.NoSuchProcess:

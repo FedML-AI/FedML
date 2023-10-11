@@ -17,6 +17,15 @@ from .client import Client
 
 class FedDynTrainer(object):
     def __init__(self, dataset, model, device, args):
+        """
+        Initialize the FedDynTrainer.
+
+        Args:
+            dataset: A tuple containing dataset information.
+            model: The model to be trained.
+            device: The device to run the training on (e.g., 'cpu' or 'cuda').
+            args: Additional training configuration and hyperparameters.
+        """
         self.device = device
         self.args = args
         [
@@ -59,6 +68,15 @@ class FedDynTrainer(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up client instances for training.
+
+        Args:
+            train_data_local_num_dict: A dictionary containing the number of samples for each local training dataset.
+            train_data_local_dict: A dictionary containing local training datasets.
+            test_data_local_dict: A dictionary containing local test datasets.
+            model_trainer: The model trainer instance.
+        """
         logging.info("############setup_clients (START)#############")
         if self.args.initialize_all_clients:
             num_initialized_clients = self.args.client_num_in_total
@@ -78,6 +96,11 @@ class FedDynTrainer(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Train the federated dynamic model using FedDyn.
+
+        This method performs the federated training loop, including client selection, training, aggregation, and testing.
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -175,6 +198,17 @@ class FedDynTrainer(object):
         mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Select a subset of clients for communication in each round.
+
+        Args:
+            round_idx: The current communication round index.
+            client_num_in_total: The total number of clients.
+            client_num_per_round: The number of clients to select in each round.
+
+        Returns:
+            A list of selected client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -185,6 +219,12 @@ class FedDynTrainer(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation dataset from the test dataset.
+
+        Args:
+            num_samples: The number of samples to include in the validation dataset.
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -192,11 +232,31 @@ class FedDynTrainer(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate local model weights from all clients.
+
+        Args:
+            w_locals: A list of tuples containing the number of samples and local model weights for each client.
+
+        Returns:
+            The aggregated global model weights.
+        """
         avg_params = FedMLAggOperator.agg(self.args, w_locals)
         return avg_params
 
 
     def _test(self, test_data, device, args):
+        """
+        Perform testing on the test dataset.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the testing on (e.g., 'cpu' or 'cuda').
+            args: Additional testing configuration and hyperparameters.
+
+        Returns:
+            A dictionary containing testing metrics (e.g., test accuracy, test loss).
+        """
         model = self.model_trainer.model
 
         model.to(device)
@@ -222,6 +282,14 @@ class FedDynTrainer(object):
         return metrics
 
     def test(self, test_data, device, args):
+        """
+        Perform testing on the test dataset and log testing metrics.
+
+        Args:
+            test_data: The test dataset.
+            device: The device to run the testing on (e.g., 'cpu' or 'cuda').
+            args: Additional testing configuration and hyperparameters.
+        """
         # test data
         test_num_samples = []
         test_tot_corrects = []
@@ -253,6 +321,12 @@ class FedDynTrainer(object):
 
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients and log the results.
+
+        Args:
+            round_idx: The current communication round index.
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -314,6 +388,12 @@ class FedDynTrainer(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on the validation set for all clients.
+
+        Args:
+            round_idx: The current communication round index.
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 

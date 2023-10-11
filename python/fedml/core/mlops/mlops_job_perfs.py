@@ -15,6 +15,9 @@ from .mlops_utils import MLOpsUtils
 
 class MLOpsJobPerfStats(object):
     def __init__(self):
+        """
+        Initialize MLOpsJobPerfStats object.
+        """
         self.job_stats_process = None
         self.job_stats_event = None
         self.args = None
@@ -25,11 +28,28 @@ class MLOpsJobPerfStats(object):
         self.job_stats_obj_map = dict()
 
     def add_job(self, job_id, process_id):
+        """
+        Add a job to be tracked for performance statistics.
+
+        Args:
+            job_id (str): The ID of the job.
+            process_id (int): The process ID of the job.
+        """
         self.job_process_id_map[job_id] = process_id
 
     @staticmethod
     def report_system_metric(run_id, edge_id, metric_json=None,
                              mqtt_mgr=None, sys_stats_obj=None):
+        """
+        Report system performance metrics to MLOps.
+
+        Args:
+            run_id (int): The ID of the run.
+            edge_id (int): The ID of the edge device.
+            metric_json (dict, optional): The system performance metrics in JSON format.
+            mqtt_mgr (MqttManager, optional): The MQTT manager for communication.
+            sys_stats_obj (SysStats, optional): The SysStats object for collecting system stats.
+        """
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_client/mlops/system_performance"
@@ -91,23 +111,40 @@ class MLOpsJobPerfStats(object):
             mqtt_mgr.send_message_json(topic_name, message_json)
 
     def stop_job_stats(self):
+        """
+        Stop tracking job performance statistics.
+        """
+
         if self.job_stats_event is not None:
             self.job_stats_event.set()
 
     def should_stop_job_stats(self):
+        """
+        Check if job performance statistics tracking should be stopped.
+
+        Returns:
+            bool: True if job performance statistics tracking should be stopped, otherwise False.
+        """
         if self.job_stats_event is not None and self.job_stats_event.is_set():
             return True
 
         return False
 
     def setup_job_stats_process(self, sys_args):
+        """
+        Set up the process for tracking job performance statistics.
+
+        Args:
+            sys_args (object): The system arguments.
+        """
         if self.job_stats_process is not None and psutil.pid_exists(self.job_stats_process.pid):
             return
 
         perf_stats = MLOpsJobPerfStats()
         perf_stats.args = sys_args
         perf_stats.edge_id = getattr(sys_args, "edge_id", None)
-        perf_stats.edge_id = getattr(sys_args, "client_id", None) if perf_stats.edge_id is None else perf_stats.edge_id
+        perf_stats.edge_id = getattr(
+            sys_args, "client_id", None) if perf_stats.edge_id is None else perf_stats.edge_id
         perf_stats.edge_id = 0 if perf_stats.edge_id is None else perf_stats.edge_id
         perf_stats.device_id = getattr(sys_args, "device_id", 0)
         perf_stats.run_id = getattr(sys_args, "run_id", 0)
@@ -122,11 +159,21 @@ class MLOpsJobPerfStats(object):
         self.job_stats_process.start()
 
     def report_job_stats(self, sys_args):
+        """
+        Report job performance statistics.
+
+        Args:
+            sys_args (object): The system arguments.
+        """
         self.setup_job_stats_process(sys_args)
 
     def report_job_stats_entry(self, sys_event):
-        print(f"Report job realtime stats, process id {os.getpid()}")
+        """
+        Report job performance statistics entry point.
 
+        Args:
+            sys_event (multiprocessing.Event): The system event for signaling the process.
+        """
         self.job_stats_event = sys_event
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],
@@ -134,7 +181,8 @@ class MLOpsJobPerfStats(object):
             self.args.mqtt_config_path["MQTT_USER"],
             self.args.mqtt_config_path["MQTT_PWD"],
             180,
-            "FedML_Metrics_JobPerf_{}_{}_{}".format(str(self.device_id), str(self.edge_id), str(uuid.uuid4()))
+            "FedML_Metrics_JobPerf_{}_{}_{}".format(
+                str(self.device_id), str(self.edge_id), str(uuid.uuid4()))
         )
         mqtt_mgr.connect()
         mqtt_mgr.loop_start()
@@ -144,13 +192,15 @@ class MLOpsJobPerfStats(object):
             for job_id, process_id in self.job_process_id_map.items():
                 try:
                     if self.job_stats_obj_map.get(job_id, None) is None:
-                        self.job_stats_obj_map[job_id] = SysStats(process_id=process_id)
+                        self.job_stats_obj_map[job_id] = SysStats(
+                            process_id=process_id)
 
                     MLOpsJobPerfStats.report_system_metric(job_id, self.edge_id,
                                                            mqtt_mgr=mqtt_mgr,
                                                            sys_stats_obj=self.job_stats_obj_map[job_id])
                 except Exception as e:
-                    logging.debug("exception when reporting job pref: {}.".format(traceback.format_exc()))
+                    logging.debug("exception when reporting job pref: {}.".format(
+                        traceback.format_exc()))
                     pass
 
             time.sleep(10)

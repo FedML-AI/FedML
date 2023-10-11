@@ -10,6 +10,19 @@ class AttackDefenseDataLoader:
     def load_cifar10_data(
         cls, client_num, batch_size, data_dir="../../../../../data/cifar10", partition_method="homo", partition_alpha=None
     ):
+        """
+        Load CIFAR-10 dataset and partition it among clients.
+
+        Args:
+            client_num (int): The number of clients to partition the dataset for.
+            batch_size (int): The batch size for DataLoader objects.
+            data_dir (str): The directory where the CIFAR-10 dataset is located.
+            partition_method (str): The method for partitioning the dataset among clients.
+            partition_alpha (float): The alpha parameter for partitioning (used when partition_method is "hetero").
+
+        Returns:
+            dict: A dictionary containing DataLoader objects for each client.
+        """
         return load_partition_data_cifar10(
             "cifar10",
             data_dir=data_dir,
@@ -24,13 +37,14 @@ class AttackDefenseDataLoader:
         """
         Get a data loader created from a given set of data.
 
-        :param batch_size: batch size of data loader
-        :type batch_size: int
-        :param X: data features
-        :type X: numpy.Array()
-        :param Y: data labels
-        :type Y: numpy.Array()
-        :return: torch.utils.data.DataLoader
+        Args:
+            batch_size (int): Batch size of the DataLoader.
+            X (numpy.ndarray): Data features.
+            Y (numpy.ndarray): Data labels.
+            **kwargs: Additional arguments for DataLoader.
+
+        Returns:
+            torch.utils.data.DataLoader: DataLoader object for the provided data.
         """
         X_torch = torch.from_numpy(X).float()
 
@@ -48,9 +62,13 @@ class AttackDefenseDataLoader:
     @classmethod
     def load_data_loader_from_file(cls, filename):
         """
-        Loads DataLoader object from a file if available.
+        Load a DataLoader object from a file.
 
-        :param filename: string
+        Args:
+            filename (str): The name of the file containing the DataLoader object.
+
+        Returns:
+            torch.utils.data.DataLoader: Loaded DataLoader object.
         """
         print("Loading data loader from file: {}".format(filename))
 

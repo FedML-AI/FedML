@@ -5,6 +5,27 @@ from ..globals import *
 
 
 def uniform_partition(train_index_list, test_index_list=None, n_clients=N_CLIENTS):
+    """Uniformly partition data indices into multiple clients.
+
+    This function partitions a list of training data indices into 'n_clients' subsets,
+    ensuring a roughly equal distribution of data among clients. Optionally, it can also
+    partition a list of test data indices in a similar manner.
+
+    Args:
+        train_index_list (list): List of training data indices.
+        test_index_list (list, optional): List of test data indices. Default is None.
+        n_clients (int): Number of clients to partition the data for.
+
+    Returns:
+        dict: A dictionary containing the data partition information.
+            - 'n_clients': Number of clients.
+            - 'partition_data': A dictionary where each key represents a client ID (0 to n_clients-1),
+                and the value is another dictionary containing the partitioned data for that client.
+                For each client:
+                - 'train': List of training data indices.
+                - 'test': List of test data indices (if 'test_index_list' is provided).
+
+    """
     partition_dict = dict()
     partition_dict["n_clients"] = n_clients
     partition_dict["partition_data"] = dict()

@@ -10,6 +10,18 @@ from fedml.constants import (
 
 
 def get_device_type(args):
+    """
+    Determine the type of device (CPU, GPU, or MPS) based on the provided arguments.
+
+    Args:
+        args (object): An object containing arguments, including 'device_type', 'using_gpu', 'gpu_id', and 'training_type'.
+
+    Returns:
+        str: The type of device to use (e.g., 'cpu', 'gpu', or 'mps').
+
+    Raises:
+        Exception: If the provided 'device_type' is not supported.
+    """
     if hasattr(args, "device_type"):
         if args.device_type == "cpu":
             device_type = "cpu"
@@ -40,6 +52,18 @@ def get_device_type(args):
 
 
 def get_device(args):
+    """
+    Get the device for training based on the provided arguments.
+
+    Args:
+        args (object): An object containing arguments, including 'training_type', 'backend', 'gpu_id', 'using_gpu', 'process_id', and others.
+
+    Returns:
+        str: The device (CPU or GPU) assigned to the current process.
+
+    Raises:
+        Exception: If the 'training_type' is not defined.
+    """
     if args.training_type == "simulation" and args.backend == "sp":
         if not hasattr(args, "gpu_id"):
             args.gpu_id = 0
@@ -104,14 +128,14 @@ def get_device(args):
             gpu_mapping_key = (
                 args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
             )
-            gpu_id = args.gpu_id if hasattr(args, "gpu_id") else None  # no no need to set gpu_id
+            gpu_id = args.gpu_id if hasattr(args, "gpu_id") else None  # no need to set gpu_id
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None
             gpu_id = None
 
         logging.info(
-            "devide_type = {}, gpu_mapping_file = {}, "
+            "device_type = {}, gpu_mapping_file = {}, "
             "gpu_mapping_key = {}, gpu_id = {}".format(
                 device_type, gpu_mapping_file, gpu_mapping_key, gpu_id
             )
@@ -138,7 +162,7 @@ def get_device(args):
         if args.enable_cuda_rpc and is_master_process:
             assert (
                 device.index == args.cuda_rpc_gpu_mapping[args.rank]
-            ), f"GPU assignemnt inconsistent with cuda_rpc_gpu_mapping. Assigned to GPU {device.index} while expecting {args.cuda_rpc_gpu_mapping[args.rank]}"
+            ), f"GPU assignment inconsistent with cuda_rpc_gpu_mapping. Assigned to GPU {device.index} while expecting {args.cuda_rpc_gpu_mapping[args.rank]}"
 
         return device
     elif args.training_type == "cross_device":

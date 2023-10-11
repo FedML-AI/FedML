@@ -19,6 +19,17 @@ class ClientMasterManager(FedMLCommManager):
     RUN_FINISHED_STATUS_FLAG = "FINISHED"
 
     def __init__(self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"):
+        """
+        Initialize the ClientMasterManager.
+
+        Args:
+            args: Arguments and configuration for the client manager.
+            trainer_dist_adapter: Trainer distribution adapter for distributed training.
+            comm: Communication backend (MPI, etc.).
+            rank: Rank of the client.
+            size: Size of the client group.
+            backend: Backend for distributed training (MPI, etc.).
+        """
         super().__init__(args, comm, rank, size, backend)
         self.trainer_dist_adapter = trainer_dist_adapter
         self.args = args
@@ -35,6 +46,9 @@ class ClientMasterManager(FedMLCommManager):
         self.is_inited = False
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for handling various types of messages.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
         )
@@ -53,6 +67,12 @@ class ClientMasterManager(FedMLCommManager):
         )
 
     def handle_message_connection_ready(self, msg_params):
+        """
+        Handle the "connection ready" message.
+
+        Args:
+            msg_params: Parameters of the message.
+        """
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)
@@ -60,9 +80,21 @@ class ClientMasterManager(FedMLCommManager):
             mlops.log_sys_perf(self.args)
 
     def handle_message_check_status(self, msg_params):
+        """
+        Handle the "check client status" message.
+
+        Args:
+            msg_params: Parameters of the message.
+        """
         self.send_client_status(0)
 
     def handle_message_init(self, msg_params):
+        """
+        Handle the "initialize" message and prepare for training.
+
+        Args:
+            msg_params: Parameters of the message.
+        """
         if self.is_inited:
             return
 
@@ -88,6 +120,12 @@ class ClientMasterManager(FedMLCommManager):
         self.round_idx += 1
 
     def handle_message_receive_model_from_server(self, msg_params):
+        """
+        Handle the "receive model from server" message.
+
+        Args:
+            msg_params: Parameters of the message.
+        """
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
@@ -108,15 +146,35 @@ class ClientMasterManager(FedMLCommManager):
             self.finish()
 
     def handle_message_finish(self, msg_params):
+        """
+        Handle the "finish" message and perform cleanup.
+
+        Args:
+            msg_params: Parameters of the message.
+        """
         logging.info(" ====================cleanup ====================")
         self.cleanup()
 
     def cleanup(self):
+        """
+        Perform cleanup operations at the end of training.
+        """
         self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
         mlops.log_training_finished_status()
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
+        """
+        Send the model to the server.
+
+        Args:
+            receive_id: ID of the recipient (usually the server).
+            weights: Model weights to be sent.
+            local_sample_num: Number of local training samples.
+
+        Note:
+            This method sends model parameters to the server for aggregation.
+        """
         tick = time.time()
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id,)
@@ -130,6 +188,17 @@ class ClientMasterManager(FedMLCommManager):
         )
 
     def send_client_status(self, receive_id, status=ONLINE_STATUS_FLAG):
+        """
+        Send the client status message to the specified recipient.
+
+        Args:
+            receive_id: ID of the recipient.
+            status: Status flag to be sent (default is ONLINE_STATUS_FLAG).
+
+        Note:
+            This method sends information about the client's status, including the operating system.
+
+        """
         logging.info("send_client_status")
         logging.info("self.client_real_id = {}".format(self.client_real_id))
         message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
@@ -149,9 +218,32 @@ class ClientMasterManager(FedMLCommManager):
             self.send_message(message)
 
     def report_training_status(self, status):
+        """
+        Report the training status to MLOps.
+
+        Args:
+            status: Training status to be reported.
+
+        Note:
+            This method logs the training status using MLOps.
+
+        """
         mlops.log_training_status(status)
 
     def sync_process_group(self, round_idx, model_params=None, client_index=None, src=0):
+        """
+        Synchronize the process group with information about the current training round.
+
+        Args:
+            round_idx: The current training round index.
+            model_params: Model parameters (default is None).
+            client_index: Client index (default is None).
+            src: Source of the synchronization (default is 0).
+
+        Note:
+            This method broadcasts information about the current training round to the process group.
+
+        """
         logging.info("sending round number to pg")
         round_number = [round_idx, model_params, client_index]
         dist.broadcast_object_list(
@@ -160,6 +252,13 @@ class ClientMasterManager(FedMLCommManager):
         logging.info("round number %d broadcast to process group" % round_number[0])
 
     def __train(self):
+        """
+        Perform the training for the current round.
+
+        Note:
+            This method initiates the training process and sends the updated model to the server.
+
+        """
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
         mlops.event("train", event_started=True, event_value=str(self.round_idx))

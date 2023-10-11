@@ -12,6 +12,12 @@ from typing import List, Tuple, Dict, Any
 
 class LazyWorkerAttack(BaseAttackMethod):
     def __init__(self, config):
+        """
+        Initialize the Lazy Worker Attack.
+
+        Args:
+            config: An object containing attack configuration parameters.
+        """
         self.lazy_worker_num = config.lazy_worker_num
         self.attack_mode = (
             config.attack_mode
@@ -39,6 +45,16 @@ class LazyWorkerAttack(BaseAttackMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform the Lazy Worker Attack on the global model.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]): List of client gradients.
+            extra_auxiliary_info (Any): Additional auxiliary information.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Updated list of client gradients with the attack.
+        """
         if self.round == 1:
             self.client_cache = [grad for (_, grad) in raw_client_grad_list]
             return raw_client_grad_list
@@ -74,10 +90,23 @@ class LazyWorkerAttack(BaseAttackMethod):
                 else:  # client
                     previous_model_params = self.client_cache[i]
                 previous_model_params = mask_func(previous_model_params)
-                new_model_list.append((local_sample_number, previous_model_params))
+                new_model_list.append(
+                    (local_sample_number, previous_model_params))
         return new_model_list
 
     def _add_a_mask_on_clients(self, model_list, lazy_worker_idxs, mask_func: Callable):
+        """
+        Perform the Lazy Worker Attack on the client models.
+
+        Args:
+            model_list (List[Tuple[float, OrderedDict]]): List of client models.
+            lazy_worker_idxs (List[int]): List of lazy worker indices.
+            mask_func (Callable): Masking function.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Updated list of client models with the attack.
+
+        """
         new_model_list = []
         for i in range(0, len(model_list)):
             if i not in lazy_worker_idxs:
@@ -88,10 +117,23 @@ class LazyWorkerAttack(BaseAttackMethod):
                 local_sample_number, _ = model_list[i]
                 previous_model_params = self.client_cache[i]
                 previous_model_params = mask_func(previous_model_params)
-                new_model_list.append((local_sample_number, previous_model_params))
+                new_model_list.append(
+                    (local_sample_number, previous_model_params))
         return new_model_list
 
     def _add_a_mask_on_global(self, model_list, lazy_worker_idxs, mask_func: Callable):
+        """
+        Perform the Lazy Worker Attack on the global model.
+
+        Args:
+            model_list (List[Tuple[float, OrderedDict]]): List of client models.
+            lazy_worker_idxs (List[int]): List of lazy worker indices.
+            mask_func (Callable): Masking function.
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Updated list of client models with the attack.
+
+        """
         new_model_list = []
         for i in range(0, len(model_list)):
             if i not in lazy_worker_idxs:
@@ -100,10 +142,17 @@ class LazyWorkerAttack(BaseAttackMethod):
                 local_sample_number, _ = model_list[i]
                 previous_model_params = self.client_cache[i]
                 previous_model_params = mask_func(previous_model_params)
-                new_model_list.append((local_sample_number, previous_model_params))
+                new_model_list.append(
+                    (local_sample_number, previous_model_params))
         return new_model_list
 
     def random_mask(self, previous_model_params):
+        """
+        Add a random mask in [-1, 1].
+
+        Args:
+            previous_model_params (OrderedDict): Previous model parameters.
+        """
         # add a random mask in [-1, 1]
         for k in previous_model_params.keys():
             if is_weight_param(k):
@@ -120,6 +169,12 @@ class LazyWorkerAttack(BaseAttackMethod):
         return previous_model_params
 
     def gaussian_mask(self, previous_model_params):
+        """
+        Add a gaussian mask.
+
+        Args:
+            previous_model_params (OrderedDict): Previous model parameters.
+        """
         # add a gaussian mask
         for k in previous_model_params.keys():
             if is_weight_param(k):
@@ -131,6 +186,12 @@ class LazyWorkerAttack(BaseAttackMethod):
         return previous_model_params
 
     def uniform_mask(self, previous_model):
+        """
+        Randomly generate a uniform mask.
+
+        Args:
+            previous_model (OrderedDict): Previous model parameters.
+        """
         # randomly generate a uniform mask
         unif_param = random.uniform(-1, 1)
         print(f"unif_mode_param = {unif_param}")
@@ -147,5 +208,11 @@ class LazyWorkerAttack(BaseAttackMethod):
         return previous_model
 
     def no_mask(self, previous_model_params):
+        """
+        Directly return the model in the last round.
+
+        Args:
+            previous_model_params (OrderedDict): Previous model parameters.
+        """
         # directly return the model in the last round
         return previous_model_params

@@ -10,6 +10,15 @@ from .TA_client import TA_Client
 
 
 class TurboAggregateTrainer(object):
+    """
+    TurboAggregateTrainer for federated learning with Turbo-Aggregate protocol.
+
+    Args:
+        dataset: A list containing dataset-related information.
+        model: The global model for training.
+        device: The computing device (e.g., 'cuda' or 'cpu').
+        args: Additional training arguments.
+    """
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
@@ -40,6 +49,14 @@ class TurboAggregateTrainer(object):
         self.setup_clients(data_local_num_dict, train_data_local_dict, test_data_local_dict)
 
     def setup_clients(self, data_local_num_dict, train_data_local_dict, test_data_local_dict):
+        """
+        Set up the list of clients for federated learning.
+
+        Args:
+            data_local_num_dict: A dictionary containing the number of local samples for each client.
+            train_data_local_dict: A dictionary containing local training data for each client.
+            test_data_local_dict: A dictionary containing local test data for each client.
+        """
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_in_total):
             c = TA_Client(
@@ -55,6 +72,9 @@ class TurboAggregateTrainer(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Train the global model using the Turbo-Aggregate protocol.
+        """
         for round_idx in range(self.args.comm_round):
             logging.info("Communication round : {}".format(round_idx))
             w_global = self.model_trainer.get_model_params()
@@ -94,6 +114,15 @@ class TurboAggregateTrainer(object):
             self.local_test(self.model_global, round_idx)
 
     def aggregate(self, w_locals):
+        """
+        Aggregate the local model weights from clients using Turbo-Aggregate.
+
+        Args:
+            w_locals: List of local model weights from clients.
+
+        Returns:
+            Averaged global model weights.
+        """
         logging.info("################aggregate: %d" % len(w_locals))
         (sample_num, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
@@ -107,6 +136,7 @@ class TurboAggregateTrainer(object):
         return averaged_params
 
     def TA_topology_vanilla(self):
+        
         # logging.info("################aggregate: %d" % len(w_locals))
 
         # N = self.args.client_number
@@ -119,10 +149,24 @@ class TurboAggregateTrainer(object):
         pass
 
     def local_test(self, model_global, round_idx):
+        """
+        Perform local testing on clients.
+
+        Args:
+            model_global: The global model to evaluate.
+            round_idx: The communication round index.
+        """
         self.local_test_on_training_data(model_global, round_idx)
         self.local_test_on_test_data(model_global, round_idx)
 
     def local_test_on_training_data(self, model_global, round_idx):
+        """
+        Perform local testing on training data for clients.
+
+        Args:
+            model_global: The global model to evaluate.
+            round_idx: The communication round index.
+        """
         num_samples = []
         tot_corrects = []
         losses = []
@@ -148,6 +192,13 @@ class TurboAggregateTrainer(object):
         logging.info(stats)
 
     def local_test_on_test_data(self, model_global, round_idx):
+        """
+        Perform local testing on test data for clients.
+
+        Args:
+            model_global: The global model to evaluate.
+            round_idx: The communication round index.
+        """
         num_samples = []
         tot_corrects = []
         losses = []
@@ -172,6 +223,9 @@ class TurboAggregateTrainer(object):
         logging.info(stats)
 
     def global_test(self):
+        """
+        Perform global testing using the global dataset and log the results.
+        """
         logging.info("################global_test")
         acc_train, num_sample, loss_train = self.test_using_global_dataset(
             self.model_global, self.train_global, self.device
@@ -190,6 +244,17 @@ class TurboAggregateTrainer(object):
             wandb.log({"Global Testing Accuracy": acc_test})
 
     def test_using_global_dataset(self, model_global, global_test_data, device):
+        """
+        Test the global model using the global test dataset.
+
+        Args:
+            model_global: The global model to evaluate.
+            global_test_data: The global test dataset.
+            device: The computing device (e.g., 'cuda' or 'cpu').
+
+        Returns:
+            Tuple of testing accuracy, total samples, and testing loss.
+        """
         model_global.eval()
         model_global.to(device)
         test_loss = test_acc = test_total = 0.0

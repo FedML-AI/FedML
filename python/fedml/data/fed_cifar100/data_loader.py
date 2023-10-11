@@ -23,7 +23,19 @@ _LABEL = "label"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
+    """
+    Get data loaders for training and testing.
 
+    Args:
+        dataset (str): Dataset name.
+        data_dir (str): Directory containing the data.
+        train_bs (int): Batch size for training data loader.
+        test_bs (int): Batch size for testing data loader.
+        client_idx (int, optional): Index of the client to load data for.
+
+    Returns:
+        tuple: A tuple containing the training data loader and testing data loader.
+    """
     train_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TRAIN_FILE), "r")
     test_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TEST_FILE), "r")
     train_x = []
@@ -31,7 +43,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
     test_x = []
     test_y = []
 
-    # load data in numpy format from h5 file
+    # Load data in numpy format from h5 file
     if client_idx is None:
         train_x = np.vstack(
             [
@@ -62,14 +74,14 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                 [test_h5[_EXAMPLE][client_id_test][_LABEL][()]]
             ).squeeze()
 
-    # preprocess
+    # Preprocess
     train_x = utils.preprocess_cifar_img(torch.tensor(train_x), train=True)
     train_y = torch.tensor(train_y)
     if len(test_x) != 0:
         test_x = utils.preprocess_cifar_img(torch.tensor(test_x), train=False)
         test_y = torch.tensor(test_y)
 
-    # generate dataloader
+    # Generate data loader
     train_ds = data.TensorDataset(train_x, train_y)
     train_dl = data.DataLoader(
         dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False
@@ -91,11 +103,22 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 def load_partition_data_distributed_federated_cifar100(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load distributed federated CIFAR-100 dataset for a specific client.
 
+    Args:
+        process_id (int): Identifier of the client process.
+        dataset (str): Dataset name.
+        data_dir (str): Directory containing the data.
+        batch_size (int, optional): Batch size for data loader.
+
+    Returns:
+        tuple: A tuple containing information about the dataset, including the number of classes.
+    """
     class_num = 100
 
     if process_id == 0:
-        # get global dataset
+        # Get global dataset
         train_data_global, test_data_global = get_dataloader(
             dataset, data_dir, batch_size, batch_size
         )
@@ -107,7 +130,7 @@ def load_partition_data_distributed_federated_cifar100(
         test_data_local = None
         local_data_num = 0
     else:
-        # get local dataset
+        # Get local dataset
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1
         )
@@ -132,6 +155,17 @@ def load_partition_data_distributed_federated_cifar100(
 def load_partition_data_federated_cifar100(
     dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
+    """
+    Load federated CIFAR-100 dataset for multiple clients.
+
+    Args:
+        dataset (str): Dataset name.
+        data_dir (str): Directory containing the data.
+        batch_size (int, optional): Batch size for data loader.
+
+    Returns:
+        tuple: A tuple containing information about the dataset, including the number of classes.
+    """
 
     class_num = 100
 

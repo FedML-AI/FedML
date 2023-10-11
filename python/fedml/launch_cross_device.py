@@ -5,8 +5,11 @@ from .constants import FEDML_TRAINING_PLATFORM_CROSS_DEVICE
 
 def run_mnn_server():
     from .cross_device import ServerMNN
+    """
+    Run the server for the FedML BeeHive platform.
 
-    """FedML BeeHive"""
+    This function initializes the server, loads data, and starts training using the MNN (Multi-device Neural Network) server.
+    """
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
 
     args = fedml.init()

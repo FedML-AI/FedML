@@ -16,6 +16,15 @@ from .client import Client
 
 class ScaffoldTrainer(object):
     def __init__(self, dataset, model, device, args):
+        """
+        Initialize the ScaffoldTrainer.
+
+        Args:
+            dataset: A list of dataset components.
+            model: The model to be trained.
+            device: The computing device (e.g., 'cuda' or 'cpu').
+            args: Training arguments.
+        """
         self.device = device
         self.args = args
         [
@@ -58,6 +67,15 @@ class ScaffoldTrainer(object):
     def _setup_clients(
         self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
+        """
+        Set up client instances for training.
+
+        Args:
+            train_data_local_num_dict: A dictionary of local training dataset sizes.
+            train_data_local_dict: A dictionary of local training datasets.
+            test_data_local_dict: A dictionary of local test datasets.
+            model_trainer: The model trainer instance.
+        """
         logging.info("############setup_clients (START)#############")
         if self.args.initialize_all_clients:
             num_initialized_clients = self.args.client_num_in_total
@@ -77,6 +95,9 @@ class ScaffoldTrainer(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
+        """
+        Perform the training process.
+        """
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -155,6 +176,17 @@ class ScaffoldTrainer(object):
         mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly sample clients for federated learning communication round.
+
+        Args:
+            round_idx (int): The current communication round index.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to select per round.
+
+        Returns:
+            list: List of client indexes selected for communication.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
@@ -165,6 +197,12 @@ class ScaffoldTrainer(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation dataset subset for local validation.
+
+        Args:
+            num_samples (int): Number of samples in the validation dataset subset.
+        """
         test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
@@ -172,6 +210,15 @@ class ScaffoldTrainer(object):
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
+        """
+        Aggregate local model updates using FedMLAggOperator.
+
+        Args:
+            w_locals: List of local model updates.
+
+        Returns:
+            tuple: Total aggregated model update and total client delta parameters.
+        """
         # training_num = 0
         # for idx in range(len(w_locals)):
         #     (sample_num, averaged_params) = w_locals[idx]
@@ -185,6 +232,12 @@ class ScaffoldTrainer(object):
 
 
     def _local_test_on_all_clients(self, round_idx):
+        """
+        Perform local testing on all clients for both training and test datasets.
+
+        Args:
+            round_idx (int): The current communication round index.
+        """
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
@@ -246,6 +299,12 @@ class ScaffoldTrainer(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
+        """
+        Perform local testing on a validation set for the specified round.
+
+        Args:
+            round_idx (int): The current communication round index.
+        """
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
 

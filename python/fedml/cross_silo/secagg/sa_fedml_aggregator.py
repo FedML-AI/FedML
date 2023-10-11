@@ -29,6 +29,20 @@ class SecAggAggregator(object):
         args,
         model_trainer,
     ):
+        """
+
+        Args:
+            train_global: Global training data.
+            test_global: Global test data.
+            all_train_data_num: Total number of training samples.
+            train_data_local_dict: Local training data for all clients.
+            test_data_local_dict: Local test data for all clients.
+            train_data_local_num_dict: Number of local training samples for all clients.
+            client_num: Total number of clients.
+            device: Computing device (e.g., 'cuda' or 'cpu').
+            args: Command-line arguments.
+            model_trainer: Model trainer instance.
+        """
         self.trainer = model_trainer
 
         self.args = args
@@ -54,9 +68,12 @@ class SecAggAggregator(object):
         self.privacy_guarantee = int(np.floor(args.worker_num / 2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
-        self.public_key_others = np.empty(self.num_pk_per_user * self.args.worker_num).astype("int64")
-        self.b_u_SS_others = np.empty((self.args.worker_num, self.args.worker_num), dtype="int64")
-        self.s_sk_SS_others = np.empty((self.args.worker_num, self.args.worker_num), dtype="int64")
+        self.public_key_others = np.empty(
+            self.num_pk_per_user * self.args.worker_num).astype("int64")
+        self.b_u_SS_others = np.empty(
+            (self.args.worker_num, self.args.worker_num), dtype="int64")
+        self.s_sk_SS_others = np.empty(
+            (self.args.worker_num, self.args.worker_num), dtype="int64")
 
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
@@ -66,14 +83,36 @@ class SecAggAggregator(object):
         self.dimensions = []
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters.
+
+        Returns:
+            global_model_params: Global model parameters.
+        """
         global_model_params = self.trainer.get_model_params()
-        self.dimensions, self.total_dimension = model_dimension(global_model_params)
+        self.dimensions, self.total_dimension = model_dimension(
+            global_model_params)
         return global_model_params
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters.
+
+        Args:
+            model_parameters: Global model parameters to be set.
+        """
         self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
+        """
+        Add the locally trained model and sample count from a client.
+
+        Args:
+            index: Index of the client.
+            model_params: Locally trained model parameters.
+            sample_num: Number of samples used for training.
+        """
+
         logging.info("add_model. index = %d" % index)
         # for key in model_params.keys():
         #     model_params[key] = model_params[key].to(self.device)
@@ -82,6 +121,12 @@ class SecAggAggregator(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check if all clients have uploaded their locally trained models.
+
+        Returns:
+            bool: True if all clients have uploaded their models, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -91,7 +136,15 @@ class SecAggAggregator(object):
 
     def aggregate_mask_reconstruction(self, active_clients, SS_rx, public_key_list):
         """
-        Recover the aggregate-mask via decoding
+        Recover the aggregate-mask via decoding.
+
+        Args:
+            active_clients (list): List of active client indices.
+            SS_rx (numpy.ndarray): Received secret shares.
+            public_key_list (numpy.ndarray): List of public keys.
+
+        Returns:
+            numpy.ndarray: The reconstructed aggregate mask.
         """
         d = self.total_dimension
         T = self.privacy_guarantee
@@ -102,7 +155,8 @@ class SecAggAggregator(object):
 
         for i in range(self.targeted_number_active_clients):
             if self.flag_client_model_uploaded_dict[i]:
-                SS_input = np.reshape(SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
+                SS_input = np.reshape(
+                    SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
                 b_u = BGW_decoding(SS_input, active_clients[: T + 1], p)
                 np.random.seed(b_u[0][0])
                 mask = np.random.randint(0, p, size=d).astype(int)
@@ -110,7 +164,8 @@ class SecAggAggregator(object):
                 # z = np.mod(z - temp, p)
             else:
                 mask = np.zeros(d, dtype="int")
-                SS_input = np.reshape(SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
+                SS_input = np.reshape(
+                    SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
                 s_sk_dec = BGW_decoding(SS_input, active_clients[: T + 1], p)
                 for j in range(self.targeted_number_active_clients):
                     s_pk_list_ = public_key_list[1, :]
@@ -138,8 +193,21 @@ class SecAggAggregator(object):
     def aggregate_model_reconstruction(
         self, active_clients_first_round, active_clients_second_round, SS_rx, public_key_list
     ):
+        """
+        Reconstruct the aggregate model using secret shares and aggregate masks.
+
+        Args:
+            active_clients_first_round (list): List of active client indices in the first round.
+            active_clients_second_round (list): List of active client indices in the second round.
+            SS_rx (numpy.ndarray): Received secret shares.
+            public_key_list (numpy.ndarray): List of public keys.
+
+        Returns:
+            dict: The reconstructed aggregate model parameters.
+        """
         start_time = time.time()
-        aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round, SS_rx, public_key_list)
+        aggregate_mask = self.aggregate_mask_reconstruction(
+            active_clients_second_round, SS_rx, public_key_list)
         p = self.prime_number
         q_bits = self.precision_parameter
         logging.info("Server starts the reconstruction of aggregate_model")
@@ -164,9 +232,9 @@ class SecAggAggregator(object):
 
             cur_shape = np.shape(averaged_params[k])
             d = self.dimensions[j]
-            #aggregate_mask = aggregate_mask.reshape((aggregate_mask.shape[0], 1))
+            # aggregate_mask = aggregate_mask.reshape((aggregate_mask.shape[0], 1))
             # logging.info('aggregate_mask shape = {}'.format(np.shape(aggregate_mask)))
-            cur_mask = np.array(aggregate_mask[pos : pos + d])
+            cur_mask = np.array(aggregate_mask[pos: pos + d])
             cur_mask = np.reshape(cur_mask, cur_shape)
 
             # Cancel out the aggregate-mask to recover the aggregate-model
@@ -174,10 +242,11 @@ class SecAggAggregator(object):
             averaged_params[k] = np.mod(averaged_params[k], p)
             pos += d
 
-
         # Convert the model from finite to real
-        logging.info("Server converts the aggregate_model from finite to tensor")
-        averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
+        logging.info(
+            "Server converts the aggregate_model from finite to tensor")
+        averaged_params = transform_finite_to_tensor(
+            averaged_params, p, q_bits)
         # do the avg after transform
         for j, k in enumerate(averaged_params):
             w = 1 / len(active_clients_first_round)
@@ -189,69 +258,107 @@ class SecAggAggregator(object):
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
+        Select a subset of clients for data siloing.
 
         Args:
-            round_idx: round index, starting from 0
-            client_num_in_total: this is equal to the users in a synthetic data,
-                                    e.g., in synthetic_1_1, this value is 30
-            client_num_per_round: the number of edge devices that can train
+            round_idx (int): Round index, starting from 0.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to select.
 
         Returns:
-            data_silo_index_list: e.g., when client_num_in_total = 30, client_num_in_total = 3,
-                                        this value is the form of [0, 11, 20]
-
+            list: List of selected client indices.
         """
         logging.info(
-            "client_num_in_total = %d, client_num_per_round = %d" % (client_num_in_total, client_num_per_round)
+            "client_num_in_total = %d, client_num_per_round = %d" % (
+                client_num_in_total, client_num_per_round)
         )
         assert client_num_in_total >= client_num_per_round
 
         if client_num_in_total == client_num_per_round:
             return [i for i in range(client_num_per_round)]
         else:
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
+            # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(round_idx)
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False)
             return data_silo_index_list
 
     def client_selection(self, round_idx, client_id_list_in_total, client_num_per_round):
         """
+        Select a subset of clients for training.
+
         Args:
-            round_idx: round index, starting from 0
-            client_id_list_in_total: this is the real edge IDs.
-                                    In MLOps, its element is real edge ID, e.g., [64, 65, 66, 67];
-                                    in simulated mode, its element is client index starting from 1, e.g., [1, 2, 3, 4]
-            client_num_per_round:
+            round_idx (int): Round index, starting from 0.
+            client_id_list_in_total (list): List of real edge IDs or client indices.
+            client_num_per_round (int): Number of clients to select.
 
         Returns:
-            client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
+            list: List of selected client IDs or indices.
         """
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
-        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
+        # make sure for each comparison, we are selecting the same clients each round
+        np.random.seed(round_idx)
+        client_id_list_in_this_round = np.random.choice(
+            client_id_list_in_total, client_num_per_round, replace=False)
         return client_id_list_in_this_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly sample a subset of clients for training.
+
+        Args:
+            round_idx (int): Round index, starting from 0.
+            client_num_in_total (int): Total number of clients.
+            client_num_per_round (int): Number of clients to select.
+
+        Returns:
+            list: List of selected client indices.
+        """
         if client_num_in_total == client_num_per_round:
-            client_indexes = [client_index for client_index in range(client_num_in_total)]
+            client_indexes = [
+                client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+            # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(round_idx)
+            client_indexes = np.random.choice(
+                range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set.
+
+        Args:
+            num_samples (int): Number of samples in the validation set.
+
+        Returns:
+            DataLoader: DataLoader for the validation set.
+        """
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
-            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
-            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+            sample_indices = random.sample(
+                range(test_data_num), min(num_samples, test_data_num))
+            subset = torch.utils.data.Subset(
+                self.test_global.dataset, sample_indices)
+            sample_testset = torch.utils.data.DataLoader(
+                subset, batch_size=self.args.batch_size)
             return sample_testset
         else:
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        """
+        Perform testing on the server for all clients.
+
+        Args:
+            round_idx (int): Round index.
+
+        Returns:
+            None
+        """
         # if self.trainer.test_on_the_server(
         #     self.train_data_local_dict,
         #     self.test_data_local_dict,
@@ -261,13 +368,15 @@ class SecAggAggregator(object):
         #     return
 
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+            logging.info(
+                "################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
+                metrics = self.trainer.test(
+                    self.train_data_local_dict[client_idx], self.device, self.args)
                 train_tot_correct, train_num_sample, train_loss = (
                     metrics["test_correct"],
                     metrics["test_total"],
@@ -286,7 +395,8 @@ class SecAggAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            mlops.log({"accuracy": round(train_acc, 4), "loss": round(train_loss, 4)})
+            mlops.log({"accuracy": round(train_acc, 4),
+                      "loss": round(train_loss, 4)})
 
             # test data
             test_num_samples = []
@@ -294,9 +404,11 @@ class SecAggAggregator(object):
             test_losses = []
 
             if round_idx == self.args.comm_round - 1:
-                metrics = self.trainer.test(self.test_global, self.device, self.args)
+                metrics = self.trainer.test(
+                    self.test_global, self.device, self.args)
             else:
-                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                metrics = self.trainer.test(
+                    self.val_global, self.device, self.args)
 
             test_tot_correct, test_num_sample, test_loss = (
                 metrics["test_correct"],

@@ -12,7 +12,24 @@ MODEL_PARMS_DIR = "./model/model_parms_from_mlops"
 # DATA_CACHE_DIR = ""
 
 class MnistPredictor(FedMLPredictor):
+    """
+    A custom predictor for MNIST digit classification using a logistic regression model.
+
+    This class loads a pretrained logistic regression model and provides a predict method to make predictions
+    on input data.
+
+    Args:
+        None
+
+    Example:
+        predictor = MnistPredictor()
+        input_data = {"arr": [0.1, 0.2, 0.3, ..., 0.9]}
+        prediction = predictor.predict(input_data)
+    """
     def __init__(self):
+        """
+        Initialize the MnistPredictor by loading a pretrained logistic regression model.
+        """
         import pickle
         import torch
 
@@ -28,6 +45,25 @@ class MnistPredictor(FedMLPredictor):
         self.list_to_tensor_func = torch.tensor
         
     def predict(self, request):
+        """
+        Perform predictions on input data using the pretrained logistic regression model.
+
+        Args:
+            request (dict): A dictionary containing input data for prediction.
+                The dictionary should have the following key:
+                - "arr" (list): A list of float values representing the input features for a MNIST digit image.
+
+        Returns:
+            torch.Tensor: A tensor representing the model's prediction.
+
+        Example:
+            predictor = MnistPredictor()
+            input_data = {"arr": [0.1, 0.2, 0.3, ..., 0.9]}
+            prediction = predictor.predict(input_data)
+
+        Note:
+            The input data should be a list of float values with the same dimensionality as the model's input.
+        """
         arr = request["arr"]
         input_tensor = self.list_to_tensor_func(arr)
         return self.model(input_tensor)

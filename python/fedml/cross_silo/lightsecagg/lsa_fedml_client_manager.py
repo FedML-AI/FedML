@@ -19,6 +19,17 @@ from ...core.mpc.lightsecagg import (
 
 class FedMLClientManager(FedMLCommManager):
     def __init__(self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"):
+        """
+        Initialize the FedMLClientManager.
+
+        Args:
+            args (argparse.Namespace): The command-line arguments.
+            trainer: The trainer for the client.
+            comm: The communication backend.
+            client_rank (int): The rank of the client.
+            client_num (int): The total number of clients.
+            backend (str): The communication backend (default is "MPI").
+        """
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.trainer = trainer
@@ -51,6 +62,9 @@ class FedMLClientManager(FedMLCommManager):
         self.sys_stats_process = None
 
     def register_message_receive_handlers(self):
+        """
+        Register message receive handlers for various message types.
+        """
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
         )
@@ -74,6 +88,12 @@ class FedMLClientManager(FedMLCommManager):
         )
 
     def handle_message_connection_ready(self, msg_params):
+        """
+        Handle the connection-ready message.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)
@@ -81,9 +101,21 @@ class FedMLClientManager(FedMLCommManager):
             mlops.log_sys_perf(self.args)
 
     def handle_message_check_status(self, msg_params):
+        """
+        Handle the check-client-status message.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         self.send_client_status(0)
 
     def handle_message_init(self, msg_params):
+        """
+        Handle the initialization message.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
@@ -100,6 +132,12 @@ class FedMLClientManager(FedMLCommManager):
         self.__offline()
 
     def handle_message_receive_encoded_mask_from_server(self, msg_params):
+        """
+        Handle the received encoded mask from the server.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_ENCODED_MASK)
         client_id = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_ID)
         # logging.info(
@@ -114,6 +152,12 @@ class FedMLClientManager(FedMLCommManager):
             self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
+        """
+        Handle the received model from the server.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
@@ -130,6 +174,12 @@ class FedMLClientManager(FedMLCommManager):
         self.__offline()
 
     def handle_message_receive_active_from_server(self, msg_params):
+        """
+        Handle the received active clients message from the server.
+
+        Args:
+            msg_params (dict): Parameters of the message.
+        """
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         # Receive the set of active client id in first round
         active_clients_first_round = msg_params.get(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS)
@@ -146,10 +196,20 @@ class FedMLClientManager(FedMLCommManager):
         self.send_aggregate_encoded_mask_to_server(0, aggregate_encoded_mask)
 
     def start_training(self):
+        """
+        Start the training process.
+        """
         self.round_idx = 0
         self.__train()
 
     def send_client_status(self, receive_id, status="ONLINE"):
+        """
+        Send the client status to another entity.
+
+        Args:
+            receive_id: The ID of the entity receiving the status.
+            status (str): The status to send (default is "ONLINE").
+        """
         logging.info("send_client_status")
         message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
         sys_name = platform.system()
@@ -163,9 +223,23 @@ class FedMLClientManager(FedMLCommManager):
         self.send_message(message)
 
     def report_training_status(self, status):
+        """
+        Report the training status to MLOps.
+
+        Args:
+            status: The training status to report.
+        """
         mlops.log_training_status(status)
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
+        """
+        Send the model to the server.
+
+        Args:
+            receive_id: The ID of the entity receiving the model.
+            weights: The model parameters to send.
+            local_sample_num: The number of local samples used for training.
+        """
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.get_sender_id(), receive_id,)
 
@@ -178,21 +252,49 @@ class FedMLClientManager(FedMLCommManager):
         )
 
     def send_encoded_mask_to_server(self, receive_id, encoded_mask):
+        """
+        Send the encoded mask to the server.
+
+        Args:
+            receive_id: The ID of the entity receiving the encoded mask.
+            encoded_mask: The encoded mask to send.
+        """
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.get_sender_id(), 0)
         message.add_params(MyMessage.MSG_ARG_KEY_ENCODED_MASK, encoded_mask)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_ID, receive_id)
         self.send_message(message)
 
     def send_aggregate_encoded_mask_to_server(self, receive_id, aggregate_encoded_mask):
+        """
+        Send the aggregate encoded mask to the server.
+
+        Args:
+            receive_id: The ID of the entity receiving the aggregate encoded mask.
+            aggregate_encoded_mask: The aggregate encoded mask to send.
+        """
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK, aggregate_encoded_mask)
         self.send_message(message)
 
     def add_encoded_mask(self, index, encoded_mask):
+        """
+        Add an encoded mask to the internal dictionary.
+
+        Args:
+            index: The index of the encoded mask.
+            encoded_mask: The encoded mask to add.
+        """
+
         self.encoded_mask_dict[index] = encoded_mask
         self.flag_encoded_mask_dict[index] = True
 
     def check_whether_all_encoded_mask_receive(self):
+        """
+        Check if all encoded masks have been received.
+
+        Returns:
+            bool: True if all encoded masks have been received, False otherwise.
+        """
         for idx in range(self.worker_num):
             if not self.flag_encoded_mask_dict[idx]:
                 return False
@@ -201,6 +303,12 @@ class FedMLClientManager(FedMLCommManager):
         return True
 
     def encoded_mask_sharing(self, encoded_mask_set):
+        """
+        Share encoded masks with other clients.
+
+        Args:
+            encoded_mask_set (list): A list of encoded masks.
+        """
         for receive_id in range(1, self.size + 1):
             print(receive_id)
             print("the size is ", self.size)
@@ -213,6 +321,9 @@ class FedMLClientManager(FedMLCommManager):
                 self.flag_encoded_mask_dict[receive_id - 1] = True
 
     def __offline(self):
+        """
+        Perform the offline phase, including mask encoding and sharing.
+        """
         # Encoding the local generated mask
         logging.info("#######Client %d offline encoding round_id = %d######" % (self.get_sender_id(), self.round_idx))
 
@@ -237,6 +348,9 @@ class FedMLClientManager(FedMLCommManager):
         logging.info("finish share")
 
     def __train(self):
+        """
+        Perform the training for the client.
+        """
         logging.info("#######training########### round_id = %d" % self.round_idx)
         mlops.event("train", event_started=True, event_value=str(self.round_idx))
 
@@ -262,4 +376,7 @@ class FedMLClientManager(FedMLCommManager):
         self.send_model_to_server(0, masked_weights, local_sample_num)
 
     def run(self):
+        """
+        Start the client's execution.
+        """
         super().run()

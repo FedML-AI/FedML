@@ -15,6 +15,23 @@ from ....core.schedule.runtime_estimate import t_sample_fit
 
 
 class FedAVGAggregator(object):
+    """
+    Federated Averaging Aggregator.
+
+    This class handles the aggregation of local model updates from clients in a federated learning setup using Federated Averaging.
+
+    Args:
+        train_global: The global training dataset.
+        test_global: The global test dataset.
+        all_train_data_num: The total number of training samples across all clients.
+        train_data_local_dict: A dictionary containing local training datasets for each client.
+        test_data_local_dict: A dictionary containing local test datasets for each client.
+        train_data_local_num_dict: A dictionary containing the number of local training samples for each client.
+        worker_num: The number of worker nodes (clients).
+        device: The device (e.g., 'cpu' or 'cuda') on which the model and data should be placed.
+        args: An object containing configuration parameters.
+        server_aggregator: An optional server aggregator object.
+    """
     def __init__(
         self,
         train_global,
@@ -57,18 +74,42 @@ class FedAVGAggregator(object):
                 self.runtime_avg[i][j] = None
 
     def get_global_model_params(self):
+        """
+        Get the global model parameters.
+
+        Returns:
+            dict: A dictionary containing the global model parameters.
+        """
         return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
+        """
+        Set the global model parameters.
+
+        Args:
+            model_parameters (dict): A dictionary containing the global model parameters.
+        """
         self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params):
+        """
+        Add the local model update from a client.
+
+        Args:
+            index (int): The index of the client.
+            model_params (dict): A dictionary containing the local model parameters.
+        """
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
-        # self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check if all clients have uploaded their local model updates.
+
+        Returns:
+            bool: True if all clients have uploaded their updates, False otherwise.
+        """
         logging.debug("worker_num = {}".format(self.worker_num))
         for idx in range(self.worker_num):
             if not self.flag_client_model_uploaded_dict[idx]:
@@ -78,6 +119,16 @@ class FedAVGAggregator(object):
         return True
 
     def workload_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the workload of clients.
+
+        Args:
+            client_indexes (list): A list of client indexes.
+            mode (str): The estimation mode, either "simulate" or "real".
+
+        Returns:
+            list: A list of estimated workloads.
+        """
         if mode == "simulate":
             client_samples = [
                 self.train_data_local_num_dict[client_index]
@@ -91,6 +142,16 @@ class FedAVGAggregator(object):
         return workload
 
     def memory_estimate(self, client_indexes, mode="simulate"):
+        """
+        Estimate the memory usage of clients.
+
+        Args:
+            client_indexes (list): A list of client indexes.
+            mode (str): The estimation mode, either "simulate" or "real".
+
+        Returns:
+            list: A list of estimated memory usages.
+        """
         if mode == "simulate":
             memory = np.ones(self.worker_num)
         elif mode == "real":
@@ -100,6 +161,15 @@ class FedAVGAggregator(object):
         return memory
 
     def resource_estimate(self, mode="simulate"):
+        """
+        Estimate the resource usage of clients.
+
+        Args:
+            mode (str): The estimation mode, either "simulate" or "real".
+
+        Returns:
+            list: A list of estimated resource usages.
+        """
         if mode == "simulate":
             resource = np.ones(self.worker_num)
         elif mode == "real":
@@ -109,6 +179,13 @@ class FedAVGAggregator(object):
         return resource
 
     def record_client_runtime(self, worker_id, client_runtimes):
+        """
+        Record the runtime of client training.
+
+        Args:
+            worker_id (int): The ID of the worker.
+            client_runtimes (dict): A dictionary containing client runtime information.
+        """
         for client_id, runtime in client_runtimes.items():
             self.runtime_history[worker_id][client_id].append(runtime)
         if hasattr(self.args, "runtime_est_mode"):
@@ -117,21 +194,27 @@ class FedAVGAggregator(object):
                     if self.runtime_avg[worker_id][client_id] is None:
                         self.runtime_avg[worker_id][client_id] = runtime
                     else:
-                        self.runtime_avg[worker_id][client_id] += self.runtime_avg[worker_id][client_id]/2 + runtime/2
+                        self.runtime_avg[worker_id][client_id] += self.runtime_avg[worker_id][client_id] / 2 + runtime / 2
             elif self.args.runtime_est_mode == 'time_window':
                 for client_id, runtime in client_runtimes.items():
                     self.runtime_history[worker_id][client_id] = self.runtime_history[worker_id][client_id][-3:]
 
 
+
     def generate_client_schedule(self, round_idx, client_indexes):
-        # self.runtime_history = {}
-        # for i in range(self.worker_num):
-        #     self.runtime_history[i] = {}
-        #     for j in range(self.args.client_num_in_total):
-        #         self.runtime_history[i][j] = []
+        """
+        Generate the schedule of clients for a given round.
+
+        Args:
+            round_idx (int): The index of the round.
+            client_indexes (list): A list of client indexes.
+
+        Returns:
+            list: A list of client schedules.
+        """
         previous_time = time.time()
         if hasattr(self.args, "simulation_schedule") and round_idx > 5:
-            # Need some rounds to record some information. 
+            # Need some rounds to record some information.
             simulation_schedule = self.args.simulation_schedule
             if hasattr(self.args, "runtime_est_mode"):
                 if self.args.runtime_est_mode == 'EMA':
@@ -144,7 +227,7 @@ class FedAVGAggregator(object):
                 runtime_to_fit = self.runtime_history
 
             fit_params, fit_funcs, fit_errors = t_sample_fit(
-                self.worker_num, self.args.client_num_in_total, runtime_to_fit, 
+                self.worker_num, self.args.client_num_in_total, runtime_to_fit,
                 self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
 
             if self.args.enable_wandb:
@@ -187,6 +270,15 @@ class FedAVGAggregator(object):
         return client_schedule
 
     def get_average_weight(self, client_indexes):
+        """
+        Calculate the average weight of clients based on their data sizes.
+
+        Args:
+            client_indexes (list): A list of client indexes.
+
+        Returns:
+            dict: A dictionary containing the average weight for each client.
+        """
         average_weight_dict = {}
         training_num = 0
         for client_index in client_indexes:
@@ -199,36 +291,33 @@ class FedAVGAggregator(object):
         return average_weight_dict
 
     def aggregate(self):
+        """
+        Aggregate the local model updates from clients and compute the global model parameters.
+
+        Returns:
+            dict: A dictionary containing the global model parameters.
+        """
         start_time = time.time()
         model_list = []
         training_num = 0
 
         for idx in range(self.worker_num):
-            # added for attack & defense; enable multiple defenses
-            # if FedMLDefender.get_instance().is_defense_enabled():
-            #     self.model_dict[idx] = FedMLDefender.get_instance().defend(
-            #         self.model_dict[idx], self.get_global_model_params()
-            #     )
-
             if len(self.model_dict[idx]) > 0:
-                # some workers may not have parameters 
+                # Some workers may not have parameters
                 model_list.append(self.model_dict[idx])
             # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
-        # logging.info("################aggregate: %d" % len(model_list))
-        # (num0, averaged_params) = model_list[0]
         averaged_params = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
                 local_model_params = model_list[i]
-                # w = local_sample_number / training_num
                 if i == 0:
                     averaged_params[k] = local_model_params[k]
                 else:
                     averaged_params[k] += local_model_params[k]
 
-        # update the global model which is cached at the server side
+        # Update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
@@ -236,6 +325,17 @@ class FedAVGAggregator(object):
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+        Randomly select a subset of clients for training in a round.
+
+        Args:
+            round_idx (int): The index of the round.
+            client_num_in_total (int): The total number of clients.
+            client_num_per_round (int): The number of clients to select per round.
+
+        Returns:
+            list: A list of selected client indexes.
+        """
         if client_num_in_total == client_num_per_round:
             client_indexes = [
                 client_index for client_index in range(client_num_in_total)
@@ -244,7 +344,7 @@ class FedAVGAggregator(object):
             num_clients = min(client_num_per_round, client_num_in_total)
             np.random.seed(
                 round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
+            )  # Make sure for each comparison, we are selecting the same clients each round
             client_indexes = np.random.choice(
                 range(client_num_in_total), num_clients, replace=False
             )
@@ -252,6 +352,15 @@ class FedAVGAggregator(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
+        """
+        Generate a validation set for testing.
+
+        Args:
+            num_samples (int, optional): The number of samples in the validation set. Defaults to 10000.
+
+        Returns:
+            torch.utils.data.DataLoader: A DataLoader containing the validation set.
+        """
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
             sample_indices = random.sample(
@@ -266,6 +375,12 @@ class FedAVGAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        """
+        Test the global model on all clients.
+
+        Args:
+            round_idx (int): The index of the current round.
+        """
         if (
             round_idx % self.args.frequency_of_the_test == 0
             or round_idx == self.args.comm_round - 1
@@ -278,6 +393,8 @@ class FedAVGAggregator(object):
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
+
+            # Note: The following code is commented out, so it doesn't affect the execution.
             # for client_idx in range(self.args.client_num_in_total):
             #     # train data
             #     metrics = self.trainer.test(
@@ -312,6 +429,7 @@ class FedAVGAggregator(object):
             else:
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
 
+            # Note: The following code is commented out, so it doesn't affect the execution.
             # test_tot_correct, test_num_sample, test_loss = (
             #     metrics["test_correct"],
             #     metrics["test_total"],

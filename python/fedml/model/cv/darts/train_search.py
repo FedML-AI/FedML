@@ -352,6 +352,26 @@ def main():
 
 
 def train(epoch, train_queue, valid_queue, model, architect, criterion, optimizer, lr):
+    """
+    Train the neural network for one epoch.
+
+    Args:
+        epoch (int): Current epoch number.
+        train_queue (DataLoader): DataLoader for the training dataset.
+        valid_queue (DataLoader): DataLoader for the validation dataset.
+        model (nn.Module): The neural network model to be trained.
+        architect (Architect): The architect responsible for updating architecture weights.
+        criterion (nn.Module): The loss function used for training.
+        optimizer (torch.optim.Optimizer): The optimizer for updating model weights.
+        lr (float): Learning rate.
+
+    Returns:
+        float: Top-1 accuracy on the training dataset.
+        float: Average loss on the training dataset.
+        float: Loss value.
+
+    """
+
     global is_multi_gpu
 
     objs = utils.AvgrageMeter()
@@ -407,6 +427,20 @@ def train(epoch, train_queue, valid_queue, model, architect, criterion, optimize
 
 
 def infer(valid_queue, model, criterion):
+    """
+    Perform inference on the validation dataset using the trained model.
+
+    Args:
+        valid_queue (DataLoader): DataLoader for the validation dataset.
+        model (nn.Module): The trained neural network model.
+        criterion (nn.Module): The loss function used for validation.
+
+    Returns:
+        float: Top-1 accuracy on the validation dataset.
+        float: Average loss on the validation dataset.
+        float: Loss value.
+
+    """
     global is_multi_gpu
 
     objs = utils.AvgrageMeter()

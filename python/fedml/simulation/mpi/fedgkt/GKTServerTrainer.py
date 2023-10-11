@@ -10,6 +10,15 @@ from .utils import RunningAverage, save_dict_to_json, accuracy, bnwd_optim_param
 
 
 class GKTServerTrainer(object):
+    """
+    Server-side trainer for Global Knowledge Transfer (GKT) in federated learning.
+
+    Args:
+        client_num (int): Number of client devices.
+        device (str): The device on which to perform training (e.g., 'cuda' or 'cpu').
+        server_model (nn.Module): The global server model.
+        args (argparse.Namespace): Command-line arguments and configurations.
+    """
     def __init__(self, client_num, device, server_model, args):
         self.client_num = client_num
         self.device = device
@@ -97,6 +106,17 @@ class GKTServerTrainer(object):
             extracted_feature_dict_test,
             labels_dict_test,
     ):
+        """
+        Add local training results from a client.
+
+        Args:
+            index (int): Index of the client.
+            extracted_feature_dict (dict): Extracted feature maps from the client model.
+            logits_dict (dict): Logits from the client model.
+            labels_dict (dict): Labels from the client model.
+            extracted_feature_dict_test (dict): Extracted feature maps from the client model for testing.
+            labels_dict_test (dict): Labels from the client model for testing.
+        """
         logging.info("add_model. index = %d" % index)
         self.client_extracted_feauture_dict[index] = extracted_feature_dict
         self.client_logits_dict[index] = logits_dict
@@ -107,6 +127,12 @@ class GKTServerTrainer(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check whether all client models have uploaded updates.
+
+        Returns:
+            bool: True if all clients have uploaded updates, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -115,9 +141,24 @@ class GKTServerTrainer(object):
         return True
 
     def get_global_logits(self, client_index):
+        """
+        Get global logits for a specific client.
+
+        Args:
+            client_index (int): Index of the client.
+
+        Returns:
+            dict: Global logits for the client.
+        """
         return self.server_logits_dict[client_index]
 
     def train(self, round_idx):
+        """
+        Train the server model using client updates.
+
+        Args:
+            round_idx (int): Current communication round index.
+        """
         if self.args.sweep == 1:
             self.sweep(round_idx)
         else:
@@ -127,6 +168,12 @@ class GKTServerTrainer(object):
                 self.do_not_train_on_client(round_idx)
 
     def train_and_distill_on_client(self, round_idx):
+        """
+        Train the server model on the client using distillation from client logits.
+
+        Args:
+            round_idx (int): Current communication round index.
+        """
         if self.args.test:
             epochs_server, whether_distill_back = self.get_server_epoch_strategy_test()
         else:
@@ -146,21 +193,48 @@ class GKTServerTrainer(object):
         self.scheduler.step(self.best_acc, epoch=round_idx)
 
     def do_not_train_on_client(self, round_idx):
+        """
+        Perform no training on the client model, only evaluation.
+
+        Args:
+            round_idx (int): Current communication round index.
+        """
         self.train_and_eval(round_idx, 1)
         self.scheduler.step(self.best_acc, epoch=round_idx)
 
     def sweep(self, round_idx):
+        """
+        Perform sweeping training on the client model.
+
+        Args:
+            round_idx (int): Current communication round index.
+        """
         # train according to the logits from the client
         self.train_and_eval(round_idx, self.args.epochs_server)
         self.scheduler.step(self.best_acc, epoch=round_idx)
 
     def get_server_epoch_strategy_test(self):
+        """
+        Get the training strategy for server epoch in the test mode.
+
+        Returns:
+            tuple: Tuple containing the number of epochs (1) and whether to distill back (True).
+        """
         return 1, True
 
     # ResNet56
     def get_server_epoch_strategy_reset56(self, round_idx):
+        """
+        Get the training strategy for server epoch in the ResNet56 client model.
+
+        Args:
+            round_idx (int): Current communication round index.
+
+        Returns:
+            tuple: Tuple containing the number of epochs and whether to distill back (True/False).
+        """
         whether_distill_back = True
-        # set the training strategy
+        # set the training strategy based on round index
         if round_idx < 20:
             epochs = 20
         elif 20 <= round_idx < 30:
@@ -183,6 +257,15 @@ class GKTServerTrainer(object):
 
     # ResNet56-2
     def get_server_epoch_strategy_reset56_2(self, round_idx):
+        """
+        Get the training strategy for server epoch in the ResNet56-2 client model.
+
+        Args:
+            round_idx (int): Current communication round index.
+
+        Returns:
+            tuple: Tuple containing the number of epochs and whether to distill back (True/False).
+        """
         whether_distill_back = True
         # set the training strategy
         epochs = self.args.epochs_server
@@ -190,6 +273,15 @@ class GKTServerTrainer(object):
 
     # not increase after 40 epochs
     def get_server_epoch_strategy2(self, round_idx):
+        """
+        Determine the training strategy (number of epochs and distillation) for the server model.
+
+        Args:
+            round_idx (int): Current communication round index.
+
+        Returns:
+            tuple: Tuple containing the number of epochs and whether to distill back (True/False).
+        """
         whether_distill_back = True
         # set the training strategy
         if round_idx < 20:
@@ -213,6 +305,13 @@ class GKTServerTrainer(object):
         return epochs, whether_distill_back
 
     def train_and_eval(self, round_idx, epochs):
+        """
+        Train and evaluate the server model for a specified number of epochs.
+
+        Args:
+            round_idx (int): Current communication round index.
+            epochs (int): Number of epochs to train for.
+        """
         for epoch in range(epochs):
             logging.info(
                 "train_and_eval. round_idx = %d, epoch = %d" % (round_idx, epoch)
@@ -295,6 +394,12 @@ class GKTServerTrainer(object):
                     )
 
     def train_large_model_on_the_server(self):
+        """
+        Train the server model using client features and logits.
+
+        Returns:
+            dict: Dictionary containing training metrics (loss, accuracy).
+        """
 
         # clear the server side logits
         for key in self.server_logits_dict.keys():
@@ -371,6 +476,12 @@ class GKTServerTrainer(object):
         return train_metrics
 
     def eval_large_model_on_the_server(self):
+        """
+        Evaluate the server model on the test dataset provided by clients.
+
+        Returns:
+            dict: Dictionary containing test metrics (loss, accuracy).
+        """
 
         # set model to evaluation mode
         self.model_global.eval()

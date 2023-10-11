@@ -15,6 +15,6 @@ class MyMessage(object):
     MSG_ARG_KEY_RECEIVER = "receiver"
 
     """
-        message payload keywords definition
+    message payload keywords definition
     """
     MSG_ARG_KEY_INFORMATION = "information"

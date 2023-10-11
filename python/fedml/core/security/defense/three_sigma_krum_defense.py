@@ -14,7 +14,52 @@ import torch
 
 
 class ThreeSigmaKrumDefense(BaseDefenseMethod):
+    """
+    Three-Sigma Defense with Krum-based Malicious Client Detection for Federated Learning.
+
+    This defense method performs a Three-Sigma-based defense with Krum-based malicious client detection for federated learning.
+
+    Args:
+        config: Configuration object for defense parameters.
+
+    Methods:
+        defend_before_aggregation(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
+        ) -> List[Tuple[float, OrderedDict]]:
+        Perform defense before aggregation.
+
+        kick_out_poisoned_local_models(
+            client_scores: List[float],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]]
+        ) -> Tuple[List[Tuple[float, OrderedDict]], List[float]]:
+        Remove poisoned local models based on client scores.
+
+        get_malicious_client_idxs() -> List[int]:
+        Get indices of detected malicious clients.
+
+        set_potential_malicious_clients(potential_malicious_client_idxs: List[int]):
+        Set potential malicious client indices.
+
+        compute_avg_with_krum(raw_client_grad_list: List[Tuple[float, OrderedDict]]) -> List[float]:
+        Compute an average feature with Krum-based malicious client detection.
+
+        compute_l2_scores(raw_client_grad_list: List[Tuple[float, OrderedDict]]) -> List[float]:
+        Compute L2 scores for client models.
+
+        compute_client_cosine_scores(raw_client_grad_list: List[Tuple[float, OrderedDict]]) -> List[float]:
+        Compute cosine similarity scores between client models.
+
+        _get_importance_feature(raw_client_grad_list: List[Tuple[float, OrderedDict]]) -> List[float]:
+        Get importance features from raw client gradients.
+    """
     def __init__(self, config):
+        """
+        Initialize the ThreeSigmaKrumDefense.
+
+        Args:
+            config: Configuration object for defense parameters.
+        """
         self.average = None
         self.upper_bound = 0
         self.malicious_client_idxs = []
@@ -31,6 +76,18 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
+        """
+        Perform defense before aggregation.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            List[Tuple[float, OrderedDict]]: Gradient list after defense.
+        """
         if self.average is None:
             self.average = self.compute_avg_with_krum(raw_client_grad_list)
         client_scores = self.compute_l2_scores(raw_client_grad_list)
@@ -46,6 +103,19 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         return new_client_models
 
     def compute_an_average_feature(self, importance_feature_list):
+        """
+        Remove poisoned local models based on client scores.
+
+        Args:
+            client_scores (List[float]): List of client scores.
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            Tuple[List[Tuple[float, OrderedDict]], List[float]]:
+                Tuple containing gradient list after removing poisoned models
+                and updated client scores.
+        """
         alphas = [1 / len(importance_feature_list)] * len(importance_feature_list)
         return compute_middle_point(alphas, importance_feature_list)
 
@@ -99,6 +169,13 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
     #     return raw_client_grad_list
 
     def kick_out_poisoned_local_models(self, client_scores, raw_client_grad_list):
+        """
+        Get indices of detected malicious clients.
+
+        Returns:
+            List[int]: List of indices of malicious clients.
+        """
+
         print(f"upper bound = {self.upper_bound}")
         # traverse the score list in a reversed order
         self.malicious_client_idxs = []
@@ -112,12 +189,38 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         return raw_client_grad_list, client_scores
 
     def get_malicious_client_idxs(self):
+        """
+        Set potential malicious client indices.
+
+        Args:
+            potential_malicious_client_idxs: List of potential malicious client indices.
+        """
         return self.malicious_client_idxs
 
     def set_potential_malicious_clients(self, potential_malicious_client_idxs):
+        """
+        Compute an average feature with Krum-based malicious client detection.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List representing an average feature.
+        """
         self.potential_malicious_client_idxs = None # potential_malicious_client_idxs todo
 
     def compute_avg_with_krum(self, raw_client_grad_list):
+        """
+        Compute L2 scores for client models.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of L2 scores.
+        """
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         krum_scores = compute_krum_score(
             importance_feature_list,
@@ -133,6 +236,16 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         return self.compute_an_average_feature(honest_importance_feature_list)
 
     def compute_l2_scores(self, raw_client_grad_list):
+        """
+        Compute L2 scores for client models.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of L2 scores.
+        """
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         scores = []
         for feature in importance_feature_list:
@@ -141,6 +254,16 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         return scores
 
     def compute_client_cosine_scores(self, raw_client_grad_list):
+        """
+        Compute cosine similarity scores between client models.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of cosine similarity scores.
+        """
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         cosine_scores = []
         num_client = len(importance_feature_list)
@@ -158,6 +281,16 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         return cosine_scores
 
     def _get_importance_feature(self, raw_client_grad_list):
+        """
+        Get importance features from raw client gradients.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+
+        Returns:
+            List[float]: List of importance feature vectors.
+        """
         # print(f"raw_client_grad_list = {raw_client_grad_list}")
         # Foolsgold uses the last layer's gradient/weights as the importance feature.
         ret_feature_vector_list = []

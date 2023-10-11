@@ -7,6 +7,15 @@ import torch.nn.functional as F
 
 
 def get_state_dict(file):
+    """
+    Load a PyTorch state dictionary from a file.
+
+    Args:
+        file (str): The path to the file containing the state dictionary.
+
+    Returns:
+        dict: The loaded state dictionary.
+    """
     try:
         pretrain_state_dict = torch.load(file)
     except AssertionError:
@@ -15,8 +24,16 @@ def get_state_dict(file):
         )
     return pretrain_state_dict
 
-
 def get_flat_params_from(model):
+    """
+    Get a flat tensor containing all the parameters of a PyTorch model.
+
+    Args:
+        model (nn.Module): The PyTorch model.
+
+    Returns:
+        torch.Tensor: A 1D tensor containing the flattened parameters.
+    """
     params = []
     for param in model.parameters():
         params.append(param.data.view(-1))
@@ -24,8 +41,14 @@ def get_flat_params_from(model):
     flat_params = torch.cat(params)
     return flat_params
 
-
 def set_flat_params_to(model, flat_params):
+    """
+    Set the parameters of a PyTorch model using a flat tensor of parameters.
+
+    Args:
+        model (nn.Module): The PyTorch model.
+        flat_params (torch.Tensor): A 1D tensor containing the flattened parameters.
+    """
     prev_ind = 0
     for param in model.parameters():
         flat_size = int(np.prod(list(param.size())))
@@ -35,32 +58,59 @@ def set_flat_params_to(model, flat_params):
         prev_ind += flat_size
 
 
+
 class RunningAverage:
-    """A simple class that maintains the running average of a quantity
+    """
+    A simple class that maintains the running average of a quantity
 
     Example:
-    ```
-    loss_avg = RunningAverage()
-    loss_avg.update(2)
-    loss_avg.update(4)
-    loss_avg() = 3
-    ```
+        ```
+        loss_avg = RunningAverage()
+        loss_avg.update(2)
+        loss_avg.update(4)
+        loss_avg() = 3.0
+        ```
+
+    Attributes:
+        steps (int): The number of updates made to the running average.
+        total (float): The cumulative sum of values for the running average.
     """
 
     def __init__(self):
+        """
+        Initialize a RunningAverage object.
+        """
         self.steps = 0
         self.total = 0
 
     def update(self, val):
+        """Update the running average with a new value.
+
+        Args:
+            val (float): The new value to update the running average.
+        """
         self.total += val
         self.steps += 1
 
     def value(self):
+        """Get the current value of the running average.
+
+        Returns:
+            float: The current running average value.
+        """
         return self.total / float(self.steps)
 
-
 def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
+    """Computes the precision@k for the specified values of k.
+
+    Args:
+        output (torch.Tensor): The model's output tensor.
+        target (torch.Tensor): The target tensor.
+        topk (tuple): A tuple of integers specifying the top-k values to compute.
+
+    Returns:
+        list: A list of accuracy values for each k in topk.
+    """
     maxk = max(topk)
     batch_size = target.size(0)
 
@@ -76,17 +126,44 @@ def accuracy(output, target, topk=(1,)):
 
 
 class KL_Loss(nn.Module):
+    """
+    Kullback-Leibler (KL) Divergence Loss with Temperature Scaling.
+
+    This class represents the KL divergence loss with an optional temperature
+    scaling parameter for softening the logits. It is commonly used in knowledge
+    distillation between a student and a teacher model.
+
+    Args:
+        temperature (float, optional): The temperature parameter for softening
+            the logits (default is 1).
+
+    Attributes:
+        T (float): The temperature parameter for temperature scaling.
+
+    """
+
     def __init__(self, temperature=1):
+        """
+        Initialize the KL Divergence Loss.
+
+        Args:
+            temperature (float, optional): The temperature parameter for softening
+                the logits (default is 1).
+
+        """
         super(KL_Loss, self).__init__()
         self.T = temperature
 
     def forward(self, output_batch, teacher_outputs):
-        # output_batch  -> B X num_classes
-        # teacher_outputs -> B X num_classes
+        """Compute the KL divergence loss between output_batch and teacher_outputs.
 
-        # loss_2 = -torch.sum(torch.sum(torch.mul(F.log_softmax(teacher_outputs,dim=1), F.softmax(teacher_outputs,dim=1)+10**(-7))))/teacher_outputs.size(0)
-        # print('loss H:',loss_2)
+        Args:
+            output_batch (torch.Tensor): The output tensor from the student model.
+            teacher_outputs (torch.Tensor): The output tensor from the teacher model.
 
+        Returns:
+            torch.Tensor: The computed KL divergence loss.
+        """
         output_batch = F.log_softmax(output_batch / self.T, dim=1)
         teacher_outputs = F.softmax(teacher_outputs / self.T, dim=1) + 10 ** (-7)
 
@@ -96,20 +173,48 @@ class KL_Loss(nn.Module):
             * nn.KLDivLoss(reduction="batchmean")(output_batch, teacher_outputs)
         )
 
-        # Same result KL-loss implementation
-        # loss = T * T * torch.sum(torch.sum(torch.mul(teacher_outputs, torch.log(teacher_outputs) - output_batch)))/teacher_outputs.size(0)
         return loss
 
 
+
 class CE_Loss(nn.Module):
+    """
+    Cross-Entropy Loss with Temperature Scaling.
+
+    This class represents the cross-entropy loss with an optional temperature
+    scaling parameter for softening the logits. It is commonly used in knowledge
+    distillation between a student and a teacher model.
+
+    Args:
+        temperature (float, optional): The temperature parameter for softening
+            the logits (default is 1).
+
+    Attributes:
+        T (float): The temperature parameter for temperature scaling.
+
+    """
+
     def __init__(self, temperature=1):
+        """
+        Initialize the Cross-Entropy (CE) Loss.
+
+        Args:
+            temperature (float): The temperature parameter for softening the logits (default is 1).
+
+        """
         super(CE_Loss, self).__init__()
         self.T = temperature
 
     def forward(self, output_batch, teacher_outputs):
-        # output_batch      -> B X num_classes
-        # teacher_outputs   -> B X num_classes
+        """Compute the cross-entropy loss between output_batch and teacher_outputs.
 
+        Args:
+            output_batch (torch.Tensor): The output tensor from the student model.
+            teacher_outputs (torch.Tensor): The output tensor from the teacher model.
+
+        Returns:
+            torch.Tensor: The computed cross-entropy loss.
+        """
         output_batch = F.log_softmax(output_batch / self.T, dim=1)
         teacher_outputs = F.softmax(teacher_outputs / self.T, dim=1)
 
@@ -123,28 +228,51 @@ class CE_Loss(nn.Module):
 
         return loss
 
-
 def save_dict_to_json(d, json_path):
-    """Saves dict of floats in json file
+    """Saves a dictionary of floats in a JSON file.
 
     Args:
-        d: (dict) of float-castable values (np.float, int, float, etc.)
-        json_path: (string) path to json file
+        d (dict): A dictionary of float-castable values (np.float, int, float, etc.).
+        json_path (str): Path to the JSON file where the dictionary will be saved.
     """
     with open(json_path, "w") as f:
-        # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
-        d = {k: v for k, v in d.items()}
+        # We need to convert the values to float for JSON (it doesn't accept np.array, np.float, etc.)
+        d = {k: float(v) for k, v in d.items()}
         json.dump(d, f, indent=4)
-
 
 # Filter out batch norm parameters and remove them from weight decay - gets us higher accuracy 93.2 -> 93.48
 # https://arxiv.org/pdf/1807.11205.pdf
 def bnwd_optim_params(model, model_params, master_params):
+    """Split model parameters into two groups for optimization.
+
+    This function separates model parameters into two groups: batch normalization parameters
+    and remaining parameters. It sets the weight decay for batch normalization parameters to 0.
+
+    Args:
+        model (nn.Module): The neural network model.
+        model_params (list): List of model parameters.
+        master_params (list): List of master parameters.
+
+    Returns:
+        list: List of dictionaries specifying parameter groups for optimization.
+    """
     bn_params, remaining_params = split_bn_params(model, model_params, master_params)
     return [{"params": bn_params, "weight_decay": 0}, {"params": remaining_params}]
 
-
 def split_bn_params(model, model_params, master_params):
+    """Split model parameters into batch normalization and remaining parameters.
+
+    This function separates model parameters into two groups: batch normalization parameters
+    and remaining parameters.
+
+    Args:
+        model (nn.Module): The neural network model.
+        model_params (list): List of model parameters.
+        master_params (list): List of master parameters.
+
+    Returns:
+        tuple: Two lists containing batch normalization parameters and remaining parameters.
+    """
     def get_bn_params(module):
         if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
             return module.parameters()

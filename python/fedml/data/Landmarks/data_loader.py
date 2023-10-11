@@ -67,9 +67,24 @@ def _read_csv(path: str):
 
 class Cutout(object):
     def __init__(self, length):
+        """
+        Initialize the Cutout transformation.
+
+        Args:
+            length (int): The size of the square patch to cut out from the image.
+        """
         self.length = length
 
     def __call__(self, img):
+        """
+        Apply the Cutout transformation to the input image.
+
+        Args:
+            img (PIL.Image): The input image.
+
+        Returns:
+            PIL.Image: The transformed image with a square patch cut out.
+        """
         h, w = img.size(1), img.size(2)
         mask = np.ones((h, w), np.float32)
         y = np.random.randint(h)
@@ -126,6 +141,17 @@ def get_mapping_per_user(fn):
                         [{'user_id': xxx, 'image_id': xxx, 'class': xxx} ...
                          {'user_id': xxx, 'image_id': xxx, 'class': xxx} ... ]
     }
+
+    Load mapping information per user from a CSV file.
+
+    Args:
+        fn (str): The filename of the CSV file containing user-image mapping.
+
+    Returns:
+        tuple: A tuple containing:
+            - data_files (list): A list of dictionaries containing mapping information.
+            - data_local_num_dict (dict): A dictionary mapping user IDs to the number of data entries they have.
+            - net_dataidx_map (dict): A dictionary mapping user IDs to data index ranges.
     """
     mapping_table = _read_csv(fn)
     expected_cols = ["user_id", "image_id", "class"]
@@ -163,6 +189,21 @@ def get_mapping_per_user(fn):
 def get_dataloader(
     dataset, datadir, train_files, test_files, train_bs, test_bs, dataidxs=None
 ):
+    """
+    Get data loaders for centralized training.
+
+    Args:
+        dataset (str): The name of the dataset.
+        datadir (str): The directory containing the data files.
+        train_files (list): A list of training data files.
+        test_files (list): A list of testing data files.
+        train_bs (int): The batch size for training.
+        test_bs (int): The batch size for testing.
+        dataidxs (list, optional): List of data indices to select specific data entries. Defaults to None.
+
+    Returns:
+        DataLoader: Data loaders for training and testing.
+    """
     return get_dataloader_Landmarks(
         datadir, train_files, test_files, train_bs, test_bs, dataidxs
     )
@@ -179,6 +220,22 @@ def get_dataloader_test(
     dataidxs_train,
     dataidxs_test,
 ):
+    """
+    Get data loaders for testing with specified data indices.
+
+    Args:
+        dataset (str): The name of the dataset.
+        datadir (str): The directory containing the data files.
+        train_files (list): A list of training data files.
+        test_files (list): A list of testing data files.
+        train_bs (int): The batch size for training.
+        test_bs (int): The batch size for testing.
+        dataidxs_train (list): List of data indices to select specific training data entries.
+        dataidxs_test (list): List of data indices to select specific testing data entries.
+
+    Returns:
+        DataLoader: Data loaders for training and testing.
+    """
     return get_dataloader_test_Landmarks(
         datadir,
         train_files,
@@ -193,6 +250,20 @@ def get_dataloader_test(
 def get_dataloader_Landmarks(
     datadir, train_files, test_files, train_bs, test_bs, dataidxs=None
 ):
+    """
+    Get data loaders for Landmarks dataset.
+
+    Args:
+        datadir (str): The directory containing the data files.
+        train_files (list): A list of training data files.
+        test_files (list): A list of testing data files.
+        train_bs (int): The batch size for training.
+        test_bs (int): The batch size for testing.
+        dataidxs (list, optional): List of data indices to select specific data entries. Defaults to None.
+
+    Returns:
+        DataLoader: Data loaders for training and testing.
+    """
     dl_obj = Landmarks
 
     transform_train, transform_test = _data_transforms_landmarks()
@@ -233,6 +304,21 @@ def get_dataloader_test_Landmarks(
     dataidxs_train=None,
     dataidxs_test=None,
 ):
+    """
+    Get data loaders for testing Landmarks dataset with specified data indices.
+
+    Args:
+        datadir (str): The directory containing the data files.
+        train_files (list): A list of training data files.
+        test_files (list): A list of testing data files.
+        train_bs (int): The batch size for training.
+        test_bs (int): The batch size for testing.
+        dataidxs_train (list, optional): List of data indices to select specific training data entries. Defaults to None.
+        dataidxs_test (list, optional): List of data indices to select specific testing data entries. Defaults to None.
+
+    Returns:
+        DataLoader: Data loaders for training and testing.
+    """
     dl_obj = Landmarks
 
     transform_train, transform_test = _data_transforms_landmarks()
@@ -274,6 +360,30 @@ def load_partition_data_landmarks(
     client_number=233,
     batch_size=10,
 ):
+    """
+    Load partitioned data for the Landmarks dataset.
+
+    Args:
+        dataset (str): The name of the dataset.
+        data_dir (str): The directory containing the data files.
+        fed_train_map_file (str): The path to the federated train data mapping file.
+        fed_test_map_file (str): The path to the federated test data mapping file.
+        partition_method (str, optional): The partitioning method for data. Defaults to None.
+        partition_alpha (float, optional): The alpha value for partitioning. Defaults to None.
+        client_number (int): The number of clients/participants. Defaults to 233.
+        batch_size (int): The batch size for data loaders. Defaults to 10.
+
+    Returns:
+        Tuple: A tuple containing the following elements:
+            - train_data_num (int): The number of training data samples.
+            - test_data_num (int): The number of testing data samples.
+            - train_data_global (DataLoader): Global training data loader.
+            - test_data_global (DataLoader): Global testing data loader.
+            - data_local_num_dict (dict): Dictionary mapping client IDs to the number of local data samples.
+            - train_data_local_dict (dict): Dictionary mapping client IDs to their local training data loaders.
+            - test_data_local_dict (dict): Dictionary mapping client IDs to their local testing data loaders.
+            - class_num (int): The number of unique classes in the dataset.
+    """
 
     train_files, data_local_num_dict, net_dataidx_map = get_mapping_per_user(
         fed_train_map_file

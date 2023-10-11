@@ -21,6 +21,20 @@ def FedML_FedAvg_distributed(
     client_trainer: ClientTrainer = None,
     server_aggregator: ServerAggregator = None,
 ):
+    """
+    Run Federated Averaging (FedAvg) in a distributed setting.
+
+    Args:
+        args: The command-line arguments and configuration for the FedAvg process.
+        process_id (int): The unique identifier for the current process.
+        worker_number (int): The total number of worker processes.
+        comm: The communication backend for inter-process communication.
+        device: The target device (e.g., CPU or GPU) for training.
+        dataset: The dataset for training and testing.
+        model: The machine learning model to be trained.
+        client_trainer (ClientTrainer, optional): The client trainer responsible for local training.
+        server_aggregator (ServerAggregator, optional): The server aggregator for model aggregation.
+    """
     [
         train_data_num,
         test_data_num,
@@ -83,6 +97,24 @@ def init_server(
     train_data_local_num_dict,
     server_aggregator
 ):
+    """
+    Initialize the server for FedAvg.
+
+    Args:
+        args: The command-line arguments and configuration for the FedAvg process.
+        device: The target device (e.g., CPU or GPU) for training.
+        comm: The communication backend for inter-process communication.
+        rank (int): The rank or identifier of the server process.
+        size (int): The total number of processes.
+        model: The machine learning model to be trained.
+        train_data_num (int): The number of training samples.
+        train_data_global: The global training dataset.
+        test_data_global: The global testing dataset.
+        train_data_local_dict: A dictionary mapping client IDs to their local training datasets.
+        test_data_local_dict: A dictionary mapping client IDs to their local testing datasets.
+        train_data_local_num_dict: A dictionary mapping client IDs to the number of local training samples.
+        server_aggregator: The server aggregator for model aggregation.
+    """
     if server_aggregator is None:
         server_aggregator = create_server_aggregator(model, args)
     server_aggregator.set_id(-1)
@@ -109,6 +141,7 @@ def init_server(
     server_manager.run()
 
 
+
 def init_client(
     args,
     device,
@@ -122,6 +155,22 @@ def init_client(
     test_data_local_dict,
     model_trainer=None,
 ):
+    """
+    Initialize a client for FedAvg.
+
+    Args:
+        args: The command-line arguments and configuration for the FedAvg process.
+        device: The target device (e.g., CPU or GPU) for training.
+        comm: The communication backend for inter-process communication.
+        process_id (int): The unique identifier for the client process.
+        size (int): The total number of processes.
+        model: The machine learning model to be trained.
+        train_data_num (int): The number of training samples.
+        train_data_local_num_dict: A dictionary mapping client IDs to the number of local training samples.
+        train_data_local_dict: A dictionary mapping client IDs to their local training datasets.
+        test_data_local_dict: A dictionary mapping client IDs to their local testing datasets.
+        model_trainer (ModelTrainer, optional): The model trainer responsible for local training.
+    """
     client_index = process_id - 1
     if model_trainer is None:
         model_trainer = create_model_trainer(model, args)

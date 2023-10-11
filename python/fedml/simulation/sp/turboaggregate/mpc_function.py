@@ -2,6 +2,16 @@ import numpy as np
 
 
 def modular_inv(a, p):
+    """
+    Compute the modular inverse of 'a' modulo 'p'.
+
+    Args:
+        a (int): The number for which the modular inverse is calculated.
+        p (int): The prime modulo.
+
+    Returns:
+        int: The modular inverse of 'a' modulo 'p'.
+    """
     x, y, m = 1, 0, p
     while a > 1:
         q = a // m
@@ -19,6 +29,17 @@ def modular_inv(a, p):
 
 
 def divmod(_num, _den, _p):
+    """
+    Compute the result of `_num` divided by `_den` modulo prime `_p`.
+
+    Args:
+        _num (int): The numerator.
+        _den (int): The denominator.
+        _p (int): The prime modulo.
+
+    Returns:
+        int: The result of `_num / _den` modulo `_p`.
+    """
     # compute num / den modulo prime p
     _num = np.mod(_num, _p)
     _den = np.mod(_den, _p)
@@ -28,6 +49,16 @@ def divmod(_num, _den, _p):
 
 
 def PI(vals, p):  # upper-case PI -- product of inputs
+    """
+    Compute the product of a list of values modulo prime 'p'.
+
+    Args:
+        vals (list): List of integers to be multiplied.
+        p (int): The prime modulo.
+
+    Returns:
+        int: The product of the values in 'vals' modulo 'p'.
+    """
     accum = 1
 
     for v in vals:
@@ -37,6 +68,18 @@ def PI(vals, p):  # upper-case PI -- product of inputs
 
 
 def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
+    """
+    Generate Lagrange coefficients for polynomial interpolation.
+
+    Args:
+        alpha_s (list): List of alpha values.
+        beta_s (list): List of beta values.
+        p (int): The prime modulo.
+        is_K1 (int): Flag indicating if it's K1.
+
+    Returns:
+        numpy.ndarray: A matrix of Lagrange coefficients.
+    """
     if is_K1 == 1:
         num_alpha = 1
     else:
@@ -60,6 +103,18 @@ def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
 
 
 def BGW_encoding(X, N, T, p):
+    """
+    Perform BGW encoding of input data X.
+
+    Args:
+        X (numpy.ndarray): The input data of shape (m, d).
+        N (int): The number of evaluation points.
+        T (int): The number of terms for encoding.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The BGW encoded data of shape (N, m, d).
+    """
     m = len(X)
     d = len(X[0])
 
@@ -76,6 +131,16 @@ def BGW_encoding(X, N, T, p):
 
 
 def gen_BGW_lambda_s(alpha_s, p):
+    """
+    Generate BGW lambda values for polynomial interpolation.
+
+    Args:
+        alpha_s (numpy.ndarray): The alpha values.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The lambda values.
+    """
     lambda_s = np.zeros((1, len(alpha_s)), dtype="int64")
 
     for i in range(len(alpha_s)):
@@ -87,7 +152,19 @@ def gen_BGW_lambda_s(alpha_s, p):
     return lambda_s.astype("int64")
 
 
-def BGW_decoding(f_eval, worker_idx, p):  # decode the output from T+1 evaluation points
+def BGW_decoding(f_eval, worker_idx, p):
+    """
+    Decode the output from T+1 evaluation points using BGW decoding.
+
+    Args:
+        f_eval (numpy.ndarray): The evaluation points of shape (RT, d).
+        worker_idx (numpy.ndarray): The worker indices of shape (1, RT).
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The decoded output of shape (1, d).
+    """  
+    # decode the output from T+1 evaluation points
     # f_eval     : [RT X d ]
     # worker_idx : [ 1 X RT]
     # output     : [ 1 X d ]
@@ -109,6 +186,19 @@ def BGW_decoding(f_eval, worker_idx, p):  # decode the output from T+1 evaluatio
 
 
 def LCC_encoding(X, N, K, T, p):
+    """
+    Perform LCC encoding of input data X.
+
+    Args:
+        X (numpy.ndarray): The input data of shape (m, d).
+        N (int): The number of encoding points.
+        K (int): The number of systematic points.
+        T (int): The number of redundant points.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The LCC encoded data of shape (N, m//K, d).
+    """
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
@@ -135,6 +225,20 @@ def LCC_encoding(X, N, K, T, p):
 
 
 def LCC_encoding_w_Random(X, R_, N, K, T, p):
+    """
+    Perform LCC encoding of input data X with random data R_.
+
+    Args:
+        X (numpy.ndarray): The input data of shape (m, d).
+        R_ (numpy.ndarray): Random data of shape (T, m // K, d).
+        N (int): The number of encoding points.
+        K (int): The number of systematic points.
+        T (int): The number of redundant points.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The LCC encoded data of shape (N, m//K, d).
+    """
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
@@ -165,6 +269,21 @@ def LCC_encoding_w_Random(X, R_, N, K, T, p):
 
 
 def LCC_encoding_w_Random_partial(X, R_, N, K, T, p, worker_idx):
+    """
+    Perform partial LCC encoding of input data X with random data R_ for specific workers.
+
+    Args:
+        X (numpy.ndarray): The input data of shape (m, d).
+        R_ (numpy.ndarray): Random data of shape (T, m // K, d).
+        N (int): The number of encoding points.
+        K (int): The number of systematic points.
+        T (int): The number of redundant points.
+        p (int): The prime modulo.
+        worker_idx (numpy.ndarray): Worker indices for partial encoding.
+
+    Returns:
+        numpy.ndarray: The partial LCC encoded data of shape (N_out, m//K, d).
+    """
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
@@ -193,6 +312,21 @@ def LCC_encoding_w_Random_partial(X, R_, N, K, T, p, worker_idx):
 
 
 def LCC_decoding(f_eval, f_deg, N, K, T, worker_idx, p):
+    """
+    Perform LCC decoding of the given evaluation points and worker indices.
+
+    Args:
+        f_eval (numpy.ndarray): The evaluation points of shape (RT, d).
+        f_deg (int): The degree of the polynomial.
+        N (int): The number of encoding points.
+        K (int): The number of systematic points.
+        T (int): The number of redundant points.
+        worker_idx (numpy.ndarray): Worker indices for decoding.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The decoded output of shape (1, d).
+    """
     # RT_LCC = f_deg * (K + T - 1) + 1
 
     n_beta = K  # +T
@@ -212,6 +346,17 @@ def LCC_decoding(f_eval, f_deg, N, K, T, worker_idx, p):
 
 
 def Gen_Additive_SS(d, n_out, p):
+    """
+    Generate an additive secret sharing matrix.
+
+    Args:
+        d (int): The dimension of the secret.
+        n_out (int): The number of output shares.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The additive secret sharing matrix.
+    """
     # x_model should be one dimension
 
     temp = np.random.randint(0, p, size=(n_out - 1, d))
@@ -225,6 +370,18 @@ def Gen_Additive_SS(d, n_out, p):
 
 
 def LCC_encoding_with_points(X, alpha_s, beta_s, p):
+    """
+    Perform LCC encoding of input data X using specific alpha and beta points.
+
+    Args:
+        X (numpy.ndarray): The input data of shape (m, d).
+        alpha_s (numpy.ndarray): The alpha points.
+        beta_s (numpy.ndarray): The beta points.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The LCC encoded data of shape (N, d).
+    """
     m, d = np.shape(X)
 
     # print alpha_s
@@ -247,6 +404,18 @@ def LCC_encoding_with_points(X, alpha_s, beta_s, p):
 
 
 def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
+    """
+    Perform LCC decoding of the given evaluation points and target points.
+
+    Args:
+        f_eval (numpy.ndarray): The evaluation points of shape (RT, d).
+        eval_points (numpy.ndarray): The evaluation points for decoding.
+        target_points (numpy.ndarray): The target points for decoding.
+        p (int): The prime modulo.
+
+    Returns:
+        numpy.ndarray: The decoded output of shape (1, d).
+    """
     alpha_s_eval = eval_points
     beta_s = target_points
 
@@ -261,6 +430,17 @@ def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
 
 
 def my_pk_gen(my_sk, p, g):
+    """
+    Generate a public key using the private key and prime modulo.
+
+    Args:
+        my_sk (int): The private key.
+        p (int): The prime modulo.
+        g (int): An optional generator.
+
+    Returns:
+        int: The public key.
+    """
     # print 'my_pk_gen option: g=',g
     if g == 0:
         return my_sk
@@ -269,6 +449,18 @@ def my_pk_gen(my_sk, p, g):
 
 
 def my_key_agreement(my_sk, u_pk, p, g):
+    """
+    Perform key agreement using private key, public key, prime modulo, and an optional generator.
+
+    Args:
+        my_sk (int): The private key.
+        u_pk (int): The other party's public key.
+        p (int): The prime modulo.
+        g (int): An optional generator.
+
+    Returns:
+        int: The shared secret key.
+    """
     if g == 0:
         return np.mod(my_sk * u_pk, p)
     else:

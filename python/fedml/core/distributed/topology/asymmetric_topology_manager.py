@@ -15,12 +15,29 @@ class AsymmetricTopologyManager(BaseTopologyManager):
     """
 
     def __init__(self, n, undirected_neighbor_num=3, out_directed_neighbor=3):
+        """
+        Initialize the AsymmetricTopologyManager.
+
+        Args:
+            n (int): Number of nodes in the topology.
+            undirected_neighbor_num (int): Number of undirected (symmetric) neighbors for each node.
+            out_directed_neighbor (int): Number of out (asymmetric) neighbors for each node.
+
+        Returns:
+            None
+        """
         self.n = n
         self.undirected_neighbor_num = undirected_neighbor_num
         self.out_directed_neighbor = out_directed_neighbor
         self.topology = []
 
     def generate_topology(self):
+        """
+        Generate the topology based on the specified parameters.
+
+        Returns:
+            None
+        """
         # randomly add some links for each node (symmetric)
         k = self.undirected_neighbor_num
         # print("neighbors = " + str(k))
@@ -81,6 +98,15 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         self.topology = topology_ring
 
     def get_in_neighbor_weights(self, node_index):
+        """
+        Get the weights of incoming neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[float]: List of weights for incoming neighbors.
+        """
         if node_index >= self.n:
             return []
         in_neighbor_weights = []
@@ -89,11 +115,29 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         return in_neighbor_weights
 
     def get_out_neighbor_weights(self, node_index):
+        """
+        Get the weights of outgoing neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[float]: List of weights for outgoing neighbors.
+        """
         if node_index >= self.n:
             return []
         return self.topology[node_index]
 
     def get_in_neighbor_idx_list(self, node_index):
+        """
+        Get the indices of incoming neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[int]: List of indices for incoming neighbors.
+        """
         neighbor_in_idx_list = []
         neighbor_weights = self.get_in_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
@@ -102,6 +146,16 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         return neighbor_in_idx_list
 
     def get_out_neighbor_idx_list(self, node_index):
+        """
+        Get the indices of outgoing neighbors for a given node.
+
+        Args:
+            node_index (int): Index of the node.
+
+        Returns:
+            List[int]: List of indices for outgoing neighbors.
+        """
+
         neighbor_out_idx_list = []
         neighbor_weights = self.get_out_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):

@@ -24,22 +24,66 @@ Steps:
 
 
 class RobustLearningRateDefense(BaseDefenseMethod):
+    """
+    Robust Learning Rate Defense.
+
+    This defense method adjusts the learning rates of clients based on the robust threshold.
+
+    Args:
+        config: Configuration parameters.
+
+    Attributes:
+        robust_threshold (int): The robust threshold used for learning rate adjustment.
+        server_learning_rate (int): The server's learning rate.
+
+    Methods:
+        run(
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
+        ) -> OrderedDict:
+        Adjust the learning rates of clients based on the robust threshold.
+
+    """
+
     def __init__(self, config):
+        """
+        Initialize the RobustLearningRateDefense.
+
+        Args:
+            config: Configuration parameters.
+        """
         self.robust_threshold = config.robust_threshold  # e.g., robust threshold = 4
         self.server_learning_rate = 1
 
     def run(
-            self,
-            raw_client_grad_list: List[Tuple[float, OrderedDict]],
-            base_aggregation_func: Callable = None,
-            extra_auxiliary_info: Any = None,
-    ):
+        self,
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
+        base_aggregation_func: Callable = None,
+        extra_auxiliary_info: Any = None,
+    ) -> OrderedDict:
+        """
+        Adjust the learning rates of clients based on the robust threshold.
+
+        Args:
+            raw_client_grad_list (List[Tuple[float, OrderedDict]]):
+                List of tuples containing client gradients as OrderedDict.
+            base_aggregation_func (Callable, optional):
+                Base aggregation function (currently unused).
+            extra_auxiliary_info (Any, optional):
+                Extra auxiliary information (currently unused).
+
+        Returns:
+            OrderedDict:
+                Aggregated parameters after adjusting learning rates based on the robust threshold.
+        """
         if self.robust_threshold == 0:
             return base_aggregation_func(raw_client_grad_list)  # avg_params
         total_sample_num = get_total_sample_num(raw_client_grad_list)
         (num0, avg_params) = raw_client_grad_list[0]
         for k in avg_params.keys():
-            client_update_sign = []  # self._compute_robust_learning_rates(model_list)
+            # self._compute_robust_learning_rates(model_list)
+            client_update_sign = []
             for i in range(0, len(raw_client_grad_list)):
                 local_sample_number, local_model_params = raw_client_grad_list[i]
                 client_update_sign.append(torch.sign(local_model_params[k]))
@@ -53,7 +97,19 @@ class RobustLearningRateDefense(BaseDefenseMethod):
         return avg_params
 
     def _compute_robust_learning_rates(self, client_update_sign):
+        """
+        Compute robust learning rates based on the client update signs.
+
+        Args:
+            client_update_sign (list of torch.Tensor):
+                List of tensors containing the sign of client updates.
+
+        Returns:
+            torch.Tensor:
+                Adjusted learning rates for clients.
+        """
         client_lr = torch.abs(sum(client_update_sign))
-        client_lr[client_lr < self.robust_threshold] = -self.server_learning_rate
+        client_lr[client_lr < self.robust_threshold] = - \
+            self.server_learning_rate
         client_lr[client_lr >= self.robust_threshold] = self.server_learning_rate
         return client_lr

@@ -1,18 +1,55 @@
 import torch
 from torch import nn
-
 from ....core.alg_frame.client_trainer import ClientTrainer
 import logging
 
-
 class MyModelTrainer(ClientTrainer):
+    """
+    Custom client trainer for federated learning using PyTorch.
+
+    Methods:
+        get_model_params: Get the model parameters as a state dictionary.
+        set_model_params: Set the model parameters from a state dictionary.
+        train: Train the model on the given training data.
+        test: Evaluate the model on the given test data.
+        test_on_the_server: Perform server-side testing (not implemented).
+
+    Parameters:
+        model: The PyTorch model to be trained.
+        id (int): The identifier of the client.
+    """
+
     def get_model_params(self):
+        """
+        Get the model parameters as a state dictionary.
+
+        Returns:
+            dict: Model parameters as a state dictionary.
+        """
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        """
+        Set the model parameters from a state dictionary.
+
+        Args:
+            model_parameters (dict): Model parameters as a state dictionary.
+        """
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args, lr=None):
+        """
+        Train the model on the given training data.
+
+        Args:
+            train_data: Training data for the client.
+            device: Device (e.g., GPU or CPU) for model training.
+            args: Command-line arguments for training configuration.
+            lr (float): Learning rate for optimization (optional).
+
+        Returns:
+            None
+        """
         model = self.model
 
         model.to(device)
@@ -44,7 +81,7 @@ class MyModelTrainer(ClientTrainer):
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
 
-                # Uncommet this following line to avoid nan loss
+                # Uncomment this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
                 optimizer.step()
@@ -66,6 +103,17 @@ class MyModelTrainer(ClientTrainer):
             )
 
     def test(self, test_data, device, args):
+        """
+        Evaluate the model on the given test data.
+
+        Args:
+            test_data: Test data for the client.
+            device: Device (e.g., GPU or CPU) for model evaluation.
+            args: Command-line arguments for evaluation configuration.
+
+        Returns:
+            dict: Evaluation metrics, including test_correct, test_loss, and test_total.
+        """
         model = self.model
 
         model.to(device)
@@ -93,4 +141,16 @@ class MyModelTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        """
+        Perform server-side testing (not implemented).
+
+        Args:
+            train_data_local_dict: Local training data for all clients.
+            test_data_local_dict: Local test data for all clients.
+            device: Device (e.g., GPU or CPU) for testing.
+            args: Command-line arguments for testing configuration (not used).
+
+        Returns:
+            bool: Always returns False (not implemented).
+        """
         return False

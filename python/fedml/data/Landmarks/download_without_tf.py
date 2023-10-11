@@ -49,12 +49,15 @@ KEY_CLASS = "class"
 
 
 def _listener_process(queue: multiprocessing.Queue, log_file: str):
-    """Sets up a separate process for handling logging messages.
+    """
+    Sets up a separate process for handling logging messages.
+
     This setup is required because without it, the logging messages will be
     duplicated when multiple processes are created for downloading GLD dataset.
+
     Args:
-      queue: The queue to receive logging messages.
-      log_file: The file which the messages will be written to.
+        queue (multiprocessing.Queue): The queue to receive logging messages.
+        log_file (str): The file to which the messages will be written.
     """
     root = logging.getLogger()
     h = logging.FileHandler(log_file)
@@ -77,27 +80,32 @@ def _listener_process(queue: multiprocessing.Queue, log_file: str):
 
 
 def _read_csv(path: str) -> List[Dict[str, str]]:
-    """Reads a csv file, and returns the content inside a list of dictionaries.
+    """
+    Reads a CSV file and returns the content inside a list of dictionaries.
+
     Args:
-      path: The path to the csv file.
+        path (str): The path to the CSV file.
+
     Returns:
-      A list of dictionaries. Each row in the csv file will be a list entry. The
-      dictionary is keyed by the column names.
+        List[Dict[str, str]]: A list of dictionaries. Each row in the CSV file will be a list entry.
+        The dictionary is keyed by the column names.
     """
     with open(path, "r") as f:
         return list(csv.DictReader(f))
 
 
 def _filter_images(shard: int, all_images: Set[str], image_dir: str, base_url: str):
-    """Download full GLDv2 dataset, only keep images that are included in the federated gld v2 dataset.
+    """
+    Download full GLDv2 dataset, only keep images that are included in the federated GLD v2 dataset.
+
     Args:
-      shard: The shard of the GLDv2 dataset.
-      all_images: A set which contains all images included in the federated GLD
-        dataset.
-      image_dir: The directory to keep all filtered images.
-      base_url: The base url for downloading GLD v2 dataset images.
+        shard (int): The shard of the GLDv2 dataset.
+        all_images (Set[str]): A set that contains all images included in the federated GLD dataset.
+        image_dir (str): The directory to keep all filtered images.
+        base_url (str): The base URL for downloading GLD v2 dataset images.
+
     Raises:
-      IOError: when failed to download checksum.
+        IOError: When failed to download checksum.
     """
     shard_str = "%03d" % shard
     images_tar_url = "%s/train/images_%s.tar" % (base_url, shard_str)
@@ -135,10 +143,14 @@ def _download_data(num_worker: int, cache_dir: str, base_url: str):
     Download the entire GLD v2 dataset, subset the dataset to only include the
     images in the federated GLD v2 dataset, and create both gld23k and gld160k
     datasets.
+
     Args:
-      num_worker: The number of threads for downloading the GLD v2 dataset.
-      cache_dir: The directory for caching temporary results.
-      base_url: The base url for downloading GLD images.
+        num_worker (int): The number of threads for downloading the GLD v2 dataset.
+        cache_dir (str): The directory for caching temporary results.
+        base_url (str): The base URL for downloading GLD images.
+
+    Raises:
+        IOError: When failed to download checksum.
     """
     logger = logging.getLogger(LOGGER)
     logging.info("Start to download fed gldv2 mapping files")
@@ -194,6 +206,15 @@ def load_data(
     gld23k: bool = False,
     base_url: str = GLD_SHARD_BASE_URL,
 ):
+    """
+    Load the GLD v2 dataset.
+
+    Args:
+        num_worker (int): The number of threads for downloading the GLD v2 dataset.
+        cache_dir (str): The directory for caching temporary results.
+        gld23k (bool): Whether to load the gld23k dataset.
+        base_url (str): The base URL for downloading GLD images.
+    """
 
     if not os.path.exists(cache_dir):
         os.mkdir(cache_dir)

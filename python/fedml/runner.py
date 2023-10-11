@@ -17,6 +17,18 @@ from .core import ClientTrainer, ServerAggregator, FedMLAlgorithmFlow
 
 
 class FedMLRunner:
+    """
+    The main runner for different Federated Learning scenarios.
+
+    Args:
+        args: The command line arguments.
+        device: The device (CPU or GPU) to use for training.
+        dataset: The dataset used for training.
+        model: The model to be trained.
+        client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+        server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+        algorithm_flow (FedMLAlgorithmFlow, optional): The pre-defined algorithm flow. Defaults to None.
+    """
     def __init__(
         self,
         args,
@@ -55,6 +67,20 @@ class FedMLRunner:
     def _init_simulation_runner(
         self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
+        """
+        Initialize the runner for the simulation-based Federated Learning.
+
+        Args:
+            args: The command line arguments.
+            device: The device (CPU or GPU) to use for training.
+            dataset: The dataset used for training.
+            model: The model to be trained.
+            client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+
+        Returns:
+            runner: The initialized simulation-based runner.
+        """
         if hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_SP:
             from .simulation.simulator import SimulatorSingleProcess
 
@@ -81,6 +107,20 @@ class FedMLRunner:
     def _init_cross_silo_runner(
         self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
+        """
+        Initialize the runner for the cross-silo Federated Learning.
+
+        Args:
+            args: The command line arguments.
+            device: The device (CPU or GPU) to use for training.
+            dataset: The dataset used for training.
+            model: The model to be trained.
+            client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+
+        Returns:
+            runner: The initialized cross-silo runner.
+        """
         if args.scenario == "horizontal":
             if args.role == "client":
                 from .cross_silo import Client
@@ -118,6 +158,20 @@ class FedMLRunner:
     def _init_cheetah_runner(
             self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
+        """
+        Initialize the runner for the Cheetah Federated Learning.
+
+        Args:
+            args: The command line arguments.
+            device: The device (CPU or GPU) to use for training.
+            dataset: The dataset used for training.
+            model: The model to be trained.
+            client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+
+        Returns:
+            runner: The initialized Cheetah runner.
+        """
         if args.role == "client":
             from .cheetah import Client
 
@@ -137,6 +191,20 @@ class FedMLRunner:
     def _init_model_serving_runner(
             self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
+        """
+        Initialize the runner for the model serving Federated Learning.
+
+        Args:
+            args: The command line arguments.
+            device: The device (CPU or GPU) to use for training.
+            dataset: The dataset used for training.
+            model: The model to be trained.
+            client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+
+        Returns:
+            runner: The initialized model serving runner.
+        """
         if args.role == "client":
             from .serving import Client
 
@@ -156,6 +224,20 @@ class FedMLRunner:
     def _init_cross_device_runner(
         self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
+        """
+        Initialize the runner for the cross-device Federated Learning.
+
+        Args:
+            args: The command line arguments.
+            device: The device (CPU or GPU) to use for training.
+            dataset: The dataset used for training.
+            model: The model to be trained.
+            client_trainer (ClientTrainer, optional): The client trainer for training clients. Defaults to None.
+            server_aggregator (ServerAggregator, optional): The server aggregator for aggregating client updates. Defaults to None.
+
+        Returns:
+            runner: The initialized cross-device runner.
+        """
         if args.role == "server":
             from .cross_device import ServerMNN
 
@@ -170,6 +252,11 @@ class FedMLRunner:
 
     @staticmethod
     def log_runner_result():
+        """
+        Log the result of the runner to a file.
+
+        This method creates a log file containing the process ID and saves it to the "fedml_trace" directory.
+        """
         log_runner_result_dir = os.path.join(expanduser("~"), "fedml_trace")
         if not os.path.exists(log_runner_result_dir):
             os.makedirs(log_runner_result_dir, exist_ok=True)
@@ -179,6 +266,11 @@ class FedMLRunner:
         log_file_obj.close()
 
     def run(self):
+        """
+        Run the initialized Federated Learning runner.
+
+        This method executes the Federated Learning process using the selected runner.
+        """
         self.runner.run()
         FedMLRunner.log_runner_result()
 

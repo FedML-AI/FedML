@@ -7,6 +7,38 @@ from torch import nn
 
 
 class FedNASAggregator(object):
+    """
+    A class responsible for aggregating model parameters and architectures from multiple clients.
+
+    Args:
+        train_global (Dataset): The global training dataset.
+        test_global (Dataset): The global testing dataset.
+        all_train_data_num (int): The total number of training data samples.
+        client_num (int): The number of clients participating in federated learning.
+        model (nn.Module): The neural network model to be aggregated.
+        device (str): The device (e.g., 'cuda' or 'cpu') on which the model is trained.
+        args (argparse.Namespace): Command-line arguments and configurations.
+
+    Attributes:
+        train_global (Dataset): The global training dataset.
+        test_global (Dataset): The global testing dataset.
+        all_train_data_num (int): The total number of training data samples.
+        client_num (int): The number of clients participating in federated learning.
+        device (str): The device (e.g., 'cuda' or 'cpu') on which the model is trained.
+        args (argparse.Namespace): Command-line arguments and configurations.
+        model (nn.Module): The neural network model to be aggregated.
+        model_dict (dict): A dictionary to store client model parameters.
+        arch_dict (dict): A dictionary to store client model architectures.
+        sample_num_dict (dict): A dictionary to store the number of samples from each client.
+        train_acc_dict (dict): A dictionary to store training accuracy from each client.
+        train_loss_dict (dict): A dictionary to store training loss from each client.
+        train_acc_avg (float): The average training accuracy.
+        test_acc_avg (float): The average testing accuracy.
+        test_loss_avg (float): The average testing loss.
+        flag_client_model_uploaded_dict (dict): A dictionary to track whether client models have been uploaded.
+        best_accuracy (float): The best accuracy achieved during aggregation.
+        best_accuracy_different_cnn_counts (dict): A dictionary to store the best accuracy with different CNN counts.
+    """
     def __init__(
             self,
             train_global,
@@ -17,6 +49,19 @@ class FedNASAggregator(object):
             device,
             args,
     ):
+        """
+        Initialize a FedNASAggregator object.
+
+        Args:
+            train_global (Dataset): The global training dataset.
+            test_global (Dataset): The global testing dataset.
+            all_train_data_num (int): The total number of training data samples.
+            client_num (int): The number of clients participating in federated learning.
+            model (nn.Module): The neural network model to be aggregated.
+            device (str): The device (e.g., 'cuda' or 'cpu') on which the model is trained.
+            args (argparse.Namespace): Command-line arguments and configurations.
+        """
+        
         self.train_global = train_global
         self.test_global = test_global
         self.all_train_data_num = all_train_data_num
@@ -43,11 +88,29 @@ class FedNASAggregator(object):
             self.wandb_table = wandb.Table(columns=["Epoch", "Searched Architecture"])
 
     def get_model(self):
+        """
+        Get the aggregated model.
+
+        Returns:
+            nn.Module: The aggregated neural network model.
+        """
         return self.model
 
     def add_local_trained_result(
             self, index, model_params, arch_params, sample_num, train_acc, train_loss
     ):
+        """
+        Add the results from a locally trained model to the aggregator.
+
+        Args:
+            index (int): The index of the client.
+            model_params (dict): The model parameters from the client.
+            arch_params (dict): The model architecture parameters from the client.
+            sample_num (int): The number of samples used for training by the client.
+            train_acc (float): The training accuracy achieved by the client.
+            train_loss (torch.Tensor): The training loss from the client.
+        """
+
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.arch_dict[index] = arch_params
@@ -57,6 +120,12 @@ class FedNASAggregator(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
+        """
+        Check if all client models have been received by the aggregator.
+
+        Returns:
+            bool: True if all client models have been received, False otherwise.
+        """
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -65,6 +134,12 @@ class FedNASAggregator(object):
         return True
 
     def aggregate(self):
+        """
+        Aggregate model parameters and architectures from multiple clients.
+
+        Returns:
+            dict: The aggregated model parameters and architectures.
+        """
         averaged_weights = self.__aggregate_weight()
         self.model.load_state_dict(averaged_weights)
         if self.args.stage == "search":
@@ -75,11 +150,23 @@ class FedNASAggregator(object):
             return averaged_weights
 
     def __update_arch(self, alphas):
+        """
+        Update the architecture parameters of the aggregator's model.
+
+        Args:
+            alphas (list): A list of architecture parameters.
+        """
         logging.info("update_arch. server.")
         for a_g, model_arch in zip(alphas, self.model.arch_parameters()):
             model_arch.data.copy_(a_g.data)
 
     def __aggregate_weight(self):
+        """
+        Aggregate model weights from multiple clients.
+
+        Returns:
+            dict: The aggregated model weights.
+        """
         logging.info("################aggregate weights############")
         start_time = time.time()
         model_list = []
@@ -104,6 +191,12 @@ class FedNASAggregator(object):
         return averaged_params
 
     def __aggregate_alpha(self):
+        """
+        Calculate and log statistics including training accuracy, training loss, validation accuracy, and validation loss.
+
+        Args:
+            round_idx (int): The current round index.
+        """
         logging.info("################aggregate alphas############")
         start_time = time.time()
         alpha_list = []
@@ -124,6 +217,12 @@ class FedNASAggregator(object):
         return averaged_alphas
 
     def statistics(self, round_idx):
+        """
+        Calculate and log statistics including training accuracy, training loss, validation accuracy, and validation loss.
+
+        Args:
+            round_idx (int): The current round index.
+        """
         # train acc
         train_acc_list = self.train_acc_dict.values()
         self.train_acc_avg = sum(train_acc_list) / len(train_acc_list)
@@ -175,6 +274,12 @@ class FedNASAggregator(object):
             )
 
     def infer(self, round_idx):
+        """
+        Perform model inference and calculate test accuracy and loss.
+
+        Args:
+            round_idx (int): The current round index.
+        """
         self.model.eval()
         self.model.to(self.device)
         if (
@@ -217,6 +322,13 @@ class FedNASAggregator(object):
             logging.info("server_infer time cost: %d" % (end_time - start_time))
 
     def record_model_global_architecture(self, round_idx):
+        """
+        Record and log the architecture information of the global model, including genotype, CNN count,
+        and best accuracy for different CNN structures.
+
+        Args:
+            round_idx (int): The current round index.
+        """
         # save the structure
         genotype, normal_cnn_count, reduce_cnn_count = self.model.genotype()
         cnn_count = normal_cnn_count + reduce_cnn_count

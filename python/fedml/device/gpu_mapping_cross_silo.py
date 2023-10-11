@@ -10,6 +10,27 @@ from ..ml.engine import ml_engine_adapter
 def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
     process_id, worker_number, gpu_util_file, gpu_util_key, device_type, scenario, gpu_id=None, args=None
 ):
+    """
+    Map processes to GPU devices based on GPU utilization information from a YAML file in a cross-silo setting.
+
+    Args:
+        process_id (int): The ID of the current process.
+        worker_number (int): The total number of worker processes.
+        gpu_util_file (str): The path to the GPU utilization YAML file.
+        gpu_util_key (str): The key to retrieve GPU utilization information from the YAML file.
+        device_type (str): The type of device to use (e.g., "gpu" or "cpu").
+        scenario (str): The cross-silo training scenario (e.g., hierarchical or non-hierarchical).
+        gpu_id (int, optional): The GPU ID to use for the current process. Defaults to None.
+        args (object, optional): An object containing additional arguments (e.g., device settings).
+
+    Returns:
+        str: The GPU or CPU device assigned to the current process.
+
+    Raises:
+        Exception: If there is an issue with GPU device mapping, such as exceeding PyTorch DDP limits.
+        AssertionError: If the number of mapped processes does not match the worker number.
+
+    """
     if device_type != "gpu":
         args.using_gpu = False
         device = ml_engine_adapter.get_device(args, device_id=gpu_id, device_type=device_type)
@@ -27,8 +48,7 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
 
             with open(gpu_util_file, "r") as f:
                 gpu_util_yaml = yaml.load(f, Loader=yaml.FullLoader)
-                # gpu_util_num_process = 'gpu_util_' + str(worker_number)
-                # gpu_util = gpu_util_yaml[gpu_util_num_process]
+                
                 gpu_util = gpu_util_yaml[gpu_util_key]
                 logging.info("gpu_util = {}".format(gpu_util))
                 gpu_util_map = {}
@@ -38,7 +58,7 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
                         # validate DDP gpu mapping
                         if unique_gpu and num_process_on_gpu > 1:
                             raise Exception(
-                                "Cannot put {num_process_on_gpu} processes on GPU {gpu_j} of {host}."
+                                f"Cannot put {num_process_on_gpu} processes on GPU {gpu_j} of {host}. "
                                 "PyTorch DDP supports up to one process on each GPU."
                             )
                         for _ in range(num_process_on_gpu):
@@ -57,3 +77,4 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
 
         logging.info("process_id = {}, GPU device = {}".format(process_id, device))
         return device
+    

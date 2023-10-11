@@ -24,20 +24,84 @@ __all__ = [
 
 
 class FutureResult(object):
-    """A thread-safe future implementation. Used only as one-to-one pipe."""
+    """A thread-safe future implementation used for one-to-one communication.
 
+    This class provides a thread-safe mechanism for transferring results between threads,
+    typically in a producer-consumer pattern. It is designed for one-to-one communication
+    and ensures that the result is safely passed from one thread to another.
+
+    Args:
+        None
+
+    Attributes:
+        _result: The result value stored in the future.
+        _lock: A lock to ensure thread safety.
+        _cond: A condition variable associated with the lock for waiting and notifying.
+
+    Methods:
+        put(result):
+            Puts a result value into the future. If a result already exists, it raises an
+            assertion error.
+        
+        get():
+            Retrieves the result value from the future. If the result is not available yet,
+            it blocks until the result is put into the future.
+
+    Example:
+        Here's an example of using `FutureResult` for communication between two threads:
+
+        ```python
+        import threading
+
+        def producer(future):
+            result = 42  # Some computation or value to produce
+            future.put(result)
+
+        def consumer(future):
+            result = future.get()
+            print(f"Received result: {result}")
+
+        future = FutureResult()
+
+        # Start the producer and consumer threads
+        producer_thread = threading.Thread(target=producer, args=(future,))
+        consumer_thread = threading.Thread(target=consumer, args=(future,))
+
+        producer_thread.start()
+        consumer_thread.start()
+
+        producer_thread.join()
+        consumer_thread.join()
+        ```
+
+    Note:
+        This class is intended for one-to-one communication between threads.
+    """
     def __init__(self):
         self._result = None
         self._lock = threading.Lock()
         self._cond = threading.Condition(self._lock)
 
     def put(self, result):
+        """Put a result into the future.
+
+        Args:
+            result: The result value to be stored in the future.
+
+        Raises:
+            AssertionError: If a result is already present in the future.
+        """
         with self._lock:
             assert self._result is None, "Previous result has't been fetched."
             self._result = result
             self._cond.notify()
 
     def get(self):
+        """Get the result from the future, blocking if necessary.
+
+        Returns:
+            The result value stored in the future.
+        """
         with self._lock:
             if self._result is None:
                 self._cond.wait()
@@ -54,9 +118,69 @@ _SlavePipeBase = collections.namedtuple(
 
 
 class SlavePipe(_SlavePipeBase):
-    """Pipe for master-slave communication."""
+    """Pipe for master-slave communication in a multi-threaded environment.
 
+    This class represents a pipe used for communication between a master thread and one
+    or more slave threads. It is designed for multi-threaded applications where the
+    master thread delegates tasks to the slave threads and waits for their results.
+
+    Args:
+        queue (Queue): A queue for sending messages from the slave thread to the master.
+        result (FutureResult): A FutureResult object for receiving results from the slave.
+        identifier (int): An identifier for the slave thread.
+
+    Attributes:
+        queue (Queue): A queue for sending messages from the slave thread to the master.
+        result (FutureResult): A FutureResult object for receiving results from the slave.
+        identifier (int): An identifier for the slave thread.
+
+    Methods:
+        run_slave(msg):
+            Executes a task in the slave thread and sends a message to the master thread.
+            It waits for the master to acknowledge the completion of the task and returns
+            the result.
+
+    Example:
+        Here's an example of using `SlavePipe` for master-slave communication:
+
+        ```python
+        import threading
+
+        def slave_function(pipe):
+            # Perform some computation and send the result to the master
+            result = 42  # Placeholder for the result
+            pipe.run_slave(result)
+
+        # Create a SlavePipe for communication
+        slave_pipe = SlavePipe(queue, result, 1)
+
+        # Start the slave thread
+        slave_thread = threading.Thread(target=slave_function, args=(slave_pipe,))
+        slave_thread.start()
+
+        # Master thread can send tasks and receive results using the slave_pipe
+        task_result = slave_pipe.run_slave(task_data)
+
+        # Wait for the slave thread to finish
+        slave_thread.join()
+
+        # Use the task_result received from the slave
+        print(f"Received result from slave: {task_result}")
+        ```
+
+    Note:
+        This class is intended for use in multi-threaded applications where a master
+        thread communicates with one or more slave threads.
+    """
     def run_slave(self, msg):
+        """Execute a task in the slave thread and communicate with the master.
+
+        Args:
+            msg: The message or task to be sent to the master.
+
+        Returns:
+            The result of the task received from the master.
+        """
         self.queue.put((self.identifier, msg))
         ret = self.result.get()
         self.queue.put(True)
@@ -64,13 +188,67 @@ class SlavePipe(_SlavePipeBase):
 
 
 class SyncMaster(object):
-    """An abstract `SyncMaster` object.
+    """An abstract `SyncMaster` object for coordinating communication between master and slave devices.
+
+    In a data parallel setting, the `SyncMaster` object manages the communication between the master device
+    and multiple slave devices. It provides a mechanism for slave devices to register and communicate with
+    the master during forward and backward passes.
+
     - During the replication, as the data parallel will trigger an callback of each module, all slave devices should
     call `register(id)` and obtain an `SlavePipe` to communicate with the master.
     - During the forward pass, master device invokes `run_master`, all messages from slave devices will be collected,
     and passed to a registered callback.
     - After receiving the messages, the master device should gather the information and determine to message passed
     back to each slave devices.
+
+    Args:
+        master_callback (callable): A callback function to be invoked after collecting messages from slave devices.
+
+    Attributes:
+        _master_callback (callable): A callback function to be invoked after collecting messages from slave devices.
+        _queue (queue.Queue): A queue for exchanging messages between master and slave devices.
+        _registry (collections.OrderedDict): A registry of slave devices and their associated communication pipes.
+        _activated (bool): A flag indicating whether the SyncMaster is activated for communication.
+
+    Methods:
+        register_slave(identifier):
+            Register a slave device and obtain a `SlavePipe` object for communication with the master device.
+
+        run_master(master_msg):
+            Main entry for the master device during each forward pass. Collects messages from all devices,
+            invokes the master callback to compute a response message, and sends messages back to each device.
+
+        nr_slaves:
+            Property that returns the number of registered slave devices.
+
+    Example:
+        Here's an example of using `SyncMaster` for coordinating communication in a data parallel setting:
+
+        ```python
+        def master_callback(messages):
+            # Compute the master message based on received messages
+            master_msg = messages[0][1]
+            return [(0, master_msg)]  # Send the same message back to the master
+
+        sync_master = SyncMaster(master_callback)
+
+        # Register slave devices and obtain communication pipes
+        slave_pipe1 = sync_master.register_slave(1)
+        slave_pipe2 = sync_master.register_slave(2)
+
+        # During the forward pass, master device runs run_master to coordinate communication
+        master_msg = "Hello from master"
+        response_msg = sync_master.run_master(master_msg)
+
+        # Use the response_msg and coordinate further actions
+
+        # Get the number of registered slave devices
+        num_slaves = sync_master.nr_slaves
+        ```
+
+    Note:
+        This class is intended for use in multi-device data parallel applications where a master device
+        coordinates communication with multiple slave devices.
     """
 
     def __init__(self, master_callback):
@@ -90,11 +268,27 @@ class SyncMaster(object):
         self.__init__(state["master_callback"])
 
     def register_slave(self, identifier):
-        """
-        Register an slave device.
+        """Register a slave device with the SyncMaster.
+
         Args:
-            identifier: an identifier, usually is the device id.
-        Returns: a `SlavePipe` object which can be used to communicate with the master device.
+            identifier (int): An identifier, usually the device ID.
+
+        Returns:
+            SlavePipe: A `SlavePipe` object for communicating with the master device.
+
+        Raises:
+            AssertionError: If the SyncMaster is already activated and the queue is not empty.
+
+        Notes:
+            This method should be called by slave devices to register themselves with the SyncMaster.
+            The returned `SlavePipe` object can be used for communication with the master device.
+
+        Example:
+            ```python
+            sync_master = SyncMaster(master_callback)
+            slave_pipe = sync_master.register_slave(1)
+            ```
+
         """
         if self._activated:
             assert self._queue.empty(), "Queue is not clean before next initialization."
@@ -105,15 +299,30 @@ class SyncMaster(object):
         return SlavePipe(identifier, self._queue, future)
 
     def run_master(self, master_msg):
-        """
-        Main entry for the master device in each forward pass.
+        """Run the master device during each forward pass.
+
         The messages were first collected from each devices (including the master device), and then
         an callback will be invoked to compute the message to be sent back to each devices
         (including the master device).
+
         Args:
-            master_msg: the message that the master want to send to itself. This will be placed as the first
-            message when calling `master_callback`. For detailed usage, see `_SynchronizedBatchNorm` for an example.
-        Returns: the message to be sent back to the master device.
+            master_msg: The message that the master wants to send to itself.
+                This message will be placed as the first message when calling `master_callback`.
+
+        Returns:
+            Any: The message to be sent back to the master device.
+
+        Notes:
+            This method is the main entry for the master device during each forward pass.
+            It collects messages from all devices, invokes the master callback to compute a response message,
+            and sends messages back to each device.
+
+        Example:
+            ```python
+            master_msg = "Hello from master"
+            response_msg = sync_master.run_master(master_msg)
+            ```
+
         """
         self._activated = True
 
@@ -136,16 +345,57 @@ class SyncMaster(object):
 
     @property
     def nr_slaves(self):
+        """Get the number of registered slave devices.
+
+        Returns:
+            int: The number of registered slave devices.
+
+        Example:
+            ```python
+            num_slaves = sync_master.nr_slaves
+            ```
+
+        """
         return len(self._registry)
 
 
 def _sum_ft(tensor):
-    """sum over the first and last dimention"""
+    """Sum over the first and last dimensions of a tensor.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+
+    Returns:
+        torch.Tensor: A tensor with the sum of values over the first and last dimensions.
+
+    Example:
+        ```python
+        input_tensor = torch.tensor([[1, 2], [3, 4]])
+        result = _sum_ft(input_tensor)
+        # Result: tensor([10])
+        ```
+
+    """
     return tensor.sum(dim=0).sum(dim=-1)
 
 
 def _unsqueeze_ft(tensor):
-    """add new dementions at the front and the tail"""
+    """Add new dimensions at the front and the tail of a tensor.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+
+    Returns:
+        torch.Tensor: A tensor with new dimensions added at the front and the tail.
+
+    Example:
+        ```python
+        input_tensor = torch.tensor([1, 2, 3])
+        result = _unsqueeze_ft(input_tensor)
+        # Result: tensor([[[1]], [[2]], [[3]]])
+        ```
+
+    """
     return tensor.unsqueeze(0).unsqueeze(-1)
 
 
@@ -154,6 +404,21 @@ _MasterMessage = collections.namedtuple("_MasterMessage", ["sum", "inv_std"])
 
 
 class _SynchronizedBatchNorm(_BatchNorm):
+    """Synchronized Batch Normalization for parallel computation.
+
+    This class extends PyTorch's BatchNorm2d to support synchronization for data parallelism.
+    It uses a master-slave communication pattern to compute batch statistics efficiently.
+
+    Args:
+        num_features (int): Number of features in the input tensor.
+        eps (float): Small constant added to the denominator for numerical stability. Default: 1e-5
+        momentum (float): Momentum factor for the running statistics. Default: 0.1
+        affine (bool): If True, apply learned affine transformation. Default: True
+
+    Note:
+        This class is typically used in a data parallel setup where multiple GPUs work together.
+
+    """
     def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True):
         super(_SynchronizedBatchNorm, self).__init__(
             num_features, eps=eps, momentum=momentum, affine=affine
@@ -166,6 +431,15 @@ class _SynchronizedBatchNorm(_BatchNorm):
         self._slave_pipe = None
 
     def forward(self, input):
+        """Forward pass through the synchronized batch normalization layer.
+
+        Args:
+            input (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The normalized and optionally affine-transformed tensor.
+
+        """
         # If it is not parallel computation or is in evaluation mode, use PyTorch's implementation.
         if not (self._is_parallel and self.training):
             return F.batch_norm(
@@ -221,7 +495,15 @@ class _SynchronizedBatchNorm(_BatchNorm):
             self._slave_pipe = ctx.sync_master.register_slave(copy_id)
 
     def _data_parallel_master(self, intermediates):
-        """Reduce the sum and square-sum, compute the statistics, and broadcast it."""
+        """Replicate the synchronized batch normalization layer for data parallelism.
+
+        This method is called during data parallel replication to prepare the layer for parallel computation.
+
+        Args:
+            ctx: The context object.
+            copy_id (int): Identifier for the replica.
+
+        """
 
         # Always using same "device order" makes the ReduceAdd operation faster.
         # Thanks to:: Tete Xiao (http://tetexiao.com/)
@@ -244,8 +526,17 @@ class _SynchronizedBatchNorm(_BatchNorm):
         return outputs
 
     def _compute_mean_std(self, sum_, ssum, size):
-        """Compute the mean and standard-deviation with sum and square-sum. This method
-        also maintains the moving average on the master device."""
+        """Compute the mean and standard-deviation with sum and square-sum.
+
+        Args:
+            sum_ (torch.Tensor): Sum of values.
+            ssum (torch.Tensor): Sum of squared values.
+            size (int): Size of the input batch.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Mean and standard-deviation.
+
+        """
         assert (
             size > 1
         ), "BatchNorm computes unbiased standard-deviation, which requires size > 1."
@@ -288,25 +579,30 @@ class SynchronizedBatchNorm1d(_SynchronizedBatchNorm):
     During evaluation, this running mean/variance is used for normalization.
     Because the BatchNorm is done over the `C` dimension, computing statistics
     on `(N, L)` slices, it's common terminology to call this Temporal BatchNorm
+    or Instance Norm.
+
+    Note:
+        This layer behaves like the built-in PyTorch BatchNorm1d when used on a single GPU or CPU.
+
     Args:
-        num_features: num_features from an expected input of size
-            `batch_size x num_features [x width]`
-        eps: a value added to the denominator for numerical stability.
-            Default: 1e-5
-        momentum: the value used for the running_mean and running_var
-            computation. Default: 0.1
-        affine: a boolean value that when set to ``True``, gives the layer learnable
-            affine parameters. Default: ``True``
+        num_features (int): Number of features in the input tensor. `batch_size x num_features [x width]`
+        eps (float): A small constant added to the denominator for numerical stability. Default: 1e-5
+        momentum (float): The momentum factor used for computing running statistics. Default: 0.1
+        affine (bool): If True, learnable affine parameters (gamma and beta) are applied. Default: True
+
     Shape:
-        - Input: :math:`(N, C)` or :math:`(N, C, L)`
-        - Output: :math:`(N, C)` or :math:`(N, C, L)` (same shape as input)
+        - Input: (N, C) or (N, C, L)
+        - Output: (N, C) or (N, C, L) (same shape as input)
+
     Examples:
         >>> # With Learnable Parameters
         >>> m = SynchronizedBatchNorm1d(100)
         >>> # Without Learnable Parameters
         >>> m = SynchronizedBatchNorm1d(100, affine=False)
-        >>> input = torch.autograd.Variable(torch.randn(20, 100))
+        >>> input = torch.randn(20, 100)  # 2D input
         >>> output = m(input)
+        >>> input_3d = torch.randn(20, 100, 30)  # 3D input
+        >>> output_3d = m(input_3d)
     """
 
     def _check_input_dim(self, input):
@@ -426,14 +722,24 @@ class CallbackContext(object):
 
 def execute_replication_callbacks(modules):
     """
-    Execute an replication callback `__data_parallel_replicate__` on each module created by original replication.
-    The callback will be invoked with arguments `__data_parallel_replicate__(ctx, copy_id)`
-    Note that, as all modules are isomorphism, we assign each sub-module with a context
+    Execute a replication callback `__data_parallel_replicate__` on each module created by original replication.
+    The callback will be invoked with arguments `__data_parallel_replicate__(ctx, copy_id)`.
+    Note that, as all modules are isomorphic, we assign each sub-module with a context
     (shared among multiple copies of this module on different devices).
     Through this context, different copies can share some information.
     We guarantee that the callback on the master copy (the first copy) will be called ahead of calling the callback
     of any slave copies.
+
+    Args:
+        modules (list): List of replicated modules.
+
+    Examples:
+        >>> # Replicate a module and execute replication callbacks
+        >>> sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
+        >>> replicated_sync_bn = DataParallelWithCallback(replicate(sync_bn, device_ids=[0, 1]))
+        >>> # sync_bn.__data_parallel_replicate__ will be invoked.
     """
+
     master_copy = modules[0]
     nr_modules = len(list(master_copy.modules()))
     ctxs = [CallbackContext() for _ in range(nr_modules)]
@@ -447,13 +753,19 @@ def execute_replication_callbacks(modules):
 class DataParallelWithCallback(DataParallel):
     """
     Data Parallel with a replication callback.
-    An replication callback `__data_parallel_replicate__` of each module will be invoked after being created by
-    original `replicate` function.
-    The callback will be invoked with arguments `__data_parallel_replicate__(ctx, copy_id)`
+    A replication callback `__data_parallel_replicate__` of each module will be invoked after being created by
+    the original `replicate` function.
+    The callback will be invoked with arguments `__data_parallel_replicate__(ctx, copy_id)`.
+
+    Args:
+        module (Module): The module to be parallelized.
+        device_ids (list): List of device IDs to use for parallelization.
+
     Examples:
-        > sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
-        > sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
-        # sync_bn.__data_parallel_replicate__ will be invoked.
+        >>> # Parallelize a module with a replication callback
+        >>> sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
+        >>> replicated_sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
+        >>> # sync_bn.__data_parallel_replicate__ will be invoked.
     """
 
     def replicate(self, module, device_ids):
@@ -466,13 +778,21 @@ def patch_replication_callback(data_parallel):
     """
     Monkey-patch an existing `DataParallel` object. Add the replication callback.
     Useful when you have customized `DataParallel` implementation.
+
+    Args:
+        data_parallel (DataParallel): The existing DataParallel object to be patched.
+
     Examples:
-        > sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
-        > sync_bn = DataParallel(sync_bn, device_ids=[0, 1])
-        > patch_replication_callback(sync_bn)
-        # this is equivalent to
-        > sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
-        > sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
+        >>> sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
+        >>> sync_bn = DataParallel(sync_bn, device_ids=[0, 1])
+        >>> patch_replication_callback(sync_bn)
+        # This is equivalent to:
+        >>> sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
+        >>> sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
+
+    Note:
+        This function monkey-patches the `DataParallel` object to add the replication callback
+        without the need to create a new `DataParallelWithCallback` object.
     """
 
     assert isinstance(data_parallel, DataParallel)

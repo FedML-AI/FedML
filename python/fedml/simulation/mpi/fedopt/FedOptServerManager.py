@@ -5,8 +5,32 @@ from .utils import transform_tensor_to_list, post_complete_message_to_sweep_proc
 from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
-
 class FedOptServerManager(FedMLCommManager):
+    """Manages the server-side operations for federated optimization.
+
+    This class is responsible for managing the server-side operations during federated optimization.
+    It handles communication with clients, aggregation of model updates, and coordination of training rounds.
+
+    Attributes:
+        args: A configuration object containing server parameters.
+        aggregator: An aggregator for collecting and aggregating model updates from clients.
+        comm: The communication backend.
+        rank: The rank of the server in the communication group.
+        size: The total number of processes in the communication group.
+        backend: The communication backend (e.g., "MPI").
+        is_preprocessed: A boolean flag indicating whether data preprocessing has been applied.
+        preprocessed_client_lists: A list of preprocessed client data (optional).
+
+    Methods:
+        run(): Runs the server manager to coordinate federated optimization.
+        send_init_msg(): Sends initialization messages to clients at the start of each round.
+        register_message_receive_handlers(): Registers message handlers for receiving updates from clients.
+        handle_message_receive_model_from_client(msg_params): Handles received model updates from clients.
+        send_message_init_config(receive_id, global_model_params, client_index): Sends initialization messages to clients.
+        send_message_sync_model_to_client(receive_id, global_model_params, client_index): Sends updated models to clients.
+
+    """
+
     def __init__(
         self,
         args,
@@ -27,10 +51,12 @@ class FedOptServerManager(FedMLCommManager):
         self.preprocessed_client_lists = preprocessed_client_lists
 
     def run(self):
+        """Runs the server manager to coordinate federated optimization."""
         super().run()
 
     def send_init_msg(self):
-        # sampling clients
+        """Sends initialization messages to clients at the start of each round."""
+        # Sampling clients
         client_indexes = self.aggregator.client_sampling(
             self.args.round_idx,
             self.args.client_num_in_total,
@@ -43,12 +69,14 @@ class FedOptServerManager(FedMLCommManager):
             )
 
     def register_message_receive_handlers(self):
+        """Registers message handlers for receiving updates from clients."""
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
         )
 
     def handle_message_receive_model_from_client(self, msg_params):
+        """Handles received model updates from clients."""
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -62,29 +90,27 @@ class FedOptServerManager(FedMLCommManager):
             global_model_params = self.aggregator.aggregate()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
-            # start the next round
+            # Start the next round
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 post_complete_message_to_sweep_process(self.args)
                 self.finish()
                 return
 
-            # sampling clients
+            # Sampling clients
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
-                    # sampling has already been done in data preprocessor
+                    # Sampling has already been done in data preprocessor
                     client_indexes = [self.args.round_idx] * self.args.client_num_per_round
                 else:
                     client_indexes = self.preprocessed_client_lists[self.args.round_idx]
             else:
-                # # sampling clients
+                # Sampling clients
                 client_indexes = self.aggregator.client_sampling(
                     self.args.round_idx,
                     self.args.client_num_in_total,
                     self.args.client_num_per_round,
                 )
-
-            print("size = %d" % self.size)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(
@@ -92,6 +118,7 @@ class FedOptServerManager(FedMLCommManager):
                 )
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
+        """Sends initialization messages to clients."""
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
@@ -102,6 +129,7 @@ class FedOptServerManager(FedMLCommManager):
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
     ):
+        """Sends updated models to clients."""
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
