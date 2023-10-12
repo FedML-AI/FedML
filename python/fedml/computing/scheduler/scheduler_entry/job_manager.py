@@ -24,7 +24,7 @@ class FedMLJobManager(Singleton):
     def start_job(self, platform, project_name, application_name, device_server, device_edges,
                   user_api_key, cluster=None, no_confirmation=False, job_id=None,
                   model_name=None, model_endpoint=None, job_yaml=None,
-                  job_type=None, app_job_id=None, app_job_name=None):
+                  job_type=None, app_job_id=None, app_job_name=None, config_id=None):
         job_start_result = None
         jot_start_url = ServerConstants.get_job_start_url()
         job_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -41,7 +41,6 @@ class FedMLJobManager(Singleton):
             "platformType": platform,
             "name": "",
             "applicationName": application_name,
-            "applicationConfigId": 0,
             "devices": device_lists,
             "urls": [],
             "apiKey": user_api_key,
@@ -71,6 +70,9 @@ class FedMLJobManager(Singleton):
 
         if app_job_id is not None:
             job_start_json["applicationId"] = app_job_id
+
+        if config_id is not None:
+            job_start_json["applicationConfigId"] = config_id
 
         if app_job_name is not None:
             job_start_json["applicationName"] = app_job_name

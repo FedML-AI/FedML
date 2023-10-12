@@ -26,7 +26,12 @@ server_job: |
   pwd
   python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_JOB_ID
 
-job_type: federate  # options: train, deploy, dev-environment
+job_type: federate              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: cross_silo
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.

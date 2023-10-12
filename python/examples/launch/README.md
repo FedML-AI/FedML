@@ -49,7 +49,13 @@ computing:
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   
 framework_type: fedml         # options: fedml, deepspeed, pytorch, general
-task_type: train              # options: serve, train, dev-environment
+
+job_type: train              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: generate_training
 
 # Running entry commands on the server side which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.

@@ -144,7 +144,10 @@ class FedMLLaunchManager(Singleton):
         if os.path.exists(fedml_launch_paths.bootstrap_full_path):
             shutil.copyfile(fedml_launch_paths.bootstrap_full_path, fedml_launch_paths.tmp_bootstrap_file)
         with open(fedml_launch_paths.bootstrap_full_path, 'w') as bootstrap_file_handle:
-            bootstrap_file_handle.writelines(job_config.bootstrap)
+            if job_config.bootstrap is not None:
+                bootstrap_file_handle.writelines(job_config.bootstrap)
+            else:
+                bootstrap_file_handle.write("\n")
             bootstrap_file_handle.close()
         configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = job_config.job_config_dict
 
@@ -348,8 +351,10 @@ class FedMLJobConfig(object):
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
         workspace = self.job_config_dict.get("workspace", None)
+        random_workspace = str(uuid.uuid4())
         self.executable_file_folder = os.path.normpath(
-            os.path.join(self.base_dir, workspace)) \
+            os.path.join(self.base_dir,
+                         workspace if workspace is not None and workspace != "" else random_workspace)) \
             if not should_use_default_workspace else None
         self.executable_commands = self.job_config_dict.get("job", "")
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
@@ -412,6 +417,7 @@ class FedMLJobConfig(object):
         self.task_type = self.job_config_dict.get("task_type", None)
         if self.task_type is None:
             self.task_type = self.job_config_dict.get("job_type", Constants.JOB_TASK_TYPE_TRAIN)
+        self.task_subtype = self.job_config_dict.get("job_subtype", Constants.JOB_TASK_SUBTYPE_TRAIN_GENERAL_TRAINING)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
         self.resource_type = computing_obj.get("resource_type", "")
@@ -427,16 +433,18 @@ class FedMLJobConfig(object):
 
         job_args = self.job_config_dict.get("job_args", {})
         self.job_id = job_args.get("job_id", None)
-        self.job_name = job_args.get("job_name", None)
+        self.config_id = job_args.get("config_id", None)
+        self.job_name = self.job_config_dict.get("job_name", None)
 
         self.application_name = FedMLJobConfig._generate_application_name(
-            self.executable_file_folder if workspace is None or workspace == "" else workspace)
+            random_workspace if self.workspace.startswith(self.tmp_dir) else self.workspace)
         self.application_name = self.job_name if self.job_name is not None else self.application_name
 
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
-        self.gitignore_file = os.path.join(self.base_dir, workspace, ".gitignore")
+        self.gitignore_file = os.path.join(
+            self.base_dir, workspace if workspace is not None and workspace != "" else random_workspace, ".gitignore")
         self.ignore_list_str = Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
         self.read_gitignore_file()
 

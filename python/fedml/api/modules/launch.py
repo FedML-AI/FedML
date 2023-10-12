@@ -37,8 +37,8 @@ def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
                                 model_name=job_config.serving_model_name,
                                 model_endpoint=job_config.serving_endpoint_name,
                                 job_yaml=job_config.job_config_dict, job_type=job_config.task_type,
-                                app_job_id=job_config.job_id,
-                                app_job_name=job_config.job_name)
+                                app_job_id=job_config.job_id, app_job_name=job_config.job_name,
+                                config_id=job_config.config_id)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -75,8 +75,8 @@ def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_ser
                                            model_name=job_config.serving_model_name,
                                            model_endpoint=job_config.serving_endpoint_name,
                                            job_yaml=job_config.job_config_dict, job_type=job_config.task_type,
-                                           app_job_id=job_config.job_id,
-                                           app_job_name=job_config.job_name)
+                                           app_job_id=job_config.job_id, app_job_name=job_config.job_name,
+                                           config_id=job_config.config_id)
 
         _post_process_launch_result(schedule_result, job_config)
 
@@ -182,15 +182,15 @@ def _prepare_launch_app(yaml_file):
         yaml_file)
 
     # Create and update an application with the built packages.
-    if job_config.job_id is None:
-        app_updated_result = FedMLAppManager.get_instance().update_app(
-            SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
-            client_package_file=client_package, server_package_file=server_package,
-            workspace=job_config.workspace, model_name=job_config.serving_model_name,
-            model_version=job_config.serving_model_version,
-            model_url=job_config.serving_model_s3_url)
-    else:
-        app_updated_result = object()
+    app_updated_result = FedMLAppManager.get_instance().update_app(
+        SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
+        client_package_file=client_package, server_package_file=server_package,
+        workspace=job_config.workspace, model_name=job_config.serving_model_name,
+        model_version=job_config.serving_model_version, model_url=job_config.serving_model_s3_url,
+        app_id=job_config.job_id, config_id=job_config.config_id,
+        job_type=Constants.JOB_TASK_TYPE_MAP.get(job_config.task_type, Constants.JOB_TASK_TYPE_TRAIN_CODE),
+        job_subtype=Constants.JOB_TASK_SUBTYPE_MAP.get(job_config.task_subtype,
+                                                       Constants.JOB_TASK_SUBTYPE_TRAIN_GENERAL_TRAINING_CODE))
 
     # Post processor to clean up local temporary launch package and do other things.
     FedMLLaunchManager.get_instance().post_launch(job_config)

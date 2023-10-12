@@ -11,7 +11,7 @@ from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 def start(platform, project_name, application_name, device_server, device_edges,
           api_key, no_confirmation=False, job_id=None,
           model_name=None, model_endpoint=None, job_yaml=None,
-          job_type=None, app_job_id=None, app_job_name=None):
+          job_type=None, app_job_id=None, app_job_name=None, config_id=None):
 
     if not _authenticated_and_validated_platform(api_key, platform):
         return
@@ -21,16 +21,16 @@ def start(platform, project_name, application_name, device_server, device_edges,
                                                                 no_confirmation=no_confirmation, job_id=job_id,
                                                                 model_name=model_name, model_endpoint=model_endpoint,
                                                                 job_yaml=job_yaml, job_type=job_type,
-                                                                app_job_id=app_job_id, app_job_name=app_job_name)
+                                                                app_job_id=app_job_id, app_job_name=app_job_name,
+                                                                config_id=config_id)
 
     return job_start_result
 
 
 def start_on_cluster(platform, cluster, project_name, application_name, device_server, device_edges,
                      api_key, no_confirmation=False, job_id=None, model_name=None,
-                     model_endpoint=None,
-                     job_yaml=None, job_type=None,
-                     app_job_id=None, app_job_name=None):
+                     model_endpoint=None, job_yaml=None, job_type=None,
+                     app_job_id=None, app_job_name=None, config_id=None):
 
     if not _authenticated_and_validated_platform(api_key, platform):
         return
@@ -41,7 +41,7 @@ def start_on_cluster(platform, cluster, project_name, application_name, device_s
                                                                 job_id=job_id, model_name=model_name,
                                                                 model_endpoint=model_endpoint, job_yaml=job_yaml,
                                                                 job_type=job_type, app_job_id=app_job_id,
-                                                                app_job_name=app_job_name)
+                                                                app_job_name=app_job_name, config_id=config_id)
 
     return job_start_result
 
