@@ -38,6 +38,12 @@ class S3Storage:
         global aws_s3_client
         env_version = fedml.get_env_version()
         if env_version == "local":
+            bucket = aws_s3_client.Bucket('fedml')
+            if bucket.creation_date:
+                print("The bucket exists")
+            else:
+                print("The bucket does not exist")
+                aws_s3_client.create_bucket(Bucket='fedml')
             aws_s3_client = boto3.client(
                 "s3",
                 endpoint_url=f'{fedml._get_local_s3_like_service_url()}',

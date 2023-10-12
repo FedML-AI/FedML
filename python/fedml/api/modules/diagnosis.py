@@ -41,9 +41,9 @@ def diagnose(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backen
     if check_s3:
         is_s3_connected = ClientDiagnosis.check_s3_connection()
         if is_s3_connected:
-            click.echo("The connection to AWS S3 is OK.")
+            click.echo("The connection to S3 Object Storage is OK.")
         else:
-            click.echo("You can not connect to AWS S3.")
+            click.echo("You can not connect to S3 Object Storage.")
 
     if check_mqtt:
         is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
