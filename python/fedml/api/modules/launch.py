@@ -113,6 +113,9 @@ def job(yaml_file, api_key, resource_id, device_server, device_edges):
     result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
                                                                 device_edges)
 
+    if schedule_result is None:
+        return None, None, None, result_code, result_message
+
     job_id = getattr(schedule_result, "job_id", None)
     project_id = getattr(schedule_result, "project_id", None)
 

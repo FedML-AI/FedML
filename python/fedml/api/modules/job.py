@@ -14,7 +14,7 @@ def start(platform, project_name, application_name, device_server, device_edges,
           job_type=None, app_job_id=None, app_job_name=None, config_id=None):
 
     if not _authenticated_and_validated_platform(api_key, platform):
-        return
+        return None
 
     job_start_result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name,
                                                                 device_server, device_edges, get_api_key(),
