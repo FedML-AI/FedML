@@ -175,6 +175,7 @@ def unbind(client, server, docker, docker_rank):
     is_server = server
     if client is None and server is None:
         is_client = True
+        is_server = True
 
     is_docker = docker
     if docker is None:

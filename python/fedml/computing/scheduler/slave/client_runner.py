@@ -1428,7 +1428,7 @@ class FedMLClientRunner:
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
