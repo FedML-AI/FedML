@@ -87,7 +87,7 @@ class ClientConstants(object):
     INFERENCE_ENGINE_TYPE_ONNX = "onnx"
     INFERENCE_ENGINE_TYPE_TENSORRT = "tensorrt"
     INFERENCE_ENGINE_TYPE_INT_TRITON = 1
-    INFERENCE_ENGINE_TYPE_INT_DEEPSPEED = 2
+    INFERENCE_ENGINE_TYPE_INT_DEFAULT = 2
     INFERENCE_MODEL_VERSION = "1"
     INFERENCE_INFERENCE_SERVER_VERSION = "v2"
 
@@ -110,9 +110,10 @@ class ClientConstants(object):
 
     CMD_TYPE_CONVERT_MODEL = "convert_model"
     CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+    CMD_TYPE_RUN_DEFAULT_SERVER = "run_default_server"
     FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
     FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
-    FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX = "fedml_llm_server_container"
+    FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX = "fedml_default_server_container"
     FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
     FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
@@ -300,12 +301,13 @@ class ClientConstants(object):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
                                                                     end_point_id, model_id)
         # Stop and delete the container
-        container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+        container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                          security_utils.get_content_hash(running_model_name)
         client = docker.from_env()
         try:
             exist_container_obj = client.containers.get(container_name)
         except docker.errors.NotFound:
+            logging.info("The container {} does not exist, cannot remove.".format(container_name))
             exist_container_obj = None
         except docker.errors.APIError:
             logging.error("Failed to get the container object")

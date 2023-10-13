@@ -285,10 +285,13 @@ class FedMLClientRunner:
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         model_config_parameters = self.request_json["parameters"]
-        if "using_triton" in model_config_parameters and model_config_parameters["using_triton"] == True:
+        if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
         else:
-            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED
+            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT
+
+        logging.info("[Critical] The inference_engine is: {}".format(inference_engine))
+
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
         if self.model_is_from_open:
             model_net_url = model_config["model_net_url"]

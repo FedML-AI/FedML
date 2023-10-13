@@ -541,7 +541,7 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
-            if "type" in model_metadata and model_metadata["type"] == "llm":
+            if "type" in model_metadata and model_metadata["type"] == "default":
                 payload_json["input_json"] = {"end_point_name": end_point_name,
                                             "model_name": model_name,
                                             "token": str(token),
