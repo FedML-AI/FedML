@@ -266,9 +266,16 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     shutil.copyfile(src_model_file, dst_model_file)
 
     if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
-        client = docker.from_env()
-        default_server_container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                    security_utils.get_content_hash(running_model_name)  # Running model name is concat of model name and version
+        try:
+            client = docker.from_env()
+        except Exception:
+            logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                          "installed Docker Desktop or Docker Engine, and the docker is running")
+            return "", "", None, None, None
+
+        default_server_container_name = "{}".format(
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +\
+            security_utils.get_content_hash(running_model_name)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)
@@ -524,7 +531,14 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
     while True:
         if not ClientConstants.is_running_on_k8s():
             logging.info(f"Test: {inference_http_port}, Attempt: {deploy_attempt} / {deploy_attempt_threshold}")
-            client = docker.from_env()
+
+            try:
+                client = docker.from_env()
+            except Exception:
+                logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                              "installed Docker Desktop or Docker Engine, and the docker is running")
+                break
+
             try:
                 container_obj = client.containers.get(cmd_container_name)
             except docker.errors.NotFound:

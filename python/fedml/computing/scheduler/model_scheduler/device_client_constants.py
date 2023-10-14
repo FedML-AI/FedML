@@ -303,7 +303,13 @@ class ClientConstants(object):
         # Stop and delete the container
         container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                          security_utils.get_content_hash(running_model_name)
-        client = docker.from_env()
+        try:
+            client = docker.from_env()
+        except Exception:
+            logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                          "installed Docker Desktop or Docker Engine, and the docker is running")
+            return False
+
         try:
             exist_container_obj = client.containers.get(container_name)
         except docker.errors.NotFound:
