@@ -1048,7 +1048,7 @@ class FedMLClientRunner:
         # if self.local_api_process is not None and self.local_api_process.pid is not None:
         #     print(f"Model worker local API process id {self.local_api_process.pid}")
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

@@ -2111,7 +2111,7 @@ class FedMLServerRunner:
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"], is_client=False)

@@ -1587,7 +1587,7 @@ class FedMLServerRunner:
 
         self.recover_inference_and_monitor()
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
