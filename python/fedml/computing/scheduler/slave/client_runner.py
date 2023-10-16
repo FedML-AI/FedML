@@ -111,6 +111,7 @@ class FedMLClientRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.server_id = None
         self.computing_started_time = 0
+        self.origin_fedml_config_object = None
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -264,13 +265,21 @@ class FedMLClientRunner:
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
                                        os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
+        self.origin_fedml_config_object = fedml_conf_object.copy()
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
 
         # Replace local fedml config objects with parameters from MLOps web
         parameters_object = run_config.get("parameters", None)
         if parameters_object is not None:
-            fedml_conf_object = parameters_object
+            for config_k, config_v in fedml_conf_object.items():
+                parameter_v = parameters_object.get(config_k, None)
+                if parameter_v is not None:
+                    fedml_conf_object[config_k] = parameter_v
+                    parameters_object.pop(config_k)
+
+            for config_k, config_v in parameters_object.items():
+                fedml_conf_object[config_k] = config_v
 
         package_dynamic_args = package_conf_object["dynamic_args"]
         if fedml_conf_object.get("comm_args", None) is not None:
@@ -568,6 +577,8 @@ class FedMLClientRunner:
         expert_mode = job_yaml.get("expert_mode", None)
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        conf_file_object = load_yaml_config(conf_file_full_path)
+        entry_args = conf_file_object.get("fedml_entry_args", None)
         error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
@@ -615,12 +626,39 @@ class FedMLClientRunner:
                                                              in_run_id=self.run_id)
             shell_cmd_list = list()
             if using_easy_mode:
-                entry_commands = list()
-                with open(entry_file_full_path, 'r') as entry_file_handle:
-                    entry_commands.extend(entry_file_handle.readlines())
-                    entry_file_handle.close()
+                entry_commands_origin = list()
+                job_yaml_from_origin_conf = self.origin_fedml_config_object.get("job_yaml", None)
+                if job_yaml_from_origin_conf is not None:
+                    # Read commands if job is not from launch
+                    with open(entry_file_full_path, 'r') as entry_file_handle:
+                        entry_commands_origin.extend(entry_file_handle.readlines())
+                        entry_file_handle.close()
 
+                # Replace entry commands with environment variable values
                 export_cmd = "set" if platform.system() == "Windows" else "export"
+                entry_commands = list()
+                env_list, env_value_map = self.parse_config_args_as_env_variables(export_cmd, conf_file_object)
+                for entry_cmd in entry_commands_origin:
+                    for env_name in ClientConstants.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
+                        env_value = env_value_map.get(env_name, None)
+                        if env_value is None:
+                            continue
+                        entry_cmd = entry_cmd.replace(env_name, env_value)
+
+                    entry_commands.append(entry_cmd)
+
+                # Replace entry arguments with environment variable values
+                for env_name in ClientConstants.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
+                    env_value = env_value_map.get(env_name, None)
+                    if env_value is None:
+                        continue
+                    entry_args = entry_args.replace(env_name, env_value)
+
+                # Export the environment variables
+                if len(env_list) > 0:
+                    entry_commands.extend(env_list)
+
+                # Add general environment variables
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={self.edge_id}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_JOB_ID={self.run_id}\n")
                 if assigned_gpu_ids is not None and assigned_gpu_ids != "":
@@ -629,6 +667,7 @@ class FedMLClientRunner:
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
 
+                # Set -e for the entry script
                 entry_commands_filled = list()
                 if platform.system() == "Windows":
                     entry_file_full_path = entry_file_full_path.replace(".sh", ".bat")
@@ -640,9 +679,17 @@ class FedMLClientRunner:
                     entry_commands_filled = entry_commands
                     entry_commands_filled.insert(0, "set -e\n")
 
+                if job_yaml_from_origin_conf is None:
+                    python_program = get_python_program()
+                    entry_commands_filled.append(f"{python_program} {entry_file_full_path} {entry_args}\n")
+                    entry_file_full_path = os.path.join(
+                        os.path.dirname(entry_file_full_path), os.path.basename(entry_file_full_path) + ".sh")
+
+                # Write the entry commands to the entry file
                 with open(entry_file_full_path, 'w') as entry_file_handle:
                     entry_file_handle.writelines(entry_commands_filled)
                     entry_file_handle.close()
+
                 shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
             else:
                 shell_cmd_list.append(executable_interpreter)
@@ -674,6 +721,50 @@ class FedMLClientRunner:
 
     def job_error_processor(self, error_str):
         raise Exception(f"Error occurs when running the job... {error_str}")
+
+    def parse_config_args_as_env_variables(self, export_cmd, run_params):
+        model_args = run_params.get("fedml_model_args", {})
+        data_args = run_params.get("fedml_data_args", {})
+        model_name = model_args.get("model_name", None)
+        model_cache_path = model_args.get("model_cache_path", None)
+        input_dim = model_args.get("input_dim", None)
+        output_dim = model_args.get("output_dim", None)
+        dataset_name = data_args.get("dataset_name", None)
+        dataset_path = data_args.get("dataset_path", None)
+        dataset_type = data_args.get("dataset_type", None)
+
+        env_list = list()
+        env_value_map = dict()
+
+        if model_name is not None and str(model_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_NAME={model_name}\n")
+            env_value_map["$FEDML_MODEL_NAME"] = model_name
+
+        if model_cache_path is not None and str(model_cache_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_CACHE_PATH={model_cache_path}\n")
+            env_value_map["$FEDML_MODEL_CACHE_PATH"] = model_cache_path
+
+        if input_dim is not None and str(input_dim).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_INPUT_DIM={input_dim}\n")
+            env_value_map["$FEDML_MODEL_INPUT_DIM"] = input_dim
+
+        if output_dim is not None and str(output_dim).strip() != "":
+            env_list.append(f"{export_cmd} MODEL_OUTPUT_DIM={output_dim}\n")
+            env_value_map["$MODEL_OUTPUT_DIM"] = output_dim
+
+        if dataset_name is not None and str(dataset_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_NAME={dataset_name}\n")
+            env_value_map["$FEDML_DATASET_NAME"] = dataset_name
+
+        if dataset_path is not None and str(dataset_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_PATH={dataset_path}\n")
+            env_value_map["$FEDML_DATASET_PATH"] = dataset_path
+
+        if dataset_type is not None and str(dataset_type).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_TYPE={dataset_type}\n")
+            env_value_map["$FEDML_DATASET_TYPE"] = dataset_type
+
+        return env_list, env_value_map
 
     def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
         self.mlops_metrics.run_id = self.run_id
