@@ -50,4 +50,5 @@ def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ig
 
     # Build the package based on the updated config file
     fedml.api.modules.build.build(ModuleConstants.PLATFORM_NAME_LAUNCH, ModuleConstants.TRAIN_BUILD_PACKAGE_CLIENT_TYPE,
-                                  source_folder, entry_point, config_folder, dest_folder, ignore)
+                                  source_folder, entry_point, config_folder, dest_folder, ignore,
+                                  package_type=ModuleConstants.FEDML_PACKAGE_TYPE_TRAIN)

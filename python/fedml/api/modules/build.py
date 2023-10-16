@@ -9,7 +9,7 @@ from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_vali
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
-def build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
+def build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore, package_type="default"):
     click.echo("Argument for type: " + type)
     click.echo("Argument for source folder: " + source_folder)
     click.echo("Argument for entry point: " + entry_point)
@@ -70,6 +70,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             "fedml-client",
             "client-package",
             "${FEDSYS.CLIENT_INDEX}",
+            package_type=package_type
         )
         if result != 0:
             exit(result)
@@ -91,6 +92,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             "fedml-server",
             "server-package",
             "0",
+            package_type=package_type
         )
         if result != 0:
             exit(result)

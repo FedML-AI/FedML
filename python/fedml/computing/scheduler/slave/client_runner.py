@@ -112,6 +112,7 @@ class FedMLClientRunner:
         self.server_id = None
         self.computing_started_time = 0
         self.origin_fedml_config_object = None
+        self.package_type = None
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -211,6 +212,7 @@ class FedMLClientRunner:
         container_dynamic_args_config = config_from_container["dynamic_args"]
         entry_file = container_entry_file_config["entry_file"]
         conf_file = container_entry_file_config["conf_file"]
+        self.package_type = container_entry_file_config.get("package_type", None)
         full_conf_path = os.path.join(unzip_package_path, "fedml", "config", os.path.basename(conf_file))
 
         # Dynamically build constrain variable with realtime parameters from server
@@ -627,8 +629,7 @@ class FedMLClientRunner:
             shell_cmd_list = list()
             if using_easy_mode:
                 entry_commands_origin = list()
-                job_yaml_from_origin_conf = self.origin_fedml_config_object.get("job_yaml", None)
-                if job_yaml_from_origin_conf is not None:
+                if self.package_type != ClientConstants.FEDML_PACKAGE_TYPE_TRAIN:
                     # Read commands if job is not from launch
                     with open(entry_file_full_path, 'r') as entry_file_handle:
                         entry_commands_origin.extend(entry_file_handle.readlines())
@@ -679,7 +680,7 @@ class FedMLClientRunner:
                     entry_commands_filled = entry_commands
                     entry_commands_filled.insert(0, "set -e\n")
 
-                if job_yaml_from_origin_conf is None:
+                if self.package_type == ClientConstants.FEDML_PACKAGE_TYPE_TRAIN:
                     python_program = get_python_program()
                     entry_commands_filled.append(f"{python_program} {entry_file_full_path} {entry_args}\n")
                     entry_file_full_path = os.path.join(

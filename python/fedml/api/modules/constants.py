@@ -4,3 +4,5 @@ class ModuleConstants:
     FEDML_CONFIG_YAML_FILE = "fedml_config.yaml"
     TRAIN_BUILD_PACKAGE_CLIENT_TYPE = "client"
 
+    FEDML_PACKAGE_TYPE_TRAIN = "train/build"
+
