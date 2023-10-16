@@ -446,8 +446,9 @@ class FedMLServerRunner:
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
-        task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
-        if task_type == Constants.JOB_TASK_TYPE_DEPLOY or task_type == Constants.JOB_TASK_TYPE_SERVE:
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
             serving_args = run_params.get("serving_args", {})
             model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
@@ -1772,8 +1773,9 @@ class FedMLServerRunner:
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
-        task_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN)
-        if task_type != Constants.JOB_TASK_TYPE_DEPLOY and task_type != Constants.JOB_TASK_TYPE_SERVE:
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        if job_type != Constants.JOB_TASK_TYPE_DEPLOY and job_type != Constants.JOB_TASK_TYPE_SERVE:
             return
 
         # Init model device ids for each run
@@ -2109,7 +2111,7 @@ class FedMLServerRunner:
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"], is_client=False)

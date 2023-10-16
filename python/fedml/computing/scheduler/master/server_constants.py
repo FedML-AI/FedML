@@ -203,6 +203,12 @@ class ServerConstants(object):
         return app_url
 
     @staticmethod
+    def get_app_update_with_app_id_url():
+        app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationConfigFromCli".format(
+            ServerConstants.get_mlops_url())
+        return app_url
+
+    @staticmethod
     def get_heartbeat_url():
         heartbeat_url = "{}/fedmlOpsServer/api/v1/cli/heartBeat".format(
             ServerConstants.get_mlops_url())

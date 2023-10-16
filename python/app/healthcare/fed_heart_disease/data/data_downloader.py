@@ -24,11 +24,11 @@ def main(output_folder, debug=False):
     # )
     base_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/"
     centers = ["cleveland", "hungarian", "switzerland", "va"]
-    md5_hashes = [
-        "2d91a8ff69cfd9616aa47b59d6f843db",
-        "22e96bee155b5973568101c93b3705f6",
-        "9a87f7577310b3917730d06ba9349e20",
-        "4249d03ca7711e84f4444768c9426170",
+    sha256_hashes = [
+        'a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8',
+        'd1ad108f785768cd3d7e82dc522e6f5a61eea93cccfb3a46ee8076f73fc3d796',
+        '834a405ccf5b66ab4056bb77794adc8df0b7125186454c0a1d002d33c6c3b314',
+        'e7c93d8d0d2acdadfa4c5e8de768e2191e7f618b952e29623f1f0d5949ff6b8f'
     ]
 
     os.makedirs(output_folder, exist_ok=True)
@@ -84,11 +84,11 @@ def main(output_folder, debug=False):
                 base_url + "processed." + center + ".data", out=output_folder
             )
 
-            hash_md5 = hashlib.md5()
+            hash_sha256 = hashlib.sha256()
             with open(fname, "rb") as f:
-                hash_md5.update(f.read())
+                hash_sha256.update(f.read())
 
-                if hash_md5.hexdigest() == md5_hashes[i]:
+                if hash_sha256.hexdigest() == sha256_hashes[i]:
                     downloaded_status_file.loc[i, "Status"] = "Downloaded"
                 else:
                     downloaded_status_file.loc[i, "Status"] = "Corrupted"

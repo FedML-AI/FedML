@@ -15,7 +15,7 @@ Usages:
                 print(f"job status {job_status}, total log nums {total_log_nums}, "
                       f"total log pages {total_log_pages}, log list {log_list}")
 """
-from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster, run
+from fedml.api.modules import launch, utils, job, build, device, logs, diagnosis, model, cluster, run, train, federate
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
 
@@ -240,3 +240,15 @@ def model_run(name, data):
 
 def run_command(cmd, cluster_name, api_key=None):
     return run.command(cmd, cluster_name, api_key)
+
+
+def train_build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
+                model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
+    return train.build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
+                       model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)
+
+
+def federate_build(source_folder, entry_point, config_folder, dest_folder, ignore,
+                   model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
+    return federate.build(source_folder, entry_point, config_folder, dest_folder, ignore,
+                          model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)

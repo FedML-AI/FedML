@@ -60,7 +60,7 @@ class ClientDiagnosis(Singleton):
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             s3_storage = S3Storage(s3_config)
-            download_ret = s3_storage.test_s3_base_cmds("d31df596c32943c64015a7e2d6e0d5a4", "test-base-cmds")
+            download_ret = s3_storage.test_s3_base_cmds("fedml", "test-base-cmds")
             if download_ret:
                 return True
         except Exception as e:

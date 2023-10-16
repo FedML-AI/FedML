@@ -51,6 +51,7 @@ def build_mlops_package(
         mlops_package_parent_dir,
         mlops_package_name,
         rank,
+        package_type="default"
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
@@ -120,6 +121,7 @@ def build_mlops_package(
             "entry_config: \n",
             "  entry_file: " + mlops_dest_entry + "\n",
             "  conf_file: config/fedml_config.yaml\n",
+            "  package_type: " + package_type + "\n",
             "dynamic_args:\n",
             "  rank: " + rank + "\n",
             "  run_id: ${FEDSYS.RUN_ID}\n",
