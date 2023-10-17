@@ -1307,7 +1307,7 @@ class FedMLClientRunner:
     def get_machine_id():
         try:
             import machineid
-            return machineid.id()
+            return machineid.id().replace('\n', '').replace('\r\n', '')
         except Exception as e:
             return hex(uuid.getnode())
 
