@@ -582,6 +582,17 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_archive_name = os.path.join(artifact_dir, artifact_dst_key)
     os.makedirs(artifact_archive_name, exist_ok=True)
 
+    if len(artifact.artifact_files) == 1 and os.path.isfile(artifact.artifact_files[0]):
+        try:
+            artifact_dst_key = "{}".format(os.path.basename(artifact.artifact_files[0]))
+            artifact_storage_url = s3_storage.upload_file_with_progress(artifact.artifact_files[0], artifact_dst_key,
+                                                                        out_progress_to_err=True,
+                                                                        progress_desc="Submitting your artifact to "
+                                                                                      "FedML® Launch platform")
+        except Exception as e:
+            pass
+        return artifact.artifact_files[0], artifact_storage_url
+
     for artifact_item in artifact.artifact_files:
         artifact_base_name = os.path.basename(artifact_item)
         shutil.copyfile(artifact_item, os.path.join(artifact_archive_name, artifact_base_name))
