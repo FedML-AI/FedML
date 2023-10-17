@@ -4,9 +4,12 @@ import fedml
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 
 
-def collect_env(args=None):
+def collect_env():
     print("\n======== FedML (https://fedml.ai) ========")
     print("FedML version: " + str(fedml.__version__))
+    env_version = fedml.get_env_version()
+    print("FedML ENV version: " + str(env_version))
+    
     print("Execution path:" + str(os.path.abspath(fedml.__file__)))
 
     print("\n======== Running Environment ========")
@@ -81,20 +84,22 @@ def collect_env(args=None):
         print("No GPU devices")
 
     print("\n======== Network Connection Checking ========")
-    is_open_connected = ClientDiagnosis.check_open_connection(args)
+    is_open_connected = ClientDiagnosis.check_open_connection(None)
+    url = fedml._get_backend_service()
     if is_open_connected:
-        print("The connection to https://open{}.fedml.ai is OK.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+        print(f"The connection to {url} is OK.\n")
     else:
-        print("You can not connect to https://open{}.fedml.ai.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+        print(f"You can not connect to {url}.\n")
 
-    is_s3_connected = ClientDiagnosis.check_s3_connection(args)
+    is_s3_connected = ClientDiagnosis.check_s3_connection(None)
     if is_s3_connected:
-        print("The connection to AWS S3 is OK.")
+        print("The connection to S3 Object Storage is OK.\n")
     else:
-        print("You can not connect to AWS S3.")
+        print("You can not connect to S3 Object Storage.\n")
 
-    is_mqtt_connected = ClientDiagnosis.check_mqtt_connection(args)
+    is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
+    mqtt_url = fedml._get_mqtt_service()
     if is_mqtt_connected:
-        print("The connection to mqtt{}.fedml.ai (port:1883) is OK.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+        print(f"The connection to {mqtt_url} (port:1883) is OK.\n")
     else:
-        print("You can not connect to mqtt{}.fedml.ai (port:1883).".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+        print(f"You can not connect to {mqtt_url}.\n")

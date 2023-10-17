@@ -49,7 +49,13 @@ computing:
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   
 framework_type: fedml         # options: fedml, deepspeed, pytorch, general
-task_type: train              # options: serve, train, dev-environment
+
+job_type: train              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: generate_training
 
 # Running entry commands on the server side which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
@@ -102,7 +108,7 @@ You can track your job running details at this URL:
 https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&jobId=1696947481910317056
 
 For querying the realtime status of your job, please run the following command.
-fedml launch log 1696947481910317056
+fedml job logs -jid 1696947481910317056
 ```
 
 ## Login as the GPU supplier

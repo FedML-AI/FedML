@@ -11,6 +11,15 @@ import torch
 import fedml
 from .computing.scheduler.env.collect_env import collect_env
 from .constants import (
+    FEDML_BACKEND_SERVICE_URL_DEV,
+    FEDML_BACKEND_SERVICE_URL_LOCAL,
+    FEDML_BACKEND_SERVICE_URL_RELEASE,
+    FEDML_BACKEND_SERVICE_URL_TEST,
+    FEDML_MQTT_DOMAIN_DEV,
+    FEDML_MQTT_DOMAIN_LOCAL,
+    FEDML_MQTT_DOMAIN_TEST,
+    FEDML_MQTT_DOMAIN_RELEASE,
+    FEDML_S3_DOMAIN_LOCAL,
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
     FEDML_SIMULATION_TYPE_MPI,
@@ -25,7 +34,31 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.8a124"
+__version__ = "0.8.8a145"
+
+
+# This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
+# three ways to set _global_env_version:
+# 1. set the Linux environment variable FEDML_ENV_VERSION by calling: 
+#                   export FEDML_ENV_VERSION=VALUE
+#         (this is typically used when a process (e.g., agent) calling antoher process (e.g., job))
+# 2. by API python API: 
+#                   import fedml
+#                   fedml.set_env_version(VALUE)
+#         (this is typically used when you want to control versions in your python scripts)
+# 3. by CLI: 
+#                   fedml launch job.yaml -v local
+#         (this is typically used when you use CLIs)
+# 4. by arguments in yaml file passed into python program. For historical reasons, we support two arguments
+#             job.yaml:
+#                   config_version: VALUE
+#                   env_version: VALUE
+#        (this is typically used when you develop your own ML training/deployment job by using FedML framework)
+# to be consistant across all geo-distributed processes in an entire job execution 
+# and make the all components inside FedML library are aligned with the same environment, we use the following policy:
+# 1) no matter how we set _global_env_version, we always save its value into FEDML_ENV_VERSION and read its value for the entire source code.
+# 2) if both 1/2/3 and 4 are set, we let the value in 1/2/3 overides 4 (to make sure the agent and the job are aligned with the same environment)
+# 3) if _global_env_version is not set, we make it as "release"
 
 
 def init(args=None, check_env=True, should_init_logs=True):
@@ -33,8 +66,20 @@ def init(args=None, check_env=True, should_init_logs=True):
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
     """Initialize FedML Engine."""
+    # only when the env version is None, we refer to the python configuration arguments. 
+    if get_env_version() is None:
+        if hasattr(args, "config_version") and args.config_version is not None:
+            set_env_version(args.config_version)
+            delattr(args, "config_version")
+        elif hasattr(args, "env_version") and args.env_version is not None:
+            set_env_version(args.env_version)
+            delattr(args, "env_version")
+        else:
+            set_env_version("release")
+    # after environment is set, only fedml.get_env_version() is used to get the environment version
+
     if check_env:
-        collect_env(args)
+        collect_env()
 
     if hasattr(args, "training_type"):
         fedml._global_training_type = args.training_type
@@ -70,15 +115,17 @@ def init(args=None, check_env=True, should_init_logs=True):
         setattr(args, "backend", fedml._global_comm_backend)
 
     if hasattr(args, "training_type"):
-        if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "MPI":
+        if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
+                                                                                "backend") and args.backend == "MPI":
             args = init_simulation_mpi(args)
 
-        elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "sp":
+        elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
+                                                                                  "backend") and args.backend == "sp":
             args = init_simulation_sp(args)
         elif (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+                args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and hasattr(args, "backend")
+                and args.backend == FEDML_SIMULATION_TYPE_NCCL
         ):
             from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
 
@@ -99,7 +146,8 @@ def init(args=None, check_env=True, should_init_logs=True):
         elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
             args = init_model_serving(args)
         else:
-            raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
+            raise Exception(
+                "no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
     manage_profiling_args(args)
 
@@ -109,7 +157,8 @@ def init(args=None, check_env=True, should_init_logs=True):
 
     if hasattr(args, "rank") and hasattr(args, "worker_num"):
         if hasattr(args, "process_id") and args.process_id is not None:
-            logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+            logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id,
+                                                                                             args.worker_num))
         else:
             logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
 
@@ -151,7 +200,7 @@ def update_client_specific_args(args):
             data_silo_1_config.yaml contains some client client speicifc arguments.
     """
     if (
-        hasattr(args, "data_silo_config")
+            hasattr(args, "data_silo_config")
     ):
         # reading the clients file
         logging.info("data_silo_config is defined in fedml_config.yaml")
@@ -236,7 +285,6 @@ def manage_profiling_args(args):
 
 
 def manage_cuda_rpc_args(args):
-
     if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
         args.enable_cuda_rpc = False
 
@@ -256,7 +304,7 @@ def manage_cuda_rpc_args(args):
             raise Exception("Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True")
         assert type(args.cuda_rpc_gpu_mapping) is dict, "Invalid cuda_rpc_gpu_mapping type. Expected dict"
         assert (
-            len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
+                len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
 
     print(f"cpu_transfer: {args.cpu_transfer}")
@@ -280,6 +328,7 @@ def manage_mpi_args(args):
         assert args.worker_num + 1 == world_size, f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
+
 
 def init_cross_silo_horizontal(args):
     args.n_proc_in_silo = 1
@@ -361,16 +410,16 @@ def init_model_serving(args):
 
 
 def update_client_id_list(args):
-
     """
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
     if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
-        if not hasattr(args, "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
+        if not hasattr(args,
+                       "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
-                args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-                or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
+                    args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+                    or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
             ):
                 if args.rank == 0:
                     client_id_list = []
@@ -404,6 +453,48 @@ def init_cross_device(args):
 def run_distributed():
     pass
 
+
+def set_env_version(version):
+    os.environ['FEDML_ENV_VERSION'] = version
+
+
+def get_env_version():
+    return "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
+
+
+def _get_backend_service():
+    version = get_env_version()
+    # from inspect import getframeinfo, stack
+    # caller = getframeinfo(stack()[1][0])    
+    # print(f"{caller.filename}:{caller.lineno} - _get_backend_service. version = {version}")
+    if version == "local":
+        return FEDML_BACKEND_SERVICE_URL_LOCAL
+    elif version == "dev":
+        return FEDML_BACKEND_SERVICE_URL_DEV
+    elif version == "test":
+        return FEDML_BACKEND_SERVICE_URL_TEST
+    else:
+        return FEDML_BACKEND_SERVICE_URL_RELEASE
+
+
+def _get_mqtt_service():
+    version = get_env_version()
+    # from inspect import getframeinfo, stack
+    # caller = getframeinfo(stack()[1][0])    
+    # print(f"{caller.filename}:{caller.lineno} - _get_backend_service. version = {version}")
+    if version == "local":
+        return FEDML_MQTT_DOMAIN_LOCAL
+    if version == "dev":
+        return FEDML_MQTT_DOMAIN_DEV
+    elif version == "test":
+        return FEDML_MQTT_DOMAIN_TEST
+    else:
+        return FEDML_MQTT_DOMAIN_RELEASE
+
+
+def _get_local_s3_like_service_url():
+    return FEDML_S3_DOMAIN_LOCAL
+    
 
 from fedml import device
 from fedml import data

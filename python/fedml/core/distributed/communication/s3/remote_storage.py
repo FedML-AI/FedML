@@ -9,6 +9,7 @@ import uuid
 from os.path import expanduser
 
 import boto3
+from botocore.client import Config
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
@@ -16,6 +17,8 @@ import dill
 import torch
 import tqdm
 import yaml
+
+import fedml
 from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 from torch import nn
@@ -33,20 +36,46 @@ class S3Storage:
         self.set_config_from_file(s3_config_path)
         self.set_config_from_objects(s3_config_path)
         global aws_s3_client
-        aws_s3_client = boto3.client(
-            "s3",
-            region_name=self.cn_region_name,
-            aws_access_key_id=self.cn_s3_aki,
-            aws_secret_access_key=self.cn_s3_sak,
-        )
+        env_version = fedml.get_env_version()
+        if env_version == "local":
+            aws_s3_client = boto3.client(
+                "s3",
+                endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
+                aws_access_key_id=self.cn_s3_aki,
+                aws_secret_access_key=self.cn_s3_sak,
+                config=Config(signature_version='s3v4'),
+                region_name=self.cn_region_name)
+        else:
+            aws_s3_client = boto3.client(
+                "s3",
+                region_name=self.cn_region_name,
+                aws_access_key_id=self.cn_s3_aki,
+                aws_secret_access_key=self.cn_s3_sak,
+            )
 
         global aws_s3_resource
-        aws_s3_resource = boto3.resource(
-            "s3",
-            region_name=self.cn_region_name,
-            aws_access_key_id=self.cn_s3_aki,
-            aws_secret_access_key=self.cn_s3_sak,
-        )
+        if env_version == "local":
+            aws_s3_resource = boto3.resource(
+                "s3",
+                endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
+                aws_access_key_id=self.cn_s3_aki,
+                aws_secret_access_key=self.cn_s3_sak,
+                config=Config(signature_version='s3v4'),
+                region_name=self.cn_region_name)
+            bucket = aws_s3_resource.Bucket('fedml')
+            if bucket.creation_date:
+                print("The fedml bucket exists")
+            else:
+                print("The fedml bucket does not exist")
+                aws_s3_resource.create_bucket(Bucket='fedml')
+        else:
+            aws_s3_resource = boto3.resource(
+                "s3",
+                region_name=self.cn_region_name,
+                aws_access_key_id=self.cn_s3_aki,
+                aws_secret_access_key=self.cn_s3_sak,
+            )
+        
 
     def write_model(self, message_key, model):
         global aws_s3_client
@@ -423,6 +452,7 @@ class S3Storage:
             logging.error(f"Download zip failed after max retry.")
 
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
+                                  show_progress=True,
                                   out_progress_to_err=True, progress_desc=None):
         """
         upload file
@@ -443,12 +473,17 @@ class S3Storage:
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
                 f.seek(old_file_position, os.SEEK_SET)
-                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
-                               file=sys.stderr if out_progress_to_err else sys.stdout,
-                               desc=progress_desc_text) as pbar:
+                if show_progress:
+                    with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
+                                   file=sys.stderr if out_progress_to_err else sys.stdout,
+                                   desc=progress_desc_text) as pbar:
+                        aws_s3_client.upload_fileobj(
+                            f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
+                            Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                        )
+                else:
                     aws_s3_client.upload_fileobj(
-                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
-                        Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
                     )
 
                 file_uploaded_url = aws_s3_client.generate_presigned_url(

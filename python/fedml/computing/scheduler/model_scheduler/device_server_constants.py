@@ -12,6 +12,7 @@ import yaml
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
 
+import fedml
 
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
@@ -246,8 +247,8 @@ class ServerConstants(object):
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        return "https://open{}.fedml.ai/fedmlModelServer".format(
-            "" if config_version == "release" else "-" + config_version)
+        url = fedml._get_backend_service()
+        return f"{url}/fedmlModelServer"
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):

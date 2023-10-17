@@ -1,7 +1,9 @@
 import os
 
 import click
+from prettytable import PrettyTable
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
 from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
@@ -12,28 +14,32 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.slave.docker_login import login_with_docker_mode
 from fedml.computing.scheduler.slave.docker_login import logout_with_docker_mode
+from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
 
 
 def bind(
-        userid, version, client, server,
-        api_key, local_server, role, runner_cmd, device_id, os_name,
-        docker, docker_rank
+        userid, client, server,
+        api_key, role, runner_cmd, device_id, os_name,
+        docker, docker_rank, infer_host,
+        redis_addr, redis_port, redis_password
 ):
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform "
-          "(https://open.fedml.ai)...\n")
+    os.environ["FEDML_INFER_HOST"] = infer_host
+    os.environ["FEDML_INFER_REDIS_ADDR"] = redis_addr
+    os.environ["FEDML_INFER_REDIS_PORT"] = redis_port
+    os.environ["FEDML_INFER_REDIS_PASSWORD"] = redis_password
+
+    url = fedml._get_backend_service()
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
     if userid is None or len(userid) <= 0:
         click.echo("Please specify your account id or API key, usage: fedml login $your_account_id_or_api_key")
         return
     account_id = userid[0]
-    platform_url = "open.fedml.ai"
-    if version != "release":
-        platform_url = "open-{}.fedml.ai".format(version)
-
+    
     # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id or API key in the FedML® Launch platform ({}).".format(
-                platform_url
+                url
             )
         )
         return
@@ -52,8 +58,8 @@ def bind(
 
     # Set the role
     if is_client:
-        default_role = ClientConstants.login_index_role_map[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
-        role_index = ClientConstants.login_role_index_map.get(role, ClientConstants.LOGIN_MODE_CLIEN_INDEX)
+        default_role = ClientConstants.login_index_role_map[ClientConstants.LOGIN_MODE_CLIENT_INDEX]
+        role_index = ClientConstants.login_role_index_map.get(role, ClientConstants.LOGIN_MODE_CLIENT_INDEX)
         role = ClientConstants.login_index_role_map.get(role_index, default_role)
     elif is_server:
         default_role = ServerConstants.login_index_role_map[ServerConstants.LOGIN_MODE_LOCAL_INDEX]
@@ -77,7 +83,7 @@ def bind(
 
     if is_client is True:
         if is_docker:
-            login_with_docker_mode(account_id, version, docker_rank)
+            login_with_docker_mode(account_id, docker_rank)
             return
         pip_source_dir = os.path.dirname(__file__)
         pip_source_dir = os.path.dirname(pip_source_dir)
@@ -91,6 +97,7 @@ def bind(
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
 
+        version = fedml.get_env_version()
         login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
@@ -103,8 +110,6 @@ def bind(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-id",
@@ -135,6 +140,8 @@ def bind(
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
+        
+        version = fedml.get_env_version()
         login_pid = sys_utils.run_subprocess_open(
             [
                 sys_utils.get_python_program(),
@@ -147,8 +154,6 @@ def bind(
                 str(account_id),
                 "-v",
                 version,
-                "-ls",
-                local_server,
                 "-r",
                 role,
                 "-rc",
@@ -170,6 +175,7 @@ def unbind(client, server, docker, docker_rank):
     is_server = server
     if client is None and server is None:
         is_client = True
+        is_server = True
 
     is_docker = docker
     if docker is None:
@@ -206,3 +212,15 @@ def unbind(client, server, docker, docker_rank):
         device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
 
     print("\nlogout successfully!\n")
+
+
+def resource_type():
+    resource_type_list = FedMLResourceManager.get_instance().show_resource_type()
+    if resource_type_list is not None and len(resource_type_list) > 0:
+        click.echo("All available resource type is as follows.")
+        resource_table = PrettyTable(['Resource Type', 'GPU Type'])
+        for type_item in resource_type_list:
+            resource_table.add_row([type_item[0], type_item[1]])
+        print(resource_table)
+    else:
+        click.echo("No available resource type.")

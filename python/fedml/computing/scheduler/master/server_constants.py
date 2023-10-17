@@ -11,6 +11,8 @@ import yaml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from ..comm_utils.run_process_utils import RunProcessUtils
 
+import fedml
+
 
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
@@ -71,6 +73,8 @@ class ServerConstants(object):
                             login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]: LOGIN_MODE_CLOUD_SERVER_INDEX,
                             login_role_list[LOGIN_MODE_GPU_MASTER_SERVER_INDEX]: LOGIN_MODE_GPU_MASTER_SERVER_INDEX}
 
+    API_HEADERS = {'Content-Type': 'application/json', 'Connection': 'close'}
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -128,56 +132,93 @@ class ServerConstants(object):
         return database_dir
 
     @staticmethod
-    def get_mlops_url(config_version="release"):
-        return "https://open{}.fedml.ai".format(
-            "" if config_version == "release" else "-" + config_version)
+    def get_mlops_url():
+        url = fedml._get_backend_service()
+        return url
 
     @staticmethod
-    def get_job_start_url(config_version="release"):
+    def get_job_start_url():
         job_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return job_ops_url
 
     @staticmethod
-    def get_job_list_url(config_version="release"):
+    def get_job_list_url():
         job_ops_url = "{}/fedmlOpsServer/api/v1/platform/queryJobList".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return job_ops_url
 
     @staticmethod
-    def get_job_stop_url(config_version="release"):
+    def get_job_stop_url():
         job_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return job_ops_url
 
     @staticmethod
-    def get_job_logs_url(config_version="release"):
+    def get_job_logs_url():
         job_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return job_ops_url
 
     @staticmethod
-    def get_app_create_url(config_version="release"):
+    def get_cluster_list_url():
+        cluster_list_url = "{}/fedmlOpsServer/api/v1/cli/getClusterStatus".format(
+            ServerConstants.get_mlops_url())
+        return cluster_list_url
+
+    @staticmethod
+    def get_cluster_start_url():
+        cluster_start_url = "{}/fedmlOpsServer/api/v1/cli/startCluster".format(
+            ServerConstants.get_mlops_url())
+        return cluster_start_url
+
+    @staticmethod
+    def get_cluster_stop_url():
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/stopCluster".format(
+            ServerConstants.get_mlops_url())
+        return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_kill_url():
+        cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/shutDownCluster".format(
+            ServerConstants.get_mlops_url())
+        return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_confirm_url():
+        cluster_confirm_url = "{}/fedmlOpsServer/api/v1/cli/confirmClusterMachines".format(
+            ServerConstants.get_mlops_url())
+        return cluster_confirm_url
+
+    @staticmethod
+    def get_app_create_url():
         app_url = "{}/fedmlOpsServer/api/v1/application/createApplicationFromCli".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return app_url
 
     @staticmethod
-    def get_app_update_url(config_version="release"):
+    def get_app_update_url():
         app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationFromCli".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return app_url
 
     @staticmethod
-    def get_heartbeat_url(config_version="release"):
+    def get_app_update_with_app_id_url():
+        app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationConfigFromCli".format(
+            ServerConstants.get_mlops_url())
+        return app_url
+
+    @staticmethod
+    def get_heartbeat_url():
         heartbeat_url = "{}/fedmlOpsServer/api/v1/cli/heartBeat".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
         return heartbeat_url
 
     @staticmethod
-    def get_resource_url(config_version="release"):
+    def get_resource_url():
         resource_url = "{}/fedmlOpsServer/api/v1/cli/resourceType".format(
-            ServerConstants.get_mlops_url(config_version))
+            ServerConstants.get_mlops_url())
+        print("resource_url: ", resource_url)
         return resource_url
 
     @staticmethod
@@ -335,21 +376,27 @@ class ServerConstants(object):
         if callback is not None:
             callback(script_process.pid)
 
+        exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            exec_out, exec_err = script_process.communicate(
-                timeout=100, data_arrived_callback=ServerConstants.log_callback,
-                error_processor=error_processor, should_write_log=should_write_log_file
+            exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = \
+                script_process.communicate(
+                    timeout=100, data_arrived_callback=ServerConstants.log_callback,
+                    error_processor=error_processor, should_write_log=should_write_log_file
             )
         except Exception as e:
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
-            if exec_err is not None:
-                err_str = sys_utils.decode_byte_str(exec_err)
-                error_list.append(err_str)
+            if exec_err_str is not None:
+                for err_line in latest_lines_err_list:
+                    err_str = sys_utils.decode_byte_str(err_line)
+                    error_list.append(err_str)
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
+
+            for error_info in error_list:
+                logging.error(error_info)
 
         return script_process, error_list
 

@@ -21,7 +21,9 @@ from urllib.parse import unquote
 import requests
 
 import fedml
+from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.run_process_utils import RunProcessUtils
+from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -110,6 +112,8 @@ class FedMLClientRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.server_id = None
         self.computing_started_time = 0
+        self.origin_fedml_config_object = None
+        self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -209,6 +213,7 @@ class FedMLClientRunner:
         container_dynamic_args_config = config_from_container["dynamic_args"]
         entry_file = container_entry_file_config["entry_file"]
         conf_file = container_entry_file_config["conf_file"]
+        self.package_type = container_entry_file_config.get("package_type", SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT)
         full_conf_path = os.path.join(unzip_package_path, "fedml", "config", os.path.basename(conf_file))
 
         # Dynamically build constrain variable with realtime parameters from server
@@ -263,19 +268,27 @@ class FedMLClientRunner:
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
                                        os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
+        self.origin_fedml_config_object = fedml_conf_object.copy()
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
 
         # Replace local fedml config objects with parameters from MLOps web
         parameters_object = run_config.get("parameters", None)
         if parameters_object is not None:
-            fedml_conf_object = parameters_object
+            for config_k, config_v in fedml_conf_object.items():
+                parameter_v = parameters_object.get(config_k, None)
+                if parameter_v is not None:
+                    fedml_conf_object[config_k] = parameter_v
+                    parameters_object.pop(config_k)
+
+            for config_k, config_v in parameters_object.items():
+                fedml_conf_object[config_k] = config_v
 
         package_dynamic_args = package_conf_object["dynamic_args"]
         if fedml_conf_object.get("comm_args", None) is not None:
             fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
             fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
             fedml_conf_object["common_args"]["using_mlops"] = True
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         if fedml_conf_object.get("train_args", None) is not None:
             fedml_conf_object["train_args"]["run_id"] = package_dynamic_args["run_id"]
             fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
@@ -311,6 +324,11 @@ class FedMLClientRunner:
 
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
+        job_type = job_yaml.get("task_type", None)
+        job_type = job_yaml.get("job_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
+            return True
+
         is_bootstrap_run_ok = True
         try:
             if bootstrap_script_path is not None:
@@ -331,8 +349,9 @@ class FedMLClientRunner:
 
                     shell_cmd_list = list()
                     shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list)
-                    ClientConstants.save_bootstrap_process(run_id, process.pid)
+                    process, error_list = ClientConstants.execute_commands_with_live_logs(
+                        shell_cmd_list, callback=self.callback_run_bootstrap)
+
                     ret_code, out, err = process.returncode, None, None
                     if ret_code is None or ret_code <= 0:
                         if error_list is not None and len(error_list) > 0:
@@ -360,6 +379,9 @@ class FedMLClientRunner:
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
+
+    def callback_run_bootstrap(self, job_pid):
+        ClientConstants.save_bootstrap_process(self.run_id, job_pid)
 
     def run(self, process_event, completed_event):
         print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
@@ -492,7 +514,6 @@ class FedMLClientRunner:
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
-        ClientConstants.save_learning_process(run_id, process.pid)
 
         ret_code, out, err = process.returncode, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
@@ -551,11 +572,16 @@ class FedMLClientRunner:
     def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
+        client_rank = self.request_json.get("client_rank", 1)
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         using_easy_mode = True
         expert_mode = job_yaml.get("expert_mode", None)
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        conf_file_object = load_yaml_config(conf_file_full_path)
+        entry_args = conf_file_object.get("fedml_entry_args", None)
         error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
@@ -592,8 +618,8 @@ class FedMLClientRunner:
             entry_command = f"{python_program} {entry_file_full_path} --cf " \
                             f"{conf_file_full_path} --rank {rank} --role client"
             shell_cmd_list = [entry_command]
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  should_write_log_file=False)
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
             is_launch_task = False
         else:
             self.check_runner_stop_event()
@@ -603,19 +629,48 @@ class FedMLClientRunner:
                                                              in_run_id=self.run_id)
             shell_cmd_list = list()
             if using_easy_mode:
-                entry_commands = list()
-                with open(entry_file_full_path, 'r') as entry_file_handle:
-                    entry_commands.extend(entry_file_handle.readlines())
-                    entry_file_handle.close()
+                entry_commands_origin = list()
+                if self.package_type == SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH or \
+                        os.path.basename(entry_file_full_path) == SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME:
+                    # Read commands if job is not from launch
+                    with open(entry_file_full_path, 'r') as entry_file_handle:
+                        entry_commands_origin.extend(entry_file_handle.readlines())
+                        entry_file_handle.close()
 
+                # Replace entry commands with environment variable values
                 export_cmd = "set" if platform.system() == "Windows" else "export"
+                entry_commands = list()
+                env_list, env_value_map = self.parse_config_args_as_env_variables(export_cmd, conf_file_object)
+                for entry_cmd in entry_commands_origin:
+                    for env_name in ClientConstants.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
+                        env_value = env_value_map.get(env_name, None)
+                        if env_value is None:
+                            continue
+                        entry_cmd = entry_cmd.replace(env_name, env_value)
+
+                    entry_commands.append(entry_cmd)
+
+                # Replace entry arguments with environment variable values
+                for env_name in ClientConstants.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
+                    env_value = env_value_map.get(env_name, None)
+                    if env_value is None:
+                        continue
+                    entry_args = entry_args.replace(env_name, env_value)
+
+                # Export the environment variables
+                if len(env_list) > 0:
+                    entry_commands.extend(env_list)
+
+                # Add general environment variables
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={self.edge_id}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_JOB_ID={self.run_id}\n")
                 if assigned_gpu_ids is not None and assigned_gpu_ids != "":
                     entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
+                entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
 
+                # Set -e for the entry script
                 entry_commands_filled = list()
                 if platform.system() == "Windows":
                     entry_file_full_path = entry_file_full_path.replace(".sh", ".bat")
@@ -627,9 +682,18 @@ class FedMLClientRunner:
                     entry_commands_filled = entry_commands
                     entry_commands_filled.insert(0, "set -e\n")
 
+                if self.package_type != SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH and \
+                        os.path.basename(entry_file_full_path) != SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME:
+                    python_program = get_python_program()
+                    entry_commands_filled.append(f"{python_program} {entry_file_full_path} {entry_args}\n")
+                    entry_file_full_path = os.path.join(
+                        os.path.dirname(entry_file_full_path), os.path.basename(entry_file_full_path) + ".sh")
+
+                # Write the entry commands to the entry file
                 with open(entry_file_full_path, 'w') as entry_file_handle:
                     entry_file_handle.writelines(entry_commands_filled)
                     entry_file_handle.close()
+
                 shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
             else:
                 shell_cmd_list.append(executable_interpreter)
@@ -641,20 +705,71 @@ class FedMLClientRunner:
                 shell_cmd_list.append(executable_args)
                 shell_cmd_list.append(f"--run_id {self.run_id}")
                 shell_cmd_list.append(f"--run_device_id {self.edge_id}")
+                shell_cmd_list.append(f"--rank {client_rank}")
+                shell_cmd_list.append(f"--role client")
                 shell_cmd_list.append("--using_mlops True")
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
-            process, error_list = ClientConstants.execute_commands_with_live_logs(shell_cmd_list,
-                                                                                  callback=self.start_job_perf,
-                                                                                  error_processor=self.job_error_processor)
-            is_launch_task = True
+            process, error_list = ClientConstants.execute_commands_with_live_logs(
+                shell_cmd_list, callback=self.start_job_perf, error_processor=self.job_error_processor,
+                should_write_log_file=False if job_type == Constants.JOB_TASK_TYPE_FEDERATE else True)
+            is_launch_task = False if job_type == Constants.JOB_TASK_TYPE_FEDERATE else True
 
         return process, is_launch_task, error_list
 
+    def callback_start_fl_job(self, job_pid):
+        ClientConstants.save_learning_process(self.run_id, job_pid)
+
     def start_job_perf(self, job_pid):
+        ClientConstants.save_learning_process(self.run_id, job_pid)
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
-    def job_error_processor(self, error_str):
+    def job_error_processor(self, error_list):
+        error_str = "\n".join(error_list)
         raise Exception(f"Error occurs when running the job... {error_str}")
+
+    def parse_config_args_as_env_variables(self, export_cmd, run_params):
+        model_args = run_params.get("fedml_model_args", {})
+        data_args = run_params.get("fedml_data_args", {})
+        model_name = model_args.get("model_name", None)
+        model_cache_path = model_args.get("model_cache_path", None)
+        input_dim = model_args.get("input_dim", None)
+        output_dim = model_args.get("output_dim", None)
+        dataset_name = data_args.get("dataset_name", None)
+        dataset_path = data_args.get("dataset_path", None)
+        dataset_type = data_args.get("dataset_type", None)
+
+        env_list = list()
+        env_value_map = dict()
+
+        if model_name is not None and str(model_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_NAME={model_name}\n")
+            env_value_map["$FEDML_MODEL_NAME"] = model_name
+
+        if model_cache_path is not None and str(model_cache_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_CACHE_PATH={model_cache_path}\n")
+            env_value_map["$FEDML_MODEL_CACHE_PATH"] = model_cache_path
+
+        if input_dim is not None and str(input_dim).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_INPUT_DIM={input_dim}\n")
+            env_value_map["$FEDML_MODEL_INPUT_DIM"] = input_dim
+
+        if output_dim is not None and str(output_dim).strip() != "":
+            env_list.append(f"{export_cmd} MODEL_OUTPUT_DIM={output_dim}\n")
+            env_value_map["$MODEL_OUTPUT_DIM"] = output_dim
+
+        if dataset_name is not None and str(dataset_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_NAME={dataset_name}\n")
+            env_value_map["$FEDML_DATASET_NAME"] = dataset_name
+
+        if dataset_path is not None and str(dataset_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_PATH={dataset_path}\n")
+            env_value_map["$FEDML_DATASET_PATH"] = dataset_path
+
+        if dataset_type is not None and str(dataset_type).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_TYPE={dataset_type}\n")
+            env_value_map["$FEDML_DATASET_TYPE"] = dataset_type
+
+        return env_list, env_value_map
 
     def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
         self.mlops_metrics.run_id = self.run_id
@@ -949,9 +1064,9 @@ class FedMLClientRunner:
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        # )
 
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
@@ -1094,9 +1209,8 @@ class FedMLClientRunner:
         server_id = payload_json.get("server_id", 0)
         run_id = payload_json.get("run_id", 0)
         response_topic = f"client/server/response_device_info/{server_id}"
-        if self.mlops_metrics is not None:
-                #and self.model_device_client is not None and \
-                #self.model_device_server is not None:
+        if self.mlops_metrics is not None and self.model_device_client is not None and \
+                self.model_device_server is not None:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
             device_info_json = {
@@ -1115,8 +1229,8 @@ class FedMLClientRunner:
                 "fedml_version": fedml.__version__,
                 "user_id": self.args.user
             }
-            response_payload = {"slave_device_id": 111,  #self.model_device_client.get_edge_id(),
-                                "master_device_id": 112,  #self.model_device_server.get_edge_id(),
+            response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
+                                "master_device_id": self.model_device_server.get_edge_id(),
                                 "run_id": run_id, "edge_id": self.edge_id,
                                 "edge_info": device_info_json}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
@@ -1251,6 +1365,7 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
+        edge_id, user_name, extra_url = -1, None, None
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
@@ -1396,8 +1511,8 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Client local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Client local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
@@ -1409,24 +1524,41 @@ class FedMLClientRunner:
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_train_msg_after_upgrading()
 
-        # if self.model_device_client is None:
-        #     self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
-        #                                                             self.args.os_name, self.args.is_from_docker,
-        #                                                             self.agent_config)
-        #     self.model_device_client.start()
+        infer_host = os.getenv("FEDML_INFER_HOST", None)
+        infer_redis_addr = os.getenv("FEDML_INFER_REDIS_ADDR", None)
+        infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
+        infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
 
-        # if self.model_device_server is None:
-        #     self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
-        #                                                             self.args.os_name, self.args.is_from_docker,
-        #                                                             self.agent_config)
-        #     self.model_device_server.start()
+        if self.model_device_client is None:
+            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            if infer_host is not None:
+                self.model_device_client.infer_host = infer_host
+
+            self.model_device_client.start()
+
+        if self.model_device_server is None:
+            self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
+                                                                    self.args.os_name, self.args.is_from_docker,
+                                                                    self.agent_config)
+            if infer_host is not None:
+                self.model_device_server.infer_host = infer_host
+            if infer_redis_addr is not None:
+                self.model_device_server.redis_addr = infer_redis_addr
+            if infer_redis_port is not None:
+                self.model_device_server.redis_port = infer_redis_port
+            if infer_redis_password is not None:
+                self.model_device_server.redis_password = infer_redis_password
+
+            self.model_device_server.start()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

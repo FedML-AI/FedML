@@ -506,21 +506,23 @@ def save_simulator_process(data_dir, runner_info_dir, process_id, run_id, run_st
 
 def get_simulator_process_list(data_dir, runner_info_dir):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
-    process_files = os.listdir(simulator_proc_path)
-    running_info = dict()
-    status_info = dict()
-    for process_file in process_files:
-        process_spit = str(process_file).split('-')
-        if len(process_spit) == 3:
-            process_id = process_spit[2]
-        else:
-            continue
-        run_id_info = load_yaml_config(os.path.join(simulator_proc_path, process_file))
-        running_info[str(process_id)] = run_id_info["run_id"]
-        status_info[str(run_id_info["run_id"])] = run_id_info.get("run_status", "")
+    if os.path.exists(simulator_proc_path):
+        process_files = os.listdir(simulator_proc_path)
+        running_info = dict()
+        status_info = dict()
+        for process_file in process_files:
+            process_spit = str(process_file).split('-')
+            if len(process_spit) == 3:
+                process_id = process_spit[2]
+            else:
+                continue
+            run_id_info = load_yaml_config(os.path.join(simulator_proc_path, process_file))
+            running_info[str(process_id)] = run_id_info["run_id"]
+            status_info[str(run_id_info["run_id"])] = run_id_info.get("run_status", "")
 
-    return running_info, status_info
-
+        return running_info, status_info
+    else:
+        return dict(), dict()
 
 def remove_simulator_process(data_dir, runner_info_dir, process_id):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
@@ -617,30 +619,46 @@ def versions(configuration_env, pkg_name):
     return sorted(releases, key=parse_version, reverse=True)
 
 
+def upgrade_if_not_latest():
+    try:
+        config_version = fedml.get_env_version()
+        is_latest_version, _, _ = check_fedml_is_latest_version()
+        if not is_latest_version:
+            daemon_ota_upgrade_with_version(config_version)
+            print("Completed upgrading, please launch your job again.")
+            exit(-1)
+    except Exception as e:
+        pass
+
+
+# Policy for version checking.
+# Dev: keep tracking the latest alpha, beta version
+# Test: don't check, keep the local version
+# Release: keep tracking the latest release version
 def check_fedml_is_latest_version(configuration_env="release"):
+    if configuration_env == "test":
+        return True
+
     fedml_version_list = versions(configuration_env, "fedml")
     local_fedml_version = fedml.__version__
-    if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
-        return True, local_fedml_version, fedml_version_list[0]
 
-    return False, local_fedml_version, fedml_version_list[0]
-    # if configuration_env != "release":
-    #     if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
-    #         return True, local_fedml_version, fedml_version_list[0]
-    #
-    #     return False, local_fedml_version, fedml_version_list[0]
-    # else:
-    #     local_fedml_ver_info = version.parse(local_fedml_version)
-    #     for remote_ver_item in fedml_version_list:
-    #         remote_fedml_ver_info = version.parse(remote_ver_item)
-    #         if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
-    #                 remote_fedml_ver_info.is_devrelease:
-    #             continue
-    #
-    #         if local_fedml_ver_info < remote_fedml_ver_info:
-    #             return False, local_fedml_version, remote_ver_item
-    #         else:
-    #             return True, local_fedml_version, fedml_version_list[0]
+    if configuration_env != "release":
+        if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
+            return True, local_fedml_version, fedml_version_list[0]
+
+        return False, local_fedml_version, fedml_version_list[0]
+    else:
+        local_fedml_ver_info = version.parse(local_fedml_version)
+        for remote_ver_item in fedml_version_list:
+            remote_fedml_ver_info = version.parse(remote_ver_item)
+            if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
+                    remote_fedml_ver_info.is_devrelease:
+                continue
+
+            if local_fedml_ver_info < remote_fedml_ver_info:
+                return False, local_fedml_version, remote_ver_item
+            else:
+                return True, local_fedml_version, fedml_version_list[0]
 
 
 def daemon_ota_upgrade(in_args):

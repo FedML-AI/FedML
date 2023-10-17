@@ -192,11 +192,21 @@ pipeline {
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
               sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
-              sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+              withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_TEST" ,)]) {
+                    withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_TEST" ,)]) {
+                        sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                        sh 'unzip -o awscliv2.zip'
+                        sh './aws/install'
+                        sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                        sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST .'
+                        sh 'docker pull $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:base'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST .'
+                        sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_TEST .'
+
+                        sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_TEST .'
+                    }
+               }
             }
           }
         }
@@ -272,16 +282,23 @@ pipeline {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_TEST" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_TEST" ,)]) {
-                    sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip -o awscliv2.zip'
-                    sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
+
+                    sh 'docker push $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
+                    sh 'docker push $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_TEST'
                  }
               }
 
-              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
-              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST'
+              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
+
+                 sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_TEST $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
+                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
+
+                 sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_TEST $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_TEST'
+                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_SERVER_AGENT:$VERSION_TEST'
+              }
             }
           }
         }
@@ -373,10 +390,18 @@ pipeline {
                     credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl delete secret open-ecr-secret --namespace=fedml-devops-aggregator-test || true; kubectl create secret docker-registry open-ecr-secret --docker-server=public.ecr.aws --docker-username=AWS --docker-password=$(/usr/local/bin/aws ecr-public get-login-password --region us-east-1) --namespace=fedml-devops-aggregator-test || true'
+
                     sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_TEST deployment/fedml-cloud-server'
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME_2'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME_2'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME_3'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME_3'
                 }
 
 //                 withCredentials([

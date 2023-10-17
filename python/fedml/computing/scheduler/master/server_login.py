@@ -6,6 +6,7 @@ import time
 import traceback
 
 import click
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.master.server_runner import FedMLServerRunner
@@ -377,10 +378,12 @@ if __name__ == "__main__":
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
 
-    print(f"Server login process id {os.getpid()}")
-
     args = parser.parse_args()
     args.user = args.user
+    if args.api_key == "":
+        args.api_key = args.user
+
+    fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)
     else:

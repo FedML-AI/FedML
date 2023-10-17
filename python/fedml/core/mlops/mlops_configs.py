@@ -3,6 +3,7 @@ import os
 import time
 import certifi
 import requests
+import fedml
 from fedml.core.mlops.mlops_utils import MLOpsUtils
 
 
@@ -39,57 +40,27 @@ class MLOpsConfigs(object):
         return MLOpsConfigs._config_instance
 
     def get_request_params(self):
-        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        config_version = "release"
-        if (
-                hasattr(self.args, "config_version")
-                and self.args.config_version is not None
-        ):
-            # Setup config url based on selected version.
-            config_version = self.args.config_version
-            if self.args.config_version == "release":
-                url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "test":
-                url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "dev":
-                url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
-            elif self.args.config_version == "local":
-                if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                    url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
-                else:
-                    url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
-
+        url = fedml._get_backend_service()
+        url = f"{url}/fedmlOpsServer/configs/fetch"
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(
-                cur_source_dir, "ssl", "open-" + config_version + ".fedml.ai_bundle.crt"
+                cur_source_dir, "ssl", "open-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
             )
 
         return url, cert_path
 
-    def get_request_params_with_version(self, version):
-        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        if version == "release":
-            url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "test":
-            url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "dev":
-            url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
-        elif version == "local":
-            if hasattr(self.args, "local_server") and self.args.local_server is not None:
-                url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
-            else:
-                url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
-
+    def get_cert_path_with_version(self):
+        url = fedml._get_backend_service()
+        version = fedml.get_env_version()
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(
                 cur_source_dir, "ssl", "open-" + version + ".fedml.ai_bundle.crt"
             )
-
-        return url, cert_path
+        return cert_path
 
     @staticmethod
     def get_root_ca_path():
@@ -128,7 +99,6 @@ class MLOpsConfigs(object):
             response = requests.post(
                 url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
             )
-
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
@@ -203,6 +173,7 @@ class MLOpsConfigs(object):
 
     def fetch_all_configs(self):
         url, cert_path = self.get_request_params()
+        print("url = {}, cert_path = {}".format(url, cert_path))
         json_params = {
             "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
             "device_send_time": int(time.time() * 1000)
@@ -237,14 +208,14 @@ class MLOpsConfigs(object):
         return mqtt_config, s3_config, mlops_config, docker_config
 
     @staticmethod
-    def fetch_all_configs_with_version(version):
-        url = "https://open{}.fedml.ai/fedmlOpsServer/configs/fetch".format(
-            "" if version == "release" else "-"+version)
+    def fetch_all_configs_with_version():
+        url = fedml._get_backend_service()
+        url = f"{url}/fedmlOpsServer/configs/fetch"
         cert_path = None
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(
-                cur_source_dir, "ssl", "open-" + version + ".fedml.ai_bundle.crt"
+                cur_source_dir, "ssl", "open-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
             )
 
         json_params = {

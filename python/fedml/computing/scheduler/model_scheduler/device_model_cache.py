@@ -1,4 +1,6 @@
 import json
+import logging
+
 import redis
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
@@ -108,7 +110,12 @@ class FedMLModelCache(object):
                         model_name, model_version,
                         check_end_point_status=True):
         # Find all deployed devices
-        status_list = self.get_deployment_status_list(end_point_name, model_name)   # get from redis
+        try:
+            status_list = self.get_deployment_status_list(end_point_name, model_name)   # get from redis
+        except Exception as e:
+            logging.error(f"get_deployment_status_list failed {e}")
+            return None, None
+
         if len(status_list) == 0:
             return None, None
 
@@ -117,22 +124,24 @@ class FedMLModelCache(object):
             _, status_payload = self.get_status_item_info(status_list[-1])
             model_version = status_payload["model_version"]
 
-        # find all devices
-        try:
-            for status_item in status_list:
+        # iterate all devices, find those with correct version and deployed
+        for status_item in status_list:
+            try:
                 device_id, status_payload = self.get_status_item_info(status_item)
                 print(f"status_payload {status_payload}")
                 model_status = status_payload["model_status"]
-                model_version_cache = status_payload["model_version"]
+                model_version_cached = status_payload["model_version"]
                 end_point_id_cache = status_payload["end_point_id"]
-                print(f"model_version {model_version}, model_version_cache {model_version_cache}")
-                if model_version == model_version_cache and \
+                print(f"model_version {model_version}, model_version_cache {model_version_cached}")
+                if model_version == model_version_cached and \
                         model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
-        except Exception as e:
-            print("Get idel device list Failed:")
-            print(e)
-        print(f"idle device list {idle_device_list}")
+            except Exception as e:
+                print(f"Get idle device list Failed: {e}, status_item {status_item}")
+                pass
+        if len(idle_device_list) <= 0:
+            return None, None
+        print(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
         # Randomly shuffle 
         # shuffle the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:

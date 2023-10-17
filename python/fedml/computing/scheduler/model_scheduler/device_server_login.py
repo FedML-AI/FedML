@@ -341,12 +341,12 @@ def __login_as_cloud_server(args, userid, version):
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Echo results
-    print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-    print(
-        "Your unique device ID is "
-        + str(unique_device_id)
-        + "\n"
-    )
+    # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+    # print(
+    #     "Your unique device ID is "
+    #     + str(unique_device_id)
+    #     + "\n"
+    # )
         
     # Start the FedML server
     runner.callback_start_train(payload=args.runner_cmd)
@@ -407,6 +407,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args.user = args.user
+    infer_host = os.getenv("FEDML_INFER_HOST", None)
+    if infer_host is not None:
+        args.infer_host = infer_host
     if args.type == 'login':
         login(args)
     else:

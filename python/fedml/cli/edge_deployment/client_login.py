@@ -1,6 +1,7 @@
 
 import argparse
 import os
+import fedml
 
 from fedml.computing.scheduler.slave.client_login import login, logout
 
@@ -21,6 +22,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     args.user = args.user
+    fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)
     else:

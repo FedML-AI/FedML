@@ -3,26 +3,43 @@ import shutil
 
 import click
 
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
 
+def fedml_login(api_key):
+    api_key_is_valid = _check_api_key(api_key=api_key)
+    if api_key_is_valid:
+        return 0, "Login successfully"
 
-def login(api_key, version):
-    return FedMLLaunchManager.get_instance().fedml_login(api_key=api_key, version=version)
+    return -1, "Login failed"
 
 
-def match_resources(yaml_file, prompt):
-    return FedMLLaunchManager.get_instance().api_match_resources(yaml_file, prompt)
+def _check_api_key(api_key=None):
+    if api_key is None or api_key == "":
+        saved_api_key = get_api_key()
+        if saved_api_key is None or saved_api_key == "":
+            api_key = click.prompt("FedML® Launch API Key is not set yet, please input your API key")
+        else:
+            api_key = saved_api_key
+
+    is_valid_heartbeat = FedMLResourceManager.get_instance().check_heartbeat(api_key)
+    if not is_valid_heartbeat:
+        return False
+    else:
+        save_api_key(api_key)
+        return True
 
 
-def authenticate(api_key, version):
-    error_code, _ = login(api_key, version)
+def authenticate(api_key):
+    error_code, _ = fedml_login(api_key)
 
     # Exit if not able to authenticate successfully
     if error_code:
         exit(0)
+
 
 def build_mlops_package(
         ignore,
@@ -34,6 +51,7 @@ def build_mlops_package(
         mlops_package_parent_dir,
         mlops_package_name,
         rank,
+        package_type="default"
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
@@ -70,11 +88,20 @@ def build_mlops_package(
     dist_package_file = os.path.join(dist_package_dir, mlops_package_file_name)
     ignore_list = tuple(ignore.split(','))
 
-    shutil.rmtree(mlops_dest_conf, ignore_errors=True)
     shutil.rmtree(mlops_dest, ignore_errors=True)
+    try:
+        os.rmdir(mlops_dest)
+    except Exception as e:
+        pass
     try:
         shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy,
                         ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
+    except Exception as e:
+        pass
+
+    shutil.rmtree(mlops_dest_conf, ignore_errors=True)
+    try:
+        os.rmdir(mlops_dest_conf)
     except Exception as e:
         pass
     try:
@@ -94,6 +121,7 @@ def build_mlops_package(
             "entry_config: \n",
             "  entry_file: " + mlops_dest_entry + "\n",
             "  conf_file: config/fedml_config.yaml\n",
+            "  package_type: " + package_type + "\n",
             "dynamic_args:\n",
             "  rank: " + rank + "\n",
             "  run_id: ${FEDSYS.RUN_ID}\n",
@@ -134,4 +162,3 @@ def build_mlops_package(
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
-

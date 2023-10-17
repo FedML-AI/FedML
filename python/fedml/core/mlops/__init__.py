@@ -94,7 +94,7 @@ def init(args, should_init_logs=True):
             # Bind local device as simulation device on the MLOps platform.
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
-            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user, args.version)
+            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user)
             return
 
     project_name = None
@@ -160,6 +160,10 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 
 def log(metrics: dict, commit=True):
+    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CHEETAH:
+        log_metric(metrics)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -213,7 +217,7 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
     logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
 
     if len(MLOpsStore.mlops_log_agent_config) == 0:
-        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version(version)
+        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version()
         service_config = dict()
         service_config["mqtt_config"] = mqtt_config
         service_config["s3_config"] = s3_config
@@ -578,6 +582,17 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_archive_name = os.path.join(artifact_dir, artifact_dst_key)
     os.makedirs(artifact_archive_name, exist_ok=True)
 
+    if len(artifact.artifact_files) == 1 and os.path.isfile(artifact.artifact_files[0]):
+        try:
+            artifact_dst_key = "{}".format(os.path.basename(artifact.artifact_files[0]))
+            artifact_storage_url = s3_storage.upload_file_with_progress(artifact.artifact_files[0], artifact_dst_key,
+                                                                        out_progress_to_err=True,
+                                                                        progress_desc="Submitting your artifact to "
+                                                                                      "FedML® Launch platform")
+        except Exception as e:
+            pass
+        return artifact.artifact_files[0], artifact_storage_url
+
     for artifact_item in artifact.artifact_files:
         artifact_base_name = os.path.basename(artifact_item)
         shutil.copyfile(artifact_item, os.path.join(artifact_archive_name, artifact_base_name))
@@ -599,7 +614,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_archive_zip_file = artifact_archive_name + ".zip"
     try:
         artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
-                                                                    out_progress_to_err=False,
+                                                                    out_progress_to_err=True,
                                                                     progress_desc="Submitting your artifact to "
                                                                                   "FedML® Launch platform")
     except Exception as e:
@@ -607,7 +622,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     return artifact_archive_zip_file, artifact_storage_url
 
 
-def log_artifact(artifact: fedml.mlops.Artifact, version=None):
+def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None):
     fedml_args = get_fedml_args()
 
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
@@ -615,10 +630,12 @@ def log_artifact(artifact: fedml.mlops.Artifact, version=None):
                                                                           fedml_args.config_version)
 
     setup_log_mqtt_mgr()
-    job_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
-    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
-    MLOpsStore.mlops_metrics.report_artifact_info(job_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+    MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
                                                   artifact_archive_zip_file, artifact_storage_url,
                                                   artifact.ext_info, artifact.artifact_desc,
                                                   timestamp)
@@ -652,6 +669,30 @@ def log_metric(metrics):
     MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
     MLOpsStore.mlops_log_metrics.clear()
     MLOpsStore.mlops_log_metrics_lock.release()
+
+
+def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None,
+                           only_push_artifact=False):
+    fedml_args = get_fedml_args()
+
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
+                                                                          version=version if version is not None else
+                                                                          fedml_args.config_version)
+    artifact_storage_url = str(artifact_storage_url).split("?")[0]
+
+    if only_push_artifact:
+        return
+
+    setup_log_mqtt_mgr()
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    timestamp = MLOpsUtils.get_ntp_time()
+    MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+                                                  artifact_archive_zip_file, artifact_storage_url,
+                                                  artifact.ext_info, artifact.artifact_desc,
+                                                  timestamp)
 
 
 def log_round_info(total_rounds, round_index):
@@ -743,25 +784,7 @@ def create_run(project_id, api_key, run_name=None):
 
 
 def get_request_params(args):
-    url = "https://open.fedml.ai"
-    config_version = "release"
-    if (
-            hasattr(args, "config_version")
-            and args.config_version is not None
-    ):
-        # Setup config url based on selected version.
-        config_version = args.config_version
-        if args.config_version == "release":
-            url = "https://open.fedml.ai"
-        elif args.config_version == "test":
-            url = "https://open-test.fedml.ai"
-        elif args.config_version == "dev":
-            url = "https://open-dev.fedml.ai"
-        elif args.config_version == "local":
-            if hasattr(args, "local_server") and args.local_server is not None:
-                url = "http://{}:9000".format(args.local_server)
-            else:
-                url = "http://localhost:9000"
+    url = fedml._get_backend_service()
 
     cert_path = None
     if str(url).startswith("https://"):
@@ -892,7 +915,7 @@ def init_logs(args, edge_id):
     logging.info("client ids:{}".format(args.client_id_list))
 
 
-def bind_simulation_device(args, userid, version="release"):
+def bind_simulation_device(args, userid):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -900,6 +923,7 @@ def bind_simulation_device(args, userid, version="release"):
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
+    version = fedml.get_env_version()
     setattr(args, "version", version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
@@ -949,7 +973,7 @@ def bind_simulation_device(args, userid, version="release"):
     edge_id = 0
     while register_try_count < 5:
         try:
-            edge_id = runner.bind_account_and_device_id(
+            edge_id, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"],
                 args.account_id, unique_device_id, args.os_name
             )

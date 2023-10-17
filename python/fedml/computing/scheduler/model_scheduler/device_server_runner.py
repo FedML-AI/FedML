@@ -190,7 +190,7 @@ class FedMLServerRunner:
         pass
 
     def run(self, process_event, completed_event):
-        print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
+        # print(f"Model master runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -353,7 +353,7 @@ class FedMLServerRunner:
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 "END_POINT_Name=\"{}\" "
                 "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} "
+                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} --reload "
                 "--log-level critical".format(
                     self.redis_addr, self.redis_port, self.redis_password,
                     end_point_name,
@@ -541,7 +541,7 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
-            if "type" in model_metadata and model_metadata["type"] == "llm":
+            if "type" in model_metadata and model_metadata["type"] == "default":
                 payload_json["input_json"] = {"end_point_name": end_point_name,
                                             "model_name": model_name,
                                             "token": str(token),
@@ -722,7 +722,53 @@ class FedMLServerRunner:
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
-        payload: {"timestamp": 1671440005119, "end_point_id": 4325, "token": "FCpWU", "state": "STARTING","user_id": "105", "user_name": "alex.liang2", "device_ids": [693], "device_objs": [{"device_id": "0xT3630FW2YM@MacOS.Edge.Device", "os_type": "MacOS", "id": 693, "ip": "1.1.1.1", "memory": 1024, "cpu": "1.7", "gpu": "Nvidia", "extra_infos":{}}], "model_config": {"model_name": "image-model", "model_id": 111, "model_version": "v1", 'is_from_open": 0, "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip", "instance_scale_min": 1, "instance_scale_max": 3, "inference_engine": "onnx"}, "parameters": {"hidden_size": 128, "hidden_act": "gelu", "initializer_range": 0.02, "vocab_size": 30522, "hidden_dropout_prob": 0.1, "num_attention_heads": 2, "type_vocab_size": 2, "max_position_embeddings": 512, "num_hidden_layers": 2, "intermediate_size": 512, "attention_probs_dropout_prob": 0.1}}
+        payload:
+        {
+          "timestamp": 1671440005119,
+          "end_point_id": 4325,
+          "token": "FCpWU",
+          "state": "STARTING",
+          "user_id": "105",
+          "user_name": "alex.liang2",
+          "device_ids": [
+            693
+          ],
+          "device_objs": [
+            {
+              "device_id": "0xT3630FW2YM@MacOS.Edge.Device",
+              "os_type": "MacOS",
+              "id": 693,
+              "ip": "1.1.1.1",
+              "memory": 1024,
+              "cpu": "1.7",
+              "gpu": "Nvidia",
+              "extra_infos": {}
+            }
+          ],
+          "model_config": {
+            "model_name": "image-model",
+            "model_id": 111,
+            "model_version": "v1",
+            "is_from_open": 0,
+            "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip",
+            "instance_scale_min": 1,
+            "instance_scale_max": 3,
+            "inference_engine": "onnx"
+          },
+          "parameters": {
+            "hidden_size": 128,
+            "hidden_act": "gelu",
+            "initializer_range": 0.02,
+            "vocab_size": 30522,
+            "hidden_dropout_prob": 0.1,
+            "num_attention_heads": 2,
+            "type_vocab_size": 2,
+            "max_position_embeddings": 512,
+            "num_hidden_layers": 2,
+            "intermediate_size": 512,
+            "attention_probs_dropout_prob": 0.1
+          }
+        }
         """
         try:
             _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
@@ -751,7 +797,7 @@ class FedMLServerRunner:
         # Start log processor for current run
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -1007,7 +1053,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = True
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
         if self.client_mqtt_mgr is not None:
@@ -1454,14 +1500,14 @@ class FedMLServerRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
-        )
+        # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        # print(
+        #     "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+        #     + str(self.unique_device_id)
+        #     + "\n"
+        # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
@@ -1536,13 +1582,12 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Model master local API process id {self.local_api_process.pid}")
-
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Model master local API process id {self.local_api_process.pid}")
 
         self.recover_inference_and_monitor()
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

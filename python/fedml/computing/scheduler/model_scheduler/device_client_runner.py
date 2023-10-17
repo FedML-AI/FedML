@@ -209,7 +209,7 @@ class FedMLClientRunner:
         return unzip_package_path
 
     def run(self, process_event, completed_event):
-        print(f"Model worker runner process id {os.getpid()}, run id {self.run_id}")
+        # print(f"Model worker runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -285,10 +285,13 @@ class FedMLClientRunner:
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         model_config_parameters = self.request_json["parameters"]
-        if "using_triton" in model_config_parameters and model_config_parameters["using_triton"] == True:
+        if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
         else:
-            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED
+            inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT
+
+        logging.info("[Critical] The inference_engine is: {}".format(inference_engine))
+
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
         if self.model_is_from_open:
             model_net_url = model_config["model_net_url"]
@@ -617,7 +620,7 @@ class FedMLClientRunner:
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -729,7 +732,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
-        logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
+        # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
         run_id = request_json["run_id"]
@@ -1001,14 +1004,14 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
-        )
+        # print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        # print(
+        #     "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+        #     + str(self.unique_device_id)
+        #     + "\n"
+        # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
@@ -1042,10 +1045,10 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        if self.local_api_process is not None and self.local_api_process.pid is not None:
-            print(f"Model worker local API process id {self.local_api_process.pid}")
+        # if self.local_api_process is not None and self.local_api_process.pid is not None:
+        #     print(f"Model worker local API process id {self.local_api_process.pid}")
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

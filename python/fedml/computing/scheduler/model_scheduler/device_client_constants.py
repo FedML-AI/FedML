@@ -14,10 +14,13 @@ from os.path import expanduser
 import psutil
 import yaml
 
+import fedml
+import docker
+
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
-
+from ..comm_utils import security_utils
 
 class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE"
@@ -84,7 +87,7 @@ class ClientConstants(object):
     INFERENCE_ENGINE_TYPE_ONNX = "onnx"
     INFERENCE_ENGINE_TYPE_TENSORRT = "tensorrt"
     INFERENCE_ENGINE_TYPE_INT_TRITON = 1
-    INFERENCE_ENGINE_TYPE_INT_DEEPSPEED = 2
+    INFERENCE_ENGINE_TYPE_INT_DEFAULT = 2
     INFERENCE_MODEL_VERSION = "1"
     INFERENCE_INFERENCE_SERVER_VERSION = "v2"
 
@@ -101,12 +104,16 @@ class ClientConstants(object):
     MODEL_REQUIRED_MODEL_CONFIG_FILE = "fedml_model_config.yaml"
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
     MODEL_REQUIRED_MODEL_README_FILE = "README.md"
+    MODEL_AUTO_GEN_LAUNCH_FILE = "deploy_cmd_auto_generated_launch.yaml"
+
+    ORIGINAL_YAML_FILE_LOCATION = "origin_yaml_file_loc_record.txt"
 
     CMD_TYPE_CONVERT_MODEL = "convert_model"
     CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+    CMD_TYPE_RUN_DEFAULT_SERVER = "run_default_server"
     FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
     FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
-    FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX = "fedml_llm_server_container"
+    FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX = "fedml_default_server_container"
     FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
     FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
@@ -257,29 +264,28 @@ class ClientConstants(object):
         return model_infer_data_dir
 
     @staticmethod
-    def get_model_ops_list_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/listFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_list_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/listFromCli"
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_upload_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/createFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_apply_endpoint_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/applyEndpointId"
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_url(config_version="release", local_server=None):
-        if config_version == "local":
-            return "http://{}:9000/fedmlModelServer".format(
-                "localhost" if local_server is None else local_server)
-        return "https://open{}.fedml.ai/fedmlModelServer".format(
-            "" if config_version == "release" else "-" + config_version)
+    def get_model_ops_upload_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/createFromCli"
+        return model_ops_url
 
     @staticmethod
-    def get_model_ops_deployment_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(
-            ClientConstants.get_model_ops_url(config_version, local_server))
+    def get_model_ops_url(config_version="release"):
+        url = fedml._get_backend_service()
+        return f"{url}/fedmlModelServer"
+
+    @staticmethod
+    def get_model_ops_deployment_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/createFromCli"
         return model_ops_url
 
     @staticmethod
@@ -294,6 +300,31 @@ class ClientConstants(object):
     def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
                                                                     end_point_id, model_id)
+        # Stop and delete the container
+        container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                         security_utils.get_content_hash(running_model_name)
+        try:
+            client = docker.from_env()
+        except Exception:
+            logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                          "installed Docker Desktop or Docker Engine, and the docker is running")
+            return False
+
+        try:
+            exist_container_obj = client.containers.get(container_name)
+        except docker.errors.NotFound:
+            logging.info("The container {} does not exist, cannot remove.".format(container_name))
+            exist_container_obj = None
+        except docker.errors.APIError:
+            logging.error("Failed to get the container object")
+            return False
+
+        if exist_container_obj is not None:
+            exist_container_obj.stop()
+            exist_container_obj.remove(v=True)
+            logging.info("Stopped and removed the container {}".format(container_name))
+
+        # Delete the deployment
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
         if os.path.exists(model_dir):
@@ -306,6 +337,7 @@ class ClientConstants(object):
                 shutil.rmtree(model_file_path, ignore_errors=True)
                 os.system("sudo rm -Rf {}".format(model_file_path))
 
+        # Delete the serving file
         model_serving_dir = ClientConstants.get_model_serving_dir()
         if not os.path.exists(model_serving_dir):
             return False

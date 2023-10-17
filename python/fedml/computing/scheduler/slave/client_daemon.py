@@ -16,7 +16,6 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
-    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
@@ -24,8 +23,6 @@ if __name__ == "__main__":
     parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
     args = parser.parse_args()
     args.user = args.user
-
-    print(f"Client daemon process id {os.getpid()}")
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "client_login.py")
@@ -53,8 +50,6 @@ if __name__ == "__main__":
                 args.user,
                 "-v",
                 args.version,
-                "-ls",
-                args.local_server,
                 "-r",
                 args.role,
                 "-id",
