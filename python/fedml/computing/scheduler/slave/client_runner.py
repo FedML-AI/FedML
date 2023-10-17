@@ -723,7 +723,8 @@ class FedMLClientRunner:
         ClientConstants.save_learning_process(self.run_id, job_pid)
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
-    def job_error_processor(self, error_str):
+    def job_error_processor(self, error_list):
+        error_str = "\n".join(error_list)
         raise Exception(f"Error occurs when running the job... {error_str}")
 
     def parse_config_args_as_env_variables(self, export_cmd, run_params):

@@ -326,8 +326,9 @@ class ClientConstants(object):
         if callback is not None:
             callback(script_process.pid)
 
+        exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            exec_out, exec_err = script_process.communicate(
+            exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = script_process.communicate(
                 timeout=100, data_arrived_callback=ClientConstants.log_callback,
                 error_processor=error_processor, should_write_log=should_write_log_file
             )
@@ -335,14 +336,17 @@ class ClientConstants(object):
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
-            if exec_err is not None:
-                err_str = sys_utils.decode_byte_str(exec_err)
-                error_list.append(err_str)
+            if exec_err_str is not None:
+                for err_line in latest_lines_err_list:
+                    err_str = sys_utils.decode_byte_str(err_line)
+                    error_list.append(err_str)
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
+
             for error_info in error_list:
                 logging.error(error_info)
+
         return script_process, error_list
 
     @staticmethod

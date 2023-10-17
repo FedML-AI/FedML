@@ -5,6 +5,8 @@ import threading
 
 
 class Popen(subprocess.Popen):
+    LATEST_ERROR_LINE_NUM = 100
+
     def __init__(self, args, bufsize=-1, executable=None,
                  stdin=None, stdout=None, stderr=None,
                  preexec_fn=None, close_fds=True,
@@ -65,7 +67,7 @@ class Popen(subprocess.Popen):
                 endtime = None
 
             try:
-                stdout, stderr = self._communicate(
+                str_stdout, str_stderr, stdout, stderr, latest_lines_err_list = self._communicate(
                     input, endtime, timeout, data_arrived_callback, error_processor=error_processor,
                     should_write_log=should_write_log)
             except KeyboardInterrupt:
@@ -91,7 +93,7 @@ class Popen(subprocess.Popen):
             except Exception as e:
                 pass
 
-        return (stdout, stderr)
+        return (str_stdout, str_stderr, stdout, stderr, latest_lines_err_list)
 
     if subprocess._mswindows:
         def _readerthread(
@@ -173,12 +175,21 @@ class Popen(subprocess.Popen):
                 self.stderr.close()
 
             # All data exchanged.  Translate lists into strings.
-            #stdout = stdout[0] if stdout else None
-            #stderr = stderr[0] if stderr else None
-            stdout = ''.join(stdout)
-            stderr = ''.join(stderr)
+            # stdout = stdout[0] if stdout else None
+            # stderr = stderr[0] if stderr else None
+            str_stdout = None
+            str_stderr = None
+            latest_lines_err_list = list()
+            if stdout is not None:
+                str_stdout = ''.join(stdout)
+            if stderr is not None:
+                str_stderr = ''.join(stderr)
 
-            return (stdout, stderr)
+                min_len = min(len(stderr), Popen.LATEST_ERROR_LINE_NUM)
+                for err_line_index in range(-min_len, 0):
+                    latest_lines_err_list.append(stderr[err_line_index])
+
+            return (str_stdout, str_stderr, stdout, stderr, latest_lines_err_list)
     else:
         def _communicate(self, input, endtime, orig_timeout,
                          data_arrived_callback=None, error_processor=None, should_write_log=True):
@@ -282,8 +293,8 @@ class Popen(subprocess.Popen):
                             if len(data_str) >= 1:
                                 diff_data_lines = list()
                                 data_lines = data_str.splitlines()
-                                if data_str[len(data_str)-1] != '\n':
-                                    data_lines.pop(len(data_lines)-1)
+                                if data_str[len(data_str) - 1] != '\n':
+                                    data_lines.pop(len(data_lines) - 1)
 
                                 if key.fileobj == self.stdout:
                                     if prev_stdout_data_lines is None:
@@ -315,21 +326,35 @@ class Popen(subprocess.Popen):
                 pass
 
             # All data exchanged.  Translate lists into strings.
+            str_stdout = None
+            str_stderr = None
             if stdout is not None:
-                stdout = b''.join(stdout)
+                str_stdout = b''.join(stdout)
             if stderr is not None:
-                stderr = b''.join(stderr)
+                str_stderr = b''.join(stderr)
+
+            latest_lines_err_list = list()
+            if stderr is not None:
+                min_len = min(len(stderr), Popen.LATEST_ERROR_LINE_NUM)
+                for err_line_index in range(-min_len, 0):
+                    if self.text_mode:
+                        err_line = self._translate_newlines(stderr[err_line_index],
+                                                            self.stderr.encoding,
+                                                            self.stderr.errors)
+                    else:
+                        err_line = stderr[err_line_index]
+                    latest_lines_err_list.append(err_line)
 
             # Translate newlines, if requested.
             # This also turns bytes into strings.
             if self.text_mode:
                 if stdout is not None:
-                    stdout = self._translate_newlines(stdout,
-                                                      self.stdout.encoding,
-                                                      self.stdout.errors)
+                    str_stdout = self._translate_newlines(str_stdout,
+                                                          self.stdout.encoding,
+                                                          self.stdout.errors)
                 if stderr is not None:
-                    stderr = self._translate_newlines(stderr,
-                                                      self.stderr.encoding,
-                                                      self.stderr.errors)
+                    str_stderr = self._translate_newlines(str_stderr,
+                                                          self.stderr.encoding,
+                                                          self.stderr.errors)
 
-            return (stdout, stderr)
+            return (str_stdout, str_stderr, stdout, stderr, latest_lines_err_list)

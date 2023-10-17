@@ -320,6 +320,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.user = args.user
+    if args.api_key == "":
+        args.api_key = args.user
     
     fedml.set_env_version(args.version)
     if args.type == 'login':
