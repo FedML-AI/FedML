@@ -329,7 +329,7 @@ class MLOpsRuntimeLogProcessor:
             log_file_name = "{}".format(os.path.basename(self.log_file_path))
             artifact = fedml.mlops.Artifact(name=log_file_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
             artifact.add_file(self.log_file_path)
-            fedml.mlops.log_artifact(artifact)
+            fedml.mlops.log_artifact(artifact, run_id=self.run_id, edge_id=self.device_id)
         except Exception as e:
             pass
 

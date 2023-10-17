@@ -611,7 +611,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     return artifact_archive_zip_file, artifact_storage_url
 
 
-def log_artifact(artifact: fedml.mlops.Artifact, version=None):
+def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None):
     fedml_args = get_fedml_args()
 
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
@@ -619,10 +619,12 @@ def log_artifact(artifact: fedml.mlops.Artifact, version=None):
                                                                           fedml_args.config_version)
 
     setup_log_mqtt_mgr()
-    job_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
-    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
-    MLOpsStore.mlops_metrics.report_artifact_info(job_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+    MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
                                                   artifact_archive_zip_file, artifact_storage_url,
                                                   artifact.ext_info, artifact.artifact_desc,
                                                   timestamp)
