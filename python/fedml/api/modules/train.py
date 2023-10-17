@@ -3,6 +3,7 @@ import os
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import generate_yaml_doc
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import fedml.api.modules.build
 
 
@@ -51,4 +52,4 @@ def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ig
     # Build the package based on the updated config file
     fedml.api.modules.build.build(ModuleConstants.PLATFORM_NAME_LAUNCH, ModuleConstants.TRAIN_BUILD_PACKAGE_CLIENT_TYPE,
                                   source_folder, entry_point, config_folder, dest_folder, ignore,
-                                  package_type=ModuleConstants.FEDML_PACKAGE_TYPE_TRAIN)
+                                  package_type=SchedulerConstants.JOB_PACKAGE_TYPE_TRAIN)

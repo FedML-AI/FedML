@@ -4,6 +4,7 @@ from os.path import expanduser
 
 import yaml
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from tempfile import gettempdir
 
 class Constants(Singleton):
@@ -45,8 +46,8 @@ class Constants(Singleton):
     MLOPS_CLIENT_STATUS_STOPPED = "Stopped"
 
     LAUNCH_JOB_DEFAULT_FOLDER_NAME = "fedml_job_pack"
-    LAUNCH_JOB_DEFAULT_ENTRY_NAME = "fedml_job_entry_pack.sh"
-    LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = "fedml_server_job_entry_pack.sh"
+    LAUNCH_JOB_DEFAULT_ENTRY_NAME = SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME
+    LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = SchedulerConstants.LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME
     LAUNCH_JOB_DEFAULT_CONF_FOLDER_NAME = "config"
     LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME = "launch_config"
     LAUNCH_JOB_DEFAULT_CONF_NAME = "fedml_config.yaml"

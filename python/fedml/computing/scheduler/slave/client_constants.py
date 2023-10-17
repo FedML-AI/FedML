@@ -74,8 +74,6 @@ class ClientConstants(object):
     FEDML_SUPPORTED_ENVIRONMENT_VARIABLES = ["$FEDML_MODEL_NAME", "$FEDML_MODEL_CACHE_PATH", "$FEDML_MODEL_INPUT_DIM", "$MODEL_OUTPUT_DIM",
                                              "$FEDML_DATASET_NAME", "$FEDML_DATASET_PATH", "$FEDML_DATASET_TYPE"]
 
-    FEDML_PACKAGE_TYPE_TRAIN = "train/build"
-
     LOCAL_CLIENT_API_PORT = 40800
 
     LOGIN_MODE_CLIENT_INDEX = 0
@@ -328,8 +326,9 @@ class ClientConstants(object):
         if callback is not None:
             callback(script_process.pid)
 
+        exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            exec_out, exec_err = script_process.communicate(
+            exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = script_process.communicate(
                 timeout=100, data_arrived_callback=ClientConstants.log_callback,
                 error_processor=error_processor, should_write_log=should_write_log_file
             )
@@ -337,14 +336,17 @@ class ClientConstants(object):
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
-            if exec_err is not None:
-                err_str = sys_utils.decode_byte_str(exec_err)
-                error_list.append(err_str)
+            if exec_err_str is not None:
+                for err_line in latest_lines_err_list:
+                    err_str = sys_utils.decode_byte_str(err_line)
+                    error_list.append(err_str)
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
+
             for error_info in error_list:
                 logging.error(error_info)
+
         return script_process, error_list
 
     @staticmethod

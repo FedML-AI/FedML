@@ -9,12 +9,16 @@ import time
 
 import requests
 import yaml
+
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
+
 
 class MLOpsRuntimeLogProcessor:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 3
+    FED_LOG_UPLOAD_S3_FREQUENCY = 30
     FEDML_LOG_REPORTING_STATUS_FILE_NAME = "log_status"
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
 
@@ -219,11 +223,18 @@ class MLOpsRuntimeLogProcessor:
 
         self.log_process_event = process_event
 
+        log_artifact_time_counter = 0
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
                 self.log_upload(self.run_id, self.device_id)
+
+                log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
+                if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
+                    log_artifact_time_counter = 0
+                    self.upload_log_file_as_artifact()
             except Exception as e:
+                log_artifact_time_counter = 0
                 pass
 
         self.log_upload(self.run_id, self.device_id)
@@ -312,6 +323,15 @@ class MLOpsRuntimeLogProcessor:
             return True
 
         return False
+
+    def upload_log_file_as_artifact(self):
+        try:
+            log_file_name = "{}".format(os.path.basename(self.log_file_path))
+            artifact = fedml.mlops.Artifact(name=log_file_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
+            artifact.add_file(self.log_file_path)
+            fedml.mlops.log_artifact(artifact, run_id=self.run_id, edge_id=self.device_id)
+        except Exception as e:
+            pass
 
 
 class MLOpsRuntimeLogDaemon:

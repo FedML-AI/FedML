@@ -7,3 +7,11 @@ class SchedulerConstants:
 
     PLATFORM_TYPE_FALCON = "falcon"
     PLATFORM_TYPE_OCTOPUS = "octopus"
+
+    JOB_PACKAGE_TYPE_TRAIN = "train/build"
+    JOB_PACKAGE_TYPE_FEDERATE = "federate/build"
+    JOB_PACKAGE_TYPE_LAUNCH = "launch/build"
+    JOB_PACKAGE_TYPE_DEFAULT = "default"
+
+    LAUNCH_JOB_DEFAULT_ENTRY_NAME = "fedml_job_entry_pack.sh"
+    LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = "fedml_server_job_entry_pack.sh"
