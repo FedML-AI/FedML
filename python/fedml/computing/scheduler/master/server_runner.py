@@ -803,6 +803,50 @@ class FedMLServerRunner:
     def job_error_processor(self, error_str):
         raise Exception(f"Error occurs when running the job... {error_str}")
 
+    def parse_config_args_as_env_variables(self, export_cmd, run_params):
+        model_args = run_params.get("fedml_model_args", {})
+        data_args = run_params.get("fedml_data_args", {})
+        model_name = model_args.get("model_name", None)
+        model_cache_path = model_args.get("model_cache_path", None)
+        input_dim = model_args.get("input_dim", None)
+        output_dim = model_args.get("output_dim", None)
+        dataset_name = data_args.get("dataset_name", None)
+        dataset_path = data_args.get("dataset_path", None)
+        dataset_type = data_args.get("dataset_type", None)
+
+        env_list = list()
+        env_value_map = dict()
+
+        if model_name is not None and str(model_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_NAME={model_name}\n")
+            env_value_map["$FEDML_MODEL_NAME"] = model_name
+
+        if model_cache_path is not None and str(model_cache_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_CACHE_PATH={model_cache_path}\n")
+            env_value_map["$FEDML_MODEL_CACHE_PATH"] = model_cache_path
+
+        if input_dim is not None and str(input_dim).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_MODEL_INPUT_DIM={input_dim}\n")
+            env_value_map["$FEDML_MODEL_INPUT_DIM"] = input_dim
+
+        if output_dim is not None and str(output_dim).strip() != "":
+            env_list.append(f"{export_cmd} MODEL_OUTPUT_DIM={output_dim}\n")
+            env_value_map["$MODEL_OUTPUT_DIM"] = output_dim
+
+        if dataset_name is not None and str(dataset_name).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_NAME={dataset_name}\n")
+            env_value_map["$FEDML_DATASET_NAME"] = dataset_name
+
+        if dataset_path is not None and str(dataset_path).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_PATH={dataset_path}\n")
+            env_value_map["$FEDML_DATASET_PATH"] = dataset_path
+
+        if dataset_type is not None and str(dataset_type).strip() != "":
+            env_list.append(f"{export_cmd} FEDML_DATASET_TYPE={dataset_type}\n")
+            env_value_map["$FEDML_DATASET_TYPE"] = dataset_type
+
+        return env_list, env_value_map
+
     def process_job_status(self, run_id):
         all_edges_is_finished = True
         any_edge_is_failed = False
