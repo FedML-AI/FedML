@@ -223,7 +223,7 @@ class MLOpsRuntimeLogProcessor:
 
         self.log_process_event = process_event
 
-        fist_push_log_artifact = True
+        only_push_artifact = False
         log_artifact_time_counter = 0
         while not self.should_stop():
             try:
@@ -233,8 +233,8 @@ class MLOpsRuntimeLogProcessor:
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
                     log_artifact_time_counter = 0
-                    self.upload_log_file_as_artifact(only_push_artifact=fist_push_log_artifact)
-                    fist_push_log_artifact = False
+                    self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact)
+                    only_push_artifact = True
             except Exception as e:
                 log_artifact_time_counter = 0
                 pass
