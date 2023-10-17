@@ -329,6 +329,9 @@ class MLOpsRuntimeLogProcessor:
 
     def upload_log_file_as_artifact(self, only_push_artifact=False):
         try:
+            if not os.path.exists(self.log_file_path):
+                return 
+            
             log_file_name = "{}".format(os.path.basename(self.log_file_path))
             artifact = fedml.mlops.Artifact(name=log_file_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
             artifact.add_file(self.log_file_path)
