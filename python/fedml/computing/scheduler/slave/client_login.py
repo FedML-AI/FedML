@@ -48,7 +48,8 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
         setattr(args, "current_device_id", args.device_id)
         is_from_docker = True
     else:
-        setattr(args, "current_device_id", FedMLClientRunner.get_device_id())
+        is_gpu_supplier = (role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX])
+        setattr(args, "current_device_id", FedMLClientRunner.get_device_id(use_machine_id=is_gpu_supplier))
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
