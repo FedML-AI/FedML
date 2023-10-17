@@ -18,6 +18,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLMo
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.api.modules.utils import build_mlops_package
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
 from fedml.core.common.singleton import Singleton
 
@@ -297,6 +298,7 @@ class FedMLLaunchManager(Singleton):
                 "fedml-client",
                 "client-package",
                 "${FEDSYS.CLIENT_INDEX}",
+                package_type=SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH
             )
             FedMLLaunchManager._cleanup_build_tmp_path(mlops_build_path)
             if result != 0:
@@ -324,6 +326,7 @@ class FedMLLaunchManager(Singleton):
                 "fedml-server",
                 "server-package",
                 "0",
+                package_type=SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH
             )
             FedMLLaunchManager._cleanup_build_tmp_path(mlops_build_path)
             if result != 0:

@@ -21,6 +21,7 @@ from urllib.parse import unquote
 import requests
 
 import fedml
+from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -112,7 +113,7 @@ class FedMLClientRunner:
         self.server_id = None
         self.computing_started_time = 0
         self.origin_fedml_config_object = None
-        self.package_type = None
+        self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -212,7 +213,7 @@ class FedMLClientRunner:
         container_dynamic_args_config = config_from_container["dynamic_args"]
         entry_file = container_entry_file_config["entry_file"]
         conf_file = container_entry_file_config["conf_file"]
-        self.package_type = container_entry_file_config.get("package_type", None)
+        self.package_type = container_entry_file_config.get("package_type", SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT)
         full_conf_path = os.path.join(unzip_package_path, "fedml", "config", os.path.basename(conf_file))
 
         # Dynamically build constrain variable with realtime parameters from server
@@ -629,7 +630,8 @@ class FedMLClientRunner:
             shell_cmd_list = list()
             if using_easy_mode:
                 entry_commands_origin = list()
-                if self.package_type != ClientConstants.FEDML_PACKAGE_TYPE_TRAIN:
+                if self.package_type == SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH or \
+                        os.path.basename(entry_file_full_path) == SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME:
                     # Read commands if job is not from launch
                     with open(entry_file_full_path, 'r') as entry_file_handle:
                         entry_commands_origin.extend(entry_file_handle.readlines())
@@ -680,7 +682,8 @@ class FedMLClientRunner:
                     entry_commands_filled = entry_commands
                     entry_commands_filled.insert(0, "set -e\n")
 
-                if self.package_type == ClientConstants.FEDML_PACKAGE_TYPE_TRAIN:
+                if self.package_type != SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH and \
+                        os.path.basename(entry_file_full_path) != SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME:
                     python_program = get_python_program()
                     entry_commands_filled.append(f"{python_program} {entry_file_full_path} {entry_args}\n")
                     entry_file_full_path = os.path.join(

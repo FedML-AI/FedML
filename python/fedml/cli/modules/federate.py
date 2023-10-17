@@ -57,14 +57,14 @@ def fedml_federate():
 )
 @click.option(
     "--input_dim",
-    "-id",
+    "-mi",
     type=str,
     default="",
     help="input dimensions for training.",
 )
 @click.option(
     "--output_dim",
-    "-od",
+    "-mo",
     type=str,
     default="",
     help="output dimensions for training.",
@@ -90,8 +90,8 @@ def fedml_federate():
     default="",
     help="dataset path for training.",
 )
-def build(source_folder, entry_point, config_folder, dest_folder, ignore,
+def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
           model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
-    return fedml.api.train_build(
-        source_folder, entry_point, config_folder, dest_folder, ignore,
+    return fedml.api.fedml_build(
+        source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
         model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)
