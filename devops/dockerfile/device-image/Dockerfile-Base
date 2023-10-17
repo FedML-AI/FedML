@@ -1,7 +1,7 @@
 ARG VERSION=base
 ARG IS_BUILDING_GPU_IMAGE=0
 #ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
-ARG BASE_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
+ARG BASE_IMAGE=docker.io/fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/aws ./fedml/aws

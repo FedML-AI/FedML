@@ -1240,7 +1240,7 @@ class FedMLClientRunner:
         ClientConstants.save_training_infos(edge_id, training_status)
 
     @staticmethod
-    def get_device_id():
+    def get_device_id(use_machine_id=False):
         device_file_path = os.path.join(ClientConstants.get_data_dir(),
                                         ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         file_for_device_id = os.path.join(device_file_path, "devices.id")
@@ -1258,7 +1258,10 @@ class FedMLClientRunner:
             device_id = os.popen(cmd_get_serial_num).read()
             device_id = device_id.replace('\n', '').replace(' ', '')
             if device_id is None or device_id == "":
-                device_id = hex(uuid.getnode())
+                if not use_machine_id:
+                    device_id = hex(uuid.getnode())
+                else:
+                    device_id = FedMLClientRunner.get_machine_id()
             else:
                 device_id = "0x" + device_id
         else:
@@ -1280,7 +1283,10 @@ class FedMLClientRunner:
             elif "posix" in os.name:
                 device_id = sys_utils.get_device_id_in_docker()
                 if device_id is None:
-                    device_id = hex(uuid.getnode())
+                    if not use_machine_id:
+                        device_id = hex(uuid.getnode())
+                    else:
+                        device_id = FedMLClientRunner.get_machine_id()
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
@@ -1296,6 +1302,14 @@ class FedMLClientRunner:
                 f.write(device_id)
 
         return device_id
+
+    @staticmethod
+    def get_machine_id():
+        try:
+            import machineid
+            return machineid.id().replace('\n', '').replace('\r\n', '')
+        except Exception as e:
+            return hex(uuid.getnode())
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()

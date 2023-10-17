@@ -582,6 +582,17 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_archive_name = os.path.join(artifact_dir, artifact_dst_key)
     os.makedirs(artifact_archive_name, exist_ok=True)
 
+    if len(artifact.artifact_files) == 1 and os.path.isfile(artifact.artifact_files[0]):
+        try:
+            artifact_dst_key = "{}".format(os.path.basename(artifact.artifact_files[0]))
+            artifact_storage_url = s3_storage.upload_file_with_progress(artifact.artifact_files[0], artifact_dst_key,
+                                                                        out_progress_to_err=True,
+                                                                        progress_desc="Submitting your artifact to "
+                                                                                      "FedML® Launch platform")
+        except Exception as e:
+            pass
+        return artifact.artifact_files[0], artifact_storage_url
+
     for artifact_item in artifact.artifact_files:
         artifact_base_name = os.path.basename(artifact_item)
         shutil.copyfile(artifact_item, os.path.join(artifact_archive_name, artifact_base_name))
@@ -658,6 +669,30 @@ def log_metric(metrics):
     MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
     MLOpsStore.mlops_log_metrics.clear()
     MLOpsStore.mlops_log_metrics_lock.release()
+
+
+def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None,
+                           only_push_artifact=False):
+    fedml_args = get_fedml_args()
+
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
+                                                                          version=version if version is not None else
+                                                                          fedml_args.config_version)
+    artifact_storage_url = str(artifact_storage_url).split("?")[0]
+
+    if only_push_artifact:
+        return
+
+    setup_log_mqtt_mgr()
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    timestamp = MLOpsUtils.get_ntp_time()
+    MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+                                                  artifact_archive_zip_file, artifact_storage_url,
+                                                  artifact.ext_info, artifact.artifact_desc,
+                                                  timestamp)
 
 
 def log_round_info(total_rounds, round_index):

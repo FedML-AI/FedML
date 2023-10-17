@@ -223,6 +223,7 @@ class MLOpsRuntimeLogProcessor:
 
         self.log_process_event = process_event
 
+        only_push_artifact = False
         log_artifact_time_counter = 0
         while not self.should_stop():
             try:
@@ -232,12 +233,14 @@ class MLOpsRuntimeLogProcessor:
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
                     log_artifact_time_counter = 0
-                    self.upload_log_file_as_artifact()
+                    self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact)
+                    only_push_artifact = True
             except Exception as e:
                 log_artifact_time_counter = 0
                 pass
 
         self.log_upload(self.run_id, self.device_id)
+        self.upload_log_file_as_artifact(only_push_artifact=True)
         print("FedDebug log_process STOPPED")
 
     def log_relocation(self):
@@ -324,12 +327,16 @@ class MLOpsRuntimeLogProcessor:
 
         return False
 
-    def upload_log_file_as_artifact(self):
+    def upload_log_file_as_artifact(self, only_push_artifact=False):
         try:
+            if not os.path.exists(self.log_file_path):
+                return 
+            
             log_file_name = "{}".format(os.path.basename(self.log_file_path))
             artifact = fedml.mlops.Artifact(name=log_file_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
             artifact.add_file(self.log_file_path)
-            fedml.mlops.log_artifact(artifact, run_id=self.run_id, edge_id=self.device_id)
+            fedml.core.mlops.log_mlops_running_logs(artifact, run_id=self.run_id, edge_id=self.device_id,
+                                                    only_push_artifact=only_push_artifact)
         except Exception as e:
             pass
 
