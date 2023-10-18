@@ -934,6 +934,30 @@ def get_file_encoding(file_path):
     return str_encoding
 
 
+def read_gitignore_file(gitignore_file, ):
+    try:
+        ignore_list = list()
+        with open(gitignore_file, "r") as ignore_file_handle:
+            while True:
+                ignore_line = ignore_file_handle.readline()
+                if not ignore_line:
+                    break
+                ignore_line = ignore_line.replace('\n', '')
+                if ignore_line.startswith("#") or len(ignore_line.lstrip(' ').rstrip(' ')) == 0:
+                    continue
+                ignore_list.append(ignore_line)
+
+            ignore_file_handle.close()
+            if len(ignore_list) > 0:
+                ignore_list_str = ','.join(ignore_list)
+                ignore_list_str = ignore_list_str.replace("\n", "")
+                return ignore_list_str
+    except Exception as e:
+        pass
+
+    return None
+
+
 if __name__ == '__main__':
     fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("release")
     print("FedML is latest version: {}, local version {}, remote version {}".format(

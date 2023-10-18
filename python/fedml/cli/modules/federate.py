@@ -15,6 +15,9 @@ def fedml_federate():
 @fedml_federate.command("build", help="Build federate packages for the FedML® Launch platform (open.fedml.ai).")
 @click.help_option("--help", "-h")
 @click.option(
+    "--server", "-s", default=None, is_flag=True, help="build the server package, default is building client package.",
+)
+@click.option(
     "--source_folder", "-sf", type=str, default="./", help="the source code folder path"
 )
 @click.option(
@@ -23,6 +26,13 @@ def fedml_federate():
     type=str,
     default="./",
     help="the entry point of the source code",
+)
+@click.option(
+    "--entry_args",
+    "-ea",
+    type=str,
+    default="./",
+    help="entry arguments of the entry point program",
 )
 @click.option(
     "--config_folder", "-cf", type=str, default="./", help="the config folder path"
@@ -90,8 +100,13 @@ def fedml_federate():
     default="",
     help="dataset path for training.",
 )
-def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
+def build(server, source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
           model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
-    return fedml.api.fedml_build(
-        source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
+    is_client = True
+    is_server = server
+    if is_server is not None:
+        is_client = False
+
+    fedml.api.federate.build(
+        is_client, source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
         model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)
