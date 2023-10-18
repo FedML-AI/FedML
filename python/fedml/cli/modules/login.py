@@ -64,11 +64,12 @@ def fedml_login(api_key, version, client, server,
                 role, runner_cmd, device_id, os_name,
                 docker, docker_rank, infer_host,
                 redis_addr, redis_port, redis_password):
-    print(f"api_key = %s, version = %s, client = %s, server = %s, role = %s, runner_cmd = %s, device_id = %s, os_name = %s, docker = %s, docker_rank = %s, infer_host = %s, redis_addr = %s, redis_port = %s, redis_password = %s" % (api_key, version, client, server, role, runner_cmd, device_id, os_name, docker, docker_rank, infer_host, redis_addr, redis_port, redis_password))
     fedml.set_env_version(version)
-    # we retire user ID and only allow API Key to be used
-    userid = "-1"
+    
+    # the backend view userid and api_key the same as apiKey.
+    userid = api_key[0]
     api_key = api_key[0]
+    
     fedml.api.login(userid, client, server,
                     api_key, role, runner_cmd, device_id, os_name,
                     docker, docker_rank, infer_host,
