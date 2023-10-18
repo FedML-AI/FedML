@@ -1,9 +1,13 @@
+import os
 import time
 
 import fedml
 
 if __name__ == "__main__":
     print("Hi everyone, I am an launch job.")
+
+    run_api_key = os.getenv("FEDML_RUN_API_KEY", "")
+    print(f"Run api key is {run_api_key}")
 
     artifact = fedml.mlops.Artifact(name="general-file", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)
     artifact.add_file("./requirements.txt")

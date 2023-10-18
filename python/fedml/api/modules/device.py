@@ -30,19 +30,12 @@ def bind(
 
     url = fedml._get_backend_service()
     print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
-    if userid is None or len(userid) <= 0:
-        click.echo("Please specify your account id or API key, usage: fedml login $your_account_id_or_api_key")
+    if api_key is None:
+        click.echo("Please specify your API key, usage: fedml login $your_api_key")
         return
-    account_id = userid[0]
-    
-    # Check user id.
-    if userid == "":
-        click.echo(
-            "Please provide your account id or API key in the FedML® Launch platform ({}).".format(
-                url
-            )
-        )
-        return
+    account_id = userid
+    # print(f"account_id = {account_id}")
+    # print(f"api_key = {api_key}")
 
     # Set client as default entity.
     is_client = client
