@@ -573,7 +573,7 @@ def get_fedml_args():
     return fedml_args
 
 
-def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
+def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_progress=True):
     args = {"config_version": version}
     _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
     s3_storage = S3Storage(s3_config)
@@ -581,17 +581,6 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
     artifact_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "artifacts")
     artifact_archive_name = os.path.join(artifact_dir, artifact_dst_key)
     os.makedirs(artifact_archive_name, exist_ok=True)
-
-    if len(artifact.artifact_files) == 1 and os.path.isfile(artifact.artifact_files[0]):
-        try:
-            artifact_dst_key = "{}".format(os.path.basename(artifact.artifact_files[0]))
-            artifact_storage_url = s3_storage.upload_file_with_progress(artifact.artifact_files[0], artifact_dst_key,
-                                                                        out_progress_to_err=True,
-                                                                        progress_desc="Submitting your artifact to "
-                                                                                      "FedML® Launch platform")
-        except Exception as e:
-            pass
-        return artifact.artifact_files[0], artifact_storage_url
 
     for artifact_item in artifact.artifact_files:
         artifact_base_name = os.path.basename(artifact_item)
@@ -612,11 +601,15 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
         base_dir=artifact_dst_key,
     )
     artifact_archive_zip_file = artifact_archive_name + ".zip"
+    artifact_storage_url = ""
     try:
+        artifact_dst_key = f"{artifact_dst_key}.zip"
         artifact_storage_url = s3_storage.upload_file_with_progress(artifact_archive_zip_file, artifact_dst_key,
+                                                                    show_progress=show_progress,
                                                                     out_progress_to_err=True,
                                                                     progress_desc="Submitting your artifact to "
                                                                                   "FedML® Launch platform")
+        artifact_storage_url = str(artifact_storage_url).split("?")[0]
     except Exception as e:
         pass
     return artifact_archive_zip_file, artifact_storage_url
@@ -625,9 +618,8 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release"):
 def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None):
     fedml_args = get_fedml_args()
 
-    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
-                                                                          version=version if version is not None else
-                                                                          fedml_args.config_version)
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
+        artifact, version=version if version is not None else fedml_args.config_version)
 
     setup_log_mqtt_mgr()
     if run_id is None:
@@ -675,10 +667,8 @@ def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=
                            only_push_artifact=False):
     fedml_args = get_fedml_args()
 
-    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(artifact,
-                                                                          version=version if version is not None else
-                                                                          fedml_args.config_version)
-    artifact_storage_url = str(artifact_storage_url).split("?")[0]
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
+        artifact, version=version if version is not None else fedml_args.config_version, show_progress=False)
 
     if only_push_artifact:
         return

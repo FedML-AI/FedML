@@ -994,6 +994,7 @@ class FedMLClientRunner:
 
     def callback_start_train(self, topic, payload):
         # Get training params
+
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1307,7 +1308,7 @@ class FedMLClientRunner:
     def get_machine_id():
         try:
             import machineid
-            return machineid.id().replace('\n', '').replace('\r\n', '')
+            return machineid.id().replace('\n', '').replace('\r\n', '').strip()
         except Exception as e:
             return hex(uuid.getnode())
 
