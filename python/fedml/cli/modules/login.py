@@ -7,7 +7,7 @@ import fedml.api
 
 @click.command("login", help="Login the FedML Platform")
 @click.help_option("--help", "-h")
-@click.argument("userid", nargs=-1)
+@click.argument("api_key", nargs=-1)
 @click.option(
     "--version",
     "-v",
@@ -20,9 +20,6 @@ import fedml.api
 )
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="bind as the FedML server.",
-)
-@click.option(
-    "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
     "--role",
@@ -63,11 +60,16 @@ import fedml.api
 @click.option(
     "--redis_password", "-rpw", default="fedml_default", help="inference redis password.",
 )
-def fedml_login(userid, version, client, server,
-                api_key, role, runner_cmd, device_id, os_name,
+def fedml_login(api_key, version, client, server,
+                role, runner_cmd, device_id, os_name,
                 docker, docker_rank, infer_host,
                 redis_addr, redis_port, redis_password):
     fedml.set_env_version(version)
+    
+    # the backend view userid and api_key the same as apiKey.
+    userid = api_key[0]
+    api_key = api_key[0]
+    
     fedml.api.login(userid, client, server,
                     api_key, role, runner_cmd, device_id, os_name,
                     docker, docker_rank, infer_host,

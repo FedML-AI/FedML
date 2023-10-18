@@ -6,11 +6,5 @@ environment_args:
   bootstrap: bootstrap.sh
 job_args:
   job_id: 2176
-serving_args:
-  endpoint_id: 1119
-  endpoint_name: Endpoint-b6012eb1-f413-43f6-9780-cc38f6c80c9a
-  model_id: 300
-  model_name: llm_from_deploy_cmd_FedMLLaunchApp
-  model_storage_url: ''
-  model_version: v2-Fri Oct 13 08:22:36 CST 2023
-  random: 0000000000005a000a0c71307c2260252070797f760a5b5b0f71617377367474747f7c71
+  config_id: 308
+run_api_key: my_api_key

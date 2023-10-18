@@ -575,13 +575,15 @@ class FedMLClientRunner:
         client_rank = self.request_json.get("client_rank", 1)
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
+        job_api_key = job_yaml.get("run_api_key", None)
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         using_easy_mode = True
         expert_mode = job_yaml.get("expert_mode", None)
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
-        entry_args = conf_file_object.get("fedml_entry_args", None)
+        entry_args_dict = conf_file_object.get("fedml_entry_args", {})
+        entry_args = entry_args_dict.get("arg_items", None)
         error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
@@ -669,6 +671,8 @@ class FedMLClientRunner:
                 entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={self.version}\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
                 entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
+                if job_api_key is not None and str(job_api_key).strip() != "":
+                    entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={job_api_key}\n")
 
                 # Set -e for the entry script
                 entry_commands_filled = list()

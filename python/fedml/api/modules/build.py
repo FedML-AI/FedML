@@ -26,7 +26,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             "platform."
         )
         click.echo(
-            "The packages will be used for client training and server aggregation."
+            "The packages will be used for your training."
         )
         click.echo(
             "When the building process is completed, you will find the packages in the directory as follows: "
@@ -34,8 +34,8 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             + "."
         )
         click.echo(
-            "Then you may upload the packages on the configuration page in the FedML® Launch platform to start the "
-            "federated learning flow."
+            "Then you may upload the packages on the configuration page in the FedML® Launch platform to "
+            "start your training flow."
         )
         click.echo("Building...")
     else:
@@ -78,8 +78,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo(
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "client-package.zip")
-            + " to start your federated "
-              "learning run."
+            + " to start your training"
         )
     elif type == "server":
         result = build_mlops_package(
@@ -101,6 +100,5 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo(
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "server-package.zip")
-            + " to start your federated "
-              "learning run."
+            + " to start your training."
         )

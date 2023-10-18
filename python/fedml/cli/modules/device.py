@@ -21,15 +21,12 @@ def fedml_device():
     default="release",
     help="bind to which version of FedML® Launch platform. It should be dev, test or release",
 )
-@click.argument("userid", nargs=-1)
+@click.argument("api_key", nargs=-1)
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="bind as the FedML client.",
 )
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="bind as the FedML server.",
-)
-@click.option(
-    "--api_key", "-k", type=str, default="", help="user api key.",
 )
 @click.option(
     "--role",
@@ -71,11 +68,16 @@ def fedml_device():
     "--redis_password", "-rpw", default="fedml_default", help="inference redis password.",
 )
 def fedml_device_bind(
-        version, userid, client, server,
-        api_key, role, runner_cmd, device_id, os_name,
+        version, api_key, client, server,
+        role, runner_cmd, device_id, os_name,
         docker, docker_rank, infer_host,
         redis_addr, redis_port, redis_password):
     fedml.set_env_version(version)
+    
+    # the backend view userid and api_key the same as apiKey.
+    userid = api_key[0]
+    api_key = api_key[0]
+    
     fedml.api.device_bind(userid, client, server,
                           api_key, role, runner_cmd, device_id, os_name,
                           docker, docker_rank, infer_host,
