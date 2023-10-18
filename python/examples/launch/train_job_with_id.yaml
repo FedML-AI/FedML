@@ -6,5 +6,5 @@ environment_args:
   bootstrap: bootstrap.sh
 job_args:
   job_id: 2176
-  config_id: 305
+  config_id: 308
 run_api_key: my_api_key
