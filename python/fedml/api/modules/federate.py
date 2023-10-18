@@ -1,13 +1,14 @@
 import os
 
 from fedml.api.modules.constants import ModuleConstants
+from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.sys_utils import generate_yaml_doc
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import fedml.api.modules.build
 
 
-def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
+def build(is_built_client_package, source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
           model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
     # Check the config file
     config_file_path = os.path.join(config_folder, ModuleConstants.FEDML_CONFIG_YAML_FILE)
@@ -44,12 +45,22 @@ def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ig
 
     # Generate the entry arguments
     if entry_args is not None and str(entry_args).strip() != "":
-        config_dict["fedml_entry_args"] = f"{entry_args}"
+        config_dict["fedml_entry_args"] = dict()
+        config_dict["fedml_entry_args"]["arg_items"] = f"{entry_args}"
 
     # Save the updated config object into the config yaml file
     generate_yaml_doc(config_dict, config_file_path)
 
+    # Read the gitignore file
+    gitignore_file = os.path.join(source_folder, ".gitignore")
+    if os.path.exists(gitignore_file):
+        ignore_list_str = sys_utils.read_gitignore_file(gitignore_file)
+        ignore = f"{ignore},{ignore_list_str}"
+
     # Build the package based on the updated config file
-    fedml.api.modules.build.build(ModuleConstants.PLATFORM_NAME_LAUNCH, ModuleConstants.TRAIN_BUILD_PACKAGE_CLIENT_TYPE,
-                                  source_folder, entry_point, config_folder, dest_folder, ignore,
-                                  package_type=SchedulerConstants.JOB_PACKAGE_TYPE_FEDERATE)
+    fedml.api.modules.build.build(
+        ModuleConstants.PLATFORM_NAME_LAUNCH,
+        ModuleConstants.TRAIN_BUILD_PACKAGE_CLIENT_TYPE if is_built_client_package
+        else ModuleConstants.TRAIN_BUILD_PACKAGE_SERVER_TYPE,
+        source_folder, entry_point, config_folder, dest_folder, ignore,
+        package_type=SchedulerConstants.JOB_PACKAGE_TYPE_FEDERATE)

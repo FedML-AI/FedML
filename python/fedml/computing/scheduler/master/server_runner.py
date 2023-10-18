@@ -662,7 +662,8 @@ class FedMLServerRunner:
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
-        entry_args = conf_file_object.get("fedml_entry_args", None)
+        entry_args_dict = conf_file_object.get("fedml_entry_args", {})
+        entry_args = entry_args_dict.get("arg_items", None)
         error_list = list()
         if expert_mode is None:
             executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
