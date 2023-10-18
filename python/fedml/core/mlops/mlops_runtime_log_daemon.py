@@ -225,19 +225,20 @@ class MLOpsRuntimeLogProcessor:
 
         only_push_artifact = False
         log_artifact_time_counter = 0
+        log_file_prev_size = 0
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
-                log_file_prev_size = os.path.getsize(self.log_file_path)
                 self.log_upload(self.run_id, self.device_id)
 
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
                     log_artifact_time_counter = 0
-                    log_file_current_size = os.path.getsize(self.log_file_path)
+                    log_file_current_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
                     if log_file_prev_size != log_file_current_size:
                         if self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact):
                             only_push_artifact = True
+                        log_file_prev_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
             except Exception as e:
                 log_artifact_time_counter = 0
                 pass
