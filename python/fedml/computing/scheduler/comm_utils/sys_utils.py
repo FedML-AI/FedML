@@ -33,7 +33,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
-enable_simulation_gpu = True
+enable_simulation_gpu = False
 
 
 def get_sys_runner_info():
