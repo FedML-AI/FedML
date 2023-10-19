@@ -209,7 +209,8 @@ server_job: |
 #job_name: cv_job
 
 # If you want to pass your API key to your job for calling FEDML APIs, you may uncomment the following line and set your API key here.
-run_api_key: my_api_key
+# You may use the environment variable FEDML_RUN_API_KEY to get your API key in your job commands or scripts.
+#run_api_key: my_api_key
 
 # If you want to use the model created by the MLOps platform or create your own model card with a specified name,
 # just uncomment the following four lines, then set model_name to your desired model name or set your desired endpoint name
@@ -276,6 +277,16 @@ https://open.fedml.ai/gpu/projects/job/jobDetail?projectId=1692900612607447040&j
 
 For querying the realtime status of your job, please run the following command.
 fedml job logs -jid 1696947481910317056
+```
+
+### Supported Environment Variables
+You may use the following environment variables in your job commands or scripts.
+```
+$FEDML_CURRENT_JOB_ID, current run id for your job
+$FEDML_CURRENT_EDGE_ID, current edge device id for your job
+$FEDML_CLIENT_RANK, current device index for your job
+$FEDML_CURRENT_VERSION, current fedml config version, options: dev, test or release
+$FEDML_RUN_API_KEY, current API key from your job.yaml with the config item run_api_key
 ```
 
 ## 9. Login as the GPU supplier
