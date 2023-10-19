@@ -48,9 +48,8 @@ computing:
   device_type: GPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   
-framework_type: fedml         # options: fedml, deepspeed, pytorch, general
-
 job_type: train              # options: train, deploy, federate
+framework_type: fedml        # options: fedml, deepspeed, pytorch, general
 
 # train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
 # federate subtype: cross_silo, simulation, web, smart_phone
@@ -63,6 +62,39 @@ server_job: |
     echo "Hello, Here is the server job."
     echo "Current directory is as follows."
     pwd
+    
+# If you want to use the job created by the MLOps platform,
+# just uncomment the following three, then set job_id and config_id to your desired job id and related config.
+#job_args:
+#  job_id: 2070
+#  config_id: 111
+
+# If you want to create the job with specific name, just uncomment the following line and set job_name to your desired job name.
+#job_name: cv_job
+
+# If you want to pass your API key to your job for calling FEDML APIs, you may uncomment the following line and set your API key here.
+# You may use the environment variable FEDML_RUN_API_KEY to get your API key in your job commands or scripts.
+#run_api_key: my_api_key
+
+# If you want to use the model created by the MLOps platform or create your own model card with a specified name,
+# just uncomment the following four lines, then set model_name to your desired model name or set your desired endpoint name
+#serving_args:
+#  model_name: "fedml-launch-sample-model" # Model card from MLOps platform or create your own model card with a specified name
+#  model_version: "" # Model version from MLOps platform or set as empty string "" which will use the latest version.
+#  endpoint_name: "fedml-launch-endpoint" # Set your end point name which will be deployed, it can be empty string "" which will be auto generated.
+
+# Dataset related arguments
+fedml_data_args:
+  dataset_name: mnist
+  dataset_path: ./dataset
+  dataset_type: csv
+  
+# Model related arguments
+fedml_model_args:
+  input_dim: '784'
+  model_cache_path: /Users/alexliang/fedml_models
+  model_name: lr
+  output_dim: '10'
 ```
 
 You just need to customize the following config items. 
@@ -111,10 +143,20 @@ For querying the realtime status of your job, please run the following command.
 fedml job logs -jid 1696947481910317056
 ```
 
+## Supported Environment Variables
+You may use the following environment variables in your job commands or scripts.
+```
+$FEDML_CURRENT_JOB_ID, current run id for your job
+$FEDML_CURRENT_EDGE_ID, current edge device id for your job
+$FEDML_CLIENT_RANK, current device index for your job
+$FEDML_CURRENT_VERSION, current fedml config version, options: dev, test or release
+$FEDML_RUN_API_KEY, current API key from your job.yaml with the config item run_api_key
+```
+
 ## Login as the GPU supplier
 If you want to login as the role of GPU supplier and join into the FedML launch payment system. You just need to run the following command.
 ```
-fedml login $YourUserId -k $YourApiKey -r gpu_supplier
+fedml login $YourApiKey -r gpu_supplier
 ```
 
 Then you may find your GPU device in the FedML launch platform https://open.fedml.ai/gpu-supplier/gpus/index
