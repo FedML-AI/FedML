@@ -28,7 +28,6 @@ job: |
 
 # If you want to use the job created by the MLOps platform,
 # just uncomment the following three, then set job_id and config_id to your desired job id and related config.
-# set job_name to your desired job name
 #job_args:
 #  job_id: 2070
 #  config_id: 111
