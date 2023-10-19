@@ -55,6 +55,7 @@ fedml_model_args:
 ```
 
 The above model and data arguments will be mapped to the equivalent environment variables as follows.
+```
 dataset_name = $FEDML_DATASET_NAME
 dataset_path = $FEDML_DATASET_PATH
 dataset_type = $FEDML_DATASET_TYPE
@@ -62,9 +63,12 @@ model_name = $FEDML_MODEL_NAME
 model_cache_path = $FEDML_MODEL_CACHE_PATH
 input_dim = $FEDML_MODEL_INPUT_DIM
 output_dim = $FEDML_MODEL_OUTPUT_DIM
+```
 
-Your may pass these environment variables as your entry arguments.
-e.g., ENTRY_ARGS_MODEL_DATA='-m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH'
+Your may pass these environment variables as your entry arguments. e.g.,
+```
+ENTRY_ARGS_MODEL_DATA='-m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH'
+```
 
 ### Examples
 ```
