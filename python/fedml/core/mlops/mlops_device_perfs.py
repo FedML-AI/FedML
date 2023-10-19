@@ -101,7 +101,7 @@ class MLOpsDevicePerfStats(object):
             gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
 
         topic_name = "ml_client/mlops/gpu_device_info"
-        artifact_info_json = {
+        device_info_json = {
             "edgeId": edge_id,
             "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
             "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
@@ -115,7 +115,7 @@ class MLOpsDevicePerfStats(object):
             "networkTraffic": sent_bytes + recv_bytes,
             "updateTime": int(MLOpsUtils.get_ntp_time())
         }
-        message_json = json.dumps(artifact_info_json)
+        message_json = json.dumps(device_info_json)
         if mqtt_mgr is not None:
             mqtt_mgr.send_message_json(topic_name, message_json)
 
