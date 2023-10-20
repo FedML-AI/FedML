@@ -282,7 +282,7 @@ fedml job logs -jid 1696947481910317056
 ### Supported Environment Variables
 You may use the following environment variables in your job commands or scripts.
 ```
-$FEDML_CURRENT_JOB_ID, current run id for your job
+$FEDML_CURRENT_RUN_ID, current run id for your job
 $FEDML_CURRENT_EDGE_ID, current edge device id for your job
 $FEDML_CLIENT_RANK, current device index for your job
 $FEDML_CURRENT_VERSION, current fedml config version, options: dev, test or release

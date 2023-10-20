@@ -42,7 +42,7 @@ class JobRunnerUtils:
 
         # Add general environment variables
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={edge_id}\n")
-        entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_JOB_ID={run_id}\n")
+        entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_RUN_ID={run_id}\n")
         if assigned_gpu_ids is not None and assigned_gpu_ids != "":
             entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={version}\n")
