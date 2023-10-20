@@ -524,7 +524,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_http_port, inference_type="default"):
     deploy_attempt = 0
     retry_interval = 10
-    deploy_attempt_threshold = 10
+    deploy_attempt_threshold = 100
     last_out_logs = ""
     last_err_logs = ""
 
