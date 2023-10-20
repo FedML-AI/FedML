@@ -644,7 +644,6 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
             MLOpsStore.mlops_log_metrics_lock.release()
             return
         MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
-        print("log metrics {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
         setup_log_mqtt_mgr()
         MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
         MLOpsStore.mlops_log_metrics.clear()
