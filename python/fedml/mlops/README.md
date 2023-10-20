@@ -24,7 +24,7 @@ fedml.mlops.log_metric(
 | step                 | Set the index for current metric. If this value is none, then step will be the current global step counter.     |
 | customized_step_key  | Specify the customized step key, which must be one of the keys in the metrics dictionary.                       |
 | commit               | If commit is false, the metrics dictionary will be saved to memory and won't be committed until commit is true. |
-| run_id               | Run id for the artifact object. Default is none, which will be filled automatically.                            |
+| run_id               | Run id for the metric object. Default is none, which will be filled automatically.                              |
 | edge_id              | Edge id for current device. Default is none, which will be filled automatically.                                |
 
 ### Example
