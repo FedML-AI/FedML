@@ -14,6 +14,14 @@ from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
+class LaunchResult:
+    def __init__(self, result_code: int, result_message: str, run_id: str = None, project_id: str = None,
+                 inner_id: str = None):
+        self.run_id = run_id
+        self.project_id = project_id
+        self.inner_id = inner_id
+        self.result_code = result_code
+        self.result_message = result_message
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
                device_edges: List[str] = None) -> (int, str, FedMLRunStartedModel):
@@ -87,13 +95,15 @@ def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: st
     return launch_result
 
 
-def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = None, device_edges: List[str] = None):
+def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = None, device_edges: List[str] = None) \
+        -> LaunchResult:
+
     # Create Run
     result_code, result_message, create_run_result = create_run(yaml_file, api_key, resource_id, device_server,
                                                               device_edges)
 
     if not create_run_result:
-        return None, None, None, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
@@ -102,7 +112,8 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return run_id, project_id, inner_id, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
     # Run Job
     run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
@@ -110,50 +121,55 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
 
     # Return Result
     if run_result is None:
-        return run_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
-            ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
+                            result_message= ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
     if run_result.job_url == "":
-        return run_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
-            ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
+                            result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
     return run_id, project_id, inner_id, 0, ""
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,
-                   device_edges: List[str]):
+                   device_edges: List[str]) -> LaunchResult:
     # Schedule Job
     result_code, result_message, create_run_result = create_run_on_cluster(yaml_file, cluster, api_key, resource_id,
                                                                            device_server, device_edges)
 
     if not create_run_result:
-        return None, None, None, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
-
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return run_id, project_id, inner_id, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
     cluster_id = getattr(create_run_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
-        return (run_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
-                ApiConstants.CLUSTER_CREATION_FAILED)
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
+                            result_message=ApiConstants.CLUSTER_CREATION_FAILED,
+                            run_id=run_id, project_id=project_id, inner_id=inner_id)
 
     # Confirm cluster and start job
     cluster_confirmed = confirm_and_start(run_id=run_id, cluster_id=cluster_id,
                                           gpu_matched=create_run_result.gpu_matched)
 
     if cluster_confirmed:
-        return (run_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
-                ApiConstants.CLUSTER_CONFIRM_SUCCESS)
-    else:
-        return (run_id, project_id, inner_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
-                ApiConstants.CLUSTER_CONFIRM_FAILED)
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
+                            result_message=ApiConstants.CLUSTER_CONFIRM_SUCCESS, run_id=run_id, project_id=project_id,
+                            inner_id=inner_id)
+
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
+                        result_message=ApiConstants.CLUSTER_CONFIRM_FAILED, run_id=run_id, project_id=project_id,
+                        inner_id=inner_id)
 
 
 def _prepare_launch_app(yaml_file):

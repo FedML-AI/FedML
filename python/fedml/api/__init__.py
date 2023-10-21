@@ -33,7 +33,7 @@ def fedml_login(api_key=None):
 
 # inputs: yaml file, resource id
 # return: job_id, error_code (0 means successful), error_message,
-def launch_job(yaml_file, api_key=None, resource_id=None, device_server=None, device_edges=None):
+def launch_job(yaml_file, api_key=None, resource_id=None, device_server=None, device_edges=None) -> launch.LaunchResult:
     """
     launch a job
     :param api_key:
@@ -66,7 +66,7 @@ def run_status(run_name, run_id, platform, api_key):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_logs(run_id, page_num, page_size, need_all_logs=False, platform="falcon", api_key=None):
+def run_logs(run_id, page_num, page_size, need_all_logs=False, platform="falcon", api_key=None) -> run.RunLogResult:
     """
     fetch logs
 
@@ -78,10 +78,10 @@ def run_logs(run_id, page_num, page_size, need_all_logs=False, platform="falcon"
                          launch). Default is falcon
     :param str api_key: API Key from MLOPs. Not needed if already configured once
 
-    :returns: str: run_status, int: total_log_lines, int: total_log_pages, List[str]: log_list, FedMLRunLogModelList:
-    logs
+    :returns: RunLogResult(str: run_status, int: total_log_lines, int: total_log_pages, List[str]: log_list, FedMLRunLogModelList:
+    logs)
 
-    :rtype: Tuple[str, int, int, List[str], FedMLRunLogModelList]
+    :rtype: RunLogResult
     """
     return run.logs(run_id=run_id, page_num=page_num, page_size=page_size, need_all_logs=need_all_logs,
                     platform=platform, api_key=api_key)
