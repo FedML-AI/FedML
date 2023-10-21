@@ -23,17 +23,17 @@ if error_code != 0:
     exit(1)
 
 # Get job status
-job_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.job_logs(job_id, 1, 100)
-if job_status is None:
+run_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.run_logs(job_id, 1, 100)
+if run_status is None:
     print(f"Failed to get job status. Reason: {error_msg}")
     exit(1)
-print(f"Job status {job_status}")
+print(f"Run status {run_status}")
 
 # Get job logs
 time.sleep(30)
-job_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.job_logs(job_id, 1, 100)
-if job_status is None:
-    print(f"Failed to get job logs. Reason: {error_msg}")
+run_status, total_num, total_pages, log_line_list, job_log_obj = fedml.api.run_logs(job_id, 1, 100)
+if run_status is None:
+    print(f"Failed to get run logs. Reason: {error_msg}")
     exit(1)
-print(f"Job logs {log_line_list}")
+print(f"Run logs {log_line_list}")
 

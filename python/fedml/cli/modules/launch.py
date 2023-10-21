@@ -9,10 +9,9 @@ from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
-from fedml.api import (schedule_job, schedule_job_on_cluster, run_scheduled_job, confirm_cluster_and_start_job,
-                       job_stop,
-                       job_list)
-from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.api.modules.launch import (create_run, create_run_on_cluster)
+from fedml.api import run_stop, run_list, start_created_run, confirm_cluster_and_start_run
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel
 
 
 @click.group("launch", cls=DefaultCommandGroup, default_command='default')
@@ -82,52 +81,54 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     if cluster is None:
         _launch_job(yaml_file[0], api_key)
     else:
-        _launch_job_with_cluster(yaml_file[0], api_key, cluster)
+        _launch_job_on_cluster(yaml_file[0], api_key, cluster)
 
 
 def _launch_job(yaml_file, api_key):
-    result_code, result_message, schedule_result = schedule_job(yaml_file, api_key=api_key)
+    result_code, result_message, create_run_result = create_run(yaml_file, api_key=api_key)
 
-    if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
-        if schedule_result.user_check:
+    if _resources_matched_and_confirmed(result_code, result_message, create_run_result, yaml_file, api_key):
+        if create_run_result.user_check:
             if not click.confirm("Do you want to launch the job with the above matched GPU "
-                                                        "resource?", abort=False):
+                                 "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
-                job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                run_stop(create_run_result.run_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
                 return False
 
         click.echo("Launching the job with the above matched GPU resource.")
-        result = run_scheduled_job(schedule_result=schedule_result, api_key=api_key)
-        _print_job_list_details(result)
-        _print_job_log_details(result)
+        result = start_created_run(create_run_result=create_run_result, api_key=api_key)
+        _print_run_list_details(result)
+        _print_run_log_details(result)
 
 
-def _launch_job_with_cluster(yaml_file, api_key, cluster):
-    result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key)
+def _launch_job_on_cluster(yaml_file, api_key, cluster):
+    result_code, result_message, create_run_result = create_run_on_cluster(yaml_file, cluster, api_key)
     cluster_confirmed = True
-    if _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
-        if schedule_result.user_check:
+    if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
+                                        create_run_result=create_run_result, yaml_file=yaml_file, api_key=api_key):
+        if create_run_result.user_check:
             if not click.confirm("Do you want to launch the job with the above matched GPU "
-                                                        "resource?", abort=False):
+                                 "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
-                job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
                 return False
 
-            cluster_id = getattr(schedule_result, "cluster_id", None)
+            cluster_id = getattr(create_run_result, "cluster_id", None)
 
             if cluster_id is None or cluster_id == "":
                 click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
                 return
 
-            cluster_confirmed = confirm_cluster_and_start_job(schedule_result.job_id, cluster_id, schedule_result.gpu_matched)
+            cluster_confirmed = confirm_cluster_and_start_run(run_id=create_run_result.run_id, cluster_id=cluster_id,
+                                                              gpu_matched=create_run_result.gpu_matched)
 
         if cluster_confirmed:
-            _print_job_list_details(schedule_result)
-            _print_job_log_details(schedule_result)
+            _print_run_list_details(create_run_result)
+            _print_run_log_details(create_run_result)
 
 
-def _check_match_result(result, yaml_file):
-    if result.job_url == "":
+def _check_match_result(result: FedMLRunStartedModel, yaml_file: dict):
+    if result.run_url == "":
         if result.message is not None:
             click.echo(f"Failed to launch the job with response messages: {result.message}")
         else:
@@ -151,7 +152,7 @@ def _check_match_result(result, yaml_file):
         click.echo("\nNo resource available now, but we can keep your job in the waiting queue.")
         if click.confirm("Do you want to join the queue?", abort=False):
             click.echo("You have confirmed to keep your job in the waiting list.")
-            _print_job_list_details(result)
+            _print_run_list_details(result)
             return ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED
         else:
             click.echo("Cancelling launch as no resources are available. Please try again later.")
@@ -166,7 +167,7 @@ def _check_match_result(result, yaml_file):
     return ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED
 
 
-def _match_and_show_resources(result):
+def _match_and_show_resources(result: FedMLRunStartedModel):
     gpu_matched = getattr(result, "gpu_matched", None)
     if gpu_matched is not None and len(gpu_matched) > 0:
         click.echo(f"\nSearched and matched the following GPU resource for your job:")
@@ -181,65 +182,65 @@ def _match_and_show_resources(result):
         click.echo("")
 
         click.echo(f"You can also view the matched GPU resource with Web UI at: ")
-        click.echo(f"{result.job_url}")
+        click.echo(f"{result.run_url}")
 
 
-def _resources_matched_and_confirmed(result_code, result_message, schedule_result, yaml_file, api_key):
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or schedule_result is None:
+def _resources_matched_and_confirmed(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
+                                     yaml_file: dict, api_key: str):
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or not create_run_result:
         click.echo(f"{result_message}. Please double check the input arguments are valid.")
         return False
-    match_result = _check_match_result(schedule_result, yaml_file)
+    match_result = _check_match_result(create_run_result, yaml_file)
     if match_result == ApiConstants.RESOURCE_MATCHED_STATUS_QUEUE_CANCELED:
-        job_stop(schedule_result.job_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+        run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
         return False
     if (match_result == ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED or
             match_result == ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS):
-        _match_and_show_resources(schedule_result)
+        _match_and_show_resources(create_run_result)
         return True
     return False
 
 
-def _print_job_list_details(result):
+def _print_run_list_details(result):
     if result is None:
         click.echo("Failed to launch the job")
         return
 
-    if result.job_url == "":
+    if result.run_url == "":
         if result.message is not None:
             click.echo(f"Failed to launch the job with response messages: {result.message}")
         else:
             click.echo("Failed to launch the job")
 
-    # List the job status
-    job_list_obj = job_list(job_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
-                            job_id=result.job_id)
-    if job_list_obj is not None and len(job_list_obj.job_list) > 0:
+    # List the run status
+    run_list_obj = run_list(run_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
+                            run_id=result.run_id)
+    if run_list_obj is not None and len(run_list_obj.run_list) > 0:
         click.echo("")
-        click.echo("Your job result is as follows:")
-        job_list_table = PrettyTable(['Job Name', 'Job ID', 'Status', 'Created',
+        click.echo("Your run result is as follows:")
+        run_list_table = PrettyTable(['Run Name', 'Run ID', 'Status', 'Created',
                                       'Spend Time(hour)', 'Cost'])
-        jobs_count = 0
-        for job in job_list_obj.job_list:
-            jobs_count += 1
-            job_list_table.add_row([job.job_name, job.job_id, job.status, job.started_time,
-                                    job.compute_duration, job.cost])
-        click.echo(job_list_table)
+        runs_count = 0
+        for run in run_list_obj.run_list:
+            runs_count += 1
+            run_list_table.add_row([run.run_name, run.run_id, run.status, run.started_time,
+                                    run.compute_duration, run.cost])
+        click.echo(run_list_table)
     else:
         click.echo("")
 
-    # Show the job url
-    click.echo("\nYou can track your job details at this URL:")
-    click.echo(f"{result.job_url}")
+    # Show the run url
+    click.echo("\nYou can track your run details at this URL:")
+    click.echo(f"{result.run_url}")
 
 
-def _print_job_log_details(result):
-    # Show the job url
-    if result is None or result.job_id is None:
+def _print_run_log_details(result: FedMLRunStartedModel):
+    # Show the run url
+    if not (result and result.run_id):
         return
 
-    # Show querying infos for getting job logs
+    # Show querying infos for getting run logs
     click.echo("")
-    click.echo(f"For querying the realtime status of your job, please run the following command.")
-    click.echo(f"fedml job logs -jid {result.job_id}" +
+    click.echo(f"For querying the realtime status of your run, please run the following command.")
+    click.echo(f"fedml run logs -rid {result.run_id}" +
                "{}".format(f" -v {fedml.get_env_version()}"))
-
