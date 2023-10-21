@@ -225,6 +225,7 @@ class MLOpsRuntimeLogProcessor:
 
         only_push_artifact = False
         log_artifact_time_counter = 0
+        log_file_prev_size = 0
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
@@ -233,8 +234,11 @@ class MLOpsRuntimeLogProcessor:
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
                     log_artifact_time_counter = 0
-                    self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact)
-                    only_push_artifact = True
+                    log_file_current_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
+                    if log_file_prev_size != log_file_current_size:
+                        if self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact):
+                            only_push_artifact = True
+                        log_file_prev_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
             except Exception as e:
                 log_artifact_time_counter = 0
                 pass
@@ -330,15 +334,19 @@ class MLOpsRuntimeLogProcessor:
     def upload_log_file_as_artifact(self, only_push_artifact=False):
         try:
             if not os.path.exists(self.log_file_path):
-                return 
+                return False
             
             log_file_name = "{}".format(os.path.basename(self.log_file_path))
-            artifact = fedml.mlops.Artifact(name=log_file_name, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
+            log_file_name_no_ext = os.path.splitext(os.path.basename(self.log_file_path))[0]
+            artifact = fedml.mlops.Artifact(name=log_file_name_no_ext, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
             artifact.add_file(self.log_file_path)
+
             fedml.core.mlops.log_mlops_running_logs(artifact, run_id=self.run_id, edge_id=self.device_id,
                                                     only_push_artifact=only_push_artifact)
+
+            return True
         except Exception as e:
-            pass
+            return False
 
 
 class MLOpsRuntimeLogDaemon:

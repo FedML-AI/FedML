@@ -1,7 +1,0 @@
-a.py
-setup.sh
-*.pyc
-# AAA
-
-test.sh
-/mlops/dist-packages/

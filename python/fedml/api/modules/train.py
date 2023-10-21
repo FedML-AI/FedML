@@ -44,7 +44,8 @@ def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ig
 
     # Generate the entry arguments
     if entry_args is not None and str(entry_args).strip() != "":
-        config_dict["fedml_entry_args"] = f"{entry_args}"
+        config_dict["fedml_entry_args"] = dict()
+        config_dict["fedml_entry_args"]["arg_items"] = f"{entry_args}"
 
     # Save the updated config object into the config yaml file
     generate_yaml_doc(config_dict, config_file_path)

@@ -33,6 +33,8 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
+enable_simulation_gpu = False
+
 
 def get_sys_runner_info():
     import fedml
@@ -106,6 +108,13 @@ def get_sys_runner_info():
     except:
         pass
 
+    if enable_simulation_gpu:
+        gpu_count = 8
+        gpu_total_mem = "80G"
+        gpu_available_mem = "80G"
+        gpu_vendor = "NVIDIA"
+        gpu_device_name = "NVIDIA A100-SXM4-80GB"
+
     cpu_count = os.cpu_count()
 
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
@@ -116,6 +125,36 @@ def get_sys_runner_info():
 # GPU list: [GPU(ID, uuid, load, memoryTotal, memoryUsed, memoryFree, driver,
 # gpu_name, serial, display_mode, display_active, temperature)]
 def get_gpu_list():
+    if enable_simulation_gpu:
+        ret_gpu_list = [
+            {'ID': 0, 'uuid': 'GPU-dab987f0-be09-294a-96d6-f9afeef49877', 'load': 1.0,
+             'memoryTotal': 81920.0, 'memoryUsed': 41738.0, 'memoryFree': 39311.0,
+             'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB', 'serial': '1320723001415',
+             'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 48.0},
+            {'ID': 1, 'uuid': 'GPU-862efda8-4d58-3a46-31f8-ce3a271aae43', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723002357', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 29.0},
+            {'ID': 2, 'uuid': 'GPU-c2e4df14-5055-1bc7-54f8-54f063621272', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723001450', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 29.0},
+            {'ID': 3, 'uuid': 'GPU-d60909cf-6436-2aaa-d162-9eb66bbe301c', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723007910', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 30.0},
+            {'ID': 4, 'uuid': 'GPU-54345e96-e7c4-6b7e-0330-eebe4e1ef139', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723001651', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 30.0},
+            {'ID': 5, 'uuid': 'GPU-dc6938d5-d1e6-fe54-1244-13ee4045687f', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723005960', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 28.0},
+            {'ID': 6, 'uuid': 'GPU-5248df36-489a-62ae-b787-6b21a0f8e388', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723004499', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 31.0},
+            {'ID': 7, 'uuid': 'GPU-b5811fb0-e93a-79c7-1548-2d2b60049207', 'load': 0.0, 'memoryTotal': 81920.0,
+             'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+             'serial': '1320723000504', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 33.0}]
+
+        return ret_gpu_list
+
     gpu_list = GPUtil.getGPUs()
     ret_gpu_list = list()
     for gpu in gpu_list:
@@ -130,6 +169,9 @@ def get_gpu_list():
 
 
 def get_available_gpu_id_list(limit=1):
+    if enable_simulation_gpu:
+        return [1, 2, 3, 4, 5, 6, 7]
+
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
 
@@ -890,6 +932,30 @@ def get_file_encoding(file_path):
     str_encoding = "utf-8" if str_encoding is None else str_encoding
 
     return str_encoding
+
+
+def read_gitignore_file(gitignore_file, ):
+    try:
+        ignore_list = list()
+        with open(gitignore_file, "r") as ignore_file_handle:
+            while True:
+                ignore_line = ignore_file_handle.readline()
+                if not ignore_line:
+                    break
+                ignore_line = ignore_line.replace('\n', '')
+                if ignore_line.startswith("#") or len(ignore_line.lstrip(' ').rstrip(' ')) == 0:
+                    continue
+                ignore_list.append(ignore_line)
+
+            ignore_file_handle.close()
+            if len(ignore_list) > 0:
+                ignore_list_str = ','.join(ignore_list)
+                ignore_list_str = ignore_list_str.replace("\n", "")
+                return ignore_list_str
+    except Exception as e:
+        pass
+
+    return None
 
 
 if __name__ == '__main__':

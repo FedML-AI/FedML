@@ -6,6 +6,7 @@ import click
 
 from fedml.api.modules.utils import build_mlops_package
 from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
+from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
@@ -25,7 +26,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             "platform."
         )
         click.echo(
-            "The packages will be used for client training and server aggregation."
+            "The packages will be used for your training."
         )
         click.echo(
             "When the building process is completed, you will find the packages in the directory as follows: "
@@ -33,8 +34,8 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             + "."
         )
         click.echo(
-            "Then you may upload the packages on the configuration page in the FedML® Launch platform to start the "
-            "federated learning flow."
+            "Then you may upload the packages on the configuration page in the FedML® Launch platform to "
+            "start your training flow."
         )
         click.echo("Building...")
     else:
@@ -47,6 +48,12 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         shutil.rmtree(mlops_build_path, ignore_errors=True)
     except Exception as e:
         pass
+
+    # Read the gitignore file
+    gitignore_file = os.path.join(source_folder, ".gitignore")
+    if os.path.exists(gitignore_file):
+        ignore_list_str = sys_utils.read_gitignore_file(gitignore_file)
+        ignore = f"{ignore},{ignore_list_str}"
 
     ignore_list = "{},{}".format(ignore, Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
@@ -77,8 +84,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo(
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "client-package.zip")
-            + " to start your federated "
-              "learning run."
+            + " to start your training"
         )
     elif type == "server":
         result = build_mlops_package(
@@ -100,6 +106,5 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo(
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "server-package.zip")
-            + " to start your federated "
-              "learning run."
+            + " to start your training."
         )

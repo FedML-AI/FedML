@@ -444,6 +444,17 @@ class FedMLJobConfig(object):
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
+        data_args = self.job_config_dict.get("fedml_data_args", {})
+        self.data_args_dataset_name = data_args.get("dataset_name", None)
+        self.data_args_dataset_path = data_args.get("dataset_path", None)
+        self.data_args_dataset_type = data_args.get("dataset_type", None)
+
+        model_args = self.job_config_dict.get("fedml_model_args", {})
+        self.model_args_model_name = model_args.get("model_name", None)
+        self.model_args_model_cache_path = model_args.get("model_cache_path", None)
+        self.model_args_input_dim = model_args.get("input_dim", None)
+        self.model_args_output_dim = model_args.get("output_dim", None)
+
         self.gitignore_file = os.path.join(
             self.base_dir, workspace if workspace is not None and workspace != "" else random_workspace, ".gitignore")
         self.ignore_list_str = Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
