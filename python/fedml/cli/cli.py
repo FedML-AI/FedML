@@ -52,8 +52,7 @@ cli.add_command(federate.fedml_federate)
 
 @cli.command(
     "env",
-    help="collect the environment information to help debugging, including OS, Hardware Architecture, "
-         "Python version, etc.",
+    help="Get environment info such as versions, hardware, and networking",
 )
 @click.help_option("--help", "-h")
 @click.option(
@@ -72,7 +71,7 @@ def fedml_env(version):
 cli.add_command(diagnosis.fedml_diagnosis)
 
 
-@cli.command("version", help="Display fedml version.")
+@cli.command("version", help="Display FEDML library version")
 @click.help_option("--help", "-h")
 def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))

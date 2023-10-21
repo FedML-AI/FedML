@@ -3,7 +3,7 @@
 ```
 Usage: fedml train build [OPTIONS]
 
-  Build training packages for the FedML® Launch platform (open.fedml.ai).
+  Build training packages for the FedML® Nexus AI Platform.
 
 Options:
   -h, --help                    Show this message and exit.

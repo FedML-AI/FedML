@@ -9,12 +9,12 @@ from prettytable import PrettyTable
 @click.help_option("--help", "-h")
 def fedml_run():
     """
-    Manage runs on the FedML platform.
+    Manage runs on the FedML® Nexus AI Platform.
     """
     pass
 
 
-@fedml_run.command("stop", help="Stop a run from the FedML platform.")
+@fedml_run.command("stop", help="Stop a run from the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--run_id",
@@ -31,14 +31,14 @@ def fedml_run():
     "-v",
     type=str,
     default="release",
-    help="stop a run at which version of FedML platform. It should be dev, test or release",
+    help="stop a run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 def stop_run(platform, run_id, api_key, version):
@@ -50,14 +50,14 @@ def stop_run(platform, run_id, api_key, version):
         click.echo(f"Failed to stop Run {run_id}. Please check if the run id is valid.")
 
 
-@fedml_run.command("list", help="List runs from the FedML platform.")
+@fedml_run.command("list", help="List runs from the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -65,14 +65,14 @@ def stop_run(platform, run_id, api_key, version):
     "-r",
     type=str,
     default="",
-    help="Run name at the FedML platform.",
+    help="Run name at the FedML® Nexus AI Platform.",
 )
 @click.option(
     "--run_id",
     "-rid",
     type=str,
     default="",
-    help="Run id at the FedML platform.",
+    help="Run id at the FedML® Nexus AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -82,7 +82,7 @@ def stop_run(platform, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="list runs at which version of FedML platform. It should be dev, test or release",
+    help="list runs at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 def list_runs(platform, run_name, run_id, api_key, version):
     fedml.set_env_version(version)
@@ -91,14 +91,14 @@ def list_runs(platform, run_name, run_id, api_key, version):
     _print_run_table(run_list_obj)
 
 
-@fedml_run.command("status", help="Get status of run from the FedML platform.")
+@fedml_run.command("status", help="Get status of run from the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -106,14 +106,14 @@ def list_runs(platform, run_name, run_id, api_key, version):
     "-r",
     type=str,
     default=None,
-    help="Run name at the FedML platform.",
+    help="Run name at the FedML® Nexus AI Platform.",
 )
 @click.option(
     "--run_id",
     "-rid",
     type=str,
     default=None,
-    help="Run id at the FedML platform.",
+    help="Run id at the FedML® Nexus AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -123,7 +123,7 @@ def list_runs(platform, run_name, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="get status of run at which version of FedML platform. It should be dev, test or release",
+    help="get status of run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 def status(platform, run_name, run_id, api_key, version):
     fedml.set_env_version(version)
@@ -135,14 +135,14 @@ def status(platform, run_name, run_id, api_key, version):
     _print_run_table(run_list_obj)
 
 
-@fedml_run.command("logs", help="Get logs of run from the FedML platform.")
+@fedml_run.command("logs", help="Get logs of run from the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -150,7 +150,7 @@ def status(platform, run_name, run_id, api_key, version):
     "-rid",
     type=str,
     default=None,
-    help="Run id at the FedML platform.",
+    help="Run id at the FedML® Nexus AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -160,7 +160,7 @@ def status(platform, run_name, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="get logs of run at which version of FedML platform. It should be dev, test or release",
+    help="get logs of run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--page_num",

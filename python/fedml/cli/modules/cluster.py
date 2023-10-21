@@ -8,17 +8,17 @@ from prettytable import PrettyTable
 # Message strings constants
 confirmation_message: str = "Are you sure you want to {} these clusters?"
 failure_message: str = ("Failed to {} the clusters, please check the arguments are valid and your network "
-                        "connection and make sure be able to access the FedML® Launch platform.")
+                        "connection and make sure be able to access the FedML® Nexus AI Platform.")
 version_help: str = "specify version of MLOps platform. It should be dev, test or release"
 api_key_help: str = "user api key."
-cluster_action_help: str = "{} clusters from the MLOps platform."
+cluster_action_help: str = "{} clusters from FedML® Nexus AI Platform"
 
 
 @click.group("cluster")
 @click.help_option("--help", "-h")
 def fedml_clusters():
     """
-    Manage clusters on the MLOps platform.
+    Manage clusters on FedML® Nexus AI Platform
     """
     pass
 

@@ -3,7 +3,7 @@ import click
 import fedml.api
 
 
-@click.command("logs", help="Display fedml logs.")
+@click.command("logs", help="Display logs for ongoing runs")
 @click.help_option("--help", "-h")
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="Display client logs.",

@@ -134,7 +134,7 @@ def deploy(local, name, master_ids, worker_ids):
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\
-                       Do you want to use fedml® launch platform to find GPU Resources deploy your model?")
+                       Do you want to use FedML® Nexus AI Platform to find GPU Resources deploy your model?")
             answer = click.prompt("Please input your answer: (y/n)")
             if answer == "y" or answer == "Y":
                 api_key = get_api_key()

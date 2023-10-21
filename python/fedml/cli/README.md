@@ -111,17 +111,17 @@ fedml diagnosis --open --s3 --mqtt
 ```
 
 ## 7. Jobs
-Start a job at the MLOps platform.
+Start a job at FedML® Nexus AI Platform
 ```
 Usage: fedml jobs start [OPTIONS]
 
-Start a job at the MLOps platform.
+Start a job at FedML® Nexus AI Platform
 
 Options:
 -pf, --platform TEXT           The platform name at the MLOps platform(options: octopus, parrot, spider, beehive).
--prj, --project_name TEXT      The project name at the MLOps platform.
--app, --application_name TEXT  Application name in the My Application list at the MLOps platform.
--jn, --job_name TEXT           The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
+-prj, --project_name TEXT      The project name at FedML® Nexus AI Platform
+-app, --application_name TEXT  Application name in the My Application list at FedML® Nexus AI Platform
+-jn, --job_name TEXT           The job name at FedML® Nexus AI Platform If you don't specify here, the job name from the job yaml file will be used.
 -ds, --devices_server TEXT     The server to run the launching job, for the launch platform, we do not need to set this option.
 -de, --devices_edges TEXT      The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the launch platform, we do not need to set this option.
 -u, --user TEXT                user id or api key.
@@ -241,7 +241,7 @@ You just need to customize the following config items.
 
 3. `bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
 
-Then you can use the following example CLI to launch the job at the MLOps platform.
+Then you can use the following example CLI to launch the job at FedML® Nexus AI Platform
 (Replace $YourApiKey with your own account API key from open.fedml.ai)
 
 Example:
@@ -251,7 +251,7 @@ fedml launch hello_job.yaml
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Submitting your job to FedML® Launch platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
+Submitting your job to FedML® Nexus AI Platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
 
 Searched and matched the following GPU resource for your job:
 +-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+

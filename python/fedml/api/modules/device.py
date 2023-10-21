@@ -29,7 +29,7 @@ def bind(
     os.environ["FEDML_INFER_REDIS_PASSWORD"] = redis_password
 
     url = fedml._get_backend_service()
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Nexus AI Platform\n")
     if api_key is None:
         click.echo("Please specify your API key, usage: fedml login $your_api_key")
         return

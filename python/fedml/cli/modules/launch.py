@@ -21,8 +21,7 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStarte
     "-c",
     default="",
     type=str,
-    help="Please provide a cluster name. If a cluster with that name already exists, it will be used; otherwise, "
-         "a new cluster with the provided name will be created."
+    help="If a cluster name is specified, you labelled the searched resource by launch with the cluster name. So later you can reuse the same cluster resource without warmup after the first launch. The cluster can be stopped by CLI: fedml cluster stop, or it would be automatically stopped after 15-minute idle time."
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -36,13 +35,13 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStarte
 )
 def fedml_launch(api_key, version, cluster):
     """
-    Launch job at the FedML® platform
+    Launch job at the FedML® Nexus AI platform
     """
     pass
 
 
 @fedml_launch.command(
-    "default", help="Launch job at the FedML platform",
+    "default", help="Launch job at the FedML® Nexus AI Platform",
     context_settings={"ignore_unknown_options": True}, hidden=True
 )
 @click.help_option("--help", "-h")
@@ -68,13 +67,12 @@ def fedml_launch(api_key, version, cluster):
     "-c",
     default=None,
     type=str,
-    help="Please provide a cluster name. If a cluster with that name already exists, it will be used; otherwise, "
-         "a new cluster with the provided name will be created."
+    help="If a cluster name is specified, you labelled the searched resource by launch with the cluster name. So later you can reuse the same cluster resource without warmup after the first launch. The cluster can be stopped by CLI: fedml cluster stop, or it would be automatically stopped after 15-minute idle time."
 )
 @click.argument("yaml_file", nargs=-1)
 def fedml_launch_default(yaml_file, api_key, group, cluster, version):
     """
-    Manage resources on the FedML® Launch platform (open.fedml.ai).
+    Manage resources on the FedML® Nexus AI Platform.
     """
     set_env_version(version)
 

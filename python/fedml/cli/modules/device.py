@@ -7,19 +7,19 @@ import fedml.api
 @click.help_option("--help", "-h")
 def fedml_device():
     """
-    Manage devices on the FedML® Launch platform (open.fedml.ai).
+    Bind/unbind devices to the FedML® Nexus AI Platform
     """
     pass
 
 
-@fedml_device.command("bind", help="Bind to the FedML Platform")
+@fedml_device.command("bind", help="Bind to the FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
     "-v",
     type=str,
     default="release",
-    help="bind to which version of FedML® Launch platform. It should be dev, test or release",
+    help="bind to which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 @click.argument("api_key", nargs=-1)
 @click.option(
@@ -91,7 +91,7 @@ def fedml_device_bind(
     "-v",
     type=str,
     default="release",
-    help="unbind to which version of FedML® Launch platform. It should be dev, test or release",
+    help="unbind to which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="unbind from the FedML client.",
@@ -117,7 +117,7 @@ def fedml_device_unbind(version, client, server, docker, docker_rank):
     "-v",
     type=str,
     default="release",
-    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
+    help="show resource type at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 def resource_type(version):
     fedml.set_env_version(version)

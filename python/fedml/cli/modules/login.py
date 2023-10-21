@@ -5,7 +5,7 @@ import click
 import fedml.api
 
 
-@click.command("login", help="Login the FedML Platform")
+@click.command("login", help="Login the FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("api_key", nargs=-1)
 @click.option(
@@ -13,7 +13,7 @@ import fedml.api
     "-v",
     type=str,
     default="release",
-    help="bind to which version of FedML® Launch platform. It should be dev, test or release",
+    help="bind to which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--client", "-c", default=None, is_flag=True, help="bind as the FedML client.",

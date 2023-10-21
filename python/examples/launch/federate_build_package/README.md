@@ -3,7 +3,7 @@
 ```
 Usage: fedml federate build [OPTIONS]
 
-  Build federate packages for the FedML® Launch platform (open.fedml.ai).
+  Build federate packages for the FedML® Nexus AI Platform.
 
 Options:
   -h, --help                    Show this message and exit.
