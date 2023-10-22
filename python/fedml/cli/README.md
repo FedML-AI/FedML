@@ -27,56 +27,36 @@ fedml build \
     --ignore __pycache__,*.git
 ```
 
-## 2. Login into the FedML MLOps platform (open.fedml.ai)
-login as client with local pip mode:
+## 2. Login into the FedML® Nexus AI Platform (nexus.fedml.ai)
+login as general computing device with local pip mode:
 ```
-fedml login userid(or API Key)
-```
-
-login as client with docker mode:
-```
-fedml login userid(or API Key) --docker --docker-rank 1
+fedml login $YourApiKey
 ```
 
-login as edge server with local pip mode:
+login as federated-learning server with local pip mode:
 ```
-fedml login userid(or API Key) -s
-```
-
-login as edge server with docker mode:
-```
-fedml login userid(or API Key) -s --docker --docker-rank 1
+fedml login $YourApiKey -s
 ```
 
-### 2.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)
+### 2.1. Examples for Logining into the FedML® Nexus AI Platform (nexus.fedml.ai)
 
 ```
-fedml login 90 
+fedml login 113343dad999933 
 ```
 
 ```
-fedml login 90 -s
+fedml login 113343dad999933 -s
 ```
 
-## 3. Logout from the FedML MLOps platform (open.fedml.ai)
-logout from client with local pip mode:
+## 3. Logout from the FedML FedML® Nexus AI Platform (nexus.fedml.ai)
+logout from computing device with local pip mode:
 ```
 fedml logout 
 ```
 
-logout from client with docker mode:
-```
-fedml logout --docker --docker-rank 1
-```
-
-logout from edge server with local pip mode:
+logout from federated-learning server with local pip mode:
 ```
 fedml logout -s
-```
-
-logout from edge server with docker mode:
-```
-fedml logout -s --docker --docker-rank 1
 ```
 
 ## 4. Display fedml version
@@ -84,24 +64,14 @@ fedml version
 
 
 ## 5. Display logs
-logs from client with local pip mode:
+logs from computing device with local pip mode:
 ```
 fedml logs 
 ```
 
-logs from client with docker mode:
-```
-fedml logs --docker --docker-rank 1
-```
-
-logs from edge server with local pip mode:
+logs from federated-learning server with local pip mode:
 ```
 fedml logs -s
-```
-
-logs from edge server with docker mode:
-```
-fedml logs --docker --docker-rank 1
 ```
 
 ## 6. Diagnosis
@@ -166,12 +136,30 @@ job: |
     echo "Current directory is as follows."
     pwd
     python hello_world.py
+    
+# Entry commands on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# job:
+#   run_on_windows: |
+#     echo "I am running on Windows"
+#   run_on_posix: |
+#     echo "I am running on posix"
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
+  
+# Bootstrap shell commands on multiple OS
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# bootstrap:
+#   run_on_windows: |
+#     echo "Bootstrap finished."
+#   run_on_posix: |
+#     echo "Bootstrap finished."
 
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
@@ -198,6 +186,15 @@ server_job: |
     echo "Hello, Here is the server job."
     echo "Current directory is as follows."
     pwd
+    
+# Entry commands for server jobs on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# server_job:
+#   run_on_windows:
+#     echo "Hello, Here is the server job on windows."
+#   run_on_posix:
+#     echo "Hello, Here is the server job on posix."
     
 # If you want to use the job created by the MLOps platform,
 # just uncomment the following three, then set job_id and config_id to your desired job id and related config.

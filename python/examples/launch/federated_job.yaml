@@ -23,7 +23,6 @@ job: |
 server_job: |
   echo "Hello, Here is the server job."
   echo "Current directory is as follows."
-  pwd
   python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_RUN_ID
 
 job_type: federate              # options: train, deploy, federate
