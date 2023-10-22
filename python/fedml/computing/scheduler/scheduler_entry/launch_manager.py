@@ -140,7 +140,7 @@ class FedMLLaunchManager(Singleton):
                 job_config.bootstrap += "".join(bootstrap_lines)
                 bootstrap_file_handle.close()
         fedml_launch_paths.add_tmp_boostrap_file(os.path.join(job_config.tmp_dir,
-                                                              os.path.basename(fedml_launch_paths.bootstrap_file)))
+                                                              os.path.basename(fedml_launch_paths.bootstrap_full_path)))
         if os.path.exists(fedml_launch_paths.bootstrap_full_path):
             shutil.copyfile(fedml_launch_paths.bootstrap_full_path, fedml_launch_paths.tmp_bootstrap_file)
         with open(fedml_launch_paths.bootstrap_full_path, 'w') as bootstrap_file_handle:
