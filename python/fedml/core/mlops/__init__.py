@@ -99,7 +99,7 @@ def init(args, should_init_logs=True):
         return
     else:
         if hasattr(args, "simulator_daemon"):
-            # Bind local device as simulation device on the MLOps platform.
+            # Bind local device as simulation device on FedML® Nexus AI Platform
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
             MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user)
@@ -117,7 +117,7 @@ def init(args, should_init_logs=True):
     if project_name is None or api_key is None:
         raise Exception("Please check mlops_project_name and mlops_api_key params.")
 
-    # Bind local device as simulation device on the MLOps platform.
+    # Bind local device as simulation device on FedML® Nexus AI Platform
     setattr(args, "using_mlops", True)
     setattr(args, "rank", 1)
     MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, args.config_version)
@@ -593,7 +593,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_
                                                                     show_progress=show_progress,
                                                                     out_progress_to_err=True,
                                                                     progress_desc="Submitting your artifact to "
-                                                                                  "FedML® Launch platform")
+                                                                                  "FedML® Nexus AI Platform")
         artifact_storage_url = str(artifact_storage_url).split("?")[0]
     except Exception as e:
         pass
@@ -1028,7 +1028,7 @@ def bind_simulation_device(args, userid):
         device_role = "Edge.Simulator"
         unique_device_id = "{}@{}.{}".format(args.device_id, args.os_name, device_role)
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:

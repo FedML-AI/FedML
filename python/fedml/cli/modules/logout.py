@@ -3,7 +3,7 @@ import click
 import fedml.api
 
 
-@click.command("logout", help="Logout from the FedML Nexus AI Platform")
+@click.command("logout", help="Logout from the FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--computing", "-c", default=None, is_flag=True, help="Logout from the FedML general computing device.",

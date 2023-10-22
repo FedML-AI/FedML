@@ -5,10 +5,13 @@ entry_point: "main_entry.py"
 data_cache_dir: "~/fedml_serving/model_and_config"
 # If you want to install some packages
 # Please write the command in the bootstrap.sh
-bootstrap: config/bootstrap.sh
+bootstrap: |
+  echo "Bootstrap start..."
+  sh ./config/bootstrap.sh
+  echo "Bootstrap finished"
 
 # If you do not have any GPU resource but want to serve the model
-# Try fedml® launch platform, and Uncomment the following lines.
+# Try FedML® Nexus AI Platform, and Uncomment the following lines.
 # ------------------------------------------------------------
 # computing:
 #   minimum_num_gpus: 1           # minimum # of GPUs to provision

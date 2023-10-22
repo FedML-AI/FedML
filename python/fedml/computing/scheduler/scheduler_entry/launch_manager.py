@@ -10,13 +10,12 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.sys_utils import upgrade_if_not_latest
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
-from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
+from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
 
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
-from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.api.modules.utils import build_mlops_package
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
@@ -140,8 +139,8 @@ class FedMLLaunchManager(Singleton):
                 bootstrap_lines = bootstrap_file_handle.readlines()
                 job_config.bootstrap += "".join(bootstrap_lines)
                 bootstrap_file_handle.close()
-        fedml_launch_paths.tmp_bootstrap_file = os.path.join(
-            job_config.tmp_dir, os.path.basename(fedml_launch_paths.bootstrap_full_path))
+        fedml_launch_paths.add_tmp_boostrap_file(os.path.join(job_config.tmp_dir,
+                                                              os.path.basename(fedml_launch_paths.bootstrap_file)))
         if os.path.exists(fedml_launch_paths.bootstrap_full_path):
             shutil.copyfile(fedml_launch_paths.bootstrap_full_path, fedml_launch_paths.tmp_bootstrap_file)
         with open(fedml_launch_paths.bootstrap_full_path, 'w') as bootstrap_file_handle:
@@ -264,7 +263,7 @@ class FedMLLaunchManager(Singleton):
     def _cleanup_build_tmp_path(build_path):
         try:
             shutil.rmtree(build_path, ignore_errors=True)
-        except Exception as e:
+        except Exception:
             pass
 
     @staticmethod
@@ -279,8 +278,7 @@ class FedMLLaunchManager(Singleton):
             print("Argument for destination package folder: " + dest_folder)
             print("Argument for ignore lists: " + ignore)
 
-        if not platform_is_valid(platform_type):
-            return
+        validate_platform(platform_type)
 
         if client_server_type == "client" or client_server_type == "server":
             if verbose:
@@ -542,8 +540,8 @@ class FedMLJobConfig(object):
 
         server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder,
                                                        self.server_executable_file)
-        if os.path.exists(source_full_path_to_base):
-            os.remove(source_full_path_to_base)
+        if os.path.exists(server_source_full_path_to_base):
+            os.remove(server_source_full_path_to_base)
 
     def read_gitignore_file(self):
         try:
@@ -568,6 +566,7 @@ class FedMLJobConfig(object):
 
 class FedMLLaunchPath(object):
     def __init__(self, job_config: FedMLJobConfig):
+        self.tmp_bootstrap_file = None
         if os.path.exists(job_config.executable_file_folder):
             self.source_full_path = os.path.join(job_config.executable_file_folder, job_config.executable_file)
             self.server_source_full_path = os.path.join(job_config.executable_file_folder,
@@ -621,3 +620,6 @@ class FedMLLaunchPath(object):
             os.path.basename(self.bootstrap_full_path).rstrip(".sh") + ".bat")
 
         os.makedirs(self.dest_folder, exist_ok=True)
+
+    def add_tmp_boostrap_file(self, path: str):
+        self.tmp_bootstrap_file = path

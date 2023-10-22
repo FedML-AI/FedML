@@ -138,7 +138,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model_from_open.eval()
 
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-            logging.info("convert the onnx model when the mode is from the MLOps platform...")
+            logging.info("convert the onnx model when the mode is from FedML® Nexus AI Platform..")
             logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                                 model_params["input_types"]))
             input_size = model_params["input_size"]

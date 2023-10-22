@@ -7,7 +7,7 @@ import fedml.api
 @click.help_option("--help", "-h")
 def fedml_device():
     """
-    Manage devices on the FedML® Nexus AI Platform (nexus.fedml.ai).
+    Bind/unbind devices to the FedML® Nexus AI Platform
     """
     pass
 
@@ -73,7 +73,7 @@ def fedml_device_unbind(version, computing, server):
     "-v",
     type=str,
     default="release",
-    help="show resource type at which version of FedML® Launch platform. It should be dev, test or release",
+    help="show resource type at which version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 def resource_type(version):
     fedml.set_env_version(version)

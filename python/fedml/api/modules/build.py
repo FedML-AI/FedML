@@ -5,8 +5,8 @@ from os.path import expanduser
 import click
 
 from fedml.api.modules.utils import build_mlops_package
+from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
 from fedml.computing.scheduler.comm_utils import sys_utils
-from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
@@ -18,12 +18,11 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
     click.echo("Argument for destination package folder: " + dest_folder)
     click.echo("Argument for ignore lists: " + ignore)
 
-    if not platform_is_valid(platform):
-        return
+    validate_platform(platform)
 
     if type == "client" or type == "server":
         click.echo(
-            "Now, you are building the fedml packages which will be used in the FedML® Launch platform "
+            "Now, you are building the fedml packages which will be used in the FedML® Nexus AI Platform "
             "platform."
         )
         click.echo(
@@ -35,7 +34,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             + "."
         )
         click.echo(
-            "Then you may upload the packages on the configuration page in the FedML® Launch platform to "
+            "Then you may upload the packages on the configuration page in the FedML® Nexus AI Platform to "
             "start your training flow."
         )
         click.echo("Building...")
