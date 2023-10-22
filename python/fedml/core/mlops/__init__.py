@@ -168,7 +168,7 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 
 def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
-    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CHEETAH:
+    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
         log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
         return
 
@@ -551,7 +551,7 @@ def log_print_end():
 
 def get_fedml_args():
     # init FedML framework
-    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD
     fedml._global_comm_backend = ""
     fedml_args = fedml.init(check_env=False, should_init_logs=False)
     print(f"current version {fedml_args.version}, {fedml_args.config_version}")

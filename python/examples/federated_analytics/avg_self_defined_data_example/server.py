@@ -1,4 +1,3 @@
-from fedml import MLEngineBackend
 from fedml.fa import init, FARunner
 from fedml.fa.data import fa_load_data
 

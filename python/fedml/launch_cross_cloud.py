@@ -1,12 +1,12 @@
 import fedml
 from .runner import FedMLRunner
 
-from .constants import FEDML_TRAINING_PLATFORM_CHEETAH
+from .constants import FEDML_TRAINING_PLATFORM_CROSS_CLOUD
 
 
-def run_cheetah_server():
+def run_cross_cloud_server():
     """FedML Cheetah"""
-    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_CLOUD
 
     args = fedml.init()
     args.role = "server"
@@ -25,9 +25,9 @@ def run_cheetah_server():
     fedml_runner.run()
 
 
-def run_cheetah_client():
+def run_cross_cloud_client():
     """FedML Cheetah"""
-    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_CLOUD
 
     args = fedml.init()
     args.role = "client"
