@@ -18,6 +18,8 @@ class JobRunnerUtils:
                                       job_api_key, client_rank, job_yaml=None, request_gpu_num=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
+        computing = job_yaml.get("computing", {})
+        request_gpu_num = computing.get("minimum_num_gpus", None) if request_gpu_num is None else request_gpu_num
 
         # Read entry commands if job is from launch
         if package_type == SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH or \
@@ -46,7 +48,8 @@ class JobRunnerUtils:
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_RUN_ID={run_id}\n")
         if assigned_gpu_ids is None or str(assigned_gpu_ids).strip() == "":
             assigned_gpu_ids = JobRunnerUtils.apply_gpu_ids(request_gpu_num)
-        entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
+        if assigned_gpu_ids is not None and str(assigned_gpu_ids).strip() != "":
+            entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
@@ -166,7 +169,9 @@ class JobRunnerUtils:
         gpu_count = len(gpu_list)
         available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
         available_gpu_count = len(available_gpu_ids)
+        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
         matched_gpu_num = min(available_gpu_count, request_gpu_num)
         if matched_gpu_num <= 0:
             return None
-        return ",".join(available_gpu_ids[0:matched_gpu_num])
+        matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
+        return ",".join(matched_gpu_ids)
