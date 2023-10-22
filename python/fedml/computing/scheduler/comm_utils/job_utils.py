@@ -1,6 +1,7 @@
 import os
 import platform
 
+from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 
@@ -14,7 +15,7 @@ class JobRunnerUtils:
     def generate_job_execute_commands(run_id, edge_id, version,
                                       package_type, executable_interpreter, entry_file_full_path,
                                       conf_file_object, entry_args, assigned_gpu_ids,
-                                      job_api_key, client_rank, job_yaml=None):
+                                      job_api_key, client_rank, job_yaml=None, request_gpu_num=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
 
@@ -43,8 +44,9 @@ class JobRunnerUtils:
         # Add general environment variables
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={edge_id}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_RUN_ID={run_id}\n")
-        if assigned_gpu_ids is not None and assigned_gpu_ids != "":
-            entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
+        if assigned_gpu_ids is None or str(assigned_gpu_ids).strip() == "":
+            assigned_gpu_ids = JobRunnerUtils.apply_gpu_ids(request_gpu_num)
+        entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={assigned_gpu_ids}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
@@ -54,7 +56,7 @@ class JobRunnerUtils:
         # Set -e for the entry script
         entry_commands_filled = list()
         if platform.system() == "Windows":
-            entry_file_full_path = entry_file_full_path.replace(".sh", ".bat")
+            entry_file_full_path = entry_file_full_path.rstrip(".sh") + ".bat"
             for cmd in entry_commands:
                 entry_commands_filled.append(cmd)
                 entry_commands_filled.append("if %ERRORLEVEL% neq 0 EXIT %ERRORLEVEL%\n")
@@ -158,3 +160,13 @@ class JobRunnerUtils:
 
         return export_env_list, env_value_map
 
+    @staticmethod
+    def apply_gpu_ids(request_gpu_num):
+        gpu_list = sys_utils.get_gpu_list()
+        gpu_count = len(gpu_list)
+        available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+        available_gpu_count = len(available_gpu_ids)
+        matched_gpu_num = min(available_gpu_count, request_gpu_num)
+        if matched_gpu_num <= 0:
+            return None
+        return ",".join(available_gpu_ids[0:matched_gpu_num])

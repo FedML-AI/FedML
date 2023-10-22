@@ -156,32 +156,20 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 
 
-def login(userid, client, server,
-          api_key, role, runner_cmd, device_id, os_name,
-          docker, docker_rank, infer_host,
-          redis_addr, redis_port, redis_password):
-    device_bind(userid, client, server,
-                api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank, infer_host,
-                redis_addr, redis_port, redis_password)
+def login(api_key, computing, server, supplier):
+    device_bind(api_key, computing, server, supplier)
 
 
-def logout(client, server, docker, docker_rank):
-    device_unbind(client, server, docker, docker_rank)
+def logout(computing, server):
+    device_unbind(computing, server)
 
 
-def device_bind(userid, client, server,
-                api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank, infer_host,
-                redis_addr, redis_port, redis_password):
-    device.bind(userid, client, server,
-                api_key, role, runner_cmd, device_id, os_name,
-                docker, docker_rank, infer_host,
-                redis_addr, redis_port, redis_password)
+def device_bind(api_key, computing, server, supplier):
+    device.bind(api_key, computing, server, supplier)
 
 
-def device_unbind(client, server, docker, docker_rank):
-    device.unbind(client, server, docker, docker_rank)
+def device_unbind(computing, server):
+    device.unbind(computing, server)
 
 
 def resource_type():

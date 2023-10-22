@@ -30,12 +30,30 @@ job: |
     echo "Current directory is as follows."
     pwd
     python hello_world.py
+    
+# Entry commands on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# job:
+#   run_on_windows: |
+#     echo "I am running on Windows"
+#   run_on_posix: |
+#     echo "I am running on posix"
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
+  
+# Bootstrap shell commands on multiple OS
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# bootstrap:
+#   run_on_windows: |
+#     echo "Bootstrap finished."
+#   run_on_posix: |
+#     echo "Bootstrap finished."
 
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
@@ -62,6 +80,15 @@ server_job: |
     echo "Hello, Here is the server job."
     echo "Current directory is as follows."
     pwd
+    
+# Entry commands for server jobs on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# server_job:
+#   run_on_windows:
+#     echo "Hello, Here is the server job on windows."
+#   run_on_posix:
+#     echo "Hello, Here is the server job on posix."
     
 # If you want to use the job created by the MLOps platform,
 # just uncomment the following three, then set job_id and config_id to your desired job id and related config.
