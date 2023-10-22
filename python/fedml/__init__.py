@@ -499,7 +499,6 @@ def _get_local_s3_like_service_url():
 from fedml import device
 from fedml import data
 from fedml import model
-from fedml import mlops
 
 from .arguments import load_arguments
 
@@ -525,6 +524,7 @@ from .runner import FedMLRunner
 
 from fedml import api
 
+from fedml import mlops
 from fedml.mlops import log, Artifact, log_artifact, log_model, log_metric, log_llm_record
 
 __all__ = [
