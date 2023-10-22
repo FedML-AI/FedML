@@ -12,7 +12,7 @@ import fedml.api
     "-v",
     type=str,
     default="release",
-    help="Bind to which version of FedML® Nexus AI Platform. It should be dev, test or release.",
+    help="Login which version of FedML® Nexus AI Platform. It should be dev, test or release.",
 )
 @click.option(
     "--computing", "-c", default=None, is_flag=True,
