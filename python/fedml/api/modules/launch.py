@@ -87,7 +87,7 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
     return result_code, result_message, create_run_result
 
 
-def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str, device_edges: List[str]):
+def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str = None, device_edges: List[str] = None):
     authenticate(api_key)
 
     # Start the run
