@@ -2,4 +2,4 @@ import fedml
 
 
 if __name__ == "__main__":
-    fedml.run_cheetah_client()
+    fedml.run_cross_cloud_client()

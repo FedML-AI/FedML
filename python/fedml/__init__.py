@@ -26,7 +26,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_NCCL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
-    FEDML_TRAINING_PLATFORM_CHEETAH,
+    FEDML_TRAINING_PLATFORM_CROSS_CLOUD,
     FEDML_TRAINING_PLATFORM_SERVING,
 )
 from .core.common.ml_engine_backend import MLEngineBackend
@@ -117,11 +117,11 @@ def init(args=None, check_env=True, should_init_logs=True):
     if hasattr(args, "training_type"):
         if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
                                                                                 "backend") and args.backend == "MPI":
-            args = init_simulation_mpi(args)
+            args = _init_simulation_mpi(args)
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args,
                                                                                   "backend") and args.backend == "sp":
-            args = init_simulation_sp(args)
+            args = _init_simulation_sp(args)
         elif (
                 args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
                 and hasattr(args, "backend")
@@ -135,23 +135,23 @@ def init(args=None, check_env=True, should_init_logs=True):
             if not hasattr(args, "scenario"):
                 args.scenario = "horizontal"
             if args.scenario == "horizontal":
-                init_cross_silo_horizontal(args)
+                _init_cross_silo_horizontal(args)
             elif args.scenario == "hierarchical":
-                args = init_cross_silo_hierarchical(args)
+                args = _init_cross_silo_hierarchical(args)
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
-            args = init_cross_device(args)
-        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
-            args = init_cheetah(args)
+            args = _init_cross_device(args)
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
+            args = _init_cross_cloud(args)
         elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
-            args = init_model_serving(args)
+            args = _init_model_serving(args)
         else:
             raise Exception(
                 "no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
-    manage_profiling_args(args)
+    _manage_profiling_args(args)
 
-    update_client_id_list(args)
+    _update_client_id_list(args)
 
     mlops.init(args, should_init_logs=should_init_logs)
 
@@ -162,13 +162,13 @@ def init(args=None, check_env=True, should_init_logs=True):
         else:
             logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
 
-    update_client_specific_args(args)
-    print_args(args)
+    _update_client_specific_args(args)
+    _print_args(args)
 
     return args
 
 
-def print_args(args):
+def _print_args(args):
     mqtt_config_path = None
     s3_config_path = None
     args_copy = args
@@ -185,7 +185,7 @@ def print_args(args):
         args_copy.s3_config_path = s3_config_path
 
 
-def update_client_specific_args(args):
+def _update_client_specific_args(args):
     """
         data_silo_config is used for reading specific configuration for each client
         Example: In fedml_config.yaml, we have the following configuration
@@ -214,7 +214,7 @@ def update_client_specific_args(args):
         logging.info("data_silo_config is not defined in fedml_config.yaml")
 
 
-def init_simulation_mpi(args):
+def _init_simulation_mpi(args):
     from mpi4py import MPI
 
     comm = MPI.COMM_WORLD
@@ -231,15 +231,15 @@ def init_simulation_mpi(args):
     return args
 
 
-def init_simulation_sp(args):
+def _init_simulation_sp(args):
     return args
 
 
-def init_simulation_nccl(args):
+def _init_simulation_nccl(args):
     return
 
 
-def manage_profiling_args(args):
+def _manage_profiling_args(args):
     if not hasattr(args, "sys_perf_profiling"):
         args.sys_perf_profiling = True
     if not hasattr(args, "sys_perf_profiling"):
@@ -284,7 +284,7 @@ def manage_profiling_args(args):
             MLOpsProfilerEvent.enable_wandb_tracking()
 
 
-def manage_cuda_rpc_args(args):
+def _manage_cuda_rpc_args(args):
     if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
         args.enable_cuda_rpc = False
 
@@ -311,7 +311,7 @@ def manage_cuda_rpc_args(args):
     print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
 
-def manage_mpi_args(args):
+def _manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
 
@@ -330,18 +330,18 @@ def manage_mpi_args(args):
         args.comm = None
 
 
-def init_cross_silo_horizontal(args):
+def _init_cross_silo_horizontal(args):
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
-    manage_mpi_args(args)
-    manage_cuda_rpc_args(args)
+    _manage_mpi_args(args)
+    _manage_cuda_rpc_args(args)
     args.process_id = args.rank
     return args
 
 
-def init_cross_silo_hierarchical(args):
-    manage_mpi_args(args)
-    manage_cuda_rpc_args(args)
+def _init_cross_silo_hierarchical(args):
+    _manage_mpi_args(args)
+    _manage_cuda_rpc_args(args)
 
     # Set intra-silo arguments
     if args.rank == 0:
@@ -392,24 +392,24 @@ def init_cross_silo_hierarchical(args):
     return args
 
 
-def init_cheetah(args):
+def _init_cross_cloud(args):
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
-    manage_mpi_args(args)
-    manage_cuda_rpc_args(args)
+    _manage_mpi_args(args)
+    _manage_cuda_rpc_args(args)
     args.process_id = args.rank
     return args
 
 
-def init_model_serving(args):
+def _init_model_serving(args):
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
-    manage_cuda_rpc_args(args)
+    _manage_cuda_rpc_args(args)
     args.process_id = args.rank
     return args
 
 
-def update_client_id_list(args):
+def _update_client_id_list(args):
     """
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
@@ -444,13 +444,13 @@ def update_client_id_list(args):
         print("using_mlops = true")
 
 
-def init_cross_device(args):
+def _init_cross_device(args):
     args.rank = 0  # only server runs on Python package
     args.role = "server"
     return args
 
 
-def run_distributed():
+def _run_distributed():
     pass
 
 
@@ -499,7 +499,6 @@ def _get_local_s3_like_service_url():
 from fedml import device
 from fedml import data
 from fedml import model
-from fedml import mlops
 
 from .arguments import load_arguments
 
@@ -511,8 +510,8 @@ from .launch_cross_silo_horizontal import run_cross_silo_client
 from .launch_cross_silo_hi import run_hierarchical_cross_silo_server
 from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
 
-from .launch_cheeath import run_cheetah_server
-from .launch_cheeath import run_cheetah_client
+from .launch_cross_cloud import run_cross_cloud_server
+from .launch_cross_cloud import run_cross_cloud_client
 
 from .launch_serving import run_model_serving_client
 from .launch_serving import run_model_serving_server
@@ -525,22 +524,30 @@ from .runner import FedMLRunner
 
 from fedml import api
 
+from fedml import mlops
+from fedml.mlops import log, Artifact, log_artifact, log_model, log_metric, log_llm_record
+
 __all__ = [
-    "MLEngineBackend",
+    "FedMLRunner",
+    "api",
+    "log",
+    "Artifact",
+    "log_artifact",
+    "log_model",
+    "log_metric",
+    "log_llm_record",
+    "mlops",
     "device",
     "data",
     "model",
-    "mlops",
-    "FedMLRunner",
     "run_simulation",
     "run_cross_silo_server",
     "run_cross_silo_client",
     "run_hierarchical_cross_silo_server",
     "run_hierarchical_cross_silo_client",
-    "run_cheetah_server",
-    "run_cheetah_client",
+    "run_cross_cloud_server",
+    "run_cross_cloud_client",
     "run_model_serving_client",
     "run_model_serving_server",
-    "run_mnn_server",
-    "api"
+    "run_mnn_server"
 ]
