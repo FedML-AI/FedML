@@ -9,8 +9,9 @@ from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
-from fedml.api.modules.launch import (create_run, create_run_on_cluster)
-from fedml.api import run_stop, run_list, start_created_run, confirm_cluster_and_start_run
+from fedml.api.modules.launch import (create_run, create_run_on_cluster, run)
+from fedml.api.modules.cluster import confirm_and_start
+from fedml.api import run_stop, run_list
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel
 
 
@@ -94,7 +95,7 @@ def _launch_job(yaml_file, api_key):
                 return False
 
         click.echo("Launching the job with the above matched GPU resource.")
-        result = start_created_run(create_run_result=create_run_result, api_key=api_key)
+        result = run(create_run_result=create_run_result, api_key=api_key)
         _print_run_list_details(result)
         _print_run_log_details(result)
 
@@ -117,8 +118,8 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
                 click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
                 return
 
-            cluster_confirmed = confirm_cluster_and_start_run(run_id=create_run_result.run_id, cluster_id=cluster_id,
-                                                              gpu_matched=create_run_result.gpu_matched)
+            cluster_confirmed = confirm_and_start(run_id=create_run_result.run_id, cluster_id=cluster_id,
+                                                  gpu_matched=create_run_result.gpu_matched)
 
         if cluster_confirmed:
             _print_run_list_details(create_run_result)

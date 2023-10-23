@@ -18,6 +18,7 @@ class RunLogResult(object):
         self.log_line_list = log_line_list
         self.run_logs = run_logs
 
+
 def create(platform: str, job_config: FedMLJobConfig, device_server: str, device_edges: List[str],
            api_key: str) -> FedMLRunStartedModel:
     _authenticate_and_validate_platform(api_key, platform)
@@ -87,8 +88,6 @@ def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRun
 # input: run_id, page_num, page_size, need_all_logs, platform, api_key
 # return RunLogResult(run_status, total_log_lines, total_log_pages, log_line_list, run_logs)
 def logs(run_id: str, page_num: int, page_size: int, need_all_logs: bool, platform: str, api_key: str) -> RunLogResult:
-
-
     _authenticate_and_validate_platform(api_key, platform)
 
     if run_id is None:
