@@ -1,4 +1,4 @@
-# FedML: The Community Building Open and Collaborative AI Anywhere at Any Scale
+# FedML: Next-Gen Cloud Services for LLMs & Generative AI
 
 <div align="center">
  <img src="doc/img/fedml_logo_light_mode.png" width="400px">
