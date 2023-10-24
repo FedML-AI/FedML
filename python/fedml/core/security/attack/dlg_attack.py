@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 from typing import List, Tuple, Any
 import fedml
-from python.fedml.model.cv.resnet import resnet56, resnet20
+from fedml.model.cv.resnet import resnet56, resnet20
 from .attack_base import BaseAttackMethod
 from ..common.net import LeNet
 from ..common.utils import cross_entropy_for_onehot
