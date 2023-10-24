@@ -15,3 +15,6 @@ class SchedulerConstants:
 
     LAUNCH_JOB_DEFAULT_ENTRY_NAME = "fedml_job_entry_pack.sh"
     LAUNCH_SERVER_JOB_DEFAULT_ENTRY_NAME = "fedml_server_job_entry_pack.sh"
+
+    CLIENT_SHELL_BASH = "bash"
+    CLIENT_SHELL_PS = "powershell"
