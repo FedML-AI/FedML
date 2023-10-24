@@ -13,7 +13,7 @@ class FedMLInferenceRunner(ABC):
             input_json = await request.json()
             response_text = self.client_predictor.predict(input_json)
 
-            return str(response_text)
+            return {"generated_text": str(response_text)}
         
         @api.get("/ready")
         async def ready():
