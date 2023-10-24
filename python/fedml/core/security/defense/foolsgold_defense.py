@@ -2,6 +2,7 @@ from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 import numpy as np
 from .defense_base import BaseDefenseMethod
+import torch
 
 """
 The Limitations of Federated Learning in Sybil Settings.
@@ -82,7 +83,8 @@ class FoolsGoldDefense(BaseDefenseMethod):
 
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
-            # print(importance_feature)
+            # Replace nan values with 0
+            importance_feature[torch.isnan(importance_feature)] = 0
             feature_len = np.array(importance_feature.cpu().data.detach().numpy().shape).prod()
             feature_vector = np.reshape(importance_feature.cpu().data.detach().numpy(), feature_len)
             ret_feature_vector_list.append(feature_vector)
