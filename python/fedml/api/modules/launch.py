@@ -125,12 +125,14 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
                             result_message= ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    if run_result.job_url == "":
+    if run_result.run_url == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    return run_id, project_id, inner_id, 0, ""
+    return LaunchResult(result_code=0,
+                        result_message="", run_id=run_id,
+                        project_id=project_id, inner_id=inner_id)
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,

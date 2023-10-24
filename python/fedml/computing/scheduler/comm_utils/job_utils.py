@@ -71,8 +71,13 @@ class JobRunnerUtils:
         # If the job type is not launch, we need to generate an entry script wrapping with entry commands
         if package_type != SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH and \
                 os.path.basename(entry_file_full_path) != SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME:
-            python_program = get_python_program()
-            entry_commands_filled.append(f"{python_program} {entry_file_full_path} {entry_args}\n")
+            if str(entry_file_full_path).endswith(".sh"):
+                shell_program = SchedulerConstants.CLIENT_SHELL_BASH
+            elif str(entry_file_full_path).endswith(".py"):
+                shell_program = get_python_program()
+            elif str(entry_file_full_path).endswith(".bat"):
+                shell_program = SchedulerConstants.CLIENT_SHELL_PS
+            entry_commands_filled.append(f"{shell_program} {entry_file_full_path} {entry_args}\n")
             entry_file_full_path = os.path.join(
                 os.path.dirname(entry_file_full_path), os.path.basename(entry_file_full_path) + ".sh")
 

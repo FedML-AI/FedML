@@ -23,17 +23,17 @@ if launch_result.result_code != 0:
     exit(1)
 
 # Get job status
-log_result = fedml.api.run_logs(job_id, 1, 100)
-if log_result.run_status is None:
-    print(f"Failed to get job status. Reason: {error_msg}")
+log_result = fedml.api.run_logs(launch_result.run_id, 1, 100)
+if log_result is None or log_result.run_status is None:
+    print(f"Failed to get job status.")
     exit(1)
-print(f"Run status {run_status}")
+print(f"Run status {log_result.run_status}")
 
 # Get job logs
 time.sleep(30)
-log_result = fedml.api.run_logs(job_id, 1, 100)
-if log_result.run_status is None:
-    print(f"Failed to get run logs. Reason: {error_msg}")
+log_result = fedml.api.run_logs(launch_result.run_id, 1, 100)
+if log_result is None or log_result.run_status is None:
+    print(f"Failed to get run logs.")
     exit(1)
-print(f"Run logs {log_line_list}")
+print(f"Run logs {log_result.log_line_list}")
 
