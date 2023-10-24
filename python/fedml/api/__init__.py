@@ -17,7 +17,8 @@ Usages:
 """
 from typing import List
 
-from fedml.api.modules import launch, utils, build, device, logs, diagnosis, model, cluster, run, train, federate
+from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, \
+    model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FedMLGpuDevices
 
@@ -161,44 +162,32 @@ def fedml_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
                        mqtt_s3_backend_run_id)
 
 
-def model_create(name, config_file):
-    model.create(name, config_file)
+def model_create(name, model, model_config):
+    model_module.create(name, model, model_config)
 
 
-def model_delete(name):
-    model.delete(name)
+def model_delete(name, local):
+    model_module.delete(name, local)
 
 
-def model_list(name):
-    model.list_models(name)
-
-
-def model_list_remote(name, user, api_key):
-    model.list_remote(name, user, api_key)
+def model_list(name, local):
+    model_module.list_models(name, local)
 
 
 def model_package(name):
-    model.package(name)
+    model_module.package(name)
 
 
-def model_push(name, model_storage_url, model_net_url, api_key):
-    model.push(name, model_storage_url, model_net_url, api_key)
+def model_push(name, model_storage_url):
+    model_module.push(name, model_storage_url)
 
 
-def model_pull(name, user, api_key):
-    model.pull(name, user, api_key)
+def model_pull(name):
+    model_module.pull(name)
 
 
-def model_deploy(local, name, master_ids, worker_ids):
-    model.deploy(local, name, master_ids, worker_ids)
-
-
-def model_info(name):
-    model.info(name)
-
-
-def model_run(name, data):
-    model.run(name, data)
+def model_deploy(name, local, master_ids, worker_ids):
+    model_module.deploy(name, local, master_ids, worker_ids)
 
 
 def train_build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,

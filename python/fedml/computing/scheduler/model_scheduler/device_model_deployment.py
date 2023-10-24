@@ -171,7 +171,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model.eval()
         except Exception as e:
             logging.info(
-                "Cannot locate the .bin file, will read it from the fedml_model_cofig.yaml with the key [local_model_dir] ")
+                "Cannot locate the .bin file, will read it from"
+                " the fedml_model_cofig.yaml with the key [local_model_dir] ")
             model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
             with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
@@ -194,8 +195,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', None)
+                extra_envs = config.get('environment_variables', None)
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}, data_cache_dir_input: {data_cache_dir_input}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path},"
+                    f" data_cache_dir_input: {data_cache_dir_input}")
                 src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
@@ -316,6 +319,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         }
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
         environment["MAIN_ENTRY"] = relative_entry
+
+        if extra_envs is not None:
+            for key in extra_envs:
+                environment[key] = extra_envs[key]
 
         new_container = client.api.create_container(
             image=inference_image_name,
