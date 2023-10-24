@@ -1,13 +1,11 @@
 from collections import OrderedDict
-# import time
 import numpy as np
 import torch
 import torch.nn.functional as F
-# from matplotlib import pyplot as plt
 from torchvision import transforms
 from typing import List, Tuple, Any
 import fedml
-from fedml.model.cv.resnet import resnet56, resnet20
+from python.fedml.model.cv.resnet import resnet56, resnet20
 from .attack_base import BaseAttackMethod
 from ..common.net import LeNet
 from ..common.utils import cross_entropy_for_onehot
