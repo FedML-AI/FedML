@@ -14,6 +14,7 @@ from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
+
 class LaunchResult:
     def __init__(self, result_code: int, result_message: str, run_id: str = None, project_id: str = None,
                  inner_id: str = None):
@@ -22,6 +23,7 @@ class LaunchResult:
         self.inner_id = inner_id
         self.result_code = result_code
         self.result_message = result_message
+
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
                device_edges: List[str] = None) -> (int, str, FedMLRunStartedModel):
@@ -85,7 +87,7 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
     return result_code, result_message, create_run_result
 
 
-def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str, device_edges: List[str]):
+def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str = None, device_edges: List[str] = None):
     authenticate(api_key)
 
     # Start the run
@@ -97,10 +99,9 @@ def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: st
 
 def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = None, device_edges: List[str] = None) \
         -> LaunchResult:
-
     # Create Run
     result_code, result_message, create_run_result = create_run(yaml_file, api_key, resource_id, device_server,
-                                                              device_edges)
+                                                                device_edges)
 
     if not create_run_result:
         return LaunchResult(result_code=result_code, result_message=result_message)
@@ -122,7 +123,7 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
     # Return Result
     if run_result is None:
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
-                            result_message= ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
+                            result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
     if run_result.run_url == "":
@@ -130,9 +131,9 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    return LaunchResult(result_code=0,
-                        result_message="", run_id=run_id,
-                        project_id=project_id, inner_id=inner_id)
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
+                        result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS,
+                        run_id=run_id, project_id=project_id, inner_id=inner_id)
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,

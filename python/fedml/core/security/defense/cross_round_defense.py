@@ -3,6 +3,14 @@ from scipy import spatial
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
 from collections import OrderedDict
+from ..common.utils import (
+    compute_euclidean_distance,
+    # get_importance_feature,
+    compute_middle_point,
+    compute_krum_score, compute_gaussian_distribution,
+)
+import torch
+import math
 
 
 # check whether attack happens
@@ -25,6 +33,8 @@ class CrossRoundDefense(BaseDefenseMethod):
         self.temp_client_features = None
         self.global_model_feature = None
         self.total_client_num = -1
+        self.zero_reference = None
+        self.upperbound = 1  # 0.999999
 
     def defend_before_aggregation(
             self,
@@ -37,6 +47,8 @@ class CrossRoundDefense(BaseDefenseMethod):
             self.total_client_num = len(raw_client_grad_list)
             # self.client_cache = self.temp_client_features
             self.potentially_poisoned_worker_list = range(self.total_client_num)
+            # Create a new vector with the same shape as feature_vector but with all weights being zero
+            self.zero_reference = np.zeros(self.temp_client_features[0].shape)
             return raw_client_grad_list
         self.is_attack_existing = False
 
@@ -46,15 +58,15 @@ class CrossRoundDefense(BaseDefenseMethod):
         self.global_model_feature = self._get_importance_feature_of_a_model(
             extra_auxiliary_info
         )
+
         if self.training_round == 2:
             for i in range(self.total_client_num):
                 if i not in self.client_cache:
                     self.client_cache[i] = self.global_model_feature
-        client_wise_scores, global_wise_scores = self.compute_client_cosine_scores(
-            client_features=self.temp_client_features, global_model_feature=self.global_model_feature
+        client_wise_scores, global_wise_scores, zero_wise_scores = self.compute_client_cosine_scores(
+            client_features=self.temp_client_features, global_model_feature=self.global_model_feature,
+            zero_reference=self.zero_reference
         )
-        # print(f"client_wise_scores = {client_wise_scores}")
-        # print(f"global_wise_scores = {global_wise_scores}")
 
         for i in range(len(client_wise_scores)):
             # if (
@@ -76,6 +88,28 @@ class CrossRoundDefense(BaseDefenseMethod):
             f"!!!!!!!!!!!!!!!!!!!!first phase: self.potentially_poisoned_worker_list = {self.potentially_poisoned_worker_list}")
         return raw_client_grad_list
 
+    # def compute_gaussian_distribution(score_list):
+    #     n = len(score_list)
+    #     mu = sum(list(score_list)) / n
+    #     temp = 0
+
+    #     for i in range(len(score_list)):
+    #         temp = (((score_list[i] - mu) ** 2) / (n - 1)) + temp
+    #     sigma = math.sqrt(temp)
+    #     return mu, sigma
+
+    def compute_l2_scores(self, importance_feature_list):
+        client_wise_distance_scores = []
+        global_wise_distance_scores = []
+        for i in range(len(importance_feature_list)):
+            client_wise_distance_score = compute_euclidean_distance(torch.Tensor(importance_feature_list[i]),
+                                                                    self.client_cache[i])
+            global_wise_distance_score = compute_euclidean_distance(torch.Tensor(importance_feature_list[i]),
+                                                                    self.global_model_feature)
+            client_wise_distance_scores.append(client_wise_distance_score)
+            global_wise_distance_scores.append(global_wise_distance_score)
+        return client_wise_distance_scores, global_wise_distance_scores
+
     def renew_cache(self, real_poisoned_client_ids):
         for i in range(self.total_client_num):
             if i not in real_poisoned_client_ids:
@@ -87,9 +121,10 @@ class CrossRoundDefense(BaseDefenseMethod):
     def get_potential_poisoned_clients(self):
         return self.potentially_poisoned_worker_list
 
-    def compute_client_cosine_scores(self, client_features, global_model_feature):
+    def compute_client_cosine_scores(self, client_features, global_model_feature, zero_reference):
         client_wise_scores = []
         global_wise_scores = []
+        zero_wise_scores = []
         num_client = len(client_features)
         for i in range(0, num_client):
             # spatial.distance.cosine ranges from 0 to 2; cosine_similarity below ranges from -1 to 1
@@ -97,7 +132,11 @@ class CrossRoundDefense(BaseDefenseMethod):
             client_wise_scores.append(cosine_similarity)
             cosine_similarity = 1 - spatial.distance.cosine(client_features[i], global_model_feature)
             global_wise_scores.append(cosine_similarity)
-        return client_wise_scores, global_wise_scores
+            # cosine_similarity = 1 -  spatial.distance.cosine(client_features[i], zero_reference)
+            cosine_similarity = 1 - spatial.distance.cosine(client_features[i], np.zeros(client_features[i].shape))
+            # np.zeros(self.temp_client_features[0].shape)
+            zero_wise_scores.append(cosine_similarity)
+        return client_wise_scores, global_wise_scores, zero_wise_scores
 
     def _get_importance_feature(self, raw_client_grad_list):
         ret_feature_vector_list = []

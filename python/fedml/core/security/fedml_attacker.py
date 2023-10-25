@@ -64,7 +64,6 @@ class FedMLAttacker:
     def is_attack_enabled(self):
         if self.is_enabled:
             if self.attack_prob == 1 or random.random() <= self.attack_prob:
-                logging.info(f"!!!!!!!!!!!!!!!!!!!!randomly enabled attack is true")
                 return True
         return False
 

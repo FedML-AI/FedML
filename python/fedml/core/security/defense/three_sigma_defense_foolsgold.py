@@ -40,7 +40,7 @@ from ..common.bucket import Bucket
 from ..common.utils import compute_geometric_median
 
 
-class ThreeSigmaDefense_foolsgold(BaseDefenseMethod):
+class ThreeSigmaDefense_Foolsgold(BaseDefenseMethod):
     def __init__(self, config):
         self.memory = None
         self.iteration_num = 1

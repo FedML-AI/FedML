@@ -9,12 +9,18 @@ from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
-from fedml.api.modules.launch import (create_run, create_run_on_cluster)
-from fedml.api import run_stop, run_list, start_created_run, confirm_cluster_and_start_run
+from fedml.api.modules.launch import (create_run, create_run_on_cluster, run)
+from fedml.api.modules.cluster import confirm_and_start
+from fedml.api import run_stop, run_list
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel
 
 
-@click.group("launch", cls=DefaultCommandGroup, default_command='default')
+class LaunchGroup(DefaultCommandGroup):
+    def format_usage(self, ctx, formatter):
+        click.echo("fedml launch [OPTIONS] YAML_FILE")
+
+
+@click.group("launch", cls=LaunchGroup, default_command='default')
 @click.help_option("--help", "-h")
 @click.option(
     "--cluster",
@@ -31,7 +37,7 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStarte
     "-v",
     type=str,
     default="release",
-    help="launch job to which version of MLOps platform. It should be dev, test or release",
+    help="version of FedML® Nexus AI Platform. It should be dev, test or release",
 )
 def fedml_launch(api_key, version, cluster):
     """
@@ -94,7 +100,7 @@ def _launch_job(yaml_file, api_key):
                 return False
 
         click.echo("Launching the job with the above matched GPU resource.")
-        result = start_created_run(create_run_result=create_run_result, api_key=api_key)
+        result = run(create_run_result=create_run_result, api_key=api_key)
         _print_run_list_details(result)
         _print_run_log_details(result)
 
@@ -108,7 +114,8 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
-                run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
+                         api_key=api_key)
                 return False
 
             cluster_id = getattr(create_run_result, "cluster_id", None)
@@ -117,8 +124,8 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
                 click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
                 return
 
-            cluster_confirmed = confirm_cluster_and_start_run(run_id=create_run_result.run_id, cluster_id=cluster_id,
-                                                              gpu_matched=create_run_result.gpu_matched)
+            cluster_confirmed = confirm_and_start(run_id=create_run_result.run_id, cluster_id=cluster_id,
+                                                  gpu_matched=create_run_result.gpu_matched)
 
         if cluster_confirmed:
             _print_run_list_details(create_run_result)
