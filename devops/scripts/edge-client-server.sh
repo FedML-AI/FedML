@@ -7,9 +7,9 @@ FEDML_DEVICE_ID=0
 FEDML_OS_NAME=linux
 
 if [ "${ROLE}" == "client" ]; then
-  fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -c -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
+  python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r client -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
 else
-  fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
+  python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r edge_server -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
 fi
 
 cur_loop=1

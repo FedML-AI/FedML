@@ -126,7 +126,7 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    if run_result.job_url == "":
+    if run_result.run_url == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)

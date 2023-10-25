@@ -7,6 +7,7 @@ class FedMLInferenceRunner(ABC):
     
     def run(self):
         api = FastAPI()
+
         @api.post("/predict")
         async def predict(request: Request):
             input_json = await request.json()

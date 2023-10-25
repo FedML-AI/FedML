@@ -23,26 +23,28 @@ def fedml_device():
     help="Bind to which version of FedML® Nexus AI Platform. It should be dev, test or release.",
 )
 @click.option(
-    "--computing", "-c", default=None, is_flag=True,
-    help="Bind as the FedML general computing device, which is the default login option."
-         "You can not specify the option -c and -s simultaneously.",
+    "--compute_node", "-c", default=None, is_flag=True,
+    help="Bind as the general compute node in FEDML Nexus AI compute network. This is enabled by default. "
+    "After binding, you can view and manage the device in the FEDML® Nexus AI Platform: https://nexus.fedml.ai/compute. "
+    "It can be grouped as a cluster and then you can use FEDML®Launch to schedule any job (training, deployment, federated learning) to it. "
+    "You can not specify the option -c and -s simultaneously.",
 )
 @click.option(
     "--server", "-s", default=None, is_flag=True,
-    help="Bind as the FedML on-premise federated-learning server."
-         "You can not specify the option -c and -s simultaneously.",
+    help="Bind as the FedML on-premise parameter server (PS). It can be used for PS-based training paradigms, such as distributed training, cross-cloud training, and federated-learning. "
+    "You can not specify the option -c and -s simultaneously for a single environment.",
 )
 @click.option(
-    "--supplier", "-p", default=None, is_flag=True,
-    help="Bind as the FedML supplier computing device which will connect to a pay-in account."
-         "You can specify the option -p and -c simultaneously, but you can not specify -p and -s simultaneously.",
+    "--provider", "-p", default=None, is_flag=True,
+    help="Bind as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://nexus.fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
+    "You can specify the option -p and -c simultaneously (can be used as provider for others as well compute node for your own jobs), but you can not specify -p and -s simultaneously.",
 )
-def fedml_device_bind(api_key, version, computing, server, supplier):
+def fedml_device_bind(api_key, version, compute_node, server, provider):
     fedml.set_env_version(version)
 
     api_key = api_key[0]
     
-    fedml.api.device_bind(api_key, computing, server, supplier)
+    fedml.api.device_bind(api_key, compute_node, server, provider)
 
 
 @fedml_device.command("unbind", help="Unbind from the FedML® Nexus AI Platform")
@@ -52,13 +54,13 @@ def fedml_device_bind(api_key, version, computing, server, supplier):
     "-v",
     type=str,
     default="release",
-    help="Unbind from which version of FedML® Launch platform. It should be dev, test or release",
+    help="Unbind which backend environment version of FedML® Nexus AI Platform. It should be dev, test, or release.",
 )
 @click.option(
-    "--computing", "-c", default=None, is_flag=True, help="Unbind from the FedML general computing device.",
+    "--compute_node", "-c", default=None, is_flag=True, help="Unbind from the FedML general compute node.",
 )
 @click.option(
-    "--server", "-s", default=None, is_flag=True, help="Unbind from the FedML on-premise federated-learning server.",
+    "--server", "-s", default=None, is_flag=True, help="Unbind from the the FedML on-premise parameter server (PS).",
 )
 def fedml_device_unbind(version, computing, server):
     fedml.set_env_version(version)

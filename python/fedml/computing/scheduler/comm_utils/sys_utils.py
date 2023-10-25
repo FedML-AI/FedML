@@ -170,7 +170,7 @@ def get_gpu_list():
 
 def get_available_gpu_id_list(limit=1):
     if enable_simulation_gpu:
-        return [1, 2, 3, 4, 5, 6, 7]
+        return [0, 1, 2, 3, 4, 5, 6, 7]
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
