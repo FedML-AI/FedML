@@ -7,7 +7,25 @@ from prettytable import PrettyTable
 
 @click.group("run")
 @click.help_option("--help", "-h")
-def fedml_run():
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="version of FedML® Nexus AI Platform. It should be dev, test or release",
+)
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="falcon",
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+         "default is falcon).",
+)
+def fedml_run(api_key, version, platform):
     """
     Manage runs on the FedML® Nexus AI Platform.
     """
@@ -189,21 +207,18 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         click.echo("Please specify run id.")
         return
 
-    run_status, total_log_lines, total_log_pages, log_list, run_logs = fedml.api.run_logs(run_id=run_id,
-                                                                                          page_num=page_num,
-                                                                                          page_size=page_size,
-                                                                                          need_all_logs=need_all_logs,
-                                                                                          platform=platform,
-                                                                                          api_key=api_key)
+    run_log_result = fedml.api.run_logs(run_id=run_id, page_num=page_num, page_size=page_size,
+                                        need_all_logs=need_all_logs, platform=platform, api_key=api_key)
 
-    if run_logs is None:
+    run_logs = run_log_result.run_logs
+    if run_log_result.run_logs is None:
         click.echo(f"No logs found for Run id: {run_id}. "
                    f"Please double check your arguments and make sure they are valid. -h for help.")
         return
 
     # Show run log summary info
     log_head_table = PrettyTable(['Run ID', 'Total Log Lines', 'Log URL'])
-    log_head_table.add_row([run_id, total_log_lines, run_logs.log_full_url])
+    log_head_table.add_row([run_id, run_log_result.total_log_lines, run_logs.log_full_url])
     click.echo("\nLogs summary info is as follows.")
     print(log_head_table)
 
@@ -216,9 +231,9 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         print(log_device_table)
 
     # Show run log lines
-    if len(log_list) > 0:
+    if len(run_log_result.log_line_list) > 0:
         click.echo("\nAll logs is as follows.")
-        for log_line in log_list:
+        for log_line in run_log_result.log_line_list:
             click.echo(log_line.rstrip('\n'))
 
 

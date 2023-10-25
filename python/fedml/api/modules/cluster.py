@@ -49,7 +49,7 @@ def exists(cluster_name, api_key) -> bool:
     return cluster_name in clusters
 
 
-def confirm_and_start(run_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices], api_key: str):
+def confirm_and_start(run_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices], api_key: str = None):
     authenticate(api_key)
     return FedMLClusterManager.get_instance().confirm_and_start(run_id=run_id, cluster_id=cluster_id,
                                                                 gpu_matched=gpu_matched)
