@@ -633,6 +633,7 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
     if MLOpsStore.mlops_log_metrics_lock is None:
         MLOpsStore.mlops_log_metrics_lock = threading.Lock()
 
+    customized_step_key = customized_step_key.replace('/', '-')
     if commit:
         MLOpsStore.mlops_log_metrics_lock.acquire()
         if step is None:
@@ -702,7 +703,7 @@ def _generate_log_metrics(metrics: dict, step: int = None, customized_step_key: 
     if customized_step_key is not None:
         customized_step_key = str(customized_step_key).lower()
     for k, v in metrics.items():
-        k = str(k).lower()
+        k = str(k).lower().replace('/','-')
         log_metrics_obj[k] = v
         found_x_axis = False
         for x_axis in MLOpsStore.METRICS_X_AXIS_TAG_LIST:
