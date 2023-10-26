@@ -56,8 +56,8 @@ class JobRunnerUtils:
         # Add the export env list to the entry commands
         if len(export_env_cmd_list) > 0:
             entry_commands.extend(export_env_cmd_list)
-        if len(export_env_cmd_list_for_match) > 0:
-            entry_commands.extend(export_env_cmd_list_for_match)
+        for match_cmd in export_env_cmd_list_for_match:
+            entry_commands.insert(0, match_cmd)
 
         # Add general environment variables
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={edge_id}\n")
