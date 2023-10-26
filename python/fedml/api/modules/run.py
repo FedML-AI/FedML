@@ -4,7 +4,7 @@ from fedml.api.modules.utils import authenticate
 from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunManager, FedMLRunLogModelList, \
-    FedMLRunStartedModel, FedMLRunModelList
+    FedMLRunStartedModel, FedMLRunModelList, FeatureEntryPoint
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLJobConfig
 
@@ -20,34 +20,38 @@ class RunLogResult(object):
 
 
 def create(platform: str, job_config: FedMLJobConfig, device_server: str, device_edges: List[str],
-           api_key: str) -> FedMLRunStartedModel:
+           api_key: str, feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
     _authenticate_and_validate_platform(api_key, platform)
 
     run_start_result = FedMLRunManager.get_instance().create_run(platform=platform, job_config=job_config,
                                                                  device_server=device_server, device_edges=device_edges,
-                                                                 api_key=get_api_key())
+                                                                 api_key=get_api_key(),
+                                                                 feature_entry_point=feature_entry_point)
 
     return run_start_result
 
 
 def create_on_cluster(platform: str, cluster: str, job_config: FedMLJobConfig, device_server: str,
-                      device_edges: List[str], api_key: str) -> FedMLRunStartedModel:
+                      device_edges: List[str], api_key: str,
+                      feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
     _authenticate_and_validate_platform(api_key, platform)
 
     run_start_result = FedMLRunManager.get_instance().create_run(platform=platform, job_config=job_config,
                                                                  device_server=device_server, device_edges=device_edges,
-                                                                 api_key=get_api_key(), cluster=cluster)
+                                                                 api_key=get_api_key(), cluster=cluster,
+                                                                 feature_entry_point=feature_entry_point)
 
     return run_start_result
 
 
 def start(platform: str, create_run_result: FedMLRunStartedModel, device_server: str, device_edges: List[str],
-          api_key: str) -> FedMLRunStartedModel:
+          api_key: str, feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
     _authenticate_and_validate_platform(api_key, platform)
 
     run_start_result = FedMLRunManager.get_instance().start_run(platform=platform, create_run_result=create_run_result,
                                                                 device_server=device_server, device_edges=device_edges,
-                                                                api_key=api_key)
+                                                                api_key=api_key,
+                                                                feature_entry_point=feature_entry_point)
 
     return run_start_result
 

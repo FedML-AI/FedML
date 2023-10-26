@@ -17,9 +17,10 @@ from typing import List, Tuple
 
 from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, \
     model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
+from fedml.api.modules.launch import FeatureEntryPoint
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FedMLGpuDevices, \
-    FedMLRunModelList
+    FedMLRunModelList, FeatureEntryPoint
 
 
 def fedml_login(api_key: str = None):
@@ -36,8 +37,10 @@ def fedml_login(api_key: str = None):
     return utils.fedml_login(api_key)
 
 
-def launch_job(yaml_file: str, api_key: str = None, resource_id: str = None, device_server: str = None,
-               device_edges: List[str] = None) -> launch.LaunchResult:
+def launch_job(
+        yaml_file: str, api_key: str = None, resource_id: str = None, device_server: str = None,
+        device_edges: List[str] = None,
+        feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> launch.LaunchResult:
     """
     Launch a job on the FedML AI Nexus platform
 
@@ -54,6 +57,8 @@ def launch_job(yaml_file: str, api_key: str = None, resource_id: str = None, dev
         device_edges:
             List of `device_edges` to use. Only needed when you want to launch a federated learning job
             with specific `device_server` and `device_edges`
+        feature_entry_point:
+            Entry point where you launch a job. Default entry point is from API.
 
     Returns:
         LaunchResult object with the following attributes
@@ -71,11 +76,14 @@ def launch_job(yaml_file: str, api_key: str = None, resource_id: str = None, dev
                 and will be `None` otherwise.
     """
 
-    return launch.job(yaml_file, api_key, resource_id, device_server, device_edges)
+    return launch.job(yaml_file, api_key, resource_id, device_server, device_edges,
+                      feature_entry_point=feature_entry_point)
 
 
-def launch_job_on_cluster(yaml_file: str, cluster: str, api_key: str = None, resource_id: str = None,
-                          device_server: str = None, device_edges: List[str] = None) -> launch.LaunchResult:
+def launch_job_on_cluster(
+        yaml_file: str, cluster: str, api_key: str = None, resource_id: str = None,
+        device_server: str = None, device_edges: List[str] = None,
+        feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> launch.LaunchResult:
     """
     Launch a job on a cluster on the FedML AI Nexus platform
 
@@ -86,7 +94,7 @@ def launch_job_on_cluster(yaml_file: str, cluster: str, api_key: str = None, res
         resource_id: Specific `resource_id` to use. Typically, you won't need to specify a specific `resource_id`. Instead, we will match resources based on your job yaml, and then automatically launch the job using matched resources.
         device_server: `device_server` to use. Only needed when you want to launch a federated learning job with specific `device_server` and `device_edges`
         device_edges: List of `device_edges` to use. Only needed when you want to launch a federated learning job with specific `device_server` and `device_edges`
-
+        feature_entry_point: Entry point where you launch a job. Default entry point is from API.
     Returns:
         LaunchResult object with the following attributes
 
@@ -104,7 +112,8 @@ def launch_job_on_cluster(yaml_file: str, cluster: str, api_key: str = None, res
     """
 
     return launch.job_on_cluster(yaml_file=yaml_file, cluster=cluster, api_key=api_key, resource_id=resource_id,
-                                 device_server=device_server, device_edges=device_edges)
+                                 device_server=device_server, device_edges=device_edges,
+                                 feature_entry_point=feature_entry_point)
 
 
 def run_stop(run_id: str, platform: str = "falcon", api_key: str = None) -> bool:

@@ -983,7 +983,7 @@ def check_port(host, port):
         s.close()
 
 
-def get_avaiable_port():
+def get_available_port():
     for port in range(40000, 65535):
         if not check_port("localhost", port):
             return port

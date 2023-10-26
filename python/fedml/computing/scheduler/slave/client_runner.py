@@ -1080,7 +1080,7 @@ class FedMLClientRunner:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
             host_ip = sys_utils.get_host_ip()
-            host_port = sys_utils.get_avaiable_port()
+            host_port = sys_utils.get_available_port()
             device_info_json = {
                 "edge_id": self.edge_id,
                 "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
