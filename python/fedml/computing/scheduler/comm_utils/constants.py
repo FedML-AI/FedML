@@ -18,3 +18,5 @@ class SchedulerConstants:
 
     CLIENT_SHELL_BASH = "bash"
     CLIENT_SHELL_PS = "powershell"
+
+    JOB_MATCH_DEFAULT_MASTER_NODE_PORT = 40000

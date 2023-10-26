@@ -583,6 +583,7 @@ class FedMLClientRunner:
         conf_file_object = load_yaml_config(conf_file_full_path)
         entry_args_dict = conf_file_object.get("fedml_entry_args", {})
         entry_args = entry_args_dict.get("arg_items", None)
+        scheduler_match_info = self.request_json.get("scheduler_match_info", None)
         executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
             if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
 
@@ -612,7 +613,8 @@ class FedMLClientRunner:
                 self.run_id, self.edge_id, self.version,
                 self.package_type, executable_interpreter, entry_file_full_path,
                 conf_file_object, entry_args, assigned_gpu_ids,
-                job_api_key, client_rank, job_yaml=job_yaml_default_none)
+                job_api_key, client_rank, job_yaml=job_yaml_default_none,
+                scheduler_match_info=scheduler_match_info)
 
             # Run the job executing commands
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
@@ -1077,6 +1079,8 @@ class FedMLClientRunner:
                 self.model_device_server is not None:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+            host_ip = sys_utils.get_host_ip()
+            host_port = sys_utils.get_avaiable_port()
             device_info_json = {
                 "edge_id": self.edge_id,
                 "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
@@ -1088,6 +1092,8 @@ class FedMLClientRunner:
                 "gpuCoresTotal": gpu_cores_total,
                 "gpuCoresAvailable": gpu_cores_available,
                 "gpu_available_ids": gpu_available_ids,
+                "node_ip": host_ip,
+                "node_port": host_port,
                 "networkTraffic": sent_bytes + recv_bytes,
                 "updateTime": int(MLOpsUtils.get_ntp_time()),
                 "fedml_version": fedml.__version__,

@@ -33,7 +33,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
-enable_simulation_gpu = False
+enable_simulation_gpu = True
 
 
 def get_sys_runner_info():
@@ -956,6 +956,39 @@ def read_gitignore_file(gitignore_file, ):
         pass
 
     return None
+
+
+def get_host_ip():
+    import socket
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 53))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+        return ip
+
+
+def check_port(host, port):
+    import socket
+
+    s = socket.socket()
+    try:
+        s.connect((host, port))
+        return True
+    except:
+        return False
+    finally:
+        s.close()
+
+
+def get_avaiable_port():
+    for port in range(40000, 65535):
+        if not check_port("localhost", port):
+            return port
+
+    return 40000
 
 
 if __name__ == '__main__':

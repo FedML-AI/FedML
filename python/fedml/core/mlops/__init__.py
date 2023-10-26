@@ -554,6 +554,8 @@ def get_fedml_args():
     fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD
     fedml._global_comm_backend = ""
     fedml_args = fedml.init(check_env=False, should_init_logs=False)
+    fedml_args.version = fedml.get_env_version()
+    fedml_args.config_version = fedml.get_env_version()
     print(f"current version {fedml_args.version}, {fedml_args.config_version}")
     return fedml_args
 
