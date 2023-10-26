@@ -331,7 +331,7 @@ class FedMLAppManager(Singleton):
         return True
 
     def check_model_exists(self, model_name, api_key):
-        result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
+        result = FedMLModelCards.get_instance().list_models(model_name, api_key=api_key)
         return result
 
     def update_model(self, model_name, workspace, api_key):
