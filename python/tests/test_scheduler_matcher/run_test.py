@@ -1,12 +1,10 @@
 import argparse
-import os
 
-import fedml
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.scheduler_core.scheduler_matcher import SchedulerMatcher
 
 
-def test_multi_nodes_with_multi_gpus(in_args, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
+def test_match_multi_nodes_with_multi_gpus(in_args, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
     request_json = {'threshold': '20', 'starttime': 1698291772383, 'edgestates': '{}', 'edgeids': [705], 'urls': '"[]"',
                     'id': 4887, 'state': 'STARTING', 'projectid': 289,
                     'run_config':
@@ -105,10 +103,10 @@ if __name__ == "__main__":
     print("Hi everyone, I am testing the server runner.\n")
 
     print("Test for single node with single GPU")
-    test_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=1, request_gpu_num=1)
+    test_match_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=1, request_gpu_num=1)
 
     print("Test for single node with multi GPUs")
-    test_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
+    test_match_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
 
     print("Test for multi node with multi GPUs")
-    test_multi_nodes_with_multi_gpus(args, node_num=3, gpu_num_per_node=8, request_gpu_num=18)
+    test_match_multi_nodes_with_multi_gpus(args, node_num=3, gpu_num_per_node=8, request_gpu_num=18)
