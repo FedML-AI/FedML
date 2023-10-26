@@ -129,7 +129,7 @@ FedMLRunModelList, str):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_logs(run_id: str, page_num: int, page_size: int, need_all_logs: bool = False, platform: str = "falcon",
+def run_logs(run_id: str, page_num: int = 1, page_size: int = 10, need_all_logs: bool = False, platform: str = "falcon",
              api_key: str = None) -> run.RunLogResult:
     return run.logs(run_id=run_id, page_num=page_num, page_size=page_size, need_all_logs=need_all_logs,
                     platform=platform, api_key=api_key)
