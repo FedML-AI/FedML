@@ -327,7 +327,6 @@ class FedMLRunManager(Singleton):
 
         if feature_entry_point is not None:
             run_create_json["featureEntryPoint"] = feature_entry_point.value
-        print(f"Json for creating run: {run_create_json}")
 
         return run_create_json
 
