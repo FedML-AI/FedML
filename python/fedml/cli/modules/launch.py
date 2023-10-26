@@ -12,7 +12,8 @@ from fedml import set_env_version
 from fedml.api.modules.launch import (create_run, create_run_on_cluster, run)
 from fedml.api.modules.cluster import confirm_and_start
 from fedml.api import run_stop, run_list
-from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel
+from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 
 class LaunchGroup(DefaultCommandGroup):
@@ -89,7 +90,8 @@ def fedml_launch_default(yaml_file, api_key, group, cluster, version):
 
 
 def _launch_job(yaml_file, api_key):
-    result_code, result_message, create_run_result = create_run(yaml_file, api_key=api_key)
+    result_code, result_message, create_run_result = create_run(
+        yaml_file, api_key=api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
 
     if _resources_matched_and_confirmed(result_code, result_message, create_run_result, yaml_file, api_key):
         if create_run_result.user_check:
@@ -106,7 +108,8 @@ def _launch_job(yaml_file, api_key):
 
 
 def _launch_job_on_cluster(yaml_file, api_key, cluster):
-    result_code, result_message, create_run_result = create_run_on_cluster(yaml_file, cluster, api_key)
+    result_code, result_message, create_run_result = create_run_on_cluster(
+        yaml_file, cluster, api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
     cluster_confirmed = True
     if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
                                         create_run_result=create_run_result, yaml_file=yaml_file, api_key=api_key):
@@ -249,3 +252,4 @@ def _print_run_log_details(result: FedMLRunStartedModel):
     click.echo(f"For querying the realtime status of your run, please run the following command.")
     click.echo(f"fedml run logs -rid {result.run_id}" +
                "{}".format(f" -v {fedml.get_env_version()}"))
+

@@ -6,7 +6,7 @@ from fedml.api.modules.run import create, create_on_cluster, start
 from fedml.api.modules.cluster import confirm_and_start
 
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLAppManager
-from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
@@ -26,7 +26,7 @@ class LaunchResult:
 
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
-               device_edges: List[str] = None) -> (int, str, FedMLRunStartedModel):
+               device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
     result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                                    ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
@@ -45,7 +45,8 @@ def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: 
 
         # Start the run with the above application.
         create_run_result = create(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, job_config=job_config,
-                                   device_server=device_server, device_edges=device_edges, api_key=get_api_key())
+                                   device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                                   feature_entry_point=feature_entry_point)
 
         result_code, result_message = _parse_create_result(result=create_run_result, yaml_file=yaml_file)
 
@@ -56,7 +57,7 @@ def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: 
 
 
 def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str = None, device_server: str = None,
-                          device_edges: List[str] = None):
+                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
     result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                                    ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
@@ -76,7 +77,8 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
         # Start the job with the above application.
         create_run_result = create_on_cluster(platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
                                               cluster=cluster, job_config=job_config, device_server=device_server,
-                                              device_edges=device_edges, api_key=get_api_key())
+                                              device_edges=device_edges, api_key=get_api_key(),
+                                              feature_entry_point=feature_entry_point)
 
         result_code, result_message = _parse_create_result(result=create_run_result, yaml_file=yaml_file)
 
@@ -87,21 +89,25 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
     return result_code, result_message, create_run_result
 
 
-def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str = None, device_edges: List[str] = None):
+def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str = None,
+        device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
     authenticate(api_key)
 
     # Start the run
     launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, create_run_result=create_run_result,
-                          device_server=device_server, device_edges=device_edges, api_key=get_api_key())
+                          device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                          feature_entry_point=feature_entry_point)
 
     return launch_result
 
 
-def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = None, device_edges: List[str] = None) \
-        -> LaunchResult:
+def job(
+        yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
+        device_edges: List[str] = None,
+        feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> LaunchResult:
     # Create Run
     result_code, result_message, create_run_result = create_run(yaml_file, api_key, resource_id, device_server,
-                                                                device_edges)
+                                                                device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
         return LaunchResult(result_code=result_code, result_message=result_message)
@@ -118,7 +124,7 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
 
     # Run Job
     run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
-                     device_edges=device_edges)
+                     device_edges=device_edges, feature_entry_point=feature_entry_point)
 
     # Return Result
     if run_result is None:
@@ -137,10 +143,11 @@ def job(yaml_file, api_key: str, resource_id: str = None, device_server: str = N
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,
-                   device_edges: List[str]) -> LaunchResult:
+                   device_edges: List[str],
+                   feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> LaunchResult:
     # Schedule Job
-    result_code, result_message, create_run_result = create_run_on_cluster(yaml_file, cluster, api_key, resource_id,
-                                                                           device_server, device_edges)
+    result_code, result_message, create_run_result = create_run_on_cluster(
+        yaml_file, cluster, api_key, resource_id, device_server, device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
         return LaunchResult(result_code=result_code, result_message=result_message)

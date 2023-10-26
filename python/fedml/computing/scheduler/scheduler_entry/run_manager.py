@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 import fedml
@@ -12,6 +13,24 @@ from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLJobConfig
+from enum import Enum
+
+
+class FeatureEntryPoint(Enum):
+    FEATURE_ENTRYPOINT_JOB_STORE_TRAIN_SUBTYPE = 1
+    FEATURE_ENTRYPOINT_JOB_STORE_DEPLOY_SUBTYPE = 2
+    FEATURE_ENTRYPOINT_JOB_STORE_FEDERATE_SUBTYPE = 3
+    FEATURE_ENTRYPOINT_JOB_STORE_VECTOR_DB_SUBTYPE = 4
+
+    FEATURE_ENTRYPOINT_STUDIO_LLM_FINE_TUNING = 5
+    FEATURE_ENTRYPOINT_STUDIO_LLM_DEPLOYMENT = 6
+
+    FEATURE_ENTRYPOINT_RUN_TRAIN = 7
+    FEATURE_ENTRYPOINT_RUN_DEPLOY = 8
+    FEATURE_ENTRYPOINT_RUN_FEDERATE = 9
+
+    FEATURE_ENTRYPOINT_CLI = 10
+    FEATURE_ENTRYPOINT_API = 11
 
 
 class FedMLRunStartedModel(object):
@@ -156,14 +175,16 @@ class FedMLRunManager(Singleton):
         return FedMLRunManager()
 
     def create_run(self, platform: str, job_config: FedMLJobConfig, device_server: str, device_edges: List[str],
-                   api_key: str, cluster: str = None) -> FedMLRunStartedModel:
+                   api_key: str, cluster: str = None,
+                   feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
         run_start_result = None
         run_create_json = self._get_run_create_json(platform=platform, project_name=job_config.project_name,
                                                     application_name=job_config.application_name,
                                                     device_server=device_server, device_edges=device_edges,
                                                     api_key=api_key, task_type=job_config.task_type,
                                                     app_job_id=job_config.job_id, app_job_name=job_config.job_name,
-                                                    cluster=cluster, config_id=job_config.config_id)
+                                                    cluster=cluster, config_id=job_config.config_id,
+                                                    feature_entry_point=feature_entry_point)
         response = self._request(request_url=ServerConstants.get_run_start_url(),
                                  request_json=run_create_json,
                                  config_version=self.config_version)
@@ -178,7 +199,8 @@ class FedMLRunManager(Singleton):
         return run_start_result
 
     def start_run(self, platform: str, create_run_result: FedMLRunStartedModel, device_server: str,
-                  device_edges: List[str], api_key: str) -> FedMLRunStartedModel:
+                  device_edges: List[str], api_key: str,
+                  feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
         run_start_result = None
         run_start_json = self._get_run_start_json(run_id=create_run_result.run_id, platform=platform,
                                                   project_name=create_run_result.project_name,
@@ -186,7 +208,8 @@ class FedMLRunManager(Singleton):
                                                   device_server=device_server, device_edges=device_edges,
                                                   api_key=api_key, task_type=create_run_result.job_type,
                                                   app_job_id=create_run_result.app_job_id,
-                                                  app_job_name=create_run_result.app_job_name)
+                                                  app_job_name=create_run_result.app_job_name,
+                                                  feature_entry_point=feature_entry_point)
 
         response = self._request(request_url=ServerConstants.get_run_start_url(),
                                  request_json=run_start_json,
@@ -253,7 +276,8 @@ class FedMLRunManager(Singleton):
 
     def _get_run_create_json(self, platform: str, project_name: str, application_name: str,
                              device_server: str, device_edges: List[str], api_key: str, task_type: str, app_job_id: str,
-                             app_job_name: str, cluster: str = None, config_id: str = None):
+                             app_job_name: str, cluster: str = None, config_id: str = None,
+                             feature_entry_point: FeatureEntryPoint = None):
 
         if not (device_server and device_edges):
             device_lists = [{"account": "", "edgeIds": [], "serverId": 0}]
@@ -301,16 +325,22 @@ class FedMLRunManager(Singleton):
         if app_job_name:
             run_create_json["applicationName"] = app_job_name
 
+        if feature_entry_point is not None:
+            run_create_json["featureEntryPoint"] = feature_entry_point.value
+        print(f"Json for creating run: {run_create_json}")
+
         return run_create_json
 
     def _get_run_start_json(self, run_id: str, platform: str, project_name: str, application_name: str,
                             device_server: str, device_edges: List[str], api_key: str,
-                            task_type: str, app_job_id: str, app_job_name: str):
+                            task_type: str, app_job_id: str, app_job_name: str,
+                            feature_entry_point: FeatureEntryPoint = None):
         run_start_json = self._get_run_create_json(platform=platform, project_name=project_name,
                                                    application_name=application_name,
                                                    device_server=device_server, device_edges=device_edges,
                                                    api_key=api_key, task_type=task_type,
-                                                   app_job_id=app_job_id, app_job_name=app_job_name)
+                                                   app_job_id=app_job_id, app_job_name=app_job_name,
+                                                   feature_entry_point=feature_entry_point)
         run_start_json["jobId"] = run_id
         run_start_json["needConfirmation"] = False
         return run_start_json
