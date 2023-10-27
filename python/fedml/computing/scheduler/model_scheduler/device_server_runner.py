@@ -182,8 +182,8 @@ class FedMLServerRunner:
 
     def get_usr_indicated_token(self, request_json) -> str:
         usr_indicated_token = ""
-        if "parameters" in request_json and "inference_token" in request_json["parameters"]:
-            usr_indicated_token = request_json["parameters"]["inference_token"]
+        if "parameters" in request_json and "authentication_token" in request_json["parameters"]:
+            usr_indicated_token = request_json["parameters"]["authentication_token"]
         return usr_indicated_token
     
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
