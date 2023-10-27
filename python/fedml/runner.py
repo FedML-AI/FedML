@@ -8,7 +8,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_NCCL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
-    FEDML_TRAINING_PLATFORM_CHEETAH,
+    FEDML_TRAINING_PLATFORM_CROSS_CLOUD,
     FEDML_TRAINING_PLATFORM_SERVING,
     FEDML_SIMULATION_TYPE_MPI,
     FEDML_SIMULATION_TYPE_SP,
@@ -37,7 +37,7 @@ class FedMLRunner:
         elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
             init_runner_func = self._init_cross_silo_runner
 
-        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
             init_runner_func = self._init_cheetah_runner
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
@@ -119,13 +119,13 @@ class FedMLRunner:
             self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
         if args.role == "client":
-            from .cheetah import Client
+            from .cross_cloud import Client
 
             runner = Client(
                 args, device, dataset, model, client_trainer
             )
         elif args.role == "server":
-            from .cheetah import Server
+            from .cross_cloud import Server
 
             runner = Server(
                 args, device, dataset, model, server_aggregator

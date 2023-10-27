@@ -8,12 +8,14 @@ from fedml.cli.modules.utils import OrderedGroup
 @click.help_option("--help", "-h")
 def fedml_model():
     """
-    Deploy and infer models.
+     FedML Model CLI will help you manage the model cards, whether it is in local environment or at FedML
+     Nexus AI platform. It also helps you to deploy the model cards to different devices, and manage the endpoints
+     that created from model cards.
     """
     pass
 
 
-@fedml_model.command("create", help="Create local model repository")
+@fedml_model.command("create", help="Create a model card in local environment.")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
@@ -22,20 +24,25 @@ def fedml_model():
     default="release"
 )
 @click.option(
-    "--name", "-n", type=str, help="model name.", required=True
+    "--name", "-n", type=str, help="Model Card name.", required=True
 )
 @click.option(
-    "--config_file", "-cf", default=None,type=str, help="Model config file (.yaml)",
+    "--model", "-m", type=str, default=None, help="Indicate a pre-built model from Hugging Face or GitHub."
+                                                  " e.g. hf:EleutherAI/pythia-70m."
 )
-def fedml_model_create(version, name, config_file):
+@click.option(
+    "--model_config", "-cf", default=None, type=str, help="Yaml file path that will be used to create a"
+                                                          " new model card.",
+)
+def fedml_model_create(version, name, model, model_config):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_create(name, config_file)
+    fedml.api.model_create(name, model, model_config)
 
 
-@fedml_model.command("push", help="Push local model repository to the MLOps platform (cloud)")
+@fedml_model.command("push", help="Push a model card (local or S3) to remote.")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
@@ -44,26 +51,20 @@ def fedml_model_create(version, name, config_file):
     default="release"
 )
 @click.option(
-    "--name", "-n", type=str, help="model name.", required=True
+    "--name", "-n", type=str, help="Model card name.", required=True
 )
 @click.option(
-    "--model_storage_url", "-s", type=str, help="model storage url.",
+    "--model_storage_url", "-s", type=str, help="A S3 address to the model card zip file.",
 )
-@click.option(
-    "--model_net_url", "-mn", type=str, help="model net url.",
-)
-@click.option(
-    "--api_key", "-k", default="", type=str, help="user api key.",
-)
-def fedml_model_push(name, model_storage_url, model_net_url, api_key, version):
+def fedml_model_push(name, model_storage_url, version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_push(name, model_storage_url, model_net_url, api_key)
+    fedml.api.model_push(name, model_storage_url)
 
 
-@fedml_model.command("deploy", help="Deploy model to the local machine or MLOps platform (cloud)")
+@fedml_model.command("deploy", help="Deploy model to the local | on-premise | GPU Cloud.")
 @click.help_option("--help", "-h")
 @click.option(
     "--version",
@@ -78,11 +79,11 @@ def fedml_model_push(name, model_storage_url, model_net_url, api_key, version):
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
-    "--master_ids", "-m", type=str, default="", help="[Optional] For on-premise deploy mode,"
+    "--master_ids", "-m", type=str, default="", help=" Device Id(s) for on-premise master node(s)."
                                                      " Please indicate master device id(s), seperated with ','"
 )
 @click.option(
-    "--worker_ids", "-w", type=str, default="", help="[Optional] For on-premise deploy mode,"
+    "--worker_ids", "-w", type=str, default="", help=" Device Id(s) for on-premise worker node(s)."
                                                      " Please indicate worker device id(s), seperated with ','"
 )
 def fedml_model_deploy(version, local, name, master_ids, worker_ids):
@@ -90,44 +91,13 @@ def fedml_model_deploy(version, local, name, master_ids, worker_ids):
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_deploy(local, name, master_ids, worker_ids)
+    fedml.api.model_deploy(name, local, master_ids, worker_ids)
 
 
-
-@fedml_model.command(
-    "run", help="Run inference action for model from the MLOps platform")
+@fedml_model.command("pull", help="Pull a model card from Nexus AI Platform to local.")
 @click.help_option("--help", "-h")
 @click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release"
-)
-@click.option(
-    "--name", "-n", type=str, help="model name.",
-)
-@click.option(
-    "--data", "-d", type=str, help="input data for model inference.",
-)
-def fedml_model_run(version, name, data):
-    fedml.set_env_version(version)
-    if name is None:
-        click.echo("You must provide a model name (use -n option).")
-        return
-    fedml.api.model_run(name, data)
-
-
-
-@fedml_model.command("pull", help="Pull remote model to local model repository")
-@click.help_option("--help", "-h")
-@click.option(
-    "--name", "-n", type=str, help="model name.",
-)
-@click.option(
-    "--user", "-u", type=str, help="user id.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
+    "--name", "-n", type=str, help="Model card name.",
 )
 @click.option(
     "--version",
@@ -136,16 +106,15 @@ def fedml_model_run(version, name, data):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def fedml_model_pull(name, user, api_key, version):
+def fedml_model_pull(name, version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_pull(name, user, api_key)
+    fedml.api.model_pull(name)
 
 
-
-@fedml_model.command("list", help="List model in the local model repository")
+@fedml_model.command("list", help="List model card(s) at local environment or Nexus AI Platform.")
 @click.option(
     "--version",
     "-v",
@@ -155,26 +124,31 @@ def fedml_model_pull(name, user, api_key, version):
 )
 @click.help_option("--help", "-h")
 @click.option(
-    "--name", "-n", type=str, default="*", help="[Optional] Show a specific model's information.",
+    "--name", "-n", type=str, default="*", help=
+    '''
+    Model card(s) name. "*" means all model cards. To select multiple model cards, use "," to separate them.
+    e.g. "model1,model2".
+    '''
 )
-def fedml_model_list(version, name):
+@click.option(
+    "--local", "-l", default=False, is_flag=True, help="List model locally.",
+)
+def fedml_model_list(version, name, local):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_list(name)
+
+    fedml.api.model_list(name, local)
 
 
-@fedml_model.command("list-remote", help="List models in the remote model repository")
+@fedml_model.command("delete", help="Delete a local or remote model card.")
 @click.help_option("--help", "-h")
 @click.option(
-    "--name", "-n", type=str, help="model name.",
+    "--name", "-n", type=str, help="Model card name",
 )
 @click.option(
-    "--user", "-u", type=str, help="user id.",
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
+    "--local", "-l", default=False, is_flag=True, help="Delete the model card in local environment.",
 )
 @click.option(
     "--version",
@@ -183,52 +157,9 @@ def fedml_model_list(version, name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def fedml_model_list_remote(name, user, api_key, version):
+def fedml_model_delete(name, local, version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_list_remote(name, user, api_key)
-
-
-
-@fedml_model.command(
-    "info", help="Get model information from MLOps platform")
-@click.help_option("--help", "-h")
-@click.option(
-    "--name", "-n", type=str, help="model name.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
-)
-def fedml_model_info(name, version):
-    fedml.set_env_version(version)
-    if name is None:
-        click.echo("You must provide a model name (use -n option).")
-        return
-    fedml.api.model_info(name)
-
-
-
-@fedml_model.command("delete", help="Delete local model repository")
-@click.help_option("--help", "-h")
-@click.option(
-    "--name", "-n", type=str, help="model name.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="interact with which version of ModelOps platform. It should be dev, test or release",
-)
-def fedml_model_delete(name, version):
-    fedml.set_env_version(version)
-    if name is None:
-        click.echo("You must provide a model name (use -n option).")
-        return
-    fedml.api.model_delete(name)
+    fedml.api.model_delete(name, local)

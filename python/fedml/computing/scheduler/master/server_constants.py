@@ -137,28 +137,28 @@ class ServerConstants(object):
         return url
 
     @staticmethod
-    def get_job_start_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
+    def get_run_start_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_list_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/platform/queryJobList".format(
+    def get_run_list_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/platform/queryJobList".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_stop_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
+    def get_run_stop_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_logs_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
+    def get_run_logs_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
     def get_cluster_list_url():

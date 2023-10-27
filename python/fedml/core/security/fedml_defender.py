@@ -6,7 +6,7 @@ from .defense.coordinate_wise_median_defense import CoordinateWiseMedianDefense
 from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedMeanDefense
 from .defense.crfl_defense import CRFLDefense
 from .defense.outlier_detection import OutlierDetection
-from .defense.three_sigma_defense_foolsgold import ThreeSigmaDefense_foolsgold
+from .defense.three_sigma_defense_foolsgold import ThreeSigmaDefense_Foolsgold
 from .defense.three_sigma_geomedian_defense import ThreeSigmaGeoMedianDefense
 from .defense.three_sigma_defense import ThreeSigmaDefense
 from ..common.ml_engine_backend import MLEngineBackend
@@ -81,7 +81,7 @@ class FedMLDefender:
             elif self.defense_type == DEFENSE_FOOLSGOLD:
                 self.defender = FoolsGoldDefense(args)
             elif self.defense_type == DEFENSE_THREESIGMA_FOOLSGOLD:
-                self.defender = ThreeSigmaDefense_foolsgold(args)
+                self.defender = ThreeSigmaDefense_Foolsgold(args)
             elif self.defense_type == DEFENSE_THREESIGMA_GEOMEDIAN:
                 self.defender = ThreeSigmaGeoMedianDefense(args)
             elif self.defense_type == DEFENSE_THREESIGMA:

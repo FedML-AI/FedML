@@ -39,6 +39,7 @@ from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
 #from ....serving.fedml_client import FedMLModelServingClient
 from ....core.mlops.mlops_utils import MLOpsUtils
+from .device_model_cache import FedMLModelCache
 
 
 class RunnerError(Exception):

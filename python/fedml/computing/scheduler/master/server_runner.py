@@ -23,6 +23,7 @@ from os import listdir
 
 import requests
 
+from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils
 from ..comm_utils.run_process_utils import RunProcessUtils
@@ -333,7 +334,7 @@ class FedMLServerRunner:
             if bootstrap_script_file is not None:
                 bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
                 if platform.system() == 'Windows':
-                    bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
+                    bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
                 if bootstrap_script_file is not None:
                     bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
                     bootstrap_script_path = os.path.join(
@@ -464,6 +465,8 @@ class FedMLServerRunner:
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
+            computing = job_yaml.get("computing", {})
+            num_gpus = computing.get("minimum_num_gpus", 1)
             serving_args = run_params.get("serving_args", {})
             model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
@@ -908,11 +911,13 @@ class FedMLServerRunner:
             # and retry to send the status checking message.
             active_edges_count = 0
             inactivate_edges = list()
+            active_edge_info_dict = dict()
             for edge_id in edge_id_list:
                 edge_info_dict = self.run_edges_realtime_status.get(run_id_str, {})
                 edge_info = edge_info_dict.get(edge_id, None)
                 if edge_info is not None:
                     active_edges_count += 1
+                    active_edge_info_dict[str(edge_id)] = edge_info
                 else:
                     inactivate_edges.append(edge_id)
                     self.send_status_check_msg(run_id, edge_id, self.edge_id)
@@ -920,7 +925,7 @@ class FedMLServerRunner:
             # If all edges are ready then send the starting job message to them
             if active_edges_count == len(edge_id_list):
                 if callback_when_edges_ready is not None:
-                    callback_when_edges_ready()
+                    callback_when_edges_ready(active_edge_info_dict=active_edge_info_dict)
                 break
 
             # Check if runner needs to stop and sleep specific time
@@ -946,10 +951,51 @@ class FedMLServerRunner:
         payload = {"server_id": server_id, "run_id": run_id}
         self.client_mqtt_mgr.send_message(topic_get_model_device_id, json.dumps(payload))
 
-    def send_training_request_to_edges(self):
+    def send_training_request_to_edges(self, active_edge_info_dict=None):
         run_id = self.request_json["runId"]
         edge_id_list = self.request_json["edgeids"]
+        run_config = self.request_json.get("run_config", {})
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        computing = job_yaml.get("computing", {})
+        request_num_gpus = computing.get("minimum_num_gpus", None)
+
         logging.info("Send training request to Edge ids: " + str(edge_id_list))
+
+        SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
+
+        # Match and assign gpus to each device
+        assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
+            request_num_gpus, edge_id_list, active_edge_info_dict)
+        if assigned_gpu_num_dict is None or assigned_gpu_ids_dict is None:
+            # If no resources available, send failed message to MLOps and send exception message to all edges.
+            gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
+                active_edge_info_dict, should_print=True)
+            logging.error(f"No resources available."
+                          f"Total available GPU count {gpu_available_count} is less than "
+                          f"request GPU count {request_num_gpus}")
+            self.mlops_metrics.report_server_id_status(
+                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+                server_id=self.edge_id, server_agent_id=self.server_agent_id)
+            self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
+            return
+
+        # Generate master node addr and port
+        master_node_addr, master_node_port = SchedulerMatcher.get_master_node_info(edge_id_list, active_edge_info_dict)
+
+        # Generate new edge id list after matched
+        edge_id_list = SchedulerMatcher.generate_new_edge_list_for_gpu_matching(assigned_gpu_num_dict)
+        if len(edge_id_list) <= 0:
+            gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
+                active_edge_info_dict, should_print=True)
+            logging.error(f"Request parameter for GPU num is invalid."
+                          f"Total available GPU count {gpu_available_count}."
+                          f"Request GPU num {request_num_gpus}")
+            self.mlops_metrics.report_server_id_status(
+                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+                server_id=self.edge_id, server_agent_id=self.server_agent_id)
+            self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
+            return
 
         client_rank = 1
         for edge_id in edge_id_list:
@@ -958,6 +1004,11 @@ class FedMLServerRunner:
             request_json = self.request_json
             request_json["client_rank"] = client_rank
             client_rank += 1
+
+            request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
+                edge_id, edge_id_list, master_node_addr, master_node_port, assigned_gpu_num_dict, assigned_gpu_ids_dict
+            )
+
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
@@ -1057,12 +1108,13 @@ class FedMLServerRunner:
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
             MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+                run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
             logging.info("start the log processor.")
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-                run_id, request_json.get("server_id", "0")
+                run_id, request_json.get("server_id", "0"), SchedulerConstants.get_log_source(request_json)
             )
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
@@ -1071,7 +1123,8 @@ class FedMLServerRunner:
 
             # Start log processor for current run
             self.args.run_id = run_id
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+                run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
 
         logging.info("callback_start_train payload: {}".format(payload))
         logging.info(

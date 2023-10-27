@@ -20,8 +20,8 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
     mlops.event(event_name, event_started, event_value, event_edge_id)
 
 
-def log(metrics):
-    mlops.log(metrics)
+def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+    mlops.log(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
 
 
 def log_llm_record(metrics: dict, version="release") -> None:
@@ -108,7 +108,6 @@ def log_print_cleanup():
     mlops.log_print_end()
 
 
-
 ARTIFACT_TYPE_GENERAL = 1  # general file
 ARTIFACT_TYPE_MODEL = 2  # model file
 ARTIFACT_TYPE_DATASET = 3  # dataset file
@@ -158,8 +157,14 @@ def log_model(model_name, model_file_path, version=None):
     mlops.log_model(model_name, model_file_path, version=version)
 
 
-def log_metric(metrics):
-    mlops.log_metric(metrics)
+def log_metric(
+        metrics: dict, step: int = None, customized_step_key: str = None,
+        commit: bool = True, run_id=None, edge_id=None
+):
+    mlops.log_metric(
+        metrics, step=step, customized_step_key=customized_step_key, commit=commit,
+        run_id=run_id, edge_id=edge_id
+    )
 
 
 from ..computing.scheduler.slave.client_constants import ClientConstants

@@ -18,7 +18,44 @@ from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLReso
 
 
 def bind(
-        userid, client, server,
+        api_key, computing, server, supplier
+):
+    userid = api_key
+    runner_cmd = "{}"
+    device_id = "0"
+    os_name = ""
+    docker = None
+    docker_rank = 1
+    infer_host = "127.0.0.1"
+    redis_addr = "local"
+    redis_port = "6379"
+    redis_password = "fedml_default"
+    role = ""
+    is_client = computing
+    is_server = server
+    is_supplier = supplier
+    if supplier is None:
+        is_supplier = False
+    if is_server and is_supplier:
+        print("You can not specify the option -p and -s simultaneously.")
+        return
+    if is_supplier:
+        role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX]
+    elif is_server:
+        role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_LOCAL_INDEX]
+    elif is_client:
+        role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIENT_INDEX]
+
+    _bind(
+        userid, computing, server,
+        api_key, role, runner_cmd, device_id, os_name,
+        docker, docker_rank, infer_host,
+        redis_addr, redis_port, redis_password
+    )
+
+
+def _bind(
+        userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
         docker, docker_rank, infer_host,
         redis_addr, redis_port, redis_password
@@ -29,7 +66,7 @@ def bind(
     os.environ["FEDML_INFER_REDIS_PASSWORD"] = redis_password
 
     url = fedml._get_backend_service()
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Launch platform\n")
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Nexus AI Platform\n")
     if api_key is None:
         click.echo("Please specify your API key, usage: fedml login $your_api_key")
         return
@@ -38,10 +75,15 @@ def bind(
     # print(f"api_key = {api_key}")
 
     # Set client as default entity.
-    is_client = client
+    is_client = computing
     is_server = server
-    if client is None and server is None:
+    if computing is None and server is None:
         is_client = True
+        is_server = False
+
+    if is_client and is_server:
+        print("You can not specify the option -c and -s simultaneously.")
+        return
 
     # Check if -c, -s, -l are mutually exclusive
     role_count = (1 if is_client else 0) + (1 if is_server else 0)
@@ -163,10 +205,12 @@ def bind(
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-def unbind(client, server, docker, docker_rank):
-    is_client = client
+def unbind(computing, server):
+    docker = None
+    docker_rank = 1
+    is_client = computing
     is_server = server
-    if client is None and server is None:
+    if computing is None and server is None:
         is_client = True
         is_server = True
 

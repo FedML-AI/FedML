@@ -411,12 +411,15 @@ class MLOpsRuntimeLogDaemon:
     def set_log_source(self, source):
         self.log_source = source
 
-    def start_log_processor(self, log_run_id, log_device_id):
+    def start_log_processor(self, log_run_id, log_device_id, log_source=None):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
                                                  in_args=self.args)
-        log_processor.set_log_source(self.log_source)
+        if log_source is not None:
+            log_processor.set_log_source(log_processor)
+        else:
+            log_processor.set_log_source(self.log_source)
         if self.log_process_event is None:
             self.log_process_event = multiprocessing.Event()
         self.log_process_event.clear()

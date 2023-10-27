@@ -170,7 +170,7 @@ def get_gpu_list():
 
 def get_available_gpu_id_list(limit=1):
     if enable_simulation_gpu:
-        return [1, 2, 3, 4, 5, 6, 7]
+        return [0, 1, 2, 3, 4, 5, 6, 7]
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
@@ -877,6 +877,7 @@ def get_sys_realtime_stats():
     cup_utilization = psutil.cpu_percent()
     cpu_cores = psutil.cpu_count()
     gpu_cores_total, _ = get_gpu_count_vendor()
+    gpu_cores_total = len(get_gpu_list())
     gpu_available_ids = get_available_gpu_id_list(limit=gpu_cores_total)
     gpu_cores_available = len(gpu_available_ids) if gpu_available_ids is not None else 0
     net = psutil.net_io_counters()
@@ -956,6 +957,39 @@ def read_gitignore_file(gitignore_file, ):
         pass
 
     return None
+
+
+def get_host_ip():
+    import socket
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 53))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+        return ip
+
+
+def check_port(host, port):
+    import socket
+
+    s = socket.socket()
+    try:
+        s.connect((host, port))
+        return True
+    except:
+        return False
+    finally:
+        s.close()
+
+
+def get_available_port():
+    for port in range(40000, 65535):
+        if not check_port("localhost", port):
+            return port
+
+    return 40000
 
 
 if __name__ == '__main__':

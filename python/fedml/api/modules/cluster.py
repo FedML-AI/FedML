@@ -1,5 +1,8 @@
+from typing import List
+
 from fedml.api.modules.utils import authenticate
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterManager, FedMLClusterModelList
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLGpuDevices
 
 
 def start(cluster_names, api_key) -> bool:
@@ -46,6 +49,7 @@ def exists(cluster_name, api_key) -> bool:
     return cluster_name in clusters
 
 
-def confirm_and_start(job_id, cluster_id, gpu_matched, api_key):
+def confirm_and_start(run_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices], api_key: str = None):
     authenticate(api_key)
-    return FedMLClusterManager.get_instance().confirm_and_start(job_id, cluster_id, gpu_matched)
+    return FedMLClusterManager.get_instance().confirm_and_start(run_id=run_id, cluster_id=cluster_id,
+                                                                gpu_matched=gpu_matched)

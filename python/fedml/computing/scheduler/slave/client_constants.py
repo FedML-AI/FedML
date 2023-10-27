@@ -16,6 +16,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 
 from ..comm_utils.yaml_utils import load_yaml_config
+from ..comm_utils.constants import SchedulerConstants
 
 
 class ClientConstants(object):
@@ -62,8 +63,8 @@ class ClientConstants(object):
     CLIENT_BOOTSTRAP_LINUX_PROGRAM = "bootstrap.sh"
     CLIENT_BOOTSTRAP_WIN_PROGRAM = "bootstrap.bat"
 
-    CLIENT_SHELL_BASH = "bash"
-    CLIENT_SHELL_PS = "powershell"
+    CLIENT_SHELL_BASH = SchedulerConstants.CLIENT_SHELL_BASH
+    CLIENT_SHELL_PS = SchedulerConstants.CLIENT_SHELL_PS
     PLATFORM_WINDOWS = "Windows"
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
