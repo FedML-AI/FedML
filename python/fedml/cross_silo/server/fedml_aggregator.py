@@ -39,6 +39,8 @@ class FedMLAggregator(object):
         self.train_data_local_num_dict = train_data_local_num_dict
 
         self.client_num = client_num
+        self.available_client_num = 0
+        self.available_client_indexes = set()
         self.device = device
         self.args.device = device
         logging.info("self.device = {}".format(self.device))
@@ -67,20 +69,38 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
-        logging.debug("client_num = {}".format(self.client_num))
+        logging.info("client_num = {}".format(self.client_num))
+        logging.info("available_client_num = {}".format(self.available_client_num))
+        model_received_cnt = 0
+
         for idx in range(self.client_num):
-            if not self.flag_client_model_uploaded_dict[idx]:
-                return False
-        for idx in range(self.client_num):
-            self.flag_client_model_uploaded_dict[idx] = False
-        return True
+            if self.flag_client_model_uploaded_dict[idx]:
+                model_received_cnt += 1
+        if model_received_cnt == self.available_client_num:
+            for idx in range(self.client_num):
+                self.flag_client_model_uploaded_dict[idx] = False
+            return True
+        else:
+            return False
 
     def aggregate(self):
         start_time = time.time()
 
         model_list = []
+        avail_idx = 0
+        avail_idx_to_global = dict()
+
+        # For unavailable clients, we do not pass to the aggregator
+        # But since the aggregator return a {idx: model_params} dict,
+        # We need to keep the mapping from available_idx to global_idx
         for idx in range(self.client_num):
-            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+            if idx in self.available_client_indexes:
+                model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+                avail_idx_to_global[avail_idx] = idx
+                avail_idx += 1
+            else:
+                logging.info("client %d is not available" % idx)
+        
         # model_list is the list after outlier removal
         model_list, model_list_idxes = self.aggregator.on_before_aggregation(model_list)
         Context().add(Context.KEY_CLIENT_MODEL_LIST, model_list)
@@ -88,13 +108,18 @@ class FedMLAggregator(object):
         averaged_params = self.aggregator.aggregate(model_list)
 
         if type(averaged_params) is dict:
-            if len(averaged_params) == self.client_num + 1: # aggregator pass extra {-1 : global_parms_dict}  as global_params
-                itr_count = len(averaged_params) - 1        # do not apply on_after_aggregation to client -1
+            if len(averaged_params) == self.available_client_num + 1:
+                # aggregator will pass extra {-1 : global_parms_dict}  as global_params
+                # we do not apply on_after_aggregation to client -1
+                itr_count = len(averaged_params) - 1
             else:
                 itr_count = len(averaged_params)
 
+            global_params = dict()
             for client_index in range(itr_count):
-                averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
+                global_index = avail_idx_to_global[client_index]
+                global_params[global_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
+            averaged_params = global_params
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
@@ -128,7 +153,8 @@ class FedMLAggregator(object):
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
-
+        Selection is inside a data silo.
+        Simulate the case that all client hold the same number of data samples.
         Args:
             round_idx: round index, starting from 0
             client_num_in_total: this is equal to the users in a synthetic data,
@@ -164,6 +190,15 @@ class FedMLAggregator(object):
         Returns:
             client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
         """
+        logging.info(
+            f"client_id_list_in_total = {client_id_list_in_total}, client_num_per_round = {client_num_per_round}"
+        )
+        if len(client_id_list_in_total) < client_num_per_round:
+            if not hasattr(self.args, "tolerate_num") or len(client_id_list_in_total) - client_num_per_round > self.args.tolerate_num:
+                raise Exception(f"Not enough clients to fullfill the requirement of client_num_per_round{client_num_per_round}")
+            else:
+                logging.warning(f"Only {len(client_id_list_in_total)} clients are available, which is less than the required {client_num_per_round}")
+                return client_id_list_in_total
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
         np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round

@@ -11,6 +11,8 @@ from ...core.distributed.communication.message import Message
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
+import threading
+import time
 
 class FedMLServerManager(FedMLCommManager):
     ONLINE_STATUS_FLAG = "ONLINE"
@@ -34,6 +36,8 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
+        self.online_clients_ids = []
+        self.online_clients_indexes = []
     def is_main_process(self):
         return getattr(self.aggregator, "aggregator", None) is None or self.aggregator.aggregator.is_main_process()
 
@@ -116,27 +120,81 @@ class FedMLServerManager(FedMLCommManager):
                     logging.info("Connection not ready for client" + str(client_id))
                 client_idx_in_this_round += 1
 
-    def process_online_status(self, client_status, msg_params):
-        self.client_online_mapping[str(msg_params.get_sender_id())] = True
-        self.aggregator.log_client_start_time(str(msg_params.get_sender_id()))
-        logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
+    def last_waiting_period(self, tolerate_time): 
+        print(f"Last Waiting Thread Sleep for {tolerate_time} seconds")
+        time.sleep(tolerate_time)
+        print(f"Last Waiting Thread Wake up")
+        self.process_online_status(None, None, cb_after_waiting=True)
 
-        all_client_is_online = True
-        for client_id in self.client_id_list_in_this_round:
-            if not self.client_online_mapping.get(str(client_id), False):
-                all_client_is_online = False
-                break
+    def process_online_status(self, client_status, msg_params, cb_after_waiting=False):
+        if self.is_initialized == True:
+            # Do not response to the later msg
+            return
+        
+        if cb_after_waiting:               # Kick off the training any way
+            online_clients_ids = []
+            self.online_clients_indexes = []
+            for client_id in self.client_id_list_in_this_round:
+                if self.client_online_mapping.get(str(client_id), False):
+                    online_clients_ids.append(client_id)
+                    self.online_clients_indexes.append(self.client_real_ids.index(client_id))   # convert the client id to the index
+            
+            if self.args.client_num_in_total == len(self.client_id_list_in_this_round):
+                # NOT in the simulation mode, in the real prodcution mode
+                self.args.client_num_in_total = len(self.online_clients_indexes)
+                self.data_silo_index_list = self.online_clients_indexes.copy()
+                
+            # Update the attributes in the server_manager
+            self.client_id_list_in_this_round = online_clients_ids.copy()
+            
+            logging.info(f"args.client_num_in_total = {self.args.client_num_in_total}")
+            logging.info(f"self.client_id_list_in_this_round = {self.client_id_list_in_this_round}")
+            logging.info(f"self.online_clients_indexes = {self.online_clients_indexes}")
+            # Update the attributes in the aggregator
+            self.aggregator.available_client_num = len(self.online_clients_indexes)
+            self.aggregator.available_client_indexes = set(self.online_clients_indexes)
+
+            mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING) 
+            #TODO: Notify MLOps that not all clients are available
+            #TODO: Notify the late / offline clients that they are not selected
+            self.send_init_msg()
+            self.is_initialized = True
+            return
+
+        self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
         logging.info(
-            "sender_id = %d, all_client_is_online = %s" % (msg_params.get_sender_id(), str(all_client_is_online))
-        )
+                    "sender_id = %d, " % (msg_params.get_sender_id())
+                )
+        logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
+        online_client_count = 0
+        if hasattr(self.args, "tolerate_num"):
+            tolerate_num = self.args.tolerate_num
+        else:
+            tolerate_num = 0    # Default value, all clients should be online        
+        avail_user_threhold = max(len(self.client_id_list_in_this_round) - tolerate_num, 1)
+        self.online_clients_indexes = []
+        self.online_clients_ids = []
+        for client_id in self.client_id_list_in_this_round:
+            if self.client_online_mapping.get(str(client_id), False):
+                online_client_count += 1
+                self.online_clients_ids.append(client_id)
+                self.online_clients_indexes.append(self.client_real_ids.index(client_id))
 
-        if all_client_is_online:
+        if online_client_count == len(self.client_id_list_in_this_round):
+            self.aggregator.available_client_num = len(self.client_id_list_in_this_round)
+            self.aggregator.available_client_indexes = set(self.online_clients_indexes)
             mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
-
             # send initialization message to all clients to start training
             self.send_init_msg()
             self.is_initialized = True
+        elif online_client_count == avail_user_threhold:    # This only will trigger once
+            if hasattr(self.args, "tolerate_time"):
+                tolerate_time = self.args.tolerate_time
+            else:
+                tolerate_time = 60
+            threading.Thread(target = self.last_waiting_period, args=(tolerate_time,)).start()
+            return            
 
     def process_finished_status(self, client_status, msg_params):
         self.client_finished_mapping[str(msg_params.get_sender_id())] = True
@@ -207,21 +265,26 @@ class FedMLServerManager(FedMLCommManager):
             mlops.log_round_info(self.round_num, self.args.round_idx)
 
             self.client_id_list_in_this_round = self.aggregator.client_selection(
-                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
+                self.args.round_idx, self.online_clients_ids, self.args.client_num_per_round
             )
-            self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
-            )
+
+            if self.args.client_num_in_total != len(self.client_id_list_in_this_round):
+                self.data_silo_index_list = self.aggregator.data_silo_selection(
+                    self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
+                )
+                # Else we still use the previous data_silo_index_list
+            
+            logging.info(f"client_id_list_in_this_round is {self.client_id_list_in_this_round}")
+            logging.info(f"data_silo_index_list is {self.data_silo_index_list}")
             Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, self.client_id_list_in_this_round)
 
             if self.args.round_idx == 0 and self.is_main_process():
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
-            client_idx_in_this_round = 0
             global_model_url = None
             global_model_key = None
-            for receiver_id in self.client_id_list_in_this_round:
-                client_index = self.data_silo_index_list[client_idx_in_this_round]
+            for receiver_id, client_index in zip(self.client_id_list_in_this_round, self.data_silo_index_list):
+                # Iterate both the real ids and their indexes
                 if type(global_model_params) is dict:
                     # compatible with the old version that, user did not give {-1 : global_params_dict}
                     global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
@@ -231,7 +294,6 @@ class FedMLServerManager(FedMLCommManager):
                     global_model_url, global_model_key = self.send_message_sync_model_to_client(
                         receiver_id, global_model_params, client_index, global_model_url, global_model_key
                     )
-                client_idx_in_this_round += 1
 
             # if user give {-1 : global_params_dict}, then record global_model url separately
             # Note MPI backend does not have rank -1
