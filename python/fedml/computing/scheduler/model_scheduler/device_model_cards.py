@@ -550,7 +550,7 @@ class FedMLModelCards(Singleton):
         import subprocess
         all_env_vars = os.environ.copy()
         for k, v in new_environment_vars.items():
-            all_env_vars[k] = v
+            all_env_vars[k] = str(v)
 
         print(f"Entering the main entry file {main_entry_file} ...")
 
