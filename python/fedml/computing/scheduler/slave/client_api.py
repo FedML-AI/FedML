@@ -39,8 +39,8 @@ async def get_history_job_status(request: Request):
     responses = list()
     history_jobs = FedMLClientDataInterface.get_instance().get_history_jobs()
     for job_item in history_jobs.job_list:
-        response = {"jobId": f"{history_jobs.job_id}_{history_jobs.edge_id}",
-                    "originalJobId": history_jobs.job_id,
+        response = {"jobId": f"{job_item.job_id}_{job_item.edge_id}",
+                    "originalJobId": job_item.job_id,
                     "edgeId": job_item.edge_id,
                     "startedTime": int(float(job_item.started_time)) if job_item.started_time != "" else 0,
                     "endedTime": int(float(job_item.ended_time)) if job_item.ended_time != "" else 0,
