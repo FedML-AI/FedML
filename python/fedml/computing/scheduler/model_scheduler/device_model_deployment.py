@@ -71,7 +71,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     }
 
     FedMLModelCache.get_instance().set_redis_params()
-    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(run_id)
+    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
