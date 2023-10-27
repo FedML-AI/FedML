@@ -243,6 +243,8 @@ class JobRunnerUtils(Singleton):
 
     @staticmethod
     def assign_matched_resources_to_run_and_generate_envs(run_id, export_cmd, scheduler_match_info):
+        if scheduler_match_info is None:
+            scheduler_match_info = {}
         master_node_addr = scheduler_match_info.get("master_node_addr", "localhost")
         master_node_port = scheduler_match_info.get(
             "master_node_port", SchedulerConstants.JOB_MATCH_DEFAULT_MASTER_NODE_PORT)

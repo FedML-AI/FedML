@@ -585,7 +585,7 @@ class FedMLClientRunner:
         conf_file_object = load_yaml_config(conf_file_full_path)
         entry_args_dict = conf_file_object.get("fedml_entry_args", {})
         entry_args = entry_args_dict.get("arg_items", None)
-        scheduler_match_info = self.request_json.get("scheduler_match_info", None)
+        scheduler_match_info = self.request_json.get("scheduler_match_info", {})
         executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
             if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
 
