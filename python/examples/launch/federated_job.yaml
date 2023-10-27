@@ -8,7 +8,7 @@ workspace: federated_mnist
 # Otherwise, you should exit with a zero code, e.g. exit 0.
 # Support multiple lines, which can not be empty.
 job: |
-    echo "current job id: $FEDML_CURRENT_JOB_ID"
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
     echo "current edge id: $FEDML_CURRENT_EDGE_ID"
     echo "Hello, Here is the launch platform."
     echo "Current directory is as follows."
@@ -16,17 +16,21 @@ job: |
     echo "config file"
     cat config/fedml_config.yaml
     echo "current rank: $FEDML_CLIENT_RANK"
-    python3 torch_client.py --cf config/fedml_config.yaml --rank $FEDML_CLIENT_RANK --role client --run_id $FEDML_CURRENT_JOB_ID
+    python3 torch_client.py --cf config/fedml_config.yaml --rank $FEDML_CLIENT_RANK --role client --run_id $FEDML_CURRENT_RUN_ID
 
 # Running entry commands on the server side which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
 server_job: |
   echo "Hello, Here is the server job."
   echo "Current directory is as follows."
-  pwd
-  python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_JOB_ID
+  python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_RUN_ID
 
-job_type: federate  # options: train, deploy, dev-environment
+job_type: federate              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: cross_silo
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.

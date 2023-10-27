@@ -37,7 +37,11 @@ class FedMLAppManager(Singleton):
     def update_app(self, platform, application_name, app_config,
                    user_api_key, client_package_file=None, server_package_file=None,
                    workspace=None, model_name=None, model_version=None,
-                   model_url=None):
+                   model_url=None, app_id=None, config_id=None,
+                   job_type=None, job_subtype=None):
+        if app_id is not None:
+            return self.update_app_with_app_id_api(app_id, config_id, app_config, user_api_key)
+
         if client_package_file is None and server_package_file is None:
             return False
 
@@ -55,7 +59,7 @@ class FedMLAppManager(Singleton):
                                      os.path.basename(client_package_file) if client_package_file is not None else None,
                                      server_package_url,
                                      os.path.basename(server_package_file) if server_package_file is not None else None,
-                                     user_api_key)
+                                     user_api_key, job_type=job_type,  job_subtype=job_subtype)
         if result is None:
             return False
 
@@ -110,7 +114,7 @@ class FedMLAppManager(Singleton):
 
     def update_app_api(self, platform, application_name, app_config,
                        client_package_url, client_package_file, server_package_url, server_package_file,
-                       user_api_key):
+                       user_api_key, job_type=None, job_subtype=None):
         platform_id = Constants.platform_str_to_type(platform)
         app_update_result = None
         app_update_url = ServerConstants.get_app_update_url()
@@ -158,6 +162,12 @@ class FedMLAppManager(Singleton):
         if app_config is not None:
             app_update_json["parameter"] = app_config
 
+        if job_type is not None:
+            app_update_json["jobType"] = job_type
+
+        if job_subtype is not None:
+            app_update_json["jobSubType"] = job_subtype
+
         package_file_list = list()
         if server_package_url is not None:
             package_file_list.append({
@@ -189,6 +199,8 @@ class FedMLAppManager(Singleton):
                 "type": 2})
         app_update_json["fileList"] = package_file_list
 
+        app_update_json
+
         args = {"config_version": self.config_version}
         cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
         if cert_path is not None:
@@ -217,6 +229,47 @@ class FedMLAppManager(Singleton):
 
         return app_update_result
 
+    def update_app_with_app_id_api(self, app_id, config_id, app_config, user_api_key):
+        app_update_result = None
+        app_update_url = ServerConstants.get_app_update_with_app_id_url()
+        app_update_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        app_update_json = {
+            "applicationConfig": app_config,
+            "applicationId": app_id,
+            "apiKey": user_api_key
+        }
+
+        if config_id is not None:
+            app_update_json["applicationConfigId"] = config_id
+
+        args = {"config_version": self.config_version}
+        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    app_update_url, verify=True, headers=app_update_api_headers, json=app_update_json
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    app_update_url, verify=True, headers=app_update_api_headers, json=app_update_json
+                )
+        else:
+            response = requests.post(app_update_url, headers=app_update_api_headers, json=app_update_json)
+        if response.status_code != 200:
+            print(f"Update application using app id with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            pass
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            app_update_result = resp_data
+
+        return app_update_result
+
     def push_app_package_to_s3(self, app_name, app_package_path):
         args = {"config_version": self.config_version}
         _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
@@ -225,7 +278,7 @@ class FedMLAppManager(Singleton):
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
                                                                out_progress_to_err=True,
                                                                progress_desc="Submitting your job to "
-                                                                             "FedML® Launch platform")
+                                                                             "FedML® Nexus AI Platform")
         return app_storage_url
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):
@@ -262,7 +315,7 @@ class FedMLAppManager(Singleton):
         return FedMLModelCards.get_instance().push_model_to_s3(
             model_name, model_zip_path, "FedMLLaunchServe",
             show_progress=False,
-            progress_desc="Submitting your job to FedML® Launch platform")
+            progress_desc="Submitting your job to FedML® Nexus AI Platform")
 
     def check_model_package(self, workspace):
         model_config_file = os.path.join(
@@ -278,7 +331,7 @@ class FedMLAppManager(Singleton):
         return True
 
     def check_model_exists(self, model_name, api_key):
-        result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
+        result = FedMLModelCards.get_instance().list_models(model_name, api_key=api_key)
         return result
 
     def update_model(self, model_name, workspace, api_key):

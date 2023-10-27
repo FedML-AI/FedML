@@ -48,7 +48,8 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
         setattr(args, "current_device_id", args.device_id)
         is_from_docker = True
     else:
-        setattr(args, "current_device_id", FedMLClientRunner.get_device_id())
+        is_gpu_supplier = (role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_GPU_SUPPLIER_INDEX])
+        setattr(args, "current_device_id", FedMLClientRunner.get_device_id(use_machine_id=is_gpu_supplier))
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
@@ -103,7 +104,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     if use_extra_device_id_suffix is not None:
         unique_device_id = args.current_device_id + "@" + args.os_name + use_extra_device_id_suffix
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
@@ -202,7 +203,7 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
     if args.device_id is not None and len(str(args.device_id)) > 0:
         unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Simulator"
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
@@ -311,6 +312,7 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
+    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
@@ -319,6 +321,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.user = args.user
+    if args.api_key == "":
+        args.api_key = args.user
     
     fedml.set_env_version(args.version)
     if args.type == 'login':

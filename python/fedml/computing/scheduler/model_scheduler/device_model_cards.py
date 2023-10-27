@@ -19,7 +19,7 @@ from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList
 from .device_client_constants import ClientConstants
-from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 
 class FedMLModelCards(Singleton):
 
@@ -51,8 +51,12 @@ class FedMLModelCards(Singleton):
         device_type = params_dict.get("device_type", "md.on_premise_device")
 
         user_api_key = get_api_key()
-        if user_api_key is None:
-            print("[Error] Please specify using fedml login or using -k.")
+        if user_api_key == "":
+            print('''
+            Please use one of the ways below to login first:
+            (1) CLI: `fedml login $api_key`
+            (2) API: fedml.api.fedml_login(api_key=$api_key)
+            ''')
             return False
 
         target_devices = self.concat_device_ids(master_device_ids, worker_device_ids)
@@ -261,14 +265,23 @@ class FedMLModelCards(Singleton):
 
         return True
 
-    def list_models(self, model_name, user_id=None, user_api_key=None):
-        if user_id is None:
+    def list_models(self, model_name, api_key=None):
+        if api_key is None or api_key == "":
+            api_key = get_api_key()
+            if api_key == "":
+                print("You must provide arguments for User Id and Api Key (use -u and -k options).")
+                return []
+        else:
+            save_api_key(api_key)
+
+        if api_key is None:
             model_home_dir = ClientConstants.get_model_dir()
             if not os.path.exists(model_home_dir):
                 return []
 
             models = os.listdir(model_home_dir)
             if model_name == "*":
+                models = [model for model in models if not model.startswith('.DS_Store')]
                 return models
             else:
                 for model in models:
@@ -293,7 +306,7 @@ class FedMLModelCards(Singleton):
                             print("Failed to list the model files. {}".format(e))
                         return [model]
         else:
-            return self.list_model_api(model_name, user_id, user_api_key)
+            return self.list_model_api(model_name, "", api_key)
 
         return []
 
@@ -325,7 +338,7 @@ class FedMLModelCards(Singleton):
 
         model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
         if not os.path.exists(model_readme_file):
-            print("You model repository is missing file {}, we've created an empty README.md for you.".format(
+            print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
                 ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
             # create a empty readme file called README.md
             with open(model_readme_file, 'w') as f:
@@ -386,7 +399,7 @@ class FedMLModelCards(Singleton):
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("You model repository is missing file {}, we've created an empty README.md for you.".format(
+                print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
                 # create a empty readme file called README.md
                 with open(model_readme_file, 'w') as f:
@@ -431,9 +444,9 @@ class FedMLModelCards(Singleton):
     def pull_model(self, model_name, user_id, user_api_key):
         model_query_result = self.list_model_api(model_name, user_id, user_api_key)
         if model_query_result is None:
-            return False
+            return ""
 
-        result = True
+        local_model_package = ""
         for model in model_query_result.model_list:
             model_storage_url = model.model_url
             query_model_name = model.model_name
@@ -443,10 +456,14 @@ class FedMLModelCards(Singleton):
                 continue
             local_model_package = self.pull_model_from_s3(model_storage_url, model_name)
             if local_model_package == "":
-                result = False
                 print("Failed to pull model name {}".format(query_model_name))
+                return ""
+            else:
+                # TODO: Check if there are multi models from return from the backend
+                print("Successfully pull model name {}".format(query_model_name))
+                break
 
-        return result
+        return local_model_package
 
     def prepare_yaml_for_launch(self, model_name) -> str:
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
@@ -465,18 +482,30 @@ class FedMLModelCards(Singleton):
             print("[Error] Model {} doesn't have config file. Please create it first.".format(model_name))
             return ""
 
-        # Rewrite the config file with task_type = serve added
-        additional_parms = {
-            "task_type": "serve"
-        }
+        # Build a tmp launch yaml file
         with open(config_file_path, 'r') as f:
-            config_params = yaml.safe_load(f)
-            config_params.update(additional_parms)
-        with open(config_file_path, 'w') as f:
-            yaml.dump(config_params, f, sort_keys=False)
-        print("The local config file {} will be used for fedml®launch.".format(config_file_path))
+            usr_config_total_params = yaml.safe_load(f)
+            usr_resource_req = usr_config_total_params.get("computing", {})
 
-        return config_file_path
+        if usr_resource_req == {}:
+            print("[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
+            return ""
+
+        launch_params = {
+            "workspace": model_name,
+            "task_type": "serve",
+            "job": "",
+            "bootstrap": "",
+            "computing": usr_resource_req,
+        }
+
+        # Dumps a yaml file in the parent directory
+        parent_dir = os.path.dirname(model_dir)
+        dst_launch_file_name = ClientConstants.MODEL_AUTO_GEN_LAUNCH_FILE
+        dst_launch_file_pth = os.path.join(parent_dir, dst_launch_file_name)
+        with open(dst_launch_file_pth, 'w') as f:
+            yaml.dump(launch_params, f, sort_keys=False)
+        return dst_launch_file_pth
 
     def local_serve_model(self, model_name):
         # Check local model card existence
@@ -521,7 +550,7 @@ class FedMLModelCards(Singleton):
         import subprocess
         all_env_vars = os.environ.copy()
         for k, v in new_environment_vars.items():
-            all_env_vars[k] = v
+            all_env_vars[k] = str(v)
 
         print(f"Entering the main entry file {main_entry_file} ...")
 

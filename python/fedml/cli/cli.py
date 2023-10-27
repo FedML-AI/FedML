@@ -2,7 +2,8 @@ import collections
 import click
 
 import fedml
-from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, job, model, device, cluster, run
+from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, run, model, device, cluster, \
+    run, train, federate
 from fedml.cli.modules.utils import OrderedGroup
 from fedml.computing.scheduler.env.collect_env import collect_env
 
@@ -30,17 +31,11 @@ cli.add_command(cluster.fedml_clusters)
 # Add run subcommand module
 cli.add_command(run.fedml_run)
 
-# Add job subcommand module
-cli.add_command(job.fedml_jobs)
-
-
 # Add device subcommand module
 cli.add_command(device.fedml_device)
 
-
 # Add model subcommand module
 cli.add_command(model.fedml_model)
-
 
 # Add build subcommand module
 cli.add_command(build.fedml_build)
@@ -48,11 +43,16 @@ cli.add_command(build.fedml_build)
 # Add logs subcommand module
 cli.add_command(logs.fedml_logs)
 
+# Add train subcommand module
+cli.add_command(train.fedml_train)
+
+# Add federate subcommand module
+cli.add_command(federate.fedml_federate)
+
 
 @cli.command(
     "env",
-    help="collect the environment information to help debugging, including OS, Hardware Architecture, "
-         "Python version, etc.",
+    help="Get environment info such as versions, hardware, and networking",
 )
 @click.help_option("--help", "-h")
 @click.option(
@@ -71,7 +71,7 @@ def fedml_env(version):
 cli.add_command(diagnosis.fedml_diagnosis)
 
 
-@cli.command("version", help="Display fedml version.")
+@cli.command("version", help="Display FEDML library version")
 @click.help_option("--help", "-h")
 def fedml_version():
     click.echo("fedml version: " + str(fedml.__version__))

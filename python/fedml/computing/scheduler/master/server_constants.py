@@ -137,28 +137,28 @@ class ServerConstants(object):
         return url
 
     @staticmethod
-    def get_job_start_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
+    def get_run_start_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/application/runApplicationFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_list_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/platform/queryJobList".format(
+    def get_run_list_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/platform/queryJobList".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_stop_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
+    def get_run_stop_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/application/stopApplicationFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
-    def get_job_logs_url():
-        job_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
+    def get_run_logs_url():
+        run_ops_url = "{}/fedmlOpsServer/api/v1/log/getLogsFromCli".format(
             ServerConstants.get_mlops_url())
-        return job_ops_url
+        return run_ops_url
 
     @staticmethod
     def get_cluster_list_url():
@@ -199,6 +199,12 @@ class ServerConstants(object):
     @staticmethod
     def get_app_update_url():
         app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationFromCli".format(
+            ServerConstants.get_mlops_url())
+        return app_url
+
+    @staticmethod
+    def get_app_update_with_app_id_url():
+        app_url = "{}/fedmlOpsServer/api/v1/application/updateApplicationConfigFromCli".format(
             ServerConstants.get_mlops_url())
         return app_url
 
@@ -370,21 +376,27 @@ class ServerConstants(object):
         if callback is not None:
             callback(script_process.pid)
 
+        exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            exec_out, exec_err = script_process.communicate(
-                timeout=100, data_arrived_callback=ServerConstants.log_callback,
-                error_processor=error_processor, should_write_log=should_write_log_file
+            exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = \
+                script_process.communicate(
+                    timeout=100, data_arrived_callback=ServerConstants.log_callback,
+                    error_processor=error_processor, should_write_log=should_write_log_file
             )
         except Exception as e:
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
-            if exec_err is not None:
-                err_str = sys_utils.decode_byte_str(exec_err)
-                error_list.append(err_str)
+            if exec_err_str is not None:
+                for err_line in latest_lines_err_list:
+                    err_str = sys_utils.decode_byte_str(err_line)
+                    error_list.append(err_str)
 
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
+
+            for error_info in error_list:
+                logging.error(error_info)
 
         return script_process, error_list
 

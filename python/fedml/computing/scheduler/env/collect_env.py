@@ -93,9 +93,9 @@ def collect_env():
 
     is_s3_connected = ClientDiagnosis.check_s3_connection(None)
     if is_s3_connected:
-        print("The connection to AWS S3 is OK.\n")
+        print("The connection to S3 Object Storage is OK.\n")
     else:
-        print("You can not connect to AWS S3.\n")
+        print("You can not connect to S3 Object Storage.\n")
 
     is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
     mqtt_url = fedml._get_mqtt_service()

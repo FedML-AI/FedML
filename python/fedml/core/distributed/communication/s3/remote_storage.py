@@ -62,6 +62,12 @@ class S3Storage:
                 aws_secret_access_key=self.cn_s3_sak,
                 config=Config(signature_version='s3v4'),
                 region_name=self.cn_region_name)
+            bucket = aws_s3_resource.Bucket('fedml')
+            if bucket.creation_date:
+                print("The fedml bucket exists")
+            else:
+                print("The fedml bucket does not exist")
+                aws_s3_resource.create_bucket(Bucket='fedml')
         else:
             aws_s3_resource = boto3.resource(
                 "s3",

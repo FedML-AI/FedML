@@ -24,6 +24,7 @@ class OutlierDetection(BaseDefenseMethod):
             # if len(self.cross_round_check.get_potential_poisoned_clients()) != len(self.three_sigma_check.get_malicious_client_idxs()):
             self.cross_round_check.renew_cache(self.three_sigma_check.get_malicious_client_idxs())
             logging.info(f"!!!!!!!!!!!!!!!!!!!!final --- real detected malicious clients = {self.three_sigma_check.get_malicious_client_idxs()}")
+        logging.info(f"!!!!!!!!!!!!!!!!!!!!==================================")
         return raw_client_grad_list
 
     def get_malicious_client_idxs(self):

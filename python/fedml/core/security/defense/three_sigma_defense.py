@@ -8,7 +8,7 @@ from typing import List, Tuple, Dict, Any
 from ..common.utils import (
     compute_euclidean_distance,
     compute_middle_point,
-    compute_krum_score, compute_gaussian_distribution,
+    compute_krum_score, compute_gaussian_distribution
 )
 import torch
 import fedml
@@ -34,9 +34,10 @@ class ThreeSigmaDefense(BaseDefenseMethod):
             raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
+        importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         if self.average is None:
-            self.average = self.compute_avg_with_krum(raw_client_grad_list)
-        client_scores = self.compute_l2_scores(raw_client_grad_list)
+            self.average = self.compute_avg_with_krum(importance_feature_list)
+        client_scores = self.compute_l2_scores(importance_feature_list)
         mu, sigma = compute_gaussian_distribution(client_scores)
         # self.upper_bound = mu + self.bound_param * sigma
         # self.upper_bound0_1 = mu + 0.1 * sigma
@@ -160,45 +161,43 @@ class ThreeSigmaDefense(BaseDefenseMethod):
     def set_potential_malicious_clients(self, potential_malicious_client_idxs):
         self.potential_malicious_client_idxs = potential_malicious_client_idxs
 
-    def compute_avg_with_krum(self, raw_client_grad_list):
-        importance_feature_list = self._get_importance_feature(raw_client_grad_list)
+    def compute_avg_with_krum(self, importance_feature_list):
         krum_scores = compute_krum_score(
             importance_feature_list,
-            client_num_after_trim=math.ceil(len(raw_client_grad_list) / 2) - 1,
+            client_num_after_trim=math.ceil(len(importance_feature_list) / 2) - 1,
         )
         score_index = torch.argsort(
             torch.Tensor(krum_scores)
         ).tolist()  # indices; ascending
-        score_index = score_index[0: math.ceil(len(raw_client_grad_list) / 2) - 1]
+        score_index = score_index[0: math.ceil(len(importance_feature_list) / 2) - 1]
         honest_importance_feature_list = [
             importance_feature_list[i] for i in score_index
         ]
         return self.compute_an_average_feature(honest_importance_feature_list)
 
-    def compute_l2_scores(self, raw_client_grad_list):
-        importance_feature_list = self._get_importance_feature(raw_client_grad_list)
+    def compute_l2_scores(self, importance_feature_list):
         scores = []
         for feature in importance_feature_list:
             score = compute_euclidean_distance(torch.Tensor(feature), self.average)
             scores.append(score)
         return scores
 
-    def compute_client_cosine_scores(self, raw_client_grad_list):
-        importance_feature_list = self._get_importance_feature(raw_client_grad_list)
-        cosine_scores = []
-        num_client = len(importance_feature_list)
-        for i in range(0, num_client):
-            dists = []
-            for j in range(0, num_client):
-                if i != j:
-                    dists.append(
-                        1
-                        - spatial.distance.cosine(
-                            importance_feature_list[i], importance_feature_list[j]
-                        )
-                    )
-            cosine_scores.append(sum(dists) / len(dists))
-        return cosine_scores
+    # def compute_client_cosine_scores(self, raw_client_grad_list):
+    #     importance_feature_list = get_importance_feature(raw_client_grad_list)
+    #     cosine_scores = []
+    #     num_client = len(importance_feature_list)
+    #     for i in range(0, num_client):
+    #         dists = []
+    #         for j in range(0, num_client):
+    #             if i != j:
+    #                 dists.append(
+    #                     1
+    #                     - spatial.distance.cosine(
+    #                         importance_feature_list[i], importance_feature_list[j]
+    #                     )
+    #                 )
+    #         cosine_scores.append(sum(dists) / len(dists))
+    #     return cosine_scores
 
     def _get_importance_feature(self, raw_client_grad_list):
         # print(f"raw_client_grad_list = {raw_client_grad_list}")

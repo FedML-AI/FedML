@@ -3,13 +3,13 @@ import click
 import fedml.api
 
 
-@click.command("network", help="Diagnosis for open.fedml.ai, AWS S3 service and MQTT service")
+@click.command("network", help="Check the Nexus AI backend network connectivity")
 @click.help_option("--help", "-h")
 @click.option(
     "--open", "-o", default=None, is_flag=True, help="check the connection to open.fedml.ai.",
 )
 @click.option(
-    "--s3", "-s", default=None, is_flag=True, help="check the connection to AWS S3 server.",
+    "--s3", "-s", default=None, is_flag=True, help="check the connection to S3 server.",
 )
 @click.option(
     "--mqtt", "-m", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883).",

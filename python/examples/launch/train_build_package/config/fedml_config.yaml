@@ -1,0 +1,11 @@
+fedml_data_args:
+  dataset_name: mnist
+  dataset_path: ./dataset
+  dataset_type: csv
+fedml_entry_args:
+  arg_items: --epochs 1
+fedml_model_args:
+  input_dim: '784'
+  model_cache_path: /Users/alexliang/fedml_models
+  model_name: lr
+  output_dim: '10'

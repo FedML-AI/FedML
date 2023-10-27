@@ -22,11 +22,11 @@ def init(args=None):
     else:
         raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
-    fedml.update_client_id_list(args)
+    fedml._update_client_id_list(args)
     mlops.init(args)
     logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
-    fedml.update_client_specific_args(args)
-    fedml.print_args(args)
+    fedml._update_client_specific_args(args)
+    fedml._print_args(args)
 
     return args
 

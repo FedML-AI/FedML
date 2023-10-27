@@ -10,14 +10,14 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.sys_utils import upgrade_if_not_latest
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
-from fedml.computing.scheduler.comm_utils.platform_utils import platform_is_valid
+from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
 
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLAppManager
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.app_manager import FedMLModelUploadResult
-from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.api.modules.utils import build_mlops_package
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
 from fedml.core.common.singleton import Singleton
 
@@ -139,12 +139,27 @@ class FedMLLaunchManager(Singleton):
                 bootstrap_lines = bootstrap_file_handle.readlines()
                 job_config.bootstrap += "".join(bootstrap_lines)
                 bootstrap_file_handle.close()
-        fedml_launch_paths.tmp_bootstrap_file = os.path.join(job_config.tmp_dir,
-                                                             os.path.basename(fedml_launch_paths.bootstrap_file))
+        fedml_launch_paths.add_tmp_boostrap_file(os.path.join(job_config.tmp_dir,
+                                                              os.path.basename(fedml_launch_paths.bootstrap_full_path)))
         if os.path.exists(fedml_launch_paths.bootstrap_full_path):
             shutil.copyfile(fedml_launch_paths.bootstrap_full_path, fedml_launch_paths.tmp_bootstrap_file)
         with open(fedml_launch_paths.bootstrap_full_path, 'w') as bootstrap_file_handle:
-            bootstrap_file_handle.writelines(job_config.bootstrap)
+            if job_config.bootstrap_on_posix is not None:
+                bootstrap_file_handle.writelines(job_config.bootstrap_on_posix)
+            else:
+                bootstrap_file_handle.write("\n")
+            bootstrap_file_handle.close()
+
+        fedml_launch_paths.tmp_bootstrap_file_on_windows = os.path.join(
+            job_config.tmp_dir, os.path.basename(fedml_launch_paths.bootstrap_full_path_on_windows))
+        if os.path.exists(fedml_launch_paths.bootstrap_full_path_on_windows):
+            shutil.copyfile(
+                fedml_launch_paths.bootstrap_full_path_on_windows, fedml_launch_paths.tmp_bootstrap_file_on_windows)
+        with open(fedml_launch_paths.bootstrap_full_path_on_windows, 'w') as bootstrap_file_handle:
+            if job_config.bootstrap_on_windows is not None:
+                bootstrap_file_handle.writelines(job_config.bootstrap_on_windows)
+            else:
+                bootstrap_file_handle.write("\n")
             bootstrap_file_handle.close()
         configs[Constants.LAUNCH_PARAMETER_JOB_YAML_KEY] = job_config.job_config_dict
 
@@ -155,15 +170,30 @@ class FedMLLaunchManager(Singleton):
         if not os.path.exists(fedml_launch_paths.source_full_path) or job_config.using_easy_mode:
             os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
             with open(fedml_launch_paths.source_full_path, 'w') as source_file_handle:
-                if job_config.using_easy_mode:
-                    source_file_handle.writelines(job_config.executable_commands)
+                if job_config.using_easy_mode and job_config.commands_on_posix is not None:
+                    source_file_handle.writelines(job_config.commands_on_posix)
                 source_file_handle.close()
         if not os.path.exists(fedml_launch_paths.server_source_full_path) or job_config.using_easy_mode:
             if job_config.server_job is not None:
                 os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
                 with open(fedml_launch_paths.server_source_full_path, 'w') as server_source_file_handle:
-                    if job_config.using_easy_mode:
-                        server_source_file_handle.writelines(job_config.server_job)
+                    if job_config.using_easy_mode and job_config.server_job_on_posix is not None:
+                        server_source_file_handle.writelines(job_config.server_job_on_posix)
+                    server_source_file_handle.close()
+
+        # Generate the source script on Windows
+        if not os.path.exists(fedml_launch_paths.source_full_path_on_windows) or job_config.using_easy_mode:
+            os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
+            with open(fedml_launch_paths.source_full_path_on_windows, 'w') as source_file_handle:
+                if job_config.using_easy_mode and job_config.commands_on_windows is not None:
+                    source_file_handle.writelines(job_config.commands_on_windows)
+                source_file_handle.close()
+        if not os.path.exists(fedml_launch_paths.server_source_full_path_on_windows) or job_config.using_easy_mode:
+            if job_config.server_job is not None:
+                os.makedirs(fedml_launch_paths.source_full_folder, exist_ok=True)
+                with open(fedml_launch_paths.server_source_full_path_on_windows, 'w') as server_source_file_handle:
+                    if job_config.using_easy_mode and job_config.server_job_on_windows is not None:
+                        server_source_file_handle.writelines(job_config.server_job_on_windows)
                     server_source_file_handle.close()
 
         if job_config.using_easy_mode:
@@ -199,6 +229,10 @@ class FedMLLaunchManager(Singleton):
                                                                      job_config.ignore_list_str)
         if os.path.exists(fedml_launch_paths.tmp_bootstrap_file):
             shutil.copyfile(fedml_launch_paths.tmp_bootstrap_file, fedml_launch_paths.bootstrap_full_path)
+        if os.path.exists(fedml_launch_paths.tmp_bootstrap_file_on_windows):
+            shutil.copyfile(
+                fedml_launch_paths.tmp_bootstrap_file_on_windows,
+                fedml_launch_paths.bootstrap_full_path_on_windows)
         if build_client_package is None:
             shutil.rmtree(fedml_launch_paths.dest_folder, ignore_errors=True)
             print("Failed to build the application package for the client executable file.")
@@ -229,7 +263,7 @@ class FedMLLaunchManager(Singleton):
     def _cleanup_build_tmp_path(build_path):
         try:
             shutil.rmtree(build_path, ignore_errors=True)
-        except Exception as e:
+        except Exception:
             pass
 
     @staticmethod
@@ -244,8 +278,7 @@ class FedMLLaunchManager(Singleton):
             print("Argument for destination package folder: " + dest_folder)
             print("Argument for ignore lists: " + ignore)
 
-        if not platform_is_valid(platform_type):
-            return
+        validate_platform(platform_type)
 
         if client_server_type == "client" or client_server_type == "server":
             if verbose:
@@ -294,6 +327,7 @@ class FedMLLaunchManager(Singleton):
                 "fedml-client",
                 "client-package",
                 "${FEDSYS.CLIENT_INDEX}",
+                package_type=SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH
             )
             FedMLLaunchManager._cleanup_build_tmp_path(mlops_build_path)
             if result != 0:
@@ -321,6 +355,7 @@ class FedMLLaunchManager(Singleton):
                 "fedml-server",
                 "server-package",
                 "0",
+                package_type=SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH
             )
             FedMLLaunchManager._cleanup_build_tmp_path(mlops_build_path)
             if result != 0:
@@ -348,11 +383,25 @@ class FedMLJobConfig(object):
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
         workspace = self.job_config_dict.get("workspace", None)
+        random_workspace = str(uuid.uuid4())
         self.executable_file_folder = os.path.normpath(
-            os.path.join(self.base_dir, workspace)) \
+            os.path.join(self.base_dir,
+                         workspace if workspace is not None and workspace != "" else random_workspace)) \
             if not should_use_default_workspace else None
         self.executable_commands = self.job_config_dict.get("job", "")
+        if isinstance(self.executable_commands, dict):
+            self.commands_on_windows = self.executable_commands.get("run_on_windows", "")
+            self.commands_on_posix = self.executable_commands.get("run_on_posix", "")
+        else:
+            self.commands_on_windows = None
+            self.commands_on_posix = self.executable_commands
         self.bootstrap = self.job_config_dict.get("bootstrap", None)
+        if self.bootstrap is not None and isinstance(self.bootstrap, dict):
+            self.bootstrap_on_windows = self.bootstrap.get("run_on_windows", None)
+            self.bootstrap_on_posix = self.bootstrap.get("run_on_posix", None)
+        else:
+            self.bootstrap_on_windows = None
+            self.bootstrap_on_posix = self.bootstrap
         self.executable_file = None
         self.server_executable_file = None
         self.executable_conf_option = ""
@@ -360,6 +409,12 @@ class FedMLJobConfig(object):
         self.executable_conf_file = None
         self.executable_args = None
         self.server_job = self.job_config_dict.get("server_job", None)
+        if isinstance(self.server_job, dict):
+            self.server_job_on_windows = self.server_job.get("run_on_windows", "")
+            self.server_job_on_posix = self.server_job.get("run_on_posix", "")
+        else:
+            self.server_job_on_windows = None
+            self.server_job_on_posix = self.server_job
         expert_mode = self.job_config_dict.get("expert_mode", None)
         if expert_mode is not None:
             self.using_easy_mode = False
@@ -412,6 +467,7 @@ class FedMLJobConfig(object):
         self.task_type = self.job_config_dict.get("task_type", None)
         if self.task_type is None:
             self.task_type = self.job_config_dict.get("job_type", Constants.JOB_TASK_TYPE_TRAIN)
+        self.task_subtype = self.job_config_dict.get("job_subtype", Constants.JOB_TASK_SUBTYPE_TRAIN_GENERAL_TRAINING)
         self.framework_type = self.job_config_dict.get("framework_type", Constants.JOB_FRAMEWORK_TYPE_GENERAL)
         self.device_type = computing_obj.get("device_type", Constants.JOB_DEVICE_TYPE_GPU)
         self.resource_type = computing_obj.get("resource_type", "")
@@ -425,13 +481,31 @@ class FedMLJobConfig(object):
             self.serving_endpoint_name = f"Endpoint-{str(uuid.uuid4())}"
         self.serving_endpoint_id = None
 
+        job_args = self.job_config_dict.get("job_args", {})
+        self.job_id = job_args.get("job_id", None)
+        self.config_id = job_args.get("config_id", None)
+        self.job_name = self.job_config_dict.get("job_name", None)
+
         self.application_name = FedMLJobConfig._generate_application_name(
-            self.executable_file_folder if workspace is None or workspace == "" else workspace)
+            random_workspace if self.workspace.startswith(self.tmp_dir) else self.workspace)
+        self.application_name = self.job_name if self.job_name is not None else self.application_name
 
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
 
-        self.gitignore_file = os.path.join(self.base_dir, workspace, ".gitignore")
+        data_args = self.job_config_dict.get("fedml_data_args", {})
+        self.data_args_dataset_name = data_args.get("dataset_name", None)
+        self.data_args_dataset_path = data_args.get("dataset_path", None)
+        self.data_args_dataset_type = data_args.get("dataset_type", None)
+
+        model_args = self.job_config_dict.get("fedml_model_args", {})
+        self.model_args_model_name = model_args.get("model_name", None)
+        self.model_args_model_cache_path = model_args.get("model_cache_path", None)
+        self.model_args_input_dim = model_args.get("input_dim", None)
+        self.model_args_output_dim = model_args.get("output_dim", None)
+
+        self.gitignore_file = os.path.join(
+            self.base_dir, workspace if workspace is not None and workspace != "" else random_workspace, ".gitignore")
         self.ignore_list_str = Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST
         self.read_gitignore_file()
 
@@ -466,8 +540,8 @@ class FedMLJobConfig(object):
 
         server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder,
                                                        self.server_executable_file)
-        if os.path.exists(source_full_path_to_base):
-            os.remove(source_full_path_to_base)
+        if os.path.exists(server_source_full_path_to_base):
+            os.remove(server_source_full_path_to_base)
 
     def read_gitignore_file(self):
         try:
@@ -492,6 +566,7 @@ class FedMLJobConfig(object):
 
 class FedMLLaunchPath(object):
     def __init__(self, job_config: FedMLJobConfig):
+        self.tmp_bootstrap_file = None
         if os.path.exists(job_config.executable_file_folder):
             self.source_full_path = os.path.join(job_config.executable_file_folder, job_config.executable_file)
             self.server_source_full_path = os.path.join(job_config.executable_file_folder,
@@ -501,6 +576,13 @@ class FedMLLaunchPath(object):
                                                  job_config.executable_file)
             self.server_source_full_path = os.path.join(job_config.base_dir, job_config.executable_file_folder,
                                                         job_config.server_executable_file)
+
+        self.source_full_path_on_windows = os.path.join(
+            os.path.dirname(self.source_full_path), os.path.basename(self.source_full_path).rstrip(".sh") + ".bat")
+        self.server_source_full_path_on_windows = os.path.join(
+            os.path.dirname(self.server_source_full_path),
+            os.path.basename(self.server_source_full_path).rstrip(".sh") + ".bat")
+
         self.source_full_folder = os.path.dirname(self.source_full_path)
         self.source_folder = os.path.dirname(job_config.executable_file)
         self.entry_point = os.path.basename(job_config.executable_file)
@@ -533,7 +615,11 @@ class FedMLLaunchPath(object):
         self.dest_folder = os.path.join(Constants.get_fedml_home_dir(), Constants.FEDML_LAUNCH_JOB_TEMP_DIR,
                                         job_config.application_name)
         self.bootstrap_full_path = os.path.join(self.source_full_folder, Constants.BOOTSTRAP_FILE_NAME)
-        self.bootstrap_file = os.path.join(self.source_full_folder, Constants.BOOTSTRAP_FILE_NAME)
-        if platform.system() == Constants.OS_PLATFORM_WINDOWS:
-            self.bootstrap_full_path = self.bootstrap_full_path.replace('.sh', '.bat')
+        self.bootstrap_full_path_on_windows = os.path.join(
+            os.path.dirname(self.bootstrap_full_path),
+            os.path.basename(self.bootstrap_full_path).rstrip(".sh") + ".bat")
+
         os.makedirs(self.dest_folder, exist_ok=True)
+
+    def add_tmp_boostrap_file(self, path: str):
+        self.tmp_bootstrap_file = path

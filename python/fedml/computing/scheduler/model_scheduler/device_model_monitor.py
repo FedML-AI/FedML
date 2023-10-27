@@ -40,7 +40,7 @@ class FedMLModelMetrics:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             get_latest_monitor_metrics(end_point_name, model_name, model_version)
-        print(f"calc metrics_item {metrics_item}")
+        print(f"Calculated metrics_item: {metrics_item}")
         if metrics_item is not None:
             total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)

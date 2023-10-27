@@ -1,10 +1,12 @@
 import os
+from typing import List
 
 from fedml.api.modules.utils import authenticate
-from fedml.api.modules.job import start, start_on_cluster, stop
+from fedml.api.modules.run import create, create_on_cluster, start
 from fedml.api.modules.cluster import confirm_and_start
 
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLAppManager
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
@@ -13,160 +15,171 @@ from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
-def schedule_job(yaml_file, api_key, resource_id, device_server, device_edges):
+class LaunchResult:
+    def __init__(self, result_code: int, result_message: str, run_id: str = None, project_id: str = None,
+                 inner_id: str = None):
+        self.run_id = run_id
+        self.project_id = project_id
+        self.inner_id = inner_id
+        self.result_code = result_code
+        self.result_message = result_message
+
+
+def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
+               device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
     result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                                    ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
     authenticate(api_key)
 
     # Check if resource is available.
-    schedule_result = FedMLLaunchManager.get_instance().get_matched_result(resource_id)
+    create_run_result = FedMLLaunchManager.get_instance().get_matched_result(resource_id)
 
-    if schedule_result is None:
+    if create_run_result is None:
         # Prepare the application for launch.
         job_config, app_updated_result = _prepare_launch_app(yaml_file)
 
         if not app_updated_result:
             return ApiConstants.ERROR_CODE[
-                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, schedule_result
+                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
 
-        # Start the job with the above application.
-        schedule_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.project_name,
-                                job_config.application_name,
-                                device_server, device_edges, get_api_key(), no_confirmation=False,
-                                model_name=job_config.serving_model_name,
-                                model_endpoint=job_config.serving_endpoint_name,
-                                job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+        # Start the run with the above application.
+        create_run_result = create(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, job_config=job_config,
+                                   device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                                   feature_entry_point=feature_entry_point)
 
-        _post_process_launch_result(schedule_result, job_config)
-
-        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file)
+        result_code, result_message = _parse_create_result(result=create_run_result, yaml_file=yaml_file)
 
         # TODO (alaydshah): Revisit if this is appropriate here or not.
-        FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id, schedule_result)
+        FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id, create_run_result)
 
-    return result_code, result_message, schedule_result
+    return result_code, result_message, create_run_result
 
 
-def schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, device_edges):
+def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str = None, device_server: str = None,
+                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
     result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                                    ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
     authenticate(api_key)
 
     # Check if resource is available.
-    schedule_result = FedMLLaunchManager.get_instance().get_matched_result(resource_id)
+    create_run_result = FedMLLaunchManager.get_instance().get_matched_result(resource_id)
 
-    if schedule_result is None:
+    if create_run_result is None:
         # Prepare the application for launch.
         job_config, app_updated_result = _prepare_launch_app(yaml_file)
 
         if not app_updated_result:
             return ApiConstants.ERROR_CODE[
-                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, schedule_result
+                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
 
         # Start the job with the above application.
-        schedule_result = start_on_cluster(SchedulerConstants.PLATFORM_TYPE_FALCON, cluster,
-                                           job_config.project_name,
-                                           job_config.application_name,
-                                           device_server, device_edges, get_api_key(), no_confirmation=False,
-                                           model_name=job_config.serving_model_name,
-                                           model_endpoint=job_config.serving_endpoint_name,
-                                           job_yaml=job_config.job_config_dict, job_type=job_config.task_type)
+        create_run_result = create_on_cluster(platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
+                                              cluster=cluster, job_config=job_config, device_server=device_server,
+                                              device_edges=device_edges, api_key=get_api_key(),
+                                              feature_entry_point=feature_entry_point)
 
-        _post_process_launch_result(schedule_result, job_config)
-
-        result_code, result_message = _parse_schedule_result(schedule_result, yaml_file)
+        result_code, result_message = _parse_create_result(result=create_run_result, yaml_file=yaml_file)
 
         # TODO (alaydshah): Revisit if this is appropriate here or not.
-        FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id, schedule_result)
+        FedMLLaunchManager.get_instance().update_matched_result_if_gpu_matched(resource_id=resource_id,
+                                                                               result=create_run_result)
 
-    return result_code, result_message, schedule_result
+    return result_code, result_message, create_run_result
 
 
-def run_job(schedule_result, api_key, device_server, device_edges):
+def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: str = None,
+        device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
     authenticate(api_key)
 
-    # Start the job
-    launch_result = start(SchedulerConstants.PLATFORM_TYPE_FALCON,
-                          schedule_result.project_name,
-                          schedule_result.application_name,
-                          device_server, device_edges, get_api_key(),
-                          no_confirmation=True, job_id=schedule_result.job_id,
-                          job_type=schedule_result.job_type)
-
-    if launch_result is not None:
-        launch_result.project_name = schedule_result.project_name
-        launch_result.application_name = schedule_result.application_name
+    # Start the run
+    launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, create_run_result=create_run_result,
+                          device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                          feature_entry_point=feature_entry_point)
 
     return launch_result
 
 
-def job(yaml_file, api_key, resource_id, device_server, device_edges):
-    # Schedule Job
-    result_code, result_message, schedule_result = schedule_job(yaml_file, api_key, resource_id, device_server,
-                                                                device_edges)
+def job(
+        yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
+        device_edges: List[str] = None,
+        feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> LaunchResult:
+    # Create Run
+    result_code, result_message, create_run_result = create_run(yaml_file, api_key, resource_id, device_server,
+                                                                device_edges, feature_entry_point=feature_entry_point)
 
-    job_id = getattr(schedule_result, "job_id", None)
-    project_id = getattr(schedule_result, "project_id", None)
+    if not create_run_result:
+        return LaunchResult(result_code=result_code, result_message=result_message)
 
-    ret_job_id = job_id if schedule_result.inner_id is None else schedule_result.inner_id
+    run_id = getattr(create_run_result, "run_id", None)
+    project_id = getattr(create_run_result, "project_id", None)
+
+    inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return ret_job_id, project_id, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
     # Run Job
-    run_result = run_job(schedule_result, api_key, device_server, device_edges)
+    run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
+                     device_edges=device_edges, feature_entry_point=feature_entry_point)
 
     # Return Result
     if run_result is None:
-        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED], \
-            ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
+                            result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
-    if run_result.job_url == "":
-        return ret_job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR], \
-            ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR
+    if run_result.run_url == "":
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
+                            result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
-    return ret_job_id, project_id, 0, ""
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
+                        result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS,
+                        run_id=run_id, project_id=project_id, inner_id=inner_id)
 
 
-def job_on_cluster(yaml_file, cluster, api_key, resource_id, device_server, device_edges):
+def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,
+                   device_edges: List[str],
+                   feature_entry_point: FeatureEntryPoint = FeatureEntryPoint.FEATURE_ENTRYPOINT_API) -> LaunchResult:
     # Schedule Job
-    result_code, result_message, schedule_result = schedule_job_on_cluster(yaml_file, cluster, api_key, resource_id,
-                                                                           device_server, device_edges)
+    result_code, result_message, create_run_result = create_run_on_cluster(
+        yaml_file, cluster, api_key, resource_id, device_server, device_edges, feature_entry_point=feature_entry_point)
 
-    job_id = getattr(schedule_result, "job_id", None)
-    project_id = getattr(schedule_result, "project_id", None)
+    if not create_run_result:
+        return LaunchResult(result_code=result_code, result_message=result_message)
+
+    run_id = getattr(create_run_result, "run_id", None)
+    project_id = getattr(create_run_result, "project_id", None)
+    inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        return job_id, project_id, result_code, result_message
+        return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id)
 
-    cluster_id = getattr(schedule_result, "cluster_id", None)
+    cluster_id = getattr(create_run_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
-                ApiConstants.CLUSTER_CREATION_FAILED)
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
+                            result_message=ApiConstants.CLUSTER_CREATION_FAILED,
+                            run_id=run_id, project_id=project_id, inner_id=inner_id)
 
     # Confirm cluster and start job
-    cluster_confirmed = confirm_and_start(cluster_id, schedule_result.gpu_matched)
+    cluster_confirmed = confirm_and_start(run_id=run_id, cluster_id=cluster_id,
+                                          gpu_matched=create_run_result.gpu_matched)
 
     if cluster_confirmed:
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
-                ApiConstants.CLUSTER_CONFIRM_SUCCESS)
-    else:
-        return (job_id, project_id, ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
-                ApiConstants.CLUSTER_CONFIRM_FAILED)
+        return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
+                            result_message=ApiConstants.CLUSTER_CONFIRM_SUCCESS, run_id=run_id, project_id=project_id,
+                            inner_id=inner_id)
 
-
-def _post_process_launch_result(launch_result, job_config):
-    if launch_result is not None:
-        launch_result.inner_id = job_config.serving_endpoint_id \
-            if job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
-               job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
-        launch_result.project_name = job_config.project_name
-        launch_result.application_name = job_config.application_name
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
+                        result_message=ApiConstants.CLUSTER_CONFIRM_FAILED, run_id=run_id, project_id=project_id,
+                        inner_id=inner_id)
 
 
 def _prepare_launch_app(yaml_file):
@@ -178,8 +191,11 @@ def _prepare_launch_app(yaml_file):
         SchedulerConstants.PLATFORM_TYPE_FALCON, job_config.application_name, app_config, get_api_key(),
         client_package_file=client_package, server_package_file=server_package,
         workspace=job_config.workspace, model_name=job_config.serving_model_name,
-        model_version=job_config.serving_model_version,
-        model_url=job_config.serving_model_s3_url)
+        model_version=job_config.serving_model_version, model_url=job_config.serving_model_s3_url,
+        app_id=job_config.job_id, config_id=job_config.config_id,
+        job_type=Constants.JOB_TASK_TYPE_MAP.get(job_config.task_type, Constants.JOB_TASK_TYPE_TRAIN_CODE),
+        job_subtype=Constants.JOB_TASK_SUBTYPE_MAP.get(job_config.task_subtype,
+                                                       Constants.JOB_TASK_SUBTYPE_TRAIN_GENERAL_TRAINING_CODE))
 
     # Post processor to clean up local temporary launch package and do other things.
     FedMLLaunchManager.get_instance().post_launch(job_config)
@@ -187,11 +203,11 @@ def _prepare_launch_app(yaml_file):
     return job_config, app_updated_result
 
 
-def _parse_schedule_result(result, yaml_file):
-    if result is None:
+def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
+    if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
-    if result.job_url == "":
+    if not result.run_url:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:

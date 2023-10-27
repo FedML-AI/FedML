@@ -6,7 +6,7 @@ import json
 import fedml
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.master.server_constants import ServerConstants
-from fedml.computing.scheduler.scheduler_entry.job_manager import FedMLGpuDevices
+from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLGpuDevices
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
@@ -78,10 +78,10 @@ class FedMLClusterManager(Singleton):
         data = self._get_data_from_response(command="List", response=response)
         return FedMLClusterModelList(data) if data is not None else data
 
-    def confirm_and_start(self, job_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
+    def confirm_and_start(self, run_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
         confirm_cluster_url = ServerConstants.get_cluster_confirm_url()
-        confirm_cluster_json = self._get_cluster_confirm_json(job_id, cluster_id, gpu_matched)
-        response = self._request(confirm_cluster_url, confirm_cluster_json, self.config_version)
+        confirm_cluster_json = self._get_cluster_confirm_json(run_id=run_id, cluster_id=cluster_id, gpu_matched=gpu_matched)
+        response = self._request(url=confirm_cluster_url, json_data=confirm_cluster_json, config_version=self.config_version)
         data = self._get_data_from_response(command="Confirm", response=response)
         return True if data is not None else False
 
@@ -126,7 +126,7 @@ class FedMLClusterManager(Singleton):
         return data
 
     @staticmethod
-    def _get_cluster_confirm_json(job_id, cluster_id, gpu_matched):
+    def _get_cluster_confirm_json(run_id: str, cluster_id: str, gpu_matched: List[FedMLGpuDevices]):
         selected_machines_list = list()
         for gpu_machine in gpu_matched:
             selected_machine_json = {
@@ -136,7 +136,7 @@ class FedMLClusterManager(Singleton):
             # print(f"gotGpuCount = {gpu_machine.gpu_count}")
             selected_machines_list.append(selected_machine_json)
 
-        confirm_cluster_dict = {ClusterConstants.JOB_ID: str(job_id),
+        confirm_cluster_dict = {ClusterConstants.JOB_ID: str(run_id),
                                 ClusterConstants.CLUSTER_ID: str(cluster_id),
                                 ClusterConstants.MACHINE_SELECTED_LIST: selected_machines_list,
                                 ClusterConstants.API_KEY: get_api_key()}

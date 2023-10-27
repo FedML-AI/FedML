@@ -88,7 +88,7 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
     if use_extra_device_id_suffix is not None:
         unique_device_id = args.current_device_id + "@" + args.os_name + use_extra_device_id_suffix
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
@@ -185,7 +185,7 @@ def __login_as_cloud_agent(args, userid, version):
     if args.current_device_id is not None and len(str(args.current_device_id)) > 0:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Public.Cloud"
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     if hasattr(args, "server_agent_id") and args.server_agent_id is not None:
         edge_id = args.server_agent_id
@@ -287,7 +287,7 @@ def __login_as_cloud_server(args, userid, version):
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Public.Server"
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
@@ -371,6 +371,7 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
+    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="local")
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
@@ -379,6 +380,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args.user = args.user
+    if args.api_key == "":
+        args.api_key = args.user
+
     fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)

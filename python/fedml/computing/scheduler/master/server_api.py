@@ -18,7 +18,8 @@ async def get_current_job_status(request: Request):
     current_job = FedMLServerDataInterface.get_instance().get_current_job()
     if current_job is None:
         return {}
-    response = {"jobId": current_job.job_id,
+    response = {"jobId": f"{current_job.job_id}_{current_job.edge_id}",
+                "originalJobId": current_job.job_id,
                 "edgeId": current_job.edge_id,
                 "startedTime": int(float(current_job.started_time)) if current_job.started_time != "" else 0,
                 "endedTime": int(float(current_job.ended_time)) if current_job.ended_time != "" else 0,
@@ -38,7 +39,8 @@ async def get_history_job_status(request: Request):
     responses = list()
     history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
     for job_item in history_jobs.job_list:
-        response = {"jobId": job_item.job_id,
+        response = {"jobId": f"{history_jobs.job_id}_{history_jobs.edge_id}",
+                    "originalJobId": history_jobs.job_id,
                     "edgeId": job_item.edge_id,
                     "startedTime": int(float(job_item.started_time)) if job_item.started_time != "" else 0,
                     "endedTime": int(float(job_item.ended_time)) if job_item.ended_time != "" else 0,

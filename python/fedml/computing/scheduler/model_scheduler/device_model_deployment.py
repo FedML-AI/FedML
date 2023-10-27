@@ -23,6 +23,7 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
 import io
 
 import docker
+from .device_model_cache import FedMLModelCache
 
 
 class CPUUnpickler(pickle.Unpickler):
@@ -69,10 +70,19 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
+    FedMLModelCache.get_instance().set_redis_params()
+    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
+
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
     else:
-        gpu_attach_cmd = "--gpus all"
+        gpu_attach_cmd = "--gpus 1"
+        if gpu_ids is not None and str(gpu_ids).strip() != "":
+            gpu_attach_cmd = f"--gpus '\"device={gpu_ids}\"'"
+        elif num_gpus is not None and str(num_gpus).strip() != "" and int(num_gpus) > 0:
+            gpu_attach_cmd = f"--gpus {num_gpus}"
+        else:
+            num_gpus = 1
 
     logging.info("Update docker environments...")
 
@@ -138,7 +148,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model_from_open.eval()
 
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-            logging.info("convert the onnx model when the mode is from the MLOps platform...")
+            logging.info("convert the onnx model when the mode is from FedML® Nexus AI Platform..")
             logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                                 model_params["input_types"]))
             input_size = model_params["input_size"]
@@ -160,7 +170,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
             convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
-        elif ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:  # we do not convert the model to onnx in llm
+        elif ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:  # we do not convert the model to onnx in llm
             logging.info("LLM model loaded from the open")
         else:
             raise Exception("Unsupported inference engine type: {}".format(inference_engine))
@@ -171,7 +181,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model.eval()
         except Exception as e:
             logging.info(
-                "Cannot locate the .bin file, will read it from the fedml_model_cofig.yaml with the key [local_model_dir] ")
+                "Cannot locate the .bin file, will read it from"
+                " the fedml_model_config.yaml with the key [local_model_dir] ")
             model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
             with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
@@ -193,9 +204,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     src_bootstrap_file_path = ""
 
                 data_cache_dir_input = config.get('data_cache_dir', "")
-                request_input_example = config.get('request_input_example', "")
+                request_input_example = config.get('request_input_example', None)
+                extra_envs = config.get('environment_variables', None)
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}, data_cache_dir_input: {data_cache_dir_input}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path},"
+                    f" data_cache_dir_input: {data_cache_dir_input}")
                 src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
@@ -265,13 +278,20 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not os.path.exists(dst_model_file):
                     shutil.copyfile(src_model_file, dst_model_file)
 
-    if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEEPSPEED:
-        client = docker.from_env()
-        llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                    security_utils.get_content_hash(running_model_name)  # Running model name is concat of model name and version
+    if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
+        try:
+            client = docker.from_env()
+        except Exception:
+            logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                          "installed Docker Desktop or Docker Engine, and the docker is running")
+            return "", "", None, None, None
+
+        default_server_container_name = "{}".format(
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +\
+            security_utils.get_content_hash(running_model_name)
 
         try:
-            exist_container_obj = client.containers.get(llm_server_container_name)
+            exist_container_obj = client.containers.get(default_server_container_name)
         except docker.errors.NotFound:
             exist_container_obj = None
         except docker.errors.APIError:
@@ -281,8 +301,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
-            device_requests.append(
-                docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
+            if gpu_ids is not None:
+                device_requests.append(
+                    docker.types.DeviceRequest(device_ids=[gpu_ids], capabilities=[['gpu']]))
+            else:
+                device_requests.append(
+                    docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info("Start pulling the inference image..., may take a few minutes...")
         # TODO:only pull if the image is not in the local
         client.images.pull(inference_image_name)
@@ -310,9 +334,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
         environment["MAIN_ENTRY"] = relative_entry
 
+        if extra_envs is not None:
+            for key in extra_envs:
+                environment[key] = extra_envs[key]
+
         new_container = client.api.create_container(
             image=inference_image_name,
-            name=llm_server_container_name,
+            name=default_server_container_name,
             volumes=volumns,
             ports=[2345],  # port open inside the container
             # entrypoint=["python3", relative_entry],
@@ -329,6 +357,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         )
         client.api.start(container=new_container.get("Id"))
 
+        # Get the port allocation
         cnt = 0
         while True:
             cnt += 1
@@ -342,31 +371,31 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     raise Exception("Failed to get the port allocation")
                 time.sleep(3)
 
-        # report the status
-        log_deployment_result(end_point_id, model_id, llm_server_container_name,
-                              ClientConstants.CMD_TYPE_RUN_TRITON_SERVER,
-                              running_model_name, inference_engine, inference_http_port, inference_type="llm")
-        inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(running_model_name, inference_engine, inference_http_port, \
-                           infer_host, inference_type="llm", request_input_example=request_input_example)
+        # Logging the info from the container
+        log_deployment_result(end_point_id, model_id, default_server_container_name,
+                              ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
+                              running_model_name, inference_engine, inference_http_port, inference_type="default")
 
-        # testing
-        if request_input_example == "":
-            test_input = {"inputs": {"text": "What is a good cure for hiccups?"}}
-        else:
-            test_input = request_input_example
-        if inference_output_url != "":
-            try:
-                inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
-                                                                          inference_type="llm")
-                logging.info("Tested the inference backend, the response is {}".format(inference_response))
-            except Exception as e:
-                logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-                inference_output_url = ""
-        else:
-            raise Exception("Failed to get the inference output url")
+        # Check if the inference server is ready
+        inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
+            get_model_info(running_model_name, inference_engine, inference_http_port,
+                           infer_host, inference_type="default", request_input_example=request_input_example)
+
+        if inference_output_url == "":
+            return running_model_name, "", None, None, None
+
+        # testing the inference container
+        test_input = ret_model_metadata["inputs"]
+
+        try:
+            inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
+                                                                      inference_type="default")
+            logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
+        except Exception as e:
+            logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+            inference_output_url = ""
+
         model_metadata = ret_model_metadata
-        # metadata to report
         logging.info(model_metadata)
     elif inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
         logging.info("prepare to run triton server...")
@@ -458,7 +487,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
-                     inference_type=None):
+                     inference_type="default"):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -493,130 +522,182 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         except Exception as e:
             pass
         return False
+    elif cmd_type == ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER:
+        # TODO: Exited Quickly if the container is Exited or Removed
+        # If the container has exited, return True, means we should exit the logs
+        # container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+        #                             security_utils.get_content_hash(model_name)
+        try:
+            inference_output_url, model_version, model_metadata, model_config = \
+                get_model_info(model_name, inference_engine, inference_port, inference_type=inference_type)
+            logging.info("Log test for deploying model successfully, inference url: {}, "
+                         "model metadata: {}, model config: {}".
+                         format(inference_output_url, model_metadata, model_config))
+            if inference_output_url != "":
+                return True
+        except Exception as e:
+            pass
+        return False
 
 
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
-                          inference_http_port, inference_type=None):
-    sudo_prefix = "sudo "
-    sys_name = platform.system()
-    if sys_name == "Darwin":
-        sudo_prefix = ""
-
+                          inference_http_port, inference_type="default"):
+    deploy_attempt = 0
+    retry_interval = 10
+    deploy_attempt_threshold = 10
     last_out_logs = ""
     last_err_logs = ""
-    deployment_count = 0
+
     while True:
         if not ClientConstants.is_running_on_k8s():
-            logs_cmd = "{}docker logs {}".format(sudo_prefix, cmd_container_name)
-            logs_process = ClientConstants.exec_console_with_script(logs_cmd,
-                                                                    should_capture_stdout=True,
-                                                                    should_capture_stderr=True)
-            ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(logs_process)
-            if out is not None:
-                out_str = sys_utils.decode_our_err_result(out)
-                added_logs = str(out_str).replace(last_out_logs, "")
-                if len(added_logs) > 0:
-                    logging.info("{}".format(added_logs))
-                last_out_logs = out_str
-            elif err is not None:
-                err_str = sys_utils.decode_our_err_result(err)
-                added_logs = str(err_str).replace(last_err_logs, "")
-                if len(added_logs) > 0:
-                    logging.info("{}".format(added_logs))
-                last_err_logs = err_str
+            logging.info(f"Test: {inference_http_port}, Attempt: {deploy_attempt} / {deploy_attempt_threshold}")
 
-        time.sleep(3)
-        deployment_count += 1
-        if deployment_count >= 5:
+            try:
+                client = docker.from_env()
+            except Exception:
+                logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                              "installed Docker Desktop or Docker Engine, and the docker is running")
+                break
+
+            try:
+                container_obj = client.containers.get(cmd_container_name)
+            except docker.errors.NotFound:
+                logging.error("Container {} not found".format(cmd_container_name))
+                break
+            except docker.errors.APIError:
+                logging.error("The API cannot be accessed")
+                break
+
+            if container_obj is not None:
+                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False)
+                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False)
+                if err_logs is not None:
+                    err_logs = sys_utils.decode_our_err_result(err_logs)
+                    added_logs = str(err_logs).replace(last_err_logs, "")
+                    if len(added_logs) > 0:
+                        logging.error(f"[Error]logs from docker: {format(added_logs)}")
+                    last_err_logs = err_logs
+
+                if out_logs is not None:
+                    out_logs = sys_utils.decode_our_err_result(out_logs)
+                    added_logs = str(out_logs).replace(last_out_logs, "")
+                    if len(added_logs) > 0:
+                        logging.info(f"Logs from docker: {format(added_logs)}")
+                    last_out_logs = out_logs
+
+                if container_obj.status == "exited":
+                    logging.info("Container {} has exited, automatically"
+                                 " remove it ...".format(cmd_container_name))
+                    client.api.remove_container(container_obj.id, v=True, force=True)
+                    break
+
+        # should_exit_logs will ping the inference container
+        # return True if ready
+        if should_exit_logs(end_point_id, model_id, cmd_type, inference_model_name, inference_engine,
+                            inference_http_port, inference_type):
             break
 
-        if should_exit_logs(end_point_id, model_id, cmd_type,
-                            inference_model_name, inference_engine, inference_http_port, inference_type):
+        # Not yet ready, retry
+        deploy_attempt += 1
+        if deploy_attempt >= deploy_attempt_threshold:
+            logging.info(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
+                         "exiting the deployment...")
             break
+
+        logging.info(f"Model {inference_model_name} not yet ready, retry in {retry_interval} seconds...")
+        time.sleep(retry_interval)
+
+
+def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
+                                        inference_type="default", model_version="", request_input_example=None):
+    logging.info(f"The inference type is {inference_type}")
+
+    if inference_type == "default":
+        default_client_container_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
+        response = None
+        try:
+            response = requests.get(default_client_container_ready_url)
+        except:
+            pass
+        if not response or response.status_code != 200:
+            return "", "", {}, {}
+
+        # Report the deployed model info
+        model_metadata = {}
+        if request_input_example is not None and len(request_input_example) > 0:
+            model_metadata["inputs"] = request_input_example
+        else:
+            model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
+        model_metadata["outputs"] = []
+        model_metadata["type"] = "default"
+        return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
+    else:
+        triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
+        wait_count = 0
+        while True:
+            if not triton_client.is_model_ready(
+                    model_name=inference_model_name, model_version=model_version
+            ):
+                logging.info(f"model {inference_model_name} not yet ready")
+                time.sleep(1)
+                wait_count += 1
+                if wait_count >= 15:
+                    return "", model_version, {}, {}
+            else:
+                break
+
+        model_metadata = triton_client.get_model_metadata(model_name=inference_model_name, model_version=model_version)
+        model_config = triton_client.get_model_config(model_name=inference_model_name, model_version=model_version)
+        version_list = model_metadata.get("versions", None)
+        if version_list is not None and len(version_list) > 0:
+            model_version = version_list[0]
+        else:
+            model_version = ClientConstants.INFERENCE_MODEL_VERSION
+
+        inference_output_url = "http://{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
+                                                                                    inference_http_port,
+                                                                                    ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
+                                                                                    inference_model_name,
+                                                                                    model_version)
+
+        return inference_output_url, model_version, model_metadata, model_config
 
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False,
-                   inference_type=None, request_input_example=""):
+                   inference_type="default", request_input_example=None):
     if model_name is None:
         return "", "", {}, {}
+
     local_ip = ClientConstants.get_local_ip()
     if infer_host is not None and infer_host != "127.0.0.1":
         infer_url_host = infer_host
     else:
         infer_url_host = local_ip
-    logging.info(f"The infer_url_host is {infer_url_host}")
-    if inference_type == "llm":
-        llm_server_test_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
-        wait_count = 0
-        while True:
-            response = None
-            try:
-                response = requests.get(llm_server_test_ready_url)
-            except:
-                pass
-            if not response or response.status_code != 200:
-                logging.info(f"Test if endpoint is ready: {llm_server_test_ready_url}")
-                logging.info(f"model {model_name} not yet ready")
-                time.sleep(10)
-                wait_count += 1
-                if wait_count >= 12:
-                    raise Exception("Can not get response from {}".format(llm_server_test_ready_url))
-            else:
-                break
-        model_metadata = {}
-        if request_input_example != "":
-            model_metadata["inputs"] = request_input_example
-        else:
-            model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
-        model_metadata["outputs"] = []
-        model_metadata["type"] = "llm"
-        return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
     local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
-    model_version = ""
+    logging.info(f"The infer_url_host is {infer_url_host}")
     logging.info("triton infer url: {}.".format(local_infer_url))
+
     if is_hg_model:
         inference_model_name = "{}_{}_inference".format(model_name, str(inference_engine))
     else:
         inference_model_name = model_name
-    triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
-    wait_count = 0
-    while True:
-        if not triton_client.is_model_ready(
-                model_name=inference_model_name, model_version=model_version
-        ):
-            logging.info(f"model {model_name} not yet ready")
-            time.sleep(1)
-            wait_count += 1
-            if wait_count >= 15:
-                return "", model_version, {}, {}
-        else:
-            break
 
-    model_metadata = triton_client.get_model_metadata(model_name=inference_model_name, model_version=model_version)
-    model_config = triton_client.get_model_config(model_name=inference_model_name, model_version=model_version)
-    version_list = model_metadata.get("versions", None)
-    if version_list is not None and len(version_list) > 0:
-        model_version = version_list[0]
-    else:
-        model_version = ClientConstants.INFERENCE_MODEL_VERSION
+    response_from_client_container = is_client_inference_container_ready(
+        infer_url_host, inference_http_port, inference_model_name, local_infer_url,
+        inference_type, model_version="", request_input_example=request_input_example)
 
-    inference_output_url = "http://{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
-                                                                                inference_http_port,
-                                                                                ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
-                                                                                inference_model_name,
-                                                                                model_version)
-
-    return inference_output_url, model_version, model_metadata, model_config
+    logging.info(f"The res is {response_from_client_container}")
+    return response_from_client_container
 
 
 def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list,
-                                         inference_type=None):
+                                         inference_type="default"):
     model_inference_result = {}
     model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
     print("inference_url: {}".format(inference_url))
     print("inference_input_list: {}".format(inference_input_list))
-    if inference_output_list == []:
+    if inference_type == "default":
         model_inference_json = inference_input_list
     else:  # triton
         model_inference_json = {

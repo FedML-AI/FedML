@@ -2,6 +2,7 @@ from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 from ..common.utils import compute_geometric_median
 from ...security.defense.defense_base import BaseDefenseMethod
+import fedml
 
 """
 added by Shanshan
@@ -13,7 +14,7 @@ Compute a geometric median in aggreagtion
 
 class RFADefense(BaseDefenseMethod):
     def __init__(self, config):
-        pass
+        self.device = fedml.device.get_device(config)
 
     def defend_on_aggregation(
             self,

@@ -182,8 +182,8 @@ class FedMLServerRunner:
 
     def get_usr_indicated_token(self, request_json) -> str:
         usr_indicated_token = ""
-        if "parameters" in request_json and "inference_token" in request_json["parameters"]:
-            usr_indicated_token = request_json["parameters"]["inference_token"]
+        if "parameters" in request_json and "authentication_token" in request_json["parameters"]:
+            usr_indicated_token = request_json["parameters"]["authentication_token"]
         return usr_indicated_token
     
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
@@ -353,7 +353,7 @@ class FedMLServerRunner:
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 "END_POINT_Name=\"{}\" "
                 "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} "
+                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} --reload "
                 "--log-level critical".format(
                     self.redis_addr, self.redis_port, self.redis_password,
                     end_point_name,
@@ -541,7 +541,7 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
-            if "type" in model_metadata and model_metadata["type"] == "llm":
+            if "type" in model_metadata and model_metadata["type"] == "default":
                 payload_json["input_json"] = {"end_point_name": end_point_name,
                                             "model_name": model_name,
                                             "token": str(token),
@@ -722,7 +722,53 @@ class FedMLServerRunner:
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
-        payload: {"timestamp": 1671440005119, "end_point_id": 4325, "token": "FCpWU", "state": "STARTING","user_id": "105", "user_name": "alex.liang2", "device_ids": [693], "device_objs": [{"device_id": "0xT3630FW2YM@MacOS.Edge.Device", "os_type": "MacOS", "id": 693, "ip": "1.1.1.1", "memory": 1024, "cpu": "1.7", "gpu": "Nvidia", "extra_infos":{}}], "model_config": {"model_name": "image-model", "model_id": 111, "model_version": "v1", 'is_from_open": 0, "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip", "instance_scale_min": 1, "instance_scale_max": 3, "inference_engine": "onnx"}, "parameters": {"hidden_size": 128, "hidden_act": "gelu", "initializer_range": 0.02, "vocab_size": 30522, "hidden_dropout_prob": 0.1, "num_attention_heads": 2, "type_vocab_size": 2, "max_position_embeddings": 512, "num_hidden_layers": 2, "intermediate_size": 512, "attention_probs_dropout_prob": 0.1}}
+        payload:
+        {
+          "timestamp": 1671440005119,
+          "end_point_id": 4325,
+          "token": "FCpWU",
+          "state": "STARTING",
+          "user_id": "105",
+          "user_name": "alex.liang2",
+          "device_ids": [
+            693
+          ],
+          "device_objs": [
+            {
+              "device_id": "0xT3630FW2YM@MacOS.Edge.Device",
+              "os_type": "MacOS",
+              "id": 693,
+              "ip": "1.1.1.1",
+              "memory": 1024,
+              "cpu": "1.7",
+              "gpu": "Nvidia",
+              "extra_infos": {}
+            }
+          ],
+          "model_config": {
+            "model_name": "image-model",
+            "model_id": 111,
+            "model_version": "v1",
+            "is_from_open": 0,
+            "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip",
+            "instance_scale_min": 1,
+            "instance_scale_max": 3,
+            "inference_engine": "onnx"
+          },
+          "parameters": {
+            "hidden_size": 128,
+            "hidden_act": "gelu",
+            "initializer_range": 0.02,
+            "vocab_size": 30522,
+            "hidden_dropout_prob": 0.1,
+            "num_attention_heads": 2,
+            "type_vocab_size": 2,
+            "max_position_embeddings": 512,
+            "num_hidden_layers": 2,
+            "intermediate_size": 512,
+            "attention_probs_dropout_prob": 0.1
+          }
+        }
         """
         try:
             _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
@@ -1541,7 +1587,7 @@ class FedMLServerRunner:
 
         self.recover_inference_and_monitor()
 
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+        # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

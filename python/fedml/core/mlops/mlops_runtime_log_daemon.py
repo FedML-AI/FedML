@@ -9,12 +9,16 @@ import time
 
 import requests
 import yaml
+
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
+
 
 class MLOpsRuntimeLogProcessor:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 3
+    FED_LOG_UPLOAD_S3_FREQUENCY = 30
     FEDML_LOG_REPORTING_STATUS_FILE_NAME = "log_status"
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
 
@@ -219,14 +223,28 @@ class MLOpsRuntimeLogProcessor:
 
         self.log_process_event = process_event
 
+        only_push_artifact = False
+        log_artifact_time_counter = 0
+        log_file_prev_size = 0
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
                 self.log_upload(self.run_id, self.device_id)
+
+                log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
+                if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
+                    log_artifact_time_counter = 0
+                    log_file_current_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
+                    if log_file_prev_size != log_file_current_size:
+                        if self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact):
+                            only_push_artifact = True
+                        log_file_prev_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
             except Exception as e:
+                log_artifact_time_counter = 0
                 pass
 
         self.log_upload(self.run_id, self.device_id)
+        self.upload_log_file_as_artifact(only_push_artifact=True)
         print("FedDebug log_process STOPPED")
 
     def log_relocation(self):
@@ -313,6 +331,23 @@ class MLOpsRuntimeLogProcessor:
 
         return False
 
+    def upload_log_file_as_artifact(self, only_push_artifact=False):
+        try:
+            if not os.path.exists(self.log_file_path):
+                return False
+            
+            log_file_name = "{}".format(os.path.basename(self.log_file_path))
+            log_file_name_no_ext = os.path.splitext(os.path.basename(self.log_file_path))[0]
+            artifact = fedml.mlops.Artifact(name=log_file_name_no_ext, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
+            artifact.add_file(self.log_file_path)
+
+            fedml.core.mlops.log_mlops_running_logs(artifact, run_id=self.run_id, edge_id=self.device_id,
+                                                    only_push_artifact=only_push_artifact)
+
+            return True
+        except Exception as e:
+            return False
+
 
 class MLOpsRuntimeLogDaemon:
     _log_sdk_instance = None
@@ -376,12 +411,15 @@ class MLOpsRuntimeLogDaemon:
     def set_log_source(self, source):
         self.log_source = source
 
-    def start_log_processor(self, log_run_id, log_device_id):
+    def start_log_processor(self, log_run_id, log_device_id, log_source=None):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
                                                  in_args=self.args)
-        log_processor.set_log_source(self.log_source)
+        if log_source is not None:
+            log_processor.set_log_source(log_processor)
+        else:
+            log_processor.set_log_source(self.log_source)
         if self.log_process_event is None:
             self.log_process_event = multiprocessing.Event()
         self.log_process_event.clear()
