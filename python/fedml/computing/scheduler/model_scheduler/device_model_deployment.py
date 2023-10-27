@@ -23,6 +23,7 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
 import io
 
 import docker
+from .device_model_cache import FedMLModelCache
 
 
 class CPUUnpickler(pickle.Unpickler):
@@ -69,10 +70,19 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
+    FedMLModelCache.get_instance().set_redis_params()
+    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
+
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
     else:
-        gpu_attach_cmd = "--gpus all"
+        gpu_attach_cmd = "--gpus 1"
+        if gpu_ids is not None and str(gpu_ids).strip() != "":
+            gpu_attach_cmd = f"--gpus '\"device={gpu_ids}\"'"
+        elif num_gpus is not None and str(num_gpus).strip() != "" and int(num_gpus) > 0:
+            gpu_attach_cmd = f"--gpus {num_gpus}"
+        else:
+            num_gpus = 1
 
     logging.info("Update docker environments...")
 
@@ -291,8 +301,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
-            device_requests.append(
-                docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
+            if gpu_ids is not None:
+                device_requests.append(
+                    docker.types.DeviceRequest(device_ids=[gpu_ids], capabilities=[['gpu']]))
+            else:
+                device_requests.append(
+                    docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info("Start pulling the inference image..., may take a few minutes...")
         # TODO:only pull if the image is not in the local
         client.images.pull(inference_image_name)

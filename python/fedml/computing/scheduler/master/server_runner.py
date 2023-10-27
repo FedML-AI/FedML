@@ -465,6 +465,8 @@ class FedMLServerRunner:
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
+            computing = job_yaml.get("computing", {})
+            num_gpus = computing.get("minimum_num_gpus", 1)
             serving_args = run_params.get("serving_args", {})
             model_id = serving_args.get("model_id", None)
             model_name = serving_args.get("model_name", None)
@@ -1106,12 +1108,13 @@ class FedMLServerRunner:
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
             MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+                run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
             logging.info("start the log processor.")
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-                run_id, request_json.get("server_id", "0")
+                run_id, request_json.get("server_id", "0"), SchedulerConstants.get_log_source(request_json)
             )
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
@@ -1120,7 +1123,8 @@ class FedMLServerRunner:
 
             # Start log processor for current run
             self.args.run_id = run_id
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+                run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
 
         logging.info("callback_start_train payload: {}".format(payload))
         logging.info(

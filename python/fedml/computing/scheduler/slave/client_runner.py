@@ -873,7 +873,8 @@ class FedMLClientRunner:
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
+            run_id, self.edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")
 
         try:
@@ -914,7 +915,11 @@ class FedMLClientRunner:
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
         matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
-        cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, matched_gpu_num)
+        job_yaml = request_json.get("job_yaml", {})
+        serving_args = job_yaml.get("serving_args", {})
+        endpoint_id = serving_args.get("endpoint_id", None)
+        cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
+            run_id, matched_gpu_num, inner_id=endpoint_id)
 
         # Start server with multiprocessing mode
         self.request_json = request_json
