@@ -104,7 +104,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     if use_extra_device_id_suffix is not None:
         unique_device_id = args.current_device_id + "@" + args.os_name + use_extra_device_id_suffix
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:
@@ -203,7 +203,7 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
     if args.device_id is not None and len(str(args.device_id)) > 0:
         unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Simulator"
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:

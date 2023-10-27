@@ -278,7 +278,7 @@ class FedMLAppManager(Singleton):
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
                                                                out_progress_to_err=True,
                                                                progress_desc="Submitting your job to "
-                                                                             "FedML® Launch platform")
+                                                                             "FedML® Nexus AI Platform")
         return app_storage_url
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):
@@ -315,7 +315,7 @@ class FedMLAppManager(Singleton):
         return FedMLModelCards.get_instance().push_model_to_s3(
             model_name, model_zip_path, "FedMLLaunchServe",
             show_progress=False,
-            progress_desc="Submitting your job to FedML® Launch platform")
+            progress_desc="Submitting your job to FedML® Nexus AI Platform")
 
     def check_model_package(self, workspace):
         model_config_file = os.path.join(
@@ -331,7 +331,7 @@ class FedMLAppManager(Singleton):
         return True
 
     def check_model_exists(self, model_name, api_key):
-        result = FedMLModelCards.get_instance().list_models(model_name, user_id="", user_api_key=api_key)
+        result = FedMLModelCards.get_instance().list_models(model_name, api_key=api_key)
         return result
 
     def update_model(self, model_name, workspace, api_key):

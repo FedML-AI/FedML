@@ -223,9 +223,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 model_params = self.s3_storage.read_model(s3_key_str)
 
             if not hasattr(self.args, "fa_task"):
-                logging.info(
-                    "mqtt_s3.on_message: model params length %d" % len(model_params)
-                )
+                if model_params:
+                    logging.info(
+                        "mqtt_s3.on_message: model params length %d" % len(model_params)
+                    )
 
             model_url = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
             logging.info("mqtt_s3.on_message: model url {}".format(model_url))

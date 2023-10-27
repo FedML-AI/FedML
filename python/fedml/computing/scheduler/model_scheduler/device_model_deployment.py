@@ -23,6 +23,7 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
 import io
 
 import docker
+from .device_model_cache import FedMLModelCache
 
 
 class CPUUnpickler(pickle.Unpickler):
@@ -69,10 +70,19 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
+    FedMLModelCache.get_instance().set_redis_params()
+    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
+
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
     else:
-        gpu_attach_cmd = "--gpus all"
+        gpu_attach_cmd = "--gpus 1"
+        if gpu_ids is not None and str(gpu_ids).strip() != "":
+            gpu_attach_cmd = f"--gpus '\"device={gpu_ids}\"'"
+        elif num_gpus is not None and str(num_gpus).strip() != "" and int(num_gpus) > 0:
+            gpu_attach_cmd = f"--gpus {num_gpus}"
+        else:
+            num_gpus = 1
 
     logging.info("Update docker environments...")
 
@@ -138,7 +148,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model_from_open.eval()
 
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-            logging.info("convert the onnx model when the mode is from the MLOps platform...")
+            logging.info("convert the onnx model when the mode is from FedML® Nexus AI Platform..")
             logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                                 model_params["input_types"]))
             input_size = model_params["input_size"]
@@ -171,7 +181,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model.eval()
         except Exception as e:
             logging.info(
-                "Cannot locate the .bin file, will read it from the fedml_model_cofig.yaml with the key [local_model_dir] ")
+                "Cannot locate the .bin file, will read it from"
+                " the fedml_model_cofig.yaml with the key [local_model_dir] ")
             model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
             with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
@@ -194,8 +205,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', None)
+                extra_envs = config.get('environment_variables', None)
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}, data_cache_dir_input: {data_cache_dir_input}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path},"
+                    f" data_cache_dir_input: {data_cache_dir_input}")
                 src_data_cache_dir, dst_data_cache_dir = "", ""
                 if data_cache_dir_input != "":
                     if data_cache_dir_input[0] == "~":
@@ -288,8 +301,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
-            device_requests.append(
-                docker.types.DeviceRequest(count=-1, capabilities=[['gpu']]))
+            if gpu_ids is not None:
+                device_requests.append(
+                    docker.types.DeviceRequest(device_ids=[gpu_ids], capabilities=[['gpu']]))
+            else:
+                device_requests.append(
+                    docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info("Start pulling the inference image..., may take a few minutes...")
         # TODO:only pull if the image is not in the local
         client.images.pull(inference_image_name)
@@ -316,6 +333,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         }
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
         environment["MAIN_ENTRY"] = relative_entry
+
+        if extra_envs is not None:
+            for key in extra_envs:
+                environment[key] = extra_envs[key]
 
         new_container = client.api.create_container(
             image=inference_image_name,

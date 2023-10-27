@@ -7,12 +7,12 @@ import fedml.api
 @click.help_option("--help", "-h")
 def fedml_train():
     """
-    Manage training resources on the MLOps platform.
+    Manage training resources on FedML® Nexus AI Platform
     """
     pass
 
 
-@fedml_train.command("build", help="Build training packages for the FedML® Launch platform (open.fedml.ai).")
+@fedml_train.command("build", help="Build training packages for the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--source_folder", "-sf", type=str, default="./", help="the source code folder path"

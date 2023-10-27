@@ -54,6 +54,7 @@ class MLOpsStore:
     mlops_project_id: int = None
     mlops_run_id = None
     mlops_edge_id = None
+    mlops_log_metrics_steps = 0
     mlops_log_metrics = dict()
     mlops_log_records = dict()
     mlops_log_round_info = dict()
@@ -71,6 +72,13 @@ class MLOpsStore:
     mlops_bind_result = False
     server_agent_id = None
     current_parrot_process = None
+
+    METRIC_NAME_X_AXIS = "x_axis_keys"
+    METRIC_NAME_Y_AXIS = "y_axis_keys"
+    METRICS_X_AXIS_TAG_DEFAULT = "step"
+    METRICS_X_AXIS_TAG_TIMESTAMP = "timestamp"
+    METRICS_X_AXIS_TAG_LIST = ["index", "idx", "iteration", "iter", "round", "round_index", "round_idx",
+                               "round-index", "round-idx", "epoch", "round", "step", "timestamp"]
 
     def __init__(self):
         pass
@@ -91,7 +99,7 @@ def init(args, should_init_logs=True):
         return
     else:
         if hasattr(args, "simulator_daemon"):
-            # Bind local device as simulation device on the MLOps platform.
+            # Bind local device as simulation device on FedML® Nexus AI Platform
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
             MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user)
@@ -109,7 +117,7 @@ def init(args, should_init_logs=True):
     if project_name is None or api_key is None:
         raise Exception("Please check mlops_project_name and mlops_api_key params.")
 
-    # Bind local device as simulation device on the MLOps platform.
+    # Bind local device as simulation device on FedML® Nexus AI Platform
     setattr(args, "using_mlops", True)
     setattr(args, "rank", 1)
     MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, args.config_version)
@@ -159,9 +167,9 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
         MLOpsStore.mlops_event.log_event_ended(event_name, event_value, event_edge_id)
 
 
-def log(metrics: dict, commit=True):
-    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CHEETAH:
-        log_metric(metrics)
+def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
+        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -172,31 +180,8 @@ def log(metrics: dict, commit=True):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    if MLOpsStore.mlops_log_metrics_lock is None:
-        MLOpsStore.mlops_log_metrics_lock = threading.Lock()
-
-    MLOpsStore.mlops_log_metrics_lock.acquire()
-    for k, v in metrics.items():
-        k = str(k).replace("/", "_")
-        if k.startswith("round"):
-            k = "round_idx"
-
-        # if isinstance(v, int):
-        #     # k = "round_idx"
-        #     k = "round_idx_" + k
-        MLOpsStore.mlops_log_metrics[k] = v
-    MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
-    MLOpsStore.mlops_log_metrics["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
-    MLOpsStore.mlops_log_metrics_lock.release()
-
-    logging.info("log metrics {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
-
-    if commit:
-        setup_log_mqtt_mgr()
-        MLOpsStore.mlops_log_metrics_lock.acquire()
-        MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
-        MLOpsStore.mlops_log_metrics.clear()
-        MLOpsStore.mlops_log_metrics_lock.release()
+    log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit,
+               run_id=MLOpsStore.mlops_run_id, edge_id=MLOpsStore.mlops_edge_id)
 
 
 def log_llm_record(metrics: dict, version="release", commit: bool = True) -> None:
@@ -566,9 +551,11 @@ def log_print_end():
 
 def get_fedml_args():
     # init FedML framework
-    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CHEETAH
+    fedml._global_training_type = constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD
     fedml._global_comm_backend = ""
     fedml_args = fedml.init(check_env=False, should_init_logs=False)
+    fedml_args.version = fedml.get_env_version()
+    fedml_args.config_version = fedml.get_env_version()
     print(f"current version {fedml_args.version}, {fedml_args.config_version}")
     return fedml_args
 
@@ -608,7 +595,7 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_
                                                                     show_progress=show_progress,
                                                                     out_progress_to_err=True,
                                                                     progress_desc="Submitting your artifact to "
-                                                                                  "FedML® Launch platform")
+                                                                                  "FedML® Nexus AI Platform")
         artifact_storage_url = str(artifact_storage_url).split("?")[0]
     except Exception as e:
         pass
@@ -623,7 +610,7 @@ def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge
 
     setup_log_mqtt_mgr()
     if run_id is None:
-        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+        run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     if edge_id is None:
         edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
@@ -639,28 +626,116 @@ def log_model(model_name, model_file_path, version=None):
     log_artifact(model_artifact, version=version)
 
 
-def log_metric(metrics):
+def log_metric(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True,
+               run_id=None, edge_id=None):
     fedml_args = get_fedml_args()
 
-    metrics_obj = dict()
-    for k, v in metrics.items():
-        metrics_obj[k] = v
-
-    job_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
-    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
-
-    metrics_obj["run_id"] = str(job_id)
-    metrics_obj["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
-
-    logging.info(f"metrics to be uploaded {metrics_obj}")
-
-    setup_log_mqtt_mgr()
     if MLOpsStore.mlops_log_metrics_lock is None:
         MLOpsStore.mlops_log_metrics_lock = threading.Lock()
-    MLOpsStore.mlops_log_metrics_lock.acquire()
-    MLOpsStore.mlops_metrics.report_server_training_metric(metrics_obj)
-    MLOpsStore.mlops_log_metrics.clear()
-    MLOpsStore.mlops_log_metrics_lock.release()
+
+    if customized_step_key is not None:
+        customized_step_key = customized_step_key.replace('/', '-')
+
+    if commit:
+        MLOpsStore.mlops_log_metrics_lock.acquire()
+        if step is None:
+            current_step = MLOpsStore.mlops_log_metrics_steps
+        else:
+            current_step = step
+        log_metrics_obj = _generate_log_metrics(
+            metrics, step=current_step, customized_step_key=customized_step_key, run_id=run_id, edge_id=edge_id,
+            previous_metrics=MLOpsStore.mlops_log_metrics)
+        if log_metrics_obj is None:
+            MLOpsStore.mlops_log_metrics_lock.release()
+            return
+        MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
+        setup_log_mqtt_mgr()
+        MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
+        MLOpsStore.mlops_log_metrics.clear()
+        if step is None:
+            MLOpsStore.mlops_log_metrics_steps = current_step + 1
+        MLOpsStore.mlops_log_metrics_lock.release()
+    else:
+        MLOpsStore.mlops_log_metrics_lock.acquire()
+        if step is None:
+            current_step = MLOpsStore.mlops_log_metrics_steps
+        else:
+            current_step = step
+        log_metrics_obj = _generate_log_metrics(
+            metrics, step=current_step, customized_step_key=customized_step_key, run_id=run_id, edge_id=edge_id,
+            previous_metrics=MLOpsStore.mlops_log_metrics)
+        if log_metrics_obj is None:
+            MLOpsStore.mlops_log_metrics_lock.release()
+            return
+        MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
+        MLOpsStore.mlops_log_metrics_lock.release()
+
+
+def _append_to_list(list_data, list_item):
+    try:
+        list_data.index(list_item)
+    except Exception as e:
+        list_data.append(list_item)
+
+    return list_data
+
+
+def _generate_log_metrics(metrics: dict, step: int = None, customized_step_key: str = None,
+                          run_id=None, edge_id=None, previous_metrics=None):
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_RUN_ID', None)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', None)
+    if run_id is None or str(run_id).strip() == "":
+        return None
+
+    # Generate default x-axis keys
+    log_metrics_obj = dict() if previous_metrics is None else previous_metrics.copy()
+    if log_metrics_obj.get(MLOpsStore.METRIC_NAME_X_AXIS, None) is None:
+        log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS] = list()
+    log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS] = _append_to_list(
+            log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS], MLOpsStore.METRICS_X_AXIS_TAG_DEFAULT)
+    log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS] = _append_to_list(
+        log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS], MLOpsStore.METRICS_X_AXIS_TAG_TIMESTAMP)
+
+    # Generate the metrics for y-axis and the keys for x-axis/y-axis
+    if log_metrics_obj.get(MLOpsStore.METRIC_NAME_Y_AXIS, None) is None:
+        log_metrics_obj[MLOpsStore.METRIC_NAME_Y_AXIS] = list()
+    found_customized_step_key = False
+    if customized_step_key is not None:
+        customized_step_key = str(customized_step_key).lower()
+    for k, v in metrics.items():
+        k = str(k).lower().replace('/','-')
+        log_metrics_obj[k] = v
+        found_x_axis = False
+        for x_axis in MLOpsStore.METRICS_X_AXIS_TAG_LIST:
+            if k == x_axis:
+                log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS] = _append_to_list(
+                    log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS], x_axis)
+                found_x_axis = True
+                break
+        if not found_x_axis and k != customized_step_key:
+            log_metrics_obj[MLOpsStore.METRIC_NAME_Y_AXIS] = _append_to_list(
+                log_metrics_obj[MLOpsStore.METRIC_NAME_Y_AXIS], k)
+
+        if k == customized_step_key:
+            found_customized_step_key = True
+
+    # Add the key for x-axis with specific step metric key
+    if customized_step_key is not None and found_customized_step_key:
+        log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS] = _append_to_list(
+            log_metrics_obj[MLOpsStore.METRIC_NAME_X_AXIS], customized_step_key)
+
+    # Generate the x-axis metric with the step value
+    if step is not None:
+        log_metrics_obj[MLOpsStore.METRICS_X_AXIS_TAG_DEFAULT] = step
+    else:
+        log_metrics_obj[MLOpsStore.METRICS_X_AXIS_TAG_DEFAULT] = 0
+
+    log_metrics_obj["run_id"] = str(run_id)
+    log_metrics_obj[MLOpsStore.METRICS_X_AXIS_TAG_TIMESTAMP] = float(time.time_ns() / 1000 / 1000 * 1.0)
+
+    return log_metrics_obj
 
 
 def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None,
@@ -675,7 +750,7 @@ def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=
 
     setup_log_mqtt_mgr()
     if run_id is None:
-        run_id = os.getenv('FEDML_CURRENT_JOB_ID', 0)
+        run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     if edge_id is None:
         edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
@@ -958,7 +1033,7 @@ def bind_simulation_device(args, userid):
         device_role = "Edge.Simulator"
         unique_device_id = "{}@{}.{}".format(args.device_id, args.os_name, device_role)
 
-    # Bind account id to the MLOps platform.
+    # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
     edge_id = 0
     while register_try_count < 5:

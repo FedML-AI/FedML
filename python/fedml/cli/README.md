@@ -27,56 +27,36 @@ fedml build \
     --ignore __pycache__,*.git
 ```
 
-## 2. Login into the FedML MLOps platform (open.fedml.ai)
-login as client with local pip mode:
+## 2. Login into the FedML® Nexus AI Platform (nexus.fedml.ai)
+login as general computing device with local pip mode:
 ```
-fedml login userid(or API Key)
-```
-
-login as client with docker mode:
-```
-fedml login userid(or API Key) --docker --docker-rank 1
+fedml login $YourApiKey
 ```
 
-login as edge server with local pip mode:
+login as federated-learning server with local pip mode:
 ```
-fedml login userid(or API Key) -s
-```
-
-login as edge server with docker mode:
-```
-fedml login userid(or API Key) -s --docker --docker-rank 1
+fedml login $YourApiKey -s
 ```
 
-### 2.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)
+### 2.1. Examples for Logining into the FedML® Nexus AI Platform (nexus.fedml.ai)
 
 ```
-fedml login 90 
+fedml login 113343dad999933 
 ```
 
 ```
-fedml login 90 -s
+fedml login 113343dad999933 -s
 ```
 
-## 3. Logout from the FedML MLOps platform (open.fedml.ai)
-logout from client with local pip mode:
+## 3. Logout from the FedML FedML® Nexus AI Platform (nexus.fedml.ai)
+logout from computing device with local pip mode:
 ```
 fedml logout 
 ```
 
-logout from client with docker mode:
-```
-fedml logout --docker --docker-rank 1
-```
-
-logout from edge server with local pip mode:
+logout from federated-learning server with local pip mode:
 ```
 fedml logout -s
-```
-
-logout from edge server with docker mode:
-```
-fedml logout -s --docker --docker-rank 1
 ```
 
 ## 4. Display fedml version
@@ -84,24 +64,14 @@ fedml version
 
 
 ## 5. Display logs
-logs from client with local pip mode:
+logs from computing device with local pip mode:
 ```
 fedml logs 
 ```
 
-logs from client with docker mode:
-```
-fedml logs --docker --docker-rank 1
-```
-
-logs from edge server with local pip mode:
+logs from federated-learning server with local pip mode:
 ```
 fedml logs -s
-```
-
-logs from edge server with docker mode:
-```
-fedml logs --docker --docker-rank 1
 ```
 
 ## 6. Diagnosis
@@ -111,17 +81,17 @@ fedml diagnosis --open --s3 --mqtt
 ```
 
 ## 7. Jobs
-Start a job at the MLOps platform.
+Start a job at FedML® Nexus AI Platform
 ```
 Usage: fedml jobs start [OPTIONS]
 
-Start a job at the MLOps platform.
+Start a job at FedML® Nexus AI Platform
 
 Options:
 -pf, --platform TEXT           The platform name at the MLOps platform(options: octopus, parrot, spider, beehive).
--prj, --project_name TEXT      The project name at the MLOps platform.
--app, --application_name TEXT  Application name in the My Application list at the MLOps platform.
--jn, --job_name TEXT           The job name at the MLOps platform. If you don't specify here, the job name from the job yaml file will be used.
+-prj, --project_name TEXT      The project name at FedML® Nexus AI Platform
+-app, --application_name TEXT  Application name in the My Application list at FedML® Nexus AI Platform
+-jn, --job_name TEXT           The job name at FedML® Nexus AI Platform If you don't specify here, the job name from the job yaml file will be used.
 -ds, --devices_server TEXT     The server to run the launching job, for the launch platform, we do not need to set this option.
 -de, --devices_edges TEXT      The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the launch platform, we do not need to set this option.
 -u, --user TEXT                user id or api key.
@@ -166,12 +136,30 @@ job: |
     echo "Current directory is as follows."
     pwd
     python hello_world.py
+    
+# Entry commands on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# job:
+#   run_on_windows: |
+#     echo "I am running on Windows"
+#   run_on_posix: |
+#     echo "I am running on posix"
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
+  
+# Bootstrap shell commands on multiple OS
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# bootstrap:
+#   run_on_windows: |
+#     echo "Bootstrap finished."
+#   run_on_posix: |
+#     echo "Bootstrap finished."
 
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
@@ -198,6 +186,15 @@ server_job: |
     echo "Hello, Here is the server job."
     echo "Current directory is as follows."
     pwd
+    
+# Entry commands for server jobs on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# server_job:
+#   run_on_windows:
+#     echo "Hello, Here is the server job on windows."
+#   run_on_posix:
+#     echo "Hello, Here is the server job on posix."
     
 # If you want to use the job created by the MLOps platform,
 # just uncomment the following three, then set job_id and config_id to your desired job id and related config.
@@ -241,7 +238,7 @@ You just need to customize the following config items.
 
 3. `bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
 
-Then you can use the following example CLI to launch the job at the MLOps platform.
+Then you can use the following example CLI to launch the job at FedML® Nexus AI Platform
 (Replace $YourApiKey with your own account API key from open.fedml.ai)
 
 Example:
@@ -251,7 +248,7 @@ fedml launch hello_job.yaml
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Submitting your job to FedML® Launch platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
+Submitting your job to FedML® Nexus AI Platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
 
 Searched and matched the following GPU resource for your job:
 +-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+
@@ -282,7 +279,7 @@ fedml job logs -jid 1696947481910317056
 ### Supported Environment Variables
 You may use the following environment variables in your job commands or scripts.
 ```
-$FEDML_CURRENT_JOB_ID, current run id for your job
+$FEDML_CURRENT_RUN_ID, current run id for your job
 $FEDML_CURRENT_EDGE_ID, current edge device id for your job
 $FEDML_CLIENT_RANK, current device index for your job
 $FEDML_CURRENT_VERSION, current fedml config version, options: dev, test or release
@@ -292,7 +289,7 @@ $FEDML_RUN_API_KEY, current API key from your job.yaml with the config item run_
 ## 9. Login as the GPU supplier
 If you want to login as the role of GPU supplier and join into the FedML launch payment system. You just need to run the following command.
 ```
-fedml login $YourApiKey -r gpu_supplier
+fedml login -p $YourApiKey
 ```
 
 Then you may find your GPU device in the FedML launch platform https://open.fedml.ai/gpu-supplier/gpus/index

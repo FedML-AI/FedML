@@ -30,12 +30,30 @@ job: |
     echo "Current directory is as follows."
     pwd
     python hello_world.py
+    
+# Entry commands on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# job:
+#   run_on_windows: |
+#     echo "I am running on Windows"
+#   run_on_posix: |
+#     echo "I am running on posix"
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
   pip install -r requirements.txt
   echo "Bootstrap finished."
+  
+# Bootstrap shell commands on multiple OS
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# bootstrap:
+#   run_on_windows: |
+#     echo "Bootstrap finished."
+#   run_on_posix: |
+#     echo "Bootstrap finished."
 
 computing:
   minimum_num_gpus: 1             # minimum # of GPUs to provision
@@ -62,6 +80,15 @@ server_job: |
     echo "Hello, Here is the server job."
     echo "Current directory is as follows."
     pwd
+    
+# Entry commands for server jobs on multiple OS.
+# if running on Windows, the commands in the run_on_windows will be executed.
+# if running on posix OS (Mac, Linux, Unix), the commands in the run_on_posix will be executed.
+# server_job:
+#   run_on_windows:
+#     echo "Hello, Here is the server job on windows."
+#   run_on_posix:
+#     echo "Hello, Here is the server job on posix."
     
 # If you want to use the job created by the MLOps platform,
 # just uncomment the following three, then set job_id and config_id to your desired job id and related config.
@@ -105,7 +132,7 @@ You just need to customize the following config items.
 
 3. `bootstrap`, It is the bootstrap shell command which will be executed before running entry commands.
 
-Then you can use the following example CLI to launch the job at the MLOps platform.
+Then you can use the following example CLI to launch the job at FedML® Nexus AI Platform
 (Replace $YourApiKey with your own account API key from open.fedml.ai)
 
 Example:
@@ -115,7 +142,7 @@ fedml launch hello_job.yaml
 
 After the launch CLI is executed, the output is as follows. Here you may open the job url to confirm and actually start the job.
 ```
-Submitting your job to FedML® Launch platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
+Submitting your job to FedML® Nexus AI Platform: 100%|████████████████████████████████████████████████████████████████████████████████████████| 6.07k/6.07k [00:01<00:00, 4.94kB/s]
 
 Searched and matched the following GPU resource for your job:
 +-----------+-------------------+---------+------------+-------------------------+---------+-------+----------+
@@ -146,7 +173,7 @@ fedml job logs -jid 1696947481910317056
 ## Supported Environment Variables
 You may use the following environment variables in your job commands or scripts.
 ```
-$FEDML_CURRENT_JOB_ID, current run id for your job
+$FEDML_CURRENT_RUN_ID, current run id for your job
 $FEDML_CURRENT_EDGE_ID, current edge device id for your job
 $FEDML_CLIENT_RANK, current device index for your job
 $FEDML_CURRENT_VERSION, current fedml config version, options: dev, test or release
@@ -156,7 +183,7 @@ $FEDML_RUN_API_KEY, current API key from your job.yaml with the config item run_
 ## Login as the GPU supplier
 If you want to login as the role of GPU supplier and join into the FedML launch payment system. You just need to run the following command.
 ```
-fedml login $YourApiKey -r gpu_supplier
+fedml login -p $YourApiKey
 ```
 
 Then you may find your GPU device in the FedML launch platform https://open.fedml.ai/gpu-supplier/gpus/index

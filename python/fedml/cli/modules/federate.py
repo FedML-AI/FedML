@@ -7,12 +7,12 @@ import fedml.api
 @click.help_option("--help", "-h")
 def fedml_federate():
     """
-    Manage federated resources on the MLOps platform.
+    Manage federated learning resources on FedML® Nexus AI Platform
     """
     pass
 
 
-@fedml_federate.command("build", help="Build federate packages for the FedML® Launch platform (open.fedml.ai).")
+@fedml_federate.command("build", help="Build federate packages for the FedML® Nexus AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="build the server package, default is building client package.",
