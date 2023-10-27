@@ -4,21 +4,78 @@ import platform
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
+from fedml.core.common.singleton import Singleton
+import threading
 
 
-class JobRunnerUtils:
+class JobRunnerUtils(Singleton):
     FEDML_SUPPORTED_ENVIRONMENT_VARIABLES = ["$FEDML_MODEL_NAME", "$FEDML_MODEL_CACHE_PATH",
                                              "$FEDML_MODEL_INPUT_DIM", "$FEDML_MODEL_OUTPUT_DIM",
                                              "$FEDML_DATASET_NAME", "$FEDML_DATASET_PATH", "$FEDML_DATASET_TYPE",
                                              "$FEDML_NODE_0_ADDR", "$FEDML_NODE_0_PORT", "$FEDML_NUM_NODES",
                                              "$CUDA_VISIBLE_DEVICES"]
 
+    def __init__(self):
+        if not hasattr(self, "run_id_to_gpu_ids_map"):
+            self.run_id_to_gpu_ids_map = dict()
+        if not hasattr(self, "available_gpu_ids"):
+            self.available_gpu_ids = list()
+        if not hasattr(self, "lock_available_gpu_ids"):
+            self.lock_available_gpu_ids = threading.Lock()
+
+    @staticmethod
+    def get_instance():
+        return JobRunnerUtils()
+
+    def occupy_gpu_ids(self, run_id, request_gpu_num):
+        self.lock_available_gpu_ids.acquire()
+        if len(self.available_gpu_ids) <= 0:
+            self.available_gpu_ids = self.get_realtime_gpu_available_ids()
+
+        available_gpu_count = len(self.available_gpu_ids)
+        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
+        matched_gpu_num = min(available_gpu_count, request_gpu_num)
+        if matched_gpu_num <= 0:
+            return None
+
+        matched_gpu_ids = map(lambda x: str(x), self.available_gpu_ids[0:matched_gpu_num])
+        cuda_visiable_gpu_ids_str = ",".join(matched_gpu_ids)
+
+        self.run_id_to_gpu_ids_map[str(run_id)] = self.available_gpu_ids[0:matched_gpu_num].copy()
+        self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
+        self.lock_available_gpu_ids.release()
+
+        return cuda_visiable_gpu_ids_str
+
+    def release_gpu_ids(self, run_id):
+        self.lock_available_gpu_ids.acquire()
+        occupy_gpu_id_list = self.run_id_to_gpu_ids_map[str(run_id)]
+        self.available_gpu_ids.extend(occupy_gpu_id_list.copy())
+        self.lock_available_gpu_ids.release()
+
+    def get_available_gpu_id_list(self):
+        self.lock_available_gpu_ids.acquire()
+        ret_gpu_ids = list()
+        if len(self.available_gpu_ids) <= 0:
+            self.available_gpu_ids = self.get_realtime_gpu_available_ids().copy()
+            ret_gpu_ids = self.available_gpu_ids.copy()
+        else:
+            ret_gpu_ids = self.available_gpu_ids.copy()
+        self.lock_available_gpu_ids.release()
+        return ret_gpu_ids
+
+    def get_realtime_gpu_available_ids(self):
+        gpu_list = sys_utils.get_gpu_list()
+        gpu_count = len(gpu_list)
+        realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+        return realtime_available_gpu_ids
+
     @staticmethod
     def generate_job_execute_commands(run_id, edge_id, version,
                                       package_type, executable_interpreter, entry_file_full_path,
                                       conf_file_object, entry_args, assigned_gpu_ids,
                                       job_api_key, client_rank, job_yaml=None, request_gpu_num=None,
-                                      scheduler_match_info=None):
+                                      scheduler_match_info=None, cuda_visible_gpu_ids_str=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
         computing = job_yaml.get("computing", {})
@@ -39,7 +96,7 @@ class JobRunnerUtils:
         # Generate the export env list about scheduler matching info for publishing environment variables
         export_env_cmd_list_for_match, env_name_value_map_for_match = \
             JobRunnerUtils.assign_matched_resources_to_run_and_generate_envs(
-                export_cmd, scheduler_match_info
+                run_id, export_cmd, scheduler_match_info
             )
 
         # Replace entry commands with environment variable values
@@ -68,6 +125,9 @@ class JobRunnerUtils:
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
         if job_api_key is not None and str(job_api_key).strip() != "":
             entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={job_api_key}\n")
+        if cuda_visible_gpu_ids_str is not None and str(cuda_visible_gpu_ids_str).strip() != "":
+            entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={cuda_visible_gpu_ids_str}\n")
+        print(f"cuda_visible_gpu_ids_str {cuda_visible_gpu_ids_str}")
 
         # Set -e for the entry script
         entry_commands_filled = list()
@@ -182,20 +242,9 @@ class JobRunnerUtils:
         return export_env_command_list, env_name_value_map
 
     @staticmethod
-    def get_cuda_visible_gpu_ids_str(request_gpu_num):
-        gpu_list = sys_utils.get_gpu_list()
-        gpu_count = len(gpu_list)
-        available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
-        available_gpu_count = len(available_gpu_ids)
-        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
-        matched_gpu_num = min(available_gpu_count, request_gpu_num)
-        if matched_gpu_num <= 0:
-            return None
-        matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
-        return ",".join(matched_gpu_ids)
-
-    @staticmethod
-    def assign_matched_resources_to_run_and_generate_envs(export_cmd, scheduler_match_info):
+    def assign_matched_resources_to_run_and_generate_envs(run_id, export_cmd, scheduler_match_info):
+        if scheduler_match_info is None:
+            scheduler_match_info = {}
         master_node_addr = scheduler_match_info.get("master_node_addr", "localhost")
         master_node_port = scheduler_match_info.get(
             "master_node_port", SchedulerConstants.JOB_MATCH_DEFAULT_MASTER_NODE_PORT)
@@ -218,10 +267,5 @@ class JobRunnerUtils:
         if num_nodes is not None and str(num_nodes).strip() != "":
             export_env_command_list.append(f"{export_cmd} FEDML_NUM_NODES={num_nodes}\n")
             env_name_value_map["$FEDML_NUM_NODES"] = num_nodes
-
-        cuda_visible_gpu_ids_str = JobRunnerUtils.get_cuda_visible_gpu_ids_str(matched_gpu_num)
-        if cuda_visible_gpu_ids_str is not None and str(cuda_visible_gpu_ids_str).strip() != "":
-            export_env_command_list.append(f"{export_cmd} CUDA_VISIBLE_DEVICES={cuda_visible_gpu_ids_str}\n")
-            env_name_value_map["$CUDA_VISIBLE_DEVICES"] = cuda_visible_gpu_ids_str
 
         return export_env_command_list, env_name_value_map

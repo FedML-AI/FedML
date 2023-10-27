@@ -960,6 +960,8 @@ class FedMLServerRunner:
 
         logging.info("Send training request to Edge ids: " + str(edge_id_list))
 
+        SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
+
         # Match and assign gpus to each device
         assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
             request_num_gpus, edge_id_list, active_edge_info_dict)

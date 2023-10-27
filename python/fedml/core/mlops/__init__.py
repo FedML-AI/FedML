@@ -633,7 +633,9 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
     if MLOpsStore.mlops_log_metrics_lock is None:
         MLOpsStore.mlops_log_metrics_lock = threading.Lock()
 
-    customized_step_key = customized_step_key.replace('/', '-')
+    if customized_step_key is not None:
+        customized_step_key = customized_step_key.replace('/', '-')
+
     if commit:
         MLOpsStore.mlops_log_metrics_lock.acquire()
         if step is None:

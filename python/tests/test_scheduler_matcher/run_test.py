@@ -1,10 +1,11 @@
 import argparse
 
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
+from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.scheduler_core.scheduler_matcher import SchedulerMatcher
 
 
-def test_match_multi_nodes_with_multi_gpus(in_args, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
+def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
     request_json = {'threshold': '20', 'starttime': 1698291772383, 'edgestates': '{}', 'edgeids': [705], 'urls': '"[]"',
                     'id': 4887, 'state': 'STARTING', 'projectid': 289,
                     'run_config':
@@ -46,13 +47,14 @@ def test_match_multi_nodes_with_multi_gpus(in_args, node_num=1, gpu_num_per_node
             'cpuCores': 10, 'gpuCoresTotal': gpu_num_per_node, 'gpuCoresAvailable': gpu_num_per_node,
             'gpu_available_ids': list(range(0, gpu_num_per_node)), 'node_ip': '192.168.68.102',
             'node_port': 40000, 'networkTraffic': 8444397568, 'updateTime': 1698291782320,
-            'fedml_version': '0.8.8a156', 'user_id': '214'}
+            'fedml_version': '0.8.8a156', 'user_id': '214', "gpu_list": sys_utils.get_gpu_list()}
 
     # Show request infos
     print(f"Node num {node_num}, gpu num per node {gpu_num_per_node}, request gpu num {request_gpu_num}")
 
     # Show current GPUs
-    gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict)
+    gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
+        active_edge_info_dict, show_gpu_list=True)
     print("\n")
 
     # Match and assign gpus to each device
@@ -83,7 +85,7 @@ def test_match_multi_nodes_with_multi_gpus(in_args, node_num=1, gpu_num_per_node
         print(f"server: generate scheduler info for {edge_id}\n   {scheduler_info}")
 
         export_env_cmd_list, env_name_value_map = JobRunnerUtils.assign_matched_resources_to_run_and_generate_envs(
-            "export", scheduler_info
+            run_id, "export", scheduler_info
         )
         print(f"client: assigned resources to run for edge id {edge_id}\n   {export_env_cmd_list}\n")
 
@@ -99,14 +101,15 @@ if __name__ == "__main__":
     parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
     args = parser.parse_args()
     args.current_running_dir = None
+    run_id = 1000
 
     print("Hi everyone, I am testing the server runner.\n")
 
     print("Test for single node with single GPU")
-    test_match_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=1, request_gpu_num=1)
+    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=1, request_gpu_num=1)
 
     print("Test for single node with multi GPUs")
-    test_match_multi_nodes_with_multi_gpus(args, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
+    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
 
     print("Test for multi node with multi GPUs")
-    test_match_multi_nodes_with_multi_gpus(args, node_num=3, gpu_num_per_node=8, request_gpu_num=18)
+    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=3, gpu_num_per_node=8, request_gpu_num=18)

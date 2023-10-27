@@ -3,7 +3,7 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
 class SchedulerMatcher:
     @staticmethod
-    def parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, should_print=True):
+    def parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, should_print=True, show_gpu_list=False):
         gpu_count_for_all_edges = 0
         gpu_available_count_for_all_edges = 0
         for edge_id, edge_info in active_edge_info_dict.items():
@@ -12,6 +12,9 @@ class SchedulerMatcher:
             gpu_available_count = edge_info.get("gpuCoresAvailable", 0)
             gpu_available_count_for_all_edges += gpu_available_count
             gpu_available_ids = edge_info.get("gpu_available_ids", [])
+            if show_gpu_list:
+                gpu_list = edge_info.get("gpu_list", [])
+                print(f"GPU List is as follows. {gpu_list}")
             if should_print:
                 print(
                     f"GPUs on edge id {edge_id}: total count {gpu_total_count}, "
