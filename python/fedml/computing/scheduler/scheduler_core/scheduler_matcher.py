@@ -78,7 +78,7 @@ class SchedulerMatcher:
             total_available_gpu_count += gpu_available_count
 
         # Check if total available gpu count is less than request gpu num
-        request_gpu_num = 0 if request_gpu_num < 0 else request_gpu_num
+        request_gpu_num = 0 if request_gpu_num is None or request_gpu_num < 0 else request_gpu_num
         if total_available_gpu_count < request_gpu_num:
             return None, None
 
