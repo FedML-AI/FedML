@@ -57,6 +57,18 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
         active_edge_info_dict, show_gpu_list=True)
     print("\n")
 
+    print(f"Occupy GPUs {request_gpu_num}.")
+    JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
+    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+
+    JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
+    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    JobRunnerUtils.get_instance().release_gpu_ids(103)
+
+    JobRunnerUtils.get_instance().occupy_gpu_ids(104, 3)
+    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+
+
     # Match and assign gpus to each device
     assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
         request_gpu_num, edge_id_list, active_edge_info_dict
@@ -89,6 +101,11 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
         )
         print(f"client: assigned resources to run for edge id {edge_id}\n   {export_env_cmd_list}\n")
 
+    print(f"Release GPUs {request_gpu_num}.")
+    JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+    JobRunnerUtils.get_instance().release_gpu_ids(104)
+    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -106,10 +123,14 @@ if __name__ == "__main__":
     print("Hi everyone, I am testing the server runner.\n")
 
     print("Test for single node with single GPU")
-    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=1, request_gpu_num=1)
+    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=8, request_gpu_num=1)
 
-    print("Test for single node with multi GPUs")
-    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
+    # test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=8, request_gpu_num=2)
+    #
+    # test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=8, request_gpu_num=5)
 
-    print("Test for multi node with multi GPUs")
-    test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=3, gpu_num_per_node=8, request_gpu_num=18)
+    # print("Test for single node with multi GPUs")
+    # test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=3, request_gpu_num=1)
+    #
+    # print("Test for multi node with multi GPUs")
+    # test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=3, gpu_num_per_node=8, request_gpu_num=18)

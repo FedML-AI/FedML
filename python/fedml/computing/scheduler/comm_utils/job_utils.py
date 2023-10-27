@@ -20,6 +20,7 @@ class JobRunnerUtils(Singleton):
             self.run_id_to_gpu_ids_map = dict()
         if not hasattr(self, "available_gpu_ids"):
             self.available_gpu_ids = list()
+            self.available_gpu_ids = self.get_realtime_gpu_available_ids().copy()
         if not hasattr(self, "lock_available_gpu_ids"):
             self.lock_available_gpu_ids = threading.Lock()
 
@@ -29,13 +30,12 @@ class JobRunnerUtils(Singleton):
 
     def occupy_gpu_ids(self, run_id, request_gpu_num):
         self.lock_available_gpu_ids.acquire()
-        if len(self.available_gpu_ids) <= 0:
-            self.available_gpu_ids = self.get_realtime_gpu_available_ids()
 
         available_gpu_count = len(self.available_gpu_ids)
         request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
         matched_gpu_num = min(available_gpu_count, request_gpu_num)
         if matched_gpu_num <= 0:
+            self.lock_available_gpu_ids.release()
             return None
 
         matched_gpu_ids = map(lambda x: str(x), self.available_gpu_ids[0:matched_gpu_num])
@@ -43,24 +43,21 @@ class JobRunnerUtils(Singleton):
 
         self.run_id_to_gpu_ids_map[str(run_id)] = self.available_gpu_ids[0:matched_gpu_num].copy()
         self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
+        self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
         self.lock_available_gpu_ids.release()
 
         return cuda_visiable_gpu_ids_str
 
     def release_gpu_ids(self, run_id):
         self.lock_available_gpu_ids.acquire()
-        occupy_gpu_id_list = self.run_id_to_gpu_ids_map[str(run_id)]
+        occupy_gpu_id_list = self.run_id_to_gpu_ids_map.get(str(run_id), [])
         self.available_gpu_ids.extend(occupy_gpu_id_list.copy())
+        self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
         self.lock_available_gpu_ids.release()
 
     def get_available_gpu_id_list(self):
         self.lock_available_gpu_ids.acquire()
-        ret_gpu_ids = list()
-        if len(self.available_gpu_ids) <= 0:
-            self.available_gpu_ids = self.get_realtime_gpu_available_ids().copy()
-            ret_gpu_ids = self.available_gpu_ids.copy()
-        else:
-            ret_gpu_ids = self.available_gpu_ids.copy()
+        ret_gpu_ids = self.available_gpu_ids.copy()
         self.lock_available_gpu_ids.release()
         return ret_gpu_ids
 
