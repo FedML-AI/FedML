@@ -172,7 +172,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         except Exception as e:
             logging.info(
                 "Cannot locate the .bin file, will read it from"
-                " the fedml_model_cofig.yaml with the key [local_model_dir] ")
+                " the fedml_model_config.yaml with the key [local_model_dir] ")
             model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
             with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
