@@ -20,3 +20,30 @@ class SchedulerConstants:
     CLIENT_SHELL_PS = "powershell"
 
     JOB_MATCH_DEFAULT_MASTER_NODE_PORT = 40000
+
+    JOB_TASK_TYPE_TRAIN = "train"
+    JOB_TASK_TYPE_DEPLOY = "deploy"
+    JOB_TASK_TYPE_SERVE = "serve"
+    JOB_TASK_TYPE_FEDERATE = "federate"
+    JOB_TASK_TYPE_DEV_ENV = "dev-environment"
+
+    @staticmethod
+    def get_log_source(run_json):
+        run_config = run_json.get("run_config", {})
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", None)
+        if job_yaml is None:
+            log_source_type = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
+        elif isinstance(job_yaml, dict):
+            job_type = job_yaml.get("task_type", None)
+            if job_type is None or str(job_type).strip() == "":
+                log_source_type = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
+            else:
+                log_source_type = job_type
+                if job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE:
+                    log_source_type = SchedulerConstants.JOB_TASK_TYPE_DEPLOY
+        else:
+            log_source_type = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
+
+        return log_source_type
+

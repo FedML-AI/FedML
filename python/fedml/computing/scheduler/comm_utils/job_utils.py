@@ -4,6 +4,7 @@ import platform
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
+from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.core.common.singleton import Singleton
 import threading
 
@@ -28,7 +29,7 @@ class JobRunnerUtils(Singleton):
     def get_instance():
         return JobRunnerUtils()
 
-    def occupy_gpu_ids(self, run_id, request_gpu_num):
+    def occupy_gpu_ids(self, run_id, request_gpu_num, inner_id=None):
         self.lock_available_gpu_ids.acquire()
 
         available_gpu_count = len(self.available_gpu_ids)
@@ -44,6 +45,12 @@ class JobRunnerUtils(Singleton):
         self.run_id_to_gpu_ids_map[str(run_id)] = self.available_gpu_ids[0:matched_gpu_num].copy()
         self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
         self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
+
+        if inner_id is not None:
+            FedMLModelCache.get_instance().set_redis_params()
+            FedMLModelCache.get_instance().set_end_point_gpu_resources(
+                inner_id, matched_gpu_num, cuda_visiable_gpu_ids_str)
+
         self.lock_available_gpu_ids.release()
 
         return cuda_visiable_gpu_ids_str
