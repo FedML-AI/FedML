@@ -56,7 +56,8 @@ class RunnerCompletedError(Exception):
 
 class FedMLClientRunner:
 
-    def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+    def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0,
+                 cuda_visible_gpu_ids_str=None):
         self.model_device_server = None
         self.model_device_client = None
         self.run_process_event = None
@@ -115,6 +116,7 @@ class FedMLClientRunner:
         self.computing_started_time = 0
         self.origin_fedml_config_object = None
         self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
+        self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -614,7 +616,8 @@ class FedMLClientRunner:
                 self.package_type, executable_interpreter, entry_file_full_path,
                 conf_file_object, entry_args, assigned_gpu_ids,
                 job_api_key, client_rank, job_yaml=job_yaml_default_none,
-                scheduler_match_info=scheduler_match_info)
+                scheduler_match_info=scheduler_match_info,
+                cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             # Run the job executing commands
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
@@ -908,11 +911,17 @@ class FedMLClientRunner:
         # OTA upgrade
         self.ota_upgrade(payload, request_json)
 
+        # Occupy GPUs
+        scheduler_match_info = request_json.get("scheduler_match_info", {})
+        matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
+        cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, matched_gpu_num)
+
         # Start server with multiprocessing mode
         self.request_json = request_json
         run_id_str = str(run_id)
         client_runner = FedMLClientRunner(
-            self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
+            self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id,
+            cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str
         )
         client_runner.start_request_json = payload
         self.run_process_event_map[run_id_str] = multiprocessing.Event()
@@ -960,6 +969,8 @@ class FedMLClientRunner:
 
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
+
+        JobRunnerUtils.get_instance().release_gpu_ids(run_id)
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
@@ -1034,6 +1045,10 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
+            print(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+            print(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:
                 if run_process.pid is not None:
@@ -1081,6 +1096,9 @@ class FedMLClientRunner:
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
             host_ip = sys_utils.get_host_ip()
             host_port = sys_utils.get_available_port()
+            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list()
+            gpu_cores_available = len(gpu_available_ids)
+            gpu_list = sys_utils.get_gpu_list()
             device_info_json = {
                 "edge_id": self.edge_id,
                 "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
@@ -1092,6 +1110,7 @@ class FedMLClientRunner:
                 "gpuCoresTotal": gpu_cores_total,
                 "gpuCoresAvailable": gpu_cores_available,
                 "gpu_available_ids": gpu_available_ids,
+                "gpu_list": gpu_list,
                 "node_ip": host_ip,
                 "node_port": host_port,
                 "networkTraffic": sent_bytes + recv_bytes,
