@@ -348,6 +348,7 @@ class FedMLClientRunner:
 
         # download model net and load into the torch model
         model_from_open = None
+        self.model_is_from_open = None
         if self.model_is_from_open:
             logging.info("process the model net from open...")
             self.check_runner_stop_event()

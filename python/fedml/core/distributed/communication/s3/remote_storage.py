@@ -308,11 +308,15 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
+        model = None
         try:
             model = torch.jit.load(temp_file_path)
         except Exception as e:
             logging.info("jit.load failed")
-            model = torch.load(temp_file_path, pickle_module=dill)
+            try:
+                model = torch.load(temp_file_path, pickle_module=dill)
+            except Exception as e:
+                logging.info("torch.load failed")
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
