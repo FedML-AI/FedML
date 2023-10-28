@@ -21,6 +21,7 @@ from os import listdir
 import requests
 import torch
 
+import fedml
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -693,7 +694,7 @@ class FedMLServerRunner:
             pass
 
         if force_ota and ota_version is not None:
-            should_upgrade = True
+            should_upgrade = True if ota_version != fedml.__version__ else False
             upgrade_version = ota_version
         else:
             try:
