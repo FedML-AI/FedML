@@ -417,7 +417,7 @@ class MLOpsRuntimeLogDaemon:
                                                  self.log_server_url,
                                                  in_args=self.args)
         if log_source is not None:
-            log_processor.set_log_source(log_processor)
+            log_processor.set_log_source(log_source)
         else:
             log_processor.set_log_source(self.log_source)
         if self.log_process_event is None:
