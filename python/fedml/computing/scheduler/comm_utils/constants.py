@@ -35,9 +35,11 @@ class SchedulerConstants:
         if job_yaml is None:
             log_source_type = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
         elif isinstance(job_yaml, dict):
-            job_type = job_yaml.get("task_type", None)
-            if job_type is None or str(job_type).strip() == "":
-                log_source_type = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
+            job_type = job_yaml.get("job_type", None)
+            job_type = job_yaml.get("task_type", SchedulerConstants.JOB_TASK_TYPE_TRAIN) \
+                if job_type is None else job_type
+            if str(job_type).strip() == "":
+                log_source_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
             else:
                 log_source_type = job_type
                 if job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE:
