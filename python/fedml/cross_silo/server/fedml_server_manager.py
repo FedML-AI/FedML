@@ -162,6 +162,7 @@ class FedMLServerManager(FedMLCommManager):
             return
 
         self.client_online_mapping[str(msg_params.get_sender_id())] = True
+        self.aggregator.log_client_start_time(str(msg_params.get_sender_id()))
 
         logging.info(
                     "sender_id = %d, " % (msg_params.get_sender_id())

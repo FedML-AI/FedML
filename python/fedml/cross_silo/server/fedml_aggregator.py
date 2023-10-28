@@ -143,6 +143,7 @@ class FedMLAggregator(object):
             logging.info(f"Logged client_start_timestamp {MLOpsUtils.get_ntp_time()} for client {client_real_id}")
 
     def assess_local_contributions(self, client_real_id:str, model_params, round_idx, run_id:str):
+        logging.info("Entering the lib's assess_local_contributions")
         if hasattr(self.args, "enable_contribution") and \
                 self.args.enable_contribution is not None and self.args.enable_contribution:
             self.client_contribution_mapping[client_real_id]["client_end_timestamp"] = MLOpsUtils.get_ntp_time()

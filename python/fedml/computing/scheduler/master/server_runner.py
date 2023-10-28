@@ -965,37 +965,43 @@ class FedMLServerRunner:
         SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
 
         # Match and assign gpus to each device
-        assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
-            request_num_gpus, edge_id_list, active_edge_info_dict)
-        if assigned_gpu_num_dict is None or assigned_gpu_ids_dict is None:
-            # If no resources available, send failed message to MLOps and send exception message to all edges.
-            gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
-                active_edge_info_dict, should_print=True)
-            logging.error(f"No resources available."
-                          f"Total available GPU count {gpu_available_count} is less than "
-                          f"request GPU count {request_num_gpus}")
-            self.mlops_metrics.report_server_id_status(
-                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
-                server_id=self.edge_id, server_agent_id=self.server_agent_id)
-            self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
-            return
+        # assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
+        #     request_num_gpus, edge_id_list, active_edge_info_dict)
+        # if assigned_gpu_num_dict is None or assigned_gpu_ids_dict is None:
+        #     # If no resources available, send failed message to MLOps and send exception message to all edges.
+        #     gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
+        #         active_edge_info_dict, should_print=True)
+        #     logging.error(f"No resources available."
+        #                   f"Total available GPU count {gpu_available_count} is less than "
+        #                   f"request GPU count {request_num_gpus}")
+        #     self.mlops_metrics.report_server_id_status(
+        #         run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+        #         server_id=self.edge_id, server_agent_id=self.server_agent_id)
+        #     self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
+        #     return
+
+        assigned_gpu_num_dict = dict()
+        assigned_gpu_ids_dict = dict()
+        for edge_id in edge_id_list:
+            assigned_gpu_num_dict[str(edge_id)] = 1
+            assigned_gpu_ids_dict[str(edge_id)] = [0]
 
         # Generate master node addr and port
         master_node_addr, master_node_port = SchedulerMatcher.get_master_node_info(edge_id_list, active_edge_info_dict)
 
         # Generate new edge id list after matched
-        edge_id_list = SchedulerMatcher.generate_new_edge_list_for_gpu_matching(assigned_gpu_num_dict)
-        if len(edge_id_list) <= 0:
-            gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
-                active_edge_info_dict, should_print=True)
-            logging.error(f"Request parameter for GPU num is invalid."
-                          f"Total available GPU count {gpu_available_count}."
-                          f"Request GPU num {request_num_gpus}")
-            self.mlops_metrics.report_server_id_status(
-                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
-                server_id=self.edge_id, server_agent_id=self.server_agent_id)
-            self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
-            return
+        # edge_id_list = SchedulerMatcher.generate_new_edge_list_for_gpu_matching(assigned_gpu_num_dict)
+        # if len(edge_id_list) <= 0:
+        #     gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
+        #         active_edge_info_dict, should_print=True)
+        #     logging.error(f"Request parameter for GPU num is invalid."
+        #                   f"Total available GPU count {gpu_available_count}."
+        #                   f"Request GPU num {request_num_gpus}")
+        #     self.mlops_metrics.report_server_id_status(
+        #         run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+        #         server_id=self.edge_id, server_agent_id=self.server_agent_id)
+        #     self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
+        #     return
 
         client_rank = 1
         for edge_id in edge_id_list:

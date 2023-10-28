@@ -71,6 +71,8 @@ class SchedulerMatcher:
 
     @staticmethod
     def match_and_assign_gpu_resources_to_devices(request_gpu_num, edge_id_list, active_edge_info_dict):
+        if request_gpu_num is None:
+            request_gpu_num = 0
         # Calculate total available gpu count
         total_available_gpu_count = 0
         for edge_id, edge_info in active_edge_info_dict.items():
