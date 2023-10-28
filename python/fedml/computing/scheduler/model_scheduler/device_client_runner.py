@@ -18,6 +18,8 @@ import zipfile
 from urllib.parse import urlparse
 
 import requests
+
+import fedml
 from fedml import mlops
 from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
@@ -348,6 +350,7 @@ class FedMLClientRunner:
 
         # download model net and load into the torch model
         model_from_open = None
+        self.model_is_from_open = None
         if self.model_is_from_open:
             logging.info("process the model net from open...")
             self.check_runner_stop_event()
@@ -562,7 +565,7 @@ class FedMLClientRunner:
             pass
 
         if force_ota and ota_version is not None:
-            should_upgrade = True
+            should_upgrade = True if ota_version != fedml.__version__ else False
             upgrade_version = ota_version
         else:
             try:

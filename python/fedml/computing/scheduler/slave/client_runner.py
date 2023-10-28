@@ -832,7 +832,7 @@ class FedMLClientRunner:
             pass
 
         if force_ota and ota_version is not None:
-            should_upgrade = True
+            should_upgrade = True if ota_version != fedml.__version__ else False
             upgrade_version = ota_version
         else:
             try:
