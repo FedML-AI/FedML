@@ -23,6 +23,7 @@ from os import listdir
 
 import requests
 
+import fedml
 from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils
@@ -1058,7 +1059,7 @@ class FedMLServerRunner:
             pass
 
         if force_ota and ota_version is not None:
-            should_upgrade = True
+            should_upgrade = True if ota_version != fedml.__version__ else False
             upgrade_version = ota_version
         else:
             try:
