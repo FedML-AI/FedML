@@ -1,0 +1,47 @@
+common_args:
+  training_type: "simulation"
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+  random_seed: 0
+
+data_args:
+  dataset: "coco"
+  data_cache_dir: ~/cache/voc
+  partition_method: "hetero"
+  data_cfg: "./YOLOv6/data/voc.yaml"
+  img_size: 640
+
+model_args:
+  model: "yolov6s6"
+  yolo_cfg: "./YOLOv6/configs/yolov6s6_finetune.py"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 10000
+  epochs: 1
+  steps: 8
+  batch_size: 8
+
+validation_args:
+  frequency_of_the_test: 200
+
+device_args:
+  worker_num: 1
+  using_gpu: true
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+tracking_args:
+  # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_object_detection
