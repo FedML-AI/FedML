@@ -131,7 +131,7 @@ import ai.fedml.edge.request.RequestManager;
 
 4. Running Android SDK Demo with MLOps (https://open.fedml.ai)
 
-Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to start training using FedML BeeHive Platform.
+Please follow this tutorial (https://doc.fedml.ai/federate/cross-silo/user_guide) to start training using FedML BeeHive Platform.
 
 <table>
 <tr>
