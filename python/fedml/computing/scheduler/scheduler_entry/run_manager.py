@@ -40,7 +40,8 @@ class FedMLRunStartedModel(object):
             self.run_id = data.get("job_id", "0")
             self.run_name = data.get("job_name", None)
             self.project_id = data.get("project_id", None)
-            self.status = data.get("status", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED)
+            self.status = data.get("status", None)
+            self.status = data.get("code", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED) if self.status is None else self.status
             self.run_url = data.get("job_url", data)
             self.gpu_matched = list()
             self.message = data.get("message", None)
@@ -378,5 +379,5 @@ class FedMLRunManager(Singleton):
             if code is None or data is None or code == "FAILURE":
                 print(f"Failed to {request_type} run with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return None
+                return resp_data
         return data
