@@ -115,7 +115,7 @@ FedML MLOps provides:
 - distributed logging
 - model serving
 
-See this tutorial (https://doc.fedml.ai/mlops/user_guide.html) for details.
+See this tutorial (https://doc.fedml.ai/federate/cross-silo/user_guide) for details.
 1. Sign up an account and log in to MLOps
 2. Register your client device to MLOps after installing fedml on it:
     ```
