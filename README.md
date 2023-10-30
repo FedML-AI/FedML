@@ -4,9 +4,7 @@
 Backed by FEDML Nexus AI: Next-Gen Cloud Services for LLMs & Generative AI (https://nexus.fedml.ai)
 
 
-<div align="center">
- <img src="doc/img/fedml_logo_light_mode.png" width="400px">
-</div>
+![fedml-nexus-ai-overview.png](https://github.com/FedML-AI/.github/blob/main/profile/fedml-nexus-ai-overview.png)
 
 FedML Documentation: https://doc.fedml.ai 
 
