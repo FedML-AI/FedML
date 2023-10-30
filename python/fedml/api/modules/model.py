@@ -149,8 +149,9 @@ def package(name: str) -> str:
         return ""
 
 
-def push(name: str, model_storage_url: str = None) -> bool:
-    api_key = get_api_key()
+def push(name: str, model_storage_url: str = None, api_key: str = None, tag_names: list = None) -> bool:
+    if api_key is None or str(api_key).strip() == "":
+        api_key = get_api_key()
     if api_key == "":
         click.echo('''
         Please use one of the ways below to login first:
@@ -163,7 +164,8 @@ def push(name: str, model_storage_url: str = None) -> bool:
 
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, "", api_key,
                                                                              model_storage_url=model_storage_url,
-                                                                             model_net_url="")
+                                                                             model_net_url="",
+                                                                             tag_names=tag_names)
     if model_is_from_open:
         click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
         return True

@@ -365,7 +365,7 @@ class FedMLModelCards(Singleton):
         return model_zip_path
 
     def push_model(self, model_name, user_id, user_api_key, model_storage_url=None,
-                   model_net_url=None, no_uploading_modelops=False):
+                   model_net_url=None, no_uploading_modelops=False, tag_names=None):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
@@ -433,7 +433,7 @@ class FedMLModelCards(Singleton):
 
                 upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
                                                       model_net_url, user_id, user_api_key,
-                                                      is_from_open=is_from_open)
+                                                      is_from_open=is_from_open, tag_names=tag_names)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -639,10 +639,13 @@ class FedMLModelCards(Singleton):
         return model_list_result
 
     def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url,
-                         user_id, user_api_key, is_from_open=True):
+                         user_id, user_api_key, is_from_open=True, tag_names=None):
         model_upload_result = None
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        tag_list = list()
+        for name in tag_names:
+            tag_list.append({"tagName": name})
         model_upload_json = {
             "description": model_name,
             "githubLink": "",
@@ -655,7 +658,8 @@ class FedMLModelCards(Singleton):
             "apiKey": user_api_key,
             "isFromOpen": int(is_from_open),
             "modelNetUrl": model_net_url,
-            "tagList": []
+            "tagList": [] if tag_names is None else tag_list
+
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
