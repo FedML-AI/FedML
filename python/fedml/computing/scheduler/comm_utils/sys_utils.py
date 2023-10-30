@@ -566,6 +566,7 @@ def get_simulator_process_list(data_dir, runner_info_dir):
     else:
         return dict(), dict()
 
+
 def remove_simulator_process(data_dir, runner_info_dir, process_id):
     simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
     os.makedirs(simulator_proc_path, exist_ok=True)
@@ -693,7 +694,8 @@ def check_fedml_is_latest_version(configuration_env="release"):
         local_fedml_ver_info = version.parse(local_fedml_version)
         for remote_ver_item in fedml_version_list:
             remote_fedml_ver_info = version.parse(remote_ver_item)
-            if remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.is_postrelease or \
+            remove_pre_version = remote_fedml_ver_info.pre
+            if (remote_fedml_ver_info.is_prerelease and remove_pre_version[0] != "rc") or \
                     remote_fedml_ver_info.is_devrelease:
                 continue
 
