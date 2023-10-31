@@ -2,7 +2,7 @@
 import click
 
 import fedml.api
-
+from fedml.api.modules.utils import authenticate
 
 @click.command("login", help="Login the FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
@@ -35,5 +35,13 @@ def fedml_login(api_key, version, compute_node, server, provider):
     fedml.set_env_version(version)
 
     api_key = api_key[0]
+
+    if api_key is not None:
+        try:
+            authenticate(api_key)
+        except Exception as e:
+            # User could use a user_id, which will be deprecated in the future.
+            # But now we still support it. i.e. femdl login <user_id> -s / -c
+            pass
     
     fedml.api.login(api_key, compute_node, server, provider)
