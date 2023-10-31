@@ -123,7 +123,7 @@ def list_models(name: str = "*", local: bool = True) -> any:
             ''')
             return None
 
-        model_query_result = FedMLModelCards.get_instance().list_models(name, None, api_key)
+        model_query_result = FedMLModelCards.get_instance().list_models(name, api_key)
         if model_query_result is None or model_query_result.model_list is None or len(
                 model_query_result.model_list) <= 0:
             click.echo("Model list is empty.")
@@ -198,7 +198,8 @@ def pull(name: str) -> any:
     return res
 
 
-def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: str = None) -> bool:
+def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: str = None,
+           use_remote: bool = False) -> bool:
     if local:
         return FedMLModelCards.get_instance().local_serve_model(name)
     else:
@@ -209,7 +210,7 @@ def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: s
                 return False
             click.echo("Enter the on-premise deployment mode...")
 
-            return FedMLModelCards.get_instance().serve_model_on_premise(name, master_ids, worker_ids)
+            return FedMLModelCards.get_instance().serve_model_on_premise(name, master_ids, worker_ids, use_remote)
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\
