@@ -55,7 +55,7 @@ cd config/
 bash bootstrap.sh
 
 cd ..
-pip install flamby[heart_disease]
+pip install "flamby[heart_disease]"
 ```
 
 2. Run the MPI simulation

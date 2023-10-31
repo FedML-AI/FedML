@@ -1,5 +1,5 @@
 numpy>=1.21
-PyYAML~=5.4.1
+PyYAML~=6.0
 h5py~=3.7.0
 tqdm~=4.64.0
 wget~=3.2
@@ -47,7 +47,7 @@ setuptools~=61.2.0
 docutils~=0.18.1
 sphinx~=5.0.2
 fedml~=0.8.3a6
-yaml~=0.2.5
+pyyaml
 opencv-python~=4.7.0.68
 pillow~=9.2.0
 seaborn~=0.11.2
