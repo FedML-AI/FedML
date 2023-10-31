@@ -34,7 +34,37 @@ class FedMLModelCards(Singleton):
     def get_instance():
         return FedMLModelCards()
 
-    def serve_model_on_premise(self, model_name, master_device_ids, worker_device_ids):
+    def serve_model_on_premise(self, model_name, master_device_ids, worker_device_ids, use_remote):
+        print(f"Use remote: {use_remote}")
+        # Check api key
+        user_api_key = get_api_key()
+        if user_api_key == "":
+            print('''
+            Please use one of the ways below to login first:
+            (1) CLI: `fedml login $api_key`
+            (2) API: fedml.api.fedml_login(api_key=$api_key)
+            ''')
+            return False
+
+        # Concat target devices
+        target_devices = self.concat_device_ids(master_device_ids, worker_device_ids)
+        if len(target_devices) == 0:
+            print("[Error] Please specify both the master device id and worker device ids")
+            return False
+
+        # Deploy remote model card
+        device_type = "md.on_premise_device"
+        additional_params_dict = {}
+        use_local_deployment = False
+
+        if use_remote:
+            if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
+                                     additional_params_dict, use_local_deployment):
+                print("Failed to deploy model")
+                return False
+            return True
+
+        # Deploy local model card (Build + Push + Deploy)
         local_model_folder = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(local_model_folder):
             print("[Error] Model {} doesn't exist. Please Create it First...".format(model_name))
@@ -49,20 +79,6 @@ class FedMLModelCards(Singleton):
         additional_params_dict = params_dict.get("default_params_dict", {})
         use_local_deployment = params_dict.get("default_use_local", False)
         device_type = params_dict.get("device_type", "md.on_premise_device")
-
-        user_api_key = get_api_key()
-        if user_api_key == "":
-            print('''
-            Please use one of the ways below to login first:
-            (1) CLI: `fedml login $api_key`
-            (2) API: fedml.api.fedml_login(api_key=$api_key)
-            ''')
-            return False
-
-        target_devices = self.concat_device_ids(master_device_ids, worker_device_ids)
-        if len(target_devices) == 0:
-            print("[Error] Please specify both the master device id and worker device ids")
-            return False
 
         self.build_model(model_name)
 
@@ -194,6 +210,10 @@ class FedMLModelCards(Singleton):
         return True
 
     def delete_model(self, model_name):
+        if model_name == "*":
+            shutil.rmtree(ClientConstants.get_model_dir(), ignore_errors=True)
+            return True
+
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir, ignore_errors=True)
@@ -266,14 +286,6 @@ class FedMLModelCards(Singleton):
         return True
 
     def list_models(self, model_name, api_key=None):
-        if api_key is None or api_key == "":
-            api_key = get_api_key()
-            if api_key == "":
-                print("You must provide arguments for User Id and Api Key (use -u and -k options).")
-                return []
-        else:
-            save_api_key(api_key)
-
         if api_key is None:
             model_home_dir = ClientConstants.get_model_dir()
             if not os.path.exists(model_home_dir):
@@ -577,19 +589,25 @@ class FedMLModelCards(Singleton):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
+            print("Start to query model from Nexus platform ...")
             model_query_result = self.list_model_api(model_name, user_id, user_api_key)
-            if model_query_result is None:
+            if model_query_result is None or model_query_result.model_list is None \
+                    or len(model_query_result.model_list) == 0:
+                print(f"[Error] Failed to query model {model_name} from Nexus platform")
                 return False
             for model in model_query_result.model_list:
                 model_id = in_model_id if in_model_id is not None and in_model_id != "" else model.id
                 model_version = in_model_version if in_model_version is not None and in_model_version != "" \
                     else model.model_version
+                print(f"Found {model_name} with model_id: {model_id} and model_version: {model_version}."
+                      f"Start to deploy model ...")
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
                                                           devices, user_id, user_api_key,
                                                           endpoint_name=endpoint_name, endpoint_id=endpoint_id)
                 if deployment_result is not None:
                     return True
         else:
+            print("[MQTT] Start to deploy model locally ...")
             model_id = uuid.uuid4()
             end_point_id = uuid.uuid4()
             end_point_token = "FedMLEndPointToken@{}".format(str(uuid.uuid4()))
@@ -644,8 +662,9 @@ class FedMLModelCards(Singleton):
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         tag_list = list()
-        for name in tag_names:
-            tag_list.append({"tagName": name})
+        if tag_names is not None:
+            for name in tag_names:
+                tag_list.append({"tagName": name})
         model_upload_json = {
             "description": model_name,
             "githubLink": "",

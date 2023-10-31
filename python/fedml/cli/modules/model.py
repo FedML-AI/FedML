@@ -86,12 +86,16 @@ def fedml_model_push(name, model_storage_url, version):
     "--worker_ids", "-w", type=str, default="", help=" Device Id(s) for on-premise worker node(s)."
                                                      " Please indicate worker device id(s), seperated with ','"
 )
-def fedml_model_deploy(version, local, name, master_ids, worker_ids):
+@click.option(
+    "--use_remote", "-r", default=False, is_flag=True, help="Use the model card on the Nexus AI Platform. Default is"
+                                                            " False, which means use the model card in local."
+)
+def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_deploy(name, local, master_ids, worker_ids)
+    fedml.api.model_deploy(name, local, master_ids, worker_ids, use_remote)
 
 
 @fedml_model.command("pull", help="Pull a model card from Nexus AI Platform to local.")
