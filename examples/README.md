@@ -1,11 +1,21 @@
 - Documentation: [https://doc.fedml.ai](https://doc.fedml.ai)
 
+
 - Examples of FedML Python Library: [FedML/python/examples](./../python/examples)
 
-- Examples of FedML IoT: [FedML/iot](../iot)
+  - `FedML/python/examples/launch` -- examples for FEDML®Launch
+  - `FedML/python/examples/serving` -- examples for FEDML®Deploy
+  - `FedML/python/examples/train` -- examples for FEDML®Train
+  - `FedML/python/examples/cross_cloud` -- examples for FEDML®Train cross-cloud distributed training
+  - `FedML/python/examples/federate/prebuilt_jobs` -- examples for federated learning prebuilt jobs (FedCV, FedNLP, FedGraphNN, Healthcare, etc.)
+  - `FedML/python/examples/federate/cross_silo` -- examples for cross-silo federated learning
+  - `FedML/python/examples/federate/cross_device` -- examples for cross-device federated learning
+  - `FedML/python/examples/federate/simulation` -- examples for federated learning simulation
+  - `FedML/python/examples/federate/security` -- examples for FEDML®Federate security related features
+  - `FedML/python/examples/federate/privacy` -- examples for FEDML®Federate privacy related features
+  - `FedML/python/examples/federate/federated_analytics` -- examples for FEDML®Federate federated analytics (FA)
 
-- Examples of FedML Android: [FedML/android](../android)
 
-- Advanced Applications developed on FedML: [https://github.com/FedML-AI/FedML/tree/master/python/app](https://github.com/FedML-AI/FedML/tree/master/python/app) 
+- FedML IoT: [FedML/iot](../iot)
 
-- User Guide for MLOps: [https://doc.fedml.ai/mlops/user_guide.html](https://doc.fedml.ai/mlops/user_guide.html)
+- FedML Android: [FedML/android](../android)

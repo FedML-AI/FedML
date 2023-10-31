@@ -174,7 +174,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             logging.info("LLM model loaded from the open")
         else:
             raise Exception("Unsupported inference engine type: {}".format(inference_engine))
-    elif model_is_from_open == False:
+    elif model_is_from_open == False or model_is_from_open is None:
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         try:
             model = torch.jit.load(model_location)
@@ -182,12 +182,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         except Exception as e:
             logging.info(
                 "Cannot locate the .bin file, will read it from"
-                " the fedml_model_cofig.yaml with the key [local_model_dir] ")
+                " the fedml_model_config.yaml with the key [local_model_dir] ")
             model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
             with open(model_config_path, 'r') as file:
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
+                usr_indicated_wait_time = config.get('deploy_timeout', 100)
+                usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
                 # Source code dir, bootstrap dir, data cache dir
@@ -374,7 +376,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         # Logging the info from the container
         log_deployment_result(end_point_id, model_id, default_server_container_name,
                               ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
-                              running_model_name, inference_engine, inference_http_port, inference_type="default")
+                              running_model_name, inference_engine, inference_http_port, inference_type="default",
+                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt)
 
         # Check if the inference server is ready
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
@@ -542,10 +545,9 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
 
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
-                          inference_http_port, inference_type="default"):
+                          inference_http_port, inference_type="default",
+                          retry_interval=10, deploy_attempt_threshold=10):
     deploy_attempt = 0
-    retry_interval = 10
-    deploy_attempt_threshold = 10
     last_out_logs = ""
     last_err_logs = ""
 
