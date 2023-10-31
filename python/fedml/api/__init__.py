@@ -229,8 +229,8 @@ def model_pull(name):
     model_module.pull(name)
 
 
-def model_deploy(name, local, master_ids, worker_ids):
-    model_module.deploy(name, local, master_ids, worker_ids)
+def model_deploy(name, local, master_ids, worker_ids, use_remote):
+    model_module.deploy(name, local, master_ids, worker_ids, use_remote)
 
 
 def train_build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
