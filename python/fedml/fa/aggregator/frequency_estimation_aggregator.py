@@ -40,4 +40,4 @@ class FrequencyEstimationAggregatorFA(FAServerAggregator):
         plt.xlabel('Keys')
         plt.ylabel('Occurrence # ')
         plt.title('Histogram')
-        plt.show()
+        plt.savefig('frequency_estimation_result.png', dpi=300, bbox_inches='tight')
