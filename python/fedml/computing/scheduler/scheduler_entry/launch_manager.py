@@ -206,6 +206,9 @@ class FedMLLaunchManager(Singleton):
             else:
                 bootstrap_file = config_dict["environment_args"]["bootstrap"]
                 bootstrap_full_path = os.path.join(fedml_launch_paths.source_full_folder, bootstrap_file)
+            for config_name, config_value in job_config.job_config_dict.items():
+                if config_name not in Constants.JOB_YAML_RESERVED_CONFIG_KEY_WORDS:
+                    config_dict[config_name] = config_value
             if model_update_result is not None:
                 random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
                 config_dict["serving_args"] = dict()

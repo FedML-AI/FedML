@@ -1,58 +1,65 @@
 
 ## Build the package for FEDML Train
 ```
-Usage: fedml train build [OPTIONS]
+Usage: fedml train build [OPTIONS] [YAML_FILE]
 
   Build training packages for the FedML® Nexus AI Platform.
 
 Options:
-  -h, --help                    Show this message and exit.
-  -sf, --source_folder TEXT     the source code folder path
-  -ep, --entry_point TEXT       the entry point of the source code
-  -ea, --entry_args TEXT        entry arguments of the entry point program
-  -cf, --config_folder TEXT     the config folder path
-  -df, --dest_folder TEXT       the destination package folder path
-  -ig, --ignore TEXT            the ignore list for copying files, the format
-                                is as follows: *.model,__pycache__,*.data*,
-  -m, --model_name TEXT         model name for training.
-  -mc, --model_cache_path TEXT  model cache path for training.
-  -mi, --input_dim TEXT         input dimensions for training.
-  -mo, --output_dim TEXT        output dimensions for training.
-  -dn, --dataset_name TEXT      dataset name for training.
-  -dt, --dataset_type TEXT      dataset type for training.
-  -dp, --dataset_path TEXT      dataset path for training.
+  -h, --help              Show this message and exit.
+  -d, --dest_folder TEXT  The destination package folder path. If this option
+                          is not specified, the built packages will be located
+                          in a subdirectory named fedml-train-packages in the
+                          directory of YAML_FILE
 ```
 
-At first, you need to define your package properties as follows.
-If you want to ignore some folders or files, you may specify the ignore argument
-or add them to the .gitignore file in the source code folder.
+At first, you need to define your job properties in the job yaml file, e.g., workspace, job entry commands.
 
-### Required arguments:
-source code folder, entry file, entry arguments,
-config folder, built destination folder
+This job yaml file can be from the launch job yaml file, which is as follows:
 
-### Optional arguments:
-You may define the model and data arguments using the command arguments as follows.
 ```
-model name, model cache path, model input dimension, model output dimension,
-dataset name, dataset type, dataset path.
-```
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: .
 
-Also, you may define the model and data arguments using the file named fedml_config.yaml as follows.
-```
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+    python3 train.py --epochs 1
+
+job_type: train              # options: train, deploy, federate
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  echo "Bootstrap finished."
+
+computing:
+  minimum_num_gpus: 1           # minimum # of GPUs to provision
+  maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: CPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+
 fedml_data_args:
-    dataset_name: mnist
-    dataset_path: ./dataset
-    dataset_type: csv
-    
+  dataset_name: mnist
+  dataset_path: ./dataset
+  dataset_type: csv
+
 fedml_model_args:
-    input_dim: '784'
-    model_cache_path: /Users/alexliang/fedml_models
-    model_name: lr
-    output_dim: '10'
+  input_dim: '784'
+  model_cache_path: /Users/alexliang/fedml_models
+  model_name: lr
+  output_dim: '10'
+
+training_params:
+  learning_rate: 0.004
 ```
 
-The above model and data arguments will be mapped to the equivalent environment variables as follows.
+The config items named fedml_data_args and fedml_model_args will be mapped to the equivalent environment variables as follows.
 ```
 dataset_name = $FEDML_DATASET_NAME
 dataset_path = $FEDML_DATASET_PATH
@@ -63,35 +70,15 @@ input_dim = $FEDML_MODEL_INPUT_DIM
 output_dim = $FEDML_MODEL_OUTPUT_DIM
 ```
 
-Your may pass these environment variables as your entry arguments. e.g.,
+Your may use these environment variables in your job commands. e.g.,
 ```
-ENTRY_ARGS_MODEL_DATA='-m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH'
+job: |
+    python3 train.py --epochs 1 -m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH
 ```
 
 ### Examples
 ```
-# Define the package properties
-SOURCE_FOLDER=.
-ENTRY_FILE=train.py
-ENTRY_ARGS='--epochs 1'
-ENTRY_ARGS_MODEL_DATA='-m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH'
-CONFIG_FOLDER=config
-DEST_FOLDER=./mlops
-MODEL_NAME=lr
-MODEL_CACHE=~/fedml_models
-MODEL_INPUT_DIM=784
-MODEL_OUTPUT_DIM=10
-DATASET_NAME=mnist
-DATASET_TYPE=csv
-DATASET_PATH=./dataset
+fedml train build train_job.yaml
 
-# Build the train package with the model and data arguments
-fedml train build -sf $SOURCE_FOLDER -ep $ENTRY_FILE -ea "$ENTRY_ARGS" \
-    -cf $CONFIG_FOLDER -df $DEST_FOLDER \
-    -m $MODEL_NAME -mc $MODEL_CACHE -mi $MODEL_INPUT_DIM -mo $MODEL_OUTPUT_DIM \
-    -dn $DATASET_NAME -dt $DATASET_TYPE -dp $DATASET_PATH
-
-# Build the train package without the model and data arguments
-fedml train build -sf $SOURCE_FOLDER -ep $ENTRY_FILE -ea "$ENTRY_ARGS" \
-    -cf $CONFIG_FOLDER -df $DEST_FOLDER
+Your train package file is located at: /home/fedml/launch/fedml-train-packages/client-package.zip
 ```
