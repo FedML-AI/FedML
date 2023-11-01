@@ -23,10 +23,6 @@ fedml_data_args:
   dataset_name: mnist
   dataset_path: /Users/alexliang/fedml_data
   dataset_type: csv
-fedml_entry_args:
-  arg_items: -m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM
-    -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp
-    $FEDML_DATASET_PATH
 fedml_model_args:
   input_dim: '784'
   model_cache_path: /Users/alexliang/fedml_models
