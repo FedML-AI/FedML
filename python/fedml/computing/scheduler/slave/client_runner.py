@@ -684,6 +684,13 @@ class FedMLClientRunner:
 
         if report_status:
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+        else:
+            try:
+                FedMLClientDataInterface.get_instance().save_job(
+                    self.run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+            except Exception as e:
+                pass
+
 
     def exit_run_with_exception_entry(self):
         try:
