@@ -71,7 +71,6 @@ python update_config.py --new-path /new/path/towards/dataset
 git clone https://github.com/FedML-AI/FedML
 
 cd FedML/python/app/healthcare/fed_camelyon16
-pip install -r requirements.txt
 
 cd config/
 bash bootstrap.sh

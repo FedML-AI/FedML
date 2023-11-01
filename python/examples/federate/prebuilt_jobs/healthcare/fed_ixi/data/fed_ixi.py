@@ -20,7 +20,7 @@ from flamby.utils import accept_license, create_config, write_value_in_config
 # IXI Tiny
 
 TINY_URL = (
-    "https://md-datasets-cache-zipfiles-prod.s3.eu-west-1.amazonaws.com/7kd5wj7v7p-1.zip"
+    "https://prod-dcd-datasets-cache-zipfiles.s3.eu-west-1.amazonaws.com/7kd5wj7v7p-3.zip"
 )
 
 

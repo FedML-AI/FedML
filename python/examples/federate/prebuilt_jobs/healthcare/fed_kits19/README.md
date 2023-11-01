@@ -52,7 +52,6 @@ to apply intensity normalization, voxel and foreground resampling. In addition, 
 git clone https://github.com/FedML-AI/FedML
 
 cd FedML/python/app/healthcare/fed_kits19
-pip install -r requirements.txt
 
 cd config/
 bash bootstrap.sh

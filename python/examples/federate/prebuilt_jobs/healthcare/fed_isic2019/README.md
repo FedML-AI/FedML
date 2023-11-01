@@ -58,7 +58,6 @@ This script will resize all images so that the shorter edge of the resized image
 git clone https://github.com/FedML-AI/FedML
 
 cd FedML/python/app/healthcare/fed_heart_disease
-pip install -r requirements.txt
 
 cd config/
 bash bootstrap.sh

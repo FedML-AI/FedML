@@ -10,6 +10,7 @@ environment_args:
 
 data_args:
   dataset: "Fed-IXI"
+  download: true
   data_cache_dir: ~/healthcare/ixi 
   partition_method: "hetero"
   partition_alpha: 0.5
