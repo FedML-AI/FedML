@@ -104,7 +104,6 @@ def _launch_job(yaml_file, api_key):
         click.echo("Launching the job with the above matched GPU resource.")
         result = run(create_run_result=create_run_result, api_key=api_key)
         _print_run_list_details(result)
-        _print_run_log_details(result)
 
 
 def _launch_job_on_cluster(yaml_file, api_key, cluster):
@@ -132,10 +131,10 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
 
         if cluster_confirmed:
             _print_run_list_details(create_run_result)
-            _print_run_log_details(create_run_result)
 
 
-def _resources_matched_and_confirmed(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel, api_key: str):
+def _resources_matched_and_confirmed(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
+                                     api_key: str):
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or not create_run_result:
         click.echo(f"{result_message}. Please double check the input arguments are valid.")
         return False
@@ -207,22 +206,17 @@ def _print_run_list_details(result):
             run_list_table.add_row([run.run_name, run.run_id, run.status, run.started_time,
                                     run.compute_duration, run.cost])
         click.echo(run_list_table)
-    else:
-        click.echo("")
 
-    # Show the run url
-    click.echo("\nYou can track your run details at this URL:")
-    click.echo(f"{result.run_url}")
-
-
-def _print_run_log_details(result: FedMLRunStartedModel):
-    # Show the run url
-    if not (result and result.run_id):
-        return
-
-    # Show querying infos for getting run logs
     click.echo("")
-    click.echo(f"For querying the realtime status of your run, please run the following command.")
-    click.echo(f"fedml run logs -rid {result.run_id}" +
-               "{}".format(f" -v {fedml.get_env_version()}"))
 
+    # Show the run url
+    click.echo(f"You can query the realtime status and logs of your with the help of following tools / commands:")
+    run_track_table = PrettyTable(['Description', 'Details'])
+    run_track_table.add_row(["Run Track URL (UI):", '{}'.format(result.run_url)])
+
+    if result.run_id:
+        version = fedml.get_env_version()
+        run_track_table.add_row(["Run Track Command (CLI):", f"fedml run logs -rid {result.run_id}" +
+                                 "{}".format(f" -v {version}" if version != "release" else "")])
+
+    click.echo(run_track_table)
