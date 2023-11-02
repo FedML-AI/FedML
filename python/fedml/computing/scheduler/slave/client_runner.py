@@ -922,8 +922,9 @@ class FedMLClientRunner:
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
         matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
-        job_yaml = request_json.get("job_yaml", {})
-        serving_args = job_yaml.get("serving_args", {})
+        run_config = request_json.get("run_config", {})
+        run_params = run_config.get("parameters", {})
+        serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
             run_id, matched_gpu_num, inner_id=endpoint_id)
