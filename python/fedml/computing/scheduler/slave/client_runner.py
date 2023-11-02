@@ -928,6 +928,7 @@ class FedMLClientRunner:
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
             run_id, matched_gpu_num, inner_id=endpoint_id)
+        logging.info(f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
         # Start server with multiprocessing mode
         self.request_json = request_json
@@ -1002,9 +1003,9 @@ class FedMLClientRunner:
 
         if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
                 job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-            print(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
             JobRunnerUtils.get_instance().release_gpu_ids(run_id)
-            print(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            logging.info(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(

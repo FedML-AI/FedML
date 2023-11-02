@@ -316,7 +316,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 gpu_id_list = gpu_ids.split(',')
                 gpu_id_list = map(lambda x: str(x), gpu_id_list)
                 device_requests.append(
-                    docker.types.DeviceRequest(device_ids=gpu_id_list, capabilities=[['gpu']]))
+                    docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
             else:
                 device_requests.append(
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
