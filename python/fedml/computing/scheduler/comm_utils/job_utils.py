@@ -100,7 +100,7 @@ class JobRunnerUtils(Singleton):
         # Trim the gpu ids based on the realtime available gpu id list.
         gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
         for gpu_id in gpu_ids:
-            if gpu_id not in realtime_available_gpu_ids:
+            if int(gpu_id) not in realtime_available_gpu_ids:
                 gpu_ids.remove(gpu_id)
 
         return gpu_ids.copy()
