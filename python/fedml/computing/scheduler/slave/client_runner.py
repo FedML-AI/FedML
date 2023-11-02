@@ -982,7 +982,28 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
-        JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+        self.release_gpu_ids()
+
+    @staticmethod
+    def release_gpu_ids(run_id):
+        try:
+            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is not None:
+                job_json = json.loads(job_obj.running_json)
+                run_config = job_json.get("run_config", {})
+                run_params = run_config.get("parameters", {})
+                job_yaml = run_params.get("job_yaml", {})
+                job_type = job_yaml.get("job_type", None)
+                job_type = job_yaml.get("task_type", SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        except Exception as e:
+            job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
+            pass
+
+        if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
+                job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+            print(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+            print(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
@@ -1057,9 +1078,7 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            print(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
-            print(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            self.release_gpu_ids(run_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:

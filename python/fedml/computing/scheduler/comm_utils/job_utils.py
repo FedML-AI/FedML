@@ -1,6 +1,8 @@
 import os
 import platform
 
+import GPUtil
+
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
@@ -21,7 +23,7 @@ class JobRunnerUtils(Singleton):
             self.run_id_to_gpu_ids_map = dict()
         if not hasattr(self, "available_gpu_ids"):
             self.available_gpu_ids = list()
-            self.available_gpu_ids = self.get_realtime_gpu_available_ids().copy()
+            self.available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
         if not hasattr(self, "lock_available_gpu_ids"):
             self.lock_available_gpu_ids = threading.Lock()
 
@@ -32,15 +34,19 @@ class JobRunnerUtils(Singleton):
     def occupy_gpu_ids(self, run_id, request_gpu_num, inner_id=None):
         self.lock_available_gpu_ids.acquire()
 
-        available_gpu_count = len(self.available_gpu_ids)
-        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
-        matched_gpu_num = min(available_gpu_count, request_gpu_num)
-        if matched_gpu_num <= 0:
+        self.available_gpu_ids = self.search_and_refresh_available_gpu_ids(self.available_gpu_ids)
+
+        cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
+            request_gpu_num, self.available_gpu_ids)
+        if cuda_visible_gpu_ids_str is None:
             self.lock_available_gpu_ids.release()
             return None
-
-        matched_gpu_ids = map(lambda x: str(x), self.available_gpu_ids[0:matched_gpu_num])
-        cuda_visiable_gpu_ids_str = ",".join(matched_gpu_ids)
+            # self.available_gpu_ids = self.balance_available_gpu_ids(self.available_gpu_ids)
+            # cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
+            #     request_gpu_num, self.available_gpu_ids)
+            # if cuda_visible_gpu_ids_str is None:
+            #     self.lock_available_gpu_ids.release()
+            #     return None
 
         self.run_id_to_gpu_ids_map[str(run_id)] = self.available_gpu_ids[0:matched_gpu_num].copy()
         self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
@@ -49,11 +55,53 @@ class JobRunnerUtils(Singleton):
         if inner_id is not None:
             FedMLModelCache.get_instance().set_redis_params()
             FedMLModelCache.get_instance().set_end_point_gpu_resources(
-                inner_id, matched_gpu_num, cuda_visiable_gpu_ids_str)
+                inner_id, matched_gpu_num, cuda_visible_gpu_ids_str)
 
         self.lock_available_gpu_ids.release()
 
-        return cuda_visiable_gpu_ids_str
+        return cuda_visible_gpu_ids_str
+
+    @staticmethod
+    def search_and_refresh_available_gpu_ids(available_gpu_ids):
+        trimmed_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
+        # if len(trimmed_gpu_ids) <= 0:
+        #     available_gpu_ids = JobRunnerUtils.balance_available_gpu_ids(trimmed_gpu_ids)
+        return trimmed_gpu_ids
+
+    @staticmethod
+    def balance_available_gpu_ids(available_gpu_ids):
+        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
+        available_gpu_ids = realtime_available_gpu_ids
+        if len(available_gpu_ids) <= 0:
+            for gpu in gpu_list:
+                gpu = GPUtil.GPU(gpu)
+                if gpu.memoryUtil > 0.8:
+                    continue
+                available_gpu_ids.append(gpu.id)
+
+        return available_gpu_ids.copy()
+
+    @staticmethod
+    def request_gpu_ids(request_gpu_num, available_gpu_ids):
+        available_gpu_count = len(available_gpu_ids)
+        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
+        matched_gpu_num = min(available_gpu_count, request_gpu_num)
+        if matched_gpu_num <= 0 or matched_gpu_num != request_gpu_num:
+            return None, None, None
+
+        matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
+        cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
+        return cuda_visible_gpu_ids_str, matched_gpu_num, matched_gpu_ids
+
+    @staticmethod
+    def trim_unavailable_gpu_ids(gpu_ids):
+        # Trim the gpu ids based on the realtime available gpu id list.
+        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
+        for gpu_id in gpu_ids:
+            if gpu_id not in realtime_available_gpu_ids:
+                gpu_ids.remove(gpu_id)
+
+        return gpu_ids.copy()
 
     def release_gpu_ids(self, run_id):
         self.lock_available_gpu_ids.acquire()
@@ -68,11 +116,19 @@ class JobRunnerUtils(Singleton):
         self.lock_available_gpu_ids.release()
         return ret_gpu_ids
 
-    def get_realtime_gpu_available_ids(self):
+    @staticmethod
+    def get_realtime_gpu_available_ids():
         gpu_list = sys_utils.get_gpu_list()
         gpu_count = len(gpu_list)
         realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
         return realtime_available_gpu_ids
+
+    @staticmethod
+    def get_gpu_list_and_realtime_gpu_available_ids():
+        gpu_list = sys_utils.get_gpu_list()
+        gpu_count = len(gpu_list)
+        realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+        return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
     def generate_job_execute_commands(run_id, edge_id, version,

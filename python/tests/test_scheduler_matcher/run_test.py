@@ -58,16 +58,18 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
     print("\n")
 
     print(f"Occupy GPUs {request_gpu_num}.")
-    JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
+    print(f"Run {run_id}, applied gpu ids {gpu_ids}, available GPU ids for: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
-    JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
+    print(f"Run 103, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
     JobRunnerUtils.get_instance().release_gpu_ids(103)
 
-    JobRunnerUtils.get_instance().occupy_gpu_ids(104, 3)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(104, 3)
+    print(f"Run 104, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(105, 3)
+    print(f"Run 105, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
     # Match and assign gpus to each device
     assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
@@ -104,6 +106,7 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
     print(f"Release GPUs {request_gpu_num}.")
     JobRunnerUtils.get_instance().release_gpu_ids(run_id)
     JobRunnerUtils.get_instance().release_gpu_ids(104)
+    JobRunnerUtils.get_instance().release_gpu_ids(105)
     print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
 
