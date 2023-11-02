@@ -92,7 +92,8 @@ def _launch_job(yaml_file, api_key):
     result_code, result_message, create_run_result = create_run(
         yaml_file, api_key=api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
 
-    if _resources_matched_and_confirmed(result_code, result_message, create_run_result, yaml_file, api_key):
+    if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
+                                        create_run_result=create_run_result, api_key=api_key):
         if create_run_result.user_check:
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
@@ -111,7 +112,7 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
         yaml_file, cluster, api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
     cluster_confirmed = True
     if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
-                                        create_run_result=create_run_result, yaml_file=yaml_file, api_key=api_key):
+                                        create_run_result=create_run_result, api_key=api_key):
         if create_run_result.user_check:
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
@@ -152,8 +153,12 @@ def _resources_matched_and_confirmed(result_code: int, result_message: str, crea
             return False
 
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
+        click.echo(result_message)
         _match_and_show_resources(create_run_result)
         return True
+
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED]:
+        _match_and_show_resources(create_run_result)
 
     click.echo(result_message)
     return False

@@ -41,6 +41,7 @@ class FedMLRunStartedModel(object):
             self.run_id = data.get("job_id", "0")
             self.run_name = data.get("job_name", None)
             self.project_id = data.get("project_id", None)
+            self.status = data.get("status", None)
             self.status = data.get("code",
                                    Constants.MLOPS_CLIENT_STATUS_NOT_STARTED) if self.status is None else self.status
             self.run_url = data.get("job_url", data)
@@ -190,6 +191,9 @@ class FedMLRunManager(Singleton):
                                  request_json=run_create_json,
                                  config_version=self.config_version)
         response_data = self._get_data_from_response(response=response)
+        inner_id = job_config.serving_endpoint_id \
+            if job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+               job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
         run_start_result = FedMLRunStartedModel(response=response, data=response_data,
                                                 project_name=job_config.project_name,
                                                 application_name=job_config.application_name, inner_id=inner_id,
