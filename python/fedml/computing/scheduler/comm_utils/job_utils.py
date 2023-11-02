@@ -35,6 +35,8 @@ class JobRunnerUtils(Singleton):
         self.lock_available_gpu_ids.acquire()
 
         self.available_gpu_ids = self.search_and_refresh_available_gpu_ids(self.available_gpu_ids)
+        if len(self.run_id_to_gpu_ids_map.keys()) <= 0:
+            self.available_gpu_ids = self.balance_available_gpu_ids(self.available_gpu_ids)
 
         cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
             request_gpu_num, self.available_gpu_ids)
@@ -108,6 +110,7 @@ class JobRunnerUtils(Singleton):
         occupy_gpu_id_list = self.run_id_to_gpu_ids_map.get(str(run_id), [])
         self.available_gpu_ids.extend(occupy_gpu_id_list.copy())
         self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
+        self.run_id_to_gpu_ids_map.pop(str(run_id))
         self.lock_available_gpu_ids.release()
 
     def get_available_gpu_id_list(self):

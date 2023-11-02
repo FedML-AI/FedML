@@ -15,6 +15,7 @@ import tritonclient.http as http_client
 import collections.abc
 
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
+from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
@@ -72,6 +73,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
     FedMLModelCache.get_instance().set_redis_params()
     num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
+    if gpu_ids is not None:
+        logging.info(f"cuda visible gpu ids: {gpu_ids}")
+        gpu_list = gpu_ids.split(',')
+        gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
+        if len(gpu_list) != num_gpus:
+            gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
+                num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""

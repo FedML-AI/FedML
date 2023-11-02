@@ -60,6 +60,7 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
     print(f"Occupy GPUs {request_gpu_num}.")
     gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
     print(f"Run {run_id}, applied gpu ids {gpu_ids}, available GPU ids for: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    JobRunnerUtils.get_instance().release_gpu_ids(run_id)
 
     gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
     print(f"Run 103, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
