@@ -77,9 +77,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         logging.info(f"cuda visible gpu ids: {gpu_ids}")
         gpu_list = gpu_ids.split(',')
         gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
-        if len(gpu_list) != num_gpus:
+        if len(gpu_list) != int(num_gpus):
             gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
+                int(num_gpus), JobRunnerUtils.get_realtime_gpu_available_ids())
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
