@@ -7,6 +7,7 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunManage
     FedMLRunStartedModel, FedMLRunModelList, FeatureEntryPoint
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLJobConfig
+from requests import Response
 
 
 class RunLogResult(object):

@@ -206,31 +206,28 @@ def _prepare_launch_app(yaml_file):
 def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
-                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
-    if not result.run_url:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
-                ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
-    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+                result.message)
+    if result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
+                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
+    if result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "
                 f"to make sure the syntax is valid, e.g. "
                 f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
-    elif result.status == Constants.JOB_START_STATUS_BLOCKED:
+    if result.status == Constants.JOB_START_STATUS_BLOCKED:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_BLOCKED],
-                f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
-                f"for your job. \n")
-    elif result.status == Constants.JOB_START_STATUS_QUEUED:
+                ApiConstants.LAUNCH_JOB_STATUS_BLOCKED)
+    if not result.run_url or result.run_url == "":
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
+                f"Failed to launch the job: "
+                f"{result.message if result.message is not None else ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR}")
+    if result.status == Constants.JOB_START_STATUS_QUEUED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
-                f"\nNo resource available now, job queued in waiting queue.")
-    elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
-                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
-    elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
-
+                ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED)
     return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
             ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+
