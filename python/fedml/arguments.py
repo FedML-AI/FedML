@@ -107,9 +107,6 @@ class Arguments:
                     path_current_file, "config/simulation_sp/fedml_config.yaml"
                 )
                 cmd_args.yaml_config_file = config_file
-                print(
-                    "training_type == FEDML_TRAINING_PLATFORM_SIMULATION and comm_backend == FEDML_SIMULATION_TYPE_SP"
-                )
             elif (
                 training_type == FEDML_TRAINING_PLATFORM_SIMULATION
                 and comm_backend == FEDML_SIMULATION_TYPE_MPI
@@ -118,17 +115,14 @@ class Arguments:
                     path_current_file, "config/simulaton_mpi/fedml_config.yaml"
                 )
                 cmd_args.yaml_config_file = config_file
-                print(
-                    "training_type == FEDML_TRAINING_PLATFORM_SIMULATION and comm_backend == FEDML_SIMULATION_TYPE_MPI"
-                )
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-                print("training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO")
+                pass
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
-                print("training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE")
+                pass
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
-                print("training_type == FEDML_TRAINING_PLATFORM_CHEETAH")
+                pass
             elif training_type == FEDML_TRAINING_PLATFORM_SERVING:
-                print("training_type == FEDML_TRAINING_PLATFORM_SERVING")
+                pass
             else:
                 raise Exception(
                     "no such a platform. training_type = {}, backend = {}".format(

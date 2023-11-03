@@ -217,13 +217,13 @@ server_job: |
 #  endpoint_name: "fedml-launch-endpoint" # Set your end point name which will be deployed, it can be empty string "" which will be auto generated.
 
 # Dataset related arguments
-fedml_data_args:
+data_args:
   dataset_name: mnist
   dataset_path: ./dataset
   dataset_type: csv
   
 # Model related arguments
-fedml_model_args:
+model_args:
   input_dim: '784'
   model_cache_path: /Users/alexliang/fedml_models
   model_name: lr

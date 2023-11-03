@@ -233,13 +233,9 @@ def model_deploy(name, local, master_ids, worker_ids, use_remote):
     model_module.deploy(name, local, master_ids, worker_ids, use_remote)
 
 
-def train_build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
-                model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
-    return train.build(source_folder, entry_point, entry_args, config_folder, dest_folder, ignore,
-                       model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)
+def train_build(job_yaml_file, dest_folder):
+    return train.build_with_job_yaml(job_yaml_file, dest_folder=dest_folder)
 
 
-def federate_build(source_folder, entry_point, config_folder, dest_folder, ignore,
-                   model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path):
-    return federate.build(source_folder, entry_point, config_folder, dest_folder, ignore,
-                          model_name, model_cache_path, input_dim, output_dim, dataset_name, dataset_type, dataset_path)
+def federate_build(job_yaml_file, dest_folder):
+    return federate.build_with_job_yaml(job_yaml_file, dest_folder=dest_folder)
