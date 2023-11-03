@@ -684,6 +684,13 @@ class FedMLClientRunner:
 
         if report_status:
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+        else:
+            try:
+                FedMLClientDataInterface.get_instance().save_job(
+                    self.run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+            except Exception as e:
+                pass
+
 
     def exit_run_with_exception_entry(self):
         try:
@@ -915,11 +922,13 @@ class FedMLClientRunner:
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
         matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
-        job_yaml = request_json.get("job_yaml", {})
-        serving_args = job_yaml.get("serving_args", {})
+        run_config = request_json.get("run_config", {})
+        run_params = run_config.get("parameters", {})
+        serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
             run_id, matched_gpu_num, inner_id=endpoint_id)
+        logging.info(f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
         # Start server with multiprocessing mode
         self.request_json = request_json
@@ -975,7 +984,28 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
-        JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+        self.release_gpu_ids()
+
+    @staticmethod
+    def release_gpu_ids(run_id):
+        try:
+            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is not None:
+                job_json = json.loads(job_obj.running_json)
+                run_config = job_json.get("run_config", {})
+                run_params = run_config.get("parameters", {})
+                job_yaml = run_params.get("job_yaml", {})
+                job_type = job_yaml.get("job_type", None)
+                job_type = job_yaml.get("task_type", SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        except Exception as e:
+            job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
+            pass
+
+        if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
+                job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+            logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+            logging.info(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
@@ -1050,9 +1080,7 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            print(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
-            print(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            self.release_gpu_ids(run_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:

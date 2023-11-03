@@ -1,6 +1,6 @@
 # FedML data
 FA_DATA_CACHE_FOLDER = "data"
-FA_DATA_TWITTER_Sentiment140_URL = "http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip"
+FA_DATA_TWITTER_Sentiment140_URL = "https://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip"
 
 # task
 FA_TASK_AVG = "AVG"

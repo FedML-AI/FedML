@@ -1,0 +1,48 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: .
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+  echo "current job id: $FEDML_CURRENT_RUN_ID"
+  echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+  echo "Hello, Here is the launch platform."
+  echo "Current directory is as follows."
+  pwd
+  echo "config file"
+  cat config/fedml_config.yaml
+  echo "current rank: $FEDML_CLIENT_RANK"
+  python3 torch_client.py --cf config/fedml_config.yaml --rank $FEDML_CLIENT_RANK --role client --run_id $FEDML_CURRENT_RUN_ID
+
+# Running entry commands on the server side which will be executed as the job entry point.
+# Support multiple lines, which can not be empty.
+server_job: |
+  echo "Hello, Here is the server job."
+  echo "Current directory is as follows."
+  python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_RUN_ID
+
+job_type: federate              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: cross_silo
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  echo "Bootstrap finished."
+
+computing:
+  minimum_num_gpus: 1           # minimum # of GPUs to provision
+  maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: CPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+
+training_params:
+  learning_rate: 0.004

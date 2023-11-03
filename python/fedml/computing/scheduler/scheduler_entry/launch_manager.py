@@ -206,6 +206,9 @@ class FedMLLaunchManager(Singleton):
             else:
                 bootstrap_file = config_dict["environment_args"]["bootstrap"]
                 bootstrap_full_path = os.path.join(fedml_launch_paths.source_full_folder, bootstrap_file)
+            for config_name, config_value in job_config.job_config_dict.items():
+                if config_name not in Constants.JOB_YAML_RESERVED_CONFIG_KEY_WORDS:
+                    config_dict[config_name] = config_value
             if model_update_result is not None:
                 random = sys_utils.random1(f"FEDML@{user_api_key}", "FEDML@9999GREAT")
                 config_dict["serving_args"] = dict()
@@ -492,17 +495,6 @@ class FedMLJobConfig(object):
 
         self.model_app_name = self.serving_model_name \
             if self.serving_model_name is not None and self.serving_model_name != "" else self.application_name
-
-        data_args = self.job_config_dict.get("fedml_data_args", {})
-        self.data_args_dataset_name = data_args.get("dataset_name", None)
-        self.data_args_dataset_path = data_args.get("dataset_path", None)
-        self.data_args_dataset_type = data_args.get("dataset_type", None)
-
-        model_args = self.job_config_dict.get("fedml_model_args", {})
-        self.model_args_model_name = model_args.get("model_name", None)
-        self.model_args_model_cache_path = model_args.get("model_cache_path", None)
-        self.model_args_input_dim = model_args.get("input_dim", None)
-        self.model_args_output_dim = model_args.get("output_dim", None)
 
         self.gitignore_file = os.path.join(
             self.base_dir, workspace if workspace is not None and workspace != "" else random_workspace, ".gitignore")

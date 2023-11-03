@@ -55,13 +55,16 @@ computing:
   #device_type: CPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
 
-fedml_data_args:
+data_args:
   dataset_name: mnist
   dataset_path: ./dataset
   dataset_type: csv
 
-fedml_model_args:
+model_args:
   input_dim: '784'
   model_cache_path: /Users/alexliang/fedml_models
   model_name: lr
   output_dim: '10'
+
+training_params:
+  learning_rate: 0.004

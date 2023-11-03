@@ -7,6 +7,7 @@ from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from tempfile import gettempdir
 
+
 class Constants(Singleton):
     FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git, *venv'
     FEDML_PLATFORM_OCTOPUS_STR = "octopus"
@@ -129,6 +130,8 @@ class Constants(Singleton):
         JOB_TASK_SUBTYPE_TRAIN_WEB_TRAINING: JOB_TASK_SUBTYPE_TRAIN_WEB_TRAINING_CODE,
         JOB_TASK_SUBTYPE_TRAIN_SMART_PHONE_TRAINING: JOB_TASK_SUBTYPE_TRAIN_SMART_PHONE_TRAINING_CODE
     }
+
+    JOB_YAML_RESERVED_CONFIG_KEY_WORDS = SchedulerConstants.JOB_YAML_RESERVED_CONFIG_KEY_WORDS
 
     JOB_DEVICE_TYPE_CPU = "CPU"
     JOB_DEVICE_TYPE_GPU = "GPU"

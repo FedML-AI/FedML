@@ -1,6 +1,8 @@
 import os
 import platform
 
+import GPUtil
+
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
@@ -10,18 +12,12 @@ import threading
 
 
 class JobRunnerUtils(Singleton):
-    FEDML_SUPPORTED_ENVIRONMENT_VARIABLES = ["$FEDML_MODEL_NAME", "$FEDML_MODEL_CACHE_PATH",
-                                             "$FEDML_MODEL_INPUT_DIM", "$FEDML_MODEL_OUTPUT_DIM",
-                                             "$FEDML_DATASET_NAME", "$FEDML_DATASET_PATH", "$FEDML_DATASET_TYPE",
-                                             "$FEDML_NODE_0_ADDR", "$FEDML_NODE_0_PORT", "$FEDML_NUM_NODES",
-                                             "$CUDA_VISIBLE_DEVICES"]
-
     def __init__(self):
         if not hasattr(self, "run_id_to_gpu_ids_map"):
             self.run_id_to_gpu_ids_map = dict()
         if not hasattr(self, "available_gpu_ids"):
             self.available_gpu_ids = list()
-            self.available_gpu_ids = self.get_realtime_gpu_available_ids().copy()
+            self.available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
         if not hasattr(self, "lock_available_gpu_ids"):
             self.lock_available_gpu_ids = threading.Lock()
 
@@ -32,15 +28,21 @@ class JobRunnerUtils(Singleton):
     def occupy_gpu_ids(self, run_id, request_gpu_num, inner_id=None):
         self.lock_available_gpu_ids.acquire()
 
-        available_gpu_count = len(self.available_gpu_ids)
-        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
-        matched_gpu_num = min(available_gpu_count, request_gpu_num)
-        if matched_gpu_num <= 0:
+        self.available_gpu_ids = self.search_and_refresh_available_gpu_ids(self.available_gpu_ids)
+        if len(self.run_id_to_gpu_ids_map.keys()) <= 0:
+            self.available_gpu_ids = self.balance_available_gpu_ids(self.available_gpu_ids)
+
+        cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
+            request_gpu_num, self.available_gpu_ids)
+        if cuda_visible_gpu_ids_str is None:
             self.lock_available_gpu_ids.release()
             return None
-
-        matched_gpu_ids = map(lambda x: str(x), self.available_gpu_ids[0:matched_gpu_num])
-        cuda_visiable_gpu_ids_str = ",".join(matched_gpu_ids)
+            # self.available_gpu_ids = self.balance_available_gpu_ids(self.available_gpu_ids)
+            # cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
+            #     request_gpu_num, self.available_gpu_ids)
+            # if cuda_visible_gpu_ids_str is None:
+            #     self.lock_available_gpu_ids.release()
+            #     return None
 
         self.run_id_to_gpu_ids_map[str(run_id)] = self.available_gpu_ids[0:matched_gpu_num].copy()
         self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
@@ -49,17 +51,61 @@ class JobRunnerUtils(Singleton):
         if inner_id is not None:
             FedMLModelCache.get_instance().set_redis_params()
             FedMLModelCache.get_instance().set_end_point_gpu_resources(
-                inner_id, matched_gpu_num, cuda_visiable_gpu_ids_str)
+                inner_id, matched_gpu_num, cuda_visible_gpu_ids_str)
 
         self.lock_available_gpu_ids.release()
 
-        return cuda_visiable_gpu_ids_str
+        return cuda_visible_gpu_ids_str
+
+    @staticmethod
+    def search_and_refresh_available_gpu_ids(available_gpu_ids):
+        trimmed_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
+        # if len(trimmed_gpu_ids) <= 0:
+        #     available_gpu_ids = JobRunnerUtils.balance_available_gpu_ids(trimmed_gpu_ids)
+        return trimmed_gpu_ids
+
+    @staticmethod
+    def balance_available_gpu_ids(available_gpu_ids):
+        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
+        available_gpu_ids = realtime_available_gpu_ids
+        if len(available_gpu_ids) <= 0:
+            for gpu in gpu_list:
+                gpu = GPUtil.GPU(gpu)
+                if gpu.memoryUtil > 0.8:
+                    continue
+                available_gpu_ids.append(gpu.id)
+
+        return available_gpu_ids.copy()
+
+    @staticmethod
+    def request_gpu_ids(request_gpu_num, available_gpu_ids):
+        available_gpu_count = len(available_gpu_ids)
+        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
+        matched_gpu_num = min(available_gpu_count, request_gpu_num)
+        if matched_gpu_num <= 0 or matched_gpu_num != request_gpu_num:
+            return None, None, None
+
+        matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
+        cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
+        return cuda_visible_gpu_ids_str, matched_gpu_num, matched_gpu_ids
+
+    @staticmethod
+    def trim_unavailable_gpu_ids(gpu_ids):
+        # Trim the gpu ids based on the realtime available gpu id list.
+        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
+        for gpu_id in gpu_ids:
+            if int(gpu_id) not in realtime_available_gpu_ids:
+                gpu_ids.remove(gpu_id)
+
+        return gpu_ids.copy()
 
     def release_gpu_ids(self, run_id):
         self.lock_available_gpu_ids.acquire()
         occupy_gpu_id_list = self.run_id_to_gpu_ids_map.get(str(run_id), [])
         self.available_gpu_ids.extend(occupy_gpu_id_list.copy())
         self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
+        if self.run_id_to_gpu_ids_map.get(str(run_id)) is not None:
+            self.run_id_to_gpu_ids_map.pop(str(run_id))
         self.lock_available_gpu_ids.release()
 
     def get_available_gpu_id_list(self):
@@ -68,11 +114,19 @@ class JobRunnerUtils(Singleton):
         self.lock_available_gpu_ids.release()
         return ret_gpu_ids
 
-    def get_realtime_gpu_available_ids(self):
+    @staticmethod
+    def get_realtime_gpu_available_ids():
         gpu_list = sys_utils.get_gpu_list()
         gpu_count = len(gpu_list)
         realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
         return realtime_available_gpu_ids
+
+    @staticmethod
+    def get_gpu_list_and_realtime_gpu_available_ids():
+        gpu_list = sys_utils.get_gpu_list()
+        gpu_count = len(gpu_list)
+        realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+        return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
     def generate_job_execute_commands(run_id, edge_id, version,
@@ -94,31 +148,32 @@ class JobRunnerUtils(Singleton):
 
         # Generate the export env list for publishing environment variables
         export_cmd = "set" if platform.system() == "Windows" else "export"
-        export_env_cmd_list, env_name_value_map = JobRunnerUtils.parse_config_args_as_env_variables(
-            export_cmd, conf_file_object, job_yaml=job_yaml)
+        export_config_env_list, config_env_name_value_map = JobRunnerUtils.parse_config_args_as_env_variables(
+            export_cmd, conf_file_object)
 
         # Generate the export env list about scheduler matching info for publishing environment variables
-        export_env_cmd_list_for_match, env_name_value_map_for_match = \
+        export_match_env_list, match_env_name_value_map = \
             JobRunnerUtils.assign_matched_resources_to_run_and_generate_envs(
                 run_id, export_cmd, scheduler_match_info
             )
 
         # Replace entry commands with environment variable values
         entry_commands = JobRunnerUtils.replace_entry_command_with_env_variable(
-            entry_commands_origin, env_name_value_map
+            entry_commands_origin, config_env_name_value_map
         )
         entry_commands = JobRunnerUtils.replace_entry_command_with_env_variable(
-            entry_commands, env_name_value_map_for_match
+            entry_commands, match_env_name_value_map
         )
 
         # Replace entry arguments with environment variable values
-        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, env_name_value_map)
+        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, config_env_name_value_map)
+        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, match_env_name_value_map)
 
         # Add the export env list to the entry commands
-        if len(export_env_cmd_list) > 0:
-            entry_commands.extend(export_env_cmd_list)
-        for match_cmd in export_env_cmd_list_for_match:
-            entry_commands.insert(0, match_cmd)
+        for config_env_cmd in export_config_env_list:
+            entry_commands.insert(0, config_env_cmd)
+        for match_env_cmd in export_match_env_list:
+            entry_commands.insert(0, match_env_cmd)
 
         # Add general environment variables
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_EDGE_ID={edge_id}\n")
@@ -172,11 +227,12 @@ class JobRunnerUtils(Singleton):
     def replace_entry_command_with_env_variable(entry_commands, env_name_value_map):
         entry_commands_replaced = list()
         for entry_cmd in entry_commands:
-            for env_name in JobRunnerUtils.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
-                env_value = env_name_value_map.get(env_name, None)
-                if env_value is None:
-                    continue
-                entry_cmd = entry_cmd.replace(env_name, str(env_value))
+            for env_name, env_value in env_name_value_map.items():
+                if platform.system() == "Windows":
+                    entry_cmd = entry_cmd.replace(f"%{env_name}%", str(env_value))
+                else:
+                    entry_cmd = entry_cmd.replace(f"${{{env_name}}}", str(env_value))
+                    entry_cmd = entry_cmd.replace(f"${env_name}", str(env_value))
 
             entry_commands_replaced.append(entry_cmd)
 
@@ -186,62 +242,44 @@ class JobRunnerUtils(Singleton):
     def replace_entry_args_with_env_variable(entry_args, env_name_value_map):
         if entry_args is None:
             return ""
-        for env_name in JobRunnerUtils.FEDML_SUPPORTED_ENVIRONMENT_VARIABLES:
-            env_value = env_name_value_map.get(env_name, None)
-            if env_value is None:
-                continue
-            entry_args = entry_args.replace(env_name, str(env_value))
+        for env_name, env_value in env_name_value_map.items():
+            if platform.system() == "Windows":
+                entry_args = entry_args.replace(f"%{env_name}%", str(env_value))
+            else:
+                entry_args = entry_args.replace(f"${{{env_name}}}", str(env_value))
+                entry_args = entry_args.replace(f"${env_name}", str(env_value))
 
         return entry_args
 
     @staticmethod
-    def parse_config_args_as_env_variables(export_cmd, run_params, job_yaml=None):
-        model_args = run_params.get("fedml_model_args", None)
-        if model_args is None:
-            model_args = job_yaml.get("fedml_model_args", {}) if job_yaml is not None else dict()
+    def parse_config_args_as_env_variables(export_cmd, run_params):
+        export_env_command_list, env_name_value_map = JobRunnerUtils.get_env_from_dict(
+            export_cmd, run_params
+        )
 
-        data_args = run_params.get("fedml_data_args", None)
-        if data_args is None:
-            data_args = job_yaml.get("fedml_data_args", {}) if job_yaml is not None else dict()
+        return export_env_command_list, env_name_value_map
 
-        model_name = model_args.get("model_name", None)
-        model_cache_path = model_args.get("model_cache_path", None)
-        input_dim = model_args.get("input_dim", None)
-        output_dim = model_args.get("output_dim", None)
-        dataset_name = data_args.get("dataset_name", None)
-        dataset_path = data_args.get("dataset_path", None)
-        dataset_type = data_args.get("dataset_type", None)
+    @staticmethod
+    def get_env_from_dict(
+            export_cmd, config_dict, export_env_command_list=[], env_name_value_map=dict(),
+            config_key_path=""
+    ):
+        if config_dict == {}:
+            return {}
 
-        export_env_command_list = list()
-        env_name_value_map = dict()
-
-        if model_name is not None and str(model_name).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_MODEL_NAME={model_name}\n")
-            env_name_value_map["$FEDML_MODEL_NAME"] = model_name
-
-        if model_cache_path is not None and str(model_cache_path).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_MODEL_CACHE_PATH={model_cache_path}\n")
-            env_name_value_map["$FEDML_MODEL_CACHE_PATH"] = model_cache_path
-
-        if input_dim is not None and str(input_dim).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_MODEL_INPUT_DIM={input_dim}\n")
-            env_name_value_map["$FEDML_MODEL_INPUT_DIM"] = input_dim
-
-        if output_dim is not None and str(output_dim).strip() != "":
-            export_env_command_list.append(f"{export_cmd} MODEL_OUTPUT_DIM={output_dim}\n")
-            env_name_value_map["$MODEL_OUTPUT_DIM"] = output_dim
-
-        if dataset_name is not None and str(dataset_name).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_DATASET_NAME={dataset_name}\n")
-            env_name_value_map["$FEDML_DATASET_NAME"] = dataset_name
-
-        if dataset_path is not None and str(dataset_path).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_DATASET_PATH={dataset_path}\n")
-            env_name_value_map["$FEDML_DATASET_PATH"] = dataset_path
-
-        if dataset_type is not None and str(dataset_type).strip() != "":
-            export_env_command_list.append(f"{export_cmd} FEDML_DATASET_TYPE={dataset_type}\n")
-            env_name_value_map["$FEDML_DATASET_TYPE"] = dataset_type
+        for config_key, config_value in config_dict.items():
+            if isinstance(config_value, dict):
+                JobRunnerUtils.get_env_from_dict(
+                    export_cmd, config_value, export_env_command_list=export_env_command_list,
+                    env_name_value_map=env_name_value_map, config_key_path=config_key
+                )
+            else:
+                env_name = f"FEDML_ENV_{'' if config_key_path == '' else str(config_key_path).upper()+'_' }" \
+                           f"{str(config_key).upper()}"
+                config_value = str(config_value).replace("\n", ";")
+                config_value = str(config_value).replace("\"", "\\\"")
+                export_env_command_list.append(f"{export_cmd} {env_name}=\"{config_value}\"\n")
+                env_name_value_map[env_name] = config_value
 
         return export_env_command_list, env_name_value_map
 
@@ -262,14 +300,14 @@ class JobRunnerUtils(Singleton):
 
         if master_node_addr is not None and str(master_node_addr).strip() != "":
             export_env_command_list.append(f"{export_cmd} FEDML_NODE_0_ADDR={master_node_addr}\n")
-            env_name_value_map["$FEDML_NODE_0_ADDR"] = master_node_addr
+            env_name_value_map["FEDML_NODE_0_ADDR"] = master_node_addr
 
         if master_node_port is not None and str(master_node_port).strip() != "":
             export_env_command_list.append(f"{export_cmd} FEDML_NODE_0_PORT={master_node_port}\n")
-            env_name_value_map["$FEDML_NODE_0_PORT"] = master_node_port
+            env_name_value_map["FEDML_NODE_0_PORT"] = master_node_port
 
         if num_nodes is not None and str(num_nodes).strip() != "":
             export_env_command_list.append(f"{export_cmd} FEDML_NUM_NODES={num_nodes}\n")
-            env_name_value_map["$FEDML_NUM_NODES"] = num_nodes
+            env_name_value_map["FEDML_NUM_NODES"] = num_nodes
 
         return export_env_command_list, env_name_value_map
