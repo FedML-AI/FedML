@@ -96,11 +96,14 @@ class JobRunnerUtils(Singleton):
     def trim_unavailable_gpu_ids(gpu_ids):
         # Trim the gpu ids based on the realtime available gpu id list.
         gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
-        for gpu_id in gpu_ids:
+        unavailable_gpu_ids = list()
+        for index, gpu_id in enumerate(gpu_ids):
             if int(gpu_id) not in realtime_available_gpu_ids:
-                gpu_ids.remove(gpu_id)
+                unavailable_gpu_ids.append(index)
 
-        return gpu_ids.copy()
+        trimmed_gpu_ids = [gpu_id for index, gpu_id in enumerate(gpu_ids) if index not in unavailable_gpu_ids]
+
+        return trimmed_gpu_ids.copy()
 
     def release_gpu_ids(self, run_id):
         self.lock_available_gpu_ids.acquire()
