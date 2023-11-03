@@ -430,11 +430,6 @@ def _update_client_id_list(args):
                     client_id_list.append(args.rank)
                     args.client_id_list = str(client_id_list)
                     print("------------------client client_id_list = {}-------------------".format(args.client_id_list))
-            else:
-                print(
-                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != "
-                    "FEDML_TRAINING_PLATFORM_CROSS_SILO"
-                )
         else:
             print("args.client_id_list is not None")
 
