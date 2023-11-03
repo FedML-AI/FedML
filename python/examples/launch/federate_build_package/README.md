@@ -90,25 +90,25 @@ config_parent_key:
 Then the equivalent environment variable will be as follows.
 
 ```
-FEDML_uppercase($config_parent_key)_uppercase($config_sub_key)
+FEDML_ENV_uppercase($config_parent_key)_uppercase($config_sub_key)
 ```
 
 e.g., the equivalent environment variables of above example config items will be as follows.
 
 ```
-dataset_name = $FEDML_DATA_ARGS_DATASET_NAME
-dataset_path = $FEDML_DATA_ARGS_DATASET_PATH
-dataset_type = $FEDML_DATA_ARGS_DATASET_TYPE
-model_name = $FEDML_MODEL_ARGS_MODEL_NAME
-model_cache_path = $FEDML_MODEL_ARGS_MODEL_CACHE_PATH
-input_dim = $FEDML_MODEL_ARGS_MODEL_INPUT_DIM
-output_dim = $FEDML_MODEL_ARGS_MODEL_OUTPUT_DIM
+dataset_name = $FEDML_ENV_DATA_ARGS_DATASET_NAME
+dataset_path = $FFEDML_ENV_DATA_ARGS_DATASET_PATH
+dataset_type = $FEDML_ENV_DATA_ARGS_DATASET_TYPE
+model_name = $FEDML_ENV_MODEL_ARGS_MODEL_NAME
+model_cache_path = $FEDML_ENV_MODEL_ARGS_MODEL_CACHE_PATH
+input_dim = $FEDML_ENV_MODEL_ARGS_MODEL_INPUT_DIM
+output_dim = $FEDML_ENV_MODEL_ARGS_MODEL_OUTPUT_DIM
 ```
 
 Your may use these environment variables in your job commands. e.g.,
 ```
 job: |
-    python3 torch_client.py --cf config/fedml_config.yaml --rank $FEDML_CLIENT_RANK --role client --run_id $FEDML_CURRENT_RUN_ID -m $FEDML_MODEL_ARGS_MODEL_NAME -mc $FEDML_MODEL_ARGS_MODEL_CACHE_PATH -mi $FEDML_MODEL_ARGS_MODEL_INPUT_DIM -mo $FEDML_MODEL_ARGS_MODEL_OUTPUT_DIM -dn $FEDML_DATA_ARGS_DATASET_NAME -dt $FEDML_DATA_ARGS_DATASET_TYPE -dp $FEDML_DATA_ARGS_DATASET_PATH
+    python3 torch_client.py --cf config/fedml_config.yaml --rank $FEDML_CLIENT_RANK --role client --run_id $FEDML_CURRENT_RUN_ID -m $FEDML_ENV_MODEL_ARGS_MODEL_NAME -mc $FEDML_ENV_MODEL_ARGS_MODEL_CACHE_PATH -mi $FEDML_ENV_MODEL_ARGS_MODEL_INPUT_DIM -mo $FEDML_ENV_MODEL_ARGS_MODEL_OUTPUT_DIM -dn $FEDML_ENV_DATA_ARGS_DATASET_NAME -dt $FEDML_ENV_DATA_ARGS_DATASET_TYPE -dp $FEDML_ENV_DATA_ARGS_DATASET_PATH
 ```
 
 ### Examples
