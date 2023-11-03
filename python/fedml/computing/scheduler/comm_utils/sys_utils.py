@@ -686,6 +686,10 @@ def versions(configuration_env, pkg_name):
 
 
 def upgrade_if_not_latest():
+    disable_ota = os.getenv("FEDML_LAUNCH_DISABLE_OTA")
+    if disable_ota is not None and disable_ota == "YES":
+        return
+
     try:
         config_version = fedml.get_env_version()
         is_latest_version, _, _ = check_fedml_is_latest_version()
