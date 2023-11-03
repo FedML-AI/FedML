@@ -274,7 +274,7 @@ class JobRunnerUtils(Singleton):
                     env_name_value_map=env_name_value_map, config_key_path=config_key
                 )
             else:
-                env_name = f"FEDML_{'' if config_key_path == '' else str(config_key_path).upper()+'_' }" \
+                env_name = f"FEDML_ENV_{'' if config_key_path == '' else str(config_key_path).upper()+'_' }" \
                            f"{str(config_key).upper()}"
                 config_value = str(config_value).replace("\n", ";")
                 config_value = str(config_value).replace("\"", "\\\"")
