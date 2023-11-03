@@ -227,24 +227,24 @@ pipeline {
 
               sh './devops/scripts/build-fedml-docker.sh'
 
-              sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/edge-client-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-
-              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
-              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/edge-client-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//
+//               sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
+//               sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//               sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+//               sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -363,46 +363,46 @@ pipeline {
                 sh './devops/scripts/push-fedml-docker.sh'
               }
 
-              withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
-                 withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
-                    sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip -o awscliv2.zip'
-                    sh './aws/install'
-                    sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
-                    sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
-                 }
-              }
-
-              sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
-
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
-
-              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
-                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-edge-client-server:latest'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/fedml-edge-client-server:latest'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest $REGISTRY_DOCKER_HUB/fedml/fedml-inference-backend:latest'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-inference-ingress:$VERSION_PRODUCTION'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-model-premise-master:$VERSION_PRODUCTION'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
-
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-model-premise-slave:$VERSION_PRODUCTION'
-                 sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
-              }
+//               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
+//                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
+//                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+//                     sh 'unzip -o awscliv2.zip'
+//                     sh './aws/install'
+//                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+//                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
+//                  }
+//               }
+//
+//               sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
+//
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
+//               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
+//
+//               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+//                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD $REGISTRY_DOCKER_HUB'
+//
+//                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-edge-client-server:latest'
+//                  sh 'docker push $REGISTRY_DOCKER_HUB/fedml/fedml-edge-client-server:latest'
+//
+//                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest $REGISTRY_DOCKER_HUB/fedml/fedml-inference-backend:latest'
+//                  sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+//
+//                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-inference-ingress:$VERSION_PRODUCTION'
+//                  sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
+//
+//                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-model-premise-master:$VERSION_PRODUCTION'
+//                  sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
+//
+//                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION $REGISTRY_DOCKER_HUB/fedml/fedml-model-premise-slave:$VERSION_PRODUCTION'
+//                  sh 'docker push $REGISTRY_DOCKER_HUB/fedml/$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
+//               }
             }
           }
         }
@@ -484,16 +484,17 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
-                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
-
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
-
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_2'
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_2'
-
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
+                       sh 'echo "deploying..."'
+//                     sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
+//
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+//
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_2'
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_2'
+//
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
+//                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
                 }
 
                 withCredentials([
