@@ -171,9 +171,9 @@ def get_gpu_list():
 def get_available_gpu_id_list(limit=1):
     if enable_simulation_gpu:
         import random
-        trim_index = random.randint(0, limit)
+        trim_index = random.randint(0, limit-1)
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-        available_gpu_ids.remove(trim_index)
+        #available_gpu_ids.remove(trim_index)
         return available_gpu_ids
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)

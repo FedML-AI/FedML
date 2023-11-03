@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.11a4"
+__version__ = "0.8.11a5"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -178,7 +178,6 @@ def _print_args(args):
     if hasattr(args_copy, "s3_config_path"):
         s3_config_path = args_copy.s3_config_path
         args_copy.s3_config_path = ""
-    logging.info("==== args = {}".format(vars(args_copy)))
     if hasattr(args_copy, "mqtt_config_path"):
         args_copy.mqtt_config_path = mqtt_config_path
     if hasattr(args_copy, "s3_config_path"):
@@ -210,8 +209,6 @@ def _update_client_specific_args(args):
             extra_config_path = args.data_silo_config[args.rank - 1]
             extra_config = args.load_yaml_config(extra_config_path)
             args.set_attr_from_config(extra_config)
-    else:
-        logging.info("data_silo_config is not defined in fedml_config.yaml")
 
 
 def _init_simulation_mpi(args):
@@ -307,8 +304,8 @@ def _manage_cuda_rpc_args(args):
                 len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
 
-    print(f"cpu_transfer: {args.cpu_transfer}")
-    print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
+    # print(f"cpu_transfer: {args.cpu_transfer}")
+    # print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
 
 def _manage_mpi_args(args):
@@ -440,8 +437,6 @@ def _update_client_id_list(args):
                 )
         else:
             print("args.client_id_list is not None")
-    else:
-        print("using_mlops = true")
 
 
 def _init_cross_device(args):

@@ -500,9 +500,6 @@ class S3Storage:
                 f"Upload data failed. | src: {src_local_path} | dest: {dest_s3_path} | Exception: {e}"
             )
             return file_uploaded_url
-        logging.info(
-            f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
-        )
         return file_uploaded_url
 
     def download_file_with_progress(self, path_s3, path_local,
