@@ -92,8 +92,9 @@ def _launch_job(yaml_file, api_key):
     result_code, result_message, create_run_result = create_run(
         yaml_file, api_key=api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
 
-    if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
-                                        create_run_result=create_run_result, api_key=api_key):
+    if _resources_matched(result_code=result_code, result_message=result_message,
+                          create_run_result=create_run_result, api_key=api_key):
+
         if create_run_result.user_check:
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
@@ -101,6 +102,7 @@ def _launch_job(yaml_file, api_key):
                 run_stop(create_run_result.run_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
                 return False
 
+        # Print Details
         click.echo("Launching the job with the above matched GPU resource.")
         result = run(create_run_result=create_run_result, api_key=api_key)
         _print_run_list_details(result)
@@ -109,10 +111,13 @@ def _launch_job(yaml_file, api_key):
 def _launch_job_on_cluster(yaml_file, api_key, cluster):
     result_code, result_message, create_run_result = create_run_on_cluster(
         yaml_file, cluster, api_key, feature_entry_point=FeatureEntryPoint.FEATURE_ENTRYPOINT_CLI)
-    cluster_confirmed = True
-    if _resources_matched_and_confirmed(result_code=result_code, result_message=result_message,
-                                        create_run_result=create_run_result, api_key=api_key):
+
+    if _resources_matched(result_code=result_code, result_message=result_message,
+                          create_run_result=create_run_result, api_key=api_key):
+
         if create_run_result.user_check:
+
+            # Confirm Cluster and Start
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
@@ -126,14 +131,15 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
                 click.echo("Cluster id was not assigned. Please check if the cli arguments are valid")
                 return
 
-            cluster_confirmed = confirm_and_start(run_id=create_run_result.run_id, cluster_id=cluster_id,
-                                                  gpu_matched=create_run_result.gpu_matched)
+            confirm_and_start(run_id=create_run_result.run_id, cluster_id=cluster_id,
+                              gpu_matched=create_run_result.gpu_matched)
 
-        if cluster_confirmed:
-            _print_run_list_details(create_run_result)
+        # Print Details
+        click.echo("Launching the job with the above matched GPU resource.")
+        _print_run_list_details(create_run_result)
 
 
-def _resources_matched_and_confirmed(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
+def _resources_matched(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
                                      api_key: str):
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or not create_run_result:
         click.echo(f"{result_message}. Please double check the input arguments are valid.")
@@ -151,13 +157,9 @@ def _resources_matched_and_confirmed(result_code: int, result_message: str, crea
             run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
             return False
 
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
-        click.echo(result_message)
-        _match_and_show_resources(create_run_result)
-        return True
-
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED]:
         _match_and_show_resources(create_run_result)
+        return True
 
     click.echo(result_message)
     return False
@@ -181,7 +183,7 @@ def _match_and_show_resources(result: FedMLRunStartedModel):
         click.echo(f"{result.run_url}")
 
 
-def _print_run_list_details(result):
+def _print_run_list_details(result: FedMLRunStartedModel):
     if result is None:
         click.echo("Failed to launch the job")
         return

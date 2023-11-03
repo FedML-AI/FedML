@@ -27,8 +27,8 @@ class LaunchResult:
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
                device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                                   ApiConstants.LAUNCHED)
 
     authenticate(api_key)
 
@@ -57,9 +57,9 @@ def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: 
 
 
 def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str = None, device_server: str = None,
-                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                                   ApiConstants.LAUNCHED)
 
     authenticate(api_key)
 
@@ -71,8 +71,7 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
         job_config, app_updated_result = _prepare_launch_app(yaml_file)
 
         if not app_updated_result:
-            return ApiConstants.ERROR_CODE[
-                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
+            return ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
 
         # Start the job with the above application.
         create_run_result = create_on_cluster(platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
@@ -117,8 +116,8 @@ def job(
 
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
-            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
+            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
@@ -156,8 +155,9 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     project_id = getattr(create_run_result, "project_id", None)
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
-            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+    # Return if run launched and no user check required, or launch failed
+    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
+            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
@@ -231,6 +231,6 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
                 ApiConstants.LAUNCHED)
-    return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-            ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+    else:
+        return ApiConstants.ERROR_CODE[ApiConstants.ERROR], result.message
 
