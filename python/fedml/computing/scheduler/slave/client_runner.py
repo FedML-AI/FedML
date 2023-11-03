@@ -984,7 +984,7 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
-        self.release_gpu_ids()
+        self.release_gpu_ids(run_id)
 
     @staticmethod
     def release_gpu_ids(run_id):
