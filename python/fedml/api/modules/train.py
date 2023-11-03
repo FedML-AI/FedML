@@ -22,28 +22,6 @@ def build(source_folder, entry_point, entry_args, config_folder, dest_folder, ig
     if config_dict is None:
         config_dict = dict()
 
-    # Generate the model args based on the input arguments
-    if config_dict.get("fedml_model_args", None) is None:
-        config_dict["fedml_model_args"] = dict()
-    if model_name is not None and str(model_name).strip() != "":
-        config_dict["fedml_model_args"]["model_name"] = model_name
-    if model_cache_path is not None and str(model_cache_path).strip() != "":
-        config_dict["fedml_model_args"]["model_cache_path"] = model_cache_path
-    if input_dim is not None and str(input_dim).strip() != "":
-        config_dict["fedml_model_args"]["input_dim"] = input_dim
-    if output_dim is not None and str(output_dim).strip() != "":
-        config_dict["fedml_model_args"]["output_dim"] = output_dim
-
-    # Generate the data args based on the input arguments
-    if config_dict.get("fedml_data_args", None) is None:
-        config_dict["fedml_data_args"] = dict()
-    if dataset_name is not None and str(dataset_name).strip() != "":
-        config_dict["fedml_data_args"]["dataset_name"] = dataset_name
-    if dataset_type is not None and str(dataset_type).strip() != "":
-        config_dict["fedml_data_args"]["dataset_type"] = dataset_type
-    if dataset_path is not None and str(dataset_path).strip() != "":
-        config_dict["fedml_data_args"]["dataset_path"] = dataset_path
-
     # Generate the entry arguments
     if entry_args is not None and str(entry_args).strip() != "":
         config_dict["fedml_entry_args"] = dict()

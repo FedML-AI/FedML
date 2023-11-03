@@ -131,9 +131,7 @@ class Constants(Singleton):
         JOB_TASK_SUBTYPE_TRAIN_SMART_PHONE_TRAINING: JOB_TASK_SUBTYPE_TRAIN_SMART_PHONE_TRAINING_CODE
     }
 
-    JOB_YAML_RESERVED_CONFIG_KEY_WORDS = [
-        "workspace", "job", "computing", "fedml_env", "bootstrap", "job_type", "job_subtype",
-        "framework_type", "server_job", "job_args", "job_name", "serving_args"]
+    JOB_YAML_RESERVED_CONFIG_KEY_WORDS = SchedulerConstants.JOB_YAML_RESERVED_CONFIG_KEY_WORDS
 
     JOB_DEVICE_TYPE_CPU = "CPU"
     JOB_DEVICE_TYPE_GPU = "GPU"

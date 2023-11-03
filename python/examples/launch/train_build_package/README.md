@@ -44,12 +44,12 @@ computing:
   #device_type: CPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
 
-fedml_data_args:
+data_args:
   dataset_name: mnist
   dataset_path: ./dataset
   dataset_type: csv
 
-fedml_model_args:
+model_args:
   input_dim: '784'
   model_cache_path: /Users/alexliang/fedml_models
   model_name: lr
@@ -59,21 +59,36 @@ training_params:
   learning_rate: 0.004
 ```
 
-The config items named fedml_data_args and fedml_model_args will be mapped to the equivalent environment variables as follows.
+The config items will be mapped to the equivalent environment variables with the following rules.
+
+if the config path for config_sub_key is as follows.
 ```
-dataset_name = $FEDML_DATASET_NAME
-dataset_path = $FEDML_DATASET_PATH
-dataset_type = $FEDML_DATASET_TYPE
-model_name = $FEDML_MODEL_NAME
-model_cache_path = $FEDML_MODEL_CACHE_PATH
-input_dim = $FEDML_MODEL_INPUT_DIM
-output_dim = $FEDML_MODEL_OUTPUT_DIM
+config_parent_key:
+    config_sub_key: config_sub_key_value
+```
+
+Then the equivalent environment variable will be as follows.
+
+```
+FEDML_ENV_uppercase($config_parent_key)_uppercase($config_sub_key)
+```
+
+e.g., the equivalent environment variables of above example config items will be as follows. 
+
+```
+dataset_name = $FEDML_ENV_DATA_ARGS_DATASET_NAME
+dataset_path = $FFEDML_ENV_DATA_ARGS_DATASET_PATH
+dataset_type = $FEDML_ENV_DATA_ARGS_DATASET_TYPE
+model_name = $FEDML_ENV_MODEL_ARGS_MODEL_NAME
+model_cache_path = $FEDML_ENV_MODEL_ARGS_MODEL_CACHE_PATH
+input_dim = $FEDML_ENV_MODEL_ARGS_MODEL_INPUT_DIM
+output_dim = $FEDML_ENV_MODEL_ARGS_MODEL_OUTPUT_DIM
 ```
 
 Your may use these environment variables in your job commands. e.g.,
 ```
 job: |
-    python3 train.py --epochs 1 -m $FEDML_MODEL_NAME -mc $FEDML_MODEL_CACHE_PATH -mi $FEDML_MODEL_INPUT_DIM -mo $FEDML_MODEL_OUTPUT_DIM -dn $FEDML_DATASET_NAME -dt $FEDML_DATASET_TYPE -dp $FEDML_DATASET_PATH
+    python3 train.py --epochs 1 -m $FEDML_ENV_MODEL_ARGS_MODEL_NAME -mc $FEDML_ENV_MODEL_ARGS_MODEL_CACHE_PATH -mi $FEDML_ENV_MODEL_ARGS_MODEL_INPUT_DIM -mo $FEDML_ENV_MODEL_ARGS_MODEL_OUTPUT_DIM -dn $FEDML_ENV_DATA_ARGS_DATASET_NAME -dt $FEDML_ENV_DATA_ARGS_DATASET_TYPE -dp $FEDML_ENV_DATA_ARGS_DATASET_PATH
 ```
 
 ### Examples

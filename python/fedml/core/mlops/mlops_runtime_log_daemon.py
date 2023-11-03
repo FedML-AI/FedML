@@ -245,7 +245,7 @@ class MLOpsRuntimeLogProcessor:
 
         self.log_upload(self.run_id, self.device_id)
         self.upload_log_file_as_artifact(only_push_artifact=True)
-        print("FedDebug log_process STOPPED")
+        print("Log Process exits normally.")
 
     def log_relocation(self):
         log_line_count = self.log_line_index

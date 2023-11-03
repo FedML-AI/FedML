@@ -19,14 +19,14 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
                                   {'job_type': 'train', 'workspace': 'hello_world',
                                    'computing': {'resource_type': 'A100-80G', 'minimum_num_gpus': 3,
                                                  'maximum_cost_per_hour': '$3000'},
-                                   'fedml_model_args': {'input_dim': '784',
-                                                        'model_cache_path': '/Users/alexliang/fedml_models',
-                                                        'model_name': 'lr', 'output_dim': '10'},
+                                   'model_args': {'input_dim': '784',
+                                                  'model_cache_path': '/Users/alexliang/fedml_models',
+                                                  'model_name': 'lr', 'output_dim': '10'},
                                    'job_subtype': 'generate_training',
                                    'bootstrap': '# pip install -r requirements.txt\necho "Bootstrap finished."\n',
                                    'job': 'echo "current job id: $FEDML_CURRENT_RUN_ID"\necho "current edge id: $FEDML_CURRENT_EDGE_ID"\necho "master node address : $FEDML_NODE_0_ADDR"\necho "master node port : $FEDML_NODE_0_PORT"\necho "num nodes : $FEDML_NUM_NODES"\necho "Hello, Here is the launch platform."\necho "Current directory is as follows."\npwd\npython3 hello_world.py\n#sleep 20\n#exit 1\n#echo "Current GPU information is as follows."\n#nvidia-smi # Print GPU information\n#gpustat\n#echo "Download the file from http://212.183.159.230/200MB.zip ..."\n#wget http://212.183.159.230/200MB.zip\n#rm ./200MB.zip*\n#echo "The downloading task has finished."\n# echo "Training the vision transformer model using PyTorch..."\n# python vision_transformer.py --epochs 1\n',
-                                   'fedml_data_args': {'dataset_type': 'csv', 'dataset_path': './dataset',
-                                                       'dataset_name': 'mnist'}},
+                                   'data_args': {'dataset_type': 'csv', 'dataset_path': './dataset',
+                                                 'dataset_name': 'mnist'}},
                               'environment_args': {'bootstrap': 'bootstrap.sh'}}},
                     'servers_state': '{}', 'timestamp': '1698291772419', 'cloud_agent_id': '706',
                     'lastupdatetime': 1698291772408, 'create_time': 1698291772408, 'groupid': 138,
@@ -57,17 +57,23 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
         active_edge_info_dict, show_gpu_list=True)
     print("\n")
 
-    print(f"Occupy GPUs {request_gpu_num}.")
-    JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    a="1".split(',')
+    gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(a)
 
-    JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    print(f"Occupy GPUs {request_gpu_num}.")
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(run_id, request_gpu_num)
+    print(f"Run {run_id}, applied gpu ids {gpu_ids}, available GPU ids for: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    JobRunnerUtils.get_instance().release_gpu_ids(run_id)
+
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(103, 2)
+    print(f"Run 103, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
     JobRunnerUtils.get_instance().release_gpu_ids(103)
 
-    JobRunnerUtils.get_instance().occupy_gpu_ids(104, 3)
-    print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(104, 3)
+    print(f"Run 104, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
+    gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(105, 3)
+    print(f"Run 105, applied gpu ids {gpu_ids}, available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
 
     # Match and assign gpus to each device
     assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
@@ -104,7 +110,26 @@ def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_
     print(f"Release GPUs {request_gpu_num}.")
     JobRunnerUtils.get_instance().release_gpu_ids(run_id)
     JobRunnerUtils.get_instance().release_gpu_ids(104)
+    JobRunnerUtils.get_instance().release_gpu_ids(105)
     print(f"available GPU ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+
+
+def test_config_map_to_env_variables():
+    config_dict = sys_utils.load_yaml_config("./train_job.yaml")
+    export_env_command_list, env_name_value_map = JobRunnerUtils.parse_config_args_as_env_variables(
+        "export", config_dict)
+    print(f"export env commands: {export_env_command_list}")
+    print(f"environment name values: {env_name_value_map}")
+
+    replaced_entry_commands = JobRunnerUtils.replace_entry_command_with_env_variable(
+        ["${FEDML_DATA_ARGS_DATASET_NAME} is loading...",
+         "$FEDML_DATA_ARGS_DATASET_NAME is loading...",
+         "%FEDML_DATA_ARGS_DATASET_NAME% is loading..."], env_name_value_map)
+    print(f"replaced entry commands: {replaced_entry_commands}")
+
+    replaced_entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(
+        "python train.py --dataset_name ${FEDML_DATA_ARGS_DATASET_NAME}", env_name_value_map)
+    print(f"replaced entry args: {replaced_entry_args}")
 
 
 if __name__ == "__main__":
@@ -121,6 +146,9 @@ if __name__ == "__main__":
     run_id = 1000
 
     print("Hi everyone, I am testing the server runner.\n")
+
+    print("Test for mapping config dictionaries to environment variables.")
+    test_config_map_to_env_variables()
 
     print("Test for single node with single GPU")
     test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=1, gpu_num_per_node=8, request_gpu_num=1)

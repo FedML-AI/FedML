@@ -27,6 +27,10 @@ class SchedulerConstants:
     JOB_TASK_TYPE_FEDERATE = "federate"
     JOB_TASK_TYPE_DEV_ENV = "dev-environment"
 
+    JOB_YAML_RESERVED_CONFIG_KEY_WORDS = [
+        "workspace", "job", "computing", "fedml_env", "bootstrap", "job_type", "job_subtype",
+        "framework_type", "server_job", "job_args", "job_name", "serving_args"]
+
     @staticmethod
     def get_log_source(run_json):
         run_config = run_json.get("run_config", {})
