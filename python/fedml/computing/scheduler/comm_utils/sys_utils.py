@@ -33,7 +33,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
-enable_simulation_gpu = False
+enable_simulation_gpu = True
 
 
 def get_sys_runner_info():
@@ -178,6 +178,16 @@ def get_available_gpu_id_list(limit=1):
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
+
+
+def get_scheduler_available_gpu_id_list():
+    from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+    FedMLModelCache.get_instance().set_redis_params()
+    available_gpu_ids = FedMLModelCache.get_instance().get_global_available_gpu_ids()
+    if available_gpu_ids is None:
+        total_gpu_list = get_gpu_list()
+        return get_available_gpu_id_list(limit=len(total_gpu_list))
+    return available_gpu_ids
 
 
 def get_host_name():
@@ -884,7 +894,7 @@ def get_sys_realtime_stats():
     cpu_cores = psutil.cpu_count()
     gpu_cores_total, _ = get_gpu_count_vendor()
     gpu_cores_total = len(get_gpu_list())
-    gpu_available_ids = get_available_gpu_id_list(limit=gpu_cores_total)
+    gpu_available_ids = get_scheduler_available_gpu_id_list()
     gpu_cores_available = len(gpu_available_ids) if gpu_available_ids is not None else 0
     net = psutil.net_io_counters()
     sent_bytes = net.bytes_sent
