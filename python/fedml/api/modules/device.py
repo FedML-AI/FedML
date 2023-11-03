@@ -4,6 +4,7 @@ import click
 from prettytable import PrettyTable
 
 import fedml
+from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.master.docker_login import login_with_server_docker_mode
 from fedml.computing.scheduler.master.docker_login import logout_with_server_docker_mode
@@ -60,10 +61,14 @@ def _bind(
         docker, docker_rank, infer_host,
         redis_addr, redis_port, redis_password
 ):
-    os.environ["FEDML_INFER_HOST"] = infer_host
-    os.environ["FEDML_INFER_REDIS_ADDR"] = redis_addr
-    os.environ["FEDML_INFER_REDIS_PORT"] = redis_port
-    os.environ["FEDML_INFER_REDIS_PASSWORD"] = redis_password
+    if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
+        os.environ[ModuleConstants.ENV_FEDML_INFER_HOST] = infer_host
+    if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR) is None:
+        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR] = redis_addr
+    if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT) is None:
+        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PORT] = redis_port
+    if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
+        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD] = redis_password
 
     url = fedml._get_backend_service()
     print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Nexus AI Platform\n")

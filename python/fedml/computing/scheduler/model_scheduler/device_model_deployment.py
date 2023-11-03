@@ -15,6 +15,7 @@ import tritonclient.http as http_client
 import collections.abc
 
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
+from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
@@ -72,6 +73,16 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
     FedMLModelCache.get_instance().set_redis_params()
     num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
+    if gpu_ids is not None:
+        logging.info(f"cuda visible gpu ids: {gpu_ids}")
+        gpu_list = gpu_ids.split(',')
+        gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
+        logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
+        if len(gpu_list) != int(num_gpus):
+            gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
+                int(num_gpus), JobRunnerUtils.get_realtime_gpu_available_ids())
+        else:
+            gpu_ids = ",".join(gpu_list)
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
@@ -304,8 +315,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         device_requests = []
         if use_gpu:
             if gpu_ids is not None:
+                gpu_id_list = gpu_ids.split(',')
+                gpu_id_list = map(lambda x: str(x), gpu_id_list)
                 device_requests.append(
-                    docker.types.DeviceRequest(device_ids=[gpu_ids], capabilities=[['gpu']]))
+                    docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
             else:
                 device_requests.append(
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
