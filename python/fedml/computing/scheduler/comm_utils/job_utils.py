@@ -48,13 +48,16 @@ class JobRunnerUtils(Singleton):
         self.available_gpu_ids = self.available_gpu_ids[matched_gpu_num:].copy()
         self.available_gpu_ids = list(dict.fromkeys(self.available_gpu_ids))
 
-        FedMLModelCache.get_instance().set_redis_params()
-        FedMLModelCache.get_instance().set_global_available_gpu_ids(self.available_gpu_ids)
-
-        if inner_id is not None:
+        try:
             FedMLModelCache.get_instance().set_redis_params()
-            FedMLModelCache.get_instance().set_end_point_gpu_resources(
-                inner_id, matched_gpu_num, cuda_visible_gpu_ids_str)
+            FedMLModelCache.get_instance().set_global_available_gpu_ids(self.available_gpu_ids)
+
+            if inner_id is not None:
+                FedMLModelCache.get_instance().set_redis_params()
+                FedMLModelCache.get_instance().set_end_point_gpu_resources(
+                    inner_id, matched_gpu_num, cuda_visible_gpu_ids_str)
+        except Exception as e:
+            pass
 
         self.lock_available_gpu_ids.release()
 
@@ -113,8 +116,11 @@ class JobRunnerUtils(Singleton):
         if self.run_id_to_gpu_ids_map.get(str(run_id)) is not None:
             self.run_id_to_gpu_ids_map.pop(str(run_id))
 
-        FedMLModelCache.get_instance().set_redis_params()
-        FedMLModelCache.get_instance().set_global_available_gpu_ids(self.available_gpu_ids)
+        try:
+            FedMLModelCache.get_instance().set_redis_params()
+            FedMLModelCache.get_instance().set_global_available_gpu_ids(self.available_gpu_ids)
+        except Exception as e:
+            pass
 
         self.lock_available_gpu_ids.release()
 

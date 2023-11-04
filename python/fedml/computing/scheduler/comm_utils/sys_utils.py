@@ -181,9 +181,13 @@ def get_available_gpu_id_list(limit=1):
 
 
 def get_scheduler_available_gpu_id_list(total_gpus):
-    from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
-    FedMLModelCache.get_instance().set_redis_params()
-    available_gpu_ids = FedMLModelCache.get_instance().get_global_available_gpu_ids()
+    try:
+        from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+        FedMLModelCache.get_instance().set_redis_params()
+        available_gpu_ids = FedMLModelCache.get_instance().get_global_available_gpu_ids()
+    except Exception as e:
+        available_gpu_ids = None
+        pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
     if available_gpu_ids is None:
         return realtime_available_gpus
