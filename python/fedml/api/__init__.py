@@ -5,7 +5,7 @@ Usages:
     job_yaml_file = "/home/fedml/train.yaml"
     login_ret = fedml.api.fedml_login(api_key)
     if login_ret == 0:
-        launch_result = fedml.api.job(job_yaml_file)
+        launch_result = fedml.launch.job(job_yaml_file)
         if launch_result.result_code == 0:
             page_num = 1
             page_size = 100
@@ -15,10 +15,9 @@ Usages:
 """
 from typing import Tuple
 
-from fedml.api.modules import utils, build, device, logs, diagnosis, cluster, run, train, federate, \
+from fedml.api.modules import utils, build, device, logs, diagnosis, cluster, train, federate, \
     model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
-from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunModelList
 
 
 def fedml_login(api_key: str = None):
@@ -33,25 +32,6 @@ def fedml_login(api_key: str = None):
         error_code is 0 if login is successful, else -1
     """
     return utils.fedml_login(api_key)
-
-
-def run_stop(run_id: str, platform: str = "falcon", api_key: str = None) -> bool:
-    return run.stop(run_id=run_id, platform=platform, api_key=api_key)
-
-
-def run_list(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
-    return run.list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
-
-
-def run_status(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (
-FedMLRunModelList, str):
-    return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
-
-
-def run_logs(run_id: str, page_num: int = 1, page_size: int = 10, need_all_logs: bool = False, platform: str = "falcon",
-             api_key: str = None) -> run.RunLogResult:
-    return run.logs(run_id=run_id, page_num=page_num, page_size=page_size, need_all_logs=need_all_logs,
-                    platform=platform, api_key=api_key)
 
 
 def cluster_list(cluster_names: Tuple[str] = (), api_key: str = None) -> FedMLClusterModelList:

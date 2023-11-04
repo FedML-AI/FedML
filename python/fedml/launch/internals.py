@@ -2,7 +2,7 @@ import os
 from typing import List
 
 from fedml.api.modules.utils import authenticate
-from fedml.api.modules.run import create, create_on_cluster, start
+from fedml.run.internals import create, create_on_cluster, start
 from fedml.api.modules.cluster import confirm_and_start
 
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLAppManager

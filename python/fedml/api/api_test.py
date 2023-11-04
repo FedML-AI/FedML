@@ -1,7 +1,7 @@
 import os.path
 import time
 
-from fedml import launch, api, set_env_version
+from fedml import launch, run, api, set_env_version
 
 # Login
 set_env_version("dev")
@@ -23,7 +23,7 @@ if launch_result.result_code != 0:
     exit(1)
 
 # Get job status
-log_result = api.run_logs(launch_result.run_id, 1, 100)
+log_result = run.logs(launch_result.run_id, 1, 100)
 if log_result is None or log_result.run_status is None:
     print(f"Failed to get job status.")
     exit(1)
@@ -31,7 +31,7 @@ print(f"Run status {log_result.run_status}")
 
 # Get job logs
 time.sleep(30)
-log_result = api.run_logs(launch_result.run_id, 1, 100)
+log_result = run.logs(launch_result.run_id, 1, 100)
 if log_result is None or log_result.run_status is None:
     print(f"Failed to get run logs.")
     exit(1)

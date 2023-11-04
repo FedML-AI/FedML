@@ -4,6 +4,8 @@ import fedml.api
 
 from prettytable import PrettyTable
 
+import fedml.run
+
 
 @click.group("run")
 @click.help_option("--help", "-h")
@@ -61,7 +63,7 @@ def fedml_run(api_key, version, platform):
 )
 def stop_run(platform, run_id, api_key, version):
     fedml.set_env_version(version)
-    is_stopped = fedml.api.run_stop(run_id=run_id, platform=platform, api_key=api_key)
+    is_stopped = fedml.run.stop(run_id=run_id, platform=platform, api_key=api_key)
     if is_stopped:
         click.echo(f"Run {run_id} is stopped successfully.")
     else:
@@ -104,8 +106,8 @@ def stop_run(platform, run_id, api_key, version):
 )
 def list_runs(platform, run_name, run_id, api_key, version):
     fedml.set_env_version(version)
-    run_list_obj = fedml.api.run_list(api_key=api_key, run_name=run_name, run_id=run_id,
-                                      platform=platform)
+    run_list_obj = fedml.run.list(api_key=api_key, run_name=run_name, run_id=run_id,
+                                  platform=platform)
     _print_run_table(run_list_obj)
 
 
@@ -148,8 +150,7 @@ def status(platform, run_name, run_id, api_key, version):
     if run_name is None and run_id is None:
         click.echo("Please specify run name or run id.")
         return
-    run_list_obj, _ = fedml.api.run_status(api_key=api_key, run_name=run_name, run_id=run_id,
-                                           platform=platform)
+    run_list_obj, _ = fedml.run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
     _print_run_table(run_list_obj)
 
 
@@ -207,8 +208,8 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         click.echo("Please specify run id.")
         return
 
-    run_log_result = fedml.api.run_logs(run_id=run_id, page_num=page_num, page_size=page_size,
-                                        need_all_logs=need_all_logs, platform=platform, api_key=api_key)
+    run_log_result = fedml.run.logs(run_id=run_id, page_num=page_num, page_size=page_size, need_all_logs=need_all_logs,
+                                    platform=platform, api_key=api_key)
 
     run_logs = run_log_result.run_logs
     if run_log_result.run_logs is None:

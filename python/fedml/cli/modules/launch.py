@@ -3,6 +3,7 @@ import click
 from prettytable import PrettyTable
 
 import fedml
+import fedml.run
 from fedml.cli.modules.utils import DefaultCommandGroup
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
@@ -10,7 +11,6 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
 from fedml.launch.internals import (create_run, create_run_on_cluster, run)
 from fedml.api.modules.cluster import confirm_and_start
-from fedml.api import run_stop, run_list
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 
@@ -98,7 +98,7 @@ def _launch_job(yaml_file, api_key):
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
-                run_stop(create_run_result.run_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+                fedml.run.stop(create_run_result.run_id, SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
                 return False
 
         # Print Details
@@ -120,8 +120,7 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
             if not click.confirm("Do you want to launch the job with the above matched GPU "
                                  "resource?", abort=False):
                 click.echo("Cancelling the job with the above matched GPU resource.")
-                run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
-                         api_key=api_key)
+                fedml.run.stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
                 return False
 
             cluster_id = getattr(create_run_result, "cluster_id", None)
@@ -153,7 +152,7 @@ def _resources_matched(result_code: int, result_message: str, create_run_result:
             return False
         else:
             click.echo("Cancelling launch as no resources are available. Please try again later.")
-            run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
+            fedml.run.stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
             return False
 
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED]:
@@ -194,8 +193,8 @@ def _print_run_list_details(result: FedMLRunStartedModel):
             click.echo("Failed to launch the job")
 
     # List the run status
-    run_list_obj = run_list(run_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
-                            run_id=result.run_id)
+    run_list_obj = fedml.run.list(run_name=result.project_name, platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
+                        run_id=result.run_id)
     if run_list_obj is not None and len(run_list_obj.run_list) > 0:
         click.echo("")
         click.echo("Your run result is as follows:")
