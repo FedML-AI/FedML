@@ -6,6 +6,7 @@ import fedml.api
 import shutil
 import yaml
 
+import fedml.launch
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.api.modules.utils import fedml_login
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
@@ -238,7 +239,7 @@ def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: s
                         click.echo("Please check if your API key is valid.")
                         return False
 
-                    fedml.api.launch_job(yaml_file)
+                    fedml.launch.job(yaml_file)
                     os.remove(yaml_file)
                     os.chdir(saved_original_path)
                     return True
