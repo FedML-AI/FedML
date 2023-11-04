@@ -390,7 +390,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         log_deployment_result(end_point_id, model_id, default_server_container_name,
                               ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="default",
-                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt)
+                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
+                              request_input_example=request_input_example)
 
         # Check if the inference server is ready
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
@@ -503,7 +504,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
-                     inference_type="default"):
+                     inference_type="default", request_input_example=None):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -545,7 +546,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         #                             security_utils.get_content_hash(model_name)
         try:
             inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(model_name, inference_engine, inference_port, inference_type=inference_type)
+                get_model_info(model_name, inference_engine, inference_port, inference_type=inference_type,
+                               request_input_example=request_input_example)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".
                          format(inference_output_url, model_metadata, model_config))
@@ -559,7 +561,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
                           inference_http_port, inference_type="default",
-                          retry_interval=10, deploy_attempt_threshold=10):
+                          retry_interval=10, deploy_attempt_threshold=10,
+                          request_input_example=None):
     deploy_attempt = 0
     last_out_logs = ""
     last_err_logs = ""
@@ -610,7 +613,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         # should_exit_logs will ping the inference container
         # return True if ready
         if should_exit_logs(end_point_id, model_id, cmd_type, inference_model_name, inference_engine,
-                            inference_http_port, inference_type):
+                            inference_http_port, inference_type, request_input_example=request_input_example):
             break
 
         # Not yet ready, retry
