@@ -34,14 +34,16 @@ class FeatureEntryPoint(Enum):
 
 
 class FedMLRunStartedModel(object):
-    def __init__(self, data, project_name: str = None, application_name: str = None, job_type: str = None,
+    def __init__(self, response: Response, data: dict, project_name: str = None, application_name: str = None,
+                 job_type: str = None,
                  inner_id: str = None, app_job_id: str = None, app_job_name: str = None):
-        if isinstance(data, dict):
+        if data is not None:
             self.run_id = data.get("job_id", "0")
             self.run_name = data.get("job_name", None)
             self.project_id = data.get("project_id", None)
             self.status = data.get("status", None)
-            self.status = data.get("code", Constants.MLOPS_CLIENT_STATUS_NOT_STARTED) if self.status is None else self.status
+            self.status = data.get("code",
+                                   Constants.MLOPS_CLIENT_STATUS_NOT_STARTED) if self.status is None else self.status
             self.run_url = data.get("job_url", data)
             self.gpu_matched = list()
             self.message = data.get("message", None)
@@ -56,11 +58,11 @@ class FedMLRunStartedModel(object):
             self.run_id = "0"
             self.run_name = None
             self.project_id = ""
-            self.status = response.get("code")
             self.run_url = data
             self.started_time = time.time()
-            self.message = response.get("message")
             self.user_check = True
+        self.status = response.status_code if self.status is None else self.status
+        self.message = response.content if self.message is None else self.message
         self.inner_id = inner_id
         self.project_name = project_name
         self.application_name = application_name
@@ -71,7 +73,7 @@ class FedMLRunStartedModel(object):
 
 class FedMLRunConfig(object):
 
-    def __init__(self, result: FedMLRunStartedModel = None, device_server : str = None,
+    def __init__(self, result: FedMLRunStartedModel = None, device_server: str = None,
                  device_edges: List[str] = None):
         self.run_id = result.run_id if result is not None else None
         self.run_name = result.run_name if result is not None else None
@@ -178,7 +180,6 @@ class FedMLRunManager(Singleton):
     def create_run(self, platform: str, job_config: FedMLJobConfig, device_server: str, device_edges: List[str],
                    api_key: str, cluster: str = None,
                    feature_entry_point: FeatureEntryPoint = None) -> FedMLRunStartedModel:
-        run_start_result = None
         run_create_json = self._get_run_create_json(platform=platform, project_name=job_config.project_name,
                                                     application_name=job_config.application_name,
                                                     device_server=device_server, device_edges=device_edges,
@@ -189,14 +190,14 @@ class FedMLRunManager(Singleton):
         response = self._request(request_url=ServerConstants.get_run_start_url(),
                                  request_json=run_create_json,
                                  config_version=self.config_version)
-        response_data = self._get_data_from_response(request_type="create", response=response)
-        if response_data:
-            inner_id = job_config.serving_endpoint_id \
-                if job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
-                   job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
-            run_start_result = FedMLRunStartedModel(data=response_data, project_name=job_config.project_name,
-                                                    application_name=job_config.application_name, inner_id=inner_id,
-                                                    app_job_id=job_config.job_id, app_job_name=job_config.job_name)
+        response_data = self._get_data_from_response(response=response)
+        inner_id = job_config.serving_endpoint_id \
+            if job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
+               job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
+        run_start_result = FedMLRunStartedModel(response=response, data=response_data,
+                                                project_name=job_config.project_name,
+                                                application_name=job_config.application_name, inner_id=inner_id,
+                                                app_job_id=job_config.job_id, app_job_name=job_config.job_name)
         return run_start_result
 
     def start_run(self, platform: str, create_run_result: FedMLRunStartedModel, device_server: str,
@@ -216,14 +217,13 @@ class FedMLRunManager(Singleton):
                                  request_json=run_start_json,
                                  config_version=self.config_version)
 
-        response_data = self._get_data_from_response(request_type="start", response=response)
+        response_data = self._get_data_from_response(response=response)
 
-        if response_data is not None:
-            run_start_result = FedMLRunStartedModel(data=response_data,
-                                                    project_name=create_run_result.project_name,
-                                                    application_name=create_run_result.application_name,
-                                                    app_job_id=create_run_result.app_job_id,
-                                                    app_job_name=create_run_result.app_job_name)
+        run_start_result = FedMLRunStartedModel(response=response, data=response_data,
+                                                project_name=create_run_result.project_name,
+                                                application_name=create_run_result.application_name,
+                                                app_job_id=create_run_result.app_job_id,
+                                                app_job_name=create_run_result.app_job_name)
         return run_start_result
 
     def list_run(self, platform: str, project_name: str, run_name: str, user_api_key: str,
@@ -240,7 +240,7 @@ class FedMLRunManager(Singleton):
                                  request_json=run_list_json,
                                  config_version=self.config_version)
 
-        response_data = self._get_data_from_response(request_type="list", response=response)
+        response_data = self._get_data_from_response(response=response)
         if response_data is not None and response_data.get("jobList", None) is not None:
             run_list_result = FedMLRunModelList(response_data)
         return run_list_result
@@ -254,7 +254,7 @@ class FedMLRunManager(Singleton):
         response = self._request(request_url=ServerConstants.get_run_stop_url(),
                                  request_json=run_stop_json,
                                  config_version=self.config_version)
-        response_data = self._get_data_from_response(request_type="stop", response=response)
+        response_data = self._get_data_from_response(response=response)
         return False if response_data is None else True
 
     def get_run_logs(self, run_id: str, page_num: int, page_size: int, user_api_key: str) -> FedMLRunLogModelList:
@@ -270,7 +270,7 @@ class FedMLRunManager(Singleton):
         response = self._request(request_url=ServerConstants.get_run_logs_url(),
                                  request_json=run_logs_json,
                                  config_version=self.config_version)
-        response_data = self._get_data_from_response(request_type="logs", response=response)
+        response_data = self._get_data_from_response(response=response)
         if response_data is not None:
             run_log_list_result = FedMLRunLogModelList(response_data)
         return run_log_list_result
@@ -346,7 +346,7 @@ class FedMLRunManager(Singleton):
         return run_start_json
 
     @staticmethod
-    def _request(request_url: str, request_json: dict, config_version: str):
+    def _request(request_url: str, request_json: dict, config_version: str) -> requests.Response:
         request_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         args = {"config_version": config_version}
         cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
@@ -366,18 +366,13 @@ class FedMLRunManager(Singleton):
         return response
 
     @staticmethod
-    def _get_data_from_response(request_type: str, response: Response):
-
+    def _get_data_from_response(response: Response):
         if response.status_code != 200:
-            print(f"Failed to {request_type} run with response.status_code = {response.status_code}, "
-                  f"response.content: {response.content}")
             return None
         else:
             resp_data = response.json()
             code = resp_data.get("code", None)
             data = resp_data.get("data", None)
             if code is None or data is None or code == "FAILURE":
-                print(f"Failed to {request_type} run with response.status_code = {response.status_code}, "
-                      f"response.content: {response.content}")
                 return resp_data
         return data
