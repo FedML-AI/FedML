@@ -10,7 +10,7 @@ from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
 from fedml.launch.internals import (create_run, create_run_on_cluster, run)
-from fedml.api.modules.cluster import confirm_and_start
+from fedml.cluster.internals import confirm_and_start
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 

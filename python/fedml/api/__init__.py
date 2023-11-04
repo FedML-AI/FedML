@@ -15,7 +15,7 @@ Usages:
 """
 from typing import Tuple
 
-from fedml.api.modules import utils, build, device, logs, diagnosis, cluster, train, federate, \
+from fedml.api.modules import utils, build, device, logs, diagnosis, train, federate, \
     model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 
@@ -32,42 +32,6 @@ def fedml_login(api_key: str = None):
         error_code is 0 if login is successful, else -1
     """
     return utils.fedml_login(api_key)
-
-
-def cluster_list(cluster_names: Tuple[str] = (), api_key: str = None) -> FedMLClusterModelList:
-    return cluster.list_clusters(cluster_names=cluster_names, api_key=api_key)
-
-
-def cluster_exists(cluster_name: str, api_key: str = None) -> bool:
-    return cluster.exists(cluster_name=cluster_name, api_key=api_key)
-
-
-def cluster_status(cluster_name: str, api_key: str = None) -> (str, FedMLClusterModelList):
-    return cluster.status(cluster_name=cluster_name, api_key=api_key)
-
-
-def cluster_start(cluster_names: Tuple[str], api_key: str = None) -> bool:
-    return cluster.start(cluster_names=cluster_names, api_key=api_key)
-
-
-def cluster_startall(api_key: str = None) -> bool:
-    return cluster.start(cluster_names=(), api_key=api_key)
-
-
-def cluster_stop(cluster_names: Tuple[str], api_key: str = None) -> bool:
-    return cluster.stop(cluster_names=cluster_names, api_key=api_key)
-
-
-def cluster_stopall(api_key: str = None) -> bool:
-    return cluster.stop(cluster_names=(), api_key=api_key)
-
-
-def cluster_kill(cluster_names: Tuple[str], api_key: str = None) -> bool:
-    return cluster.kill(cluster_names=cluster_names, api_key=api_key)
-
-
-def cluster_killall(api_key=None) -> bool:
-    return cluster.kill(cluster_names=(), api_key=api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

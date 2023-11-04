@@ -3,7 +3,7 @@ from typing import List
 
 from fedml.api.modules.utils import authenticate
 from fedml.run.internals import create, create_on_cluster, start
-from fedml.api.modules.cluster import confirm_and_start
+from fedml.cluster.internals import confirm_and_start
 
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager, FedMLAppManager
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
