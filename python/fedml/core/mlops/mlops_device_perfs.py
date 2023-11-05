@@ -12,6 +12,7 @@ import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from .system_stats import SysStats
+from ...computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from .mlops_utils import MLOpsUtils
@@ -97,8 +98,11 @@ class MLOpsDevicePerfStats(object):
 
     @staticmethod
     def report_gpu_device_info(edge_id, mqtt_mgr=None):
+        JobRunnerUtils.get_instance().sync_run_process_gpu()
+        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
+
         total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
-            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(edge_id)
 
         topic_name = "ml_client/mlops/gpu_device_info"
         device_info_json = {

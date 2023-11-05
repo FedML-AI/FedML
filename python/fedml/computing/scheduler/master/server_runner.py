@@ -1001,6 +1001,8 @@ class FedMLServerRunner:
                 return
 
         client_rank = 1
+        model_master_device_id = active_edge_info_dict.get("master_device_id", None)
+        model_slave_device_id = active_edge_info_dict.get("slave_device_id", None)
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
@@ -1010,7 +1012,10 @@ class FedMLServerRunner:
 
             if job_yaml_default_none is not None and request_num_gpus is not None:
                 request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
-                    edge_id, edge_id_list, master_node_addr, master_node_port, assigned_gpu_num_dict, assigned_gpu_ids_dict
+                    edge_id, edge_id_list, master_node_addr, master_node_port,
+                    assigned_gpu_num_dict, assigned_gpu_ids_dict,
+                    model_master_device_id = model_master_device_id,
+                    model_slave_device_id = model_slave_device_id
                 )
 
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
@@ -1780,6 +1785,8 @@ class FedMLServerRunner:
         slave_device_id = payload_jsonn.get("slave_device_id", 0)
         edge_id = payload_jsonn.get("edge_id", 0)
         device_info = payload_jsonn.get("edge_info", 0)
+        device_info["master_device_id"] = master_device_id
+        device_info["slave_device_id"] = slave_device_id
         run_id_str = str(run_id)
 
         # Put device info into a multiprocessing queue so master runner checks if all edges are ready
@@ -1805,7 +1812,7 @@ class FedMLServerRunner:
 
         # Append master device and slave devices to the model devices map
         self.run_model_device_ids[run_id_str].append({"master_device_id": master_device_id,
-                                                  "slave_device_id": slave_device_id})
+                                                     "slave_device_id": slave_device_id})
         model_device_ids = self.run_model_device_ids.get(run_id_str, None)
         if model_device_ids is None:
             return
