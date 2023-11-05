@@ -1130,9 +1130,6 @@ class FedMLClientRunner:
         response_topic = f"client/server/response_device_info/{server_id}"
         if self.mlops_metrics is not None and self.model_device_client is not None and \
                 self.model_device_server is not None:
-            JobRunnerUtils.get_instance().sync_run_process_gpu()
-            JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
-
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(self.edge_id)
             host_ip = sys_utils.get_host_ip()
@@ -1500,6 +1497,10 @@ class FedMLClientRunner:
                 self.model_device_server.redis_password = infer_redis_password
 
             self.model_device_server.start()
+
+        JobRunnerUtils.get_instance().sync_run_process_gpu()
+        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
+        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

@@ -459,8 +459,8 @@ class FedMLServerRunner:
             logging.info("Received completed event.")
             raise RunnerCompletedError("Runner completed")
 
-    def deploy_model(self, serving_devices):
-        run_config = self.request_json["run_config"]
+    def deploy_model(self, serving_devices, request_json):
+        run_config = request_json["run_config"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
         job_type = job_yaml.get("job_type", None)
@@ -1001,8 +1001,6 @@ class FedMLServerRunner:
                 return
 
         client_rank = 1
-        model_master_device_id = active_edge_info_dict.get("master_device_id", None)
-        model_slave_device_id = active_edge_info_dict.get("slave_device_id", None)
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
             logging.info("start_train: send topic " + topic_start_train + " to client...")
@@ -1010,12 +1008,16 @@ class FedMLServerRunner:
             request_json["client_rank"] = client_rank
             client_rank += 1
 
+            edge_info = active_edge_info_dict.get(str(edge_id), {})
+            model_master_device_id = edge_info.get("master_device_id", None)
+            model_slave_device_id = edge_info.get("slave_device_id", None)
+
             if job_yaml_default_none is not None and request_num_gpus is not None:
                 request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
                     edge_id, edge_id_list, master_node_addr, master_node_port,
                     assigned_gpu_num_dict, assigned_gpu_ids_dict,
-                    model_master_device_id = model_master_device_id,
-                    model_slave_device_id = model_slave_device_id
+                    model_master_device_id=model_master_device_id,
+                    model_slave_device_id=model_slave_device_id
                 )
 
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
@@ -1797,6 +1799,9 @@ class FedMLServerRunner:
         self.check_model_device_ready_and_deploy(run_id, master_device_id, slave_device_id)
 
     def check_model_device_ready_and_deploy(self, run_id, master_device_id, slave_device_id):
+        request_json = self.running_request_json.get(str(run_id), None)
+        if request_json is None:
+            return
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
@@ -1841,7 +1846,7 @@ class FedMLServerRunner:
         serving_devices.extend(device_slave_ids)
 
         # Start to deploy the model
-        self.deploy_model(serving_devices)
+        self.deploy_model(serving_devices, request_json)
 
     @staticmethod
     def get_device_id():
@@ -2145,6 +2150,10 @@ class FedMLServerRunner:
 
         if not self.run_as_cloud_server:
             self.recover_start_train_msg_after_upgrading()
+
+        JobRunnerUtils.get_instance().sync_run_process_gpu()
+        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
+        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
 
         # if self.model_device_server is None:
         #     self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
