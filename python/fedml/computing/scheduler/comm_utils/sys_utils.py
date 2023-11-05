@@ -33,7 +33,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
-enable_simulation_gpu = False
+enable_simulation_gpu = True
 
 
 def get_sys_runner_info():
@@ -185,14 +185,14 @@ def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
         from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().get_redis_connection().lock(
-                ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
+            ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
         ):
             available_gpu_ids = ComputeCacheManager.get_instance().get_device_available_gpu_ids(edge_id)
     except Exception as e:
         available_gpu_ids = None
         pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
-    if available_gpu_ids is None or len(available_gpu_ids) <= 0:
+    if available_gpu_ids is None:
         return realtime_available_gpus
 
     realtime_available_gpus_map_list = list(map(lambda x: str(x), realtime_available_gpus[0:]))

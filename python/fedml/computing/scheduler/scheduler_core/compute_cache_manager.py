@@ -1,6 +1,7 @@
 from fedml.core.common.singleton import Singleton
 import redis
 
+
 class ComputeCacheManager(object):
 
     FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG = "FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG-"
@@ -13,6 +14,10 @@ class ComputeCacheManager(object):
     FEDML_DEVICE_RUN_LOCK_TAG = "FEDML_DEVICE_RUN_LOCK_TAG-"
     FEDML_DEVICE_LOCK_TAG = "FEDML_DEVICE_LOCK_TAG-"
     FEDML_RUN_LOCK_TAG = "FEDML_RUN_LOCK_TAG-"
+    FEDML_RUN_INFO_LOCK_TAG = "FEDML_RUN_INFO_LOCK_TAG-"
+    FEDML_RUN_INFO_SYNC_LOCK_TAG = "FEDML_RUN_INFO_SYNC_LOCK_TAG-"
+
+    FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG = "FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG-"
 
     def __init__(self):
         pass
@@ -134,6 +139,19 @@ class ComputeCacheManager(object):
 
         return run_device_ids
 
+    def get_edge_model_id_map(self, run_id):
+        if self.redis_connection.exists(self.get_edge_model_id_map_key(run_id)):
+            ids_map = self.redis_connection.get(self.get_edge_model_id_map_key(run_id))
+            if str(ids_map).strip() == "":
+                return None, None, None
+            ids_split = ids_map.split(',')
+            if len(ids_split) != 3:
+                return None, None, None
+            edge_id, model_master_device_id, model_slave_device_id = ids_split[0], ids_split[1], ids_split[2]
+            return edge_id, model_master_device_id, model_slave_device_id
+
+        return None, None, None
+
     def set_device_run_num_gpus(self, device_id, run_id, num_gpus):
         self.redis_connection.set(self.get_device_run_num_gpus_key(device_id, run_id), num_gpus)
 
@@ -160,6 +178,10 @@ class ComputeCacheManager(object):
         str_device_ids = self.map_list_to_str(device_ids)
         self.redis_connection.set(self.get_run_device_ids_key(run_id), str_device_ids)
 
+    def set_edge_model_id_map(self, run_id, edge_id, model_master_device_id, model_slave_device_id):
+        ids_map = f"{edge_id},{model_master_device_id},{model_slave_device_id}"
+        self.redis_connection.set(self.get_edge_model_id_map_key(run_id), ids_map)
+
     def get_device_run_num_gpus_key(self, device_id, run_id):
         return f"{ComputeCacheManager.FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG}{device_id}_{run_id}"
 
@@ -179,13 +201,19 @@ class ComputeCacheManager(object):
         return f"{ComputeCacheManager.FEDML_GLOBAL_RUN_DEVICE_IDS_TAG}{run_id}"
 
     def get_device_run_lock_key(self, device_id, run_id):
-        return f"{ComputeCacheManager.FEDML_DEVICE_RUN_LOCK_TAG}_{device_id}_{run_id}"
+        return f"{ComputeCacheManager.FEDML_DEVICE_RUN_LOCK_TAG}{device_id}_{run_id}"
 
     def get_device_lock_key(self, device_id):
-        return f"{ComputeCacheManager.FEDML_DEVICE_LOCK_TAG}_{device_id}"
+        return f"{ComputeCacheManager.FEDML_DEVICE_LOCK_TAG}{device_id}"
 
     def get_run_lock_key(self, run_id):
-        return f"{ComputeCacheManager.FEDML_RUN_LOCK_TAG}_{run_id}"
+        return f"{ComputeCacheManager.FEDML_RUN_LOCK_TAG}{run_id}"
+
+    def get_run_info_sync_lock_key(self, run_id):
+        return f"{ComputeCacheManager.FEDML_RUN_INFO_SYNC_LOCK_TAG}{run_id}"
+
+    def get_edge_model_id_map_key(self, run_id):
+        return f"{ComputeCacheManager.FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG}{run_id}"
 
     def map_list_to_str(self, list_obj):
         list_map = map(lambda x: str(x), list_obj[0:])
