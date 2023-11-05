@@ -24,7 +24,7 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
 import io
 
 import docker
-from .device_model_cache import FedMLModelCache
+from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class CPUUnpickler(pickle.Unpickler):
@@ -41,7 +41,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token):
+                     model_from_open, token, edge_id):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
@@ -71,18 +71,27 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
-    FedMLModelCache.get_instance().set_redis_params()
-    num_gpus, gpu_ids = FedMLModelCache.get_instance().get_end_point_gpu_resources(end_point_id)
-    if gpu_ids is not None:
-        logging.info(f"cuda visible gpu ids: {gpu_ids}")
-        gpu_list = gpu_ids.split(',')
-        gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
-        logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-        if len(gpu_list) != int(num_gpus):
-            gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                int(num_gpus), JobRunnerUtils.get_realtime_gpu_available_ids())
-        else:
-            gpu_ids = ",".join(gpu_list)
+    num_gpus = 1
+    try:
+        ComputeCacheManager.get_instance().set_redis_params()
+        with ComputeCacheManager.get_instance().get_redis_connection().lock(
+                ComputeCacheManager.get_instance().get_device_run_lock_key(edge_id, end_point_id)
+        ):
+            num_gpus = ComputeCacheManager.get_instance().get_device_run_num_gpus(edge_id, end_point_id)
+            gpu_ids = ComputeCacheManager.get_instance().get_device_run_gpu_ids(edge_id, end_point_id)
+            if gpu_ids is not None:
+                logging.info(f"cuda visible gpu ids: {gpu_ids}")
+                gpu_list = gpu_ids.split(',')
+                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
+                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
+                if len(gpu_list) != int(num_gpus):
+                    gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
+                        int(num_gpus), JobRunnerUtils.get_realtime_gpu_available_ids())
+                else:
+                    gpu_ids = ",".join(gpu_list)
+    except Exception as e:
+        gpu_ids = None
+        pass
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""

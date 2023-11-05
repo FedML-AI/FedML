@@ -9,6 +9,7 @@ from urllib.parse import urlparse, unquote
 
 import yaml
 from fedml.computing.scheduler.comm_utils import sys_utils
+from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.run_process_utils import RunProcessUtils
 
 import fedml
@@ -235,25 +236,25 @@ class ServerConstants(object):
     def cleanup_learning_process(run_id):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-            info_file_prefix="user-process")
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_USER_PROCESS)
 
     @staticmethod
     def save_learning_process(run_id, learning_id):
         RunProcessUtils.save_run_process(
             run_id, learning_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-            info_file_prefix="user-process")
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_USER_PROCESS)
 
     @staticmethod
     def cleanup_bootstrap_process(run_id):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-            info_file_prefix="bootstrap-process")
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS)
 
     @staticmethod
     def save_bootstrap_process(run_id, process_id):
         RunProcessUtils.save_run_process(
             run_id, process_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-            info_file_prefix="bootstrap-process")
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS)
 
     @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
