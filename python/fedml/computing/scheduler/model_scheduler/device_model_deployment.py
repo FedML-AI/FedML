@@ -328,7 +328,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         device_requests = []
         if use_gpu:
             if gpu_ids is not None:
-                gpu_id_list = map(lambda x: str(x), gpu_id_list)
+                gpu_id_list = map(lambda x: str(x), gpu_ids)
                 device_requests.append(
                     docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
             else:
