@@ -1411,10 +1411,9 @@ class FedMLClientRunner:
 
         # Echo results
         print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
+        print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
+              f"master deploy ID is {str(self.model_device_server.edge_id)}, "
+              f"worker deploy ID is {str(self.model_device_client.edge_id)}\n"
         )
         if self.edge_extra_url is not None and self.edge_extra_url != "":
             print(f"You may visit the following url to fill in more information with your device.\n"
