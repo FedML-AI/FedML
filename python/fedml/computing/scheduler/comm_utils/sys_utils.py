@@ -180,10 +180,17 @@ def get_available_gpu_id_list(limit=1):
     return gpu_available_list
 
 
-def get_scheduler_available_gpu_id_list(total_gpus):
-    from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
-    FedMLModelCache.get_instance().set_redis_params()
-    available_gpu_ids = FedMLModelCache.get_instance().get_global_available_gpu_ids()
+def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
+    try:
+        from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+        ComputeCacheManager.get_instance().set_redis_params()
+        with ComputeCacheManager.get_instance().get_redis_connection().lock(
+            ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
+        ):
+            available_gpu_ids = ComputeCacheManager.get_instance().get_device_available_gpu_ids(edge_id)
+    except Exception as e:
+        available_gpu_ids = None
+        pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
     if available_gpu_ids is None:
         return realtime_available_gpus
@@ -897,7 +904,7 @@ def decode_our_err_result(out_err):
         return out_err
 
 
-def get_sys_realtime_stats():
+def get_sys_realtime_stats(edge_id):
     sys_mem = psutil.virtual_memory()
     total_mem = sys_mem.total
     free_mem = sys_mem.available
@@ -907,7 +914,8 @@ def get_sys_realtime_stats():
     cpu_cores = psutil.cpu_count()
     gpu_cores_total, _ = get_gpu_count_vendor()
     gpu_cores_total = len(get_gpu_list())
-    gpu_available_ids = get_scheduler_available_gpu_id_list(gpu_cores_total)
+
+    gpu_available_ids = get_scheduler_available_gpu_id_list(edge_id, gpu_cores_total)
     gpu_cores_available = len(gpu_available_ids) if gpu_available_ids is not None else 0
     net = psutil.net_io_counters()
     sent_bytes = net.bytes_sent
