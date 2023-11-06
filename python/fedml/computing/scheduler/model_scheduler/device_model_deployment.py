@@ -82,7 +82,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             gpu_ids = ComputeCacheManager.get_instance().get_device_run_gpu_ids(edge_id, end_point_id)
             if gpu_ids is not None:
                 logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
+                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
                 logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
                 if len(gpu_list) != num_gpus:
                     _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
