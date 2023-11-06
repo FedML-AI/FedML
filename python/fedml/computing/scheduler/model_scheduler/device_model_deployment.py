@@ -78,17 +78,18 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 ComputeCacheManager.get_instance().get_device_run_lock_key(edge_id, end_point_id)
         ):
             num_gpus = ComputeCacheManager.get_instance().get_device_run_num_gpus(edge_id, end_point_id)
+            num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
             gpu_ids = ComputeCacheManager.get_instance().get_device_run_gpu_ids(edge_id, end_point_id)
             if gpu_ids is not None:
                 logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = gpu_ids.split(',')
                 gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_list)
                 logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-                if len(gpu_list) != int(num_gpus):
-                    gpu_ids, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                        int(num_gpus), JobRunnerUtils.get_realtime_gpu_available_ids())
+                if len(gpu_list) != num_gpus:
+                    _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
+                        num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
+                    gpu_ids = list(matched_gpu_ids)
                 else:
-                    gpu_ids = ",".join(gpu_list)
+                    gpu_ids = gpu_list
     except Exception as e:
         gpu_ids = None
         pass
@@ -98,7 +99,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     else:
         gpu_attach_cmd = "--gpus 1"
         if gpu_ids is not None and str(gpu_ids).strip() != "":
-            gpu_attach_cmd = f"--gpus '\"device={gpu_ids}\"'"
+            gpu_id_map = map(lambda x: str(x), gpu_ids)
+            gpu_ids_str = ','.join(gpu_id_map)
+            gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
         elif num_gpus is not None and str(num_gpus).strip() != "" and int(num_gpus) > 0:
             gpu_attach_cmd = f"--gpus {num_gpus}"
         else:
@@ -324,7 +327,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         device_requests = []
         if use_gpu:
             if gpu_ids is not None:
-                gpu_id_list = gpu_ids.split(',')
                 gpu_id_list = map(lambda x: str(x), gpu_id_list)
                 device_requests.append(
                     docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
