@@ -91,6 +91,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 else:
                     gpu_ids = gpu_list
     except Exception as e:
+        logging.info(f"Execption when fetching gpu ids. {traceback.format_exc()}")
         gpu_ids = None
         pass
 
