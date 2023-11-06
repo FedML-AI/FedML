@@ -42,6 +42,7 @@ from .device_client_data_interface import FedMLClientDataInterface
 #from ....serving.fedml_client import FedMLModelServingClient
 from ....core.mlops.mlops_utils import MLOpsUtils
 from .device_model_cache import FedMLModelCache
+from ..comm_utils.job_utils import JobRunnerUtils
 
 
 class RunnerError(Exception):
@@ -386,7 +387,7 @@ class FedMLClientRunner:
                 self.infer_host,
                 self.model_is_from_open, model_config_parameters,
                 model_from_open,
-                token)
+                token, self.edge_id)
         if inference_output_url == "":
             logging.error("failed to deploy the model...")
             self.send_deployment_status(end_point_name, self.edge_id,
@@ -680,6 +681,10 @@ class FedMLClientRunner:
                                           model_msg_object.model_name, model_msg_object.model_version)
 
         self.set_runner_stopped_event(model_msg_object.run_id)
+
+        logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+        JobRunnerUtils.get_instance().release_gpu_ids(model_msg_object.run_id, self.edge_id)
+        logging.info(f"Endpoint deleted, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
 
     def exit_run_with_exception_entry(self):
         try:

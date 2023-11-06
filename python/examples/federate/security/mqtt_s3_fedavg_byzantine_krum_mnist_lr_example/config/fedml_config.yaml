@@ -56,10 +56,11 @@ tracking_args:
   wandb_name: fedml_torch_fedavg_mnist_lr
 
 attack_args:
-  enable_attack: false
-  attack_type: None
+  enable_attack: true
+  attack_type: byzantine
+  attack_mode: random
+  byzantine_client_num: 1
 
 defense_args:
   enable_defense: true
   defense_type: krum
-  byzantine_client_num: 1

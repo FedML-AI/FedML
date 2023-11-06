@@ -922,13 +922,17 @@ class FedMLClientRunner:
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
         matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
+        model_master_device_id = scheduler_match_info.get("model_master_device_id", None)
+        model_slave_device_id = scheduler_match_info.get("model_slave_device_id", None)
         run_config = request_json.get("run_config", {})
         run_params = run_config.get("parameters", {})
         serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
-            run_id, matched_gpu_num, inner_id=endpoint_id)
-        logging.info(f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            run_id, matched_gpu_num, self.edge_id, inner_id=endpoint_id,
+            model_master_device_id=model_master_device_id,
+            model_slave_device_id=model_slave_device_id)
+        logging.info(f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
 
         # Start server with multiprocessing mode
         self.request_json = request_json
@@ -984,10 +988,11 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
-        self.release_gpu_ids(run_id)
+        self.release_gpu_ids(run_id, self.edge_id)
 
     @staticmethod
-    def release_gpu_ids(run_id):
+    def release_gpu_ids(run_id, device_id):
+        job_type = None
         try:
             job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
             if job_obj is not None:
@@ -1003,9 +1008,9 @@ class FedMLClientRunner:
 
         if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
                 job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-            logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id)
-            logging.info(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list()}")
+            logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
+            logging.info(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
@@ -1080,7 +1085,7 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            self.release_gpu_ids(run_id)
+            self.release_gpu_ids(run_id, self.edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:
@@ -1126,10 +1131,10 @@ class FedMLClientRunner:
         if self.mlops_metrics is not None and self.model_device_client is not None and \
                 self.model_device_server is not None:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
-                gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+                gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(self.edge_id)
             host_ip = sys_utils.get_host_ip()
             host_port = sys_utils.get_available_port()
-            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list()
+            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
             gpu_cores_available = len(gpu_available_ids)
             gpu_list = sys_utils.get_gpu_list()
             device_info_json = {
@@ -1406,10 +1411,9 @@ class FedMLClientRunner:
 
         # Echo results
         print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
-        print(
-            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
-            + str(self.unique_device_id)
-            + "\n"
+        print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
+              f"master deploy ID is {str(self.model_device_server.edge_id)}, "
+              f"worker deploy ID is {str(self.model_device_client.edge_id)}\n"
         )
         if self.edge_extra_url is not None and self.edge_extra_url != "":
             print(f"You may visit the following url to fill in more information with your device.\n"
@@ -1476,9 +1480,6 @@ class FedMLClientRunner:
             self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
-            if infer_host is not None:
-                self.model_device_client.infer_host = infer_host
-
             self.model_device_client.start()
 
         if self.model_device_server is None:
@@ -1495,6 +1496,10 @@ class FedMLClientRunner:
                 self.model_device_server.redis_password = infer_redis_password
 
             self.model_device_server.start()
+
+        JobRunnerUtils.get_instance().sync_run_process_gpu()
+        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
+        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

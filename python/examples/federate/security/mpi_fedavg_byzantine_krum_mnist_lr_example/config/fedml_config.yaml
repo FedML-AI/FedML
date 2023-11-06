@@ -43,23 +43,20 @@ device_args:
   gpu_mapping_key: mapping_config3_11
 
 comm_args:
-  backend: "MQTT_S3"
+  backend: "MPI"
   mqtt_config_path:
   s3_config_path:
   grpc_ipconfig_path: ./config/grpc_ipconfig.csv
 
 tracking_args:
-   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
-  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
-  wandb_project: fedml
-  wandb_name: fedml_torch_fedavg_mnist_lr
 
 attack_args:
-  enable_attack: false
-  attack_type: None
+  enable_attack: true
+  attack_type: byzantine
+  attack_mode: random
+  byzantine_client_num: 1
 
 defense_args:
   enable_defense: true
   defense_type: krum
-  byzantine_client_num: 1

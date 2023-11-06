@@ -4,6 +4,8 @@ import signal
 
 import psutil
 import yaml
+
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 
 
@@ -13,7 +15,8 @@ class RunProcessUtils:
         return f"{prefix}-run@{run_id}@pid@"
 
     @staticmethod
-    def cleanup_run_process(run_id, data_dir, info_dir, info_file_prefix="runner-process"):
+    def cleanup_run_process(run_id, data_dir, info_dir,
+                            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS):
         try:
             local_pkg_data_dir = data_dir
             run_process_dir = os.path.join(local_pkg_data_dir, info_dir)
@@ -65,8 +68,42 @@ class RunProcessUtils:
             pass
 
     @staticmethod
+    def get_run_process_list(run_id, data_dir, info_dir,
+                             info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS):
+        run_process_list = list()
+        try:
+            local_pkg_data_dir = data_dir
+            run_process_dir = os.path.join(local_pkg_data_dir, info_dir)
+            run_process_files = os.listdir(run_process_dir)
+            for process_file in run_process_files:
+                if run_id is None:
+                    run_splits = process_file.split("@")
+                    process_id = None if len(run_splits) < 4 else run_splits[3]
+                    if process_id is None or process_id == "":
+                        continue
+                else:
+                    run_pid_prefix = RunProcessUtils.get_run_process_prefix(info_file_prefix, run_id)
+                    if not process_file.startswith(run_pid_prefix):
+                        continue
+
+                    split_list = process_file.split(run_pid_prefix)
+                    if split_list is None or len(split_list) < 2:
+                        continue
+
+                    process_id = split_list[1]
+                    if process_id is None or process_id == "":
+                        continue
+
+                    run_process_list.append(process_id)
+        except Exception as e:
+            pass
+
+        return run_process_list
+
+    @staticmethod
     def save_run_process(run_id, process_id, data_dir, info_dir,
-                         process_info=None, info_file_prefix="runner-process"):
+                         process_info=None,
+                         info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS):
         try:
             local_pkg_data_dir = data_dir
             process_id_file = os.path.join(local_pkg_data_dir, info_dir,

@@ -15,9 +15,6 @@ class FedMLModelCache(object):
     FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
     FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
-    FEDML_MODEL_GPU_RESOURCES_NUM_GPUS_TAG = "FEDML_MODEL_GPU_RESOURCES_NUM_GPUS_TAG-"
-    FEDML_MODEL_GPU_RESOURCES_GPU_IDS_TAG = "FEDML_MODEL_GPU_RESOURCES_GPU_IDS_TAG-"
-    FEDML_GLOBAL_AVAILABLE_GPU_IDS_TAG = "FEDML_GLOBAL_AVAILABLE_GPU_IDS_TAG"
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
     def __init__(self):
@@ -262,41 +259,6 @@ class FedMLModelCache(object):
         token = self.redis_connection.get(self.get_deployment_token_key(end_point_name, model_name))
         return token
 
-    def get_end_point_gpu_resources(self, end_point_id):
-        if self.redis_connection.exists(self.get_end_point_gpu_resources_num_gups_key(end_point_id)):
-            num_gpus = self.redis_connection.get(self.get_end_point_gpu_resources_num_gups_key(end_point_id))
-        else:
-            num_gpus = 0
-
-        if self.redis_connection.exists(self.get_end_point_gpu_resources_gpu_ids_key(end_point_id)):
-            gpu_ids = self.redis_connection.get(self.get_end_point_gpu_resources_gpu_ids_key(end_point_id))
-        else:
-            gpu_ids = None
-
-        return num_gpus, gpu_ids
-
-    def set_end_point_gpu_resources(self, end_point_id, num_gpus, gpu_ids):
-        self.redis_connection.set(self.get_end_point_gpu_resources_num_gups_key(end_point_id), num_gpus)
-        self.redis_connection.set(self.get_end_point_gpu_resources_gpu_ids_key(end_point_id), gpu_ids)
-
-    def get_global_available_gpu_ids(self) -> list:
-        try:
-            if self.redis_connection.exists(self.get_global_available_gpu_ids_key()):
-                available_gpu_ids_str = self.redis_connection.get(self.get_global_available_gpu_ids_key())
-                gpu_id_list = str(available_gpu_ids_str).split(',')
-                return gpu_id_list
-        except Exception as e:
-            return None
-
-        return None
-
-    def set_global_available_gpu_ids(self, gpu_ids: list):
-        gpu_ids_map = map(lambda x: str(x), gpu_ids[0:])
-        gpu_ids_str = ','.join(gpu_ids_map)
-        if len(gpu_ids) <= 0:
-            gpu_ids_str = ""
-        self.redis_connection.set(self.get_global_available_gpu_ids_key(), gpu_ids_str)
-
     def get_deployment_result_key(self, end_point_name, model_name):
         return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_name, model_name)
 
@@ -314,15 +276,6 @@ class FedMLModelCache(object):
 
     def get_deployment_token_key(self, end_point_name, model_name):
         return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_name, model_name)
-
-    def get_end_point_gpu_resources_num_gups_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_GPU_RESOURCES_NUM_GPUS_TAG, end_point_id)
-
-    def get_end_point_gpu_resources_gpu_ids_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_GPU_RESOURCES_GPU_IDS_TAG, end_point_id)
-
-    def get_global_available_gpu_ids_key(self):
-        return "{}".format(FedMLModelCache.FEDML_GLOBAL_AVAILABLE_GPU_IDS_TAG)
 
     def get_round_robin_prev_device(self, end_point_name, model_name, version):
         return "{}{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_name, model_name, version)
