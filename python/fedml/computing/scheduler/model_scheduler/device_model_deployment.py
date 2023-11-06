@@ -103,7 +103,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             gpu_id_map = map(lambda x: str(x), gpu_ids)
             gpu_ids_str = ','.join(gpu_id_map)
             gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
-        elif num_gpus is not None and str(num_gpus).strip() != "" and int(num_gpus) > 0:
+        elif num_gpus is not None and str(num_gpus).strip() != "" and num_gpus > 0:
             gpu_attach_cmd = f"--gpus {num_gpus}"
         else:
             num_gpus = 1
