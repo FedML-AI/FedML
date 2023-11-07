@@ -1,5 +1,5 @@
 # FedIoT: Federated Learning for Internet of Things
-This is the offical implementation of the paper: \
+This is the official implementation of the paper: \
 **Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection** \
 Tuo Zhang*, Chaoyang He*, Tianhao Ma, Lei Gao, Mark Ma, Salman Avestimehr \
 (* means co-1st authors) \
@@ -33,7 +33,7 @@ Reference: https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/
 * Install Raspberry Pi OS on your SD card via Raspberry Pi Imager
   * Choose Raspberry Pi OS Lite (64-bit)
   * Choose SD card you would like to install it on
-  * Click gear icon and configurate as the following
+  * Click gear icon and configure as the following
         <div align="left">
          <img src="doc/raspberry_setup.gif" width="300px">
         </div>
