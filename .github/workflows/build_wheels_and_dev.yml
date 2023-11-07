@@ -1,4 +1,4 @@
-name: Build-Wheels-PyPi
+name: Build-Wheels-PyPi-Dev
 # https://github.com/pypa/cibuildwheel
 # Controls when the workflow will run
 on:
