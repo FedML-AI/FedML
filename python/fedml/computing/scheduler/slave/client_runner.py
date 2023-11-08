@@ -988,7 +988,7 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
-        self.release_gpu_ids(run_id, self.edge_id)
+        FedMLClientRunner.release_gpu_ids(run_id, self.edge_id)
 
     @staticmethod
     def release_gpu_ids(run_id, device_id):
@@ -1008,9 +1008,11 @@ class FedMLClientRunner:
 
         if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
                 job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-            logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+            logging.info(
+                f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
             JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-            logging.info(f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+            logging.info(
+                f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
@@ -1085,7 +1087,7 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            self.release_gpu_ids(run_id, self.edge_id)
+            FedMLClientRunner.release_gpu_ids(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:

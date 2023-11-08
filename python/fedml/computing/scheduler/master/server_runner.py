@@ -875,6 +875,17 @@ class FedMLServerRunner:
         if self.run_edges_realtime_status.get(run_id_str, None) is not None:
             self.run_edges_realtime_status.pop(run_id_str)
 
+    def should_process_async_cluster(self):
+        run_config = self.request_json.get("run_config", {})
+        run_params = run_config.get("parameters", {})
+        common_args = run_params.get("common_args", {})
+        enable_async_cluster = common_args.get("enable_async_cluster", False)
+        async_check_timeout = common_args.get("async_check_timeout", 0)
+        if enable_async_cluster:
+            return True, async_check_timeout
+
+        return False, async_check_timeout
+
     def detect_edges_status(self, edge_status_queue, callback_when_edges_ready=None):
         run_id = self.request_json["runId"]
         run_id_str = str(run_id)
@@ -892,6 +903,7 @@ class FedMLServerRunner:
         total_sleep_seconds = 0
         status_check_sleep_seconds = 5
         allowed_status_check_sleep_seconds = 60 * 25
+        allowed_status_check_sleep_seconds_for_async = 30
         while True:
             # Fetch edge info from the edge status queue, which will be added to realtime status map
             while True:
@@ -945,6 +957,14 @@ class FedMLServerRunner:
                 self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
                 return False
 
+            # If we enable the mode for async cluster, then sleep some time and send messages to all clients.
+            should_async, async_timeout = self.should_process_async_cluster()
+            if should_async and total_sleep_seconds >= allowed_status_check_sleep_seconds_for_async:
+                if async_timeout > allowed_status_check_sleep_seconds_for_async:
+                    time.sleep(async_timeout-allowed_status_check_sleep_seconds_for_async)
+                self.send_training_request_to_edges()
+                return True
+
         return True
 
     def send_status_check_msg(self, run_id, edge_id, server_id):
@@ -964,7 +984,7 @@ class FedMLServerRunner:
 
         logging.info("Send training request to Edge ids: " + str(edge_id_list))
 
-        if job_yaml_default_none is not None and request_num_gpus is not None:
+        if job_yaml_default_none is not None and request_num_gpus is not None and active_edge_info_dict is not None:
             SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
 
             # Match and assign gpus to each device
@@ -1008,17 +1028,18 @@ class FedMLServerRunner:
             request_json["client_rank"] = client_rank
             client_rank += 1
 
-            edge_info = active_edge_info_dict.get(str(edge_id), {})
-            model_master_device_id = edge_info.get("master_device_id", None)
-            model_slave_device_id = edge_info.get("slave_device_id", None)
+            if active_edge_info_dict is not None:
+                edge_info = active_edge_info_dict.get(str(edge_id), {})
+                model_master_device_id = edge_info.get("master_device_id", None)
+                model_slave_device_id = edge_info.get("slave_device_id", None)
 
-            if job_yaml_default_none is not None and request_num_gpus is not None:
-                request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
-                    edge_id, edge_id_list, master_node_addr, master_node_port,
-                    assigned_gpu_num_dict, assigned_gpu_ids_dict,
-                    model_master_device_id=model_master_device_id,
-                    model_slave_device_id=model_slave_device_id
-                )
+                if job_yaml_default_none is not None and request_num_gpus is not None:
+                    request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
+                        edge_id, edge_id_list, master_node_addr, master_node_port,
+                        assigned_gpu_num_dict, assigned_gpu_ids_dict,
+                        model_master_device_id=model_master_device_id,
+                        model_slave_device_id=model_slave_device_id
+                    )
 
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
 
