@@ -61,7 +61,8 @@ def collect_env():
         nvidia_smi.nvmlInit()
         handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
         info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        print("NVIDIA GPU Info: " + str(handle))
+        name = nvidia_smi.nvmlDeviceGetName(handle)
+        print("NVIDIA GPU Info: " + name)
         print(
             "Available GPU memory: {:.1f} G / {}G".format(
                 info.free / 1024 / 1024 / 1024, info.total / 1024 / 1024 / 1024
