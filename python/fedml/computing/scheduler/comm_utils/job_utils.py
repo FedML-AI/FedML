@@ -12,7 +12,6 @@ from fedml.computing.scheduler.scheduler_core.compute_cache_manager import Compu
 from fedml.computing.scheduler.slave import client_data_interface
 from fedml.computing.scheduler.model_scheduler import device_client_data_interface
 from fedml.core.common.singleton import Singleton
-from .run_process_utils import RunProcessUtils
 import threading
 
 from ..model_scheduler.device_model_cache import FedMLModelCache
@@ -45,9 +44,9 @@ class JobRunnerUtils(Singleton):
             ):
                 available_gpu_ids = self.get_available_gpu_id_list(device_id)
 
-                available_gpu_ids = self.search_and_refresh_available_gpu_ids(available_gpu_ids)
+                available_gpu_ids = JobRunnerUtils.search_and_refresh_available_gpu_ids(available_gpu_ids)
 
-                cuda_visible_gpu_ids_str, matched_gpu_num, _ = self.request_gpu_ids(
+                cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(
                     request_gpu_num, available_gpu_ids)
                 if cuda_visible_gpu_ids_str is None:
                     return None
@@ -152,9 +151,12 @@ class JobRunnerUtils(Singleton):
             with ComputeCacheManager.get_instance().get_redis_connection().lock(
                 ComputeCacheManager.get_instance().get_run_info_sync_lock_key("")
             ):
-                index = 0
+                count = 0
                 job_list = client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
                 for job in job_list.job_list:
+                    count += 1
+                    if count >= 1000:
+                        break
                     all_run_processes_exited = True
                     run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                     for run_process_id in run_process_list:
@@ -171,7 +173,7 @@ class JobRunnerUtils(Singleton):
                         client_constants.ClientConstants.cleanup_learning_process(job.job_id)
 
                     if all_run_processes_exited:
-                        self.release_gpu_ids(job.job_id, job.edge_id)
+                        JobRunnerUtils.release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
             logging.info("Exception when syncing run process.")
             pass
@@ -182,10 +184,13 @@ class JobRunnerUtils(Singleton):
             with ComputeCacheManager.get_instance().get_redis_connection().lock(
                 ComputeCacheManager.get_instance().get_run_info_sync_lock_key("")
             ):
+                count = 0
                 FedMLModelCache.get_instance().set_redis_params()
                 job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
                 for job in job_list.job_list:
-                    all_run_processes_exited = True
+                    count += 1
+                    if count >= 1000:
+                        break
                     endpoint_status = FedMLModelCache.get_instance().get_end_point_status(job.job_id)
                     if endpoint_status is None or \
                             endpoint_status != \
