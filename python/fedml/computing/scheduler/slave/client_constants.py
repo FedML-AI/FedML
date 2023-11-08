@@ -348,8 +348,9 @@ class ClientConstants(object):
                 if error_processor is not None and len(error_list) > 0:
                     error_processor(error_list)
 
-            for error_info in error_list:
-                logging.error(error_info)
+            if error_processor is not None:
+                for error_info in error_list:
+                    logging.error(error_info)
 
         return script_process, error_list
 

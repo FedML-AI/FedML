@@ -599,8 +599,6 @@ class FedMLClientRunner:
                             f"{conf_file_full_path} --rank {rank} --role client"
             shell_cmd_list = [entry_command]
 
-            time.sleep(10)
-
             # Run the job executing commands for previous federated learning (Compatibility)
             process, error_list = ClientConstants.execute_commands_with_live_logs(
                 shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
