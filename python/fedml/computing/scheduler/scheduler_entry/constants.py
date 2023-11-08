@@ -88,7 +88,7 @@ class Constants(Singleton):
     JOB_FRAMEWORK_TYPE_MXNET = "mxnet"
     JOB_FRAMEWORK_TYPE_GENERAL = "general"
 
-    JOB_TASK_TYPE_TRAIN = SchedulerConstants.JOB_PACKAGE_TYPE_TRAIN
+    JOB_TASK_TYPE_TRAIN = SchedulerConstants.JOB_TASK_TYPE_TRAIN
     JOB_TASK_TYPE_DEPLOY = SchedulerConstants.JOB_TASK_TYPE_DEPLOY
     JOB_TASK_TYPE_SERVE = SchedulerConstants.JOB_TASK_TYPE_SERVE
     JOB_TASK_TYPE_FEDERATE = SchedulerConstants.JOB_TASK_TYPE_FEDERATE
