@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import torch
+import fedml
 from torch import nn
 
 from fedml.core import ServerAggregator
@@ -20,7 +21,7 @@ class FedDetectAggregator(ServerAggregator):
     def test(self, test_data, device, args):
         pass
 
-    def test_on_the_server(
+    def test_all(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
         model = self.model
@@ -66,6 +67,9 @@ class FedDetectAggregator(ServerAggregator):
         logging.info("The False positive number is {}".format(false_positive))
         logging.info("The True positive number is {}".format(true_positive))
         logging.info("The False negative number is {}".format(false_negative))
+
+        logging.info(f"The type of auc is {type(accuracy)}")
+        fedml.mlops.log({"round_idx": args.round_idx, "accuracy": float(accuracy)})
 
         logging.info("The accuracy is {}".format(accuracy))
         logging.info("The precision is {}".format(precision))
