@@ -127,11 +127,14 @@ class FedMLServerManager(FedMLCommManager):
         self.process_online_status(None, None, cb_after_waiting=True)
 
     def process_online_status(self, client_status, msg_params, cb_after_waiting=False):
+        logging.info(f"received client status {client_status}")
         if self.is_initialized == True:
+            logging.info("Server is already initialized")
             # Do not response to the later msg
             return
         
         if cb_after_waiting:               # Kick off the training any way
+            logging.info("Kick off the training")
             online_clients_ids = []
             self.online_clients_indexes = []
             for client_id in self.client_id_list_in_this_round:
