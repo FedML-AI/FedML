@@ -1,0 +1,13 @@
+# You can define a cluster containing multiple GPUs within multiple machines by defining `gpu_mapping.yaml` as follows:
+
+# config_cluster0:
+#     host_name_node0: [num_of_processes_on_GPU0, num_of_processes_on_GPU1, num_of_processes_on_GPU2, num_of_processes_on_GPU3, ..., num_of_processes_on_GPU_n]
+#     host_name_node1: [num_of_processes_on_GPU0, num_of_processes_on_GPU1, num_of_processes_on_GPU2, num_of_processes_on_GPU3, ..., num_of_processes_on_GPU_n]
+#     host_name_node_m: [num_of_processes_on_GPU0, num_of_processes_on_GPU1, num_of_processes_on_GPU2, num_of_processes_on_GPU3, ..., num_of_processes_on_GPU_n]
+
+# mapping_server:
+#   server : [1]
+# mapping_silo_1:
+#   node-1 : [1,1]
+# mapping_silo_2:
+#   node-1 : [1]
