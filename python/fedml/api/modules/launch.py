@@ -94,7 +94,9 @@ def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: st
     authenticate(api_key)
 
     # Start the run
-    launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, create_run_result=create_run_result,
+    device_server = 706
+    device_edges = 705
+    launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_OCTOPUS, create_run_result=create_run_result,
                           device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
                           feature_entry_point=feature_entry_point)
 

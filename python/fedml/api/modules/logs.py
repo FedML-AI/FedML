@@ -4,10 +4,8 @@ from os.path import expanduser
 import click
 
 from fedml.computing.scheduler.comm_utils import sys_utils
-from fedml.computing.scheduler.master.docker_login import logs_with_server_docker_mode
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
-from fedml.computing.scheduler.slave.docker_login import logs_with_docker_mode
 
 
 def log(client, server, docker, docker_rank):

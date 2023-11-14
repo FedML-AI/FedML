@@ -286,6 +286,9 @@ class MqttManager(object):
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
 
+    def unsubscribe_msg(self, topic):
+        self._client.unsubscribe(topic)
+
     def check_connection(self):
         count = 0
         while not self._client.connected_flag and self._client.bad_conn_flag:
