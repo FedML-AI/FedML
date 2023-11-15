@@ -46,8 +46,7 @@ class FedMLLaunchManager(Singleton):
         user_api_key = get_api_key()
         upgrade_if_not_latest()
         if not os.path.exists(yaml_file):
-            print(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
-            exit(-1)
+            raise Exception(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
 
         if os.path.dirname(yaml_file) == "":
             yaml_file = os.path.join(os.getcwd(), yaml_file)
@@ -89,21 +88,19 @@ class FedMLLaunchManager(Singleton):
             models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
             if models is None or len(models.model_list) <= 0:
                 if not FedMLAppManager.get_instance().check_model_package(self.job_config.workspace):
-                    print(f"Please make sure fedml_model_config.yaml exists in your workspace."
-                          f"{self.job_config.workspace}")
-                    exit(-1)
+                    error_info = f"You model card {self.job_config.model_app_name} does not exist. " \
+                                 f"Moreover, your workspace is not a valid deploy job package."
+                    raise Exception(error_info)
 
                 model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,
                                                                                   self.job_config.workspace,
                                                                                   user_api_key)
                 if model_update_result is None:
-                    print("Failed to upload the model package to MLOps.")
-                    exit(-1)
+                    raise Exception("Failed to upload the model package to MLOps.")
 
                 models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
                 if models is None or len(models.model_list) <= 0:
-                    print("Failed to upload the model package to MLOps.")
-                    exit(-1)
+                    raise Exception("Failed to upload the model package to MLOps.")
 
                 model_update_result.model_id = models.model_list[0].id
                 model_update_result.model_version = models.model_list[0].model_version
@@ -122,8 +119,7 @@ class FedMLLaunchManager(Singleton):
                 user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
                 model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version)
             if self.job_config.serving_endpoint_id is None:
-                print("Failed to apply endpoint for your model.")
-                exit(-1)
+                raise Exception("Failed to apply endpoint for your model.")
 
             model_update_result.endpoint_id = self.job_config.serving_endpoint_id
             return model_update_result
@@ -238,8 +234,7 @@ class FedMLLaunchManager(Singleton):
                 fedml_launch_paths.bootstrap_full_path_on_windows)
         if build_client_package is None:
             shutil.rmtree(fedml_launch_paths.dest_folder, ignore_errors=True)
-            print("Failed to build the application package for the client executable file.")
-            exit(-1)
+            raise Exception("Failed to build the application package for the client executable file.")
         return build_client_package
 
     @staticmethod
@@ -255,8 +250,7 @@ class FedMLLaunchManager(Singleton):
                                                                          job_config.ignore_list_str)
             job_config.cleanup_temp_files()
             if build_server_package is None:
-                print("Failed to build the application package for the server executable file.")
-                exit(-1)
+                raise Exception("Failed to build the application package for the server executable file.")
         else:
             build_server_package = None
             job_config.cleanup_temp_files()
@@ -305,7 +299,7 @@ class FedMLLaunchManager(Singleton):
         else:
             if verbose:
                 print("You should specify the type argument value as client or server.")
-            exit(-1)
+            raise Exception("You should specify the type argument value as client or server.")
 
         home_dir = expanduser("~")
         mlops_build_path = os.path.join(home_dir, "fedml-mlops-build", str(uuid.uuid4()))
