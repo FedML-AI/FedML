@@ -61,6 +61,7 @@ class FedMLRunStartedModel(object):
             self.run_url = data
             self.started_time = time.time()
             self.user_check = True
+            self.status = None
         self.status = response.status_code if self.status is None else self.status
         self.message = response.content if self.message is None else self.message
         self.inner_id = inner_id
