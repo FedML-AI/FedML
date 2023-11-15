@@ -1,5 +1,7 @@
+import logging
 import math
 import os
+import pickle
 import zipfile
 import wget
 from fedml.fa.constants import FA_DATA_TWITTER_Sentiment140_URL
@@ -12,7 +14,6 @@ def download_twitter_Sentiment140(data_cache_dir):
     file_path = os.path.join(data_cache_dir, "trainingandtestdata.zip")
 
     if not os.path.exists(file_path):  # Download the file (if we haven't already)
-        # download from http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip
         wget.download(FA_DATA_TWITTER_Sentiment140_URL, out=file_path)
 
     with zipfile.ZipFile(file_path, "r") as zip_ref:

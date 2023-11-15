@@ -509,8 +509,16 @@ class FedMLServerRunner:
                 return
 
             # 1. We should generate one unified inference api
-            ip = self.get_ip_address()
+            ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
+            # model_inference_url = "http://{}:{}/api/v1/end_point_{}/model_id_{}" \
+            #                       "/model_name_{}/model_version_{}/predict".format(ip, str(model_inference_port),
+            #                                                                        end_point_id,
+            #                                                                        model_id,
+            #                                                                        model_name,
+            #                                                                        model_version)
+            if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+                ip = self.infer_host
             if ip.startswith("http://") or ip.startswith("https://"):
                 model_inference_url = "{}/api/v1/predict".format(ip)
             else:
@@ -630,8 +638,10 @@ class FedMLServerRunner:
                 return
 
             # Send deployment finished message to ModelOps
-            ip = self.get_ip_address()
+            ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
+            if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+                ip = self.infer_host
             if ip.startswith("http://") or ip.startswith("https://"):
                 model_inference_url = "{}/api/v1/predict".format(ip)
             else:
@@ -650,7 +660,6 @@ class FedMLServerRunner:
         run_id = self.request_json["run_id"]
         edge_id_list = self.request_json["device_ids"]
         logging.info("Edge ids: " + str(edge_id_list))
-        self.request_json["master_node_ip"] = self.get_ip_address()
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
                 continue
@@ -658,23 +667,6 @@ class FedMLServerRunner:
             topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
-
-    def get_ip_address(self):
-        # OPTION 1: Use local ip
-        ip = ServerConstants.get_local_ip()
-
-        # OPTION 2: Auto detect public ip
-        if "parameters" in self.request_json and \
-                ServerConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
-                self.request_json["parameters"][ServerConstants.AUTO_DETECT_PUBLIC_IP]:
-            ip = ServerConstants.get_public_ip()
-            logging.info("Auto detect public ip for master: " + ip)
-
-        # OPTION 3: Use user indicated ip
-        if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
-            ip = self.infer_host
-
-        return ip
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
         edge_id_list = model_msg_object.device_ids
