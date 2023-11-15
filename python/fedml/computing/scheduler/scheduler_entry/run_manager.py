@@ -71,6 +71,7 @@ class FedMLRunStartedModel(object):
         self.job_type = job_type
         self.app_job_id = app_job_id
         self.app_job_name = app_job_name
+        self.headers = response.headers
 
 
 class FedMLRunConfig(object):
