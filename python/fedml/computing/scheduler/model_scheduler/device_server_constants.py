@@ -98,6 +98,7 @@ class ServerConstants(object):
     FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
+    AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
     MODEL_INFERENCE_DEFAULT_PORT = 5001
     # -----End-----
 
@@ -270,6 +271,16 @@ class ServerConstants(object):
         conn = s.connect(('8.8.8.8', 53))
         ip = s.getsockname()[0]
         s.close()
+        return ip
+
+    @staticmethod
+    def get_public_ip():
+        import requests
+        ip = None
+        try:
+            ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        except Exception as e:
+            print("Failed to get public ip: {}".format(e))
         return ip
 
     @staticmethod
