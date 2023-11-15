@@ -16,11 +16,13 @@ import fedml
 
 
 class MLOpsRuntimeLogProcessor:
-    FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
+    FED_LOG_LINE_NUMS_PER_UPLOADING = 100
     FED_LOG_UPLOAD_FREQUENCY = 3
     FED_LOG_UPLOAD_S3_FREQUENCY = 30
     FEDML_LOG_REPORTING_STATUS_FILE_NAME = "log_status"
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
+
+    ENABLE_UPLOAD_LOG_USING_MQTT = True
 
     def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
         self.args = in_args
@@ -169,39 +171,41 @@ class MLOpsRuntimeLogProcessor:
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 
-            log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-
-            # send log data to the log server
-            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
-            if cert_path is not None:
-                try:
-                    requests.session().verify = cert_path
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                    response = requests.post(
-                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                    )
-                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-
-                except requests.exceptions.SSLError as err:
-                    MLOpsConfigs.install_root_ca_file()
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                    response = requests.post(
-                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                    )
-                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
+                fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
             else:
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-            if response.status_code != 200:
-                pass
-            else:
-                self.log_line_index += (line_end_req - line_start_req)
-                self.log_uploaded_line_index += len(upload_lines)
-                line_count += (line_end_req - line_start_req)
-                line_start_req = line_end_req
-                self.save_log_config()
-                resp_data = response.json()
+                log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+
+                # send log data to the log server
+                _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+                if cert_path is not None:
+                    try:
+                        requests.session().verify = cert_path
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                        response = requests.post(
+                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                        )
+                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+
+                    except requests.exceptions.SSLError as err:
+                        MLOpsConfigs.install_root_ca_file()
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                        response = requests.post(
+                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                        )
+                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+                else:
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+                if response.status_code != 200:
+                    return
+
+            self.log_line_index += (line_end_req - line_start_req)
+            self.log_uploaded_line_index += len(upload_lines)
+            line_count += (line_end_req - line_start_req)
+            line_start_req = line_end_req
+            self.save_log_config()
 
     @staticmethod
     def should_ignore_log_line(log_line):
@@ -353,6 +357,8 @@ class MLOpsRuntimeLogDaemon:
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
 
+    ENABLE_SYNC_LOG_TO_MASTER = True
+
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsRuntimeLogDaemon, "_instance"):
             with MLOpsRuntimeLogDaemon._instance_lock:
@@ -394,6 +400,9 @@ class MLOpsRuntimeLogDaemon:
                 self.log_server_url = self.args.log_server_url
         except Exception as e:
             self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
+
+        if MLOpsRuntimeLogDaemon.ENABLE_SYNC_LOG_TO_MASTER:
+            self.log_server_url = f"http://localhost:42000/fedml/api/v2/fedmlLogsServer/logs/update"
 
         self.log_file_dir = self.args.log_file_dir
         self.log_child_process_list = list()
