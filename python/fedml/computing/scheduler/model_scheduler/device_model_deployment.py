@@ -41,7 +41,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip):
+                     model_from_open, token, master_ip, edge_id):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
