@@ -280,6 +280,7 @@ class FedMLClientRunner:
         user_name = self.request_json["user_name"]
         device_ids = self.request_json["device_ids"]
         device_objs = self.request_json["device_objs"]
+        master_ip = self.request_json["master_node_ip"]
 
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
@@ -376,23 +377,25 @@ class FedMLClientRunner:
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
+        client_ip = self.get_ip_address()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             "", "", model_version, {}, {}
         try:
             running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
                 start_deployment(
-                    inference_end_point_id, end_point_name, model_id, model_version,
-                    unzip_package_path, model_bin_file, model_name, inference_engine,
-                    ClientConstants.INFERENCE_HTTP_PORT,
-                    ClientConstants.INFERENCE_GRPC_PORT,
-                    ClientConstants.INFERENCE_METRIC_PORT,
-                    use_gpu, memory_size,
-                    ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-                    ClientConstants.INFERENCE_SERVER_IMAGE,
-                    self.infer_host,
-                    self.model_is_from_open, model_config_parameters,
-                    model_from_open,
-                    token, self.edge_id)
+                  inference_end_point_id, end_point_name, model_id, model_version,
+                  unzip_package_path, model_bin_file, model_name, inference_engine,
+                  ClientConstants.INFERENCE_HTTP_PORT,
+                  ClientConstants.INFERENCE_GRPC_PORT,
+                  ClientConstants.INFERENCE_METRIC_PORT,
+                  use_gpu, memory_size,
+                  ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                  ClientConstants.INFERENCE_SERVER_IMAGE,
+                  client_ip,
+                  self.model_is_from_open, model_config_parameters,
+                  model_from_open,
+                  token,
+                  master_ip)
         except Exception as e:
             inference_output_url = ""
             logging.error(f"Exception at deployment: {traceback.format_exc()}")
@@ -655,7 +658,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        client_runner.infer_host = self.infer_host
+        client_runner.infer_host = self.get_ip_address()
         self.run_process_event_map[run_id_str] = multiprocessing.Event()
         self.run_process_event_map[run_id_str].clear()
         client_runner.run_process_event = self.run_process_event_map[run_id_str]
@@ -864,6 +867,23 @@ class FedMLClientRunner:
                 f.write(device_id)
 
         return device_id
+
+    def get_ip_address(self):
+        # OPTION 1: Use local ip
+        ip = ClientConstants.get_local_ip()
+
+        # OPTION 2: Auto detect public ip
+        if "parameters" in self.request_json and \
+                ClientConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
+                self.request_json["parameters"][ClientConstants.AUTO_DETECT_PUBLIC_IP]:
+            ip = ClientConstants.get_public_ip()
+            logging.info("Auto detect public ip for worker: " + ip)
+
+        # OPTION 3: Use user indicated ip
+        if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+            ip = self.infer_host
+
+        return ip
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="md.on_premise_device"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()

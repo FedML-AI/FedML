@@ -27,8 +27,8 @@ class LaunchResult:
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
                device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                                   ApiConstants.LAUNCHED)
 
     authenticate(api_key)
 
@@ -57,9 +57,9 @@ def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: 
 
 
 def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str = None, device_server: str = None,
-                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                                   ApiConstants.LAUNCHED)
 
     authenticate(api_key)
 
@@ -71,8 +71,7 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
         job_config, app_updated_result = _prepare_launch_app(yaml_file)
 
         if not app_updated_result:
-            return ApiConstants.ERROR_CODE[
-                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
+            return ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
 
         # Start the job with the above application.
         create_run_result = create_on_cluster(platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
@@ -119,8 +118,8 @@ def job(
 
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
-            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
+            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
@@ -139,8 +138,8 @@ def job(
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
-                        result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS,
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                        result_message=ApiConstants.LAUNCHED,
                         run_id=run_id, project_id=project_id, inner_id=inner_id)
 
 
@@ -158,8 +157,9 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     project_id = getattr(create_run_result, "project_id", None)
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
-            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+    # Return if run launched and no user check required, or launch failed
+    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
+            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
@@ -208,31 +208,31 @@ def _prepare_launch_app(yaml_file):
 def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
-                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
-    if not result.run_url:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
-                ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
-    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
+                result.message)
+    if result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
+                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
+    if result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "
                 f"to make sure the syntax is valid, e.g. "
                 f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
-    elif result.status == Constants.JOB_START_STATUS_BLOCKED:
+    if result.status == Constants.JOB_START_STATUS_BLOCKED:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_BLOCKED],
-                f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
-                f"for your job. \n")
-    elif result.status == Constants.JOB_START_STATUS_QUEUED:
+                ApiConstants.LAUNCH_JOB_STATUS_BLOCKED)
+    if not result.run_url or result.run_url == "":
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
+                f"Failed to launch the job: "
+                f"{result.message if result.message is not None else ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR}")
+    if result.status == Constants.JOB_START_STATUS_QUEUED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
-                f"\nNo resource available now, job queued in waiting queue.")
-    elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
-                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
-    elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
+                ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED)
+    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                ApiConstants.LAUNCHED)
+    else:
+        return ApiConstants.ERROR_CODE[ApiConstants.ERROR], result.message
 
-    return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
-            ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
