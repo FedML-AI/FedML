@@ -611,8 +611,19 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                     err_logs = sys_utils.decode_our_err_result(err_logs)
                     added_logs = str(err_logs).replace(last_err_logs, "")
                     if len(added_logs) > 0:
-                        logging.error(f"[Error]logs from docker: {format(added_logs)}")
-                    last_err_logs = err_logs
+                        log_str = f"logs from docker: {format(added_logs)}"
+                        if added_logs.startswith("ERROR:") or added_logs.startswith("CRITICAL:"):
+                            logging.error(log_str)
+                            last_err_logs = err_logs
+                        elif added_logs.startswith("WARNING:"):
+                            logging.warning(log_str)
+                            last_out_logs = err_logs
+                        elif added_logs.startswith("DEBUG:"):
+                            logging.debug(log_str)
+                            last_out_logs = err_logs
+                        else:
+                            logging.info(log_str)
+                            last_out_logs = err_logs
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)

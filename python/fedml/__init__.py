@@ -78,7 +78,7 @@ def init(args=None, check_env=True, should_init_logs=True):
             set_env_version("release")
     # after environment is set, only fedml.get_env_version() is used to get the environment version
 
-    if check_env:
+    if check_env and hasattr(args, "training_type") and args.training_type != fedml.FEDML_TRAINING_PLATFORM_SIMULATION:
         collect_env()
 
     if hasattr(args, "training_type"):
