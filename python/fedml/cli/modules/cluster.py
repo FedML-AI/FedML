@@ -4,7 +4,6 @@ import fedml.api
 
 from prettytable import PrettyTable
 
-
 # Message strings constants
 confirmation_message: str = "Are you sure you want to {} these clusters?"
 failure_message: str = ("Failed to {} the clusters, please check the arguments are valid and your network "
@@ -232,6 +231,30 @@ def status(cluster_name, version, api_key):
         _print_clusters(cluster_list_obj)
 
 
+@fedml_clusters.command("autostop", help="Autostop clusters after some minutes of inactivity. Defaults to 10 minutes")
+@click.help_option("--help", "-h")
+@click.argument("cluster_id", type=int,nargs=1)
+@click.option("--time", "-t", type=int, default=10, help="Number of minutes of inactivity before autostop")
+@click.option(
+    "--api_key", "-k", type=str, help=api_key_help,
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help=version_help,
+)
+def autostop(cluster_id, time, version, api_key):
+    fedml.set_env_version(version)
+    is_configured = fedml.api.cluster_autostop(cluster_id=cluster_id, time=time, api_key=api_key)
+    if is_configured:
+        click.echo(f"Cluster has been successfully configured to autostop after {minutes} of inactivity.")
+    else:
+        click.echo("Cluster autostop configuration failed. The cluster will still undergo autostopping after the "
+                   "default minutes of inactivity or the previously configured minutes, if any.")
+
+
 def _print_clusters(cluster_list_obj):
     click.echo("Found the following matching clusters.")
     cluster_list_table = PrettyTable(['Cluster Name', 'Cluster ID', 'Status'])
@@ -240,4 +263,3 @@ def _print_clusters(cluster_list_obj):
         cluster_list_table.add_row([cluster.cluster_name, cluster.cluster_id, cluster.status])
 
     click.echo(cluster_list_table)
-
