@@ -579,6 +579,7 @@ class FedMLClientRunner:
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         job_api_key = job_yaml.get("run_api_key", None)
+        job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type

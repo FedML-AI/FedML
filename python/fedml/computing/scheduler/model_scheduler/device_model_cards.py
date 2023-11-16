@@ -8,17 +8,17 @@ import yaml
 
 import fedml
 import requests
-from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
-from ....core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
-from .device_client_constants import ClientConstants
-from ....core.common.singleton import Singleton
-from .modelops_configs import ModelOpsConfigs
-from .device_model_deployment import get_model_info
-from .device_server_constants import ServerConstants
-from .device_model_object import FedMLModelList
-from .device_client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
+from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 
 class FedMLModelCards(Singleton):
@@ -768,10 +768,15 @@ class FedMLModelCards(Singleton):
         else:
             response = requests.post(model_ops_url, headers=model_api_headers, json=model_deployment_json)
         if response.status_code != 200:
+            print(f"Api error, response data {response.json()}")
             pass
         else:
+            print(f"Api error, response data {response.json()}")
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            elif resp_data["code"] == "ENDPOINT_EXIST":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
             model_deployment_result = resp_data
@@ -948,3 +953,9 @@ if __name__ == "__main__":
     parser.add_argument("--cf", "-c", help="config file")
     parser.add_argument("--role", "-r", type=str, default="client", help="role")
     in_args = parser.parse_args()
+    # fedml.set_env_version("dev")
+    # FedMLModelCards.get_instance().deploy_model_api(
+    #     "375", "mnist", "v0-Thu Nov 16 09:41:42 GMT 2023",
+    #     "md.on_premise_device", [1,2], "XXAA",
+    #     "XXAA", endpoint_name="EndPoint-a8a8c0b0-cb3f-428a-a4f3-6e9e2437a096"
+    # )
