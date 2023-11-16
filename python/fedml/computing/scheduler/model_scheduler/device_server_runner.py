@@ -22,6 +22,8 @@ import requests
 import torch
 
 import fedml
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -57,6 +59,7 @@ class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        self.inference_gateway_process = None
         self.local_api_process = None
         self.run_process_event = None
         self.run_process_event_map = dict()
@@ -350,19 +353,23 @@ class FedMLServerRunner:
         if not ServerConstants.is_running_on_k8s():
             logging.info(f"start the model inference gateway, end point {run_id}, model name {model_name}...")
             self.check_runner_stop_event()
-            process = ServerConstants.exec_console_with_script(
-                "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                "END_POINT_Name=\"{}\" "
-                "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} --reload "
-                "--log-level critical".format(
-                    self.redis_addr, self.redis_port, self.redis_password,
-                    end_point_name,
-                    model_name, model_version, "", self.args.version,
-                    python_program, str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
-                should_capture_stdout=False,
-                should_capture_stderr=False
-            )
+
+            inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
+            inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
+            if inference_gateway_pids is not None and len(inference_gateway_pids) <= 0:
+                self.inference_gateway_process = ServerConstants.exec_console_with_script(
+                    "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                    "END_POINT_Name=\"{}\" "
+                    "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload "
+                    "--log-level critical".format(
+                        self.redis_addr, self.redis_port, self.redis_password,
+                        end_point_name,
+                        model_name, model_version, "", self.args.version,
+                        python_program, inference_gw_cmd, str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
+                    should_capture_stdout=False,
+                    should_capture_stderr=False
+                )
 
     def start_device_inference_monitor(self, run_id, end_point_name,
                                        model_id, model_name, model_version, check_stopped_event=True):

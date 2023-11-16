@@ -67,7 +67,7 @@ async def predict(request: Request):
         print("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
             input_list = input_json["inputs"]
-            output_list = input_json["outputs"]
+            output_list = input_json.get("outputs", [])
             inference_response = send_inference_request(inference_output_url, input_list, output_list)
 
         # Calculate model metrics
