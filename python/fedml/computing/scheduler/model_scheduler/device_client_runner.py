@@ -375,24 +375,36 @@ class FedMLClientRunner:
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
-        client_ip = self.get_ip_address()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
-            start_deployment(
-                inference_end_point_id, end_point_name, model_id, model_version,
-                unzip_package_path, model_bin_file, model_name, inference_engine,
-                ClientConstants.INFERENCE_HTTP_PORT,
-                ClientConstants.INFERENCE_GRPC_PORT,
-                ClientConstants.INFERENCE_METRIC_PORT,
-                use_gpu, memory_size,
-                ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-                ClientConstants.INFERENCE_SERVER_IMAGE,
-                client_ip,
-                self.model_is_from_open, model_config_parameters,
-                model_from_open,
-                token,
-                master_ip)
+            "", "", model_version, {}, {}
+        try:
+            client_ip = self.get_ip_address()
+            running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+                start_deployment(
+                    inference_end_point_id, end_point_name, model_id, model_version,
+                    unzip_package_path, model_bin_file, model_name, inference_engine,
+                    ClientConstants.INFERENCE_HTTP_PORT,
+                    ClientConstants.INFERENCE_GRPC_PORT,
+                    ClientConstants.INFERENCE_METRIC_PORT,
+                    use_gpu, memory_size,
+                    ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                    ClientConstants.INFERENCE_SERVER_IMAGE,
+                    client_ip,
+                    self.model_is_from_open, model_config_parameters,
+                    model_from_open,
+                    token,
+                    master_ip, self.edge_id)
+        except Exception as e:
+            inference_output_url = ""
+            logging.error(f"Exception at deployment: {traceback.format_exc()}")
+
         if inference_output_url == "":
             logging.error("failed to deploy the model...")
+
+            logging.info(f"Failed, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id, self.edge_id)
+            logging.info(f"Released, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+
             self.send_deployment_status(end_point_name, self.edge_id,
                                         model_id, model_name, model_version,
                                         inference_output_url,

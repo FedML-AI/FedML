@@ -21,6 +21,7 @@ class ClusterConstants(object):
     ID = "id"
     SHORT_NAME = "shortName"
     CLUSTER_NAME_LIST = "clusterNameList"
+    AUTOSTOP_TIME = "time"
 
 
 class FedMLClusterModelList(object):
@@ -60,6 +61,14 @@ class FedMLClusterManager(Singleton):
                              ClusterConstants.API_KEY: get_api_key()}
         response = self._request(cluster_stop_url, cluster_stop_json, self.config_version)
         data = self._get_data_from_response(command="Stop", response=response)
+        return True if data is not None else False
+
+    def autostop_clusters(self, cluster_id: int, time: int) -> bool:
+        cluster_autostop_url = ServerConstants.get_cluster_autostop_url()
+        cluster_autostop_json = {ClusterConstants.CLUSTER_ID: cluster_id,
+                                 ClusterConstants.AUTOSTOP_TIME: time}
+        response = self._request(cluster_autostop_url, cluster_autostop_json, self.config_version)
+        data = self._get_data_from_response(command="Autostop", response=response)
         return True if data is not None else False
 
     def kill_clusters(self, cluster_names=()):
