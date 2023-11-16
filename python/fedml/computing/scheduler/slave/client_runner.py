@@ -579,6 +579,7 @@ class FedMLClientRunner:
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         job_api_key = job_yaml.get("run_api_key", None)
+        job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
@@ -1006,13 +1007,16 @@ class FedMLClientRunner:
             job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
             pass
 
-        if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
-                job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-            logging.info(
-                f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-            logging.info(
-                f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+        try:
+            if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
+                    job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                logging.info(
+                    f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+                JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
+                logging.info(
+                    f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+        except Exception as e:
+            pass
 
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info(
