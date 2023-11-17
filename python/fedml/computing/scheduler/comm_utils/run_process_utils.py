@@ -154,10 +154,13 @@ class RunProcessUtils:
         ret_pids = list()
         pids = psutil.process_iter()
         for pid in pids:
-            for cmd in pid.cmdline():
-                if cmd.find(cmd_line) != -1:
-                    ret_pids.append(pid.pid)
-                    if break_on_first:
-                        return ret_pids
+            try:
+                for cmd in pid.cmdline():
+                    if cmd.find(cmd_line) != -1:
+                        ret_pids.append(pid.pid)
+                        if break_on_first:
+                            return ret_pids
+            except Exception as e:
+                pass
 
         return ret_pids

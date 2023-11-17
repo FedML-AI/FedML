@@ -356,7 +356,7 @@ class FedMLServerRunner:
 
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
-            if inference_gateway_pids is not None and len(inference_gateway_pids) <= 0:
+            if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 self.inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_Name=\"{}\" "
