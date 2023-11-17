@@ -900,7 +900,7 @@ def do_upgrade(config_version, upgrade_version, show_local_console=False):
 
 
 def is_runner_finished_normally(process_id):
-    log_runner_result_file = os.path.join(expanduser("~"), "fedml_trace", str(process_id))
+    log_runner_result_file = os.path.join(expanduser("~"), ".fedml", "fedml_trace", str(process_id))
     if os.path.exists(log_runner_result_file):
         os.remove(log_runner_result_file)
         return True
