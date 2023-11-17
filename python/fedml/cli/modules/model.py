@@ -73,7 +73,7 @@ def fedml_model_push(name, model_storage_url, version):
     default="release"
 )
 @click.option(
-    "--name", "-n", type=str, help="[Required] Model Cards Name.", required=True
+    "--name", "-n", type=str, help="Model Card Name.",
 )
 @click.option(
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
@@ -90,12 +90,42 @@ def fedml_model_push(name, model_storage_url, version):
     "--use_remote", "-r", default=False, is_flag=True, help="Use the model card on the Nexus AI Platform. Default is"
                                                             " False, which means use the model card in local."
 )
-def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote):
+@click.option(
+    "--delete", "-d", type=str, default="", help="Delete a model endpoint using endpoint id."
+)
+def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote, delete):
     fedml.set_env_version(version)
+    if delete != "":
+        click.confirm(
+            "Are you sure to delete the model endpoint: {}".format(delete),
+            abort=True,
+        )
+        fedml.api.endpoint_delete(delete)
+        return
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
     fedml.api.model_deploy(name, local, master_ids, worker_ids, use_remote)
+
+
+@fedml_model.command("run", help="Request a model inference endpoint.")
+@click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
+@click.option(
+    "--endpoint", "-e", type=str, help="Model endpoint id.",
+)
+@click.argument("JSON_STRING", type=str)
+def fedml_model_run(endpoint, version, json_string):
+    fedml.set_env_version(version)
+    if endpoint is None:
+        click.echo("You must provide a model endpoint id (use -e option).")
+        return
+    fedml.api.model_run(endpoint, json_string)
 
 
 @fedml_model.command("pull", help="Pull a model card from Nexus AI Platform to local.")

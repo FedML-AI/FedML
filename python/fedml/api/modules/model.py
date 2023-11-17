@@ -262,10 +262,37 @@ def info(name):
             click.echo("Failed to query model {}.".format(name))
 
 
-def run(name, data):
-    infer_out_json = FedMLModelCards.get_instance().inference_model(name, data)
+def run(endpoint_id: str, json_string: str) -> bool:
+    api_key = get_api_key()
+    if api_key == "":
+        click.echo('''
+                Please use one of the ways below to login first:
+                (1) CLI: `fedml login $api_key`
+                (2) API: fedml.api.fedml_login(api_key=$api_key)
+                ''')
+        return False
+    infer_out_json = FedMLModelCards.get_instance().endpoint_inference_api(api_key, endpoint_id, json_string)
     if infer_out_json != "":
-        click.echo("Inference model {} successfully.".format(name))
+        click.echo("Model run successfully.")
         click.echo("Result: {}.".format(infer_out_json))
+        return True
     else:
-        click.echo("Failed to inference model {}.".format(name))
+        click.echo("Failed to run model.")
+        return False
+
+
+def delete_endpoint(endpoint_id: str) -> bool:
+    api_key = get_api_key()
+    if api_key == "":
+        click.echo('''
+                Please use one of the ways below to login first:
+                (1) CLI: `fedml login $api_key`
+                (2) API: fedml.api.fedml_login(api_key=$api_key)
+                ''')
+        return False
+    if FedMLModelCards.get_instance().delete_endpoint(api_key, endpoint_id):
+        click.echo("Model endpoint {} deleted successfully.".format(endpoint_id))
+        return True
+    else:
+        click.echo("Failed to delete model endpoint {}.".format(endpoint_id))
+        return False
