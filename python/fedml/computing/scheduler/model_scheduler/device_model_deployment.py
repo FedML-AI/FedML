@@ -868,7 +868,7 @@ def load_gpu_model_to_cpu_device():
             else:
                 return super().find_class(module, name)
 
-    model_file = "/home/fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
+    model_file = "/home/fedml/.fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
     with open(model_file, "rb") as model_pkl_file:
         if not torch.cuda.is_available():
             model = CPU_Unpickler(model_pkl_file).load()

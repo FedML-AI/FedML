@@ -294,6 +294,8 @@ class FedMLServerRunner:
 
         logging.info("send deployment stages...")
 
+        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
+
         self.check_runner_stop_event()
 
         # Send stage: MODEL_DEPLOYMENT_STAGE4 = "ForwardRequest2Slave"
@@ -356,7 +358,7 @@ class FedMLServerRunner:
 
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
-            if inference_gateway_pids is not None and len(inference_gateway_pids) <= 0:
+            if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 self.inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_Name=\"{}\" "
@@ -1617,8 +1619,6 @@ class FedMLServerRunner:
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
-        self.mlops_metrics.stop_sys_perf()
-        self.mlops_metrics.report_sys_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_deployment_msg_after_upgrading()
 

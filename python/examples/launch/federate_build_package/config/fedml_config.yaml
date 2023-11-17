@@ -8,7 +8,7 @@ common_args:
   training_type: cross_silo
   using_mlops: false
 data_args:
-  data_cache_dir: ~/fedml_data
+  data_cache_dir: ~/.cache/fedml_data
   dataset: mnist
   partition_alpha: 0.5
   partition_method: hetero

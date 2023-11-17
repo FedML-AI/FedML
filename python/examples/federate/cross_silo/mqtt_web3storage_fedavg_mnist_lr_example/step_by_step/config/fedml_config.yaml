@@ -9,7 +9,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: ~/fedml_data
+  data_cache_dir: ~/.cache/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -48,7 +48,7 @@ comm_args:
   customized_training_web3_config: { 'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDEwMjdFNzE2MDdmNzkzQTNmRjVDODIzZTAwQzcyQ2RERDcxODYwRUQiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NjUxOTk2ODQwNDIsIm5hbWUiOiJmZWRtbC10ZXN0In0.UejyT2d3N9wCD1cNqOei77rgn8Q7or3jTj7ucBAsBtQ', 'upload_uri': 'https://api.web3.storage/upload', 'download_uri': 'ipfs.w3s.link' }
 
 tracking_args:
-   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml

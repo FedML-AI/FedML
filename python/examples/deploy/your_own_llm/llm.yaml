@@ -2,7 +2,7 @@ workspace: "./src"
 entry_point: "main_entry.py"
 ### This folder will NOT be upload to MLOps,
 ### the inference server (Docker) will mount from local directory
-data_cache_dir: "~/fedml_serving/model_and_config"
+data_cache_dir: "~/.fedml/fedml_serving/model_and_config"
 # If you want to install some packages
 # Please write the command in the bootstrap.sh
 bootstrap: |
