@@ -106,7 +106,7 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
 def _resources_matched(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
                        api_key: str):
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or not create_run_result:
-        click.echo(f"{result_message}. Please double check the input arguments are valid.")
+        click.echo(f"Result Message: {result_message}. Please double check the input arguments are valid.")
         return False
 
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED]:
