@@ -32,6 +32,12 @@ class MLOpsJobPerfStats(object):
                              mqtt_mgr=None, sys_stats_obj=None):
         # if not self.comm_sanity_check():
         #     return
+        if run_id is None:
+            return
+        run_id_str = str(run_id).strip()
+        if run_id_str == "0" or run_id_str == "":
+            return
+
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
             if sys_stats_obj is None:
@@ -86,6 +92,20 @@ class MLOpsJobPerfStats(object):
                 ),
                 "timestamp": int(current_time)
             }
+
+            gpu_metrics_list = list()
+            if sys_stats_obj.metrics_of_all_gpus is not None:
+                for gpu_metric_item in sys_stats_obj.metrics_of_all_gpus:
+                    gpu_metric_dict = {
+                        "gpu_utilization": gpu_metric_item.gpu_utilization,
+                        "gpu_memory_allocated": gpu_metric_item.gpu_memory_allocated,
+                        "gpu_temp": gpu_metric_item.gpu_temp,
+                        "gpu_power_usage": gpu_metric_item.gpu_power_usage,
+                        "gpu_time_spent_accessing_memory": gpu_metric_item.gpu_time_spent_accessing_memory
+                    }
+                    gpu_metrics_list.append(gpu_metric_dict)
+            metric_json["metrics_of_all_gpus"] = gpu_metrics_list
+
         message_json = json.dumps(metric_json)
         if mqtt_mgr is not None:
             mqtt_mgr.send_message_json(topic_name, message_json)

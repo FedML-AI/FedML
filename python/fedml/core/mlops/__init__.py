@@ -861,7 +861,7 @@ def get_request_params(args):
     if str(url).startswith("https://"):
         cur_source_dir = os.path.dirname(__file__)
         cert_path = os.path.join(
-            cur_source_dir, "ssl", "open-" + config_version + ".fedml.ai_bundle.crt"
+            cur_source_dir, "ssl", "open-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
         )
 
     return url, cert_path

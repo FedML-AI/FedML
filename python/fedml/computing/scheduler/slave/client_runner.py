@@ -632,6 +632,8 @@ class FedMLClientRunner:
 
     def callback_start_fl_job(self, job_pid):
         ClientConstants.save_learning_process(self.run_id, job_pid)
+        self.mlops_metrics.report_sys_perf(
+            self.args, self.agent_config["mqtt_config"], job_process_id=job_pid)
 
     def start_job_perf(self, job_pid):
         ClientConstants.save_learning_process(self.run_id, job_pid)

@@ -72,6 +72,7 @@ class WandbSystemStats:
             self.gpu_count = pynvml.nvmlDeviceGetCount()
         except Exception:
             self.gpu_count = 0
+        self.refresh_apple_gpu = False
         # self.run = run
         self._settings = settings
         self._pid = settings._stats_pid
@@ -235,7 +236,7 @@ class WandbSystemStats:
         if (
             platform.system() == "Darwin"
             and platform.processor() == "arm"
-            and self.gpu_count == 0
+            and self.refresh_apple_gpu
         ):
             try:
                 out = subprocess.check_output([util.apple_gpu_stats_binary(), "--json"])

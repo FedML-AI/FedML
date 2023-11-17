@@ -21,8 +21,10 @@ class SysStats:
         self.process_memory_in_use_size = 0.0
         self.system_memory_utilization = 0.0
         self.cpu_utilization = 0.0
+        self.metrics_of_all_gpus = None
 
     def produce_info(self):
+        self.sys_stats_impl.refresh_apple_gpu = True
         stats = self.sys_stats_impl.stats()
 
         self.cpu_utilization = stats.get("cpu", 0.0)
@@ -41,32 +43,43 @@ class SysStats:
                 if self.sys_stats_impl.gpu_count == 0:
                     self.sys_stats_impl.gpu_count = 1
 
-        gpu_mem_used = 0.0
         gpu_usage_total = 0.0
-        gpu_mem_allocated = 0.0
+        gpu_mem_allocated_total = 0.0
         gpu_temperature_total = 0.0
         gpu_power_usage_total = 0.0
+        gpu_accessing_memory_total = 0.0
 
+        self.metrics_of_all_gpus = list()
         if self.sys_stats_impl.gpu_count >= 1:
             for i in range(self.sys_stats_impl.gpu_count):
-                gpu_mem_used += stats.get("gpu.{}.{}".format(i, "memory"), 0.0)
-                gpu_usage_total += stats.get("gpu.{}.{}".format(i, "gpu"), 0.0)
-                gpu_mem_allocated += stats.get("gpu.{}.{}".format(i, "memoryAllocated"), 0.0)
-                gpu_temperature_total += stats.get("gpu.{}.{}".format(i, "temp"), 0.0)
-                gpu_power_usage_total += stats.get("gpu.{}.{}".format(i, "powerPercent"), 0.0)
+                gpu_utilization = round(stats.get("gpu.{}.{}".format(i, "gpu"), 0.0), 4)
+                gpu_memory_allocated = round(stats.get("gpu.{}.{}".format(i, "memoryAllocated"), 0.0), 4)
+                gpu_temp = round(stats.get("gpu.{}.{}".format(i, "temp"), 0.0), 4)
+                gpu_power_usage = round(stats.get("gpu.{}.{}".format(i, "powerPercent"), 0.0), 4)
+                gpu_accessing_memory = round(stats.get("gpu.{}.{}".format(i, "memory"), 0.0), 4)
+
+                gpu_metric_item = GpuMetrics(
+                    gpu_utilization, gpu_memory_allocated, gpu_temp, gpu_power_usage, gpu_accessing_memory)
+                self.metrics_of_all_gpus.append(gpu_metric_item)
+
+                gpu_usage_total += gpu_utilization
+                gpu_mem_allocated_total += gpu_memory_allocated
+                gpu_temperature_total += gpu_temp
+                gpu_power_usage_total += gpu_power_usage
+                gpu_accessing_memory_total += gpu_accessing_memory
 
             self.gpu_utilization = round(
-                gpu_usage_total / self.sys_stats_impl.gpu_count, 2
+                gpu_usage_total / self.sys_stats_impl.gpu_count, 4
             )
             self.gpu_memory_allocated = round(
-                gpu_mem_allocated / self.sys_stats_impl.gpu_count
+                gpu_mem_allocated_total / self.sys_stats_impl.gpu_count, 4
             )
-            self.gpu_temp = round(gpu_temperature_total / self.sys_stats_impl.gpu_count)
+            self.gpu_temp = round(gpu_temperature_total / self.sys_stats_impl.gpu_count, 4)
             self.gpu_power_usage = round(
-                gpu_power_usage_total / self.sys_stats_impl.gpu_count
+                gpu_power_usage_total / self.sys_stats_impl.gpu_count, 4
             )
             self.gpu_time_spent_accessing_memory = round(
-                gpu_mem_used / self.sys_stats_impl.gpu_count
+                gpu_accessing_memory_total / self.sys_stats_impl.gpu_count, 4
             )
 
     def get_cpu_utilization(self):
@@ -107,3 +120,15 @@ class SysStats:
 
     def get_gpu_power_usage(self):
         return self.gpu_power_usage
+
+
+class GpuMetrics(object):
+    def __init__(self, gpu_utilization, gpu_memory_allocated, gpu_temp,
+                 gpu_power_usage, gpu_time_spent_accessing_memory):
+        self.gpu_utilization = gpu_utilization
+        self.gpu_memory_allocated = gpu_memory_allocated
+        self.gpu_temp = gpu_temp
+        self.gpu_power_usage = gpu_power_usage
+        self.gpu_time_spent_accessing_memory = gpu_time_spent_accessing_memory
+
+
