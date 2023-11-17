@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 import uuid
+from multiprocessing import Process
 
 import click
 import fedml
@@ -601,8 +602,14 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_
     return artifact_archive_zip_file, artifact_storage_url
 
 
-def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None):
+def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None, async_upload=True):
     fedml_args = get_fedml_args()
+
+    if async_upload:
+        Process(target=log_artifact, args=(
+            artifact, version, run_id, edge_id, False
+        )).start()
+        return
 
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
         artifact, version=version if version is not None else fedml_args.config_version)
@@ -854,7 +861,7 @@ def get_request_params(args):
     if str(url).startswith("https://"):
         cur_source_dir = os.path.dirname(__file__)
         cert_path = os.path.join(
-            cur_source_dir, "ssl", "open-" + config_version + ".fedml.ai_bundle.crt"
+            cur_source_dir, "ssl", "open-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
         )
 
     return url, cert_path

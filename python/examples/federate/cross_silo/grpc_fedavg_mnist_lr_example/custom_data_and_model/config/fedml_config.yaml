@@ -44,7 +44,7 @@ comm_args:
   grpc_ipconfig_path: config/grpc_ipconfig.csv
   
 tracking_args:
-  # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+  # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   log_file_dir: ./log
   local_log_output_path: ./log
   enable_wandb: false

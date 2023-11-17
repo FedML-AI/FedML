@@ -126,7 +126,7 @@ class MLOpsDevicePerfStats(object):
 
         try:
             home_dir = expanduser("~")
-            fedml_ppids_dir = os.path.join(home_dir, "fedml-client", "fedml", "data", "ppids")
+            fedml_ppids_dir = os.path.join(home_dir, ".fedml", "fedml-client", "fedml", "data", "ppids")
             if not os.path.exists(fedml_ppids_dir):
                 return
 
@@ -154,7 +154,7 @@ class MLOpsDevicePerfStats(object):
 
         try:
             home_dir = expanduser("~")
-            fedml_ppids_dir = os.path.join(home_dir, "fedml-server", "fedml", "data", "ppids")
+            fedml_ppids_dir = os.path.join(home_dir, ".fedml", "fedml-server", "fedml", "data", "ppids")
             if not os.path.exists(fedml_ppids_dir):
                 return
 

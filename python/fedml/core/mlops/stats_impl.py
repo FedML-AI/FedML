@@ -72,6 +72,7 @@ class WandbSystemStats:
             self.gpu_count = pynvml.nvmlDeviceGetCount()
         except Exception:
             self.gpu_count = 0
+        self.refresh_apple_gpu = False
         # self.run = run
         self._settings = settings
         self._pid = settings._stats_pid
@@ -189,6 +190,8 @@ class WandbSystemStats:
                     temp = pynvml.nvmlDeviceGetTemperature(
                         handle, pynvml.NVML_TEMPERATURE_GPU
                     )
+                    name = pynvml.nvmlDeviceGetName(handle)
+                    name = name.decode("utf-8", errors='ignore')
                     in_use_by_us = gpu_in_use_by_this_process(handle, pid=self._pid)
 
                     stats["gpu.{}.{}".format(i, "gpu")] = utilz.gpu
@@ -197,6 +200,7 @@ class WandbSystemStats:
                         memory.used / float(memory.total)
                     ) * 100
                     stats["gpu.{}.{}".format(i, "temp")] = temp
+                    stats["gpu.{}.{}".format(i, "name")] = name
 
                     if in_use_by_us:
                         stats["gpu.process.{}.{}".format(i, "gpu")] = utilz.gpu
@@ -235,7 +239,7 @@ class WandbSystemStats:
         if (
             platform.system() == "Darwin"
             and platform.processor() == "arm"
-            and self.gpu_count == 0
+            and self.refresh_apple_gpu
         ):
             try:
                 out = subprocess.check_output([util.apple_gpu_stats_binary(), "--json"])

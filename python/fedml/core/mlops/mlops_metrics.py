@@ -387,10 +387,11 @@ class MLOpsMetrics(object):
         message_json = json.dumps(artifact_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_sys_perf(self, sys_args, mqtt_config):
+    def report_sys_perf(self, sys_args, mqtt_config, run_id=None, job_process_id=None):
         setattr(sys_args, "mqtt_config_path", mqtt_config)
-        run_id = getattr(sys_args, "run_id", 0)
-        self.fl_job_perf.add_job(run_id, os.getpid())
+        run_id = getattr(sys_args, "run_id", 0) if run_id is None else run_id
+        setattr(sys_args, "run_id", run_id)
+        self.fl_job_perf.add_job(run_id, os.getpid() if job_process_id is None else job_process_id)
         self.fl_job_perf.report_job_stats(sys_args)
 
     def stop_sys_perf(self):
