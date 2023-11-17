@@ -118,8 +118,6 @@ class FedMLClientRunner:
         self.origin_fedml_config_object = None
         self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
         self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
-
-        self.client_login_lock = threading.Lock()
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -1176,14 +1174,13 @@ class FedMLClientRunner:
         secret = payload_json.get("auth", None)
         if secret is None or str(secret) != "246b1be6-0eeb-4b17-b118-7d74de1975d4":
             return
-        self.client_login_lock.acquire()
+        logging.info("Received the logout request.")
         if self.run_process_event is not None:
             self.run_process_event.set()
         if self.run_process_completed_event is not None:
             self.run_process_completed_event.set()
         self.disable_client_login = True
         time.sleep(3)
-        self.client_login_lock.release()
         os.system("fedml logout")
 
     def save_training_status(self, edge_id, training_status):
