@@ -21,6 +21,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLM
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
 
+
 class FedMLModelCards(Singleton):
 
     def __init__(self):
@@ -120,7 +121,7 @@ class FedMLModelCards(Singleton):
         shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'r') as f:
             launch_params = yaml.safe_load(f)
-            launch_params["workspace"] = "./"   # Since it is inside the src folder, the workspace is "./"
+            launch_params["workspace"] = "./"  # Since it is inside the src folder, the workspace is "./"
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'w') as f:
             yaml.dump(launch_params, f, sort_keys=False)
         return True
@@ -149,7 +150,7 @@ class FedMLModelCards(Singleton):
 
         if not os.path.isabs(model_config["workspace"]):
             # Use config_file_path + workspace if workspace is a relative path
-            base_path = os.path.dirname(config_file)   # Avoid scene like: ./src
+            base_path = os.path.dirname(config_file)  # Avoid scene like: ./src
             workspace_abs_path = os.path.join(base_path, model_config["workspace"])
         else:
             workspace_abs_path = model_config["workspace"]
@@ -184,7 +185,7 @@ class FedMLModelCards(Singleton):
         with open(os.path.join(model_dir, ClientConstants.ORIGINAL_YAML_FILE_LOCATION), 'r') as f:
             original_config_file_path = f.read()
 
-        if not os.path.exists(original_config_file_path) or not os.path.isfile(original_config_file_path)\
+        if not os.path.exists(original_config_file_path) or not os.path.isfile(original_config_file_path) \
                 or not os.path.isabs(original_config_file_path):
             print(f"The original config file {original_config_file_path} doesn't exist, cannot recreate the model.")
             return False
@@ -411,8 +412,9 @@ class FedMLModelCards(Singleton):
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
-                    ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
+                print(
+                    "[Warning] You model repository is missing file {}, we've created an empty README.md for you."
+                    .format(ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
                 # create a empty readme file called README.md
                 with open(model_readme_file, 'w') as f:
                     f.write("")
@@ -500,7 +502,8 @@ class FedMLModelCards(Singleton):
             usr_resource_req = usr_config_total_params.get("computing", {})
 
         if usr_resource_req == {}:
-            print("[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
+            print(
+                "[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
             return ""
 
         launch_params = {
@@ -617,7 +620,8 @@ class FedMLModelCards(Singleton):
         return False
 
     def query_model(self, model_name):
-        return get_model_info(model_name, ClientConstants.INFERENCE_ENGINE_TYPE_ONNX, ClientConstants.INFERENCE_HTTP_PORT)
+        return get_model_info(model_name, ClientConstants.INFERENCE_ENGINE_TYPE_ONNX,
+                              ClientConstants.INFERENCE_HTTP_PORT)
 
     def list_model_api(self, model_name, user_id, user_api_key):
         model_list_result = None
@@ -830,6 +834,59 @@ class FedMLModelCards(Singleton):
                 return None
 
         return endpoint_apply_result
+
+    def endpoint_inference_api(self, user_api_key, endpoint_id: str, req: str) -> str:
+        model_ops_url = ClientConstants.get_model_ops_endpoint_inference_url(endpoint_id)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                                'Authorization': 'Bearer {}'.format(user_api_key)}
+        try:
+            req_json = json.loads(req)
+        except Exception as e:
+            print("[Error] Cannot jsonify your req body: {}.".format(e))
+            return ""
+
+        try:
+            args = {"config_version": self.config_version}
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+
+            if cert_path is not None:
+                try:
+                    requests.session().verify = False
+                    response = requests.post(
+                        model_ops_url, verify=True, headers=endpoint_api_headers, json=req_json
+                    )
+                except requests.exceptions.SSLError as err:
+                    ModelOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        model_ops_url, verify=True, headers=endpoint_api_headers, json=req_json
+                    )
+            else:
+                response = requests.post(model_ops_url, headers=endpoint_api_headers, json=req_json)
+        except Exception as e:
+            print("[Error] After post, got: {}.".format(e))
+            return ""
+
+        if response.status_code != 200:
+            print(f"Endpoint inference with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            return ""
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Got error msg from mlops: {}.".format(resp_data["message"]))
+                return ""
+            endpoint_inference_result = resp_data["data"]
+            if endpoint_inference_result is None or endpoint_inference_result == "":
+                print(f"Endpoint inference with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return ""
+            try:
+                endpoint_inference_result = json.dumps(endpoint_inference_result)
+            except Exception as e:
+                print("[Error] Cannot jsonify the endpoint inference result from mlops: {}.".format(e))
+                return ""
+
+        return endpoint_inference_result
 
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id, params):

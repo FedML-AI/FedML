@@ -98,6 +98,26 @@ def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote)
     fedml.api.model_deploy(name, local, master_ids, worker_ids, use_remote)
 
 
+@fedml_model.command("run", help="Request a model inference endpoint.")
+@click.help_option("--help", "-h")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release"
+)
+@click.option(
+    "--endpoint", "-e", type=str, help="Model endpoint id.",
+)
+@click.argument("JSON_STRING", type=str)
+def fedml_model_run(endpoint, version, json_string):
+    fedml.set_env_version(version)
+    if endpoint is None:
+        click.echo("You must provide a model endpoint id (use -e option).")
+        return
+    fedml.api.model_run(endpoint, json_string)
+
+
 @fedml_model.command("pull", help="Pull a model card from Nexus AI Platform to local.")
 @click.help_option("--help", "-h")
 @click.option(

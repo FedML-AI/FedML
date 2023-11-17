@@ -291,6 +291,12 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_endpoint_inference_url(endpoint_id: str):
+        config_version = fedml.get_env_version()
+        model_ops_url = f"{fedml._get_backend_service()}/inference" + f"/{endpoint_id}"
+        return model_ops_url
+
+    @staticmethod
     def get_running_model_name(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
         running_model_name = "model_endpoint_{}_model_{}_ver_-{}".format(end_point_name, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
