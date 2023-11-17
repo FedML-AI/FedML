@@ -79,7 +79,7 @@ class ServerConstants(object):
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        fedml_home_dir = os.path.join(home_dir, ".fedml", ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
