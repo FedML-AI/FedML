@@ -1,10 +1,8 @@
 import click
-import os
 
 from prettytable import PrettyTable
 
 import fedml
-from fedml.cli.modules.utils import DefaultCommandGroup
 from fedml.api.constants import ApiConstants
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
@@ -15,41 +13,7 @@ from fedml.api import run_stop, run_list
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 
-class LaunchGroup(DefaultCommandGroup):
-    def format_usage(self, ctx, formatter):
-        click.echo("fedml launch [OPTIONS] YAML_FILE")
-
-
-@click.group("launch", cls=LaunchGroup, default_command='default')
-@click.help_option("--help", "-h")
-@click.option(
-    "--cluster",
-    "-c",
-    default="",
-    type=str,
-    help="If a cluster name is specified, you labelled the searched resource by launch with the cluster name. So later you can reuse the same cluster resource without warmup after the first launch. The cluster can be stopped by CLI: fedml cluster stop, or it would be automatically stopped after 15-minute idle time."
-)
-@click.option(
-    "--api_key", "-k", type=str, help="user api key.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    default="release",
-    help="version of FedML® Nexus AI Platform. It should be dev, test or release",
-)
-def fedml_launch(api_key, version, cluster):
-    """
-    Launch job at the FedML® Nexus AI platform
-    """
-    pass
-
-
-@fedml_launch.command(
-    "default", help="Launch job at the FedML® Nexus AI Platform",
-    context_settings={"ignore_unknown_options": True}, hidden=True
-)
+@click.command("launch", help="Launch job at the FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -76,7 +40,7 @@ def fedml_launch(api_key, version, cluster):
     help="If a cluster name is specified, you labelled the searched resource by launch with the cluster name. So later you can reuse the same cluster resource without warmup after the first launch. The cluster can be stopped by CLI: fedml cluster stop, or it would be automatically stopped after 15-minute idle time."
 )
 @click.argument("yaml_file", nargs=-1)
-def fedml_launch_default(yaml_file, api_key, group, cluster, version):
+def fedml_launch(yaml_file, cluster, version, api_key, group):
     """
     Manage resources on the FedML® Nexus AI Platform.
     """
@@ -140,7 +104,7 @@ def _launch_job_on_cluster(yaml_file, api_key, cluster):
 
 
 def _resources_matched(result_code: int, result_message: str, create_run_result: FedMLRunStartedModel,
-                                     api_key: str):
+                       api_key: str):
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED] or not create_run_result:
         click.echo(f"{result_message}. Please double check the input arguments are valid.")
         return False
