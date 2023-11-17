@@ -97,6 +97,8 @@ class MLOpsJobPerfStats(object):
             if sys_stats_obj.metrics_of_all_gpus is not None:
                 for gpu_metric_item in sys_stats_obj.metrics_of_all_gpus:
                     gpu_metric_dict = {
+                        "gpu_id": gpu_metric_item.gpu_id,
+                        "gpu_name": gpu_metric_item.gpu_name,
                         "gpu_utilization": gpu_metric_item.gpu_utilization,
                         "gpu_memory_allocated": gpu_metric_item.gpu_memory_allocated,
                         "gpu_temp": gpu_metric_item.gpu_temp,

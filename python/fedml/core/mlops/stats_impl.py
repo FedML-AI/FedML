@@ -190,6 +190,7 @@ class WandbSystemStats:
                     temp = pynvml.nvmlDeviceGetTemperature(
                         handle, pynvml.NVML_TEMPERATURE_GPU
                     )
+                    name = pynvml.nvmlDeviceGetName(handle)
                     in_use_by_us = gpu_in_use_by_this_process(handle, pid=self._pid)
 
                     stats["gpu.{}.{}".format(i, "gpu")] = utilz.gpu
@@ -198,6 +199,7 @@ class WandbSystemStats:
                         memory.used / float(memory.total)
                     ) * 100
                     stats["gpu.{}.{}".format(i, "temp")] = temp
+                    stats["gpu.{}.{}".format(i, "name")] = name
 
                     if in_use_by_us:
                         stats["gpu.process.{}.{}".format(i, "gpu")] = utilz.gpu
