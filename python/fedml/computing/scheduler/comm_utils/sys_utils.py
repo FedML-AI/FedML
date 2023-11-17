@@ -249,7 +249,7 @@ def get_gpu_count_vendor():
 def get_running_info(cs_home_dir, cs_info_dir):
     home_dir = expanduser("~")
     runner_info_file = os.path.join(
-        home_dir, cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
+        home_dir, ".fedml", cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
     )
     if os.path.exists(runner_info_file):
         running_info = load_yaml_config(runner_info_file)
@@ -277,7 +277,7 @@ def get_python_program():
 def cleanup_login_process(runner_home_dir, runner_info_dir):
     try:
         home_dir = expanduser("~")
-        local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+        local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
         edge_process_id_file = os.path.join(
             local_pkg_data_dir, runner_info_dir, "runner-process.id"
         )
@@ -302,7 +302,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
 
 def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
     home_dir = expanduser("~")
-    local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+    local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
     os.makedirs(local_pkg_data_dir, exist_ok=True)
     os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir), exist_ok=True)
 

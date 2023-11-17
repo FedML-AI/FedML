@@ -11,7 +11,7 @@ def test_attack_cifar10():
     client_num = 10
     attack_client_num = 5
     batch_size = 32
-    data_dir = os.path.join(expanduser("~"), "fedml_data", "cifar10")
+    data_dir = os.path.join(expanduser("~"), ".cache", "fedml_data", "cifar10")
     dataset = AttackDefenseDataLoader.load_cifar10_data(data_dir=data_dir, client_num=client_num, batch_size=batch_size)
     backdoor_data = torch.rand(784, 3, 32, 32)
     backdoor_target = torch.randint(10, (784,))
