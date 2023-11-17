@@ -281,6 +281,11 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_delete_url():
+        model_ops_url = f"{ClientConstants.get_model_ops_url()}/api/v1/endpoint/deleteFromCli"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_url(config_version="release"):
         url = fedml._get_backend_service()
         return f"{url}/fedmlModelServer"

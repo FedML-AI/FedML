@@ -240,6 +240,10 @@ def model_run(endpoint_id, json_string):
     model_module.run(endpoint_id, json_string)
 
 
+def endpoint_delete(endpoint_id):
+    model_module.delete_endpoint(endpoint_id)
+
+
 def train_build(job_yaml_file, dest_folder):
     return train.build_with_job_yaml(job_yaml_file, dest_folder=dest_folder)
 

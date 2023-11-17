@@ -888,6 +888,41 @@ class FedMLModelCards(Singleton):
 
         return endpoint_inference_result
 
+    def delete_endpoint(self, user_api_key: str, endpoint_id: str) -> bool:
+        delete_mlops_url = ClientConstants.get_model_ops_delete_url()
+        endpoint_delete_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_delete_json = {
+            "apiKey": user_api_key,
+            "endpointId": int(endpoint_id)
+        }
+
+        try:
+            args = {"config_version": self.config_version}
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+
+            if cert_path is not None:
+                try:
+                    requests.session().verify = False
+                    response = requests.post(
+                        delete_mlops_url, verify=True, headers=endpoint_delete_headers, json=endpoint_delete_json
+                    )
+                except requests.exceptions.SSLError as err:
+                    ModelOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        delete_mlops_url, verify=True, headers=endpoint_delete_headers, json=endpoint_delete_json
+                    )
+            else:
+                response = requests.post(delete_mlops_url, headers=endpoint_delete_headers, json=endpoint_delete_json)
+        except Exception as e:
+            print("[Error] After post req, got: {}.".format(e))
+            return False
+
+        if response.status_code != 200:
+            print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            return False
+        return True
+
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id, params):
         ServerConstants.get_local_ip()
