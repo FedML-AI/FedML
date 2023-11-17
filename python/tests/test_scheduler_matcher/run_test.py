@@ -1,5 +1,7 @@
 import argparse
 
+import pynvml
+
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.scheduler_core.scheduler_matcher import SchedulerMatcher
@@ -132,6 +134,22 @@ def test_config_map_to_env_variables():
     print(f"replaced entry args: {replaced_entry_args}")
 
 
+def test_gpu_info():
+    pynvml.nvmlInit()
+    gpu_count = pynvml.nvmlDeviceGetCount()
+    for i in range(0, gpu_count):
+        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+        try:
+            utilz = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            temp = pynvml.nvmlDeviceGetTemperature(
+                handle, pynvml.NVML_TEMPERATURE_GPU
+            )
+            print(f"index {i}, utilz {utilz}, memory {memory}, temp {temp}.")
+        except Exception as e:
+            print(f"Exception when getting gpu info: {str(e)} ")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="dev")
@@ -162,3 +180,4 @@ if __name__ == "__main__":
     #
     # print("Test for multi node with multi GPUs")
     # test_match_multi_nodes_with_multi_gpus(args, run_id, node_num=3, gpu_num_per_node=8, request_gpu_num=18)
+

@@ -304,6 +304,8 @@ class FedMLClientRunner:
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance
 
+        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
+
         self.check_runner_stop_event()
 
         logging.info("model deployment request: {}".format(self.request_json))
@@ -1101,8 +1103,6 @@ class FedMLClientRunner:
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
                                                          is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
-        self.mlops_metrics.stop_sys_perf()
-        self.mlops_metrics.report_sys_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_deployment_msg_after_upgrading()
 

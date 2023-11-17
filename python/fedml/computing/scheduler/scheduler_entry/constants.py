@@ -144,7 +144,7 @@ class Constants(Singleton):
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir,
+        fedml_home_dir = os.path.join(home_dir, ".fedml",
                                       Constants.FEDML_DEVICE_RUNNER_TYPE_CLIENT
                                       if is_client else Constants.FEDML_DEVICE_RUNNER_TYPE_SERVER)
         if not os.path.exists(fedml_home_dir):

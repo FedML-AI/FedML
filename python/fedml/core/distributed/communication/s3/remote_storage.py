@@ -223,7 +223,7 @@ class S3Storage:
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
-        cache_dir = os.path.join(expanduser("~"), "fedml_cache")
+        cache_dir = os.path.join(expanduser("~"), ".fedml", "fedml_cache")
         if not os.path.exists(cache_dir):
             try:
                 os.makedirs(cache_dir)

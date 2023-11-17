@@ -14,7 +14,7 @@ from transformers import (
 # DATA_CACHE_DIR is a LOCAL folder that contains the model and config files if 
 # you do NOT want to transfer the model and config files to MLOps
 # Not to also metion DATA_CACHE_DIR in the fedml_model_config.yaml
-DATA_CACHE_DIR = "~/fedml_serving/model_and_config"
+DATA_CACHE_DIR = "~/.fedml/fedml_serving/model_and_config"
 DATA_CACHE_DIR = os.path.expanduser(DATA_CACHE_DIR) # Use absolute path
 
 class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor

@@ -170,7 +170,7 @@ class FedMLRunner:
 
     @staticmethod
     def log_runner_result():
-        log_runner_result_dir = os.path.join(expanduser("~"), "fedml_trace")
+        log_runner_result_dir = os.path.join(expanduser("~"), ".fedml", "fedml_trace")
         if not os.path.exists(log_runner_result_dir):
             os.makedirs(log_runner_result_dir, exist_ok=True)
 

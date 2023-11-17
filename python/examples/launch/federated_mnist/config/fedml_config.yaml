@@ -9,7 +9,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: ~/fedml_data
+  data_cache_dir: ~/.cache/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -48,7 +48,7 @@ comm_args:
   #customized_training_s3_config: {'CN_S3_SAK': 'your s3 aws_secret_access_key', 'CN_REGION_NAME': 'your s3 region name', 'CN_S3_AKI': 'your s3 aws_access_key_id', 'BUCKET_NAME': 'your s3 bucket name'}
 
 tracking_args:
-   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml

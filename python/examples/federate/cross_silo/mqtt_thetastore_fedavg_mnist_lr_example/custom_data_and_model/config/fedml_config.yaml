@@ -9,7 +9,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: ~/fedml_data
+  data_cache_dir: ~/.cache/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -47,7 +47,7 @@ comm_args:
   customized_training_thetastore_config: {'store_home_dir': '~/edge-store-playground', 'upload_uri': 'http://localhost:19888/rpc', 'download_uri': 'http://localhost:19888/rpc'}
 
 tracking_args:
-   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
