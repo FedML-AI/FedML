@@ -191,6 +191,7 @@ class WandbSystemStats:
                         handle, pynvml.NVML_TEMPERATURE_GPU
                     )
                     name = pynvml.nvmlDeviceGetName(handle)
+                    name = name.decode("utf-8", errors='ignore')
                     in_use_by_us = gpu_in_use_by_this_process(handle, pid=self._pid)
 
                     stats["gpu.{}.{}".format(i, "gpu")] = utilz.gpu
