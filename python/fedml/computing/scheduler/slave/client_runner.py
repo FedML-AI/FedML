@@ -58,6 +58,7 @@ class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0,
                  cuda_visible_gpu_ids_str=None):
+        self.disable_client_login = False
         self.model_device_server = None
         self.model_device_client = None
         self.run_process_event = None
@@ -117,6 +118,8 @@ class FedMLClientRunner:
         self.origin_fedml_config_object = None
         self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
         self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
+
+        self.client_login_lock = threading.Lock()
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
@@ -1168,6 +1171,21 @@ class FedMLClientRunner:
                                 "edge_info": device_info_json}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
+    def callback_client_logout(self, topic, payload):
+        payload_json = json.loads(payload)
+        secret = payload_json.get("auth", None)
+        if secret is None or str(secret) != "246b1be6-0eeb-4b17-b118-7d74de1975d4":
+            return
+        self.client_login_lock.acquire()
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+        if self.run_process_completed_event is not None:
+            self.run_process_completed_event.set()
+        self.disable_client_login = True
+        time.sleep(3)
+        self.client_login_lock.release()
+        os.system("fedml logout")
+
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
         ClientConstants.save_training_infos(edge_id, training_status)
@@ -1403,6 +1421,10 @@ class FedMLClientRunner:
         topic_request_device_info = "server/client/request_device_info/" + str(self.edge_id)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.callback_report_device_info)
 
+        # Setup MQTT message listener to logout from MLOps.
+        topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
+        self.mqtt_mgr.add_message_listener(topic_client_logout, self.callback_client_logout)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1411,6 +1433,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
+        mqtt_client_object.subscribe(topic_client_logout, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
