@@ -658,8 +658,17 @@ class FedMLServerRunner:
 
     def send_deployment_start_request_to_edges(self):
         run_id = self.request_json["run_id"]
-        edge_id_list = self.request_json["device_ids"]
-        logging.info("Edge ids: " + str(edge_id_list))
+
+        edge_id_list = []
+        for device_id in self.request_json["device_ids"]:
+            if device_id in self.request_json["diff_devices"] and \
+                    self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_ADD_OPERATION:
+                edge_id_list.append(device_id)
+
+        logging.info("Edge ids before diff: " + str(self.request_json["device_ids"]))
+        logging.info("Edge ids diff: " + str(self.request_json["diff_devices"]))
+        logging.info("Edge ids after diff: " + str(edge_id_list))
+
         self.request_json["master_node_ip"] = self.get_ip_address()
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
@@ -832,6 +841,9 @@ class FedMLServerRunner:
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
 
+        diff_devices = self.get_diff_devices(run_id)
+        request_json["diff_devices"] = diff_devices
+
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(run_id, end_point_name, json.dumps(device_objs))
@@ -892,6 +904,37 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"])
+
+    def get_diff_devices(self, run_id) -> dict:
+        # {device_id(int): "op: add" | "op: delete"}
+        # "op: add" -> need to add | "op: delete" -> need to delete device
+        try:
+            diff_devices = {}
+            FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+            device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                get_end_point_device_info(run_id)
+            if device_objs is None:
+                for new_device_id in self.request_json["device_ids"]:
+                    diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+            else:
+                device_objs_dict = json.loads(device_objs)
+                device_ids = [d["id"] for d in device_objs_dict]
+
+                for exist_device_id in device_ids:
+                    if exist_device_id not in self.request_json["device_ids"]:
+                        diff_devices[exist_device_id] = ServerConstants.DEVICE_DIFF_DELETE_OPERATION
+
+                for new_device_id in self.request_json["device_ids"]:
+                    if new_device_id not in device_ids:
+                        diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+        except Exception as e:
+            error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/{run_id}_error.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+            with open(os.path.expanduser(error_log_path), "w") as f:
+                f.write(str(e))
+            raise e
+        return diff_devices
 
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))

@@ -133,6 +133,8 @@ class ServerConstants(object):
                                "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
                                "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
 
+    DEVICE_DIFF_ADD_OPERATION = "op: add"
+    DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
