@@ -1,4 +1,5 @@
 import os
+import traceback
 
 import GPUtil
 
@@ -86,23 +87,27 @@ def collect_env():
     except:
         print("No GPU devices")
 
-    print("\n======== Network Connection Checking ========")
-    is_open_connected = ClientDiagnosis.check_open_connection(None)
-    url = fedml._get_backend_service()
-    if is_open_connected:
-        print(f"The connection to {url} is OK.\n")
-    else:
-        print(f"You can not connect to {url}.\n")
+    try:
+        print("\n======== Network Connection Checking ========")
+        is_open_connected = ClientDiagnosis.check_open_connection(None)
+        url = fedml._get_backend_service()
+        if is_open_connected:
+            print(f"The connection to {url} is OK.\n")
+        else:
+            print(f"You can not connect to {url}.\n")
 
-    is_s3_connected = ClientDiagnosis.check_s3_connection(None)
-    if is_s3_connected:
-        print("The connection to S3 Object Storage is OK.\n")
-    else:
-        print("You can not connect to S3 Object Storage.\n")
+        is_s3_connected = ClientDiagnosis.check_s3_connection(None)
+        if is_s3_connected:
+            print("The connection to S3 Object Storage is OK.\n")
+        else:
+            print("You can not connect to S3 Object Storage.\n")
 
-    is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
-    mqtt_url = fedml._get_mqtt_service()
-    if is_mqtt_connected:
-        print(f"The connection to {mqtt_url} (port:1883) is OK.\n")
-    else:
-        print(f"You can not connect to {mqtt_url}.\n")
+        is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
+        mqtt_url = fedml._get_mqtt_service()
+        if is_mqtt_connected:
+            print(f"The connection to {mqtt_url} (port:1883) is OK.\n")
+        else:
+            print(f"You can not connect to {mqtt_url}.\n")
+    except Exception as e:
+        print(f"The connection exception: {traceback.format_exc()}")
+        pass
