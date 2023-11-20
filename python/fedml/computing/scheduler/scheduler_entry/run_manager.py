@@ -55,6 +55,8 @@ class FedMLRunStartedModel(object):
             self.started_time = data.get("started_time", time.time())
             self.user_check = data.get("user_check", True)
         else:
+            self.status = None
+            self.message = None
             self.run_id = "0"
             self.run_name = None
             self.project_id = ""
@@ -71,6 +73,7 @@ class FedMLRunStartedModel(object):
         self.job_type = job_type
         self.app_job_id = app_job_id
         self.app_job_name = app_job_name
+        self.headers = response.headers
 
 
 class FedMLRunConfig(object):
