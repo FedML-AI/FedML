@@ -92,16 +92,17 @@ def get_sys_runner_info():
         pass
 
     try:
-        import nvidia_smi
+        gpus = GPUtil.getGPUs()
+        memory_total = 0.0
+        memory_free = 0.0
+        for gpu in gpus:
+            memory_total += gpu.memoryTotal
+            memory_free += gpu.memoryFree
 
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
-        gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_available_mem = "{:.1f} G".format(memory_free / 1024.0)
+        gpu_total_mem = "{:.1f}G".format(memory_total / 1024.0)
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
 
         gpu_device_name = torch.cuda.get_device_name(0)
         gpu_info = gpu_device_name
@@ -232,14 +233,9 @@ def get_gpu_count_vendor():
     gpu_count = 0
     gpu_vendor = ""
     try:
-        import nvidia_smi
-
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpus = GPUtil.getGPUs()
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
     except:
         pass
 

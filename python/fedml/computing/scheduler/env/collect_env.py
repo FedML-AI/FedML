@@ -1,5 +1,7 @@
 import os
 
+import GPUtil
+
 import fedml
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 
@@ -56,19 +58,19 @@ def collect_env():
 
     try:
         print("\n======== GPU Configuration ========")
-        import nvidia_smi
+        import GPUtil
+        gpus = GPUtil.getGPUs()
+        memory_total = 0.0
+        memory_free = 0.0
+        gpu_name = ""
+        for gpu in gpus:
+            memory_total += gpu.memoryTotal
+            memory_free += gpu.memoryFree
+            gpu_name = gpu.name
 
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        name = nvidia_smi.nvmlDeviceGetName(handle)
-        print("NVIDIA GPU Info: " + name)
-        print(
-            "Available GPU memory: {:.1f} G / {}G".format(
-                info.free / 1024 / 1024 / 1024, info.total / 1024 / 1024 / 1024
-            )
-        )
-        nvidia_smi.nvmlShutdown()
+        print("NVIDIA GPU Info: " + gpu_name)
+        print("Available GPU memory: {:.1f} G / {:.1f}G".format(
+            memory_free / 1024.0, memory_total / 1024.0))
 
         import torch
 
