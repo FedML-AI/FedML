@@ -1211,7 +1211,7 @@ class FedMLClientRunner:
                 if not use_machine_id:
                     device_id = hex(uuid.getnode())
                 else:
-                    device_id = FedMLClientRunner.get_machine_id()
+                    device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
             else:
                 device_id = "0x" + device_id
         else:
@@ -1236,7 +1236,7 @@ class FedMLClientRunner:
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
                     else:
-                        device_id = FedMLClientRunner.get_machine_id()
+                        device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
