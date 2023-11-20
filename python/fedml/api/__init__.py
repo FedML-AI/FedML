@@ -232,8 +232,8 @@ def model_pull(name):
     model_module.pull(name)
 
 
-def model_deploy(name, local, master_ids, worker_ids, use_remote):
-    model_module.deploy(name, local, master_ids, worker_ids, use_remote)
+def model_deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote):
+    model_module.deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote)
 
 
 def model_run(endpoint_id, json_string):
