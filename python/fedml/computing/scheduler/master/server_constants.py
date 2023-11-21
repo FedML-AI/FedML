@@ -180,6 +180,12 @@ class ServerConstants(object):
         return cluster_stop_url
 
     @staticmethod
+    def get_cluster_autostop_url():
+        cluster_autostop_url = "{}/fedmlOpsServer/api/v1/cli/setAutomaticStopTime".format(
+            ServerConstants.get_mlops_url())
+        return cluster_autostop_url
+
+    @staticmethod
     def get_cluster_kill_url():
         cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/shutDownCluster".format(
             ServerConstants.get_mlops_url())

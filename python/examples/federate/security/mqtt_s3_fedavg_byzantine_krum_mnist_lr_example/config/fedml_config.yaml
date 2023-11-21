@@ -24,8 +24,8 @@ train_args:
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
   # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
-  client_num_in_total: 5
-  client_num_per_round: 5
+  client_num_in_total: 20
+  client_num_per_round: 20
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -37,7 +37,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 5
+  worker_num: 20
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_config3_11
@@ -59,8 +59,9 @@ attack_args:
   enable_attack: true
   attack_type: byzantine
   attack_mode: random
-  byzantine_client_num: 1
+  byzantine_client_num: 5
 
 defense_args:
   enable_defense: true
-  defense_type: krum
+  defense_type: anomaly_detection
+  cosine_similarity_bound: 0.5

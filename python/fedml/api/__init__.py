@@ -154,13 +154,16 @@ def cluster_start(cluster_names: Tuple[str], api_key: str = None) -> bool:
 def cluster_startall(api_key: str = None) -> bool:
     return cluster.start(cluster_names=(), api_key=api_key)
 
-
 def cluster_stop(cluster_names: Tuple[str], api_key: str = None) -> bool:
     return cluster.stop(cluster_names=cluster_names, api_key=api_key)
 
 
 def cluster_stopall(api_key: str = None) -> bool:
     return cluster.stop(cluster_names=(), api_key=api_key)
+
+
+def cluster_autostop(cluster_id:int, time:int, api_key: str = None) -> bool:
+    return cluster.autostop(cluster_id=cluster_id, time=time, api_key=api_key)
 
 
 def cluster_kill(cluster_names: Tuple[str], api_key: str = None) -> bool:
@@ -229,8 +232,16 @@ def model_pull(name):
     model_module.pull(name)
 
 
-def model_deploy(name, local, master_ids, worker_ids, use_remote):
-    model_module.deploy(name, local, master_ids, worker_ids, use_remote)
+def model_deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote):
+    model_module.deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote)
+
+
+def model_run(endpoint_id, json_string):
+    model_module.run(endpoint_id, json_string)
+
+
+def endpoint_delete(endpoint_id):
+    model_module.delete_endpoint(endpoint_id)
 
 
 def train_build(job_yaml_file, dest_folder):

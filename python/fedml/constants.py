@@ -62,7 +62,7 @@ FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG = "Async_FedAvg"
 # service, while the URL is the complete URL including the protocol (http or https). These variables
 # are used to configure the backend service connection in the code.
 
-FEDML_BACKEND_SERVICE_URL_LOCAL = "http://127.0.0.1:18080"
+FEDML_BACKEND_SERVICE_URL_LOCAL = "http://34.83.130.103:18080"
 
 FEDML_BACKEND_SERVICE_URL_DEV = "https://open-dev.fedml.ai"
 
@@ -70,7 +70,7 @@ FEDML_BACKEND_SERVICE_URL_TEST = "https://open-test.fedml.ai"
 
 FEDML_BACKEND_SERVICE_URL_RELEASE = "https://open.fedml.ai"
 
-FEDML_MQTT_DOMAIN_LOCAL = "127.0.0.1"
+FEDML_MQTT_DOMAIN_LOCAL = "34.83.130.103"
 FEDML_MQTT_DOMAIN_DEV = "mqtt-dev.fedml.ai"
 FEDML_MQTT_DOMAIN_TEST = "mqtt.fedml.ai"
 FEDML_MQTT_DOMAIN_RELEASE = "mqtt.fedml.ai"
