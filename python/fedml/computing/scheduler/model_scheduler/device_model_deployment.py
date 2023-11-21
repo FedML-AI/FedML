@@ -213,7 +213,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
                 usr_indicated_wait_time = config.get('deploy_timeout', 100)
-                usr_indicated_worker_port = config.get('worker_port', 2345)
+                usr_indicated_worker_port = config.get('worker_port', "")
+                if usr_indicated_worker_port == "":
+                    usr_indicated_worker_port = int(os.environ.get("FEDML_WORKER_PORT", 2345))
 
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
