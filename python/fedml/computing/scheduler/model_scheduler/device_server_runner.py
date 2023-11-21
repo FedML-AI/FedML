@@ -760,7 +760,7 @@ class FedMLServerRunner:
                         if int(device_status_dict["cache_device_id"]) in edge_id_list_to_delete:
                             delete_devices_status_list.append(device_status)
 
-                    for delete_item in devices_status_list:
+                    for delete_item in delete_devices_status_list:
                         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
                             delete_item, self.request_json["end_point_name"],
                             self.request_json["model_config"]["model_name"]
