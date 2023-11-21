@@ -166,8 +166,8 @@ class FedMLServerRunner:
         model_config = run_config
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -252,8 +252,8 @@ class FedMLServerRunner:
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         model_is_from_open = model_config["is_from_open"]
         inference_end_point_id = run_id
@@ -891,8 +891,8 @@ class FedMLServerRunner:
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
