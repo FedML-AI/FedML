@@ -332,7 +332,12 @@ class FedMLServerRunner:
         # forward deployment request to slave devices
         logging.info("send the model inference request to slave devices...")
         self.check_runner_stop_event()
+
+        # Diff could be scale out
         self.send_deployment_start_request_to_edges()
+
+        # Diff could be scale in
+        self.send_deployment_delete_request_to_edges(payload=json.dumps(self.request_json), model_msg_object=None)
 
         while True:
             self.check_runner_stop_event()
@@ -696,9 +701,79 @@ class FedMLServerRunner:
         return ip
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
-        edge_id_list = model_msg_object.device_ids
-        logging.info("Device ids: " + str(edge_id_list))
-        for edge_id in edge_id_list:
+        if model_msg_object is None:    # Called after the diff operation
+            if "diff_devices" not in self.request_json or self.request_json["diff_devices"] is None:
+                return
+            else:
+                edge_id_list_to_delete = []
+                for device_id in self.request_json["diff_devices"]:
+                    if self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_DELETE_OPERATION:
+                        edge_id_list_to_delete.append(device_id)
+                if len(edge_id_list_to_delete) == 0:
+                    return
+
+                try:
+                    FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port,
+                                                                    self.redis_password)
+
+                    # 1. Get & Delete Deployment Status in Redis / SQLite
+                    devices_status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                        get_deployment_status_list(self.request_json["end_point_name"],
+                                                   self.request_json["model_config"]["model_name"])
+                    delete_devices_status_list = []
+                    for device_status in devices_status_list:
+                        device_status_dict = json.loads(device_status)
+                        if int(device_status_dict["cache_device_id"]) in edge_id_list_to_delete:
+                            delete_devices_status_list.append(device_status)
+
+                    for delete_item in devices_status_list:
+                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                            delete_item, self.request_json["end_point_name"],
+                            self.request_json["model_config"]["model_name"]
+                        )
+
+                    # 2. Get & Delete the endpoint device info in Redis / SQLite
+                    device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                        get_end_point_device_info(self.request_json["run_id"])
+
+                    if device_objs is None:
+                        raise Exception("The device list in local redis is None")
+                    else:
+                        total_device_objs_list = json.loads(device_objs)
+                        for device_obj in total_device_objs_list:
+                            if device_obj["id"] in edge_id_list_to_delete:
+                                total_device_objs_list.remove(device_obj)
+
+                    FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
+                        self.request_json["run_id"], self.request_json["end_point_name"],
+                        json.dumps(total_device_objs_list))
+                except Exception as e:
+                    run_id = self.request_json["run_id"]
+                    error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_delete_{run_id}.txt"
+                    if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                        os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+                    with open(os.path.expanduser(error_log_path), "w") as f:
+                        f.write(str(self.request_json))
+                        f.write(str(e))
+                        f.write('\n')
+                        # f.write(self.request_json["run_id"])
+                        # f.write('\n')
+                        # f.write(self.request_json["end_point_name"])
+                    raise e
+
+        else:   # Delete the whole endpoint
+            edge_id_list_to_delete = model_msg_object.device_ids
+
+        # For Debug
+        if payload is not None:
+            debug_log_path = f"~/.fedml/fedml-model-server/fedml/logs/tmp_debug_delete_payload.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(debug_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(debug_log_path)))
+            with open(os.path.expanduser(debug_log_path), "w") as f:
+                f.write(str(payload))
+
+        logging.info("Device ids to be deleted: " + str(edge_id_list_to_delete))
+        for edge_id in edge_id_list_to_delete:
             if edge_id == self.edge_id:
                 continue
             # send delete deployment request to each model device
