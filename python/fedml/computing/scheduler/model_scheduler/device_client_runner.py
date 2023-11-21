@@ -177,8 +177,8 @@ class FedMLClientRunner:
     def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -287,8 +287,8 @@ class FedMLClientRunner:
         model_id = model_config["model_id"]
         model_version = model_config["model_version"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         model_config_parameters = self.request_json["parameters"]
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
@@ -624,8 +624,8 @@ class FedMLClientRunner:
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
