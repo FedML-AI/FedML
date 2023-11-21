@@ -397,10 +397,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         cnt = 0
         while True:
             cnt += 1
-            try:  # check dynamic port allocation
-                port_info = client.api.port(new_container.get("Id"), 2345)
-                inference_http_port = port_info[0]["HostPort"]
-                logging.info("inference_http_port: {}".format(inference_http_port))
+            try:
+                inference_http_port = usr_indicated_worker_port
                 break
             except:
                 if cnt >= 5:
