@@ -987,8 +987,10 @@ class FedMLServerRunner:
 
         logging.info("Send training request to Edge ids: " + str(edge_id_list))
 
+        should_match_gpu = False
         if job_yaml_default_none is not None and request_num_gpus is not None and \
                 int(request_num_gpus) > 0 and active_edge_info_dict is not None:
+            should_match_gpu = True
             SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
 
             # Match and assign gpus to each device
@@ -1037,7 +1039,7 @@ class FedMLServerRunner:
                 model_master_device_id = edge_info.get("master_device_id", None)
                 model_slave_device_id = edge_info.get("slave_device_id", None)
 
-                if job_yaml_default_none is not None and request_num_gpus is not None:
+                if should_match_gpu:
                     request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
                         edge_id, edge_id_list, master_node_addr, master_node_port,
                         assigned_gpu_num_dict, assigned_gpu_ids_dict,
