@@ -213,6 +213,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
                 usr_indicated_wait_time = config.get('deploy_timeout', 100)
+                usr_indicated_worker_port = config.get('worker_port', 2345)
+
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
@@ -380,7 +382,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             host_config=client.api.create_host_config(
                 binds=binds,
                 port_bindings={
-                    2345: None  # randomly open a port on the host
+                    2345: usr_indicated_worker_port  # randomly open a port on the host
                 },
                 device_requests=device_requests,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
