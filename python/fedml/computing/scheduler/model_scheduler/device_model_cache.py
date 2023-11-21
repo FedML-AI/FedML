@@ -68,6 +68,11 @@ class FedMLModelCache(object):
                                                        model_name, model_version,
                                                        device_id, deployment_status)
 
+    def delete_deployment_result(self, element: str, end_point_name, model_name):
+        self.redis_connection.lrem(self.get_deployment_status_key(end_point_name, model_name),
+                                   0, element)
+        # TODO: delete from SQLite database
+
     def get_deployment_result_list(self, end_point_name, model_name):
         result_list = self.redis_connection.lrange(self.get_deployment_result_key(end_point_name, model_name), 0, -1)
         if result_list is None or len(result_list) <= 0:

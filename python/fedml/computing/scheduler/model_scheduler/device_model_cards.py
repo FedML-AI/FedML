@@ -35,7 +35,8 @@ class FedMLModelCards(Singleton):
     def get_instance():
         return FedMLModelCards()
 
-    def serve_model_on_premise(self, model_name, master_device_ids, worker_device_ids, use_remote):
+    def serve_model_on_premise(self, model_name, endpoint_name, master_device_ids,
+                               worker_device_ids, use_remote, endpoint_id):
         print(f"Use remote: {use_remote}")
         # Check api key
         user_api_key = get_api_key()
@@ -60,7 +61,7 @@ class FedMLModelCards(Singleton):
 
         if use_remote:
             if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                     additional_params_dict, use_local_deployment):
+                                     additional_params_dict, use_local_deployment, endpoint_id=endpoint_id):
                 print("Failed to deploy model")
                 return False
             return True
@@ -86,7 +87,8 @@ class FedMLModelCards(Singleton):
         self.push_model(model_name, "", user_api_key)
 
         if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                 additional_params_dict, use_local_deployment):
+                                 additional_params_dict, use_local_deployment, endpoint_name=endpoint_name,
+                                 endpoint_id=endpoint_id):
             print("Failed to deploy model")
             return False
         return True
@@ -754,8 +756,10 @@ class FedMLModelCards(Singleton):
             "userId": str(user_id),
             "apiKey": user_api_key,
         }
-        if endpoint_id is not None:
-            model_deployment_json["id"] = endpoint_id
+        if endpoint_id is not None and endpoint_id != "":
+            print(f"Updating endpoint {endpoint_id}...")
+            time.sleep(5)
+            model_deployment_json["id"] = int(endpoint_id)
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
         if cert_path is not None:
@@ -775,7 +779,7 @@ class FedMLModelCards(Singleton):
             print(f"Api error, response data {response.json()}")
             pass
         else:
-            print(f"Api error, response data {response.json()}")
+            print(f"Api Success, response data {response.json()}")
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
                 print("Error: {}.".format(resp_data["message"]))
