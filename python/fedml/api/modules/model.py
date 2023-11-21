@@ -198,8 +198,8 @@ def pull(name: str) -> any:
     return res
 
 
-def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: str = None,
-           use_remote: bool = False) -> bool:
+def deploy(name: str, endpoint_name: str = "", endpoint_id: str = None, local: bool = False, master_ids: str = None,
+           worker_ids: str = None, use_remote: bool = False) -> bool:
     if local:
         return FedMLModelCards.get_instance().local_serve_model(name)
     else:
@@ -210,7 +210,8 @@ def deploy(name: str, local: bool = False, master_ids: str = None, worker_ids: s
                 return False
             click.echo("Enter the on-premise deployment mode...")
 
-            return FedMLModelCards.get_instance().serve_model_on_premise(name, master_ids, worker_ids, use_remote)
+            return FedMLModelCards.get_instance().serve_model_on_premise(
+                name, endpoint_name, master_ids, worker_ids, use_remote, endpoint_id)
         else:
             # FedML® Launch deploy mode
             click.echo("Warning: You did not indicate the master device id and worker device id\n\

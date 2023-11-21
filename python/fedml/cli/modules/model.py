@@ -76,6 +76,12 @@ def fedml_model_push(name, model_storage_url, version):
     "--name", "-n", type=str, help="Model Card Name.",
 )
 @click.option(
+    "--endpoint_name", "-e", type=str, default="", help="Endpoint name."
+)
+@click.option(
+    "--endpoint_id", "-i", type=str, default="", help="Endpoint id."
+)
+@click.option(
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
@@ -93,7 +99,7 @@ def fedml_model_push(name, model_storage_url, version):
 @click.option(
     "--delete", "-d", type=str, default="", help="Delete a model endpoint using endpoint id."
 )
-def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote, delete):
+def fedml_model_deploy(version, local, name, endpoint_name, endpoint_id, master_ids, worker_ids, use_remote, delete):
     fedml.set_env_version(version)
     if delete != "":
         click.confirm(
@@ -105,7 +111,7 @@ def fedml_model_deploy(version, local, name, master_ids, worker_ids, use_remote,
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_deploy(name, local, master_ids, worker_ids, use_remote)
+    fedml.api.model_deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote)
 
 
 @fedml_model.command("run", help="Request a model inference endpoint.")
