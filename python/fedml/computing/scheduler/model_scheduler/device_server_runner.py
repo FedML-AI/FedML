@@ -336,10 +336,26 @@ class FedMLServerRunner:
         self.check_runner_stop_event()
 
         # Diff could be scale out
-        self.send_deployment_start_request_to_edges()
+        should_added_devices = self.send_deployment_start_request_to_edges()
 
         # Diff could be scale in
         self.send_deployment_delete_request_to_edges(payload=json.dumps(self.request_json), model_msg_object=None)
+
+        if len(should_added_devices) == 0:
+            ip = self.get_ip_address()
+            master_port = os.getenv("FEDML_MASTER_PORT", None)
+            if master_port is not None:
+                inference_port = int(master_port)
+            model_inference_port = inference_port
+            if ip.startswith("http://") or ip.startswith("https://"):
+                model_inference_url = "{}/api/v1/predict".format(ip)
+            else:
+                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+
+            self.send_deployment_status(self.run_id, end_point_name,
+                                        model_name,
+                                        model_inference_url,
+                                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
         while True:
             self.check_runner_stop_event()
@@ -690,13 +706,16 @@ class FedMLServerRunner:
         logging.info("Edge ids after diff: " + str(edge_id_list))
 
         self.request_json["master_node_ip"] = self.get_ip_address()
+        should_added_devices = []
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
                 continue
+            should_added_devices.append(edge_id)
             # send start deployment request to each model device
             topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
+        return should_added_devices
 
     def get_ip_address(self):
         # OPTION 1: Use local ip
