@@ -11,9 +11,7 @@ from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLJobCon
 
 class RunLogResult(object):
     def __init__(self, run_status: str = None, total_log_lines: int = 0, total_log_pages: int = 0,
-                 log_line_list: List[str] = None, run_logs: FedMLRunLogModelList = None):
-        if log_line_list is None:
-            log_line_list = list()
+                 log_line_list: List[str] = list(), run_logs: FedMLRunLogModelList = None):
         self.run_status = run_status
         self.total_log_lines = total_log_lines
         self.total_log_pages = total_log_pages
@@ -76,7 +74,7 @@ def list_run(run_name: str, run_id: str, platform: str, api_key: str) -> FedMLRu
     return run_list_obj
 
 
-def status(run_name: str or None, run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, str):
+def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, str):
     _authenticate_and_validate_platform(api_key, platform)
 
     run_status = None

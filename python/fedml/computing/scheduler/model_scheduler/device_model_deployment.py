@@ -322,8 +322,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             return "", "", None, None, None
 
         default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +\
-            security_utils.get_content_hash(running_model_name)
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                                        security_utils.get_content_hash(running_model_name)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)

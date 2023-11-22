@@ -2,7 +2,7 @@ import logging
 import os
 import fedml
 from .. import load_arguments, run_simulation, FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_CROSS_SILO, \
-    collect_env, mlops, FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+    collect_env, mlops
 
 
 def init(args=None):
@@ -11,7 +11,7 @@ def init(args=None):
         args = load_arguments(training_type=None, comm_backend=None)
 
     """Initialize FedML Engine."""
-    collect_env()
+    collect_env(args)
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
@@ -22,95 +22,13 @@ def init(args=None):
     else:
         raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
-    _update_client_id_list(args)
+    fedml._update_client_id_list(args)
     mlops.init(args)
     logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
-    _update_client_specific_args(args)
-    _print_args(args)
+    fedml._update_client_specific_args(args)
+    fedml._print_args(args)
 
     return args
-
-
-def _print_args(args):
-    mqtt_config_path = None
-    s3_config_path = None
-    args_copy = args
-    if hasattr(args_copy, "mqtt_config_path"):
-        mqtt_config_path = args_copy.mqtt_config_path
-        args_copy.mqtt_config_path = ""
-    if hasattr(args_copy, "s3_config_path"):
-        s3_config_path = args_copy.s3_config_path
-        args_copy.s3_config_path = ""
-    logging.info("==== args = {}".format(vars(args_copy)))
-    if hasattr(args_copy, "mqtt_config_path"):
-        args_copy.mqtt_config_path = mqtt_config_path
-    if hasattr(args_copy, "s3_config_path"):
-        args_copy.s3_config_path = s3_config_path
-
-
-def _update_client_specific_args(args):
-    """
-        data_silo_config is used for reading specific configuration for each client
-        Example: In fedml_config.yaml, we have the following configuration
-        client_specific_args:
-            data_silo_config:
-                [
-                    fedml_config/data_silo_1_config.yaml,
-                    fedml_config/data_silo_2_config.yaml,
-                    fedml_config/data_silo_3_config.yaml,
-                    fedml_config/data_silo_4_config.yaml,
-                ]
-            data_silo_1_config.yaml contains some client client speicifc arguments.
-    """
-    if (
-            hasattr(args, "data_silo_config")
-    ):
-        # reading the clients file
-        logging.info("data_silo_config is defined in fedml_config.yaml")
-        args.rank = int(args.rank)
-        args.worker_num = len(args.data_silo_config)
-        if args.rank > 0:
-            extra_config_path = args.data_silo_config[args.rank - 1]
-            extra_config = args.load_yaml_config(extra_config_path)
-            args.set_attr_from_config(extra_config)
-    else:
-        logging.info("data_silo_config is not defined in fedml_config.yaml")
-
-
-def _update_client_id_list(args):
-    """
-        generate args.client_id_list for CLI mode where args.client_id_list is set to None
-        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
-    """
-    if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
-        if not hasattr(args,
-                       "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
-            if (
-                    args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-                    or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
-            ):
-                if args.rank == 0:
-                    client_id_list = []
-                    for client_idx in range(args.client_num_per_round):
-                        client_id_list.append(client_idx + 1)
-                    args.client_id_list = str(client_id_list)
-                    print("------------------server client_id_list = {}-------------------".format(args.client_id_list))
-                else:
-                    # for the client, we only specify its client id in the list, not including others.
-                    client_id_list = []
-                    client_id_list.append(args.rank)
-                    args.client_id_list = str(client_id_list)
-                    print("------------------client client_id_list = {}-------------------".format(args.client_id_list))
-            else:
-                print(
-                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != "
-                    "FEDML_TRAINING_PLATFORM_CROSS_SILO"
-                )
-        else:
-            print("args.client_id_list is not None")
-    else:
-        print("using_mlops = true")
-
 
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":

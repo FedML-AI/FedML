@@ -276,16 +276,6 @@ class ServerConstants(object):
         return ip
 
     @staticmethod
-    def get_public_ip():
-        import requests
-        ip = None
-        try:
-            ip = requests.get('https://checkip.amazonaws.com').text.strip()
-        except Exception as e:
-            print("Failed to get public ip: {}".format(e))
-        return ip
-
-    @staticmethod
     def cleanup_run_process(run_id):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)

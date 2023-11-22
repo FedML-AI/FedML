@@ -77,7 +77,6 @@ class ClientConstants(object):
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
     INFERENCE_METRIC_PORT = 8002
-    AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
 
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
 
@@ -372,16 +371,6 @@ class ClientConstants(object):
         conn = s.connect(('8.8.8.8', 53))
         ip = s.getsockname()[0]
         s.close()
-        return ip
-
-    @staticmethod
-    def get_public_ip():
-        import requests
-        ip = None
-        try:
-            ip = requests.get('https://checkip.amazonaws.com').text.strip()
-        except Exception as e:
-            print("Failed to get public ip: {}".format(e))
         return ip
 
     @staticmethod

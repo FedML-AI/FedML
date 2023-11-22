@@ -212,16 +212,16 @@ class FedMLServerRunner:
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
-            self.mlops_metrics.report_server_training_status(self.run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
-                                                             is_from_model=True)
+            self.mlops_metrics.report_server_training_status(
+                self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
+                is_from_model=True, edge_id=self.edge_id)
         except RunnerCompletedError:
             logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions.")
-            self.mlops_metrics.report_server_training_status(self.run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                             is_from_model=True)
+            self.mlops_metrics.report_server_training_status(
+                self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                is_from_model=True, edge_id=self.edge_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -312,10 +312,9 @@ class FedMLServerRunner:
         # report server running status
         logging.info("report deployment status...")
         self.check_runner_stop_event()
-        self.mlops_metrics.report_server_training_status(run_id,
-                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
-                                                         is_from_model=True,
-                                                         running_json=json.dumps(self.request_json))
+        self.mlops_metrics.report_server_training_status(
+            run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
+            is_from_model=True, running_json=json.dumps(self.request_json))
         self.send_deployment_status(self.run_id, end_point_name,
                                     model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
@@ -327,9 +326,9 @@ class FedMLServerRunner:
         # start inference monitor server
         self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
 
-        self.mlops_metrics.broadcast_server_training_status(run_id,
-                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                            is_from_model=True)
+        self.mlops_metrics.broadcast_server_training_status(
+            run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+            is_from_model=True, edge_id=self.edge_id)
 
         # forward deployment request to slave devices
         logging.info("send the model inference request to slave devices...")
@@ -453,7 +452,7 @@ class FedMLServerRunner:
 
         self.mlops_metrics.broadcast_server_training_status(
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-            is_from_model=True
+            is_from_model=True, edge_id=self.edge_id
         )
 
         try:
@@ -474,9 +473,9 @@ class FedMLServerRunner:
     def cleanup_run_when_starting_failed(self):
         logging.info("Cleanup run successfully when starting failed.")
 
-        self.mlops_metrics.broadcast_server_training_status(self.run_id,
-                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                            is_from_model=True)
+        self.mlops_metrics.broadcast_server_training_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+            is_from_model=True, edge_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -716,23 +715,6 @@ class FedMLServerRunner:
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
         return should_added_devices
-
-    def get_ip_address(self):
-        # OPTION 1: Use local ip
-        ip = ServerConstants.get_local_ip()
-
-        # OPTION 2: Auto detect public ip
-        if "parameters" in self.request_json and \
-                ServerConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
-                self.request_json["parameters"][ServerConstants.AUTO_DETECT_PUBLIC_IP]:
-            ip = ServerConstants.get_public_ip()
-            logging.info("Auto detect public ip for master: " + ip)
-
-        # OPTION 3: Use user indicated ip
-        if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
-            ip = self.infer_host
-
-        return ip
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
         if model_msg_object is None:    # Called after the diff operation
@@ -1354,9 +1336,9 @@ class FedMLServerRunner:
             job_json_obj = json.loads(job.running_json)
             edge_ids = job_json_obj.get("edgeids", None)
 
-            self.mlops_metrics.broadcast_server_training_status(run_id,
-                                                                ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_server_training_status(
+                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                is_from_model=True, edge_id=self.edge_id)
 
             self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
 
@@ -1766,9 +1748,9 @@ class FedMLServerRunner:
         self.mqtt_mgr.connect()
 
         self.setup_client_mqtt_mgr()
-        self.mlops_metrics.report_server_training_status(self.run_id,
-                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
-                                                         is_from_model=True)
+        self.mlops_metrics.report_server_training_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
+            is_from_model=True, edge_id=self.edge_id)
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )

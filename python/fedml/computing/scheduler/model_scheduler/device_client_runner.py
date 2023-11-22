@@ -280,7 +280,6 @@ class FedMLClientRunner:
         user_name = self.request_json["user_name"]
         device_ids = self.request_json["device_ids"]
         device_objs = self.request_json["device_objs"]
-        master_ip = self.request_json["master_node_ip"]
 
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
@@ -324,11 +323,13 @@ class FedMLClientRunner:
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
                                                          is_from_model=True,
-                                                         running_json=json.dumps(self.request_json))
+                                                         running_json=json.dumps(self.request_json),
+                                                         run_id=run_id)
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
-                                                         is_from_model=True)
+                                                         is_from_model=True,
+                                                         run_id=run_id)
 
         self.check_runner_stop_event()
 
@@ -419,9 +420,9 @@ class FedMLClientRunner:
                                          inference_model_version, inference_port,
                                          inference_engine, model_metadata, model_config)
             self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
-                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_client_training_status(
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                is_from_model=True, run_id=self.run_id)
 
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -439,9 +440,9 @@ class FedMLClientRunner:
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
-                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_client_training_status(
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                is_from_model=True, run_id=self.run_id)
 
     def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
@@ -481,7 +482,8 @@ class FedMLClientRunner:
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
-        self.mlops_metrics.broadcast_client_training_status(edge_id, status, is_from_model=True)
+        self.mlops_metrics.broadcast_client_training_status(
+            edge_id, status, is_from_model=True, run_id=self.run_id)
 
     def cleanup_run_when_starting_failed(self):
         logging.info("Cleanup run successfully when starting failed.")
@@ -662,7 +664,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        client_runner.infer_host = self.get_ip_address()
+        client_runner.infer_host = self.infer_host
         self.run_process_event_map[run_id_str] = multiprocessing.Event()
         self.run_process_event_map[run_id_str].clear()
         client_runner.run_process_event = self.run_process_event_map[run_id_str]
@@ -727,9 +729,9 @@ class FedMLClientRunner:
         ClientConstants.cleanup_learning_process(self.run_id)
         ClientConstants.cleanup_run_process(self.run_id)
 
-        self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
-                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                                                   is_from_model=True)
+        self.mlops_metrics.report_client_id_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+            is_from_model=True, run_id=self.run_id)
 
         time.sleep(1)
 
@@ -871,23 +873,6 @@ class FedMLClientRunner:
                 f.write(device_id)
 
         return device_id
-
-    def get_ip_address(self):
-        # OPTION 1: Use local ip
-        ip = ClientConstants.get_local_ip()
-
-        # OPTION 2: Auto detect public ip
-        if "parameters" in self.request_json and \
-                ClientConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
-                self.request_json["parameters"][ClientConstants.AUTO_DETECT_PUBLIC_IP]:
-            ip = ClientConstants.get_public_ip()
-            logging.info("Auto detect public ip for worker: " + ip)
-
-        # OPTION 3: Use user indicated ip
-        if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
-            ip = self.infer_host
-
-        return ip
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="md.on_premise_device"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()

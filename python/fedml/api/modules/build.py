@@ -40,7 +40,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo("Building...")
     else:
         click.echo("You should specify the type argument value as client or server.")
-        raise Exception("You should specify the type argument value as client or server.")
+        exit(-1)
 
     home_dir = expanduser("~")
     fedml_dir = os.path.join(home_dir, ".fedml")
