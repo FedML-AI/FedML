@@ -280,6 +280,7 @@ class FedMLClientRunner:
         user_name = self.request_json["user_name"]
         device_ids = self.request_json["device_ids"]
         device_objs = self.request_json["device_objs"]
+        master_ip = self.request_json["master_node_ip"]
 
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
@@ -320,16 +321,13 @@ class FedMLClientRunner:
         # inference_process = Process(target=client_runner.inference_run)
         # inference_process.start()
 
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
-                                                         is_from_model=True,
-                                                         running_json=json.dumps(self.request_json),
-                                                         run_id=run_id)
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
+            is_from_model=True, running_json=json.dumps(self.request_json), run_id=run_id)
 
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
-                                                         is_from_model=True,
-                                                         run_id=run_id)
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
+            is_from_model=True, run_id=run_id)
 
         self.check_runner_stop_event()
 
@@ -424,8 +422,8 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 is_from_model=True, run_id=self.run_id)
 
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            self.mlops_metrics.client_send_exit_train_msg(
+                run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         else:
             logging.info("finished deployment, continue to send results to master...")
             self.send_deployment_status(end_point_name, self.edge_id,
@@ -664,7 +662,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        client_runner.infer_host = self.infer_host
+        client_runner.infer_host = self.get_ip_address()
         self.run_process_event_map[run_id_str] = multiprocessing.Event()
         self.run_process_event_map[run_id_str].clear()
         client_runner.run_process_event = self.run_process_event_map[run_id_str]
@@ -874,6 +872,23 @@ class FedMLClientRunner:
 
         return device_id
 
+    def get_ip_address(self):
+        # OPTION 1: Use local ip
+        ip = ClientConstants.get_local_ip()
+
+        # OPTION 2: Auto detect public ip
+        if "parameters" in self.request_json and \
+                ClientConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
+                self.request_json["parameters"][ClientConstants.AUTO_DETECT_PUBLIC_IP]:
+            ip = ClientConstants.get_public_ip()
+            logging.info("Auto detect public ip for worker: " + ip)
+
+        # OPTION 3: Use user indicated ip
+        if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+            ip = self.infer_host
+
+        return ip
+
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="md.on_premise_device"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
@@ -1064,7 +1079,7 @@ class FedMLClientRunner:
             "FedML_ModelClientAgent_Daemon_" + self.args.current_device_id,
             "flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
-        )
+            )
         self.agent_config = service_config
 
         # Init local database
@@ -1090,9 +1105,8 @@ class FedMLClientRunner:
         self.mqtt_mgr.connect()
 
         self.setup_client_mqtt_mgr()
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
-                                                         is_from_model=True)
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE, is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         self.recover_start_deployment_msg_after_upgrading()
