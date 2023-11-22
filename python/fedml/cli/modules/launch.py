@@ -121,7 +121,8 @@ def _resources_matched(result_code: int, result_message: str, create_run_result:
             run_stop(run_id=create_run_result.run_id, platform=SchedulerConstants.PLATFORM_TYPE_FALCON, api_key=api_key)
             return False
 
-    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED]:
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or \
+            result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
         _match_and_show_resources(create_run_result)
         return True
 
