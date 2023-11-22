@@ -1724,7 +1724,7 @@ class FedMLServerRunner:
             server_id = request_json.get("server_id", None)
 
         if run_id is None or server_id is None:
-            logging("Json format is not correct!")
+            logging.info("Json format is not correct!")
             return
 
         # logging.info("Stop run with multiprocessing.")

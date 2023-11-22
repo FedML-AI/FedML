@@ -271,7 +271,7 @@ class MLOpsMetrics(object):
             message_json = payload
         else:
             message_json = json.dumps(metric_json)
-        logging.info("report_server_training_metric. message_json = %s" % metric_json)
+        # logging.info("report_server_training_metric. message_json = %s" % metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_fedml_train_metric(self, metric_json, run_id=0):
