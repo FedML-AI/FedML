@@ -16,13 +16,13 @@ import fedml
 
 
 class MLOpsRuntimeLogProcessor:
-    FED_LOG_LINE_NUMS_PER_UPLOADING = 100
+    FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 3
     FED_LOG_UPLOAD_S3_FREQUENCY = 30
     FEDML_LOG_REPORTING_STATUS_FILE_NAME = "log_status"
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
 
-    ENABLE_UPLOAD_LOG_USING_MQTT = True
+    ENABLE_UPLOAD_LOG_USING_MQTT = False
 
     def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
         self.args = in_args
@@ -357,7 +357,7 @@ class MLOpsRuntimeLogDaemon:
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
 
-    ENABLE_SYNC_LOG_TO_MASTER = True
+    ENABLE_SYNC_LOG_TO_MASTER = False
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsRuntimeLogDaemon, "_instance"):
