@@ -121,7 +121,7 @@ class ClientConstants(object):
     FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
-    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    MODEL_INFERENCE_DEFAULT_PORT = 80
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
@@ -152,7 +152,7 @@ class ClientConstants(object):
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        fedml_home_dir = os.path.join(home_dir, ".fedml", ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
@@ -280,6 +280,11 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_delete_url():
+        model_ops_url = f"{ClientConstants.get_model_ops_url()}/api/v1/endpoint/deleteFromCli"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_url(config_version="release"):
         url = fedml._get_backend_service()
         return f"{url}/fedmlModelServer"
@@ -287,6 +292,12 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/createFromCli"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_endpoint_inference_url(endpoint_id: str):
+        config_version = fedml.get_env_version()
+        model_ops_url = f"{fedml._get_backend_service()}/inference" + f"/{endpoint_id}"
         return model_ops_url
 
     @staticmethod

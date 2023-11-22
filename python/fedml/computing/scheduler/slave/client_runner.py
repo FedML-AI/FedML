@@ -58,6 +58,7 @@ class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0,
                  cuda_visible_gpu_ids_str=None):
+        self.disable_client_login = False
         self.model_device_server = None
         self.model_device_client = None
         self.run_process_event = None
@@ -574,6 +575,7 @@ class FedMLClientRunner:
         job_yaml = run_params.get("job_yaml", {})
         job_yaml_default_none = run_params.get("job_yaml", None)
         job_api_key = job_yaml.get("run_api_key", None)
+        job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
@@ -624,6 +626,8 @@ class FedMLClientRunner:
 
     def callback_start_fl_job(self, job_pid):
         ClientConstants.save_learning_process(self.run_id, job_pid)
+        self.mlops_metrics.report_sys_perf(
+            self.args, self.agent_config["mqtt_config"], job_process_id=job_pid)
 
     def start_job_perf(self, job_pid):
         ClientConstants.save_learning_process(self.run_id, job_pid)
@@ -936,13 +940,16 @@ class FedMLClientRunner:
             job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
             pass
 
-        if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
-                job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-            logging.info(
-                f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-            logging.info(
-                f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+        try:
+            if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
+                    job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                logging.info(
+                    f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+                JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
+                logging.info(
+                    f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+        except Exception as e:
+            pass
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1072,6 +1079,20 @@ class FedMLClientRunner:
                                 "edge_info": device_info_json}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
+    def callback_client_logout(self, topic, payload):
+        payload_json = json.loads(payload)
+        secret = payload_json.get("auth", None)
+        if secret is None or str(secret) != "246b1be6-0eeb-4b17-b118-7d74de1975d4":
+            return
+        logging.info("Received the logout request.")
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+        if self.run_process_completed_event is not None:
+            self.run_process_completed_event.set()
+        self.disable_client_login = True
+        time.sleep(3)
+        os.system("fedml logout")
+
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
         ClientConstants.save_training_infos(edge_id, training_status)
@@ -1098,7 +1119,7 @@ class FedMLClientRunner:
                 if not use_machine_id:
                     device_id = hex(uuid.getnode())
                 else:
-                    device_id = FedMLClientRunner.get_machine_id()
+                    device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
             else:
                 device_id = "0x" + device_id
         else:
@@ -1123,7 +1144,7 @@ class FedMLClientRunner:
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
                     else:
-                        device_id = FedMLClientRunner.get_machine_id()
+                        device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
@@ -1304,6 +1325,10 @@ class FedMLClientRunner:
         topic_request_device_info = "server/client/request_device_info/" + str(self.edge_id)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.callback_report_device_info)
 
+        # Setup MQTT message listener to logout from MLOps.
+        topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
+        self.mqtt_mgr.add_message_listener(topic_client_logout, self.callback_client_logout)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1311,6 +1336,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
+        mqtt_client_object.subscribe(topic_client_logout, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()

@@ -92,16 +92,17 @@ def get_sys_runner_info():
         pass
 
     try:
-        import nvidia_smi
+        gpus = GPUtil.getGPUs()
+        memory_total = 0.0
+        memory_free = 0.0
+        for gpu in gpus:
+            memory_total += gpu.memoryTotal
+            memory_free += gpu.memoryFree
 
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
-        gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_available_mem = "{:.1f} G".format(memory_free / 1024.0)
+        gpu_total_mem = "{:.1f}G".format(memory_total / 1024.0)
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
 
         gpu_device_name = torch.cuda.get_device_name(0)
         gpu_info = gpu_device_name
@@ -232,14 +233,9 @@ def get_gpu_count_vendor():
     gpu_count = 0
     gpu_vendor = ""
     try:
-        import nvidia_smi
-
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpus = GPUtil.getGPUs()
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
     except:
         pass
 
@@ -249,7 +245,7 @@ def get_gpu_count_vendor():
 def get_running_info(cs_home_dir, cs_info_dir):
     home_dir = expanduser("~")
     runner_info_file = os.path.join(
-        home_dir, cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
+        home_dir, ".fedml", cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
     )
     if os.path.exists(runner_info_file):
         running_info = load_yaml_config(runner_info_file)
@@ -277,7 +273,7 @@ def get_python_program():
 def cleanup_login_process(runner_home_dir, runner_info_dir):
     try:
         home_dir = expanduser("~")
-        local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+        local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
         edge_process_id_file = os.path.join(
             local_pkg_data_dir, runner_info_dir, "runner-process.id"
         )
@@ -302,7 +298,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
 
 def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
     home_dir = expanduser("~")
-    local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+    local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
     os.makedirs(local_pkg_data_dir, exist_ok=True)
     os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir), exist_ok=True)
 
@@ -901,7 +897,7 @@ def do_upgrade(config_version, upgrade_version, show_local_console=False):
 
 
 def is_runner_finished_normally(process_id):
-    log_runner_result_file = os.path.join(expanduser("~"), "fedml_trace", str(process_id))
+    log_runner_result_file = os.path.join(expanduser("~"), ".fedml", "fedml_trace", str(process_id))
     if os.path.exists(log_runner_result_file):
         os.remove(log_runner_result_file)
         return True

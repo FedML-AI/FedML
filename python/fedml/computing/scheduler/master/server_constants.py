@@ -79,7 +79,7 @@ class ServerConstants(object):
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        fedml_home_dir = os.path.join(home_dir, ".fedml", ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
@@ -178,6 +178,12 @@ class ServerConstants(object):
         cluster_stop_url = "{}/fedmlOpsServer/api/v1/cli/stopCluster".format(
             ServerConstants.get_mlops_url())
         return cluster_stop_url
+
+    @staticmethod
+    def get_cluster_autostop_url():
+        cluster_autostop_url = "{}/fedmlOpsServer/api/v1/cli/setAutomaticStopTime".format(
+            ServerConstants.get_mlops_url())
+        return cluster_autostop_url
 
     @staticmethod
     def get_cluster_kill_url():

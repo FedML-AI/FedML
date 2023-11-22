@@ -304,7 +304,9 @@ class JobRunnerUtils(Singleton):
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
         if job_api_key is not None and str(job_api_key).strip() != "":
-            entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={job_api_key}\n")
+            random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
+            random_list = random_out.split("FEDML_NEXUS@")
+            entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={random_list[1]}\n")
         if cuda_visible_gpu_ids_str is not None and str(cuda_visible_gpu_ids_str).strip() != "":
             entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={cuda_visible_gpu_ids_str}\n")
         print(f"cuda_visible_gpu_ids_str {cuda_visible_gpu_ids_str}")

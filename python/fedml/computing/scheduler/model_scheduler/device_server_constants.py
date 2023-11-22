@@ -98,7 +98,8 @@ class ServerConstants(object):
     FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
-    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
+    MODEL_INFERENCE_DEFAULT_PORT = 80
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
@@ -132,10 +133,12 @@ class ServerConstants(object):
                                "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
                                "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
 
+    DEVICE_DIFF_ADD_OPERATION = "op: add"
+    DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        fedml_home_dir = os.path.join(home_dir, ".fedml", ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir

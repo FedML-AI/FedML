@@ -177,8 +177,8 @@ class FedMLClientRunner:
     def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -286,8 +286,9 @@ class FedMLClientRunner:
         model_id = model_config["model_id"]
         model_version = model_config["model_version"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
+        inference_port = model_config.get("inference_external_api_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
         model_config_parameters = self.request_json["parameters"]
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
@@ -302,6 +303,8 @@ class FedMLClientRunner:
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance
+
+        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
 
         self.check_runner_stop_event()
 
@@ -379,6 +382,7 @@ class FedMLClientRunner:
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             "", "", model_version, {}, {}
         try:
+            client_ip = self.get_ip_address()
             running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
                 start_deployment(
                     inference_end_point_id, end_point_name, model_id, model_version,
@@ -389,17 +393,17 @@ class FedMLClientRunner:
                     use_gpu, memory_size,
                     ClientConstants.INFERENCE_CONVERTOR_IMAGE,
                     ClientConstants.INFERENCE_SERVER_IMAGE,
-                    self.infer_host,
+                    client_ip,
                     self.model_is_from_open, model_config_parameters,
                     model_from_open,
-                    token, self.edge_id)
+                    token,
+                    master_ip, self.edge_id)
         except Exception as e:
             inference_output_url = ""
             logging.error(f"Exception at deployment: {traceback.format_exc()}")
-            pass
 
         if inference_output_url == "":
-            logging.error("Failed to deploy the model...")
+            logging.error("failed to deploy the model...")
 
             logging.info(f"Failed, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
             JobRunnerUtils.get_instance().release_gpu_ids(run_id, self.edge_id)
@@ -408,11 +412,12 @@ class FedMLClientRunner:
             self.send_deployment_status(end_point_name, self.edge_id,
                                         model_id, model_name, model_version,
                                         inference_output_url,
-                                        ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                                        ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                                        inference_port=inference_port)
             self.send_deployment_results(end_point_name, self.edge_id,
                                          ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                                          model_id, model_name, inference_output_url,
-                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         inference_model_version, inference_port,
                                          inference_engine, model_metadata, model_config)
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.broadcast_client_training_status(
@@ -426,11 +431,12 @@ class FedMLClientRunner:
             self.send_deployment_status(end_point_name, self.edge_id,
                                         model_id, model_name, model_version,
                                         inference_output_url,
-                                        ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
+                                        ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                                        inference_port=inference_port)
             self.send_deployment_results(end_point_name, self.edge_id,
                                          ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                                          model_id, model_name, inference_output_url,
-                                         model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         model_version, inference_port,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.mlops_metrics.run_id = self.run_id
@@ -450,7 +456,8 @@ class FedMLClientRunner:
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
                                       "model_config": model_config,
-                                      "model_status": model_status}
+                                      "model_status": model_status,
+                                      "inference_port": inference_port}
 
         logging.info("send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                              deployment_results_payload))
@@ -458,13 +465,15 @@ class FedMLClientRunner:
 
     def send_deployment_status(self, end_point_name, device_id,
                                model_id, model_name, model_version,
-                               model_inference_url, model_status):
+                               model_inference_url, model_status,
+                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
         deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
                                      "model_id": model_id, "model_name": model_name,
                                      "model_version": model_version,
-                                     "model_url": model_inference_url, "model_status": model_status}
+                                     "model_url": model_inference_url, "model_status": model_status,
+                                     "inference_port": inference_port}
 
         logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
@@ -623,8 +632,8 @@ class FedMLClientRunner:
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -1085,8 +1094,6 @@ class FedMLClientRunner:
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
                                                          is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
-        self.mlops_metrics.stop_sys_perf()
-        self.mlops_metrics.report_sys_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_deployment_msg_after_upgrading()
 

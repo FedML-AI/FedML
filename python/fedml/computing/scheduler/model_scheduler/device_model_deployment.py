@@ -41,7 +41,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, edge_id):
+                     model_from_open, token, master_ip, edge_id):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
@@ -213,6 +213,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
                 usr_indicated_wait_time = config.get('deploy_timeout', 100)
+                usr_indicated_worker_port = config.get('worker_port', "")
+                if usr_indicated_worker_port == "":
+                    usr_indicated_worker_port = int(os.environ.get("FEDML_WORKER_PORT", 2345))
+
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
@@ -305,6 +309,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     shutil.copyfile(src_model_file, dst_model_file)
 
     if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
+        logging.info(f"master ip: {master_ip}, worker ip: {infer_host}")
+        if infer_host == master_ip:
+            logging.info("infer_host is the same as master ip, will use 127.0.0.1 to avoid firewall issue")
+            infer_host = "127.0.0.1"
+
         try:
             client = docker.from_env()
         except Exception:
@@ -313,8 +322,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             return "", "", None, None, None
 
         default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +\
-            security_utils.get_content_hash(running_model_name)
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                                        security_utils.get_content_hash(running_model_name)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)
@@ -375,7 +384,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             host_config=client.api.create_host_config(
                 binds=binds,
                 port_bindings={
-                    2345: None  # randomly open a port on the host
+                    2345: usr_indicated_worker_port  # randomly open a port on the host
                 },
                 device_requests=device_requests,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
@@ -388,10 +397,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         cnt = 0
         while True:
             cnt += 1
-            try:  # check dynamic port allocation
-                port_info = client.api.port(new_container.get("Id"), 2345)
-                inference_http_port = port_info[0]["HostPort"]
-                logging.info("inference_http_port: {}".format(inference_http_port))
+            try:
+                inference_http_port = usr_indicated_worker_port
                 break
             except:
                 if cnt >= 5:
@@ -402,7 +409,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         log_deployment_result(end_point_id, model_id, default_server_container_name,
                               ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="default",
-                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt)
+                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
+                              request_input_example=request_input_example, infer_host=infer_host)
 
         # Check if the inference server is ready
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
@@ -415,13 +423,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         # testing the inference container
         test_input = ret_model_metadata["inputs"]
 
-        try:
-            inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
-                                                                      inference_type="default")
-            logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
-        except Exception as e:
-            logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-            inference_output_url = ""
+        # try:
+        #     inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
+        #                                                               inference_type="default")
+        #     logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
+        # except Exception as e:
+        #     logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+        #     inference_output_url = ""
 
         model_metadata = ret_model_metadata
         logging.info(model_metadata)
@@ -515,7 +523,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
-                     inference_type="default"):
+                     inference_type="default", request_input_example=None, infer_host="127.0.0.1"):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -557,7 +565,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         #                             security_utils.get_content_hash(model_name)
         try:
             inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(model_name, inference_engine, inference_port, inference_type=inference_type)
+                get_model_info(model_name, inference_engine, inference_port, infer_host,
+                               inference_type=inference_type, request_input_example=request_input_example)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".
                          format(inference_output_url, model_metadata, model_config))
@@ -571,7 +580,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
                           inference_http_port, inference_type="default",
-                          retry_interval=10, deploy_attempt_threshold=10):
+                          retry_interval=10, deploy_attempt_threshold=10,
+                          request_input_example=None, infer_host="127.0.0.1"):
     deploy_attempt = 0
     last_out_logs = ""
     last_err_logs = ""
@@ -603,8 +613,19 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                     err_logs = sys_utils.decode_our_err_result(err_logs)
                     added_logs = str(err_logs).replace(last_err_logs, "")
                     if len(added_logs) > 0:
-                        logging.error(f"[Error]logs from docker: {format(added_logs)}")
-                    last_err_logs = err_logs
+                        log_str = f"logs from docker: {format(added_logs)}"
+                        if added_logs.startswith("ERROR:") or added_logs.startswith("CRITICAL:"):
+                            logging.error(log_str)
+                            last_err_logs = err_logs
+                        elif added_logs.startswith("WARNING:"):
+                            logging.warning(log_str)
+                            last_out_logs = err_logs
+                        elif added_logs.startswith("DEBUG:"):
+                            logging.debug(log_str)
+                            last_out_logs = err_logs
+                        else:
+                            logging.info(log_str)
+                            last_out_logs = err_logs
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
@@ -622,7 +643,8 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         # should_exit_logs will ping the inference container
         # return True if ready
         if should_exit_logs(end_point_id, model_id, cmd_type, inference_model_name, inference_engine,
-                            inference_http_port, inference_type):
+                            inference_http_port, inference_type, request_input_example,
+                            infer_host):
             break
 
         # Not yet ready, retry
@@ -638,10 +660,10 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
                                         inference_type="default", model_version="", request_input_example=None):
-    logging.info(f"The inference type is {inference_type}")
+    logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}")
 
     if inference_type == "default":
-        default_client_container_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
+        default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
         try:
             response = requests.get(default_client_container_ready_url)
@@ -691,19 +713,14 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
         return inference_output_url, model_version, model_metadata, model_config
 
 
-def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False,
+def get_model_info(model_name, inference_engine, inference_http_port, infer_host="127.0.0.1", is_hg_model=False,
                    inference_type="default", request_input_example=None):
     if model_name is None:
         return "", "", {}, {}
 
-    local_ip = ClientConstants.get_local_ip()
-    if infer_host is not None and infer_host != "127.0.0.1":
-        infer_url_host = infer_host
-    else:
-        infer_url_host = local_ip
-    local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
-    logging.info(f"The infer_url_host is {infer_url_host}")
-    logging.info("triton infer url: {}.".format(local_infer_url))
+    local_infer_url = "{}:{}".format(infer_host, inference_http_port)
+    logging.info(f"The infer_url_host is {infer_host}")
+    logging.info(f"Local infer url: {local_infer_url}.")
 
     if is_hg_model:
         inference_model_name = "{}_{}_inference".format(model_name, str(inference_engine))
@@ -711,7 +728,7 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         inference_model_name = model_name
 
     response_from_client_container = is_client_inference_container_ready(
-        infer_url_host, inference_http_port, inference_model_name, local_infer_url,
+        infer_host, inference_http_port, inference_model_name, local_infer_url,
         inference_type, model_version="", request_input_example=request_input_example)
 
     logging.info(f"The res is {response_from_client_container}")
@@ -853,7 +870,7 @@ def load_gpu_model_to_cpu_device():
             else:
                 return super().find_class(module, name)
 
-    model_file = "/home/fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
+    model_file = "/home/fedml/.fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
     with open(model_file, "rb") as model_pkl_file:
         if not torch.cuda.is_available():
             model = CPU_Unpickler(model_pkl_file).load()

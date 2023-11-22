@@ -219,6 +219,12 @@ def unbind(computing, server):
     if docker is None:
         is_docker = False
 
+    if is_client:
+        device_login_entry.logout_from_model_ops(True, True, docker, docker_rank)
+
+    if is_server:
+        device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
+
     if is_client is True:
         if is_docker:
             logout_with_docker_mode(docker_rank)
@@ -232,8 +238,6 @@ def unbind(computing, server):
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
-        device_login_entry.logout_from_model_ops(True, True, docker, docker_rank)
-
     if is_server is True:
         if is_docker:
             logout_with_server_docker_mode(docker_rank)
@@ -246,8 +250,6 @@ def unbind(computing, server):
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
-
-        device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
 
     print("\nlogout successfully!\n")
 

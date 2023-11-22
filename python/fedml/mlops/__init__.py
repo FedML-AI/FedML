@@ -153,8 +153,8 @@ class Artifact:
         self.ext_info = ext_info_dict
 
 
-def log_artifact(artifact: Artifact, version=None, run_id=None, edge_id=None):
-    mlops.log_artifact(artifact, version=version, run_id=run_id, edge_id=edge_id)
+def log_artifact(artifact: Artifact, version=None, run_id=None, edge_id=None, async_upload=True):
+    mlops.log_artifact(artifact, version=version, run_id=run_id, edge_id=edge_id, async_upload=async_upload)
 
 
 def log_model(model_name, model_file_path, version=None):

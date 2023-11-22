@@ -17,10 +17,8 @@ def cli():
 # Add login subcommand module
 cli.add_command(login.fedml_login)
 
-
 # Add logout subcommand module
 cli.add_command(logout.fedml_logout)
-
 
 # Add launch subcommand module
 cli.add_command(launch.fedml_launch)

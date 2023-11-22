@@ -308,7 +308,7 @@ class FedMLLaunchManager(Singleton):
             exit(-1)
 
         home_dir = expanduser("~")
-        mlops_build_path = os.path.join(home_dir, "fedml-mlops-build", str(uuid.uuid4()))
+        mlops_build_path = os.path.join(home_dir, ".fedml", "fedml-mlops-build", str(uuid.uuid4()))
         FedMLLaunchManager._cleanup_build_tmp_path(mlops_build_path)
 
         ignore_list = "{},{}".format(ignore, Constants.FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
