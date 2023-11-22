@@ -70,7 +70,7 @@ class ServerConstants(object):
     "cloud_server": 
         (public server instance), more detailed name: master_agent_cloud_for_fl、master_agent_cloud_for_general_launch
     "cloud-agent": 
-        (public server container which will opens a public server instance when the user selects a 
+        (public server container which will open a public server instance when the user selects a 
         FedML Public Cloud Server as the aggregation sever or launch server to start a run) , 
         more detailed name: master_agent_cloud_proxy_for_fl、master_agent_cloud_proxy_for_general_launch
     '''
