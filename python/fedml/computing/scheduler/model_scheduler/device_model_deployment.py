@@ -423,13 +423,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         # testing the inference container
         test_input = ret_model_metadata["inputs"]
 
-        try:
-            inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
-                                                                      inference_type="default")
-            logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
-        except Exception as e:
-            logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-            inference_output_url = ""
+        # try:
+        #     inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
+        #                                                               inference_type="default")
+        #     logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
+        # except Exception as e:
+        #     logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+        #     inference_output_url = ""
 
         model_metadata = ret_model_metadata
         logging.info(model_metadata)
@@ -663,7 +663,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
     logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}")
 
     if inference_type == "default":
-        default_client_container_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
+        default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
         try:
             response = requests.get(default_client_container_ready_url)
