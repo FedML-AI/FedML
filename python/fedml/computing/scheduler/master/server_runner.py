@@ -494,7 +494,7 @@ class FedMLServerRunner:
             random_out = sys_utils.random2(random, "FEDML@9999GREAT")
             random_list = random_out.split("FEDML@")
             device_type = device_client_constants.ClientConstants.login_role_list[
-                device_client_constants.ClientConstants.LOGIN_MODE_ON_PREMISE_INDEX]
+                device_client_constants.ClientConstants.LOGIN_MODE_FEDML_CLOUD_INDEX]
             FedMLModelCards.get_instance().deploy_model(
                 model_name, device_type, json.dumps(serving_devices),
                 "", random_list[1], None,
