@@ -568,9 +568,8 @@ class FedMLServerRunner:
             model_slave_url = payload_json["model_url"]
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
-            token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                get_end_point_token(end_point_name, model_name)
-
+            token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_token(end_point_id, end_point_name, model_name)
+            
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
@@ -751,7 +750,8 @@ class FedMLServerRunner:
 
                     # 1. Get & Delete Deployment Status in Redis / SQLite
                     devices_status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_deployment_status_list(self.request_json["end_point_name"],
+                        get_deployment_status_list(self.request_json["end_point_id"],
+                                                   self.request_json["end_point_name"],
                                                    self.request_json["model_config"]["model_name"])
                     delete_devices_status_list = []
                     for device_status in devices_status_list:
@@ -761,7 +761,8 @@ class FedMLServerRunner:
 
                     for delete_item in delete_devices_status_list:
                         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
-                            delete_item, self.request_json["end_point_name"],
+                            delete_item, self.request_json["end_point_id"], 
+                            self.request_json["end_point_name"],
                             self.request_json["model_config"]["model_name"]
                         )
 
@@ -778,7 +779,7 @@ class FedMLServerRunner:
                                 total_device_objs_list.remove(device_obj)
 
                     FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
-                        self.request_json["run_id"], self.request_json["end_point_name"],
+                        self.request_json["end_point_id"], self.request_json["end_point_name"],
                         json.dumps(total_device_objs_list))
                 except Exception as e:
                     run_id = self.request_json["run_id"]
@@ -954,7 +955,7 @@ class FedMLServerRunner:
 
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            set_end_point_device_info(run_id, end_point_name, json.dumps(device_objs))
+            set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
         usr_indicated_token = self.get_usr_indicated_token(request_json)
         if usr_indicated_token != "":
             logging.info(f"Change Token from{token} to {usr_indicated_token}")
@@ -1127,7 +1128,7 @@ class FedMLServerRunner:
             set_end_point_activation(model_msg_object.inference_end_point_id,
                                      model_msg_object.end_point_name, False)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            delete_end_point(model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)
+            delete_end_point(model_msg_object.inference_end_point_id, model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
