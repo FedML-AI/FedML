@@ -1,3 +1,4 @@
+import os
 import time
 
 import fedml
@@ -5,7 +6,12 @@ import fedml
 if __name__ == "__main__":
     print("Hi everyone, I am an launch job.")
 
-    artifact = fedml.mlops.Artifact(name="general-file", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)
+    print(f"current config is {fedml.get_env_version()}")
+
+    run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
+    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+
+    artifact = fedml.mlops.Artifact(name="general-file-2", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)
     artifact.add_file("./requirements.txt")
     artifact.add_dir("./config")
     fedml.mlops.log_artifact(artifact)
@@ -16,6 +22,8 @@ if __name__ == "__main__":
     artifact.add_file("./requirements.txt")
     artifact.add_dir("./config")
     fedml.mlops.log_artifact(artifact)
+
+    time.sleep(10000)
 
     artifact = fedml.mlops.Artifact(name="source-file", type=fedml.mlops.ARTIFACT_TYPE_NAME_SOURCE)
     artifact.add_file("./requirements.txt")

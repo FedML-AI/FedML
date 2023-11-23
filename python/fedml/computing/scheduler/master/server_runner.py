@@ -1173,6 +1173,24 @@ class FedMLServerRunner:
                 self.send_training_stop_request_to_edges_when_exception(edge_id_list, payload=json.dumps(self.request_json), run_id=run_id)
                 return
 
+        if should_match_gpu:
+            # Report gpu num and related infos to MLOps.
+            serving_args = job_yaml.get("serving_args", {})
+            endpoint_id = serving_args.get("endpoint_id", None)
+            if endpoint_id is not None:
+                endpoint_info = dict()
+                for edge_id_item, gpu_num in assigned_gpu_num_dict:
+                    if endpoint_info.get(edge_id_item) is None:
+                        endpoint_info[edge_id_item] = dict()
+                    edge_info = active_edge_info_dict.get(str(edge_id_item), {})
+                    endpoint_info[edge_id_item] = {
+                        "endpoint_gpu_count": gpu_num, "master_deploy_id": edge_info.get("master_device_id", 0),
+                        "slave_deploy_id": edge_info.get("slave_device_id", 0)}
+                topic_name = f"compute/mlops/endpoint/{endpoint_id}"
+                endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
+                print(f"endpoint_info_json {endpoint_info_json}")
+                self.client_mqtt_mgr.send_message(topic_name, json.dumps(endpoint_info_json))
+
         client_rank = 1
         for edge_id in edge_id_list:
             topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
@@ -1995,12 +2013,12 @@ class FedMLServerRunner:
 
     def callback_response_device_info(self, topic, payload):
         # Parse payload
-        payload_jsonn = json.loads(payload)
-        run_id = payload_jsonn.get("run_id", 0)
-        master_device_id = payload_jsonn.get("master_device_id", 0)
-        slave_device_id = payload_jsonn.get("slave_device_id", 0)
-        edge_id = payload_jsonn.get("edge_id", 0)
-        device_info = payload_jsonn.get("edge_info", 0)
+        payload_json = json.loads(payload)
+        run_id = payload_json.get("run_id", 0)
+        master_device_id = payload_json.get("master_device_id", 0)
+        slave_device_id = payload_json.get("slave_device_id", 0)
+        edge_id = payload_json.get("edge_id", 0)
+        device_info = payload_json.get("edge_info", 0)
         device_info["master_device_id"] = master_device_id
         device_info["slave_device_id"] = slave_device_id
         run_id_str = str(run_id)

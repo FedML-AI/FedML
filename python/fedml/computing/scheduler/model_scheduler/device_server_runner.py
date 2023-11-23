@@ -553,9 +553,9 @@ class FedMLServerRunner:
                 inference_port = int(master_port)
             model_inference_port = inference_port
             if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/api/v1/predict".format(ip)
+                model_inference_url = "{}/inference/{}".format(ip, end_point_id)
             else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+                model_inference_url = "http://{}:{}/inference/{}".format(ip, model_inference_port, end_point_id)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -569,7 +569,7 @@ class FedMLServerRunner:
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
             token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_token(end_point_id, end_point_name, model_name)
-            
+
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
@@ -677,9 +677,9 @@ class FedMLServerRunner:
                 inference_port = int(master_port)
             model_inference_port = inference_port
             if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/api/v1/predict".format(ip)
+                model_inference_url = "{}/inference/{}".format(ip, end_point_id)
             else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+                model_inference_url = "http://{}:{}/inference/{}".format(ip, model_inference_port, end_point_id)
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, end_point_name, True)
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -761,7 +761,7 @@ class FedMLServerRunner:
 
                     for delete_item in delete_devices_status_list:
                         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
-                            delete_item, self.request_json["end_point_id"], 
+                            delete_item, self.request_json["end_point_id"],
                             self.request_json["end_point_name"],
                             self.request_json["model_config"]["model_name"]
                         )

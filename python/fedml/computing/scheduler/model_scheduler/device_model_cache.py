@@ -147,7 +147,7 @@ class FedMLModelCache(object):
         if len(idle_device_list) <= 0:
             return None, None
         print(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
-        # Randomly shuffle 
+        # Randomly shuffle
         # shuffle the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
         #     return None, None
@@ -212,10 +212,10 @@ class FedMLModelCache(object):
         status = 1 if activate_status else 0
         self.redis_connection.set(self.get_end_point_activation_key(end_point_id), status)
         self.model_deployment_db.set_end_point_activation(end_point_id, end_point_name, status)
-        
+
     def delete_end_point(self, end_point_id, end_point_name, model_name, model_version):
         self.redis_connection.delete(self.get_deployment_status_key(end_point_id, end_point_name, model_name))
-        # TODO: Delete related KV Pair      
+        # TODO: Delete related KV Pair
         # print("Will Delete the realated redis keys permanently")
         # self.redis_connection.delete(self.get_deployment_result_key(end_point_id, end_point_name, model_name))
         # self.redis_connection.delete(self.get_deployment_status_key(end_point_id, end_point_name, model_name))
@@ -337,7 +337,7 @@ class FedMLModelCache(object):
 
     def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
-                                   end_point_id, end_point_name, model_name, model_version)
+                                      end_point_id, end_point_name, model_name, model_version)
 
 
 if __name__ == "__main__":

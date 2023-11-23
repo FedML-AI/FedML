@@ -117,7 +117,7 @@ def job(
 
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
@@ -137,8 +137,8 @@ def job(
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
-    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS],
-                        result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS,
+    return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
+                        result_message=ApiConstants.LAUNCHED,
                         run_id=run_id, project_id=project_id, inner_id=inner_id)
 
 
@@ -156,7 +156,7 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     project_id = getattr(create_run_result, "project_id", None)
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_SUCCESS] or
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
