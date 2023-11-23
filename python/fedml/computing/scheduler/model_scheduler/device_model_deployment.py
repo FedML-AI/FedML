@@ -336,6 +336,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
+            logging.info("Number of GPUs: {}".format(num_gpus))
             if gpu_ids is not None:
                 gpu_id_list = map(lambda x: str(x), gpu_ids)
                 device_requests.append(
@@ -343,9 +344,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             else:
                 device_requests.append(
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
+        logging.info(f"device_requests: {device_requests}")
         logging.info("Start pulling the inference image..., may take a few minutes...")
-        # TODO:only pull if the image is not in the local
-        client.images.pull(inference_image_name)
+        # Detect if the image is already at the local
+        try:
+            client.images.get(inference_image_name)
+        except docker.errors.ImageNotFound:
+            logging.info("Image not found, start pulling the image...")
+            client.images.pull(inference_image_name)
         logging.info("Start creating the inference container...")
 
         volumns = []
@@ -354,12 +360,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         # Optional
         if src_data_cache_dir != "":
-            volumns.append(src_data_cache_dir)
-            binds[src_data_cache_dir] = {
-                "bind": dst_data_cache_dir,
-                "mode": "rw"
-            }
-            environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+            if os.path.exists(src_data_cache_dir):
+                volumns.append(src_data_cache_dir)
+                binds[src_data_cache_dir] = {
+                    "bind": dst_data_cache_dir,
+                    "mode": "rw"
+                }
+                environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
 
         # Default
         volumns.append(src_code_dir)
