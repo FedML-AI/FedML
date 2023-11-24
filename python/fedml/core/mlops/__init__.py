@@ -676,8 +676,6 @@ def _log_artifact_async(
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
         artifact, version=version if version is not None else fedml_args.config_version)
 
-    print(f"agent config {agent_config}")
-
     device_id = str(uuid.uuid4())
     log_artifact_mqtt_mgr = MqttManager(
         agent_config["mqtt_config"]["BROKER_HOST"],
