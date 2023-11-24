@@ -321,14 +321,13 @@ class FedMLClientRunner:
         # inference_process = Process(target=client_runner.inference_run)
         # inference_process.start()
 
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
-                                                         is_from_model=True,
-                                                         running_json=json.dumps(self.request_json))
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
+            is_from_model=True, running_json=json.dumps(self.request_json), run_id=run_id)
 
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
-                                                         is_from_model=True)
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
+            is_from_model=True, run_id=run_id)
 
         self.check_runner_stop_event()
 
@@ -419,12 +418,12 @@ class FedMLClientRunner:
                                          inference_model_version, inference_port,
                                          inference_engine, model_metadata, model_config)
             self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
-                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_client_training_status(
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                is_from_model=True, run_id=self.run_id)
 
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            self.mlops_metrics.client_send_exit_train_msg(
+                run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         else:
             logging.info("finished deployment, continue to send results to master...")
             self.send_deployment_status(end_point_name, self.edge_id,
@@ -439,9 +438,9 @@ class FedMLClientRunner:
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
-                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_client_training_status(
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                is_from_model=True, run_id=self.run_id)
 
     def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
@@ -481,7 +480,8 @@ class FedMLClientRunner:
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
-        self.mlops_metrics.broadcast_client_training_status(edge_id, status, is_from_model=True)
+        self.mlops_metrics.broadcast_client_training_status(
+            edge_id, status, is_from_model=True, run_id=self.run_id)
 
     def cleanup_run_when_starting_failed(self):
         logging.info("Cleanup run successfully when starting failed.")
@@ -727,9 +727,9 @@ class FedMLClientRunner:
         ClientConstants.cleanup_learning_process(self.run_id)
         ClientConstants.cleanup_run_process(self.run_id)
 
-        self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
-                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                                                   is_from_model=True)
+        self.mlops_metrics.report_client_id_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+            is_from_model=True, run_id=self.run_id)
 
         time.sleep(1)
 
@@ -1079,7 +1079,7 @@ class FedMLClientRunner:
             "FedML_ModelClientAgent_Daemon_" + self.args.current_device_id,
             "flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
-        )
+            )
         self.agent_config = service_config
 
         # Init local database
@@ -1105,9 +1105,8 @@ class FedMLClientRunner:
         self.mqtt_mgr.connect()
 
         self.setup_client_mqtt_mgr()
-        self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
-                                                         is_from_model=True)
+        self.mlops_metrics.report_client_training_status(
+            self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE, is_from_model=True)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         self.recover_start_deployment_msg_after_upgrading()

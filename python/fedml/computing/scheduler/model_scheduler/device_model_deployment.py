@@ -322,8 +322,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             return "", "", None, None, None
 
         default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +\
-            security_utils.get_content_hash(running_model_name)
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                                        security_utils.get_content_hash(running_model_name)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)
@@ -336,6 +336,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
         if use_gpu:
+            logging.info("Number of GPUs: {}".format(num_gpus))
             if gpu_ids is not None:
                 gpu_id_list = map(lambda x: str(x), gpu_ids)
                 device_requests.append(
@@ -343,9 +344,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             else:
                 device_requests.append(
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
+        logging.info(f"device_requests: {device_requests}")
         logging.info("Start pulling the inference image..., may take a few minutes...")
-        # TODO:only pull if the image is not in the local
-        client.images.pull(inference_image_name)
+        # Detect if the image is already at the local
+        try:
+            client.images.get(inference_image_name)
+        except docker.errors.ImageNotFound:
+            logging.info("Image not found, start pulling the image...")
+            client.images.pull(inference_image_name)
         logging.info("Start creating the inference container...")
 
         volumns = []
@@ -354,12 +360,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         # Optional
         if src_data_cache_dir != "":
-            volumns.append(src_data_cache_dir)
-            binds[src_data_cache_dir] = {
-                "bind": dst_data_cache_dir,
-                "mode": "rw"
-            }
-            environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+            if os.path.exists(src_data_cache_dir):
+                volumns.append(src_data_cache_dir)
+                binds[src_data_cache_dir] = {
+                    "bind": dst_data_cache_dir,
+                    "mode": "rw"
+                }
+                environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
 
         # Default
         volumns.append(src_code_dir)
@@ -397,10 +404,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         cnt = 0
         while True:
             cnt += 1
-            try:  # check dynamic port allocation
-                port_info = client.api.port(new_container.get("Id"), 2345)
-                inference_http_port = port_info[0]["HostPort"]
-                logging.info("inference_http_port: {}".format(inference_http_port))
+            try:
+                inference_http_port = usr_indicated_worker_port
                 break
             except:
                 if cnt >= 5:
@@ -425,13 +430,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         # testing the inference container
         test_input = ret_model_metadata["inputs"]
 
-        try:
-            inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
-                                                                      inference_type="default")
-            logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
-        except Exception as e:
-            logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-            inference_output_url = ""
+        # try:
+        #     inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
+        #                                                               inference_type="default")
+        #     logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
+        # except Exception as e:
+        #     logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+        #     inference_output_url = ""
 
         model_metadata = ret_model_metadata
         logging.info(model_metadata)
@@ -665,7 +670,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
     logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}")
 
     if inference_type == "default":
-        default_client_container_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
+        default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
         try:
             response = requests.get(default_client_container_ready_url)

@@ -62,6 +62,18 @@ class ServerConstants(object):
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
     LOGIN_MODE_GPU_MASTER_SERVER_INDEX = 3
 
+    ''' 
+    "edge_server":  
+        (on premise server, used by fl) , more detailed name: master_agent_on_prem_for_fl
+    "gpu_master_server":  
+        (on premise server, used by launch), more detailed name: master_agent_on_prem_for_general_launch
+    "cloud_server": 
+        (public server instance), more detailed name: master_agent_cloud_for_fl、master_agent_cloud_for_general_launch
+    "cloud-agent": 
+        (public server container which will initiate a public server instance when the user selects a 
+        FedML Public Cloud Server as the aggregation sever or launch server to start a run) , 
+        more detailed name: master_agent_cloud_proxy_for_fl、master_agent_cloud_proxy_for_general_launch
+    '''
     login_role_list = ["edge_server", "cloud_agent", "cloud_server", "gpu_master_server"]
 
     login_index_role_map = {LOGIN_MODE_LOCAL_INDEX: login_role_list[LOGIN_MODE_LOCAL_INDEX],

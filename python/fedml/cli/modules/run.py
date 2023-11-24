@@ -217,8 +217,8 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         return
 
     # Show run log summary info
-    log_head_table = PrettyTable(['Run ID', 'Status', 'Total Log Lines', 'Log URL'])
-    log_head_table.add_row([run_id, run_log_result.run_status, run_log_result.total_log_lines, run_logs.log_full_url])
+    log_head_table = PrettyTable(['Run ID', 'Total Log Lines', 'Log URL'])
+    log_head_table.add_row([run_id, run_log_result.total_log_lines, run_logs.log_full_url])
     click.echo("\nLogs summary info is as follows.")
     print(log_head_table)
 

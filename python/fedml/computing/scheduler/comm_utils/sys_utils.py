@@ -698,7 +698,8 @@ def upgrade_if_not_latest():
         is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=config_version)
         if not is_latest_version:
             daemon_ota_upgrade_with_version(config_version)
-            print("Completed upgrading, please launch your job again to use latest upgrading version.")
+            print("Completed upgrading, please launch your job again.")
+            exit(-1)
     except Exception as e:
         pass
 

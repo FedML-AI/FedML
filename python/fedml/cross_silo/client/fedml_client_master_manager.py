@@ -39,6 +39,8 @@ class ClientMasterManager(FedMLCommManager):
         self.has_sent_online_msg = False
         self.is_inited = False
 
+        mlops.register_run_status_callback(self.callback_mlops_run_status)
+
         if self.use_customized_hierarchical:
             trainer_class_name = self.trainer_dist_adapter.trainer.trainer.__class__.__name__
 
@@ -47,6 +49,9 @@ class ClientMasterManager(FedMLCommManager):
                     f"\"sync_process_group\" implementation is required for class {trainer_class_name}"
                     f" for customized hierarchical cross-silo."
                 )
+
+    def callback_mlops_run_status(self, run_id, run_status):
+        logging.info(f"Client run id {run_id}, status {run_status}")
 
     @property
     def use_customized_hierarchical(self) -> bool:
