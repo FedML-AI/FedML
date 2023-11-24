@@ -186,10 +186,11 @@ def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
         from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().get_redis_connection().lock(
-            ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
+            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
         ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_device_available_gpu_ids(edge_id)
+            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
     except Exception as e:
+        logging.info(f"Exception {traceback.format_exc()}")
         available_gpu_ids = None
         pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
