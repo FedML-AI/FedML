@@ -388,7 +388,7 @@ class FedMLServerRunner:
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 self.inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                    "END_POINT_Name=\"{}\" "
+                    "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
                     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload "
                     "--log-level critical".format(
