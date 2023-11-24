@@ -75,11 +75,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     try:
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().get_redis_connection().lock(
-                ComputeCacheManager.get_instance().get_device_run_lock_key(edge_id, end_point_id)
+                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
         ):
-            num_gpus = ComputeCacheManager.get_instance().get_device_run_num_gpus(edge_id, end_point_id)
+            num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
             num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
-            gpu_ids = ComputeCacheManager.get_instance().get_device_run_gpu_ids(edge_id, end_point_id)
+            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
             if gpu_ids is not None:
                 logging.info(f"cuda visible gpu ids: {gpu_ids}")
                 gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
