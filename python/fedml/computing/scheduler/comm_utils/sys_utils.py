@@ -92,16 +92,17 @@ def get_sys_runner_info():
         pass
 
     try:
-        import nvidia_smi
+        gpus = GPUtil.getGPUs()
+        memory_total = 0.0
+        memory_free = 0.0
+        for gpu in gpus:
+            memory_total += gpu.memoryTotal
+            memory_free += gpu.memoryFree
 
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
-        gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_available_mem = "{:.1f} G".format(memory_free / 1024.0)
+        gpu_total_mem = "{:.1f}G".format(memory_total / 1024.0)
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
 
         gpu_device_name = torch.cuda.get_device_name(0)
         gpu_info = gpu_device_name
@@ -185,10 +186,11 @@ def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
         from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().get_redis_connection().lock(
-            ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
+            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
         ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_device_available_gpu_ids(edge_id)
+            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
     except Exception as e:
+        logging.info(f"Exception {traceback.format_exc()}")
         available_gpu_ids = None
         pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
@@ -232,14 +234,9 @@ def get_gpu_count_vendor():
     gpu_count = 0
     gpu_vendor = ""
     try:
-        import nvidia_smi
-
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpus = GPUtil.getGPUs()
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
     except:
         pass
 
@@ -702,7 +699,8 @@ def upgrade_if_not_latest():
         is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=config_version)
         if not is_latest_version:
             daemon_ota_upgrade_with_version(config_version)
-            print("Completed upgrading, please launch your job again to use latest upgrading version.")
+            print("Completed upgrading, please launch your job again.")
+            exit(-1)
     except Exception as e:
         pass
 

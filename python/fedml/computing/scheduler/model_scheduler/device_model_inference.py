@@ -25,6 +25,17 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# class settings:
+#     redis_addr = "127.0.0.1"
+#     redis_port = 6379
+#     redis_password = "fedml_default"
+#     end_point_name = ""
+#     model_name = ""
+#     model_version = ""
+#     model_infer_url = "127.0.0.1"
+#     version = "dev"
+
 api = FastAPI()
 
 
@@ -37,6 +48,21 @@ def root():
 async def predict(request: Request):
     # Get json data
     input_json = await request.json()
+    end_point_id = input_json.get("end_point_id", None)
+
+    return _predict(end_point_id, input_json)
+
+
+@api.post('/inference/{end_point_id}')
+async def predict_with_end_point_id(end_point_id, request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    return _predict(end_point_id, input_json)
+
+
+def _predict(end_point_id, input_json):
+    in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
     in_model_version = input_json.get("model_version", None)
@@ -50,10 +76,10 @@ async def predict(request: Request):
 
     # Authenticate request token
     inference_response = {}
-    if auth_request_token(in_end_point_name, in_model_name, in_end_point_token):
+    if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
         # Found idle inference device
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
-            found_idle_inference_device(in_end_point_name, in_model_name, in_model_version)
+            found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
 
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
@@ -73,8 +99,8 @@ async def predict(request: Request):
         # Calculate model metrics
         try:
             model_metrics.calc_metrics(end_point_id, in_end_point_name,
-                                        model_id, model_name, model_version,
-                                        inference_output_url, idle_device)
+                                       model_id, model_name, model_version,
+                                       inference_output_url, idle_device)
         except Exception as e:
             print("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
             pass
@@ -91,17 +117,16 @@ async def predict(request: Request):
     return inference_response
 
 
-def found_idle_inference_device(end_point_name, in_model_name, in_model_version):
+def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
     model_name = ""
     model_id = ""
-    end_point_id = ""
     inference_host = ""
     inference_output_url = ""
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
-        get_idle_device(end_point_name, in_model_name, in_model_version)
+        get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
         print("found idle deployment result {}".format(payload))
         deployment_result = payload
@@ -127,13 +152,13 @@ def send_inference_request(inference_url, input_list, output_list):
     return {}
 
 
-def auth_request_token(end_point_name, model_name, token):
+def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
 
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
-        get_end_point_token(end_point_name, model_name)
+        get_end_point_token(end_point_id, end_point_name, model_name)
     if cached_token is not None and cached_token == token:
         return True
 
@@ -151,3 +176,8 @@ def logging_inference_request(request, response):
     except Exception as ex:
         print("failed to log inference request and response to file.")
 
+
+if __name__ == "__main__":
+    import uvicorn
+    port = 23450
+    uvicorn.run(api, host="0.0.0.0", port=port)

@@ -73,6 +73,7 @@ class MLOpsStore:
     mlops_bind_result = False
     server_agent_id = None
     current_parrot_process = None
+    mlops_run_status_callback = None
 
     METRIC_NAME_X_AXIS = "x_axis_keys"
     METRIC_NAME_Y_AXIS = "y_axis_keys"
@@ -235,9 +236,11 @@ def log_training_status(status, run_id=None):
 
     setup_log_mqtt_mgr()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id, status)
+        MLOpsStore.mlops_metrics.report_client_training_status(
+            MLOpsStore.mlops_edge_id, status, run_id=MLOpsStore.mlops_run_id)
     else:
-        MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
+        MLOpsStore.mlops_metrics.report_client_id_status(
+            MLOpsStore.mlops_edge_id, status, run_id=MLOpsStore.mlops_run_id)
 
 
 def log_aggregation_status(status, run_id=None):
@@ -260,7 +263,8 @@ def log_aggregation_status(status, run_id=None):
     else:
         device_role = "server"
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
+        MLOpsStore.mlops_metrics.report_server_training_status(
+            MLOpsStore.mlops_run_id, status, role=device_role, edge_id=MLOpsStore.mlops_edge_id)
         sys_utils.save_simulator_process(ClientConstants.get_data_dir(),
                                          ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(),
                                          str(MLOpsStore.mlops_run_id),
@@ -272,7 +276,10 @@ def log_aggregation_status(status, run_id=None):
             MLOpsRuntimeLogDaemon.get_instance(MLOpsStore.mlops_args).stop_log_processor(MLOpsStore.mlops_run_id,
                                                                                          MLOpsStore.mlops_edge_id)
     else:
-        MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
+        MLOpsStore.mlops_metrics.report_server_id_status(
+            MLOpsStore.mlops_run_id, status, edge_id=MLOpsStore.mlops_edge_id,
+            server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+        )
 
 
 def log_training_finished_status(run_id=None):
@@ -292,11 +299,8 @@ def log_training_finished_status(run_id=None):
     logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED))
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
-                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-    MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
-                                                     MLOpsStore.mlops_edge_id,
-                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+    MLOpsStore.mlops_metrics.report_client_id_status(
+        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=MLOpsStore.mlops_run_id)
 
 
 def send_exit_train_msg(run_id=None):
@@ -334,11 +338,8 @@ def log_training_failed_status(run_id=None):
     logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED))
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
-                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-    MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
-                                                     MLOpsStore.mlops_edge_id,
-                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+    MLOpsStore.mlops_metrics.report_client_id_status(
+        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=MLOpsStore.mlops_run_id)
 
 
 def log_aggregation_finished_status(run_id=None):
@@ -358,10 +359,10 @@ def log_aggregation_finished_status(run_id=None):
     logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED))
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
-                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
-    MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
-                                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+    MLOpsStore.mlops_metrics.report_server_id_status(
+        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=MLOpsStore.mlops_edge_id,
+        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+    )
 
 
 def log_aggregation_failed_status(run_id=None):
@@ -380,10 +381,43 @@ def log_aggregation_failed_status(run_id=None):
     # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
-                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-    MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
-                                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+    MLOpsStore.mlops_metrics.report_server_id_status(
+        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=MLOpsStore.mlops_edge_id,
+        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+    )
+
+
+def callback_run_status_changed(topic, payload):
+    payload_obj = json.loads(payload)
+    run_id = payload_obj.get("run_id", 0)
+    run_status = payload_obj.get("status")
+    if MLOpsStore.mlops_run_status_callback is not None:
+        MLOpsStore.mlops_run_status_callback(run_id, run_status)
+
+
+# run_status_callback: def run_status_callback(run_id, run_status)
+# run_status: FINISHED, FAILED, KILLED, etc.
+def register_run_status_callback(run_status_callback):
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
+
+    setup_log_mqtt_mgr()
+
+    MLOpsStore.mlops_run_status_callback = run_status_callback
+
+    topic_client_status = "fl_client/flclient_agent_" + str(MLOpsStore.mlops_edge_id) + "/status"
+    topic_server_status = "fl_server/flserver_agent_" + str(MLOpsStore.mlops_edge_id) + "/status"
+    MLOpsStore.mlops_log_mqtt_mgr.add_message_listener(topic_client_status, callback_run_status_changed)
+    MLOpsStore.mlops_log_mqtt_mgr.add_message_listener(topic_server_status, callback_run_status_changed)
+    MLOpsStore.mlops_log_mqtt_mgr.subscribe_msg(topic_client_status)
+    MLOpsStore.mlops_log_mqtt_mgr.subscribe_msg(topic_server_status)
 
 
 def log_aggregated_model_info(round_index, model_url):
@@ -603,13 +637,19 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_
 
 
 def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None, async_upload=True):
-    fedml_args = get_fedml_args()
-
     if async_upload:
-        Process(target=log_artifact, args=(
-            artifact, version, run_id, edge_id, False
+        Process(target=_log_artifact_async, args=(
+            artifact, version, run_id, edge_id
         )).start()
         return
+    else:
+        _log_artifact_sync(artifact, version=version, run_id=run_id, edge_id=edge_id)
+
+
+def _log_artifact_sync(
+        artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None
+):
+    fedml_args = get_fedml_args()
 
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
         artifact, version=version if version is not None else fedml_args.config_version)
@@ -624,6 +664,44 @@ def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge
                                                   artifact_archive_zip_file, artifact_storage_url,
                                                   artifact.ext_info, artifact.artifact_desc,
                                                   timestamp)
+
+
+def _log_artifact_async(
+        artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None
+):
+    fedml_args = get_fedml_args()
+    fetch_config(fedml_args, version=fedml.get_env_version())
+    agent_config = MLOpsStore.mlops_log_agent_config
+
+    artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
+        artifact, version=version if version is not None else fedml_args.config_version)
+
+    device_id = str(uuid.uuid4())
+    log_artifact_mqtt_mgr = MqttManager(
+        agent_config["mqtt_config"]["BROKER_HOST"],
+        agent_config["mqtt_config"]["BROKER_PORT"],
+        agent_config["mqtt_config"]["MQTT_USER"],
+        agent_config["mqtt_config"]["MQTT_PWD"],
+        agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+        "FedML_MLOps_Metrics_{}_{}_{}".format(
+            device_id, str(edge_id), str(uuid.uuid4()))
+    )
+    log_artifact_mqtt_mgr.connect()
+    log_artifact_mqtt_mgr.loop_start()
+
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    timestamp = MLOpsUtils.get_ntp_time()
+    log_artifact_metrics = MLOpsMetrics()
+    log_artifact_metrics.set_messenger(log_artifact_mqtt_mgr)
+    log_artifact_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+                                              artifact_archive_zip_file, artifact_storage_url,
+                                              artifact.ext_info, artifact.artifact_desc,
+                                              timestamp)
+    log_artifact_mqtt_mgr.disconnect()
+    log_artifact_mqtt_mgr.loop_stop()
 
 
 def log_model(model_name, model_file_path, version=None):
@@ -642,6 +720,11 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
     if customized_step_key is not None:
         customized_step_key = customized_step_key.replace('/', '-')
 
+    if run_id is None:
+        run_id = os.getenv('FEDML_CURRENT_RUN_ID', None)
+    if edge_id is None:
+        edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', None)
+
     if commit:
         MLOpsStore.mlops_log_metrics_lock.acquire()
         if step is None:
@@ -656,7 +739,7 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
             return
         MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
         setup_log_mqtt_mgr()
-        MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
+        MLOpsStore.mlops_metrics.report_fedml_train_metric(MLOpsStore.mlops_log_metrics, run_id=run_id)
         MLOpsStore.mlops_log_metrics.clear()
         if step is None:
             MLOpsStore.mlops_log_metrics_steps = current_step + 1
@@ -675,6 +758,14 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
             return
         MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
         MLOpsStore.mlops_log_metrics_lock.release()
+
+
+def log_run_logs(logs_json: dict, run_id=0):
+    fedml_args = get_fedml_args()
+
+    setup_log_mqtt_mgr()
+
+    MLOpsStore.mlops_metrics.report_fedml_run_logs(logs_json, run_id=run_id)
 
 
 def _append_to_list(list_data, list_item):

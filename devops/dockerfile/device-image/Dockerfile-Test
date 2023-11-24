@@ -26,4 +26,4 @@ ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_DEVICE_ID=0 \
     FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
     FEDML_RUNNER_CMD=3dsad
 
-CMD python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID}; ./runner.sh
+CMD bash ./start-redis.sh; python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID}; bash ./runner.sh;

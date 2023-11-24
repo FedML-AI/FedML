@@ -9,6 +9,7 @@ ADD ./devops/scripts/setup-aws-cli.sh ./fedml/setup-aws-cli.sh
 ADD ./devops/scripts/set-aws-credentials.sh ./fedml/set-aws-credentials.sh
 ADD ./devops/scripts/docker /usr/bin/
 ADD ./devops/scripts/kubectl /usr/bin/
+ADD ./devops/scripts/start-redis.sh ./fedml/start-redis.sh
 
 ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 ADD ./devops/scripts/setup-conda-env.sh ./fedml/setup-conda-env.sh
@@ -19,7 +20,11 @@ RUN chmod a+x ./fedml/setup-aws-cli.sh
 RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
 
-RUN apt-get update
+RUN curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+RUN apt-get -y update
+RUN apt-get install -y redis
+
 #RUN apt-get -y install gettext-base
 #RUN apt-get -y install unar wget
 #RUN apt-get -y install libquadmath0

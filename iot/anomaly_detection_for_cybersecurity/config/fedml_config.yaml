@@ -32,7 +32,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 1
+  frequency_of_the_test: 5
 
 device_args:
   worker_num: 2

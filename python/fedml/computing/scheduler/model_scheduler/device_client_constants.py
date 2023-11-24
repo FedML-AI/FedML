@@ -122,7 +122,7 @@ class ClientConstants(object):
     FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
-    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    MODEL_INFERENCE_DEFAULT_PORT = 80
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
@@ -281,6 +281,11 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_delete_url():
+        model_ops_url = f"{ClientConstants.get_model_ops_url()}/api/v1/endpoint/deleteFromCli"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_url(config_version="release"):
         url = fedml._get_backend_service()
         return f"{url}/fedmlModelServer"
@@ -288,6 +293,12 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/createFromCli"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_endpoint_inference_url(endpoint_id: str):
+        config_version = fedml.get_env_version()
+        model_ops_url = f"{fedml._get_backend_service()}/inference" + f"/{endpoint_id}"
         return model_ops_url
 
     @staticmethod
@@ -361,16 +372,6 @@ class ClientConstants(object):
         conn = s.connect(('8.8.8.8', 53))
         ip = s.getsockname()[0]
         s.close()
-        return ip
-
-    @staticmethod
-    def get_public_ip():
-        import requests
-        ip = None
-        try:
-            ip = requests.get('https://checkip.amazonaws.com').text.strip()
-        except Exception as e:
-            print("Failed to get public ip: {}".format(e))
         return ip
 
     @staticmethod
