@@ -1,5 +1,7 @@
 from abc import ABC
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
+import os
 
 class FedMLInferenceRunner(ABC):
     def __init__(self, client_predictor):
@@ -12,7 +14,9 @@ class FedMLInferenceRunner(ABC):
         async def predict(request: Request):
             input_json = await request.json()
             response_text = self.client_predictor.predict(input_json)
-
+            print("Check if the response is a file path ...")
+            if os.path.exists(response_text):
+                return FileResponse(response_text)
             return {"generated_text": str(response_text)}
         
         @api.get("/ready")
