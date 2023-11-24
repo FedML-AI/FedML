@@ -2070,8 +2070,6 @@ class FedMLServerRunner:
         # Generate serving devices for deploying
         serving_devices = list()
         serving_devices.append(device_master_ids[0])
-        if len(device_slave_ids) > 1:
-            device_slave_ids.pop(0)
         serving_devices.extend(device_slave_ids)
 
         # Start to deploy the model
