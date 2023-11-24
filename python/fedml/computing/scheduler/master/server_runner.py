@@ -527,12 +527,10 @@ class FedMLServerRunner:
             return
 
         if not self.should_continue_run_job(run_id):
-            while True:
-                self.check_runner_stop_event()
-                self.reset_edges_status_map(run_id)
-                if not self.detect_edges_status(edge_device_info_queue):
-                    break
-                time.sleep(10)
+            # Check if the run status is normal
+            self.check_run_status_timeout(
+                run_id, edge_ids, edge_id_status_queue, edge_device_info_queue,
+                run_metrics_queue, run_logs_queue)
             return
 
         # Start the server job
@@ -548,7 +546,7 @@ class FedMLServerRunner:
             run_metrics_queue, run_logs_queue):
         total_sleep_seconds = 0
         sleep_seconds = 3
-        allowed_status_check_sleep_seconds = 60 * 10
+        allowed_status_check_sleep_seconds = 60 * 25
         server_id = self.edge_id
         no_response_status_list = [ClientConstants.MSG_MLOPS_CLIENT_STATUS_QUEUED,
                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING]
