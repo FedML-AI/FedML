@@ -147,8 +147,8 @@ class FedMLServerRunner:
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
-        self.enable_simulation_cloud_agent = False
-        self.use_local_process_as_cloud_server = False
+        self.enable_simulation_cloud_agent = True
+        self.use_local_process_as_cloud_server = True
 
         self.model_device_server = None
         self.run_model_device_ids = dict()
@@ -1183,7 +1183,7 @@ class FedMLServerRunner:
                     endpoint_info.append({
                         "machine_id": edge_id_item, "endpoint_gpu_count": gpu_num, "master_deploy_id": edge_info.get("master_device_id", 0),
                         "slave_deploy_id": edge_info.get("slave_device_id", 0)})
-                topic_name = f"compute/lops/endpoint"
+                topic_name = f"compute/mlops/endpoint"
                 endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
                 print(f"endpoint_info_json {endpoint_info_json}")
                 self.client_mqtt_mgr.send_message(topic_name, json.dumps(endpoint_info_json))
