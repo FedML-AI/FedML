@@ -98,7 +98,7 @@ class FedMLModelMetrics:
     def send_monitoring_metrics(self, index):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            get_monitor_metrics_item(self.current_model_id, self.current_end_point_name,
+            get_monitor_metrics_item(self.current_end_point_id, self.current_end_point_name,
                                      self.current_model_name, self.current_model_version, index)
         if metrics_item is None:
             return index
