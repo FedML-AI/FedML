@@ -176,7 +176,6 @@ class JobRunnerUtils(Singleton):
                     if all_run_processes_exited:
                         self.release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
-            raise e
             logging.info(f"Exception when syncing run process.{traceback.format_exc()}")
             pass
 
