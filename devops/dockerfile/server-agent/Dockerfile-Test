@@ -19,6 +19,10 @@ RUN pip3 install -e ./
 #RUN pip3 install -e '.[jax]'
 #RUN pip3 install -e '.[mxnet]'
 
+RUN  curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg; \
+     echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list; \
+     apt-get -y update; apt-get install -y redis
+
 WORKDIR /fedml
 
 ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
@@ -26,4 +30,4 @@ ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
     AWS_IAM_ACCESS_KEY=0 \
     AWS_REGION=0
 
-CMD ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_agent -id ${SERVER_AGENT_ID};./runner.sh
+CMD nohup redis-server &;./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_agent -id ${SERVER_AGENT_ID};./runner.sh
