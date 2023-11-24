@@ -57,7 +57,7 @@ class JobRunnerUtils(Singleton):
                 available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
 
                 with ComputeCacheManager.get_instance().get_redis_connection().lock(
-                    ComputeCacheManager.get_instance().get_gpu_cache().get_gpu_cache().get_device_lock_key(device_id)
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
                 ):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, available_gpu_ids)
 
@@ -70,6 +70,7 @@ class JobRunnerUtils(Singleton):
 
                 return cuda_visible_gpu_ids_str
         except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
             return None
 
     @staticmethod
@@ -144,6 +145,7 @@ class JobRunnerUtils(Singleton):
 
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(device_id, run_id, None)
         except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
             pass
 
     def sync_run_process_gpu(self):
@@ -220,6 +222,7 @@ class JobRunnerUtils(Singleton):
                 self.available_gpu_ids = available_gpu_ids
                 return self.available_gpu_ids
         except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
             return []
 
     @staticmethod
@@ -232,6 +235,7 @@ class JobRunnerUtils(Singleton):
                 current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, current_available_gpu_ids)
         except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
             pass
 
     @staticmethod
