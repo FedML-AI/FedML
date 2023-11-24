@@ -99,7 +99,7 @@ class ServerConstants(object):
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
-    MODEL_INFERENCE_DEFAULT_PORT = 80
+    MODEL_INFERENCE_DEFAULT_PORT = 2203
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
