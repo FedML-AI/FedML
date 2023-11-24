@@ -219,6 +219,8 @@ class FedMLServerRunner:
             logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions.")
+            logging.error(traceback.format_exc())
+            logging.error(e)
             self.mlops_metrics.report_server_training_status(
                 self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
                 is_from_model=True, edge_id=self.edge_id)
