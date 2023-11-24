@@ -799,7 +799,7 @@ class FedMLModelCards(Singleton):
         endpoint_apply_json = {
             "apiKey": user_api_key,
             "endpointName": endpoint_name,
-            "resourceType": "md.on_premise_device"
+            "resourceType": "md.fedml_cloud_device"
         }
         if model_id is not None:
             endpoint_apply_json["modelId"] = model_id
