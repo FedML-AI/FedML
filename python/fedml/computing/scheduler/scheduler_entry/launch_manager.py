@@ -125,6 +125,9 @@ class FedMLLaunchManager(Singleton):
                 print("Failed to apply endpoint for your model.")
                 exit(-1)
 
+            if self.job_config.job_config_dict.get("serving_args") is None:
+                self.job_config.job_config_dict["serving_args"] = dict()
+            self.job_config.job_config_dict["serving_args"]["endpoint_id"] = self.job_config.serving_endpoint_id
             model_update_result.endpoint_id = self.job_config.serving_endpoint_id
             return model_update_result
 

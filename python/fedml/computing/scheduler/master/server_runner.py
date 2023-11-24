@@ -633,6 +633,7 @@ class FedMLServerRunner:
             try:
                 metrics_item = run_metrics_queue.get(block=False, timeout=3)
                 MetricsManager.get_instance().save_metrics(metrics_item)
+                self.mlops_metrics.report_server_training_metric({}, payload=metrics_item)
             except queue.Empty as e:  # If queue is empty, then break loop
                 break
 
@@ -1178,15 +1179,13 @@ class FedMLServerRunner:
             serving_args = job_yaml.get("serving_args", {})
             endpoint_id = serving_args.get("endpoint_id", None)
             if endpoint_id is not None:
-                endpoint_info = dict()
-                for edge_id_item, gpu_num in assigned_gpu_num_dict:
-                    if endpoint_info.get(edge_id_item) is None:
-                        endpoint_info[edge_id_item] = dict()
+                endpoint_info = list()
+                for edge_id_item, gpu_num in assigned_gpu_num_dict.items():
                     edge_info = active_edge_info_dict.get(str(edge_id_item), {})
-                    endpoint_info[edge_id_item] = {
-                        "endpoint_gpu_count": gpu_num, "master_deploy_id": edge_info.get("master_device_id", 0),
-                        "slave_deploy_id": edge_info.get("slave_device_id", 0)}
-                topic_name = f"compute/mlops/endpoint/{endpoint_id}"
+                    endpoint_info.append({
+                        "machine_id": edge_id_item, "endpoint_gpu_count": gpu_num, "master_deploy_id": edge_info.get("master_device_id", 0),
+                        "slave_deploy_id": edge_info.get("slave_device_id", 0)})
+                topic_name = f"compute/lops/endpoint"
                 endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
                 print(f"endpoint_info_json {endpoint_info_json}")
                 self.client_mqtt_mgr.send_message(topic_name, json.dumps(endpoint_info_json))
@@ -1260,12 +1259,12 @@ class FedMLServerRunner:
         self.run_logs_queue_map[run_id_str].put(payload)
 
     def callback_run_metrics(self, topic, payload):
+        print(f"callback_run_metrics topic {topic}, payload {payload}")
         run_id = str(topic).split('/')[-1]
         run_id_str = str(run_id)
         if self.run_metrics_queue_map.get(run_id_str) is None:
             self.run_metrics_queue_map[run_id_str] = Queue()
         self.run_metrics_queue_map[run_id_str].put(payload)
-        self.mlops_metrics.report_server_training_metric({}, payload=payload)
 
     def callback_edge_status(self, topic, payload):
         payload_json = json.loads(payload)
