@@ -1,7 +1,7 @@
 import argparse
 import os
 from utilities import TRT_LOGGER, add_arguments
-LOCAL_ROOT = os.environ.get("LOCAL_ROOT", "/workspace/TensorRT/demo/Diffusion")
+LOCAL_ROOT = os.environ.get("LOCAL_ROOT", "/data/scalellm_share_dir")
 def parseArgs():
     parser = argparse.ArgumentParser(description="Options for Stable Diffusion XL Txt2Img Demo", conflict_handler='resolve')
     parser = add_arguments(parser)
@@ -13,8 +13,8 @@ def parseArgs():
 
     parser.add_argument('--onnx-base-dir', default='onnx_xl_base', help="Directory for SDXL-Base ONNX models")
     parser.add_argument('--onnx-refiner-dir', default='onnx_xl_refiner', help="Directory for SDXL-Refiner ONNX models")
-    parser.add_argument('--engine-base-dir', default=LOCAL_ROOT + '/engine_xl_base', help="Directory for SDXL-Base TensorRT engines")
-    parser.add_argument('--engine-refiner-dir', default=LOCAL_ROOT + '/engine_xl_refiner', help="Directory for SDXL-Refiner TensorRT engines")
+    parser.add_argument('--engine-base-dir', default=LOCAL_ROOT + '/stable-diffusion/engine_xl_base', help="Directory for SDXL-Base TensorRT engines")
+    parser.add_argument('--engine-refiner-dir', default=LOCAL_ROOT + '/stable-diffusion/engine_xl_refiner', help="Directory for SDXL-Refiner TensorRT engines")
 
     return parser.parse_args()
 
