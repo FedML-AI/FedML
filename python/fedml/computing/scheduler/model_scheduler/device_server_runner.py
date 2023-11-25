@@ -390,7 +390,7 @@ class FedMLServerRunner:
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {}"
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} "
                     "--log-level critical".format(
                         self.redis_addr, self.redis_port, self.redis_password,
                         end_point_name,
