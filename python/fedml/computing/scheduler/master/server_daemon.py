@@ -30,7 +30,7 @@ if __name__ == "__main__":
         try:
             ServerConstants.cleanup_run_process(None)
             cleanup_all_fedml_server_api_processes()
-            cleanup_all_fedml_server_learning_processes(None)
+            cleanup_all_fedml_server_learning_processes()
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
             device_login_entry.logout_from_model_ops(False, True, None, 0)
         except Exception as e:
