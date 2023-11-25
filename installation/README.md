@@ -18,7 +18,7 @@ if your machine has not installed python, please install one version of the foll
 
 On Ubuntu, run the following commands to install pip3 and fedml.
 ```
-sudo apt install python3-pip
+sudo apt-get update && sudo apt install python3-pip
 pip3 install fedml
 export PATH=$HOME/.local/bin:$PATH
 fedml env
