@@ -19,15 +19,9 @@ def log(client, server, docker, docker_rank):
         is_docker = False
 
     if is_client:
-        if is_docker:
-            logs_with_docker_mode(docker_rank)
-            return
         _display_client_logs()
 
     if is_server:
-        if is_docker:
-            logs_with_server_docker_mode(docker_rank)
-            return
         _display_server_logs()
 
 
