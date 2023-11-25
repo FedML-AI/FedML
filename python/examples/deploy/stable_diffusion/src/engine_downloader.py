@@ -5,7 +5,7 @@ S3_ROOT = "https://fedml-scalellm.s3.us-west-1.amazonaws.com/"
 LOCAL_ROOT = os.environ.get("LOCAL_ROOT", "/data/scalellm_share_dir")
 ENGINE_DICT = {
     "stable-diffusion": {
-        "intermediate_path": "stable-diffusion/",
+        "intermediate_path": "Stable-Diffusion/",
         "files": [
             "engine_xl_base/clip.plan",
             "engine_xl_base/clip2.plan",
