@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from .log_manager import LogsManager
 from .metrics_manager import MetricsManager
+from ..comm_utils import  sys_utils
 
 
 class MasterApiDaemon(object):
@@ -52,6 +53,8 @@ class MasterApiDaemon(object):
 
         import uvicorn
         port = 30800
+        if sys_utils.check_port("localhost", port):
+            return
         uvicorn.run(api, host="0.0.0.0", port=port)
 
 
