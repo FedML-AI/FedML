@@ -26,6 +26,7 @@ import io
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
+from fastapi.responses import Response
 
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
@@ -760,7 +761,7 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
     model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
     print("inference_url: {}".format(inference_url))
     print("inference_input_list: {}".format(inference_input_list))
-    if inference_type == "default":
+    if inference_type == "default" or inference_type == "image/png":
         model_inference_json = inference_input_list
     else:  # triton
         model_inference_json = {
@@ -771,7 +772,14 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
     try:
         response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
         if response.status_code == 200:
-            model_inference_result = response.json()
+            if inference_type == "default":
+                model_inference_result = response.json()
+            elif inference_type == "image/png":
+                binary_content: bytes = response.content
+                model_inference_result = Response(content=binary_content, media_type="image/png")
+            else:
+                model_inference_result = response.json()
+
     except Exception as e:
         print("Error in running inference: {}".format(e))
 
