@@ -1357,14 +1357,16 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
+        print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
               f"master deploy ID is {str(self.model_device_server.edge_id)}, "
-              f"worker deploy ID is {str(self.model_device_client.edge_id)}\n"
+              f"worker deploy ID is {str(self.model_device_client.edge_id)}"
               )
         if self.edge_extra_url is not None and self.edge_extra_url != "":
             print(f"You may visit the following url to fill in more information with your device.\n"
-                  f"{self.edge_extra_url}\n")
+                  f"{self.edge_extra_url}")
+        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
