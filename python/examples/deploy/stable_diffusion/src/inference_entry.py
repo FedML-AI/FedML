@@ -1,4 +1,5 @@
 import run_utils
+import base64
 import tensorrt as trt
 
 from fedml.serving import FedMLPredictor
@@ -97,7 +98,7 @@ class StableDiffusionBot(FedMLPredictor):
                                                        warmup=warmup, verbose=verbose, seed=self.args.seed)
         return images, paths, time_base + time_refiner
         
-    def predict(self, request:dict):
+    def predict(self, request: dict, header=None):
         # --width 1024   --height 1024   --denoising-steps 30
         args = self.args
         input_dict = request
@@ -111,7 +112,12 @@ class StableDiffusionBot(FedMLPredictor):
         if len(prompt) == 0:
             response_text = "<received empty input; no response generated.>"
         else:
-            return str(paths[0])
+            if header == "image/png":
+                return str(paths[0])
+            else:
+                with open(paths[0], "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+                    return encoded_string
 
 
 if __name__ == "__main__":

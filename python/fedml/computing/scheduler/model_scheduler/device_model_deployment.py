@@ -758,10 +758,13 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
 def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list,
                                          inference_type="default"):
     model_inference_result = {}
-    model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-    print("inference_url: {}".format(inference_url))
-    print("inference_input_list: {}".format(inference_input_list))
-    if inference_type == "default" or inference_type == "image/png":
+    if inference_type == "default":
+        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                             'Accept': 'application/json'}
+    else:
+        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                             'Accept': inference_type}
+    if inference_type == "default" or inference_type == "image/png" or inference_type == "application/json":
         model_inference_json = inference_input_list
     else:  # triton
         model_inference_json = {

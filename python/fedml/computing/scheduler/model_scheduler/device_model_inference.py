@@ -50,7 +50,10 @@ async def predict(request: Request):
     input_json = await request.json()
     end_point_id = input_json.get("end_point_id", None)
 
-    return _predict(end_point_id, input_json)
+    # Get header
+    header = request.headers
+
+    return _predict(end_point_id, input_json, header)
 
 
 @api.post('/inference/{end_point_id}')
@@ -58,16 +61,22 @@ async def predict_with_end_point_id(end_point_id, request: Request):
     # Get json data
     input_json = await request.json()
 
-    return _predict(end_point_id, input_json)
+    # Get header
+    header = request.headers
+
+    return _predict(end_point_id, input_json, header)
 
 
-def _predict(end_point_id, input_json):
+def _predict(end_point_id, input_json, header=None):
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
     in_model_version = input_json.get("model_version", None)
     in_end_point_token = input_json.get("token", None)
-    in_return_type = input_json.get("return_type", "default")
+    in_return_type = "default"
+    if header is not None:
+        in_return_type = header.get("Accept", "default")
+
     if in_model_version is None:
         in_model_version = "latest"
 
