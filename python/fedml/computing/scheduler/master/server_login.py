@@ -226,7 +226,6 @@ def __login_as_cloud_agent(args, userid, version):
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(0, edge_id)
     runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
