@@ -502,12 +502,18 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             find_monitor_process = False
+            find_monitor_name_arg = False
+            find_endpoint_id_name_arg = False
             for cmd in pinfo["cmdline"]:
-                if str(cmd).find("-ep {}".format(str(run_id))) != -1:
-                    find_monitor_process = True
+                if str(cmd).endswith("device_model_monitor.py"):
+                    find_monitor_name_arg = True
 
-                if str(cmd).find("-epn {}".format(end_point_name)) != -1:
+                if find_monitor_name_arg and str(cmd) == f"-ep":
+                    find_endpoint_id_name_arg = True
+
+                if find_monitor_name_arg and find_endpoint_id_name_arg and str(cmd) == f"{run_id}":
                     find_monitor_process = True
+                    break
 
             if find_monitor_process:
                 # click.echo("find the monitor process at {}.".format(process.pid))
@@ -515,6 +521,7 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     os.kill(process.pid, signal.SIGKILL)
+                break
         except Exception as e:
             pass
 

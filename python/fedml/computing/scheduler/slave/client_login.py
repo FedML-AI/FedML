@@ -28,7 +28,6 @@ def init_logs(args, edge_id):
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
     MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(0, edge_id)
     # logging.info("client ids:{}".format(args.client_id_list))
 
 
@@ -148,6 +147,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(0, edge_id)
     runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
