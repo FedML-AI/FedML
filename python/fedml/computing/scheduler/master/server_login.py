@@ -126,7 +126,6 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(0, edge_id)
     runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
@@ -333,7 +332,6 @@ def __login_as_cloud_server(args, userid, version):
     )
 
     # Setup MQTT connection for communication with the FedML server.
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(0, edge_id)
     runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
@@ -348,7 +346,7 @@ def init_logs(args, edge_id):
     args.edge_id = edge_id
     setattr(args, "using_mlops", True)
     setattr(args, "server_agent_id", edge_id)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
 
 
 def login(args):
