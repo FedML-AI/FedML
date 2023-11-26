@@ -2335,7 +2335,7 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Daemon_" + self.args.current_device_id,
+            "FedML_ServerAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
             "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
         )
@@ -2343,16 +2343,19 @@ class FedMLServerRunner:
         # Init local database
         FedMLServerDataInterface.get_instance().create_job_table()
 
-        # Start local API services
-        python_program = get_python_program()
-        self.local_api_process = ServerConstants.exec_console_with_script(
-            "{} -m uvicorn fedml.computing.scheduler.master.server_api:api --host 0.0.0.0 --port {} "
-            "--log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
-            should_capture_stdout=False,
-            should_capture_stderr=False
-        )
-        # if self.local_api_process is not None and self.local_api_process.pid is not None:
-        #     print(f"Server local API process id {self.local_api_process.pid}")
+        server_api_cmd = "fedml.computing.scheduler.master.server_api:api"
+        server_api_pids = RunProcessUtils.get_pid_from_cmd_line(server_api_cmd)
+        if server_api_pids is None or len(server_api_pids) <= 0:
+            # Start local API services
+            python_program = get_python_program()
+            self.local_api_process = ServerConstants.exec_console_with_script(
+                "{} -m uvicorn {} --host 0.0.0.0 --port {} "
+                "--log-level critical".format(python_program, server_api_cmd, ServerConstants.LOCAL_SERVER_API_PORT),
+                should_capture_stdout=False,
+                should_capture_stderr=False
+            )
+            # if self.local_api_process is not None and self.local_api_process.pid is not None:
+            #     print(f"Server local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

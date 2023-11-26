@@ -6,6 +6,7 @@ from prettytable import PrettyTable
 import fedml
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.master.server_login import logout as server_logout
 from fedml.computing.scheduler.model_scheduler import device_login_entry
@@ -118,9 +119,12 @@ def _bind(
     redis_password = "fedml_default"
 
     if is_client is True:
-        if is_docker:
-            login_with_docker_mode(account_id, docker_rank)
+        client_daemon_cmd = "client_daemon.py"
+        client_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(client_daemon_cmd)
+        if client_daemon_pids is not None and len(client_daemon_pids) > 0:
+            print("There is another login process running on your system. Please check and exit the previous login with the command 'fedml logout -c'.")
             return
+
         pip_source_dir = os.path.dirname(__file__)
         pip_source_dir = os.path.dirname(pip_source_dir)
         pip_source_dir = os.path.dirname(pip_source_dir)
@@ -162,8 +166,10 @@ def _bind(
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
     if is_server is True:
-        if is_docker:
-            login_with_server_docker_mode(account_id, version, docker_rank)
+        server_daemon_cmd = "server_daemon.py"
+        server_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(server_daemon_cmd)
+        if server_daemon_pids is not None and len(server_daemon_pids) > 0:
+            print("There is another login process running on your system. Please check and exit the previous login with the command 'fedml logout -s'.")
             return
 
         pip_source_dir = os.path.dirname(__file__)
@@ -226,9 +232,6 @@ def unbind(computing, server):
         device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
 
     if is_client is True:
-        if is_docker:
-            logout_with_docker_mode(docker_rank)
-            return
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -239,9 +242,6 @@ def unbind(computing, server):
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
     if is_server is True:
-        if is_docker:
-            logout_with_server_docker_mode(docker_rank)
-            return
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
