@@ -43,6 +43,7 @@ from .device_client_data_interface import FedMLClientDataInterface
 from ....core.mlops.mlops_utils import MLOpsUtils
 from .device_model_cache import FedMLModelCache
 from ..comm_utils.job_utils import JobRunnerUtils
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 
 
 class RunnerError(Exception):
