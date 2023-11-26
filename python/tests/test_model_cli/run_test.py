@@ -3,6 +3,7 @@ import uuid
 
 import fedml
 from fedml.api.modules import model
+from fedml.computing.scheduler.comm_utils import sys_utils
 
 
 def test_model_create_push(config_version="release"):
@@ -18,6 +19,9 @@ def test_model_create_push(config_version="release"):
 
 if __name__ == "__main__":
     print("Hi everyone, I am testing the model cli.\n")
+
+    sys_utils.cleanup_model_monitor_processes(1627, "ep-1124-304-13ad33",
+                                              "", "", "")
 
     test_model_create_push()
 
