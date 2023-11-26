@@ -225,12 +225,6 @@ def unbind(computing, server):
     if docker is None:
         is_docker = False
 
-    if is_client:
-        device_login_entry.logout_from_model_ops(True, True, docker, docker_rank)
-
-    if is_server:
-        device_login_entry.logout_from_model_ops(False, True, docker, docker_rank)
-
     if is_client is True:
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
         client_logout()
