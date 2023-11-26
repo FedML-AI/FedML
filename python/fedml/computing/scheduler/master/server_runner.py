@@ -2315,12 +2315,13 @@ class FedMLServerRunner:
             self.callback_start_train(payload=self.args.runner_cmd)
 
         # Echo results
-        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
+        print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(
             "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
             + str(self.unique_device_id)
-            + "\n"
         )
+        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
