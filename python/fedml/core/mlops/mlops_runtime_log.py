@@ -12,6 +12,31 @@ from fedml import mlops
 from .mlops_utils import MLOpsUtils
 
 
+class MLOpsFormatter(logging.Formatter):
+    converter = datetime.datetime.utcfromtimestamp
+
+    def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
+        super().__init__(fmt, datefmt, style, validate)
+        self.ntp_offset = 0.0
+
+    # Here the `record` is a LogRecord object
+    def formatTime(self, record, datefmt=None):
+        log_time = record.created
+        if record.created is None:
+            log_time = time.time()
+
+        if self.ntp_offset is None:
+            self.ntp_offset = 0.0
+
+        log_ntp_time = int((log_time * 1000 + self.ntp_offset) / 1000.0)
+        ct = self.converter(log_ntp_time)
+        if datefmt:
+            s = ct.strftime(datefmt)
+        else:
+            s = ct.strftime("%a, %d %b %Y %H:%M:%S")
+        return s
+
+
 class MLOpsRuntimeLog:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 1
@@ -48,6 +73,8 @@ class MLOpsRuntimeLog:
         mlops.send_exit_train_msg()
 
     def __init__(self, args):
+        self.format_str = None
+        self.stdout_handle = None
         self.logger = None
         self.args = args
         if hasattr(args, "using_mlops"):
@@ -102,57 +129,52 @@ class MLOpsRuntimeLog:
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
 
-        class MLOpsFormatter(logging.Formatter):
-            converter = datetime.datetime.utcfromtimestamp
+        self.generate_format_str()
 
-            def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
-                super().__init__(fmt, datefmt, style, validate)
-                self.ntp_offset = 0.0
-
-            # Here the `record` is a LogRecord object
-            def formatTime(self, record, datefmt=None):
-                log_time = record.created
-                if record.created is None:
-                    log_time = time.time()
-
-                if self.ntp_offset is None:
-                    self.ntp_offset = 0.0
-
-                log_ntp_time = int((log_time * 1000 + self.ntp_offset) / 1000.0)
-                ct = self.converter(log_ntp_time)
-                if datefmt:
-                    s = ct.strftime(datefmt)
-                else:
-                    s = ct.strftime("%a, %d %b %Y %H:%M:%S")
-                return s
-
-        format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                                               "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                                               "message)s",
-                                    datefmt="%a, %d %b %Y %H:%M:%S")
-        format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
-
-        stdout_handle = logging.StreamHandler()
-        stdout_handle.setFormatter(format_str)
+        self.stdout_handle = logging.StreamHandler()
+        self.stdout_handle.setFormatter(self.format_str)
         if show_stdout_log:
-            stdout_handle.setLevel(logging.INFO)
+            self.stdout_handle.setLevel(logging.INFO)
             self.logger.setLevel(logging.INFO)
         else:
-            stdout_handle.setLevel(logging.CRITICAL)
+            self.stdout_handle.setLevel(logging.CRITICAL)
             self.logger.setLevel(logging.CRITICAL)
         self.logger.handlers.clear()
-        self.logger.addHandler(stdout_handle)
+        self.logger.addHandler(self.stdout_handle)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
             when = 'D'
             backup_count = 100
             file_handle = handlers.TimedRotatingFileHandler(filename=log_file_path, when=when,
                                                             backupCount=backup_count, encoding='utf-8')
-            file_handle.setFormatter(format_str)
+            file_handle.setFormatter(self.format_str)
             file_handle.setLevel(logging.INFO)
             self.logger.addHandler(file_handle)
         logging.root = self.logger
         # Rewrite sys.stdout to redirect stdout (i.e print()) to Logger
         sys.stdout.write = self.logger.info
+
+    def enable_show_log_to_stdout(self, enable=True):
+        if self.stdout_handle is None:
+            return
+
+        if enable:
+            self.stdout_handle.setLevel(logging.INFO)
+            self.logger.setLevel(logging.INFO)
+            self.stdout_handle.setFormatter(None)
+        else:
+            self.stdout_handle.setLevel(logging.CRITICAL)
+            self.logger.setLevel(logging.CRITICAL)
+            if self.format_str is None:
+                self.generate_format_str()
+            self.stdout_handle.setFormatter(self.format_str)
+
+    def generate_format_str(self):
+        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                                    "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                    "message)s",
+                                         datefmt="%a, %d %b %Y %H:%M:%S")
+        self.format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
 
     @staticmethod
     def build_log_file_path(in_args):
