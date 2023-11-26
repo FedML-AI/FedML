@@ -231,6 +231,9 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
                 ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
+    elif result.status == Constants.JOB_START_STATUS_GENERAL_ERROR:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_GENERAL_ERROR],
+                result.message)
 
     return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
             ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)

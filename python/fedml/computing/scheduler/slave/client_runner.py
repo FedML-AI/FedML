@@ -42,6 +42,7 @@ from ..comm_utils import sys_utils
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
+from ..comm_utils import security_utils
 
 
 class RunnerError(Exception):
@@ -1098,6 +1099,20 @@ class FedMLClientRunner:
         ClientConstants.save_training_infos(edge_id, training_status)
 
     @staticmethod
+    def get_gpu_machine_id():
+        gpu_list = sys_utils.get_gpu_list()
+        gpu_uuids = ""
+        if len(gpu_list) > 0:
+            for gpu in gpu_list:
+                gpu_uuids += gpu.get("uuid", "")
+        else:
+            gpu_uuids = str(uuid.uuid4())
+        device_id_combination = \
+            f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}-{gpu_uuids}"
+        device_id = security_utils.get_content_hash(device_id_combination)
+        return device_id
+
+    @staticmethod
     def get_device_id(use_machine_id=False):
         device_file_path = os.path.join(ClientConstants.get_data_dir(),
                                         ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
@@ -1119,7 +1134,7 @@ class FedMLClientRunner:
                 if not use_machine_id:
                     device_id = hex(uuid.getnode())
                 else:
-                    device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
+                    device_id = FedMLClientRunner.get_gpu_machine_id()
             else:
                 device_id = "0x" + device_id
         else:
@@ -1144,7 +1159,7 @@ class FedMLClientRunner:
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
                     else:
-                        device_id = f"{FedMLClientRunner.get_machine_id()}-{hex(uuid.getnode())}"
+                        device_id = device_id = FedMLClientRunner.get_gpu_machine_id()
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
@@ -1365,7 +1380,7 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Daemon_" + self.args.current_device_id,
+            "FedML_ClientAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
             "flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
         )
@@ -1375,16 +1390,19 @@ class FedMLClientRunner:
         FedMLClientDataInterface.get_instance().create_job_table()
 
         # Start local API services
-        python_program = get_python_program()
-        self.local_api_process = ClientConstants.exec_console_with_script(
-            "{} -m uvicorn fedml.computing.scheduler.slave.client_api:api --host 0.0.0.0 --port {} "
-            "--log-level critical".format(python_program,
-                                          ClientConstants.LOCAL_CLIENT_API_PORT),
-            should_capture_stdout=False,
-            should_capture_stderr=False
-        )
-        # if self.local_api_process is not None and self.local_api_process.pid is not None:
-        #     print(f"Client local API process id {self.local_api_process.pid}")
+        client_api_cmd = "fedml.computing.scheduler.slave.client_api:api"
+        client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
+        if client_api_pids is None or len(client_api_pids) <= 0:
+            python_program = get_python_program()
+            self.local_api_process = ClientConstants.exec_console_with_script(
+                "{} -m uvicorn {} --host 0.0.0.0 --port {} "
+                "--log-level critical".format(
+                    python_program, client_api_cmd, ClientConstants.LOCAL_CLIENT_API_PORT),
+                should_capture_stdout=False,
+                should_capture_stderr=False
+            )
+            # if self.local_api_process is not None and self.local_api_process.pid is not None:
+            #     print(f"Client local API process id {self.local_api_process.pid}")
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)

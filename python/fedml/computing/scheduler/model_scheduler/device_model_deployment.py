@@ -215,7 +215,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 usr_indicated_wait_time = config.get('deploy_timeout', 100)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
-                    usr_indicated_worker_port = int(os.environ.get("FEDML_WORKER_PORT", 2345))
+                    usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
+                
+                if usr_indicated_worker_port == "":
+                    usr_indicated_worker_port = None
+                else:
+                    usr_indicated_worker_port = int(usr_indicated_worker_port)
 
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
@@ -391,7 +396,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             host_config=client.api.create_host_config(
                 binds=binds,
                 port_bindings={
-                    2345: usr_indicated_worker_port  # randomly open a port on the host
+                    2345: usr_indicated_worker_port  # Could be either None or a port number
                 },
                 device_requests=device_requests,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
@@ -405,8 +410,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         while True:
             cnt += 1
             try:
-                inference_http_port = usr_indicated_worker_port
-                break
+                if usr_indicated_worker_port is not None:
+                    inference_http_port = usr_indicated_worker_port
+                    break
+                else:
+                    # Find the random port
+                    port_info = client.api.port(new_container.get("Id"), 2345)  
+                    inference_http_port = port_info[0]["HostPort"]
+                    logging.info("inference_http_port: {}".format(inference_http_port))
+                    break
             except:
                 if cnt >= 5:
                     raise Exception("Failed to get the port allocation")

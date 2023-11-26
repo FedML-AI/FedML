@@ -385,6 +385,16 @@ class ClientConstants(object):
             return True
         except:
             return False
+    
+    @staticmethod
+    def get_public_ip():
+        import requests
+        ip = None
+        try:
+            ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        except Exception as e:
+            print("Failed to get public ip: {}".format(e))
+        return ip
 
     @staticmethod
     def check_process_is_running(process_id):
