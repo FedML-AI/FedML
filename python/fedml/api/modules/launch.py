@@ -119,6 +119,8 @@ def job(
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+        if create_run_result.inner_id is not None:
+            FedMLLaunchManager.get_instance().cleanup_launch(run_id, create_run_result.inner_id)
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 

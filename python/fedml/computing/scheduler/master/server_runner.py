@@ -1146,13 +1146,24 @@ class FedMLServerRunner:
                 # If no resources available, send failed message to MLOps and send exception message to all edges.
                 gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
                     active_edge_info_dict, should_print=True)
-                logging.error(f"No resources available."
-                              f"Total available GPU count {gpu_available_count} is less than "
-                              f"request GPU count {request_num_gpus}")
+                err_info = f"No resources available."\
+                           f"Total available GPU count {gpu_available_count} is less than "\
+                           f"request GPU count {request_num_gpus}"
+                logging.error(err_info)
                 self.mlops_metrics.report_server_id_status(
                     run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
                     server_id=self.edge_id, server_agent_id=self.server_agent_id)
                 self.send_training_stop_request_to_edges_when_exception(edge_id_list, payload=json.dumps(self.request_json), run_id=run_id)
+
+                serving_args = job_yaml.get("serving_args", {})
+                endpoint_id = serving_args.get("endpoint_id", None)
+                if endpoint_id is not None:
+                    fedml.mlops.log_endpoint_status(
+                        endpoint_id, device_client_constants.ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                    fedml.mlops.log_run_log_lines(
+                        endpoint_id, 0, [err_info],
+                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT
+                    )
                 return
 
             # Generate master node addr and port

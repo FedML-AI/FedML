@@ -360,6 +360,9 @@ class FedMLAppManager(Singleton):
 
         return result
 
+    def delete_endpoint(self, api_key, endpoint_id):
+        FedMLModelCards.get_instance().delete_endpoint_api(api_key, endpoint_id)
+
 
 class FedMLModelUploadResult(object):
     def __init__(self, model_name, model_id="", model_version="", model_storage_url="", endpoint_name=""):
