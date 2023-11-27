@@ -4,6 +4,10 @@ import logging
 import os
 import time
 
+import requests
+
+import fedml
+from . import MLOpsConfigs
 from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...computing.scheduler.master.server_constants import ServerConstants
 from ...core.mlops.mlops_status import MLOpsStatus
@@ -370,6 +374,68 @@ class MLOpsMetrics(object):
         }
         message_json = json.dumps(artifact_info_json)
         self.messenger.send_message_json(topic_name, message_json)
+
+    def report_endpoint_status(self, end_point_id, model_status, timestamp=None,
+                               end_point_name="", model_name="", model_inference_url=""):
+        deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
+        deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
+        time_param = time.time_ns() / 1000.0 if timestamp is None else timestamp
+        deployment_status_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
+                                     "model_name": model_name,
+                                     "model_url": model_inference_url,
+                                     "model_status": model_status,
+                                     "timestamp": int(format(time_param, '.0f'))}
+
+        self.messenger.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.messenger.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
+
+    def report_run_log(
+            self, run_id, device_id, log_list, log_source=None, use_mqtt=False
+    ):
+        url = fedml._get_backend_service()
+        log_sever_url = f"{url}/fedmlLogsServer/logs/update"
+        log_upload_request = {
+            "run_id": run_id,
+            "edge_id": device_id,
+            "logs": log_list,
+            "create_time": time.time(),
+            "update_time": time.time(),
+            "created_by": str(device_id),
+            "updated_by": str(device_id)
+        }
+
+        if log_source is not None and log_source != "":
+            log_upload_request["source"] = log_source
+
+        if use_mqtt:
+            self.report_fedml_run_logs(log_upload_request, run_id=run_id)
+        else:
+            log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+
+            # send log data to the log server
+            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            if cert_path is not None:
+                try:
+                    requests.session().verify = cert_path
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(
+                        log_sever_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+
+                except requests.exceptions.SSLError as err:
+                    MLOpsConfigs.install_root_ca_file()
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(
+                        log_sever_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            else:
+                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                response = requests.post(log_sever_url, headers=log_headers, json=log_upload_request)
+                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            if response.status_code != 200:
+                return
 
     def report_sys_perf(self, sys_args, mqtt_config, run_id=None, job_process_id=None):
         setattr(sys_args, "mqtt_config_path", mqtt_config)

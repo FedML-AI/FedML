@@ -839,6 +839,46 @@ class FedMLModelCards(Singleton):
 
         return endpoint_apply_result
 
+    def delete_endpoint_api(self, user_api_key, endpoint_id):
+        endpoint_request_result = None
+        model_ops_url = ClientConstants.get_model_ops_delete_endpoint_url(self.config_version)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_request_json = {
+            "apiKey": user_api_key,
+            "endpointId": endpoint_id
+        }
+
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_request_json
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_request_json
+                )
+        else:
+            response = requests.post(model_ops_url, headers=endpoint_api_headers, json=endpoint_request_json)
+        if response.status_code != 200:
+            print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            endpoint_request_result = resp_data["data"]
+            if endpoint_request_result is None or endpoint_request_result == "":
+                print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+
+        return endpoint_request_result
+
     def endpoint_inference_api(self, user_api_key, endpoint_id: str, req: str) -> str:
         model_ops_url = ClientConstants.get_model_ops_endpoint_inference_url(endpoint_id)
         endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',

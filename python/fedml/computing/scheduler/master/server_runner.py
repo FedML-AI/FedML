@@ -1146,13 +1146,24 @@ class FedMLServerRunner:
                 # If no resources available, send failed message to MLOps and send exception message to all edges.
                 gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
                     active_edge_info_dict, should_print=True)
-                logging.error(f"No resources available."
-                              f"Total available GPU count {gpu_available_count} is less than "
-                              f"request GPU count {request_num_gpus}")
+                err_info = f"No resources available."\
+                           f"Total available GPU count {gpu_available_count} is less than "\
+                           f"request GPU count {request_num_gpus}"
+                logging.error(err_info)
                 self.mlops_metrics.report_server_id_status(
                     run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
                     server_id=self.edge_id, server_agent_id=self.server_agent_id)
                 self.send_training_stop_request_to_edges_when_exception(edge_id_list, payload=json.dumps(self.request_json), run_id=run_id)
+
+                serving_args = job_yaml.get("serving_args", {})
+                endpoint_id = serving_args.get("endpoint_id", None)
+                if endpoint_id is not None:
+                    fedml.mlops.log_endpoint_status(
+                        endpoint_id, device_client_constants.ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                    fedml.mlops.log_run_log_lines(
+                        endpoint_id, 0, [err_info],
+                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT
+                    )
                 return
 
             # Generate master node addr and port
@@ -2075,6 +2086,34 @@ class FedMLServerRunner:
         # Start to deploy the model
         self.deploy_model(serving_devices, request_json)
 
+    def callback_request_device_info_from_mlops(self, topic, payload):
+        self.response_device_info_to_mlops()
+
+    def response_device_info_to_mlops(self):
+        response_topic = f"master_agent/mlops/response_device_info"
+        if self.mlops_metrics is not None:
+            total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, \
+                gpu_cores_total, gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = \
+                sys_utils.get_sys_realtime_stats(self.edge_id)
+            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
+            gpu_cores_available = len(gpu_available_ids)
+            response_payload = {
+                "run_id": self.run_id,
+                "master_agent_device_id": self.edge_id,
+                "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                "cpuUtilization": round(cup_utilization, 2),
+                "cpuCores": cpu_cores,
+                "gpuCoresTotal": gpu_cores_total,
+                "gpuCoresAvailable": gpu_cores_available,
+                "networkTraffic": sent_bytes + recv_bytes,
+                "timestamp": int(MLOpsUtils.get_ntp_time()),
+                "fedml_version": fedml.__version__
+            }
+            self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
+
     @staticmethod
     def get_device_id():
         device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
@@ -2299,6 +2338,11 @@ class FedMLServerRunner:
         topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
         self.mqtt_mgr.add_message_listener(topic_response_device_info, self.callback_response_device_info)
 
+        # Setup MQTT message listener to request device info from MLOps.
+        topic_request_device_info_from_mlops = f"mlops/master_agent/request_device_info/{self.edge_id}"
+        self.mqtt_mgr.add_message_listener(
+            topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -2306,6 +2350,7 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_response_device_info, qos=2)
+        mqtt_client_object.subscribe(topic_request_device_info_from_mlops, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()

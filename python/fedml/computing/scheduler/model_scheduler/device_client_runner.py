@@ -116,26 +116,27 @@ class FedMLClientRunner:
 
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
-        if not os.path.exists(local_package_path):
-            os.makedirs(local_package_path, exist_ok=True)
-        local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
+        os.makedirs(local_package_path, exist_ok=True)
+        filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
+        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, filename=local_package_file, reporthook=self.package_download_progress)
-        unzip_package_path = ClientConstants.get_model_dir()
-        self.fedml_packages_base_dir = unzip_package_path
+        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
+                                          f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
-            shutil.rmtree(
-                os.path.join(unzip_package_path, package_name), ignore_errors=True
-            )
+            shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
             pass
-        logging.info("local_package_file {}, unzip_package_path {}".format(
-            local_package_file, unzip_package_path))
-        package_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
-        unzip_package_path = os.path.join(unzip_package_path, package_name)
+
+        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
+        unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
         model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
-        return unzip_package_path, model_bin_file
+
+        logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
+            local_package_file, unzip_package_path, unzip_package_full_path))
+
+        return unzip_package_full_path, model_bin_file
 
     def retrieve_binary_model_file(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
@@ -701,8 +702,12 @@ class FedMLClientRunner:
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        ClientConstants.remove_deployment(model_msg_object.end_point_name,
-                                          model_msg_object.model_name, model_msg_object.model_version)
+        try:
+            ClientConstants.remove_deployment(model_msg_object.end_point_name,
+                                              model_msg_object.model_name, model_msg_object.model_version)
+        except Exception as e:
+            logging.info(f"Exception when removing deployment {traceback.format_exc()}")
+            pass
 
         self.set_runner_stopped_event(model_msg_object.run_id)
 
