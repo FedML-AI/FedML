@@ -46,7 +46,8 @@ __all__ = [
     "MLOpsRuntimeLogProcessor",
     "MLOpsRuntimeLogDaemon",
     "log_aggregation_failed_status",
-    "log_training_failed_status"
+    "log_training_failed_status",
+    "log_endpoint_status"
 ]
 
 
@@ -768,6 +769,15 @@ def log_run_logs(logs_json: dict, run_id=0):
     MLOpsStore.mlops_metrics.report_fedml_run_logs(logs_json, run_id=run_id)
 
 
+def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
+    fedml_args = get_fedml_args()
+
+    setup_log_mqtt_mgr()
+
+    MLOpsStore.mlops_metrics.report_run_log(
+        run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
+
+
 def _append_to_list(list_data, list_item):
     try:
         list_data.index(list_item)
@@ -881,6 +891,16 @@ def log_round_info(total_rounds, round_index):
     }
     logging.info("log round info {}".format(round_info))
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
+
+
+def log_endpoint_status(endpoint_id, status):
+    fedml_args = get_fedml_args()
+
+    setup_log_mqtt_mgr()
+    run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
+    edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    MLOpsStore.mlops_metrics.report_endpoint_status(
+        endpoint_id, status, timestamp=MLOpsUtils.get_ntp_time() * 1000.0)
 
 
 def create_project(project_name, api_key):

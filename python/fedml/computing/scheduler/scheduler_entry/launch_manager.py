@@ -80,6 +80,10 @@ class FedMLLaunchManager(Singleton):
                                            job_config.application_name)
         shutil.rmtree(package_dest_folder)
 
+    def cleanup_launch(self, run_id, inner_id):
+        user_api_key = get_api_key()
+        FedMLAppManager.get_instance().delete_endpoint(user_api_key, inner_id)
+
     def _create_and_update_model_card(self, yaml_file, user_api_key):
         if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
                 self.job_config.task_type == Constants.JOB_TASK_TYPE_SERVE:

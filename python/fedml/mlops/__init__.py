@@ -171,6 +171,15 @@ def log_metric(
     )
 
 
+def log_endpoint_status(endpoint_id, status):
+    mlops.log_endpoint_status(endpoint_id, status)
+
+
+def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
+    mlops.log_run_log_lines(
+        run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
+
+
 from ..computing.scheduler.slave.client_constants import ClientConstants
 from ..computing.scheduler.master.server_constants import ServerConstants
 
