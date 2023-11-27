@@ -4,13 +4,11 @@ import click
 from prettytable import PrettyTable
 
 import fedml
-from fedml.api.modules.utils import authenticate
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.master.server_login import logout as server_logout
-from fedml.computing.scheduler.model_scheduler import device_login_entry
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
@@ -45,7 +43,6 @@ def bind(
     elif is_client:
         role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIENT_INDEX]
 
-    authenticate(api_key)
     _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
