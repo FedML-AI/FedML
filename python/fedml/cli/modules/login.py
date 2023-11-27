@@ -34,14 +34,6 @@ from fedml.api.modules.utils import authenticate
 def fedml_login(api_key, version, compute_node, server, provider):
     fedml.set_env_version(version)
 
-    api_key = api_key[0]
-
-    if api_key is not None:
-        try:
-            authenticate(api_key)
-        except Exception as e:
-            # User could use a user_id, which will be deprecated in the future.
-            # But now we still support it. i.e. fedml login <user_id> -s / -c
-            pass
-
+    api_key = api_key[0] if len(api_key) > 0 else None
+    authenticate(api_key)
     fedml.api.login(api_key, compute_node, server, provider)

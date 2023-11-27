@@ -10,11 +10,11 @@ FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-pac
 
 
 def fedml_login(api_key):
-    api_key_is_valid = _check_api_key(api_key=api_key)
+    api_key_is_valid, api_key = _check_api_key(api_key=api_key)
     if api_key_is_valid:
-        return 0, "Login successfully"
+        return 0, api_key
 
-    return -1, "Login failed"
+    return -1, api_key
 
 
 def _check_api_key(api_key=None):
@@ -27,18 +27,18 @@ def _check_api_key(api_key=None):
 
     is_valid_heartbeat = FedMLResourceManager.get_instance().check_heartbeat(api_key)
     if not is_valid_heartbeat:
-        return False
+        return False, api_key
     else:
         save_api_key(api_key)
-        return True
+        return True, api_key
 
 
 def authenticate(api_key):
-    error_code, _ = fedml_login(api_key)
+    error_code, api_key = fedml_login(api_key)
 
     # Exit if not able to authenticate successfully
     if error_code:
-        raise SystemExit(f"Failed to authenticate with provided apikey: '{api_key}'. Please make sure your login "
+        raise SystemExit(f"Failed to authenticate with apikey: '{api_key}'. Please make sure your login "
                          f"credentials are valid.")
 
 
