@@ -119,6 +119,8 @@ def job(
 
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+        if create_run_result.inner_id is not None:
+            FedMLLaunchManager.get_instance().cleanup_launch(run_id, create_run_result.inner_id)
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id)
 
@@ -231,8 +233,38 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
                 ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
+    elif result.status == Constants.JOB_START_STATUS_QUERY_USER_BALANCE_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_QUERY_USER_BALANCE_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_USER_BALANCE_NOT_ENOUGH:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_USER_BALANCE_NOT_ENOUGH],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_JOB_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_NOT_EXISTS],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_MACHINE_STARTUP_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_MACHINE_STARTUP_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_CREATE_PROJECT_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_CREATE_PROJECT_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_PROJECT_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_PROJECT_NOT_EXISTS],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_DB_INSERT_ERROR:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_DB_INSERT_ERROR],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_OCCUPIED_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_OCCUPIED_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_JOB_CONFIG_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CONFIG_NOT_EXISTS],
+                result.message)
     elif result.status == Constants.JOB_START_STATUS_GENERAL_ERROR:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_GENERAL_ERROR],
+                result.message)
+    elif result.status != Constants.JOB_START_STATUS_SUCCESS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_NO_SPECIFIC_ERROR],
                 result.message)
 
     return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],

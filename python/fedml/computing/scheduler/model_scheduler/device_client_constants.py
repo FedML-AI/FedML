@@ -10,6 +10,7 @@ import traceback
 import urllib
 import zipfile
 from os.path import expanduser
+from urllib.parse import urlparse, unquote
 
 import psutil
 import yaml
@@ -188,6 +189,14 @@ class ClientConstants(object):
         return package_unzip_dir
 
     @staticmethod
+    def get_filename_and_extension(url):
+        parsed_url = urlparse(unquote(url))
+        path = parsed_url.path
+        filename = os.path.basename(path)
+        filename_without_extension, file_extension = os.path.splitext(filename)
+        return filename, filename_without_extension, file_extension
+
+    @staticmethod
     def get_package_run_dir(package_name):
         package_file_no_extension = str(package_name).split('.')[0]
         package_run_dir = os.path.join(ClientConstants.get_package_unzip_dir(),
@@ -273,6 +282,11 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_apply_endpoint_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/applyEndpointId"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_delete_endpoint_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/deleteFromCli"
         return model_ops_url
 
     @staticmethod

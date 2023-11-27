@@ -50,7 +50,10 @@ async def predict(request: Request):
     input_json = await request.json()
     end_point_id = input_json.get("end_point_id", None)
 
-    return _predict(end_point_id, input_json)
+    # Get header
+    header = request.headers
+
+    return _predict(end_point_id, input_json, header)
 
 
 @api.post('/inference/{end_point_id}')
@@ -58,15 +61,22 @@ async def predict_with_end_point_id(end_point_id, request: Request):
     # Get json data
     input_json = await request.json()
 
-    return _predict(end_point_id, input_json)
+    # Get header
+    header = request.headers
+
+    return _predict(end_point_id, input_json, header)
 
 
-def _predict(end_point_id, input_json):
+def _predict(end_point_id, input_json, header=None):
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
     in_model_version = input_json.get("model_version", None)
     in_end_point_token = input_json.get("token", None)
+    in_return_type = "default"
+    if header is not None:
+        in_return_type = header.get("Accept", "default")
+
     if in_model_version is None:
         in_model_version = "latest"
 
@@ -94,7 +104,8 @@ def _predict(end_point_id, input_json):
         if inference_output_url != "":
             input_list = input_json["inputs"]
             output_list = input_json.get("outputs", [])
-            inference_response = send_inference_request(inference_output_url, input_list, output_list)
+            inference_response = send_inference_request(
+                inference_output_url, input_list, output_list, in_return_type)
 
         # Calculate model metrics
         try:
@@ -141,9 +152,10 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-def send_inference_request(inference_url, input_list, output_list):
+def send_inference_request(inference_url, input_list, output_list, inference_type="default"):
     try:
-        inference_response = run_http_inference_with_curl_request(inference_url, input_list, output_list)
+        inference_response = run_http_inference_with_curl_request(
+            inference_url, input_list, output_list, inference_type)
         return inference_response
     except Exception as e:
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
