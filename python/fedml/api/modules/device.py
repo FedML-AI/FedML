@@ -4,6 +4,7 @@ import click
 from prettytable import PrettyTable
 
 import fedml
+from fedml.api.modules.utils import authenticate
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
@@ -44,6 +45,7 @@ def bind(
     elif is_client:
         role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIENT_INDEX]
 
+    authenticate(api_key)
     _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
