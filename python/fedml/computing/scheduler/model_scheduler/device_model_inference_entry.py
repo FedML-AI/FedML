@@ -39,7 +39,7 @@ if __name__ == "__main__":
     ''' 
     REDIS_ADDR=127.0.0.1 REDIS_PORT=6379 REDIS_PASSWORD=fedml_default END_POINT_NAME=111 MODEL_NAME=111 MODEL_VERSION=111 \
     MODEL_INFER_URL= VERSION=dev python -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api \
-    --host 0.0.0.0 --port 2203 --log-level info --reload --reload-delay 3 --reload-include /Users/alexliang/opt/anaconda3/envs/fedml-pip-38/lib/python3.8/site-packages/fedml
+    --host 0.0.0.0 --port 2203 --log-level info --reload --reload-delay 3 --reload-dir /Users/alexliang/opt/anaconda3/envs/fedml-pip-38/lib/python3.8/site-packages/fedml
     '''
     python_program = get_python_program()
     process = ServerConstants.exec_console_with_script(

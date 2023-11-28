@@ -55,7 +55,10 @@ class MasterApiDaemon(object):
         port = 30800
         if sys_utils.check_port("localhost", port):
             return
-        uvicorn.run(api, host="0.0.0.0", port=port)
+
+        cur_dir = os.path.dirname(__file__)
+        fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+        uvicorn.run(api, host="0.0.0.0", port=port, reload=True, reload_delay=3, reload_dirs=fedml_base_dir)
 
 
 
