@@ -388,16 +388,19 @@ class FedMLServerRunner:
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
+                cur_dir = os.path.dirname(__file__)
+                fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
                 self.inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {} "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-include {} "
                     "--log-level critical".format(
                         self.redis_addr, self.redis_port, self.redis_password,
                         end_point_name,
                         model_name, model_version, "", self.args.version,
-                        python_program, inference_gw_cmd, str(inference_port)),
+                        python_program, inference_gw_cmd, str(inference_port), fedml_base_dir
+                    ),
                     should_capture_stdout=False,
                     should_capture_stderr=False
                 )
@@ -1774,10 +1777,15 @@ class FedMLServerRunner:
         server_api_pids = RunProcessUtils.get_pid_from_cmd_line(server_api_cmd)
         if server_api_pids is None or len(server_api_pids) <= 0:
             # Start local API services
+            cur_dir = os.path.dirname(__file__)
+            fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             python_program = get_python_program()
             self.local_api_process = ServerConstants.exec_console_with_script(
-                "{} -m uvicorn {} --host 0.0.0.0 --port {} "
-                "--log-level critical".format(python_program, server_api_cmd, ServerConstants.LOCAL_SERVER_API_PORT),
+                "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-include {} "
+                "--log-level critical".format(
+                    python_program, server_api_cmd, ServerConstants.LOCAL_SERVER_API_PORT,
+                    fedml_base_dir
+                ),
                 should_capture_stdout=False,
                 should_capture_stderr=False
             )
