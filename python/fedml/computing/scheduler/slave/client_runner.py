@@ -1396,10 +1396,12 @@ class FedMLClientRunner:
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
         if client_api_pids is None or len(client_api_pids) <= 0:
             python_program = get_python_program()
+            cur_dir = os.path.dirname(__file__)
+            fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             self.local_api_process = ClientConstants.exec_console_with_script(
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} "
-                "--log-level critical".format(
-                    python_program, client_api_cmd, ClientConstants.LOCAL_CLIENT_API_PORT),
+                "--reload --reload-delay 3 --reload-include {} --log-level critical".format(
+                    python_program, client_api_cmd, ClientConstants.LOCAL_CLIENT_API_PORT, fedml_base_dir),
                 should_capture_stdout=False,
                 should_capture_stderr=False
             )

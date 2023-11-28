@@ -186,4 +186,6 @@ from ..computing.scheduler.master.server_constants import ServerConstants
 __all__ = [
     "ClientConstants",
     "ServerConstants",
+    "log_endpoint_status",
+    "log_run_log_lines"
 ]
