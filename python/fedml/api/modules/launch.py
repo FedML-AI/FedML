@@ -17,12 +17,13 @@ from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 class LaunchResult:
     def __init__(self, result_code: int, result_message: str, run_id: str = None, project_id: str = None,
-                 inner_id: str = None):
+                 inner_id: str = None, result_object: FedMLRunStartedModel=None):
         self.run_id = run_id
         self.project_id = project_id
         self.inner_id = inner_id
         self.result_code = result_code
         self.result_message = result_message
+        self.result_object = result_object
 
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
@@ -110,7 +111,7 @@ def job(
                                                                 device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
-        return LaunchResult(result_code=result_code, result_message=result_message)
+        return LaunchResult(result_code=result_code, result_message=result_message, result_object=create_run_result)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
@@ -122,7 +123,7 @@ def job(
         if create_run_result.inner_id is not None:
             FedMLLaunchManager.get_instance().cleanup_launch(run_id, create_run_result.inner_id)
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     # Run Job
     run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
@@ -132,16 +133,17 @@ def job(
     if run_result is None:
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     if run_result.run_url == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
                         result_message=ApiConstants.LAUNCHED,
-                        run_id=run_id, project_id=project_id, inner_id=inner_id)
+                        run_id=run_id, project_id=project_id, inner_id=inner_id,
+                        result_object=create_run_result)
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,
@@ -152,7 +154,7 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
         yaml_file, cluster, api_key, resource_id, device_server, device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
-        return LaunchResult(result_code=result_code, result_message=result_message)
+        return LaunchResult(result_code=result_code, result_message=result_message, result_object=create_run_result)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
@@ -161,14 +163,15 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
             result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     cluster_id = getattr(create_run_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
                             result_message=ApiConstants.CLUSTER_CREATION_FAILED,
-                            run_id=run_id, project_id=project_id, inner_id=inner_id)
+                            run_id=run_id, project_id=project_id, inner_id=inner_id,
+                            result_object=create_run_result)
 
     # Confirm cluster and start job
     cluster_confirmed = confirm_and_start(run_id=run_id, cluster_id=cluster_id,
@@ -177,11 +180,11 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     if cluster_confirmed:
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
                             result_message=ApiConstants.CLUSTER_CONFIRM_SUCCESS, run_id=run_id, project_id=project_id,
-                            inner_id=inner_id)
+                            inner_id=inner_id, result_object=create_run_result)
 
     return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
                         result_message=ApiConstants.CLUSTER_CONFIRM_FAILED, run_id=run_id, project_id=project_id,
-                        inner_id=inner_id)
+                        inner_id=inner_id, result_object=create_run_result)
 
 
 def _prepare_launch_app(yaml_file):
