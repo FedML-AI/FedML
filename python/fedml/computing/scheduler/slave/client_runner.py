@@ -1400,7 +1400,7 @@ class FedMLClientRunner:
             fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             self.local_api_process = ClientConstants.exec_console_with_script(
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} "
-                "--reload --reload-delay 3 --reload-include {} --log-level critical".format(
+                "--reload --reload-delay 3 --reload-dir {} --log-level critical".format(
                     python_program, client_api_cmd, ClientConstants.LOCAL_CLIENT_API_PORT, fedml_base_dir),
                 should_capture_stdout=False,
                 should_capture_stderr=False

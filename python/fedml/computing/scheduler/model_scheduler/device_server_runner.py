@@ -394,7 +394,7 @@ class FedMLServerRunner:
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-include {} "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                     "--log-level critical".format(
                         self.redis_addr, self.redis_port, self.redis_password,
                         end_point_name,
@@ -1781,7 +1781,7 @@ class FedMLServerRunner:
             fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             python_program = get_python_program()
             self.local_api_process = ServerConstants.exec_console_with_script(
-                "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-include {} "
+                "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                 "--log-level critical".format(
                     python_program, server_api_cmd, ServerConstants.LOCAL_SERVER_API_PORT,
                     fedml_base_dir

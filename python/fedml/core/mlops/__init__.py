@@ -853,7 +853,7 @@ def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=
         artifact, version=version if version is not None else fedml_args.config_version, show_progress=False)
 
     if only_push_artifact:
-        return
+        return artifact_storage_url
 
     setup_log_mqtt_mgr()
     if run_id is None:
@@ -865,6 +865,8 @@ def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=
                                                   artifact_archive_zip_file, artifact_storage_url,
                                                   artifact.ext_info, artifact.artifact_desc,
                                                   timestamp)
+
+    return artifact_storage_url
 
 
 def log_round_info(total_rounds, round_index):
