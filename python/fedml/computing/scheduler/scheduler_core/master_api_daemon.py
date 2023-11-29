@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from .log_manager import LogsManager
 from .metrics_manager import MetricsManager
 from ..comm_utils import  sys_utils
+import os
 
 
 class MasterApiDaemon(object):
