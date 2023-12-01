@@ -266,6 +266,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 else:
                     dst_bootstrap_dir = ""
 
+                enable_custom_image = config.get("enable_custom_image", False)
+                docker_registry_user_name = config.get("docker_registry_user_name", "")
+                docker_registry_user_password = config.get("docker_registry_user_password", "")
+                docker_registry = config.get("docker_registry", "")
+
             if src_code_dir == "":
                 raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
             if relative_entry == "":
@@ -322,6 +327,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         try:
             client = docker.from_env()
+            if enable_custom_image:
+                client.login(username=docker_registry_user_name, password=docker_registry_user_password,
+                             registry=docker_registry)
         except Exception:
             logging.error("Failed to connect to the docker daemon, please ensure that you have "
                           "installed Docker Desktop or Docker Engine, and the docker is running")
@@ -403,6 +411,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
             ),
             detach=True,
+            command=relative_entry if enable_custom_image else None
         )
         client.api.start(container=new_container.get("Id"))
 
@@ -430,12 +439,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                               ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                               running_model_name, inference_engine, inference_http_port, inference_type="default",
                               retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
-                              request_input_example=request_input_example, infer_host=infer_host)
+                              request_input_example=request_input_example, infer_host=infer_host,
+                              enable_custom_image=enable_custom_image)
 
         # Check if the inference server is ready
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
             get_model_info(running_model_name, inference_engine, inference_http_port,
-                           infer_host, inference_type="default", request_input_example=request_input_example)
+                           infer_host, inference_type="default", request_input_example=request_input_example,
+                           enable_custom_image=enable_custom_image)
 
         if inference_output_url == "":
             return running_model_name, "", None, None, None
@@ -543,7 +554,8 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
-                     inference_type="default", request_input_example=None, infer_host="127.0.0.1"):
+                     inference_type="default", request_input_example=None, infer_host="127.0.0.1",
+                     enable_custom_image=False):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -586,7 +598,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         try:
             inference_output_url, model_version, model_metadata, model_config = \
                 get_model_info(model_name, inference_engine, inference_port, infer_host,
-                               inference_type=inference_type, request_input_example=request_input_example)
+                               inference_type=inference_type, request_input_example=request_input_example,
+                               enable_custom_image=enable_custom_image)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".
                          format(inference_output_url, model_metadata, model_config))
@@ -601,7 +614,8 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
                           inference_http_port, inference_type="default",
                           retry_interval=10, deploy_attempt_threshold=10,
-                          request_input_example=None, infer_host="127.0.0.1"):
+                          request_input_example=None, infer_host="127.0.0.1",
+                          enable_custom_image=False):
     deploy_attempt = 0
     last_out_logs = ""
     last_err_logs = ""
@@ -664,7 +678,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         # return True if ready
         if should_exit_logs(end_point_id, model_id, cmd_type, inference_model_name, inference_engine,
                             inference_http_port, inference_type, request_input_example,
-                            infer_host):
+                            infer_host, enable_custom_image=enable_custom_image):
             break
 
         # Not yet ready, retry
@@ -734,7 +748,10 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
 
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host="127.0.0.1", is_hg_model=False,
-                   inference_type="default", request_input_example=None):
+                   inference_type="default", request_input_example=None, enable_custom_image=False):
+    if enable_custom_image:
+        return f"http://{infer_host}:{inference_http_port}/api/v1/predict", "", {"inputs": {}}, {}
+
     if model_name is None:
         return "", "", {}, {}
 
@@ -772,9 +789,11 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
             "outputs": inference_output_list
         }
 
+    response_ok = False
     try:
         response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
         if response.status_code == 200:
+            request_successful = True
             if inference_type == "default":
                 model_inference_result = response.json()
             elif inference_type == "image/png":
@@ -786,7 +805,7 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
     except Exception as e:
         print("Error in running inference: {}".format(e))
 
-    return model_inference_result
+    return response_ok, model_inference_result
 
 
 def convert_model_to_onnx(

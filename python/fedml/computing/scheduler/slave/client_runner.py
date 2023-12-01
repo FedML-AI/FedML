@@ -1434,6 +1434,8 @@ class FedMLClientRunner:
             self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
+            if infer_host is not None:
+                self.model_device_client.infer_host = infer_host
             self.model_device_client.start()
 
         if self.model_device_server is None:
