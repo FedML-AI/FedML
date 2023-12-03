@@ -36,46 +36,62 @@ class S3Storage:
         self.set_config_from_file(s3_config_path)
         self.set_config_from_objects(s3_config_path)
         global aws_s3_client
-        env_version = fedml.get_env_version()
-        if env_version == "local":
-            aws_s3_client = boto3.client(
-                "s3",
-                endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
-                aws_access_key_id=self.cn_s3_aki,
-                aws_secret_access_key=self.cn_s3_sak,
-                config=Config(signature_version='s3v4'),
-                region_name=self.cn_region_name)
-        else:
-            aws_s3_client = boto3.client(
-                "s3",
-                region_name=self.cn_region_name,
-                aws_access_key_id=self.cn_s3_aki,
-                aws_secret_access_key=self.cn_s3_sak,
-            )
+
+        # env_version = fedml.get_env_version()
+        # if env_version == "local":
+        #     aws_s3_client = boto3.client(
+        #         "s3",
+        #         endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
+        #         aws_access_key_id=self.cn_s3_aki,
+        #         aws_secret_access_key=self.cn_s3_sak,
+        #         config=Config(signature_version='s3v4'),
+        #         region_name=self.cn_region_name)
+        # else:
+        #     aws_s3_client = boto3.client(
+        #         "s3",
+        #         region_name=self.cn_region_name,
+        #         aws_access_key_id=self.cn_s3_aki,
+        #         aws_secret_access_key=self.cn_s3_sak,
+        #     )
+
+        aws_s3_client = boto3.client(
+            "s3",
+            region_name=self.cn_region_name,
+            aws_access_key_id=self.cn_s3_aki,
+            aws_secret_access_key=self.cn_s3_sak,
+        )
 
         global aws_s3_resource
-        if env_version == "local":
-            aws_s3_resource = boto3.resource(
-                "s3",
-                endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
-                aws_access_key_id=self.cn_s3_aki,
-                aws_secret_access_key=self.cn_s3_sak,
-                config=Config(signature_version='s3v4'),
-                region_name=self.cn_region_name)
-            bucket = aws_s3_resource.Bucket('fedml')
-            if bucket.creation_date:
-                print("The fedml bucket exists")
-            else:
-                print("The fedml bucket does not exist")
-                aws_s3_resource.create_bucket(Bucket='fedml')
-        else:
-            aws_s3_resource = boto3.resource(
-                "s3",
-                region_name=self.cn_region_name,
-                aws_access_key_id=self.cn_s3_aki,
-                aws_secret_access_key=self.cn_s3_sak,
-            )
-        
+
+        # if env_version == "local":
+        #     aws_s3_resource = boto3.resource(
+        #         "s3",
+        #         endpoint_url=f'{fedml._get_local_s3_like_service_url()}',
+        #         aws_access_key_id=self.cn_s3_aki,
+        #         aws_secret_access_key=self.cn_s3_sak,
+        #         config=Config(signature_version='s3v4'),
+        #         region_name=self.cn_region_name)
+        #     bucket = aws_s3_resource.Bucket('fedml')
+        #     if bucket.creation_date:
+        #         print("The fedml bucket exists")
+        #     else:
+        #         print("The fedml bucket does not exist")
+        #         aws_s3_resource.create_bucket(Bucket='fedml')
+        # else:
+        #     aws_s3_resource = boto3.resource(
+        #         "s3",
+        #         region_name=self.cn_region_name,
+        #         aws_access_key_id=self.cn_s3_aki,
+        #         aws_secret_access_key=self.cn_s3_sak,
+        #     )
+
+        aws_s3_resource = boto3.resource(
+            "s3",
+            region_name=self.cn_region_name,
+            aws_access_key_id=self.cn_s3_aki,
+            aws_secret_access_key=self.cn_s3_sak,
+        )
+
 
     def write_model(self, message_key, model):
         global aws_s3_client
@@ -223,7 +239,7 @@ class S3Storage:
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
-        cache_dir = os.path.join(expanduser("~"), "fedml_cache")
+        cache_dir = os.path.join(expanduser("~"), ".fedml", "fedml_cache")
         if not os.path.exists(cache_dir):
             try:
                 os.makedirs(cache_dir)

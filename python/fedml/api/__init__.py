@@ -232,8 +232,16 @@ def model_pull(name):
     model_module.pull(name)
 
 
-def model_deploy(name, local, master_ids, worker_ids, use_remote):
-    model_module.deploy(name, local, master_ids, worker_ids, use_remote)
+def model_deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote):
+    model_module.deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids, use_remote)
+
+
+def model_run(endpoint_id, json_string):
+    model_module.run(endpoint_id, json_string)
+
+
+def endpoint_delete(endpoint_id):
+    model_module.delete_endpoint(endpoint_id)
 
 
 def train_build(job_yaml_file, dest_folder):

@@ -14,6 +14,8 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_runner import FedMLClientRunner
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 
 
 def init_logs(args, edge_id):
@@ -25,8 +27,7 @@ def init_logs(args, edge_id):
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
-    # logging.info("client ids:{}".format(args.client_id_list))
+    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
 
 
 def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None, role="client"):

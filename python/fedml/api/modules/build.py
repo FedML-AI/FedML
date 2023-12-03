@@ -40,10 +40,12 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
         click.echo("Building...")
     else:
         click.echo("You should specify the type argument value as client or server.")
-        raise Exception("You should specify the type argument value as client or server.")
+        exit(-1)
 
     home_dir = expanduser("~")
-    mlops_build_path = os.path.join(home_dir, "fedml-mlops-build")
+    fedml_dir = os.path.join(home_dir, ".fedml")
+    os.makedirs(fedml_dir, exist_ok=True)
+    mlops_build_path = os.path.join(fedml_dir, "fedml-mlops-build")
     try:
         shutil.rmtree(mlops_build_path, ignore_errors=True)
     except Exception as e:

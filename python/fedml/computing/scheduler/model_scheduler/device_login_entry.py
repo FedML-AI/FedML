@@ -8,10 +8,6 @@ from .device_client_constants import ClientConstants
 from .device_server_constants import ServerConstants
 from .device_client_login import logout as client_logout
 from .device_server_login import logout as server_logout
-from .docker_client_login import login_with_docker_mode
-from .docker_client_login import logout_with_docker_mode
-from .docker_server_login import login_with_server_docker_mode
-from .docker_server_login import logout_with_server_docker_mode
 from ..comm_utils import sys_utils
 
 
@@ -51,9 +47,6 @@ def login_as_model_device_agent(
     # click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     role = None
     if not is_master:
-        if is_docker:
-            login_with_docker_mode(account_id, version, docker_rank)
-            return
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "device_client_daemon.py")
         client_logout()
@@ -96,10 +89,6 @@ def login_as_model_device_agent(
 
         if is_cloud is True:
             role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_FEDML_CLOUD_MASTER_INDEX]
-
-        if is_docker:
-            login_with_server_docker_mode(account_id, version, docker_rank)
-            return
 
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "device_server_daemon.py")
@@ -150,9 +139,6 @@ def logout_from_model_ops(slave, master, docker, docker_rank):
         is_docker = False
 
     if is_client is True:
-        if is_docker:
-            logout_with_docker_mode(docker_rank)
-            return
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
@@ -160,9 +146,6 @@ def logout_from_model_ops(slave, master, docker, docker_rank):
         sys_utils.cleanup_all_fedml_client_api_processes(is_model_device=True)
 
     if is_server is True:
-        if is_docker:
-            logout_with_server_docker_mode(docker_rank)
-            return
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()

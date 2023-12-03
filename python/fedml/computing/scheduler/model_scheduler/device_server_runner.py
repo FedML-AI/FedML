@@ -22,6 +22,8 @@ import requests
 import torch
 
 import fedml
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -57,6 +59,7 @@ class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        self.inference_gateway_process = None
         self.local_api_process = None
         self.run_process_event = None
         self.run_process_event_map = dict()
@@ -103,8 +106,8 @@ class FedMLServerRunner:
         self.redis_port = "6379"
         self.redis_password = "fedml_default"
 
-        self.slave_deployment_statuses_mapping = {}
-        self.slave_deployment_results_mapping = {}
+        self.slave_deployment_statuses_mapping = dict()
+        self.slave_deployment_results_mapping = dict()
 
         self.model_runner_mapping = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
@@ -163,8 +166,8 @@ class FedMLServerRunner:
         model_config = run_config
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -186,7 +189,7 @@ class FedMLServerRunner:
         if "parameters" in request_json and "authentication_token" in request_json["parameters"]:
             usr_indicated_token = request_json["parameters"]["authentication_token"]
         return usr_indicated_token
-    
+
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
 
@@ -209,16 +212,18 @@ class FedMLServerRunner:
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
-            self.mlops_metrics.report_server_training_status(self.run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
-                                                             is_from_model=True)
+            self.mlops_metrics.report_server_training_status(
+                self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
+                is_from_model=True, edge_id=self.edge_id)
         except RunnerCompletedError:
             logging.info("Runner completed.")
         except Exception as e:
             logging.error("Runner exits with exceptions.")
-            self.mlops_metrics.report_server_training_status(self.run_id,
-                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                             is_from_model=True)
+            logging.error(traceback.format_exc())
+            logging.error(e)
+            self.mlops_metrics.report_server_training_status(
+                self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                is_from_model=True, edge_id=self.edge_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -249,23 +254,24 @@ class FedMLServerRunner:
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         model_is_from_open = model_config["is_from_open"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
         model_version = model_config["model_version"]
+        inference_port = model_config.get("inference_external_api_port", ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
 
         return run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version
+            inference_end_point_id, use_gpu, memory_size, model_version, inference_port
 
     def inference_run(self):
         # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
         #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-        #     inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+        #     inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(self.request_json)
         #
         # inference_server = FedMLModelServingServer(self.args,
         #                                            end_point_name,
@@ -278,7 +284,7 @@ class FedMLServerRunner:
     def run_impl(self):
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+            inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(self.request_json)
 
         logging.info("model deployment request: {}".format(self.request_json))
 
@@ -290,6 +296,8 @@ class FedMLServerRunner:
         # inference_process.start()
 
         logging.info("send deployment stages...")
+
+        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
 
         self.check_runner_stop_event()
 
@@ -306,28 +314,49 @@ class FedMLServerRunner:
         # report server running status
         logging.info("report deployment status...")
         self.check_runner_stop_event()
-        self.mlops_metrics.report_server_training_status(run_id,
-                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
-                                                         is_from_model=True,
-                                                         running_json=json.dumps(self.request_json))
+        self.mlops_metrics.report_server_training_status(
+            run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
+            is_from_model=True, running_json=json.dumps(self.request_json), edge_id=self.edge_id)
         self.send_deployment_status(self.run_id, end_point_name,
                                     model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
         # start unified inference server
-        self.start_device_inference_gateway(run_id, end_point_name, model_id, model_name, model_version)
+        self.start_device_inference_gateway(
+            run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port)
 
         # start inference monitor server
         self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
 
-        self.mlops_metrics.broadcast_server_training_status(run_id,
-                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                            is_from_model=True)
+        self.mlops_metrics.broadcast_server_training_status(
+            run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+            is_from_model=True, edge_id=self.edge_id)
 
         # forward deployment request to slave devices
         logging.info("send the model inference request to slave devices...")
         self.check_runner_stop_event()
-        self.send_deployment_start_request_to_edges()
+
+        # Diff could be scale out
+        should_added_devices = self.send_deployment_start_request_to_edges()
+
+        # Diff could be scale in
+        self.send_deployment_delete_request_to_edges(payload=json.dumps(self.request_json), model_msg_object=None)
+
+        if len(should_added_devices) == 0:
+            ip = self.get_ip_address(self.request_json)
+            master_port = os.getenv("FEDML_MASTER_PORT", None)
+            if master_port is not None:
+                inference_port = int(master_port)
+            model_inference_port = inference_port
+            if ip.startswith("http://") or ip.startswith("https://"):
+                model_inference_url = "{}/api/v1/predict".format(ip)
+            else:
+                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+
+            self.send_deployment_status(self.run_id, end_point_name,
+                                        model_name,
+                                        model_inference_url,
+                                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
         while True:
             self.check_runner_stop_event()
@@ -342,27 +371,39 @@ class FedMLServerRunner:
             logging.info("Received completed event.")
             raise RunnerCompletedError("Runner completed")
 
-    def start_device_inference_gateway(self, run_id, end_point_name, model_id, model_name, model_version):
+    def start_device_inference_gateway(
+            self, run_id, end_point_name, model_id,
+            model_name, model_version, inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
         # start unified inference server
         running_model_name = ServerConstants.get_running_model_name(end_point_name,
                                                                     model_name, model_version, run_id, model_id)
         python_program = get_python_program()
+        master_port = os.getenv("FEDML_MASTER_PORT", None)
+        if master_port is not None:
+            inference_port = int(master_port)
         if not ServerConstants.is_running_on_k8s():
             logging.info(f"start the model inference gateway, end point {run_id}, model name {model_name}...")
             self.check_runner_stop_event()
-            process = ServerConstants.exec_console_with_script(
-                "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                "END_POINT_Name=\"{}\" "
-                "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_model_inference:api --host 0.0.0.0 --port {} --reload "
-                "--log-level critical".format(
-                    self.redis_addr, self.redis_port, self.redis_password,
-                    end_point_name,
-                    model_name, model_version, "", self.args.version,
-                    python_program, str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
-                should_capture_stdout=False,
-                should_capture_stderr=False
-            )
+
+            inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
+            inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
+            if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
+                cur_dir = os.path.dirname(__file__)
+                fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                self.inference_gateway_process = ServerConstants.exec_console_with_script(
+                    "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                    "END_POINT_NAME=\"{}\" "
+                    "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                    "--log-level critical".format(
+                        self.redis_addr, self.redis_port, self.redis_password,
+                        end_point_name,
+                        model_name, model_version, "", self.args.version,
+                        python_program, inference_gw_cmd, str(inference_port), fedml_base_dir
+                    ),
+                    should_capture_stdout=False,
+                    should_capture_stderr=False
+                )
 
     def start_device_inference_monitor(self, run_id, end_point_name,
                                        model_id, model_name, model_version, check_stopped_event=True):
@@ -416,7 +457,7 @@ class FedMLServerRunner:
 
         self.mlops_metrics.broadcast_server_training_status(
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-            is_from_model=True
+            is_from_model=True, edge_id=self.edge_id
         )
 
         try:
@@ -437,9 +478,9 @@ class FedMLServerRunner:
     def cleanup_run_when_starting_failed(self):
         logging.info("Cleanup run successfully when starting failed.")
 
-        self.mlops_metrics.broadcast_server_training_status(self.run_id,
-                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                            is_from_model=True)
+        self.mlops_metrics.broadcast_server_training_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+            is_from_model=True, edge_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -467,23 +508,35 @@ class FedMLServerRunner:
         model_name = payload_json["model_name"]
         model_version = payload_json["model_version"]
         model_status = payload_json["model_status"]
+        run_id_str = str(end_point_id)
+        inference_port = payload_json.get("inference_external_api_port", ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_result(end_point_id, end_point_name,
                                   model_name, model_version,
                                   device_id, payload)
-        self.slave_deployment_results_mapping[device_id] = model_status
+        if self.slave_deployment_results_mapping.get(run_id_str, None) is None:
+            self.slave_deployment_results_mapping[run_id_str] = dict()
+        self.slave_deployment_results_mapping[run_id_str][str(device_id)] = model_status
 
         logging.info("callback_deployment_result_message: topic {}, payload {}, mapping {}.".format(
-            topic, payload, self.slave_deployment_results_mapping))
+            topic, payload, self.slave_deployment_results_mapping[run_id_str]))
+
+        request_json = self.running_request_json.get(run_id_str, None)
+        if request_json is None:
+            logging.error(f"The endpoint {end_point_id} is not running.")
+            self.send_deployment_status(
+                end_point_id, end_point_name, payload_json["model_name"], "",
+                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+            return
 
         # When all deployments are finished
-        device_id_list = self.request_json["device_ids"]
-        if len(device_id_list) <= len(self.slave_deployment_results_mapping) + 1:
+        device_id_list = request_json["device_ids"]
+        if len(device_id_list) <= len(self.slave_deployment_results_mapping[run_id_str].keys()) + 1:
             is_exist_deployed_model = False
             failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_results_mapping. \
+                status = self.slave_deployment_results_mapping[run_id_str]. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     pass
@@ -496,7 +549,7 @@ class FedMLServerRunner:
             # Failed to deploy models.
             if failed_to_deploy_all_models:
                 # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
-                self.send_deployment_stages(self.run_id, model_name, model_id,
+                self.send_deployment_stages(end_point_id, model_name, model_id,
                                             "",
                                             ServerConstants.MODEL_DEPLOYMENT_STAGE5["index"],
                                             ServerConstants.MODEL_DEPLOYMENT_STAGE5["text"],
@@ -510,15 +563,18 @@ class FedMLServerRunner:
                 return
 
             # 1. We should generate one unified inference api
-            ip = self.get_ip_address()
-            model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
+            ip = self.get_ip_address(request_json)
+            master_port = os.getenv("FEDML_MASTER_PORT", None)
+            if master_port is not None:
+                inference_port = int(master_port)
+            model_inference_port = inference_port
             if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/api/v1/predict".format(ip)
+                model_inference_url = "{}/inference/{}".format(ip, end_point_id)
             else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+                model_inference_url = "http://{}:{}/inference/{}".format(ip, model_inference_port, end_point_id)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
-            self.send_deployment_stages(self.run_id, model_name, model_id,
+            self.send_deployment_stages(end_point_id, model_name, model_id,
                                         model_inference_url,
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE5["index"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE5["text"],
@@ -528,18 +584,17 @@ class FedMLServerRunner:
             model_slave_url = payload_json["model_url"]
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
-            token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                get_end_point_token(end_point_name, model_name)
+            token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_token(end_point_id, end_point_name, model_name)
 
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
             if "type" in model_metadata and model_metadata["type"] == "default":
                 payload_json["input_json"] = {"end_point_name": end_point_name,
-                                            "model_name": model_name,
-                                            "token": str(token),
-                                            "inputs": model_inputs,
-                                            "outputs": []}
+                                              "model_name": model_name,
+                                              "token": str(token),
+                                              "inputs": model_inputs,
+                                              "outputs": []}
                 payload_json["output_json"] = model_metadata["outputs"]
             else:
                 for input_item in model_inputs:
@@ -557,12 +612,12 @@ class FedMLServerRunner:
                                 shape[i] = 1
                         ret_item["data"] = torch.zeros(shape).tolist()
                     ret_inputs.append(ret_item)
-                
+
                 payload_json["input_json"] = {"end_point_name": end_point_name,
-                                            "model_name": model_name,
-                                            "token": str(token),
-                                            "inputs": ret_inputs,
-                                            "outputs": model_metadata["outputs"]}
+                                              "model_name": model_name,
+                                              "token": str(token),
+                                              "inputs": ret_inputs,
+                                              "outputs": model_metadata["outputs"]}
                 payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, end_point_name,
@@ -570,7 +625,7 @@ class FedMLServerRunner:
                                       self.edge_id, json.dumps(payload_json))
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, end_point_name, True)
-            self.send_deployment_results_with_payload(self.run_id, end_point_name, payload_json)
+            self.send_deployment_results_with_payload(end_point_id, end_point_name, payload_json)
 
             payload_json_saved = payload_json
             payload_json_saved["model_slave_url"] = model_slave_url
@@ -589,6 +644,8 @@ class FedMLServerRunner:
         end_point_name = payload_json["end_point_name"]
         model_name = payload_json["model_name"]
         model_version = payload_json["model_version"]
+        inference_port = payload_json.get("inference_external_api_port", ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+        run_id_str = str(end_point_id)
 
         model_status = payload_json["model_status"]
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -596,17 +653,27 @@ class FedMLServerRunner:
             set_deployment_status(end_point_id, end_point_name,
                                   model_name, model_version,
                                   device_id, payload)
-        self.slave_deployment_statuses_mapping[device_id] = model_status
+        if self.slave_deployment_statuses_mapping.get(run_id_str, None) is None:
+            self.slave_deployment_statuses_mapping[run_id_str] = dict()
+        self.slave_deployment_statuses_mapping[run_id_str][device_id] = model_status
         logging.info("callback_deployment_status_message: topic {}, payload {}, mapping {}.".format(
-            topic, payload, self.slave_deployment_statuses_mapping))
+            topic, payload, self.slave_deployment_statuses_mapping[run_id_str]))
 
         # When all deployments are finished
-        device_id_list = self.request_json["device_ids"]
-        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping) + 1:
+        request_json = self.running_request_json.get(run_id_str, None)
+        if request_json is None:
+            logging.error(f"The endpoint {end_point_id} is not running.")
+            self.send_deployment_status(
+                self.run_id, end_point_name, payload_json["model_name"], "",
+                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+            return
+
+        device_id_list = request_json["device_ids"]
+        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping[run_id_str].keys()) + 1:
             is_exist_deployed_model = False
             failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_statuses_mapping. \
+                status = self.slave_deployment_statuses_mapping[run_id_str]. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     pass
@@ -623,7 +690,7 @@ class FedMLServerRunner:
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_end_point_status(end_point_id, end_point_name,
                                          ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                self.send_deployment_status(self.run_id, end_point_name,
+                self.send_deployment_status(end_point_id, end_point_name,
                                             payload_json["model_name"], "",
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 return
@@ -631,43 +698,58 @@ class FedMLServerRunner:
                 return
 
             # Send deployment finished message to ModelOps
-            ip = self.get_ip_address()
-            model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
+            ip = self.get_ip_address(request_json)
+            master_port = os.getenv("FEDML_MASTER_PORT", None)
+            if master_port is not None:
+                inference_port = int(master_port)
+            model_inference_port = inference_port
             if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/api/v1/predict".format(ip)
+                model_inference_url = "{}/inference/{}".format(ip, end_point_id)
             else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+                model_inference_url = "http://{}:{}/inference/{}".format(ip, model_inference_port, end_point_id)
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, end_point_name, True)
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_status(end_point_id, end_point_name,
                                      ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_status(self.run_id, end_point_name,
+            self.send_deployment_status(end_point_id, end_point_name,
                                         payload_json["model_name"],
                                         model_inference_url,
                                         ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
     def send_deployment_start_request_to_edges(self):
         run_id = self.request_json["run_id"]
-        edge_id_list = self.request_json["device_ids"]
-        logging.info("Edge ids: " + str(edge_id_list))
-        self.request_json["master_node_ip"] = self.get_ip_address()
+
+        edge_id_list = []
+        for device_id in self.request_json["device_ids"]:
+            if device_id in self.request_json["diff_devices"] and \
+                    self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_ADD_OPERATION:
+                edge_id_list.append(device_id)
+
+        logging.info("Edge ids before diff: " + str(self.request_json["device_ids"]))
+        logging.info("Edge ids diff: " + str(self.request_json["diff_devices"]))
+        logging.info("Edge ids after diff: " + str(edge_id_list))
+
+        self.request_json["master_node_ip"] = self.get_ip_address(self.request_json)
+        should_added_devices = []
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
                 continue
+            should_added_devices.append(edge_id)
             # send start deployment request to each model device
             topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
+        return should_added_devices
 
-    def get_ip_address(self):
+    def get_ip_address(self, request_json):
         # OPTION 1: Use local ip
         ip = ServerConstants.get_local_ip()
 
         # OPTION 2: Auto detect public ip
-        if "parameters" in self.request_json and \
-                ServerConstants.AUTO_DETECT_PUBLIC_IP in self.request_json["parameters"] and \
-                self.request_json["parameters"][ServerConstants.AUTO_DETECT_PUBLIC_IP]:
+        if "parameters" in request_json and \
+                ServerConstants.AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
+                request_json["parameters"][ServerConstants.AUTO_DETECT_PUBLIC_IP]:
             ip = ServerConstants.get_public_ip()
             logging.info("Auto detect public ip for master: " + ip)
 
@@ -678,9 +760,81 @@ class FedMLServerRunner:
         return ip
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
-        edge_id_list = model_msg_object.device_ids
-        logging.info("Device ids: " + str(edge_id_list))
-        for edge_id in edge_id_list:
+        if model_msg_object is None:    # Called after the diff operation
+            if "diff_devices" not in self.request_json or self.request_json["diff_devices"] is None:
+                return
+            else:
+                edge_id_list_to_delete = []
+                for device_id in self.request_json["diff_devices"]:
+                    if self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_DELETE_OPERATION:
+                        edge_id_list_to_delete.append(device_id)
+                if len(edge_id_list_to_delete) == 0:
+                    return
+
+                try:
+                    FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port,
+                                                                    self.redis_password)
+
+                    # 1. Get & Delete Deployment Status in Redis / SQLite
+                    devices_status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                        get_deployment_status_list(self.request_json["end_point_id"],
+                                                   self.request_json["end_point_name"],
+                                                   self.request_json["model_config"]["model_name"])
+                    delete_devices_status_list = []
+                    for device_status in devices_status_list:
+                        device_status_dict = json.loads(device_status)
+                        if int(device_status_dict["cache_device_id"]) in edge_id_list_to_delete:
+                            delete_devices_status_list.append(device_status)
+
+                    for delete_item in delete_devices_status_list:
+                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                            delete_item, self.request_json["end_point_id"],
+                            self.request_json["end_point_name"],
+                            self.request_json["model_config"]["model_name"]
+                        )
+
+                    # 2. Get & Delete the endpoint device info in Redis / SQLite
+                    device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                        get_end_point_device_info(self.request_json["run_id"])
+
+                    if device_objs is None:
+                        raise Exception("The device list in local redis is None")
+                    else:
+                        total_device_objs_list = json.loads(device_objs)
+                        for device_obj in total_device_objs_list:
+                            if device_obj["id"] in edge_id_list_to_delete:
+                                total_device_objs_list.remove(device_obj)
+
+                    FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
+                        self.request_json["end_point_id"], self.request_json["end_point_name"],
+                        json.dumps(total_device_objs_list))
+                except Exception as e:
+                    run_id = self.request_json["run_id"]
+                    error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_delete_{run_id}.txt"
+                    if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                        os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+                    with open(os.path.expanduser(error_log_path), "w") as f:
+                        f.write(str(self.request_json))
+                        f.write(str(e))
+                        f.write('\n')
+                        # f.write(self.request_json["run_id"])
+                        # f.write('\n')
+                        # f.write(self.request_json["end_point_name"])
+                    raise e
+
+        else:   # Delete the whole endpoint
+            edge_id_list_to_delete = model_msg_object.device_ids
+
+        # For Debug
+        if payload is not None:
+            debug_log_path = f"~/.fedml/fedml-model-server/fedml/logs/tmp_debug_delete_payload.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(debug_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(debug_log_path)))
+            with open(os.path.expanduser(debug_log_path), "w") as f:
+                f.write(str(payload))
+
+        logging.info("Device ids to be deleted: " + str(edge_id_list_to_delete))
+        for edge_id in edge_id_list_to_delete:
             if edge_id == self.edge_id:
                 continue
             # send delete deployment request to each model device
@@ -798,8 +952,8 @@ class FedMLServerRunner:
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config["instance_scale_min"]
-        scale_max = model_config["instance_scale_max"]
+        scale_min = model_config.get("instance_scale_min", 0)
+        scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -823,9 +977,12 @@ class FedMLServerRunner:
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
 
+        diff_devices = self.get_diff_devices(run_id)
+        request_json["diff_devices"] = diff_devices
+
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            set_end_point_device_info(run_id, end_point_name, json.dumps(device_objs))
+            set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
         usr_indicated_token = self.get_usr_indicated_token(request_json)
         if usr_indicated_token != "":
             logging.info(f"Change Token from{token} to {usr_indicated_token}")
@@ -833,7 +990,7 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, end_point_name, model_name, token)
 
-        self.subscribe_slave_devices_message()
+        self.subscribe_slave_devices_message(request_json)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
         time.sleep(2)
@@ -883,6 +1040,38 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"])
+
+    def get_diff_devices(self, run_id) -> dict:
+        # {device_id(int): "op: add" | "op: delete"}
+        # "op: add" -> need to add | "op: delete" -> need to delete device
+        try:
+            request_json = self.running_request_json.get(str(run_id))
+            diff_devices = {}
+            FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+            device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                get_end_point_device_info(run_id)
+            if device_objs is None:
+                for new_device_id in request_json["device_ids"]:
+                    diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+            else:
+                device_objs_dict = json.loads(device_objs)
+                device_ids = [d["id"] for d in device_objs_dict]
+
+                for exist_device_id in device_ids:
+                    if exist_device_id not in request_json["device_ids"]:
+                        diff_devices[exist_device_id] = ServerConstants.DEVICE_DIFF_DELETE_OPERATION
+
+                for new_device_id in request_json["device_ids"]:
+                    if new_device_id not in device_ids:
+                        diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+        except Exception as e:
+            error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/{run_id}_error.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+            with open(os.path.expanduser(error_log_path), "w") as f:
+                f.write(str(e))
+            raise e
+        return diff_devices
 
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))
@@ -967,7 +1156,7 @@ class FedMLServerRunner:
             set_end_point_activation(model_msg_object.inference_end_point_id,
                                      model_msg_object.end_point_name, False)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            delete_end_point(model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)                                     
+            delete_end_point(model_msg_object.inference_end_point_id, model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
@@ -1143,8 +1332,8 @@ class FedMLServerRunner:
         ServerConstants.cleanup_learning_process(self.run_id)
         ServerConstants.cleanup_run_process(self.run_id)
 
-        self.mlops_metrics.report_server_id_status(self.run_id,
-                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        self.mlops_metrics.report_server_id_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id)
 
         time.sleep(1)
 
@@ -1193,9 +1382,9 @@ class FedMLServerRunner:
             job_json_obj = json.loads(job.running_json)
             edge_ids = job_json_obj.get("edgeids", None)
 
-            self.mlops_metrics.broadcast_server_training_status(run_id,
-                                                                ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
-                                                                is_from_model=True)
+            self.mlops_metrics.broadcast_server_training_status(
+                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                is_from_model=True, edge_id=edge_id)
 
             self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
 
@@ -1442,11 +1631,11 @@ class FedMLServerRunner:
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
-    def subscribe_slave_devices_message(self):
-        if self.request_json is None:
+    def subscribe_slave_devices_message(self, request_json):
+        if request_json is None:
             return
-        run_id = self.request_json["run_id"]
-        edge_id_list = self.request_json["device_ids"]
+        run_id = request_json["run_id"]
+        edge_id_list = request_json["device_ids"]
         logging.info("Edge ids: " + str(edge_id_list))
         for edge_id in edge_id_list:
             if str(edge_id) == str(self.edge_id):
@@ -1535,7 +1724,7 @@ class FedMLServerRunner:
 
                 run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
                     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-                    inference_end_point_id, use_gpu, memory_size, model_version = \
+                    inference_end_point_id, use_gpu, memory_size, model_version, inference_port = \
                     self.parse_model_run_params(json.loads(job.running_json))
 
                 FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -1544,7 +1733,8 @@ class FedMLServerRunner:
                 if not is_activated:
                     continue
 
-                self.start_device_inference_gateway(run_id, end_point_name, model_id, model_name, model_version)
+                self.start_device_inference_gateway(run_id, end_point_name, model_id, model_name, model_version,
+                                                    inference_port=inference_port)
 
                 self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
         except Exception as e:
@@ -1574,25 +1764,33 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelServerAgent_Daemon_" + self.args.current_device_id,
+            "FedML_ModelServerAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
             "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
-        )
+            )
         self.agent_config = service_config
 
         # Init local database
         FedMLServerDataInterface.get_instance().create_job_table()
 
-        # Start local API services
-        python_program = get_python_program()
-        self.local_api_process = ServerConstants.exec_console_with_script(
-            "{} -m uvicorn fedml.computing.scheduler.model_scheduler.device_server_api:api --host 0.0.0.0 --port {} "
-            "--log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
-            should_capture_stdout=False,
-            should_capture_stderr=False
-        )
-        # if self.local_api_process is not None and self.local_api_process.pid is not None:
-        #     print(f"Model master local API process id {self.local_api_process.pid}")
+        server_api_cmd = "fedml.computing.scheduler.model_scheduler.device_server_api:api"
+        server_api_pids = RunProcessUtils.get_pid_from_cmd_line(server_api_cmd)
+        if server_api_pids is None or len(server_api_pids) <= 0:
+            # Start local API services
+            cur_dir = os.path.dirname(__file__)
+            fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+            python_program = get_python_program()
+            self.local_api_process = ServerConstants.exec_console_with_script(
+                "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                "--log-level critical".format(
+                    python_program, server_api_cmd, ServerConstants.LOCAL_SERVER_API_PORT,
+                    fedml_base_dir
+                ),
+                should_capture_stdout=False,
+                should_capture_stderr=False
+            )
+            # if self.local_api_process is not None and self.local_api_process.pid is not None:
+            #     print(f"Model master local API process id {self.local_api_process.pid}")
 
         self.recover_inference_and_monitor()
 
@@ -1604,14 +1802,12 @@ class FedMLServerRunner:
         self.mqtt_mgr.connect()
 
         self.setup_client_mqtt_mgr()
-        self.mlops_metrics.report_server_training_status(self.run_id,
-                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
-                                                         is_from_model=True)
+        self.mlops_metrics.report_server_training_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
+            is_from_model=True, edge_id=self.edge_id)
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         )
-        self.mlops_metrics.stop_sys_perf()
-        self.mlops_metrics.report_sys_perf(self.args, service_config["mqtt_config"])
 
         self.recover_start_deployment_msg_after_upgrading()
 

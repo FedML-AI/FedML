@@ -58,6 +58,10 @@ def log_aggregation_failed_status(run_id=None):
     mlops.log_aggregation_failed_status(run_id)
 
 
+def register_run_status_callback(run_status_callback):
+    mlops.register_run_status_callback(run_status_callback)
+
+
 def log_round_info(total_rounds, round_index):
     mlops.log_round_info(total_rounds, round_index)
 
@@ -149,8 +153,8 @@ class Artifact:
         self.ext_info = ext_info_dict
 
 
-def log_artifact(artifact: Artifact, version=None, run_id=None, edge_id=None):
-    mlops.log_artifact(artifact, version=version, run_id=run_id, edge_id=edge_id)
+def log_artifact(artifact: Artifact, version=None, run_id=None, edge_id=None, async_upload=True):
+    mlops.log_artifact(artifact, version=version, run_id=run_id, edge_id=edge_id, async_upload=async_upload)
 
 
 def log_model(model_name, model_file_path, version=None):
@@ -167,10 +171,21 @@ def log_metric(
     )
 
 
+def log_endpoint_status(endpoint_id, status):
+    mlops.log_endpoint_status(endpoint_id, status)
+
+
+def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
+    mlops.log_run_log_lines(
+        run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
+
+
 from ..computing.scheduler.slave.client_constants import ClientConstants
 from ..computing.scheduler.master.server_constants import ServerConstants
 
 __all__ = [
     "ClientConstants",
     "ServerConstants",
+    "log_endpoint_status",
+    "log_run_log_lines"
 ]

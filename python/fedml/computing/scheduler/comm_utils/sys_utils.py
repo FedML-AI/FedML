@@ -92,16 +92,17 @@ def get_sys_runner_info():
         pass
 
     try:
-        import nvidia_smi
+        gpus = GPUtil.getGPUs()
+        memory_total = 0.0
+        memory_free = 0.0
+        for gpu in gpus:
+            memory_total += gpu.memoryTotal
+            memory_free += gpu.memoryFree
 
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
-        gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpu_available_mem = "{:.1f} G".format(memory_free / 1024.0)
+        gpu_total_mem = "{:.1f}G".format(memory_total / 1024.0)
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
 
         gpu_device_name = torch.cuda.get_device_name(0)
         gpu_info = gpu_device_name
@@ -185,10 +186,11 @@ def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
         from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().get_redis_connection().lock(
-            ComputeCacheManager.get_instance().get_device_lock_key(edge_id)
+            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
         ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_device_available_gpu_ids(edge_id)
+            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
     except Exception as e:
+        logging.info(f"Exception {traceback.format_exc()}")
         available_gpu_ids = None
         pass
     realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
@@ -232,14 +234,9 @@ def get_gpu_count_vendor():
     gpu_count = 0
     gpu_vendor = ""
     try:
-        import nvidia_smi
-
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        gpu_count = nvidia_smi.nvmlDeviceGetCount()
+        gpus = GPUtil.getGPUs()
+        gpu_count = len(gpus)
         gpu_vendor = "nvidia"
-        nvidia_smi.nvmlShutdown()
     except:
         pass
 
@@ -249,7 +246,7 @@ def get_gpu_count_vendor():
 def get_running_info(cs_home_dir, cs_info_dir):
     home_dir = expanduser("~")
     runner_info_file = os.path.join(
-        home_dir, cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
+        home_dir, ".fedml", cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml"
     )
     if os.path.exists(runner_info_file):
         running_info = load_yaml_config(runner_info_file)
@@ -277,7 +274,7 @@ def get_python_program():
 def cleanup_login_process(runner_home_dir, runner_info_dir):
     try:
         home_dir = expanduser("~")
-        local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+        local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
         edge_process_id_file = os.path.join(
             local_pkg_data_dir, runner_info_dir, "runner-process.id"
         )
@@ -302,7 +299,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
 
 def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
     home_dir = expanduser("~")
-    local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+    local_pkg_data_dir = os.path.join(home_dir, ".fedml", runner_home_dir, "fedml", "data")
     os.makedirs(local_pkg_data_dir, exist_ok=True)
     os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir), exist_ok=True)
 
@@ -505,12 +502,18 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             find_monitor_process = False
+            find_monitor_name_arg = False
+            find_endpoint_id_name_arg = False
             for cmd in pinfo["cmdline"]:
-                if str(cmd).find("-ep {}".format(str(run_id))) != -1:
-                    find_monitor_process = True
+                if str(cmd).endswith("device_model_monitor.py"):
+                    find_monitor_name_arg = True
 
-                if str(cmd).find("-epn {}".format(end_point_name)) != -1:
+                if find_monitor_name_arg and str(cmd) == f"-ep":
+                    find_endpoint_id_name_arg = True
+
+                if find_monitor_name_arg and find_endpoint_id_name_arg and str(cmd) == f"{run_id}":
                     find_monitor_process = True
+                    break
 
             if find_monitor_process:
                 # click.echo("find the monitor process at {}.".format(process.pid))
@@ -518,6 +521,7 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     os.kill(process.pid, signal.SIGKILL)
+                break
         except Exception as e:
             pass
 
@@ -702,7 +706,8 @@ def upgrade_if_not_latest():
         is_latest_version, _, _ = check_fedml_is_latest_version(configuration_env=config_version)
         if not is_latest_version:
             daemon_ota_upgrade_with_version(config_version)
-            print("Completed upgrading, please launch your job again to use latest upgrading version.")
+            print("Completed upgrading, please launch your job again.")
+            exit(-1)
     except Exception as e:
         pass
 
@@ -900,7 +905,7 @@ def do_upgrade(config_version, upgrade_version, show_local_console=False):
 
 
 def is_runner_finished_normally(process_id):
-    log_runner_result_file = os.path.join(expanduser("~"), "fedml_trace", str(process_id))
+    log_runner_result_file = os.path.join(expanduser("~"), ".fedml", "fedml_trace", str(process_id))
     if os.path.exists(log_runner_result_file):
         os.remove(log_runner_result_file)
         return True

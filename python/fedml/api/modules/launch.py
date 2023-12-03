@@ -17,18 +17,19 @@ from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 class LaunchResult:
     def __init__(self, result_code: int, result_message: str, run_id: str = None, project_id: str = None,
-                 inner_id: str = None):
+                 inner_id: str = None, result_object: FedMLRunStartedModel=None):
         self.run_id = run_id
         self.project_id = project_id
         self.inner_id = inner_id
         self.result_code = result_code
         self.result_message = result_message
+        self.result_object = result_object
 
 
 def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: str = None,
                device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
-                                   ApiConstants.LAUNCHED)
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
     authenticate(api_key)
 
@@ -57,9 +58,9 @@ def create_run(yaml_file, api_key: str, resource_id: str = None, device_server: 
 
 
 def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str = None, device_server: str = None,
-                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None) -> (int, str, FedMLRunStartedModel):
-    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
-                                   ApiConstants.LAUNCHED)
+                          device_edges: List[str] = None, feature_entry_point: FeatureEntryPoint = None):
+    result_code, result_message = (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+                                   ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
 
     authenticate(api_key)
 
@@ -71,7 +72,8 @@ def create_run_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: st
         job_config, app_updated_result = _prepare_launch_app(yaml_file)
 
         if not app_updated_result:
-            return ApiConstants.ERROR_CODE[ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
+            return ApiConstants.ERROR_CODE[
+                ApiConstants.APP_UPDATE_FAILED], ApiConstants.APP_UPDATE_FAILED, create_run_result
 
         # Start the job with the above application.
         create_run_result = create_on_cluster(platform=SchedulerConstants.PLATFORM_TYPE_FALCON,
@@ -109,17 +111,19 @@ def job(
                                                                 device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
-        return LaunchResult(result_code=result_code, result_message=result_message)
+        return LaunchResult(result_code=result_code, result_message=result_message, result_object=create_run_result)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
 
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
-            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
+            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
+        if create_run_result.inner_id is not None:
+            FedMLLaunchManager.get_instance().cleanup_launch(run_id, create_run_result.inner_id)
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     # Run Job
     run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
@@ -129,16 +133,17 @@ def job(
     if run_result is None:
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     if run_result.run_url == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR],
                             result_message=ApiConstants.LAUNCH_JOB_STATUS_JOB_URL_ERROR, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
                         result_message=ApiConstants.LAUNCHED,
-                        run_id=run_id, project_id=project_id, inner_id=inner_id)
+                        run_id=run_id, project_id=project_id, inner_id=inner_id,
+                        result_object=create_run_result)
 
 
 def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, device_server: str,
@@ -149,24 +154,24 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
         yaml_file, cluster, api_key, resource_id, device_server, device_edges, feature_entry_point=feature_entry_point)
 
     if not create_run_result:
-        return LaunchResult(result_code=result_code, result_message=result_message)
+        return LaunchResult(result_code=result_code, result_message=result_message, result_object=create_run_result)
 
     run_id = getattr(create_run_result, "run_id", None)
     project_id = getattr(create_run_result, "project_id", None)
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    # Return if run launched and no user check required, or launch failed
-    if ((result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] and not create_run_result.user_check) or
-            (result_code != ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED])):
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
+            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
-                            project_id=project_id, inner_id=inner_id)
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
 
     cluster_id = getattr(create_run_result, "cluster_id", None)
 
     if cluster_id is None or cluster_id == "":
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CREATION_FAILED],
                             result_message=ApiConstants.CLUSTER_CREATION_FAILED,
-                            run_id=run_id, project_id=project_id, inner_id=inner_id)
+                            run_id=run_id, project_id=project_id, inner_id=inner_id,
+                            result_object=create_run_result)
 
     # Confirm cluster and start job
     cluster_confirmed = confirm_and_start(run_id=run_id, cluster_id=cluster_id,
@@ -175,11 +180,11 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
     if cluster_confirmed:
         return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_SUCCESS],
                             result_message=ApiConstants.CLUSTER_CONFIRM_SUCCESS, run_id=run_id, project_id=project_id,
-                            inner_id=inner_id)
+                            inner_id=inner_id, result_object=create_run_result)
 
     return LaunchResult(result_code=ApiConstants.ERROR_CODE[ApiConstants.CLUSTER_CONFIRM_FAILED],
                         result_message=ApiConstants.CLUSTER_CONFIRM_FAILED, run_id=run_id, project_id=project_id,
-                        inner_id=inner_id)
+                        inner_id=inner_id, result_object=create_run_result)
 
 
 def _prepare_launch_app(yaml_file):
@@ -206,31 +211,64 @@ def _prepare_launch_app(yaml_file):
 def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
-                result.message)
-    if result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
-                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
-    if result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
+                ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
+    if not result.run_url:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
+                ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
+    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
     if result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "
                 f"to make sure the syntax is valid, e.g. "
                 f"whether minimum_num_gpus or maximum_cost_per_hour is valid.")
-    if result.status == Constants.JOB_START_STATUS_BLOCKED:
+    elif result.status == Constants.JOB_START_STATUS_BLOCKED:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_BLOCKED],
-                ApiConstants.LAUNCH_JOB_STATUS_BLOCKED)
-    if not result.run_url or result.run_url == "":
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
-                f"Failed to launch the job: "
-                f"{result.message if result.message is not None else ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR}")
-    if result.status == Constants.JOB_START_STATUS_QUEUED:
+                f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
+                f"for your job. \n")
+    elif result.status == Constants.JOB_START_STATUS_QUEUED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
-                ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED)
-    if result.status == Constants.JOB_START_STATUS_LAUNCHED:
-        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED],
-                ApiConstants.LAUNCHED)
-    else:
-        return ApiConstants.ERROR_CODE[ApiConstants.ERROR], result.message
+                f"\nNo resource available now, job queued in waiting queue.")
+    elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST],
+                ApiConstants.RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST)
+    elif result.status == Constants.JOB_START_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED],
+                ApiConstants.RESOURCE_MATCHED_STATUS_QUERY_CREDIT_CARD_BINDING_STATUS_FAILED)
+    elif result.status == Constants.JOB_START_STATUS_QUERY_USER_BALANCE_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_QUERY_USER_BALANCE_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_USER_BALANCE_NOT_ENOUGH:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_USER_BALANCE_NOT_ENOUGH],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_JOB_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_NOT_EXISTS],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_MACHINE_STARTUP_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_MACHINE_STARTUP_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_CREATE_PROJECT_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_CREATE_PROJECT_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_PROJECT_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_PROJECT_NOT_EXISTS],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_DB_INSERT_ERROR:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_DB_INSERT_ERROR],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_OCCUPIED_FAILED:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_OCCUPIED_FAILED],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_JOB_CONFIG_NOT_EXISTS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_JOB_CONFIG_NOT_EXISTS],
+                result.message)
+    elif result.status == Constants.JOB_START_STATUS_GENERAL_ERROR:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_GENERAL_ERROR],
+                result.message)
+    elif result.status != Constants.JOB_START_STATUS_SUCCESS:
+        return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_NO_SPECIFIC_ERROR],
+                result.message)
 
+    return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
+            ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)

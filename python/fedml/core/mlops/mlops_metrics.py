@@ -4,6 +4,10 @@ import logging
 import os
 import time
 
+import requests
+
+import fedml
+from . import MLOpsConfigs
 from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...computing.scheduler.master.server_constants import ServerConstants
 from ...core.mlops.mlops_status import MLOpsStatus
@@ -68,19 +72,8 @@ class MLOpsMetrics(object):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False, in_run_id=None):
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
-
-        if in_run_id is not None:
-            run_id = in_run_id
-
-        self.common_report_client_training_status(edge_id, status)
-
-        self.common_report_client_id_status(run_id, edge_id, status)
-
-        self.report_client_device_status_to_web_ui(edge_id, status)
+    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False, run_id=0):
+        self.common_report_client_training_status(edge_id, status, run_id=run_id)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
@@ -89,16 +82,13 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
-    def report_client_device_status_to_web_ui(self, edge_id, status):
+    def report_client_device_status_to_web_ui(self, edge_id, status, run_id=0):
         """
         this is used for notifying the client device status to MLOps Frontend
         """
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE:
             return
 
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
         topic_name = "fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status, "version": "v1.0"}
         message_json = json.dumps(msg)
@@ -106,36 +96,28 @@ class MLOpsMetrics(object):
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def common_report_client_training_status(self, edge_id, status):
+    def common_report_client_training_status(self, edge_id, status, run_id=0):
         # if not self.comm_sanity_check():
         #     logging.info("comm_sanity_check at report_client_training_status.")
         #     return
         """
         this is used for notifying the client status to MLOps (both FedML CLI and backend can consume it)
         """
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
-        # logging.info("report_client_training_status. message_json = %s" % message_json)
+        logging.info("report_client_training_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def broadcast_client_training_status(self, edge_id, status, is_from_model=False):
+    def broadcast_client_training_status(self, edge_id, status, is_from_model=False, run_id=0):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for broadcasting the client status to MLOps (backend can consume it)
         """
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
+        self.common_broadcast_client_training_status(edge_id, status, run_id=run_id)
 
-        self.common_broadcast_client_training_status(edge_id, status)
-
-        self.report_client_device_status_to_web_ui(edge_id, status)
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
@@ -143,15 +125,12 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
-    def common_broadcast_client_training_status(self, edge_id, status):
+    def common_broadcast_client_training_status(self, edge_id, status, run_id=0):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for broadcasting the client status to MLOps (backend can consume it)
         """
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
@@ -165,16 +144,14 @@ class MLOpsMetrics(object):
         logging.info("client_send_exit_train_msg.")
         self.messenger.send_message_json(topic_exit_train_with_exception, message_json)
 
-    def report_client_id_status(self, run_id, edge_id, status, running_json=None,
-                                is_from_model=False, server_id="0"):
+    def report_client_id_status(self, edge_id, status, running_json=None,
+                                is_from_model=False, server_id="0", run_id=0, msg=""):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for communication between client agent (FedML cli module) and client
         """
-        self.common_report_client_id_status(run_id, edge_id, status, server_id)
-
-        self.report_client_device_status_to_web_ui(edge_id, status)
+        self.common_report_client_id_status(run_id, edge_id, status, server_id, msg=msg)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
@@ -183,24 +160,22 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
             FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
-    def common_report_client_id_status(self, run_id, edge_id, status, server_id="0"):
+    def common_report_client_id_status(self, run_id, edge_id, status, server_id="0", msg=""):
         # if not self.comm_sanity_check():
         #     return
         """
         this is used for communication between client agent (FedML cli module) and client
         """
         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-        msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id}
+        msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id, "msg": msg}
         message_json = json.dumps(msg)
-        # logging.info("report_client_id_status. message_json = %s" % message_json)
+        logging.info("report_client_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status, role=None, running_json=None, is_from_model=False):
+    def report_server_training_status(self, run_id, status, edge_id=0, role=None, running_json=None, is_from_model=False):
         # if not self.comm_sanity_check():
         #     return
-        self.common_report_server_training_status(run_id, status, role)
-
-        self.report_server_device_status_to_web_ui(run_id, status, role)
+        self.common_report_server_training_status(run_id, status, role, edge_id=edge_id)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
@@ -209,7 +184,7 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
-    def report_server_device_status_to_web_ui(self, run_id, status, role=None):
+    def report_server_device_status_to_web_ui(self, run_id, status, edge_id=0, role=None):
         """
         this is used for notifying the server device status to MLOps Frontend
         """
@@ -221,7 +196,7 @@ class MLOpsMetrics(object):
             role = "normal"
         msg = {
             "run_id": run_id,
-            "edge_id": self.edge_id,
+            "edge_id": edge_id,
             "status": status,
             "role": role,
             "version": "v1.0"
@@ -231,7 +206,7 @@ class MLOpsMetrics(object):
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def common_report_server_training_status(self, run_id, status, role=None):
+    def common_report_server_training_status(self, run_id, status, role=None, edge_id=0):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_run/fl_server/mlops/status"
@@ -239,7 +214,7 @@ class MLOpsMetrics(object):
             role = "normal"
         msg = {
             "run_id": run_id,
-            "edge_id": self.edge_id,
+            "edge_id": edge_id,
             "status": status,
             "role": role,
         }
@@ -247,7 +222,6 @@ class MLOpsMetrics(object):
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
-        self.report_server_id_status(run_id, status)
 
     def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False, edge_id=None):
         if self.messenger is None:
@@ -264,8 +238,6 @@ class MLOpsMetrics(object):
         logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
-
-        self.report_server_device_status_to_web_ui(run_id, status, role)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
@@ -287,8 +259,6 @@ class MLOpsMetrics(object):
         logging.info("report_server_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-        self.report_server_device_status_to_web_ui(run_id, status)
-
     def report_client_training_metric(self, metric_json):
         # if not self.comm_sanity_check():
         #     return
@@ -297,12 +267,30 @@ class MLOpsMetrics(object):
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_metric(self, metric_json):
+    def report_server_training_metric(self, metric_json, payload=None):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/training_progress_and_eval"
-        logging.info("report_server_training_metric. message_json = %s" % metric_json)
+        if payload is not None:
+            message_json = payload
+        else:
+            message_json = json.dumps(metric_json)
+        # logging.info("report_server_training_metric. message_json = %s" % metric_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
+    def report_fedml_train_metric(self, metric_json, run_id=0):
+        # if not self.comm_sanity_check():
+        #     return
+        topic_name = f"fedml_slave/fedml_master/metrics/{run_id}"
+        logging.info("report_fedml_train_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
+    def report_fedml_run_logs(self, logs_json, run_id=0):
+        # if not self.comm_sanity_check():
+        #     return
+        topic_name = f"fedml_slave/fedml_master/logs/{run_id}"
+        message_json = json.dumps(logs_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
@@ -387,10 +375,73 @@ class MLOpsMetrics(object):
         message_json = json.dumps(artifact_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_sys_perf(self, sys_args, mqtt_config):
+    def report_endpoint_status(self, end_point_id, model_status, timestamp=None,
+                               end_point_name="", model_name="", model_inference_url=""):
+        deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
+        deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
+        time_param = time.time_ns() / 1000.0 if timestamp is None else timestamp
+        deployment_status_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
+                                     "model_name": model_name,
+                                     "model_url": model_inference_url,
+                                     "model_status": model_status,
+                                     "timestamp": int(format(time_param, '.0f'))}
+
+        self.messenger.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.messenger.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
+
+    def report_run_log(
+            self, run_id, device_id, log_list, log_source=None, use_mqtt=False
+    ):
+        url = fedml._get_backend_service()
+        log_sever_url = f"{url}/fedmlLogsServer/logs/update"
+        log_upload_request = {
+            "run_id": run_id,
+            "edge_id": device_id,
+            "logs": log_list,
+            "create_time": time.time(),
+            "update_time": time.time(),
+            "created_by": str(device_id),
+            "updated_by": str(device_id)
+        }
+
+        if log_source is not None and log_source != "":
+            log_upload_request["source"] = log_source
+
+        if use_mqtt:
+            self.report_fedml_run_logs(log_upload_request, run_id=run_id)
+        else:
+            log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+
+            # send log data to the log server
+            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            if cert_path is not None:
+                try:
+                    requests.session().verify = cert_path
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(
+                        log_sever_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+
+                except requests.exceptions.SSLError as err:
+                    MLOpsConfigs.install_root_ca_file()
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(
+                        log_sever_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            else:
+                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                response = requests.post(log_sever_url, headers=log_headers, json=log_upload_request)
+                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            if response.status_code != 200:
+                return
+
+    def report_sys_perf(self, sys_args, mqtt_config, run_id=None, job_process_id=None):
         setattr(sys_args, "mqtt_config_path", mqtt_config)
-        run_id = getattr(sys_args, "run_id", 0)
-        self.fl_job_perf.add_job(run_id, os.getpid())
+        run_id = getattr(sys_args, "run_id", 0) if run_id is None else run_id
+        setattr(sys_args, "run_id", run_id)
+        self.fl_job_perf.add_job(run_id, os.getpid() if job_process_id is None else job_process_id)
         self.fl_job_perf.report_job_stats(sys_args)
 
     def stop_sys_perf(self):

@@ -8,18 +8,19 @@ import yaml
 
 import fedml
 import requests
-from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
-from ....core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
-from .device_client_constants import ClientConstants
-from ....core.common.singleton import Singleton
-from .modelops_configs import ModelOpsConfigs
-from .device_model_deployment import get_model_info
-from .device_server_constants import ServerConstants
-from .device_model_object import FedMLModelList
-from .device_client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
+from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
+
 
 class FedMLModelCards(Singleton):
 
@@ -34,7 +35,8 @@ class FedMLModelCards(Singleton):
     def get_instance():
         return FedMLModelCards()
 
-    def serve_model_on_premise(self, model_name, master_device_ids, worker_device_ids, use_remote):
+    def serve_model_on_premise(self, model_name, endpoint_name, master_device_ids,
+                               worker_device_ids, use_remote, endpoint_id):
         print(f"Use remote: {use_remote}")
         # Check api key
         user_api_key = get_api_key()
@@ -59,7 +61,7 @@ class FedMLModelCards(Singleton):
 
         if use_remote:
             if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                     additional_params_dict, use_local_deployment):
+                                     additional_params_dict, use_local_deployment, endpoint_id=endpoint_id):
                 print("Failed to deploy model")
                 return False
             return True
@@ -85,7 +87,8 @@ class FedMLModelCards(Singleton):
         self.push_model(model_name, "", user_api_key)
 
         if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                 additional_params_dict, use_local_deployment):
+                                 additional_params_dict, use_local_deployment, endpoint_name=endpoint_name,
+                                 endpoint_id=endpoint_id):
             print("Failed to deploy model")
             return False
         return True
@@ -120,7 +123,7 @@ class FedMLModelCards(Singleton):
         shutil.copy(yaml_file, os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'r') as f:
             launch_params = yaml.safe_load(f)
-            launch_params["workspace"] = "./"   # Since it is inside the src folder, the workspace is "./"
+            launch_params["workspace"] = "./"  # Since it is inside the src folder, the workspace is "./"
         with open(os.path.join(src_folder, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE), 'w') as f:
             yaml.dump(launch_params, f, sort_keys=False)
         return True
@@ -149,7 +152,7 @@ class FedMLModelCards(Singleton):
 
         if not os.path.isabs(model_config["workspace"]):
             # Use config_file_path + workspace if workspace is a relative path
-            base_path = os.path.dirname(config_file)   # Avoid scene like: ./src
+            base_path = os.path.dirname(config_file)  # Avoid scene like: ./src
             workspace_abs_path = os.path.join(base_path, model_config["workspace"])
         else:
             workspace_abs_path = model_config["workspace"]
@@ -184,7 +187,7 @@ class FedMLModelCards(Singleton):
         with open(os.path.join(model_dir, ClientConstants.ORIGINAL_YAML_FILE_LOCATION), 'r') as f:
             original_config_file_path = f.read()
 
-        if not os.path.exists(original_config_file_path) or not os.path.isfile(original_config_file_path)\
+        if not os.path.exists(original_config_file_path) or not os.path.isfile(original_config_file_path) \
                 or not os.path.isabs(original_config_file_path):
             print(f"The original config file {original_config_file_path} doesn't exist, cannot recreate the model.")
             return False
@@ -411,8 +414,9 @@ class FedMLModelCards(Singleton):
 
             model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
             if not os.path.exists(model_readme_file):
-                print("[Warning] You model repository is missing file {}, we've created an empty README.md for you.".format(
-                    ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
+                print(
+                    "[Warning] You model repository is missing file {}, we've created an empty README.md for you."
+                    .format(ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
                 # create a empty readme file called README.md
                 with open(model_readme_file, 'w') as f:
                     f.write("")
@@ -500,7 +504,8 @@ class FedMLModelCards(Singleton):
             usr_resource_req = usr_config_total_params.get("computing", {})
 
         if usr_resource_req == {}:
-            print("[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
+            print(
+                "[Error] Model {} doesn't have computing resource requirement. Please add it first.".format(model_name))
             return ""
 
         launch_params = {
@@ -617,7 +622,8 @@ class FedMLModelCards(Singleton):
         return False
 
     def query_model(self, model_name):
-        return get_model_info(model_name, ClientConstants.INFERENCE_ENGINE_TYPE_ONNX, ClientConstants.INFERENCE_HTTP_PORT)
+        return get_model_info(model_name, ClientConstants.INFERENCE_ENGINE_TYPE_ONNX,
+                              ClientConstants.INFERENCE_HTTP_PORT)
 
     def list_model_api(self, model_name, user_id, user_api_key):
         model_list_result = None
@@ -750,8 +756,10 @@ class FedMLModelCards(Singleton):
             "userId": str(user_id),
             "apiKey": user_api_key,
         }
-        if endpoint_id is not None:
-            model_deployment_json["id"] = endpoint_id
+        if endpoint_id is not None and endpoint_id != "":
+            print(f"Updating endpoint {endpoint_id}...")
+            time.sleep(5)
+            model_deployment_json["id"] = int(endpoint_id)
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
         if cert_path is not None:
@@ -768,10 +776,15 @@ class FedMLModelCards(Singleton):
         else:
             response = requests.post(model_ops_url, headers=model_api_headers, json=model_deployment_json)
         if response.status_code != 200:
+            print(f"Api error, response data {response.json()}")
             pass
         else:
+            print(f"Api Success, response data {response.json()}")
             resp_data = response.json()
             if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            elif resp_data["code"] == "ENDPOINT_EXIST":
                 print("Error: {}.".format(resp_data["message"]))
                 return None
             model_deployment_result = resp_data
@@ -786,7 +799,7 @@ class FedMLModelCards(Singleton):
         endpoint_apply_json = {
             "apiKey": user_api_key,
             "endpointName": endpoint_name,
-            "resourceType": "md.on_premise_device"
+            "resourceType": "md.fedml_cloud_device"
         }
         if model_id is not None:
             endpoint_apply_json["modelId"] = model_id
@@ -825,6 +838,134 @@ class FedMLModelCards(Singleton):
                 return None
 
         return endpoint_apply_result
+
+    def delete_endpoint_api(self, user_api_key, endpoint_id):
+        endpoint_request_result = None
+        model_ops_url = ClientConstants.get_model_ops_delete_endpoint_url(self.config_version)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_request_json = {
+            "apiKey": user_api_key,
+            "endpointId": endpoint_id
+        }
+
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_request_json
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    model_ops_url, verify=True, headers=endpoint_api_headers, json=endpoint_request_json
+                )
+        else:
+            response = requests.post(model_ops_url, headers=endpoint_api_headers, json=endpoint_request_json)
+        if response.status_code != 200:
+            print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            endpoint_request_result = resp_data["data"]
+            if endpoint_request_result is None or endpoint_request_result == "":
+                print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return None
+
+        return endpoint_request_result
+
+    def endpoint_inference_api(self, user_api_key, endpoint_id: str, req: str) -> str:
+        model_ops_url = ClientConstants.get_model_ops_endpoint_inference_url(endpoint_id)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                                'Authorization': 'Bearer {}'.format(user_api_key)}
+        try:
+            req_json = json.loads(req)
+        except Exception as e:
+            print("[Error] Cannot jsonify your req body: {}.".format(e))
+            return ""
+
+        try:
+            args = {"config_version": self.config_version}
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+
+            if cert_path is not None:
+                try:
+                    requests.session().verify = False
+                    response = requests.post(
+                        model_ops_url, verify=True, headers=endpoint_api_headers, json=req_json
+                    )
+                except requests.exceptions.SSLError as err:
+                    ModelOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        model_ops_url, verify=True, headers=endpoint_api_headers, json=req_json
+                    )
+            else:
+                response = requests.post(model_ops_url, headers=endpoint_api_headers, json=req_json)
+        except Exception as e:
+            print("[Error] After post, got: {}.".format(e))
+            return ""
+
+        if response.status_code != 200:
+            print(f"Endpoint inference with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            return ""
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Got error msg from mlops: {}.".format(resp_data["message"]))
+                return ""
+            endpoint_inference_result = resp_data["data"]
+            if endpoint_inference_result is None or endpoint_inference_result == "":
+                print(f"Endpoint inference with response.status_code = {response.status_code}, "
+                      f"response.content: {response.content}")
+                return ""
+            try:
+                endpoint_inference_result = json.dumps(endpoint_inference_result)
+            except Exception as e:
+                print("[Error] Cannot jsonify the endpoint inference result from mlops: {}.".format(e))
+                return ""
+
+        return endpoint_inference_result
+
+    def delete_endpoint(self, user_api_key: str, endpoint_id: str) -> bool:
+        delete_mlops_url = ClientConstants.get_model_ops_delete_url()
+        endpoint_delete_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        endpoint_delete_json = {
+            "apiKey": user_api_key,
+            "endpointId": int(endpoint_id)
+        }
+
+        try:
+            args = {"config_version": self.config_version}
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+
+            if cert_path is not None:
+                try:
+                    requests.session().verify = False
+                    response = requests.post(
+                        delete_mlops_url, verify=True, headers=endpoint_delete_headers, json=endpoint_delete_json
+                    )
+                except requests.exceptions.SSLError as err:
+                    ModelOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        delete_mlops_url, verify=True, headers=endpoint_delete_headers, json=endpoint_delete_json
+                    )
+            else:
+                response = requests.post(delete_mlops_url, headers=endpoint_delete_headers, json=endpoint_delete_json)
+        except Exception as e:
+            print("[Error] After post req, got: {}.".format(e))
+            return False
+
+        if response.status_code != 200:
+            print(f"Delete endpoint with response.status_code = {response.status_code}, "
+                  f"response.content: {response.content}")
+            return False
+        return True
 
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id, params):
@@ -948,3 +1089,9 @@ if __name__ == "__main__":
     parser.add_argument("--cf", "-c", help="config file")
     parser.add_argument("--role", "-r", type=str, default="client", help="role")
     in_args = parser.parse_args()
+    # fedml.set_env_version("dev")
+    # FedMLModelCards.get_instance().deploy_model_api(
+    #     "375", "mnist", "v0-Thu Nov 16 09:41:42 GMT 2023",
+    #     "md.on_premise_device", [1,2], "XXAA",
+    #     "XXAA", endpoint_name="EndPoint-a8a8c0b0-cb3f-428a-a4f3-6e9e2437a096"
+    # )

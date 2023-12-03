@@ -10,6 +10,7 @@ import traceback
 import urllib
 import zipfile
 from os.path import expanduser
+from urllib.parse import urlparse, unquote
 
 import psutil
 import yaml
@@ -122,7 +123,7 @@ class ClientConstants(object):
     FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
-    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    MODEL_INFERENCE_DEFAULT_PORT = 2203
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
@@ -153,7 +154,7 @@ class ClientConstants(object):
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
-        fedml_home_dir = os.path.join(home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        fedml_home_dir = os.path.join(home_dir, ".fedml", ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
         if not os.path.exists(fedml_home_dir):
             os.makedirs(fedml_home_dir, exist_ok=True)
         return fedml_home_dir
@@ -186,6 +187,14 @@ class ClientConstants(object):
         if not os.path.exists(package_unzip_dir):
             os.makedirs(package_unzip_dir, exist_ok=True)
         return package_unzip_dir
+
+    @staticmethod
+    def get_filename_and_extension(url):
+        parsed_url = urlparse(unquote(url))
+        path = parsed_url.path
+        filename = os.path.basename(path)
+        filename_without_extension, file_extension = os.path.splitext(filename)
+        return filename, filename_without_extension, file_extension
 
     @staticmethod
     def get_package_run_dir(package_name):
@@ -276,8 +285,18 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_delete_endpoint_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/deleteFromCli"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_upload_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/createFromCli"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_delete_url():
+        model_ops_url = f"{ClientConstants.get_model_ops_url()}/api/v1/endpoint/deleteFromCli"
         return model_ops_url
 
     @staticmethod
@@ -288,6 +307,12 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/createFromCli"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_endpoint_inference_url(endpoint_id: str):
+        config_version = fedml.get_env_version()
+        model_ops_url = f"{fedml._get_backend_service()}/inference" + f"/{endpoint_id}"
         return model_ops_url
 
     @staticmethod
@@ -364,16 +389,6 @@ class ClientConstants(object):
         return ip
 
     @staticmethod
-    def get_public_ip():
-        import requests
-        ip = None
-        try:
-            ip = requests.get('https://checkip.amazonaws.com').text.strip()
-        except Exception as e:
-            print("Failed to get public ip: {}".format(e))
-        return ip
-
-    @staticmethod
     def check_network_port_is_opened(port):
         import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -384,6 +399,16 @@ class ClientConstants(object):
             return True
         except:
             return False
+    
+    @staticmethod
+    def get_public_ip():
+        import requests
+        ip = None
+        try:
+            ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        except Exception as e:
+            print("Failed to get public ip: {}".format(e))
+        return ip
 
     @staticmethod
     def check_process_is_running(process_id):

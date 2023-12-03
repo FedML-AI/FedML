@@ -59,7 +59,7 @@ class FedMLModelDeviceServerRunner:
 
                 self.start_agent()
             except Exception as e:
-                logging.info("Restart model device client: {}".format(traceback.format_exc()))
+                logging.info("Restart model device server: {}".format(traceback.format_exc()))
                 pass
 
             time.sleep(3)

@@ -148,3 +148,19 @@ class RunProcessUtils:
             file.close()
         except Exception as e:
             pass
+
+    @staticmethod
+    def get_pid_from_cmd_line(cmd_line, break_on_first=True):
+        ret_pids = list()
+        pids = psutil.process_iter()
+        for pid in pids:
+            try:
+                for cmd in pid.cmdline():
+                    if cmd.find(cmd_line) != -1:
+                        ret_pids.append(pid.pid)
+                        if break_on_first:
+                            return ret_pids
+            except Exception as e:
+                pass
+
+        return ret_pids

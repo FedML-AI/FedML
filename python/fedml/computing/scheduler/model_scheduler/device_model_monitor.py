@@ -38,8 +38,8 @@ class FedMLModelMetrics:
                      inference_output_url, device_id):
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
-            get_latest_monitor_metrics(end_point_name, model_name, model_version)
+        metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
         print(f"Calculated metrics_item: {metrics_item}")
         if metrics_item is not None:
             total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
@@ -48,9 +48,9 @@ class FedMLModelMetrics:
         total_latency += cost_time
         total_request_num += 1
         current_qps = 1 / (cost_time / self.ms_per_sec)
-        current_qps = format(current_qps, '.0f')
-        avg_qps = total_request_num / (total_latency / self.ms_per_sec)
-        avg_qps = format(avg_qps, '.0f')
+        current_qps = format(current_qps, '.6f')
+        avg_qps = total_request_num * 1.0 / (total_latency / self.ms_per_sec)
+        avg_qps = format(avg_qps, '.6f')
         avg_latency = format(total_latency / total_request_num / self.ms_per_sec, '.6f')
 
         timestamp = int(format(time.time_ns()/1000.0, '.0f'))
@@ -97,9 +97,9 @@ class FedMLModelMetrics:
 
     def send_monitoring_metrics(self, index):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
-            get_monitor_metrics_item(self.current_end_point_name, self.current_model_name,
-                                     self.current_model_version, index)
+        metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_monitor_metrics_item(self.current_end_point_id, self.current_end_point_name,
+                                     self.current_model_name, self.current_model_version, index)
         if metrics_item is None:
             return index
         total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
@@ -111,7 +111,7 @@ class FedMLModelMetrics:
                                          "model_url": self.current_infer_url,
                                          "end_point_id": self.current_end_point_id,
                                          "latency": float(avg_latency),
-                                         "qps": int(avg_qps),
+                                         "qps": float(avg_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp,
                                          "edgeId": device_id}

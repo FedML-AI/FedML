@@ -34,6 +34,11 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
+        mlops.register_run_status_callback(self.callback_mlops_run_status)
+
+    def callback_mlops_run_status(self, run_id, run_status):
+        logging.info(f"Server run id {run_id}, status {run_status}")
+
     def is_main_process(self):
         return getattr(self.aggregator, "aggregator", None) is None or self.aggregator.aggregator.is_main_process()
 

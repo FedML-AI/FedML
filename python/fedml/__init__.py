@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.12.dev15"
+__version__ = "0.8.12b53"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -78,7 +78,7 @@ def init(args=None, check_env=True, should_init_logs=True):
             set_env_version("release")
     # after environment is set, only fedml.get_env_version() is used to get the environment version
 
-    if check_env:
+    if check_env and hasattr(args, "training_type") and args.training_type != fedml.FEDML_TRAINING_PLATFORM_SIMULATION:
         collect_env()
 
     if hasattr(args, "training_type"):
