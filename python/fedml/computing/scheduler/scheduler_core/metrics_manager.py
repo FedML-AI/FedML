@@ -12,14 +12,20 @@ class MetricsManager(Singleton):
         return MetricsManager()
 
     def save_metrics(self, metrics_json):
-        if metrics_json is None:
-            return
+        try:
+            if metrics_json is None:
+                return
 
-        metrics_model = MetricsModel(metrics_json)
-        ComputeCacheManager.get_instance().set_redis_params()
-        ComputeCacheManager.get_instance().store_cache(metrics_model)
+            metrics_model = MetricsModel(metrics_json)
+            ComputeCacheManager.get_instance().set_redis_params()
+            ComputeCacheManager.get_instance().store_cache(metrics_model)
+        except Exception as e:
+            pass
 
     def get_metrics(self):
-        ComputeCacheManager.get_instance().set_redis_params()
-        return ComputeCacheManager.get_instance().get_metrics()
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            return ComputeCacheManager.get_instance().get_metrics()
+        except Exception as e:
+            return None
 

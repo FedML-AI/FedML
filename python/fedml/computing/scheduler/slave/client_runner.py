@@ -304,6 +304,8 @@ class FedMLClientRunner:
         if fedml_conf_object.get("device_args", None) is not None:
             fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
+        fedml_conf_object["data_args"]["data_cache_dir"] = os.path.join(
+            fedml_conf_object["data_args"]["data_cache_dir"], str(self.edge_id))
         if fedml_conf_object.get("tracking_args", None) is not None:
             fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
             fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]

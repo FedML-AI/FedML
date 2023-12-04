@@ -69,7 +69,7 @@ class ComputeCacheManager(object):
         pass
 
     def get_metrics(self):
-        pass
+        return None
 
     def get_logs(self, run_id, edge_id=-1, page_num=1, page_size=100):
         return self.logs_cache.get_run_logs(run_id, edge_id=edge_id, page_num=page_num, page_size=page_size)
