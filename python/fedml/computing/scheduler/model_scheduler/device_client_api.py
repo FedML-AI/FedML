@@ -52,7 +52,7 @@ async def get_history_job_status(request: Request):
 
 
 @api.post('/api/v1/predict')
-async def predict(end_point_id, request: Request):
+async def predict(request: Request):
     # Get json data
     input_json = await request.json()
     endpoint_id = input_json.get("endpoint_id", None)
@@ -63,7 +63,7 @@ async def predict(end_point_id, request: Request):
     inference_output_list = input_json.get("output", [])
     inference_type = input_json.get("inference_type", "default")
 
-    inference_response = run_http_inference_with_curl_request(
+    response_ok, inference_response = run_http_inference_with_curl_request(
         inference_url, inference_input_list, inference_output_list, inference_type=inference_type)
 
     return inference_response
