@@ -945,7 +945,7 @@ class FedMLClientRunner:
             json_params["extra_infos"]["gpu_available_id_list"] = []
             json_params["extra_infos"]["gpu_list"] = []
 
-        _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+        _, cert_path = MLOpsConfigs.get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path

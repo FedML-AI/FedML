@@ -434,16 +434,15 @@ class S3Storage:
                 ExpiresIn=60 * 60 * 24 * 5,
                 Params={"Bucket": self.bucket_name, "Key": message_key},
             )
+            logging.info(
+                f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
+            )
             return model_url
         except Exception as e:
             logging.error(
                 f"Upload data failed. | src: {src_local_path} | dest: {message_key} | Exception: {e}"
             )
             return None
-        logging.info(
-            f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
-        )
-        return None
 
     def download_file(self, message_key, path_local):
         """

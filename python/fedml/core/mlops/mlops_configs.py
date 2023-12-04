@@ -1,11 +1,21 @@
-
 import os
 import time
+from enum import Enum
+from typing import List
+
 import certifi
 import requests
 import fedml
 from fedml.core.mlops.mlops_utils import MLOpsUtils
 
+
+class Configs(Enum):
+    MQTT_CONFIG = "mqtt_config"
+    S3_CONFIG = "s3_config"
+    ML_OPS_CONFIG = "ml_ops_config"
+    DOCKER_CONFIG = "docker_config"
+    WEB3_CONFIG = "web3_config"
+    THETASTORE_CONFIG = "thetastore_config"
 
 class Singleton(object):
     def __new__(cls):
@@ -39,7 +49,8 @@ class MLOpsConfigs(object):
 
         return MLOpsConfigs._config_instance
 
-    def get_request_params(self):
+    @staticmethod
+    def get_request_params():
         url = fedml._get_backend_service()
         url = f"{url}/fedmlOpsServer/configs/fetch"
         cert_path = None
@@ -50,6 +61,33 @@ class MLOpsConfigs(object):
             )
 
         return url, cert_path
+
+    @staticmethod
+    def _request(request_url: str, request_json: dict, request_headers=None, cert_path = None) -> requests.Response:
+        if request_headers is None:
+            request_headers = {}
+        request_headers["Connection"] = "close"
+        request_headers["Content-Type"] = "application/json"
+
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    request_url, json=request_json, verify=True,
+                    headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    request_url, json=request_json, verify=True,
+                    headers={"content-type": "application/json", "Connection": "close"}
+                )
+        else:
+            response = requests.post(
+                request_url, json=request_json, headers={"content-type": "application/json", "Connection": "close"}
+            )
+        return response
+
 
     def get_cert_path_with_version(self):
         url = fedml._get_backend_service()
@@ -79,57 +117,31 @@ class MLOpsConfigs(object):
         with open(ca_file, 'ab') as outfile:
             outfile.write(open_root_ca_file)
 
-    def fetch_configs(self):
-        url, cert_path = self.get_request_params()
-        json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
+    @staticmethod
+    def _fetch_configs(configs: set[Configs]) -> dict:
+        url, cert_path = get_request_params()
+        request_configs = {Configs.ML_OPS_CONFIG.value}
+        request_configs = request_configs.union(configs)
+        json_params = {"config_name": [config.value for config in request_configs],
                        "device_send_time": int(time.time() * 1000)}
-
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-        else:
-            response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
-            )
+        response = MLOpsConfigs._request(request_url=url, request_json=json_params, cert_path=cert_path)
         status_code = response.json().get("code")
+        result = {}
         if status_code == "SUCCESS":
-            mqtt_config = response.json().get("data").get("mqtt_config")
-            s3_config = response.json().get("data").get("s3_config")
-            mlops_config = response.json().get("data").get("ml_ops_config")
+            data = response.json().get("data")
+            for config in configs:
+                result[config] = data.get(config.value)
+            mlops_config = data.get(Configs.ML_OPS_CONFIG.value)
             MLOpsUtils.calc_ntp_from_config(mlops_config)
         else:
             raise Exception("failed to fetch device configurations!")
-        return mqtt_config, s3_config
+        return result
 
     def fetch_web3_configs(self):
-        url, cert_path = self.get_request_params()
+        url, cert_path = get_request_params()
         json_params = {"config_name": ["mqtt_config", "web3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
-
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-        else:
-            response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
-            )
-
+        response = MLOpsConfigs._request(request_url=url, request_json=json_params, cert_path=cert_path)
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
@@ -141,26 +153,10 @@ class MLOpsConfigs(object):
         return mqtt_config, web3_config
 
     def fetch_thetastore_configs(self):
-        url, cert_path = self.get_request_params()
+        url, cert_path = get_request_params()
         json_params = {"config_name": ["mqtt_config", "thetastore_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
-
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-        else:
-            response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
-            )
-
+        response = MLOpsConfigs._request(request_url=url, request_json=json_params, cert_path=cert_path)
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
@@ -171,86 +167,17 @@ class MLOpsConfigs(object):
             raise Exception("failed to fetch device configurations!")
         return mqtt_config, thetastore_config
 
-    def fetch_all_configs(self):
-        url, cert_path = self.get_request_params()
-        # print("url = {}, cert_path = {}".format(url, cert_path))
-        json_params = {
-            "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
-            "device_send_time": int(time.time() * 1000)
-        }
-
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-        else:
-            response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
-            )
-
-        status_code = response.json().get("code")
-        if status_code == "SUCCESS":
-            mqtt_config = response.json().get("data").get("mqtt_config")
-            s3_config = response.json().get("data").get("s3_config")
-            mlops_config = response.json().get("data").get("ml_ops_config")
-            docker_config = response.json().get("data").get("docker_config")
-            MLOpsUtils.calc_ntp_from_config(mlops_config)
-        else:
-            raise Exception("failed to fetch device configurations!")
-
-        return mqtt_config, s3_config, mlops_config, docker_config
-
     @staticmethod
-    def fetch_all_configs_with_version():
-        url = fedml._get_backend_service()
-        url = f"{url}/fedmlOpsServer/configs/fetch"
-        cert_path = None
-        if str(url).startswith("https://"):
-            cur_source_dir = os.path.dirname(__file__)
-            cert_path = os.path.join(
-                cur_source_dir, "ssl", "open-" + fedml.get_env_version() + ".fedml.ai_bundle.crt"
-            )
-
-        json_params = {
-            "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
-            "device_send_time": int(time.time() * 1000)
-        }
-
-        if cert_path is not None:
-            try:
-                requests.session().verify = cert_path
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-            except requests.exceptions.SSLError as err:
-                MLOpsConfigs.install_root_ca_file()
-                response = requests.post(
-                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
-                )
-        else:
-            response = requests.post(
-                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
-            )
-
-        status_code = response.json().get("code")
-        if status_code == "SUCCESS":
-            mqtt_config = response.json().get("data").get("mqtt_config")
-            s3_config = response.json().get("data").get("s3_config")
-            mlops_config = response.json().get("data").get("ml_ops_config")
-            docker_config = response.json().get("data").get("docker_config")
-            MLOpsUtils.calc_ntp_from_config(mlops_config)
-        else:
-            raise Exception("failed to fetch device configurations!")
-
-        return mqtt_config, s3_config, mlops_config, docker_config
+    def fetch_all_configs(self):
+        config_dict = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG, Configs.S3_CONFIG, Configs.ML_OPS_CONFIG,
+                                                   Configs.DOCKER_CONFIG})
+        return (config_dict[Configs.MQTT_CONFIG],
+                config_dict[Configs.S3_CONFIG],
+                config_dict[Configs.ML_OPS_CONFIG],
+                config_dict[Configs.DOCKER_CONFIG])
 
 
 if __name__ == "__main__":
-    pass
+    fedml.set_env_version("release")
+    mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs()
+

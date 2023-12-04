@@ -205,7 +205,7 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
     logging.info("log records {}".format(json.dumps(MLOpsStore.mlops_log_records)))
 
     if len(MLOpsStore.mlops_log_agent_config) == 0:
-        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs_with_version()
+        mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs()
         service_config = dict()
         service_config["mqtt_config"] = mqtt_config
         service_config["s3_config"] = s3_config

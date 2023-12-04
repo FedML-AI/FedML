@@ -77,7 +77,7 @@ def list_dataset(version, api_key):
     pass
 
 
-@fedml_dataset.command("retrieve-metadata", help="Retrieve metadata of a dataset on FedML® Nexus AI Platform")
+@fedml_dataset.command("download-metadata", help="Download metadata of a dataset on FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("dataset_id", nargs=1, callback=validate_argument)
 @click.option(
@@ -90,12 +90,12 @@ def list_dataset(version, api_key):
     default="release",
     help=version_help,
 )
-def retrieve_metadata(dataset_id, version, api_key):
+def download_metadata(dataset_id, version, api_key):
     fedml.set_env_version(version)
     pass
 
 
-@fedml_dataset.command("retrieve", help="Retrieve dataset on FedML® Nexus AI Platform")
+@fedml_dataset.command("download", help="Download dataset on FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("dataset_id", nargs=1, callback=validate_argument)
 @click.option(
@@ -108,7 +108,7 @@ def retrieve_metadata(dataset_id, version, api_key):
     default="release",
     help=version_help,
 )
-def retrieve_metadata(dataset_id, version, api_key):
+def download(dataset_id, version, api_key):
     fedml.set_env_version(version)
     pass
 
