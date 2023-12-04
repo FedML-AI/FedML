@@ -415,7 +415,7 @@ class S3Storage:
     #             print("Exception " + str(e))
     #     return model
 
-    def upload_file(self, src_local_path, message_key):
+    def upload_file(self, src_local_path, dest_key):
         """
         upload file
         :param src_local_path:
@@ -426,24 +426,23 @@ class S3Storage:
             with open(src_local_path, "rb") as f:
                 global aws_s3_client
                 aws_s3_client.upload_fileobj(
-                    f, self.bucket_name, message_key, ExtraArgs={"ACL": "public-read"}
+                    f, self.bucket_name, dest_key, ExtraArgs={"ACL": "public-read"}
                 )
 
             model_url = aws_s3_client.generate_presigned_url(
                 "get_object",
-                ExpiresIn=60 * 60 * 24 * 5,
-                Params={"Bucket": self.bucket_name, "Key": message_key},
+                ExpiresIn=60 * 60 * 24 * 7,
+                Params={"Bucket": self.bucket_name, "Key": dest_key},
+            )
+            logging.info(
+                f"Uploading file successful. | src: {src_local_path} | dest: {dest_key}"
             )
             return model_url
         except Exception as e:
             logging.error(
-                f"Upload data failed. | src: {src_local_path} | dest: {message_key} | Exception: {e}"
+                f"Upload data failed. | src: {src_local_path} | dest: {dest_key} | Exception: {e}"
             )
             return None
-        logging.info(
-            f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
-        )
-        return None
 
     def download_file(self, message_key, path_local):
         """

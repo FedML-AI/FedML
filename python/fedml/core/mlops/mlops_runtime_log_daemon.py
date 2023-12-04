@@ -10,7 +10,6 @@ import time
 import requests
 import yaml
 
-from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
 
@@ -177,7 +176,7 @@ class MLOpsRuntimeLogProcessor:
                 log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
                 # send log data to the log server
-                _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+                _, cert_path = MLOpsConfigs.get_request_params()
                 if cert_path is not None:
                     try:
                         requests.session().verify = cert_path

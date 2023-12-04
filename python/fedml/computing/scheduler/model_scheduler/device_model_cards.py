@@ -12,14 +12,13 @@ from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
-from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
 from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
-from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 
 class FedMLModelCards(Singleton):
@@ -637,7 +636,7 @@ class FedMLModelCards(Singleton):
             "user_api_key": user_api_key
         }
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_request_params(self.config_version)
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -687,7 +686,7 @@ class FedMLModelCards(Singleton):
 
         }
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_request_params(self.config_version)
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
