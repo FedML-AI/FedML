@@ -146,6 +146,8 @@ class FedMLMqttInfernce:
         if self.run_inference_response_map.get(str_endpoint_id) is None:
             self.run_inference_response_map[str_endpoint_id] = dict()
         self.run_inference_response_map[str_endpoint_id][inference_request_id] = inference_response
+        if self.run_inference_event_map.get(str_endpoint_id) is None:
+            self.run_inference_event_map[str_endpoint_id] = dict()
         self.run_inference_event_map[str_endpoint_id][inference_request_id].set()
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):

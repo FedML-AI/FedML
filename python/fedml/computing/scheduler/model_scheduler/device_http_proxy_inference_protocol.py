@@ -22,6 +22,7 @@ from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from urllib.parse import urlparse
 from .device_client_constants import ClientConstants
+import requests
 
 
 class FedMLHttpProxyInfernce:

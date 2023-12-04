@@ -167,12 +167,14 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         response_ok, inference_response = run_http_inference_with_curl_request(
             inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
+            print("Use http inference.")
             return inference_response
 
         http_proxy_inference = FedMLHttpProxyInfernce()
         response_ok, inference_response = http_proxy_inference.run_http_proxy_inference_with_request(
             endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
+            print("Use http proxy inference.")
             return inference_response
 
         connect_str = "@FEDML@"
@@ -189,6 +191,7 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         inference_response = mqtt_inference.run_mqtt_inference_with_request(
             idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
 
+        print("Use mqtt inference.")
         return inference_response
     except Exception as e:
         logging.info("Inference Exception: {}".format(traceback.format_exc()))

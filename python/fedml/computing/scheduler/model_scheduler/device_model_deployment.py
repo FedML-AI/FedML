@@ -793,7 +793,7 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
     try:
         response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
         if response.status_code == 200:
-            request_successful = True
+            response_ok = True
             if inference_type == "default":
                 model_inference_result = response.json()
             elif inference_type == "image/png":
