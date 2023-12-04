@@ -1,3 +1,5 @@
+from typing import List
+
 import click
 
 import fedml.api
@@ -38,6 +40,11 @@ def validate_argument(ctx, param, value):
 @click.argument("data_path", nargs=1, callback=validate_argument)
 @click.option("--name", "-n", type=str, help="Name your data to store. If not provided, the name will be the same as "
                                              "the data file or directory name.")
+@click.option("--tags", "-t", type=list, help="Add tags to your data to store. If not provided, the tags "
+                                              "will be empty.")
+@click.option("--description", "-d", type=str, help="Add description to your data to store. If not provided, "
+                                                    "the description will be empty.")
+
 @click.option(
     "--api_key", "-k", type=str, help=api_key_help,
 )
@@ -48,7 +55,7 @@ def validate_argument(ctx, param, value):
     default="release",
     help=version_help,
 )
-def upload(data_path, name, version, api_key):
+def upload(data_path: str, name: str, tags: List[str], description: str, version: str, api_key: str):
     fedml.set_env_version(version)
     storage_url = fedml.api.upload(data_path=data_path, api_key=api_key, name=name, show_progress=True)
     if storage_url:
@@ -75,7 +82,7 @@ def list_data(version, api_key):
     pass
 
 
-@fedml_storage.command("download", help="Download data from FedML® Nexus AI Platform")
+@fedml_storage.command("download", help="Download data stored on FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_name", nargs=1, callback=validate_argument)
 @click.option(
