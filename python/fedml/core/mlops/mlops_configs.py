@@ -16,6 +16,7 @@ class Configs(Enum):
     DOCKER_CONFIG = "docker_config"
     WEB3_CONFIG = "web3_config"
     THETASTORE_CONFIG = "thetastore_config"
+    R2_CONFIG = "r2_config"
 
 
 class Singleton(object):
@@ -136,6 +137,11 @@ class MLOpsConfigs(object):
     def fetch_thetastore_configs():
         fetched_configs = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG, Configs.THETASTORE_CONFIG})
         return fetched_configs[Configs.MQTT_CONFIG], fetched_configs[Configs.THETASTORE_CONFIG]
+
+    @staticmethod
+    def fetch_remote_storage_configs():
+        fetched_configs = MLOpsConfigs._fetch_configs({Configs.S3_CONFIG, Configs.R2_CONFIG})
+        return fetched_configs
 
     @staticmethod
     def fetch_all_configs():

@@ -90,10 +90,11 @@ def list_data(version, api_key):
 )
 def download(data_name, version, api_key):
     fedml.set_env_version(version)
-    if fedml.api.download(data_name, api_key):
-        click.echo("Data downloaded successfully.")
+    data_download_path = fedml.api.download(data_name, api_key)
+    if data_download_path:
+        click.echo(f"Data downloaded successfully at: {data_download_path}")
     else:
-        click.echo("Failed to download data.")
+        click.echo(f"Failed to download data {data_name}")
     pass
 
 

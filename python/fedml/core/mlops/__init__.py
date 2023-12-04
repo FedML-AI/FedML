@@ -47,7 +47,7 @@ __all__ = [
     "MLOpsRuntimeLogDaemon",
     "log_aggregation_failed_status",
     "log_training_failed_status",
-    "log_endpoint_status"
+    "log_endpoint_status",
 ]
 
 
