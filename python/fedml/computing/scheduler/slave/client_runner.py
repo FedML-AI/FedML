@@ -304,6 +304,8 @@ class FedMLClientRunner:
         if fedml_conf_object.get("device_args", None) is not None:
             fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
+        fedml_conf_object["data_args"]["data_cache_dir"] = os.path.join(
+            fedml_conf_object["data_args"]["data_cache_dir"], str(self.edge_id))
         if fedml_conf_object.get("tracking_args", None) is not None:
             fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
             fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
@@ -1434,6 +1436,8 @@ class FedMLClientRunner:
             self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
+            if infer_host is not None:
+                self.model_device_client.infer_host = infer_host
             self.model_device_client.start()
 
         if self.model_device_server is None:

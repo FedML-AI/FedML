@@ -924,9 +924,6 @@ class FedMLServerRunner:
 
         if status_to_report is not None:
             self.report_server_status(run_id, server_id, status_to_report)
-            self.remove_listeners_for_edge_status(list(edge_id_status_dict.keys()))
-            self.remove_listener_for_run_metrics(run_id)
-            self.remove_listener_for_run_logs(run_id)
 
     def parse_fault_tolerance_params(self, run_id):
         run_json = self.running_request_json.get(str(run_id), {})
@@ -1968,6 +1965,11 @@ class FedMLServerRunner:
 
             if self.run_process_map.get(run_id_str, None) is not None:
                 self.run_process_map.pop(run_id_str)
+
+            edge_id_status_dict = self.client_agent_active_list.get(f"{self.run_id}", {})
+            self.remove_listeners_for_edge_status(list(edge_id_status_dict.keys()))
+            self.remove_listener_for_run_metrics(self.run_id)
+            self.remove_listener_for_run_logs(self.run_id)
         else:
             self.mlops_metrics.report_server_training_status(
                 run_id, status, edge_id=self.edge_id, running_json=self.start_request_json)

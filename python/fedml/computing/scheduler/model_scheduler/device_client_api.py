@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fedml.computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
+from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
 
 
 api = FastAPI()
@@ -48,3 +49,21 @@ async def get_history_job_status(request: Request):
         responses.append(response)
 
     return responses
+
+
+@api.post('/api/v1/predict')
+async def predict(request: Request):
+    # Get json data
+    input_json = await request.json()
+    endpoint_id = input_json.get("endpoint_id", None)
+    if endpoint_id is None:
+        return {}
+    inference_url = input_json.get("inference_url", "0")
+    inference_input_list = input_json.get("input", {})
+    inference_output_list = input_json.get("output", [])
+    inference_type = input_json.get("inference_type", "default")
+
+    response_ok, inference_response = run_http_inference_with_curl_request(
+        inference_url, inference_input_list, inference_output_list, inference_type=inference_type)
+
+    return inference_response
