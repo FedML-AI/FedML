@@ -385,20 +385,33 @@ class FedMLServerRunner:
             logging.info(f"start the model inference gateway, end point {run_id}, model name {model_name}...")
             self.check_runner_stop_event()
 
+            use_mqtt_inference = os.getenv("FEDML_USE_MQTT_INFERENCE", "False")
+            use_mqtt_inference = True if use_mqtt_inference.lower() == 'true' else False
+            use_worker_gateway = os.getenv("FEDML_USE_WORKER_GATEWAY", "False")
+            use_worker_gateway = True if use_worker_gateway.lower() == 'true' else False
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                connect_str = "@FEDML@"
+                ext_info = sys_utils.random1(
+                    self.agent_config["mqtt_config"]["BROKER_HOST"] + connect_str +
+                    str(self.agent_config["mqtt_config"]["BROKER_PORT"]) + connect_str +
+                    self.agent_config["mqtt_config"]["MQTT_USER"] + connect_str +
+                    self.agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
+                    str(self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
                 self.inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                    "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
                     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                     "--log-level critical".format(
                         self.redis_addr, self.redis_port, self.redis_password,
                         end_point_name,
                         model_name, model_version, "", self.args.version,
+                        use_mqtt_inference, use_worker_gateway, ext_info,
                         python_program, inference_gw_cmd, str(inference_port), fedml_base_dir
                     ),
                     should_capture_stdout=False,

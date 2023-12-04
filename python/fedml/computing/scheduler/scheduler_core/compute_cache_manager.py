@@ -23,14 +23,17 @@ class ComputeCacheManager(object):
         self.logs_cache = ComputeLogsCache(self.redis_connection)
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
-        if redis_password is None or redis_password == "" or redis_password == "fedml_default":
-            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
-        else:
-            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
-                                                   password=redis_password, decode_responses=True)
-        self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
-        self.gpu_cache.redis_connection = self.redis_connection
-        self.logs_cache.redis_connection = self.redis_connection
+        try:
+            if redis_password is None or redis_password == "" or redis_password == "fedml_default":
+                self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
+            else:
+                self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
+                                                       password=redis_password, decode_responses=True)
+            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.gpu_cache.redis_connection = self.redis_connection
+            self.logs_cache.redis_connection = self.redis_connection
+        except Exception as e:
+            pass
 
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         if self.redis_pool is None:
@@ -69,7 +72,7 @@ class ComputeCacheManager(object):
         pass
 
     def get_metrics(self):
-        pass
+        return None
 
     def get_logs(self, run_id, edge_id=-1, page_num=1, page_size=100):
         return self.logs_cache.get_run_logs(run_id, edge_id=edge_id, page_num=page_num, page_size=page_size)

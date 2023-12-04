@@ -9,6 +9,9 @@ from fedml.computing.scheduler.model_scheduler.device_model_deployment import ru
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInfernce
+from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInfernce
+from fedml.computing.scheduler.comm_utils import sys_utils
 
 from pydantic import BaseSettings
 
@@ -22,6 +25,9 @@ class Settings(BaseSettings):
     model_version: str
     model_infer_url: str
     version: str
+    use_mqtt_inference: bool
+    use_worker_gateway: bool
+    ext_info: str
 
 
 settings = Settings()
@@ -35,6 +41,10 @@ settings = Settings()
 #     model_version = ""
 #     model_infer_url = "127.0.0.1"
 #     version = "dev"
+#     use_mqtt_inference = False
+#     use_worker_gateway = False
+#     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+
 
 api = FastAPI()
 
@@ -105,7 +115,7 @@ def _predict(end_point_id, input_json, header=None):
             input_list = input_json["inputs"]
             output_list = input_json.get("outputs", [])
             inference_response = send_inference_request(
-                inference_output_url, input_list, output_list, in_return_type)
+                idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
 
         # Calculate model metrics
         try:
@@ -152,10 +162,36 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-def send_inference_request(inference_url, input_list, output_list, inference_type="default"):
+def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list, inference_type="default"):
     try:
-        inference_response = run_http_inference_with_curl_request(
-            inference_url, input_list, output_list, inference_type)
+        response_ok, inference_response = run_http_inference_with_curl_request(
+            inference_url, input_list, output_list, inference_type=inference_type)
+        if response_ok:
+            print("Use http inference.")
+            return inference_response
+
+        http_proxy_inference = FedMLHttpProxyInfernce()
+        response_ok, inference_response = http_proxy_inference.run_http_proxy_inference_with_request(
+            endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+        if response_ok:
+            print("Use http proxy inference.")
+            return inference_response
+
+        connect_str = "@FEDML@"
+        random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
+        config_list = random_out.split(connect_str)
+        agent_config = dict()
+        agent_config["mqtt_config"] = dict()
+        agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
+        agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
+        agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
+        agent_config["mqtt_config"]["MQTT_PWD"]  = config_list[3]
+        agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
+        mqtt_inference = FedMLMqttInfernce(agent_config=agent_config, run_id=endpoint_id)
+        inference_response = mqtt_inference.run_mqtt_inference_with_request(
+            idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+
+        print("Use mqtt inference.")
         return inference_response
     except Exception as e:
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
@@ -191,5 +227,5 @@ def logging_inference_request(request, response):
 
 if __name__ == "__main__":
     import uvicorn
-    port = 23450
+    port = 2204
     uvicorn.run(api, host="0.0.0.0", port=port)
