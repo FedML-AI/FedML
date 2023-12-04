@@ -36,6 +36,7 @@ _global_comm_backend = None
 
 __version__ = "0.8.12a56"
 
+
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
 # three ways to set _global_env_version:
 # 1. set the Linux environment variable FEDML_ENV_VERSION by calling: 
