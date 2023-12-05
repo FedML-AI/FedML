@@ -413,7 +413,7 @@ class MLOpsMetrics(object):
             log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
             # send log data to the log server
-            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            _, cert_path = MLOpsConfigs.get_request_params()
             if cert_path is not None:
                 try:
                     requests.session().verify = cert_path
