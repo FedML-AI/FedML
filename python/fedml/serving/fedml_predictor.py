@@ -1,16 +1,12 @@
-import platform
-import os
-import stat
-import logging
-import traceback
-from abc import ABC, abstractmethod
-from ..computing.scheduler.model_scheduler.device_client_constants import ClientConstants
-from ..computing.scheduler.comm_utils import sys_utils
+from abc import ABC
 
 class FedMLPredictor(ABC):
     def __init__(self):
-        pass
+        if not (self.predict != FedMLPredictor.predict or self.async_predict != FedMLPredictor.async_predict):
+            raise NotImplementedError("At least one of the predict methods must be implemented.")
 
-    @abstractmethod
     def predict(self, *args, **kwargs):
-        pass
+        raise NotImplementedError
+    
+    async def async_predict(self, *args, **kwargs):
+        raise NotImplementedError
