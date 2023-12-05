@@ -249,7 +249,7 @@ def autostop(cluster_id, time, version, api_key):
     fedml.set_env_version(version)
     is_configured = fedml.api.cluster_autostop(cluster_id=cluster_id, time=time, api_key=api_key)
     if is_configured:
-        click.echo(f"Cluster has been successfully configured to autostop after {minutes} of inactivity.")
+        click.echo(f"Cluster has been successfully configured to autostop after {time} of inactivity.")
     else:
         click.echo("Cluster autostop configuration failed. The cluster will still undergo autostopping after the "
                    "default minutes of inactivity or the previously configured minutes, if any.")
