@@ -23,19 +23,14 @@ from fedml.core.distributed.communication.s3.utils import load_params_from_tf, p
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 from torch import nn
 
-aws_s3_client = None
-aws_s3_resource = None
-
 
 class S3Storage:
-    def __init__(self, s3_config_path):
+    def __init__(self, s3_config):
         self.bucket_name = None
-        self.cn_region_name = None
-        self.cn_s3_sak = None
-        self.cn_s3_aki = None
-        self.set_config_from_file(s3_config_path)
-        self.set_config_from_objects(s3_config_path)
-        global aws_s3_client
+        self.aws_s3_client = None
+        self.aws_s3_resource = None
+        self.set_config_from_file(s3_config)
+        self.set_config_from_objects(s3_config)
 
         # env_version = fedml.get_env_version()
         # if env_version == "local":
@@ -53,15 +48,6 @@ class S3Storage:
         #         aws_access_key_id=self.cn_s3_aki,
         #         aws_secret_access_key=self.cn_s3_sak,
         #     )
-
-        aws_s3_client = boto3.client(
-            "s3",
-            region_name=self.cn_region_name,
-            aws_access_key_id=self.cn_s3_aki,
-            aws_secret_access_key=self.cn_s3_sak,
-        )
-
-        global aws_s3_resource
 
         # if env_version == "local":
         #     aws_s3_resource = boto3.resource(
@@ -85,16 +71,7 @@ class S3Storage:
         #         aws_secret_access_key=self.cn_s3_sak,
         #     )
 
-        aws_s3_resource = boto3.resource(
-            "s3",
-            region_name=self.cn_region_name,
-            aws_access_key_id=self.cn_s3_aki,
-            aws_secret_access_key=self.cn_s3_sak,
-        )
-
-
     def write_model(self, message_key, model):
-        global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
@@ -107,6 +84,7 @@ class S3Storage:
         model_file_size = len(model_to_send)
         model_file_transfered = 0
         prev_progress = 0
+
         def upload_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal model_file_size
@@ -119,15 +97,15 @@ class S3Storage:
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
                 logging.info("model uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
                 prev_progress = progress_format_int
-        
-        aws_s3_client.upload_fileobj(
+
+        self.aws_s3_client.upload_fileobj(
             Fileobj=io.BytesIO(model_to_send), Bucket=self.bucket_name, Key=message_key,
             Callback=upload_model_progress,
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
         )
-        model_url = aws_s3_client.generate_presigned_url(
+        model_url = self.aws_s3_client.generate_presigned_url(
             "get_object",
             ExpiresIn=60 * 60 * 24 * 5,
             Params={"Bucket": self.bucket_name, "Key": message_key},
@@ -135,7 +113,6 @@ class S3Storage:
         return model_url
 
     def write_model_net(self, message_key, model, dummy_input_tensor, local_model_cache_path):
-        global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
@@ -162,6 +139,7 @@ class S3Storage:
         model_to_send.seek(0, 0)
         net_file_transfered = 0
         prev_progress = 0
+
         def upload_model_net_progress(bytes_transferred):
             nonlocal net_file_transfered
             nonlocal net_file_size
@@ -172,16 +150,18 @@ class S3Storage:
             progress_format_int = int(progress)
             # print the process every 5%
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
-                logging.info("model net uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
+                logging.info(
+                    "model net uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
                 prev_progress = progress_format_int
-        aws_s3_client.upload_fileobj(
+
+        self.aws_s3_client.upload_fileobj(
             Fileobj=model_to_send, Bucket=self.bucket_name, Key=message_key,
-            Callback= upload_model_net_progress,
+            Callback=upload_model_net_progress,
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
         )
-        model_url = aws_s3_client.generate_presigned_url(
+        model_url = self.aws_s3_client.generate_presigned_url(
             "get_object",
             ExpiresIn=60 * 60 * 24 * 5,
             Params={"Bucket": self.bucket_name, "Key": message_key},
@@ -189,8 +169,6 @@ class S3Storage:
         return model_url
 
     def write_model_input(self, message_key, input_size, input_type, local_model_cache_path):
-        global aws_s3_client
-
         if not os.path.exists(local_model_cache_path):
             try:
                 os.makedirs(local_model_cache_path)
@@ -202,15 +180,14 @@ class S3Storage:
             json.dump(model_input_dict, f)
 
         with open(model_input_path, 'rb') as f:
-            aws_s3_client.upload_fileobj(f, Bucket=self.bucket_name, Key=message_key)
+            self.aws_s3_client.upload_fileobj(f, Bucket=self.bucket_name, Key=message_key)
 
-        model_input_url = aws_s3_client.generate_presigned_url("get_object",
+        model_input_url = self.aws_s3_client.generate_presigned_url("get_object",
                                                                ExpiresIn=60 * 60 * 24 * 5,
                                                                Params={"Bucket": self.bucket_name, "Key": message_key})
         return model_input_url
 
     def write_model_web(self, message_key, model):
-        global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
@@ -220,13 +197,13 @@ class S3Storage:
         model_json = process_state_dict(state_dict)
         model_to_send = json.dumps(model_json)
         s3_upload_start_time = time.time()
-        aws_s3_client.put_object(
+        self.aws_s3_client.put_object(
             Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
         )
-        model_url = aws_s3_client.generate_presigned_url(
+        model_url = self.aws_s3_client.generate_presigned_url(
             "get_object",
             ExpiresIn=60 * 60 * 24 * 5,
             Params={"Bucket": self.bucket_name, "Key": message_key},
@@ -234,11 +211,10 @@ class S3Storage:
         return model_url
 
     def read_model(self, message_key):
-        global aws_s3_client
         message_handler_start_time = time.time()
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
-        object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+        object_size = self.aws_s3_client.head_object(**kwargs)["ContentLength"]
         cache_dir = os.path.join(expanduser("~"), ".fedml", "fedml_cache")
         if not os.path.exists(cache_dir):
             try:
@@ -256,6 +232,7 @@ class S3Storage:
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
         prev_progress = 0
+
         def read_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
@@ -270,8 +247,8 @@ class S3Storage:
                 prev_progress = progress_format_int
 
         with open(temp_file_path, 'wb') as f:
-            aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                            Callback=read_model_progress)
+            self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
+                                           Callback=read_model_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -287,11 +264,10 @@ class S3Storage:
         return model
 
     def read_model_net(self, message_key, local_model_cache_path):
-        global aws_s3_client
         message_handler_start_time = time.time()
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
-        object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+        object_size = self.aws_s3_client.head_object(**kwargs)["ContentLength"]
         temp_base_file_path = local_model_cache_path
         if not os.path.exists(temp_base_file_path):
             try:
@@ -304,6 +280,7 @@ class S3Storage:
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
         prev_progress = 0
+
         def read_model_net_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
@@ -316,9 +293,10 @@ class S3Storage:
             if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
                 logging.info("model net readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format_int))
                 prev_progress = progress_format_int
+
         with open(temp_file_path, 'wb') as f:
-            aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                            Callback=read_model_net_progress)
+            self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
+                                           Callback=read_model_net_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -340,8 +318,6 @@ class S3Storage:
         return model
 
     def read_model_input(self, message_key, local_model_cache_path):
-        global aws_s3_client
-
         temp_base_file_path = local_model_cache_path
         if not os.path.exists(temp_base_file_path):
             try:
@@ -353,7 +329,7 @@ class S3Storage:
             os.remove(temp_file_path)
         logging.info("temp_file_path = {}".format(temp_file_path))
         with open(temp_file_path, 'wb') as f:
-            aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f)
+            self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f)
 
         with open(temp_file_path, 'r') as f:
             model_input_dict = json.load(f)
@@ -365,9 +341,8 @@ class S3Storage:
 
     # TODO: added python torch model to align the Tensorflow parameters from browser
     def read_model_web(self, message_key, py_model: nn.Module):
-        global aws_s3_client
         message_handler_start_time = time.time()
-        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        obj = self.aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
         model_json = obj["Body"].read()
         if type(model_json) == list:
             model = load_params_from_tf(py_model, model_json)
@@ -415,7 +390,7 @@ class S3Storage:
     #             print("Exception " + str(e))
     #     return model
 
-    def upload_file(self, src_local_path, message_key):
+    def upload_file(self, src_local_path, dest_key):
         """
         upload file
         :param src_local_path:
@@ -424,26 +399,24 @@ class S3Storage:
         """
         try:
             with open(src_local_path, "rb") as f:
-                global aws_s3_client
-                aws_s3_client.upload_fileobj(
-                    f, self.bucket_name, message_key, ExtraArgs={"ACL": "public-read"}
+                self.aws_s3_client.upload_fileobj(
+                    f, self.bucket_name, dest_key, ExtraArgs={"ACL": "public-read"}
                 )
 
-            model_url = aws_s3_client.generate_presigned_url(
+            model_url = self.aws_s3_client.generate_presigned_url(
                 "get_object",
-                ExpiresIn=60 * 60 * 24 * 5,
-                Params={"Bucket": self.bucket_name, "Key": message_key},
+                ExpiresIn=60 * 60 * 24 * 7,
+                Params={"Bucket": self.bucket_name, "Key": dest_key},
+            )
+            logging.info(
+                f"Uploading file successful. | src: {src_local_path} | dest: {dest_key}"
             )
             return model_url
         except Exception as e:
             logging.error(
-                f"Upload data failed. | src: {src_local_path} | dest: {message_key} | Exception: {e}"
+                f"Upload data failed. | src: {src_local_path} | dest: {dest_key} | Exception: {e}"
             )
             return None
-        logging.info(
-            f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
-        )
-        return None
 
     def download_file(self, message_key, path_local):
         """
@@ -458,8 +431,7 @@ class S3Storage:
                 f"Start downloading files. | message key: {message_key} | path_local: {path_local}"
             )
             try:
-                global aws_s3_client
-                aws_s3_client.download_file(self.bucket_name, message_key, path_local)
+                self.aws_s3_client.download_file(self.bucket_name, message_key, path_local)
                 file_size = os.path.getsize(path_local)
                 logging.info(
                     f"Downloading completed. | size: {round(file_size / 1048576, 2)} MB"
@@ -483,12 +455,11 @@ class S3Storage:
         :return:
         """
         file_uploaded_url = ""
-        progress_desc_text = "Uploading Package to AWS S3"
+        progress_desc_text = "Uploading Package to Remote Storage"
         if progress_desc is not None:
             progress_desc_text = progress_desc
         try:
             with open(src_local_path, "rb") as f:
-                global aws_s3_client
                 old_file_position = f.tell()
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
@@ -497,18 +468,18 @@ class S3Storage:
                     with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
                                    file=sys.stderr if out_progress_to_err else sys.stdout,
                                    desc=progress_desc_text) as pbar:
-                        aws_s3_client.upload_fileobj(
+                        self.aws_s3_client.upload_fileobj(
                             f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
                             Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
                         )
                 else:
-                    aws_s3_client.upload_fileobj(
+                    self.aws_s3_client.upload_fileobj(
                         f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
                     )
 
-                file_uploaded_url = aws_s3_client.generate_presigned_url(
+                file_uploaded_url = self.aws_s3_client.generate_presigned_url(
                     "get_object",
-                    ExpiresIn=60 * 60 * 24 * 365,
+                    ExpiresIn=60 * 60 * 24 * 7,
                     Params={"Bucket": self.bucket_name, "Key": dest_s3_path},
                 )
         except Exception as e:
@@ -529,7 +500,7 @@ class S3Storage:
         :return:
         """
         retry = 0
-        progress_desc_text = "Downloading Package from AWS S3"
+        progress_desc_text = "Downloading Package from Remote Storage"
         if progress_desc is not None:
             progress_desc_text = progress_desc
         while retry < 3:
@@ -537,14 +508,13 @@ class S3Storage:
                 f"Start downloading files. | path_s3: {path_s3} | path_local: {path_local}"
             )
             try:
-                global aws_s3_client
                 kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
-                object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+                object_size = self.aws_s3_client.head_object(**kwargs)["ContentLength"]
                 with tqdm.tqdm(total=object_size, unit="B", unit_scale=True,
                                file=sys.stderr if out_progress_to_err else sys.stdout,
                                desc=progress_desc_text) as pbar:
                     with open(path_local, 'wb') as f:
-                        aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
+                        self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
                                                        Callback=lambda bytes_transferred: pbar.update(
                                                            bytes_transferred), )
                 break
@@ -553,6 +523,8 @@ class S3Storage:
                 retry += 1
         if retry >= 3:
             logging.error(f"Download zip failed after max retry.")
+            return False
+        return True
 
     def test_s3_base_cmds(self, message_key, message_body):
         """
@@ -564,12 +536,11 @@ class S3Storage:
         retry = 0
         while retry < 3:
             try:
-                global aws_s3_client
                 message_pkl = pickle.dumps(message_body)
-                aws_s3_client.put_object(
+                self.aws_s3_client.put_object(
                     Body=message_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
                 )
-                obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+                obj = self.aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
                 message_pkl_downloaded = obj["Body"].read()
                 message_downloaded = pickle.loads(message_pkl_downloaded)
                 if str(message_body) == str(message_downloaded):
@@ -590,23 +561,69 @@ class S3Storage:
         :param path_s3: s3 key
         :return:
         """
-        global aws_s3_client
-        aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
+        self.aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
         logging.info(f"Delete s3 file Successful. | path_s3 = {path_s3}")
 
     def set_config_from_file(self, config_file_path):
         try:
             with open(config_file_path, "r") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
-                self.cn_s3_aki = config["CN_S3_AKI"]
-                self.cn_s3_sak = config["CN_S3_SAK"]
-                self.cn_region_name = config["CN_REGION_NAME"]
+                cn_s3_aki = config["CN_S3_AKI"]
+                cn_s3_sak = config["CN_S3_SAK"]
+                cn_region_name = config["CN_REGION_NAME"]
                 self.bucket_name = config["BUCKET_NAME"]
+                self.aws_s3_client = boto3.client(
+                    "s3",
+                    region_name=cn_region_name,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                )
+                self.aws_s3_resource = boto3.resource(
+                    "s3",
+                    region_name=cn_region_name,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                )
         except Exception as e:
-            pass
+            logging.info("Failed to load s3 config from file: {}".format(str(e)))
 
     def set_config_from_objects(self, s3_config):
-        self.cn_s3_aki = s3_config["CN_S3_AKI"]
-        self.cn_s3_sak = s3_config["CN_S3_SAK"]
-        self.cn_region_name = s3_config["CN_REGION_NAME"]
-        self.bucket_name = s3_config["BUCKET_NAME"]
+        try:
+            self.bucket_name = s3_config["BUCKET_NAME"]
+            cn_s3_aki = s3_config["CN_S3_AKI"]
+            cn_s3_sak = s3_config["CN_S3_SAK"]
+            cn_region_name = s3_config["CN_REGION_NAME"] if "CN_REGION_NAME" in s3_config else None
+            cn_s3_endpoint = s3_config["CN_S3_ENDPOINT"] if "CN_S3_ENDPOINT" in s3_config else None
+            if cn_s3_endpoint:
+                self.aws_s3_client = boto3.client(
+                    "s3",
+                    endpoint_url=cn_s3_endpoint,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                    config=Config(signature_version='s3v4')
+                )
+                self.aws_s3_resource = boto3.resource(
+                    "s3",
+                    endpoint_url=cn_s3_endpoint,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                    config=Config(signature_version='s3v4')
+                )
+            elif cn_region_name:
+                self.aws_s3_client = boto3.client(
+                    "s3",
+                    region_name=cn_region_name,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                    config=Config(signature_version='s3v4')
+                )
+                self.aws_s3_resource = boto3.resource(
+                    "s3",
+                    region_name=cn_region_name,
+                    aws_access_key_id=cn_s3_aki,
+                    aws_secret_access_key=cn_s3_sak,
+                    config=Config(signature_version='s3v4')
+                )
+
+        except Exception as e:
+            logging.exception("Failed to load s3 config from objects: {}".format(str(e)))

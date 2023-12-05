@@ -15,7 +15,7 @@ Usages:
 """
 from typing import List, Tuple
 
-from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, \
+from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, storage, \
     model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
 from fedml.api.modules.launch import FeatureEntryPoint
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
@@ -172,6 +172,16 @@ def cluster_kill(cluster_names: Tuple[str], api_key: str = None) -> bool:
 
 def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
+
+
+def upload(data_path, api_key=None, name=None, show_progress=False, out_progress_to_err=True, progress_desc=None) \
+        -> str:
+    return storage.upload(data_path=data_path, api_key=api_key, name=name, progress_desc=progress_desc,
+                          show_progress=show_progress, out_progress_to_err=out_progress_to_err)
+
+
+def download(data_name, api_key=None):
+    return storage.download(data_name, api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

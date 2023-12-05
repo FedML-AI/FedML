@@ -98,7 +98,7 @@ class FedMLClusterManager(Singleton):
     def _request(url: str, json_data: dict, config_version: str):
         # print("json_data = ", json_data)
         args = {"config_version": config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path

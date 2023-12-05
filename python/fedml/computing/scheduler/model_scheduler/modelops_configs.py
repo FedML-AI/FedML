@@ -31,7 +31,8 @@ class ModelOpsConfigs(Singleton):
 
         return ModelOpsConfigs._config_instance
 
-    def get_request_params(self, in_config_version="release"):
+    @staticmethod
+    def get_request_params():
         url = fedml._get_backend_service()
         url = "{}/fedmlOpsServer/configs/fetch".format(url)
         cert_path = None

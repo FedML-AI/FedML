@@ -202,7 +202,7 @@ class FedMLAppManager(Singleton):
         app_update_json
 
         args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -243,7 +243,7 @@ class FedMLAppManager(Singleton):
             app_update_json["applicationConfigId"] = config_id
 
         args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
