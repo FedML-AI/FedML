@@ -60,7 +60,7 @@ class ModelOpsConfigs(Singleton):
             outfile.write(open_root_ca_file)
 
     def fetch_configs(self, config_version="release"):
-        url, cert_path = self.get_request_params(config_version)
+        url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
 

@@ -636,7 +636,7 @@ class FedMLModelCards(Singleton):
             "user_api_key": user_api_key
         }
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -686,7 +686,7 @@ class FedMLModelCards(Singleton):
 
         }
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -760,7 +760,7 @@ class FedMLModelCards(Singleton):
             time.sleep(5)
             model_deployment_json["id"] = int(endpoint_id)
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -808,7 +808,7 @@ class FedMLModelCards(Singleton):
             endpoint_apply_json["modelVersion"] = model_version
 
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -848,7 +848,7 @@ class FedMLModelCards(Singleton):
         }
 
         args = {"config_version": self.config_version}
-        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+        _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -890,7 +890,7 @@ class FedMLModelCards(Singleton):
 
         try:
             args = {"config_version": self.config_version}
-            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params()
 
             if cert_path is not None:
                 try:
@@ -941,7 +941,7 @@ class FedMLModelCards(Singleton):
 
         try:
             args = {"config_version": self.config_version}
-            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
+            _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params()
 
             if cert_path is not None:
                 try:

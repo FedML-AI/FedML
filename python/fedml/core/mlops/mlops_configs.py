@@ -109,7 +109,7 @@ class MLOpsConfigs(object):
             outfile.write(open_root_ca_file)
 
     @staticmethod
-    def _fetch_configs(configs: set[Configs]) -> dict:
+    def _fetch_configs(configs) -> dict:
         url, cert_path = MLOpsConfigs.get_request_params()
         request_configs = {Configs.ML_OPS_CONFIG}
         request_configs = request_configs.union(configs)

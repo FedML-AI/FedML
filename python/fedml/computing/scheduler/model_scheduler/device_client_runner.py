@@ -644,7 +644,7 @@ class FedMLClientRunner:
         inference_end_point_id = run_id
 
         try:
-            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+            MLOpsConfigs.fetch_all_configs()
         except Exception as e:
             pass
 
@@ -995,7 +995,7 @@ class FedMLClientRunner:
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
-        return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
+        return MLOpsConfigs.fetch_all_configs()
 
     def send_agent_active_msg(self):
         active_topic = "flclient_agent/active"
