@@ -585,7 +585,8 @@ class S3Storage:
                     aws_secret_access_key=cn_s3_sak,
                 )
         except Exception as e:
-            logging.info("Failed to load s3 config from file: {}".format(str(e)))
+            pass
+            # logging.info("Failed to load s3 config from file: {}".format(str(e)))
 
     def set_config_from_objects(self, s3_config):
         try:

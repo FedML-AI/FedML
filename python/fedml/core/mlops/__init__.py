@@ -388,6 +388,28 @@ def log_aggregation_failed_status(run_id=None):
     )
 
 
+def log_aggregation_exception_status(run_id=None):
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, run_id)
+        return
+
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION))
+
+    setup_log_mqtt_mgr()
+    MLOpsStore.mlops_metrics.report_server_id_status(
+        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, edge_id=MLOpsStore.mlops_edge_id,
+        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+    )
+
+
 def callback_run_status_changed(topic, payload):
     payload_obj = json.loads(payload)
     run_id = payload_obj.get("run_id", 0)

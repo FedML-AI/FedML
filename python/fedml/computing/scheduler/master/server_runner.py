@@ -1718,16 +1718,19 @@ class FedMLServerRunner:
             logging.info("stop_train: send topic " + topic_stop_train)
             self.client_mqtt_mgr.send_message(topic_stop_train, payload)
 
-    def send_training_stop_request_to_edges_when_exception(self, edge_id_list, payload=None, run_id=0):
+    def send_training_stop_request_to_edges_when_exception(
+            self, edge_id_list, payload=None, run_id=0, server_id=None, status=None):
         if payload is None:
             payload_obj = {"runId": run_id, "edgeids": edge_id_list}
+            if server_id is not None:
+                payload_obj["serverId"] = server_id
         else:
             payload_obj = json.loads(payload)
-        payload_obj["run_status"] = ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION
+        payload_obj["run_status"] = ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION if status is None else status
         topic_stop_train = "mlops/flserver_agent_" + str(self.edge_id) + "/stop_train"
-        self.callback_stop_train(topic_stop_train, json.dumps(payload_obj))
+        self.callback_stop_train(topic_stop_train, json.dumps(payload_obj), use_payload=payload_obj)
 
-    def callback_stop_train(self, topic, payload):
+    def callback_stop_train(self, topic, payload, use_payload=None):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
@@ -1757,6 +1760,8 @@ class FedMLServerRunner:
         stop_request_json = self.running_request_json.get(run_id_str, None)
         if stop_request_json is None:
             stop_request_json = request_json
+        if use_payload is not None:
+            stop_request_json = use_payload
         if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
@@ -1970,6 +1975,17 @@ class FedMLServerRunner:
             self.remove_listeners_for_edge_status(list(edge_id_status_dict.keys()))
             self.remove_listener_for_run_metrics(self.run_id)
             self.remove_listener_for_run_logs(self.run_id)
+        elif (
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION
+        ):
+            request_json = self.running_request_json.get(run_id_str, None)
+            if request_json is not None:
+                edge_id_list = request_json.get("edgeids", list())
+                server_id = request_json.get("serverId", None)
+                server_id = request_json.get("server_id", None) if server_id is None else server_id
+                self.send_training_stop_request_to_edges_when_exception(
+                    edge_id_list, run_id=run_id, server_id=server_id,
+                    status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         else:
             self.mlops_metrics.report_server_training_status(
                 run_id, status, edge_id=self.edge_id, running_json=self.start_request_json)

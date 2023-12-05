@@ -58,6 +58,10 @@ def log_aggregation_failed_status(run_id=None):
     mlops.log_aggregation_failed_status(run_id)
 
 
+def log_aggregation_exception_status(run_id=None):
+    mlops.log_aggregation_exception_status(run_id)
+
+
 def register_run_status_callback(run_status_callback):
     mlops.register_run_status_callback(run_status_callback)
 
