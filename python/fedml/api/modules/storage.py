@@ -6,7 +6,7 @@ from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
 
 
-def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc) -> str | None:
+def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc) -> str:
     authenticate(api_key)
     configs = MLOpsConfigs.fetch_remote_storage_configs()
     r2_config = configs[Configs.R2_CONFIG]
@@ -39,7 +39,7 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
     return file_uploaded_url
 
 
-def download(data_name, api_key) -> str | None:
+def download(data_name, api_key) -> str:
     authenticate(api_key)
     configs = MLOpsConfigs.fetch_remote_storage_configs()
     r2_config = configs[Configs.R2_CONFIG]
