@@ -597,7 +597,7 @@ def get_fedml_args():
 
 def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_progress=True):
     args = {"config_version": version}
-    _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    _, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
     s3_storage = S3Storage(s3_config)
     artifact_dst_key = f"{artifact.artifact_name}_{artifact.artifact_type_name}"
     artifact_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "artifacts")

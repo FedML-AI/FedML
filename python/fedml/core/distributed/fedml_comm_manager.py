@@ -88,7 +88,7 @@ class FedMLCommManager(Observer):
         if hasattr(self.args, "customized_training_s3_config") and self.args.customized_training_s3_config != "":
             s3_config = self.args.customized_training_s3_config
         if mqtt_config is None or s3_config is None:
-            mqtt_config_from_cloud, s3_config_from_cloud = MLOpsConfigs.get_instance(self.args).fetch_configs()
+            mqtt_config_from_cloud, s3_config_from_cloud, _, _ = MLOpsConfigs.fetch_all_configs()
             if mqtt_config is None:
                 mqtt_config = mqtt_config_from_cloud
             if s3_config is None:

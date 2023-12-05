@@ -46,9 +46,9 @@ class ClientDiagnosis(Singleton):
         if args is None:
             args = ClientDiagnosis._default_args()
         try:
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
         except Exception as e:
-            traceback.print_exc(e)
+            print(f"{traceback.format_exc()}")
             return False
 
         return True
@@ -58,13 +58,13 @@ class ClientDiagnosis(Singleton):
         if args is None:
             args = ClientDiagnosis._default_args()
         try:
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
             s3_storage = S3Storage(s3_config)
             download_ret = s3_storage.test_s3_base_cmds("fedml", "test-base-cmds")
             if download_ret:
                 return True
         except Exception as e:
-            traceback.print_exc(e)
+            print(f"{traceback.format_exc()}")
             return False
 
         return False
@@ -74,7 +74,7 @@ class ClientDiagnosis(Singleton):
         if args is None:
             args = ClientDiagnosis._default_args()
         try:
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
             mqtt_mgr = MqttManager(
                 mqtt_config["BROKER_HOST"],
                 mqtt_config["BROKER_PORT"],
@@ -102,7 +102,7 @@ class ClientDiagnosis(Singleton):
             return True
         except Exception as e:
             print("MQTT connect exception: {}".format(str(e)))
-            traceback.print_exc(e)
+            print(f"{traceback.format_exc()}")
             return False
 
     @staticmethod
@@ -113,7 +113,7 @@ class ClientDiagnosis(Singleton):
         try:
             diagnosis = ClientDiagnosis()
 
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
             comm_server = MqttS3MultiClientsCommManager(
                 mqtt_config,
                 s3_config,
@@ -144,7 +144,7 @@ class ClientDiagnosis(Singleton):
         try:
             diagnosis = ClientDiagnosis()
 
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
             comm_client = MqttS3MultiClientsCommManager(
                 mqtt_config,
                 s3_config,
@@ -174,7 +174,7 @@ class ClientDiagnosis(Singleton):
         if args is None:
             args = ClientDiagnosis._default_args(rank=0)
         try:
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
             mqtt_mgr = MqttManager(
                 mqtt_config["BROKER_HOST"],
                 mqtt_config["BROKER_PORT"],

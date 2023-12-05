@@ -272,7 +272,7 @@ class FedMLAppManager(Singleton):
 
     def push_app_package_to_s3(self, app_name, app_package_path):
         args = {"config_version": self.config_version}
-        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+        _, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
         s3_storage = S3Storage(s3_config)
         app_dst_key = "{}@{}".format(app_name, str(uuid.uuid4()))
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
@@ -283,7 +283,7 @@ class FedMLAppManager(Singleton):
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):
         args = {"config_version": self.config_version}
-        _, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+        _, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
         s3_storage = S3Storage(s3_config)
         local_app_package = os.path.join(ClientConstants.get_package_download_dir(), model_name)
         local_app_package = "{}.zip".format(local_app_package)
