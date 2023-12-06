@@ -343,8 +343,7 @@ class FedMLModelCards(Singleton):
                     config = yaml.safe_load(f)
                     main_entry_file = config.get("entry_point", "")
                     if main_entry_file == "":
-                        print("The entry_point is missing in the model config file.")
-                        return ""
+                        print("[Warning] The entry_point is missing in the model config file.")
             except:
                 print("You model repository is missing file {}, you should add it.".format(
                     ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
@@ -404,8 +403,7 @@ class FedMLModelCards(Singleton):
                         config = yaml.safe_load(f)
                         main_entry_file = config.get("entry_point", "")
                         if main_entry_file == "":
-                            print("The entry_point is missing in the model config file.")
-                            return "", ""
+                            print("[Warning] The entry_point is missing in the model config file.")
                 except:
                     print("You model repository is missing file {}, you should add it.".format(
                         ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
