@@ -27,8 +27,7 @@ class FedMLInferenceRunner(ABC):
                     else:
                         return StreamingResponse(resp)
                 else:
-                    response_obj = self.client_predictor.predict(input_json)
-                    return {"generated_text": str(response_obj)}
+                    return self.client_predictor.predict(input_json)
             else:
                 response_obj = self.client_predictor.predict(input_json, request.headers.get("Accept"))
                 return FileResponse(response_obj)
