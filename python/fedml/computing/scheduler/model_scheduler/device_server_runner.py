@@ -629,7 +629,7 @@ class FedMLServerRunner:
                 payload_json["input_json"] = {"end_point_name": end_point_name,
                                               "model_name": model_name,
                                               "token": str(token),
-                                              "inputs": ret_inputs,
+                                              "inputs": {"inputs": ret_inputs}, # Nested inputs
                                               "outputs": model_metadata["outputs"]}
                 payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
