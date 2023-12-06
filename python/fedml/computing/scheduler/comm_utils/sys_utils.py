@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import signal
+import traceback
 import uuid
 from os.path import expanduser
 

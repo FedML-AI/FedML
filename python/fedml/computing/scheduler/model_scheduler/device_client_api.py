@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response, status
 from fedml.computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
 from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
 
@@ -52,7 +52,7 @@ async def get_history_job_status(request: Request):
 
 
 @api.post('/api/v1/predict')
-async def predict(request: Request):
+async def predict(request: Request, response: Response):
     # Get json data
     input_json = await request.json()
     endpoint_id = input_json.get("endpoint_id", None)
@@ -62,8 +62,12 @@ async def predict(request: Request):
     inference_input_list = input_json.get("input", {})
     inference_output_list = input_json.get("output", [])
     inference_type = input_json.get("inference_type", "default")
+    inference_timeout = input_json.get("inference_timeout", None)
 
     response_ok, inference_response = run_http_inference_with_curl_request(
-        inference_url, inference_input_list, inference_output_list, inference_type=inference_type)
+        inference_url, inference_input_list, inference_output_list,
+        inference_type=inference_type, timeout=inference_timeout)
+    if not response_ok:
+        response.status_code = status.HTTP_404_NOT_FOUND
 
     return inference_response

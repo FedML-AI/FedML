@@ -27,6 +27,9 @@ class FedMLModelDeviceClientRunner:
         self.is_from_docker = is_from_docker
         self.edge_id = None
         self.infer_host = infer_host
+        self.redis_addr = "local"
+        self.redis_port = "6379"
+        self.redis_password = "fedml_default"
 
         self.agent_runner = None
 
@@ -37,6 +40,9 @@ class FedMLModelDeviceClientRunner:
         self.agent_runner = FedMLModelDeviceClientRunner(self.args, self.current_device_id, self.os_name,
                                                          self.is_from_docker, self.service_config)
         self.agent_runner.infer_host = self.infer_host
+        self.agent_runner.redis_addr = self.redis_addr
+        self.agent_runner.redis_port = self.redis_port
+        self.agent_runner.redis_password = self.redis_password
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))
@@ -152,6 +158,9 @@ class FedMLModelDeviceClientRunner:
 
         # Setup MQTT connection for communication with the FedML server.
         self.real_client_runner.infer_host = self.infer_host
+        self.real_client_runner.redis_addr = self.redis_addr
+        self.real_client_runner.redis_port = self.redis_port
+        self.real_client_runner.redis_password = self.redis_password
         self.real_client_runner.setup_agent_mqtt_connection(self.service_config)
 
         # Start mqtt looper

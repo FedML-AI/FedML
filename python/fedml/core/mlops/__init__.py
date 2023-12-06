@@ -221,42 +221,50 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
         MLOpsStore.mlops_log_records_lock.release()
 
 
-def log_training_status(status, run_id=None):
+def log_training_status(status, run_id=None, edge_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
     if run_id is not None:
         MLOpsStore.mlops_args.run_id = run_id
         MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
-
-    logging.info("log training status {}".format(status))
 
     setup_log_mqtt_mgr()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         MLOpsStore.mlops_metrics.report_client_training_status(
-            MLOpsStore.mlops_edge_id, status, run_id=MLOpsStore.mlops_run_id)
+            edge_id, status, run_id=run_id)
     else:
         MLOpsStore.mlops_metrics.report_client_id_status(
-            MLOpsStore.mlops_edge_id, status, run_id=MLOpsStore.mlops_run_id)
+            edge_id, status, run_id=run_id)
 
 
-def log_aggregation_status(status, run_id=None):
+def log_aggregation_status(status, run_id=None, edge_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
     if run_id is not None:
         MLOpsStore.mlops_args.run_id = run_id
         MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
-
-    logging.info("log aggregation status {}".format(status))
 
     setup_log_mqtt_mgr()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
@@ -265,43 +273,50 @@ def log_aggregation_status(status, run_id=None):
         device_role = "server"
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         MLOpsStore.mlops_metrics.report_server_training_status(
-            MLOpsStore.mlops_run_id, status, role=device_role, edge_id=MLOpsStore.mlops_edge_id)
+            run_id, status, role=device_role, edge_id=edge_id)
         sys_utils.save_simulator_process(ClientConstants.get_data_dir(),
                                          ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(),
-                                         str(MLOpsStore.mlops_run_id),
+                                         str(run_id),
                                          run_status=status)
 
         # Start log processor for current run
         if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
-            MLOpsRuntimeLogDaemon.get_instance(MLOpsStore.mlops_args).stop_log_processor(MLOpsStore.mlops_run_id,
-                                                                                         MLOpsStore.mlops_edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(MLOpsStore.mlops_args).stop_log_processor(
+                run_id, edge_id)
     else:
         MLOpsStore.mlops_metrics.report_server_id_status(
-            MLOpsStore.mlops_run_id, status, edge_id=MLOpsStore.mlops_edge_id,
-            server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+            run_id, status, edge_id=edge_id,
+            server_id=edge_id, server_agent_id=edge_id
         )
 
 
-def log_training_finished_status(run_id=None):
+def log_training_finished_status(run_id=None, edge_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id)
+        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id, edge_id=edge_id)
         time.sleep(2)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED))
-
     setup_log_mqtt_mgr()
     MLOpsStore.mlops_metrics.report_client_id_status(
-        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=MLOpsStore.mlops_run_id)
+        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id)
 
 
 def send_exit_train_msg(run_id=None):
@@ -313,100 +328,130 @@ def send_exit_train_msg(run_id=None):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    run_id_param = run_id
-    if run_id is None:
-        run_id_param = MLOpsStore.mlops_run_id
-
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.client_send_exit_train_msg(run_id_param, MLOpsStore.mlops_edge_id,
-                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+    MLOpsStore.mlops_metrics.client_send_exit_train_msg(
+        MLOpsStore.mlops_run_id if run_id is None else run_id,
+        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
 
-def log_training_failed_status(run_id=None):
+def log_training_failed_status(run_id=None, edge_id=None, enable_broadcast=False):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id)
+        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id, edge_id=edge_id)
         time.sleep(2)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED))
-
     setup_log_mqtt_mgr()
+
     MLOpsStore.mlops_metrics.report_client_id_status(
-        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=MLOpsStore.mlops_run_id)
+        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id)
+    if enable_broadcast:
+        MLOpsStore.mlops_metrics.report_client_training_status(
+            edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id)
 
 
-def log_aggregation_finished_status(run_id=None):
+def log_aggregation_finished_status(run_id=None, edge_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, run_id)
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, run_id=run_id, edge_id=edge_id)
         time.sleep(15)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED))
-
     setup_log_mqtt_mgr()
+
     MLOpsStore.mlops_metrics.report_server_id_status(
-        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=MLOpsStore.mlops_edge_id,
-        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+        run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+        edge_id=edge_id, server_id=edge_id, server_agent_id=edge_id
     )
 
 
-def log_aggregation_failed_status(run_id=None):
+def log_aggregation_failed_status(run_id=None, edge_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, run_id)
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, run_id=run_id, edge_id=edge_id)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
 
-    # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
-
     setup_log_mqtt_mgr()
     MLOpsStore.mlops_metrics.report_server_id_status(
-        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=MLOpsStore.mlops_edge_id,
-        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+        run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=edge_id,
+        server_id=edge_id, server_agent_id=edge_id
     )
 
 
-def log_aggregation_exception_status(run_id=None):
+def log_aggregation_exception_status(run_id=None, edge_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, run_id)
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, run_id=run_id, edge_id=edge_id)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
+    else:
+        run_id = MLOpsStore.mlops_run_id
+    if edge_id is not None:
+        MLOpsStore.mlops_edge_id = edge_id
+    else:
+        edge_id = MLOpsStore.mlops_edge_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
         return
 
-    # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION))
-
     setup_log_mqtt_mgr()
     MLOpsStore.mlops_metrics.report_server_id_status(
-        MLOpsStore.mlops_run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, edge_id=MLOpsStore.mlops_edge_id,
-        server_id=MLOpsStore.mlops_edge_id, server_agent_id=MLOpsStore.mlops_edge_id
+        run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, edge_id=edge_id,
+        server_id=edge_id, server_agent_id=edge_id
     )
 
 
@@ -614,6 +659,7 @@ def get_fedml_args():
     fedml_args = fedml.init(check_env=False, should_init_logs=False)
     fedml_args.version = fedml.get_env_version()
     fedml_args.config_version = fedml.get_env_version()
+    fedml_args.using_mlops = True
     return fedml_args
 
 
@@ -1308,6 +1354,9 @@ def mlops_parrot_enabled(args):
 
 
 def mlops_enabled(args):
+    if args is None:
+        MLOpsStore.mlops_args = get_fedml_args()
+        args = MLOpsStore.mlops_args
     if hasattr(args, "using_mlops") and args.using_mlops:
         return True
     else:
