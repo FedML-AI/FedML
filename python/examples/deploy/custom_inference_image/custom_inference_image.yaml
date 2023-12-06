@@ -1,0 +1,18 @@
+workspace: "./"
+entry_point: "sleep 300"
+bootstrap: |
+  echo "Bootstrap start..."
+  echo "Bootstrap finished"
+enable_custom_image: true
+inference_image_name: ""
+docker_registry_user_name: aaa
+docker_registry_user_password: bbb
+use_gpu: true
+deploy_timeout: 1000
+
+# computing:
+#   minimum_num_gpus: 1           # minimum # of GPUs to provision
+#   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+#   resource_type: A100-80G       # e.g., A100-80G,
+#   #allow_cross_cloud_resources: true # true, false
+#   #device_type: CPU              # options: GPU, CPU, hybrid

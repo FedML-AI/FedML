@@ -17,6 +17,7 @@ import fedml
 
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
+    MSG_MLOPS_SERVER_STATUS_PROVISIONING = "PROVISIONING"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
     MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
     MSG_MLOPS_SERVER_STATUS_STARTING = "STARTING"
@@ -253,6 +254,12 @@ class ServerConstants(object):
     @staticmethod
     def cleanup_learning_process(run_id):
         RunProcessUtils.cleanup_run_process(
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_USER_PROCESS)
+
+    @staticmethod
+    def get_learning_process_list(run_id):
+        return RunProcessUtils.get_run_process_list(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
             info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_USER_PROCESS)
 

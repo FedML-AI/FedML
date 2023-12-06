@@ -29,33 +29,37 @@ def log_llm_record(metrics: dict, version="release") -> None:
 
 
 # status list : ClientStatus
-def log_training_status(status, run_id=None):
-    mlops.log_training_status(status, run_id)
+def log_training_status(status, run_id=None, edge_id=None):
+    mlops.log_training_status(status, run_id, edge_id=edge_id)
 
 
-def log_training_finished_status(run_id=None):
-    mlops.log_training_finished_status(run_id)
+def log_training_finished_status(run_id=None, edge_id=None):
+    mlops.log_training_finished_status(run_id, edge_id=edge_id)
 
 
-def log_training_failed_status(run_id=None):
-    mlops.log_training_failed_status(run_id)
+def log_training_failed_status(run_id=None, edge_id=None, enable_broadcast=False):
+    mlops.log_training_failed_status(run_id, edge_id=edge_id, enable_broadcast=enable_broadcast)
 
 
 # status list : ServerStatus
-def log_aggregation_status(status, run_id=None):
-    mlops.log_aggregation_status(status, run_id)
+def log_aggregation_status(status, run_id=None, edge_id=None):
+    mlops.log_aggregation_status(status, run_id, edge_id=edge_id)
 
 
-def log_aggregation_finished_status(run_id=None):
-    mlops.log_aggregation_finished_status(run_id)
+def log_aggregation_finished_status(run_id=None, edge_id=None):
+    mlops.log_aggregation_finished_status(run_id, edge_id=edge_id)
 
 
 def send_exit_train_msg(run_id=None):
     mlops.send_exit_train_msg(run_id)
 
 
-def log_aggregation_failed_status(run_id=None):
-    mlops.log_aggregation_failed_status(run_id)
+def log_aggregation_failed_status(run_id=None, edge_id=None):
+    mlops.log_aggregation_failed_status(run_id, edge_id=edge_id)
+
+
+def log_aggregation_exception_status(run_id=None, edge_id=None):
+    mlops.log_aggregation_exception_status(run_id, edge_id=edge_id)
 
 
 def register_run_status_callback(run_status_callback):

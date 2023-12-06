@@ -106,7 +106,7 @@ class MLOpsMetrics(object):
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
-        logging.info("report_client_training_status. message_json = %s" % message_json)
+        # logging.info("report_client_training_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
@@ -169,13 +169,13 @@ class MLOpsMetrics(object):
         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id, "msg": msg}
         message_json = json.dumps(msg)
-        logging.info("report_client_id_status. message_json = %s" % message_json)
+        # logging.info("report_client_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status, edge_id=0, role=None, running_json=None, is_from_model=False):
         # if not self.comm_sanity_check():
         #     return
-        self.common_report_server_training_status(run_id, status, role, edge_id=edge_id)
+        self.common_report_server_training_status(run_id, status, role=role, edge_id=edge_id)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
@@ -201,7 +201,7 @@ class MLOpsMetrics(object):
             "role": role,
             "version": "v1.0"
         }
-        logging.info("report_server_device_status. msg = %s" % msg)
+        # logging.info("report_server_device_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
@@ -256,7 +256,7 @@ class MLOpsMetrics(object):
             msg["server_id"] = server_id
         message_json = json.dumps(msg)
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
-        logging.info("report_server_id_status. message_json = %s" % message_json)
+        # logging.info("report_server_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_training_metric(self, metric_json):
@@ -413,7 +413,7 @@ class MLOpsMetrics(object):
             log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
             # send log data to the log server
-            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            _, cert_path = MLOpsConfigs.get_request_params()
             if cert_path is not None:
                 try:
                     requests.session().verify = cert_path
@@ -466,4 +466,3 @@ class MLOpsMetrics(object):
 
     def report_json_message(self, topic, payload):
         self.messenger.send_message_json(topic, payload)
-

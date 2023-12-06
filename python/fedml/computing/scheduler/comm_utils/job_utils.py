@@ -1,23 +1,31 @@
+import json
 import logging
 import os
 import platform
+import time
 import traceback
 
 import GPUtil
 import psutil
+from fedml import mlops
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from fedml.computing.scheduler.slave import client_data_interface
+from fedml.computing.scheduler.master import server_data_interface
 from fedml.computing.scheduler.model_scheduler import device_client_data_interface
+from fedml.computing.scheduler.model_scheduler import device_server_data_interface
 from fedml.core.common.singleton import Singleton
 import threading
 
+from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
 from ..slave import client_constants
+from ..master import server_constants
 from ..model_scheduler import device_client_constants
+from ..model_scheduler import device_server_constants
 
 
 class JobRunnerUtils(Singleton):
@@ -28,6 +36,8 @@ class JobRunnerUtils(Singleton):
             self.available_gpu_ids = None
         if not hasattr(self, "lock_available_gpu_ids"):
             self.lock_available_gpu_ids = threading.Lock()
+        if not hasattr(self, "endpoint_unavailable_counter"):
+            self.endpoint_unavailable_counter = dict()
 
     @staticmethod
     def get_instance():
@@ -194,14 +204,8 @@ class JobRunnerUtils(Singleton):
                     count += 1
                     if count >= 1000:
                         break
-                    endpoint_status = FedMLModelCache.get_instance().get_end_point_status(job.job_id)
-                    if endpoint_status is None or \
-                            endpoint_status != \
-                            device_client_constants.ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                        # FedMLModelCache.get_instance().get_deployment_result_list(job.job_id)
-                        # device_client_constants.ClientConstants.remove_deployment(
-                        #    job.job_id, model_msg_object.model_name, model_msg_object.model_version)
-
+                    if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
                         self.release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
             logging.info("Exception when syncing endpoint process.")
@@ -437,3 +441,244 @@ class JobRunnerUtils(Singleton):
             env_name_value_map["FEDML_NUM_NODES"] = num_nodes
 
         return export_env_command_list, env_name_value_map
+
+    def monitor_slave_run_process_status(self):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            job_list = client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+                all_run_processes_exited = True
+                run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
+                for run_process_id in run_process_list:
+                    try:
+                        process = psutil.Process(int(run_process_id))
+                    except Exception as e:
+                        process = None
+                        pass
+                    if process is not None:
+                        all_run_processes_exited = False
+
+                # If the run processes have exited but run status is not completed,
+                # then release gpu ids and report failed status to the master agent.
+                if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status):
+                    # Release the gpu ids
+                    self.release_gpu_ids(job.job_id, job.edge_id)
+
+                    # Report failed status to the master agent
+                    mlops.log_training_failed_status(
+                        run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
+
+        except Exception as e:
+            logging.info(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
+            pass
+
+    def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            job_list = server_data_interface.FedMLServerDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+
+                # Calc the timeout
+                started_time = int(float(job.started_time))
+                timeout = time.time() - started_time
+
+                # Get the timeout threshold
+                timeout_threshold = None
+                if job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_PROVISIONING:
+                    timeout_threshold = SchedulerConstants.TRAIN_PROVISIONING_TIMEOUT
+                elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING:
+                    timeout_threshold = SchedulerConstants.TRAIN_STARTING_TIMEOUT
+                elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING:
+                    timeout_threshold = SchedulerConstants.TRAIN_RUNNING_TIMEOUT
+                elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_STOPPING:
+                    timeout_threshold = SchedulerConstants.TRAIN_STOPPING_TIMEOUT
+
+                # Check if the timout is greater than the threshold value
+                if timeout_threshold is not None and timeout > timeout_threshold:
+                    # Report failed status to the master agent
+                    mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+
+                # Request all running process list from the edge device.
+                if not SchedulerConstants.is_run_completed(job.status) and \
+                        timeout > SchedulerConstants.TRAIN_INIT_TIMEOUT:
+                    run_completed_on_all_edges = True
+                    job_run_json = json.loads(job.running_json)
+                    edge_ids = job_run_json.get("edgeids", [])
+                    for edge_id in edge_ids:
+                        device_info = device_info_reporter.get_device_info(job.job_id, edge_id, server_id)
+                        if device_info is None:
+                            continue
+                        run_process_list_map = device_info.get("run_process_list_map", {})
+                        run_process_list = run_process_list_map.get(str(job.job_id), [])
+                        if len(run_process_list) <= 0:
+                            # Report failed status to the master agent
+                            mlops.log_training_failed_status(run_id=job.job_id, edge_id=edge_id)
+                            mlops.log_run_log_lines(
+                                job.job_id, edge_id, ["ERROR: Client process exited------------------------------"],
+                                SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+                        else:
+                            run_completed_on_all_edges = False
+
+                    # If run completed on all edges, then report run status to the master agent.
+                    if run_completed_on_all_edges:
+                        # Report failed status to the master agent
+                        mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+
+        except Exception as e:
+            logging.info(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
+            pass
+
+    def monitor_slave_endpoint_status(self):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            FedMLModelCache.get_instance().set_redis_params()
+            job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+
+                if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
+                    # Release the gpu ids
+                    self.release_gpu_ids(job.job_id, job.edge_id)
+
+                    # Report failed status to the master agent
+                    mlops.log_training_failed_status(
+                        run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
+                elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                    endpoint_json = json.loads(job.running_json)
+                    model_config = endpoint_json.get("model_config", {})
+                    model_name = model_config.get("model_name", None)
+                    endpoint_name = endpoint_json.get("end_point_name", None)
+                    if model_name is not None:
+                        # Get model deployment result
+                        deployment_result, activated = \
+                            FedMLModelCache.get_instance().get_deployment_result_with_device_id(
+                                job.job_id, endpoint_name, model_name, job.edge_id)
+                        if not activated:
+                            mlops.log_endpoint_status(
+                                job.job_id,
+                                device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE)
+                            continue
+
+                        # Check the endpoint status
+                        self._check_slave_endpoint_status(job.job_id, job.edge_id, deployment_result)
+
+        except Exception as e:
+            logging.info(f"Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
+            pass
+
+    def _check_slave_endpoint_status(self, endpoint_id, device_id, deployment_result):
+        result_json = deployment_result
+        inference_url = result_json.get("model_url", None)
+        model_metadata = result_json.get("model_metadata", {})
+        input_list = model_metadata.get("inputs", None)
+        output_list = []
+
+        # Run inference request to check if endpoint is running normally.
+        while True:
+            response_ok, inference_response = \
+                FedMLHttpProxyInference.run_http_proxy_inference_with_request(
+                    endpoint_id, inference_url, input_list, output_list,
+                    timeout=SchedulerConstants.ENDPOINT_STATUS_CHECK_TIMEOUT)
+            if self.endpoint_unavailable_counter.get(str(endpoint_id)) is None:
+                self.endpoint_unavailable_counter[str(endpoint_id)] = 0
+            if not response_ok:
+                self.endpoint_unavailable_counter[str(endpoint_id)] += 1
+            else:
+                self.endpoint_unavailable_counter[str(endpoint_id)] = 0
+                return True
+
+            # If the endpoint unavailable counter is greater than the threshold value,
+            # then release gpu ids and report failed status to the master agent.
+            if self.endpoint_unavailable_counter.get(str(endpoint_id), 0) > \
+                    SchedulerConstants.ENDPOINT_FAIL_THRESHOLD_VALUE:
+                # Release the gpu ids
+                self.release_gpu_ids(endpoint_id, device_id)
+
+                # Report failed status to the master agent
+                mlops.log_training_failed_status(
+                    run_id=endpoint_id, edge_id=device_id, enable_broadcast=True
+                )
+                return False
+            time.sleep(2)
+
+    def monitor_master_endpoint_status(self):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            FedMLModelCache.get_instance().set_redis_params()
+            job_list = device_server_data_interface.FedMLServerDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+
+                endpoint_status = FedMLModelCache.get_instance().get_end_point_status(job.job_id)
+
+                if endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
+                    # Release the gpu ids
+                    self.release_gpu_ids(job.job_id, job.edge_id)
+                elif endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+                    endpoint_json = json.loads(job.running_json)
+                    model_config = endpoint_json.get("model_config", {})
+                    model_name = model_config.get("model_name", None)
+                    endpoint_name = endpoint_json.get("end_point_name", None)
+                    if model_name is not None:
+                        try:
+                            # Get model deployment result
+                            is_endpoint_offline = True
+                            result_list = FedMLModelCache.get_instance().get_deployment_result_list(
+                                job.job_id, endpoint_name, model_name)
+                            for result_item in result_list:
+                                result_device_id, result_payload = FedMLModelCache.get_instance().get_result_item_info(result_item)
+
+                                # Check if the endpoint is activated
+                                end_point_activated = FedMLModelCache.get_instance().get_end_point_activation(job.job_id)
+                                if not end_point_activated:
+                                    mlops.log_endpoint_status(
+                                        job.job_id,
+                                        device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+                                    break
+                                else:
+                                    # Check if the endpoint is running
+                                    if self._check_slave_endpoint_status(job.job_id, result_device_id, result_payload):
+                                        is_endpoint_offline = False
+
+                            # If the endpoint is offline, then report offline status to the MLOps.
+                            if is_endpoint_offline:
+                                mlops.log_endpoint_status(
+                                    job.job_id,
+                                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+
+                        except Exception as e:
+                            print(e)
+                elif endpoint_status == \
+                        device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING:
+                    started_time = int(float(job.started_time))
+                    timeout = time.time() - started_time
+                    if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_PROVISIONING_TIMEOUT:
+                        mlops.log_endpoint_status(
+                            job.job_id,
+                            device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+                elif endpoint_status == \
+                        device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING:
+                    started_time = int(float(job.started_time))
+                    timeout = time.time() - started_time
+                    if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
+                        mlops.log_endpoint_status(
+                            job.job_id,
+                            device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+
+        except Exception as e:
+            logging.info("Exception when syncing endpoint process on the master agent.")
+            pass

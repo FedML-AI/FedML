@@ -197,6 +197,21 @@ class FedMLModelCache(object):
 
         return None, None
 
+    def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        try:
+            result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
+            for result_item in result_list:
+                result_device_id, result_payload = self.get_result_item_info(result_item)
+                found_end_point_id = result_payload["end_point_id"]
+
+                end_point_activated = self.get_end_point_activation(found_end_point_id)
+                if str(found_end_point_id) == str(end_point_id) and str(result_device_id) == str(device_id):
+                    return result_payload, end_point_activated
+        except Exception as e:
+            print(e)
+
+        return None, False
+
     def set_end_point_status(self, end_point_id, end_point_name, status):
         self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)
         self.model_deployment_db.set_end_point_status(end_point_id, end_point_name, status)

@@ -947,7 +947,7 @@ class FedMLServerRunner:
         }
         """
         try:
-            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+            MLOpsConfigs.fetch_all_configs()
         except Exception as e:
             pass
 
@@ -1590,7 +1590,7 @@ class FedMLServerRunner:
             json_params["extra_infos"]["gpu_available_id_list"] = []
             json_params["extra_infos"]["gpu_list"] = []
 
-        _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+        _, cert_path = MLOpsConfigs.get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -1627,7 +1627,7 @@ class FedMLServerRunner:
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
-        return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
+        return MLOpsConfigs.fetch_all_configs()
 
     def send_agent_active_msg(self):
         active_topic = "flserver_agent/active"

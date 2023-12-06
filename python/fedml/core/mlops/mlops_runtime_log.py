@@ -64,13 +64,11 @@ class MLOpsRuntimeLog:
                 hasattr(MLOpsRuntimeLog._log_sdk_instance, "args") and \
                 hasattr(MLOpsRuntimeLog._log_sdk_instance.args, "rank"):
             if MLOpsRuntimeLog._log_sdk_instance.args.rank == 0:
-                mlops.log_aggregation_failed_status()
+                mlops.log_aggregation_exception_status()
             else:
                 mlops.log_training_failed_status()
         else:
-            mlops.log_aggregation_failed_status()
-
-        mlops.send_exit_train_msg()
+            mlops.log_aggregation_exception_status()
 
     def __init__(self, args):
         self.format_str = None
