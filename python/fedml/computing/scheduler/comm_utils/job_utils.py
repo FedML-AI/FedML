@@ -43,6 +43,10 @@ class JobRunnerUtils(Singleton):
             self.sync_data_proc = None
         if not hasattr(self, "released_endpoints"):
             self.released_endpoints = dict()
+        if not hasattr(self, "reported_runs"):
+            self.reported_runs = dict()
+        if not hasattr(self, "reported_runs_on_edges"):
+            self.reported_runs_on_edges = dict()
 
     @staticmethod
     def get_instance():
@@ -496,6 +500,9 @@ class JobRunnerUtils(Singleton):
                     mlops.log_training_failed_status(
                         run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
 
+                    print(f"[Slave][{job.job_id}:{job.edge_id}] Due to timeout, release gpu ids and "
+                          f"set run status of slave to failed.")
+
         except Exception as e:
             logging.info(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
             pass
@@ -530,6 +537,7 @@ class JobRunnerUtils(Singleton):
                 if timeout_threshold is not None and timeout > timeout_threshold:
                     # Report failed status to the master agent
                     mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+                    print(f"[Master][{job.job_id}:{job.edge_id}:{server_id}] Due to timeout, set run status to failed.")
 
                 # Request all running process list from the edge device.
                 if not SchedulerConstants.is_run_completed(job.status) and \
@@ -545,20 +553,32 @@ class JobRunnerUtils(Singleton):
                         run_process_list = run_process_list_map.get(str(job.job_id), [])
                         if len(run_process_list) <= 0:
                             # Report failed status to the master agent
-                            mlops.log_training_failed_status(run_id=job.job_id, edge_id=edge_id)
-                            mlops.log_run_log_lines(
-                                job.job_id, edge_id, ["ERROR: Client process exited------------------------------"],
-                                SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+                            if self.reported_runs_on_edges.get(str(job.job_id)) is None:
+                                self.reported_runs_on_edges[str(job.job_id)] = dict()
+                            if not self.reported_runs_on_edges[str(job.job_id)].get(str(edge_id), False):
+                                self.reported_runs_on_edges[str(job.job_id)][str(edge_id)] = True
+
+                                mlops.log_training_failed_status(run_id=job.job_id, edge_id=edge_id)
+                                mlops.log_run_log_lines(
+                                    job.job_id, edge_id, ["ERROR: Client process exited------------------------------"],
+                                    SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+                                print(f"[Master][{job.job_id}:{edge_id}] Due to job terminated on the slave agent, "
+                                      f"set run status of slave to failed.")
                         else:
                             run_completed_on_all_edges = False
 
                     # If run completed on all edges, then report run status to the master agent.
                     if run_completed_on_all_edges:
                         # Report failed status to the master agent
-                        mlops.log_run_log_lines(
-                            job.job_id, edge_id, ["ERROR: Run failed ------------------------------"],
-                            SchedulerConstants.JOB_TASK_TYPE_TRAIN)
-                        mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+                        if not self.reported_runs.get(str(job.job_id), False):
+                            self.reported_runs[str(job.job_id)] = True
+
+                            mlops.log_run_log_lines(
+                                job.job_id, job.edge_id, ["ERROR: Run failed ------------------------------"],
+                                SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+                            mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+                            print(f"[Master][{job.job_id}:{job.edge_id}:{server_id}] "
+                                  f"Due to job failed on all slave agents, set run status to failed.")
 
         except Exception as e:
             logging.info(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
