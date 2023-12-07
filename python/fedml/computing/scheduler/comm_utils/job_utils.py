@@ -168,9 +168,9 @@ class JobRunnerUtils(Singleton):
 
     @staticmethod
     def sync_proc(edge_id):
+        JobRunnerUtils.get_instance().reset_available_gpu_id_list(edge_id)
         JobRunnerUtils.get_instance().sync_run_process_gpu()
         JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
-        JobRunnerUtils.get_instance().reset_available_gpu_id_list(edge_id)
 
     def sync_run_process_gpu(self):
         try:
@@ -184,20 +184,13 @@ class JobRunnerUtils(Singleton):
                     count += 1
                     if count >= 1000:
                         break
-                    all_run_processes_exited = True
+
                     run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
-                    for run_process_id in run_process_list:
-                        try:
-                            process = psutil.Process(int(run_process_id))
-                        except Exception as e:
-                            process = None
-                            pass
-                        if process is not None:
-                            all_run_processes_exited = False
+                    all_run_processes_exited = True if len(run_process_list) <= 0 else False
 
                     if SchedulerConstants.is_run_completed(job.status):
-                        all_run_processes_exited = True
                         client_constants.ClientConstants.cleanup_learning_process(job.job_id)
+                        all_run_processes_exited = True
 
                     if all_run_processes_exited:
                         self.release_gpu_ids(job.job_id, job.edge_id)
@@ -696,7 +689,7 @@ class JobRunnerUtils(Singleton):
                                     device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
 
                         except Exception as e:
-                            print(e)
+                            print(f"exception when check endpoint status: {traceback.format_exc()}")
                 elif endpoint_status == \
                         device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING:
                     started_time = int(float(job.started_time))
