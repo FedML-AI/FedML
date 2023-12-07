@@ -1,21 +1,12 @@
 import json
-import logging
 import multiprocessing
-import sys
 
 from multiprocessing import Process
 import os
-import platform
-import shutil
-import subprocess
 import threading
 
 import time
 import uuid
-
-import fedml
-from fedml import mlops
-from ..comm_utils import sys_utils
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
@@ -23,7 +14,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_deployment import ru
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 
 
-class FedMLMqttInfernce:
+class FedMLMqttInference:
     def __init__(self, request_json=None, agent_config=None, run_id=0, mqtt_mgr=None):
         self.run_id = run_id
         self.request_json = request_json

@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import signal
+import traceback
 import uuid
 from os.path import expanduser
 
@@ -738,7 +739,7 @@ def check_fedml_is_latest_version(configuration_env="release"):
         # For the dev env, we just check if the version is alpha version of pre release
         for remote_ver_item in fedml_version_list:
             remote_fedml_ver_info = version.parse(remote_ver_item)
-            if not remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.pre[0] != "a":
+            if not remote_fedml_ver_info.is_prerelease or remote_fedml_ver_info.pre[0] != "rc":
                 continue
 
             if local_fedml_ver_info < remote_fedml_ver_info:

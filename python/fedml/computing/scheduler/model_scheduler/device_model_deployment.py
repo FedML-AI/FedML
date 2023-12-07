@@ -777,7 +777,7 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
 
 
 def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list,
-                                         inference_type="default", engine_type="default"):
+                                         inference_type="default", engine_type="default", timeout=None):
     model_inference_result = {}
     if inference_type == "default":
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
@@ -801,7 +801,11 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
                 media_type="text/event-stream")
             response_ok = True
         else:
-            response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+            if timeout is None:
+                response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+            else:
+                response = requests.post(
+                    inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout)
             if response.status_code == 200:
                 response_ok = True
                 if inference_type == "default":
@@ -812,7 +816,8 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
                 else:
                     model_inference_result = response.json()
     except Exception as e:
-        print("Error in running inference: {}".format(e))
+        # print("Error in running inference: {}".format(e))
+        pass
 
     return response_ok, model_inference_result
 
