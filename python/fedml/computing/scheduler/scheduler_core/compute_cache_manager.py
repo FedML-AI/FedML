@@ -27,6 +27,7 @@ class ComputeCacheManager(object):
         _, env_redis_addr, env_redis_port, env_redis_pwd = \
             SchedulerConstants.get_redis_and_infer_host_env_addr()
         redis_addr = env_redis_addr if env_redis_addr is not None else redis_addr
+        redis_addr = "localhost" if redis_addr is not None and redis_addr == "local" else redis_addr
         redis_port = env_redis_port if env_redis_port is not None else redis_port
         redis_password = env_redis_pwd if env_redis_pwd is not None else redis_password
 
@@ -37,7 +38,7 @@ class ComputeCacheManager(object):
                 self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
                                                        password=redis_password, decode_responses=True)
             self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
-            self.redis_connection.exists("FEDML_KEYS")
+            self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
             is_connected = True
@@ -54,7 +55,7 @@ class ComputeCacheManager(object):
                 host=SchedulerConstants.PUBLIC_REDIS_ADDR, port=SchedulerConstants.PUBLIC_REDIS_PORT,
                 password=SchedulerConstants.PUBLIC_REDIS_PASSWORD, decode_responses=True)
             self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
-            self.redis_connection.exists("FEDML_KEYS")
+            self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
             is_connected = True

@@ -466,20 +466,34 @@ class JobRunnerUtils(Singleton):
                 count += 1
                 if count >= 1000:
                     break
-                all_run_processes_exited = True
-                run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
-                for run_process_id in run_process_list:
-                    try:
-                        process = psutil.Process(int(run_process_id))
-                    except Exception as e:
-                        process = None
-                        pass
-                    if process is not None:
-                        all_run_processes_exited = False
 
-                # If the run processes have exited but run status is not completed,
-                # then release gpu ids and report failed status to the master agent.
-                if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status):
+                # Calc the timeout
+                started_time = int(float(job.started_time))
+                timeout = time.time() - started_time
+
+                # Check if all processes of the specific run are exited
+                run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
+                all_run_processes_exited = True if len(run_process_list) <= 0 else False
+
+                # Get the timeout threshold
+                timeout_threshold = None
+                if job.status == client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_PROVISIONING or \
+                        job.status == client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_QUEUED:
+                    timeout_threshold = SchedulerConstants.TRAIN_PROVISIONING_TIMEOUT
+                elif job.status == client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
+                        job.status == client_constants.ClientConstants.MSG_MLOPS_RUN_STATUS_STARTING or \
+                        job.status == client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+                    timeout_threshold = SchedulerConstants.TRAIN_STARTING_TIMEOUT
+                elif job.status == client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING or \
+                        job.status == client_constants.ClientConstants.MSG_MLOPS_RUN_STATUS_RUNNING:
+                    timeout_threshold = SchedulerConstants.TRAIN_RUNNING_TIMEOUT
+                elif job.status == client_constants.ClientConstants.MSG_MLOPS_RUN_STATUS_STOPPING:
+                    timeout_threshold = SchedulerConstants.TRAIN_STOPPING_TIMEOUT
+
+                # If the run processes have exited but run status is not completed and
+                # timeout is out of the range, then release gpu ids and report failed status to the master agent.
+                if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
+                        timeout_threshold is not None and timeout > timeout_threshold:
                     # Release the gpu ids
                     self.release_gpu_ids(job.job_id, job.edge_id)
 
@@ -509,7 +523,8 @@ class JobRunnerUtils(Singleton):
                 timeout_threshold = None
                 if job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_PROVISIONING:
                     timeout_threshold = SchedulerConstants.TRAIN_PROVISIONING_TIMEOUT
-                elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING:
+                elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING or \
+                        job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
                     timeout_threshold = SchedulerConstants.TRAIN_STARTING_TIMEOUT
                 elif job.status == server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING:
                     timeout_threshold = SchedulerConstants.TRAIN_RUNNING_TIMEOUT

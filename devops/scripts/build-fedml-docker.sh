@@ -101,8 +101,7 @@ if [ "$build_arm_arch_images" != "" ]; then
   cd $pwd
 fi
 
-cd ./installation/build_fedml_docker
-docker build -f light/Dockerfile \
+docker build -f ./installation/build_fedml_docker/light/Dockerfile \
     --network=host \
     -t ${DOCKER_REGISTRY}/fedml/fedml:light .
 cd $pwd

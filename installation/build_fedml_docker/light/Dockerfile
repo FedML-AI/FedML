@@ -8,8 +8,14 @@ ENV HOME /home/$USER
 ##############################################################################
 # Add docker location file
 ##############################################################################
-ADD ./light/docker-location.yml /home/fedml/fedml-client/fedml/data/docker-location.yml
+ADD ./installation/build_fedml_docker/light/docker-location.yml /home/fedml/fedml-client/fedml/data/docker-location.yml
 
 RUN pip3 install fedml
+
+COPY ./python ./fedml/fedml-pip
+WORKDIR ./fedml/fedml-pip
+RUN pip3 install -e ./
+
+
 
 
