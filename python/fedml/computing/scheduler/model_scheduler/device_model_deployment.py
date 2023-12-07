@@ -27,6 +27,8 @@ import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 from fastapi.responses import Response
+from fastapi.responses import StreamingResponse
+import httpx
 
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
@@ -793,22 +795,33 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
 
     response_ok = False
     try:
-        response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
-        if response.status_code == 200:
+        if model_inference_json.get("stream", False):
+            model_inference_result = StreamingResponse(
+                stream_generator(inference_url, input_json=model_inference_json),
+                media_type="text/event-stream")
             response_ok = True
-            if inference_type == "default":
-                model_inference_result = response.json()
-            elif inference_type == "image/png":
-                binary_content: bytes = response.content
-                model_inference_result = Response(content=binary_content, media_type="image/png")
-            else:
-                model_inference_result = response.json()
-
+        else:
+            response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+            if response.status_code == 200:
+                response_ok = True
+                if inference_type == "default":
+                    model_inference_result = response.json()
+                elif inference_type == "image/png":
+                    binary_content: bytes = response.content
+                    model_inference_result = Response(content=binary_content, media_type="image/png")
+                else:
+                    model_inference_result = response.json()
     except Exception as e:
         print("Error in running inference: {}".format(e))
 
     return response_ok, model_inference_result
 
+async def stream_generator(inference_url, input_json):
+    async with httpx.AsyncClient() as client:
+        async with client.stream("POST", inference_url, json=input_json,
+                                 timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
+            async for chunk in response.aiter_lines():
+                yield chunk
 
 def convert_model_to_onnx(
         torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True

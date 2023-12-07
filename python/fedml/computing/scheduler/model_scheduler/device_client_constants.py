@@ -80,6 +80,8 @@ class ClientConstants(object):
     INFERENCE_METRIC_PORT = 8002
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
 
+    WORKER_STREAM_API_TIMEOUT = int(os.getenv("WORKER_STREAM_API_TIMEOUT", 100))
+
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
 
     INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"

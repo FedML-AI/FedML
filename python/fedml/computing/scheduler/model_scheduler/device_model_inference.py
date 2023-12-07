@@ -113,6 +113,8 @@ def _predict(end_point_id, input_json, header=None):
         print("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
             input_list = input_json["inputs"]
+            stream_flag = input_json.get("stream", False)
+            input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
             inference_response = send_inference_request(
                 idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
@@ -169,6 +171,7 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         if response_ok:
             print("Use http inference.")
             return inference_response
+        print("Use http inference failed.")
 
         http_proxy_inference = FedMLHttpProxyInfernce()
         response_ok, inference_response = http_proxy_inference.run_http_proxy_inference_with_request(
