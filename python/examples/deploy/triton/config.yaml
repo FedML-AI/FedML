@@ -1,0 +1,7 @@
+workspace: "."
+
+# Related to the triton server
+inference_image_name: "fedml/fedml-triton"  # Replace with your own image name
+data_cache_dir: "/home/raphael/Triton/server/docs/examples/model_repository"
+port_inside_container: 8000
+use_triton: true

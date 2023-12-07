@@ -1,0 +1,71 @@
+workspace: "."
+entry_point: "main_openai_vllm.py"
+use_gpu: true
+### This folder will NOT be uploaded to MLOps,
+### The inference server (Docker) will mount it from local directory
+data_cache_dir: "~/fedml_serving/model_and_config"
+# If you want to install some packages
+# Please write the command in the bootstrap.sh
+bootstrap: |
+  echo "Bootstrap start..."
+  bash config/bootstrap.sh -r requirements/requirements_vllm.txt
+  echo "Bootstrap finished"
+
+# timeout (in seconds) for deployment startup
+deploy_timeout: 3600  # set to 30 min
+
+# auto detect public IP for on-prem deployment
+auto_detect_public_ip: true
+
+# request example
+request_input_example: {
+  "model": "local_model",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Who won the world series in 2020?"
+    },
+    {
+      "role": "assistant",
+      "content": "The Los Angeles Dodgers won the World Series in 2020.",
+    },
+    {
+      "role": "user",
+      "content": "Where was it played?",
+    }
+  ]
+}
+
+# inference docker image
+inference_image_name: "fedml/fedml-inference-cuda-11-8"
+
+# set environment variables below
+environment_variables:
+  HF_HOME: "/home/fedml/fedml_serving/model_and_config"
+  # HUGGING_FACE_HUB_TOKEN: "<your hugging face token>"  # this is required for private hugging face models
+  MODEL_NAME_OR_PATH: "Gryphe/MythoMax-L2-13b"  # model name (hugging face ID) or path
+  MODEL_DTYPE: "auto"
+  MAX_NEW_TOKENS: "0"
+  DO_SAMPLE: "True"
+  TEMPERATURE: "0.5"
+  TOP_K: "0"
+  TOP_P: "0.92"
+  MAX_HISTORY_TOKENS: "-1"
+  PROMPT_STYLE: "auto"
+
+# If you do not have any GPU resource but want to serve the model
+# Try fedml® launch platform, and uncomment the following lines.
+# ------------------------------------------------------------
+computing:
+  minimum_num_gpus: 1           # minimum # of GPUs to provision
+  maximum_cost_per_hour: $5     # max cost per hour for your job per gpu card
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: CPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G,
+  # please check the resource type list by "fedml show-resource-type"
+  # or visiting URL: https://open.fedml.ai/accelerator_resource_type
+# ------------------------------------------------------------
