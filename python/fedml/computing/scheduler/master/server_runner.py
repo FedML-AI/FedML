@@ -2500,9 +2500,7 @@ class FedMLServerRunner:
         if not self.run_as_cloud_server:
             self.recover_start_train_msg_after_upgrading()
 
-        JobRunnerUtils.get_instance().sync_run_process_gpu()
-        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
-        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
+        JobRunnerUtils.get_instance().sync_data_on_startup(self.edge_id)
 
         self.master_api_daemon = MasterApiDaemon()
         self.master_api_process = Process(target=self.master_api_daemon.run)
