@@ -1,6 +1,6 @@
 from fedml.core.common.singleton import Singleton
 from .compute_cache_manager import ComputeCacheManager
-from .business_models import LogsUploadModel, LogRequestModel, LogResponseModel
+from .business_models import LogsUploadModel, LogRequestModel
 
 
 class LogsManager(Singleton):
@@ -11,7 +11,8 @@ class LogsManager(Singleton):
     def get_instance():
         return LogsManager()
 
-    def save_logs(self, logs_json):
+    @staticmethod
+    def save_logs(logs_json):
         if logs_json is None:
             return
 
@@ -19,13 +20,8 @@ class LogsManager(Singleton):
         ComputeCacheManager.get_instance().set_redis_params()
         ComputeCacheManager.get_instance().store_cache(log_model)
 
-    def get_logs(self, run_id, edge_id=-1, page_num=1, page_size=100):
-        ComputeCacheManager.get_instance().set_redis_params()
-        response_model = ComputeCacheManager.get_instance().get_logs(
-            run_id, edge_id=edge_id, page_num=page_num, page_size=page_size)
-        return response_model
-
-    def get_logs(self, logs_request):
+    @staticmethod
+    def get_logs(logs_request):
         log_req_model = LogRequestModel(logs_request)
         ComputeCacheManager.get_instance().set_redis_params()
         return ComputeCacheManager.get_instance().get_logs(

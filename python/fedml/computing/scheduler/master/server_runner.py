@@ -640,7 +640,7 @@ class FedMLServerRunner:
         while True:
             try:
                 logs_item = run_logs_queue.get(block=False, timeout=3)
-                LogsManager.get_instance().save_logs(logs_item)
+                LogsManager.save_logs(logs_item)
             except queue.Empty as e:  # If queue is empty, then break loop
                 break
 
