@@ -1,7 +1,7 @@
 from abc import ABC
 import asyncio
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import FileResponse, StreamingResponse
 
 
@@ -34,7 +34,10 @@ class FedMLInferenceRunner(ABC):
 
         @api.get("/ready")
         async def ready():
-            return {"status": "Success"}
+            if self.client_predictor.ready():
+                return {"status": "Success"}
+            else:
+                return Response(status_code=status.HTTP_202_ACCEPTED)
 
         import uvicorn
         port = 2345

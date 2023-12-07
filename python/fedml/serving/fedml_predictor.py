@@ -17,3 +17,6 @@ class FedMLPredictor(ABC):
 
     async def async_predict(self, *args, **kwargs):
         raise NotImplementedError
+
+    def ready(self) -> bool:
+        return True
