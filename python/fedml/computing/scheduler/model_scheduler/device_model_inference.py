@@ -9,8 +9,8 @@ from fedml.computing.scheduler.model_scheduler.device_model_deployment import ru
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
-from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInfernce
-from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInfernce
+from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
+from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from fedml.computing.scheduler.comm_utils import sys_utils
 
 from pydantic import BaseSettings
@@ -90,7 +90,7 @@ def _predict(end_point_id, input_json, header=None):
     if in_model_version is None:
         in_model_version = "latest"
 
-    print("Inference json: {}".format(input_json))
+    # print("Inference json: {}".format(input_json))
 
     start_time = time.time_ns()
 
@@ -113,6 +113,8 @@ def _predict(end_point_id, input_json, header=None):
         print("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
             input_list = input_json["inputs"]
+            stream_flag = input_json.get("stream", False)
+            input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
             inference_response = send_inference_request(
                 idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
@@ -169,9 +171,9 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         if response_ok:
             print("Use http inference.")
             return inference_response
+        print("Use http inference failed.")
 
-        http_proxy_inference = FedMLHttpProxyInfernce()
-        response_ok, inference_response = http_proxy_inference.run_http_proxy_inference_with_request(
+        response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
             endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
             print("Use http proxy inference.")
@@ -185,9 +187,9 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
         agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
         agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
-        agent_config["mqtt_config"]["MQTT_PWD"]  = config_list[3]
+        agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
         agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
-        mqtt_inference = FedMLMqttInfernce(agent_config=agent_config, run_id=endpoint_id)
+        mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
         inference_response = mqtt_inference.run_mqtt_inference_with_request(
             idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
 
