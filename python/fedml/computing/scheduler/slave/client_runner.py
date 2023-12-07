@@ -1474,9 +1474,7 @@ class FedMLClientRunner:
 
             self.model_device_server.start()
 
-        JobRunnerUtils.get_instance().sync_run_process_gpu()
-        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
-        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
+        JobRunnerUtils.get_instance().sync_data_on_startup(self.edge_id)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

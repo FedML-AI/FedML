@@ -2,6 +2,8 @@ import json
 import logging
 
 import redis
+
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
 
@@ -34,6 +36,13 @@ class FedMLModelCache(object):
         self.model_deployment_db.create_table()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
+        _, env_redis_addr, env_redis_port, env_redis_pwd = \
+            SchedulerConstants.get_redis_and_infer_host_env_addr()
+        redis_addr = env_redis_addr if env_redis_addr is not None else redis_addr
+        redis_port = env_redis_port if env_redis_port is not None else redis_port
+        redis_password = env_redis_pwd if env_redis_pwd is not None else redis_password
+
+        is_connected = False
         try:
             if redis_password is None or redis_password == "" or redis_password == "fedml_default":
                 self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
@@ -41,8 +50,27 @@ class FedMLModelCache(object):
                 self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
                                                        password=redis_password, decode_responses=True)
             self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection.exists("FEDML_KEYS")
+            is_connected = True
+        except Exception as e:
+            is_connected = False
+
+        if not is_connected:
+            self.setup_public_redis_connection()
+
+    def setup_public_redis_connection(self):
+        is_connected = False
+        try:
+            self.redis_pool = redis.ConnectionPool(
+                host=SchedulerConstants.PUBLIC_REDIS_ADDR, port=SchedulerConstants.PUBLIC_REDIS_PORT,
+                password=SchedulerConstants.PUBLIC_REDIS_PASSWORD, decode_responses=True)
+            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection.exists("FEDML_KEYS")
+            is_connected = True
         except Exception as e:
             pass
+
+        return is_connected
 
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         if self.redis_pool is None:
