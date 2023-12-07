@@ -4,6 +4,7 @@ import os
 import platform
 import time
 import traceback
+from multiprocessing import Process
 
 import GPUtil
 import psutil
@@ -38,6 +39,8 @@ class JobRunnerUtils(Singleton):
             self.lock_available_gpu_ids = threading.Lock()
         if not hasattr(self, "endpoint_unavailable_counter"):
             self.endpoint_unavailable_counter = dict()
+        if not hasattr(self, "sync_data_proc"):
+            self.sync_data_proc = None
 
     @staticmethod
     def get_instance():
@@ -158,6 +161,17 @@ class JobRunnerUtils(Singleton):
             logging.info(f"Exception {traceback.format_exc()}")
             pass
 
+    def sync_data_on_startup(self, edge_id):
+        if self.sync_data_proc is None:
+            self.sync_data_proc = Process(target=JobRunnerUtils.sync_proc, args=(edge_id,))
+            self.sync_data_proc.start()
+
+    @staticmethod
+    def sync_proc(edge_id):
+        JobRunnerUtils.get_instance().sync_run_process_gpu()
+        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
+        JobRunnerUtils.get_instance().reset_available_gpu_id_list(edge_id)
+
     def sync_run_process_gpu(self):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
@@ -199,6 +213,7 @@ class JobRunnerUtils(Singleton):
             ):
                 count = 0
                 FedMLModelCache.get_instance().set_redis_params()
+                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
                 job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
                 for job in job_list.job_list:
                     count += 1
@@ -530,6 +545,9 @@ class JobRunnerUtils(Singleton):
                     # If run completed on all edges, then report run status to the master agent.
                     if run_completed_on_all_edges:
                         # Report failed status to the master agent
+                        mlops.log_run_log_lines(
+                            job.job_id, edge_id, ["ERROR: Run failed ------------------------------"],
+                            SchedulerConstants.JOB_TASK_TYPE_TRAIN)
                         mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
 
         except Exception as e:
@@ -541,6 +559,7 @@ class JobRunnerUtils(Singleton):
             ComputeCacheManager.get_instance().set_redis_params()
             count = 0
             FedMLModelCache.get_instance().set_redis_params()
+            device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1
@@ -617,6 +636,7 @@ class JobRunnerUtils(Singleton):
             ComputeCacheManager.get_instance().set_redis_params()
             count = 0
             FedMLModelCache.get_instance().set_redis_params()
+            device_server_data_interface.FedMLServerDataInterface.get_instance().create_job_table()
             job_list = device_server_data_interface.FedMLServerDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1

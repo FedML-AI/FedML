@@ -146,11 +146,17 @@ class FedMLModelDatabase(object):
 
     def create_table(self):
         self.open_job_db()
-        Base.metadata.create_all(self.db_engine, checkfirst=True)
+        try:
+            Base.metadata.create_all(self.db_engine, checkfirst=True)
+        except Exception as e:
+            pass
 
     def drop_table(self):
         self.open_job_db()
-        Base.metadata.drop_all(self.db_engine, checkfirst=True)
+        try:
+            Base.metadata.drop_all(self.db_engine, checkfirst=True)
+        except Exception as e:
+            pass
 
     def get_deployment_results_info(self, end_point_id, end_point_name, model_name, model_version):
         self.open_job_db()
