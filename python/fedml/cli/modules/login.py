@@ -35,5 +35,10 @@ def fedml_login(api_key, version, compute_node, server, provider):
     fedml.set_env_version(version)
 
     api_key = api_key[0] if len(api_key) > 0 else None
-    authenticate(api_key)
+    try:
+        authenticate(api_key)
+    except SystemExit as e:
+        print(f"{str(e)}\n")
+        print(f"Maybe you are using account id to login, we will try to login with account {api_key}.")
+        pass
     fedml.api.login(api_key, compute_node, server, provider)
