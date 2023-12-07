@@ -55,6 +55,7 @@ def root():
 
 
 @api.post('/api/v1/predict')
+@api.post('/chat/completions')
 async def predict(request: Request):
     # Get json data
     input_json = await request.json()
