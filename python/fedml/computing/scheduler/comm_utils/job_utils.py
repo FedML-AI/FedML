@@ -764,5 +764,5 @@ class JobRunnerUtils(Singleton):
                             device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
 
         except Exception as e:
-            logging.info("Exception when syncing endpoint process on the master agent.")
+            logging.info(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
             pass

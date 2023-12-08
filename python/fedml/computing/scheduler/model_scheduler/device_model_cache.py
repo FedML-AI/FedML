@@ -139,6 +139,8 @@ class FedMLModelCache(object):
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)
+        if not isinstance(result_item_json, dict):
+            return "", {}
         device_id = result_item_json["cache_device_id"]
         result_payload = json.loads(result_item_json["result"])
         return device_id, result_payload
