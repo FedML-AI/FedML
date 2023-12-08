@@ -178,6 +178,7 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         if response_ok:
             print("Use http proxy inference.")
             return inference_response
+        print("Use http proxy inference failed.")
 
         connect_str = "@FEDML@"
         random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
@@ -190,14 +191,17 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
         agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
         mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
-        inference_response = mqtt_inference.run_mqtt_inference_with_request(
+        response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
             idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+        if not response_ok:
+            inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
 
         print("Use mqtt inference.")
         return inference_response
     except Exception as e:
+        inference_response = {"error": True, "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
-        pass
+        return inference_response
 
     return {}
 
