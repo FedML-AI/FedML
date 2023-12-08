@@ -528,10 +528,13 @@ class JobRunnerUtils(Singleton):
                 if count >= 1000:
                     break
 
+                endpoint_status = FedMLModelCache.get_instance().get_end_point_status(job.job_id)
+
                 if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
-                    job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
                         job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
-                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                        endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     if not self.released_endpoints.get(str(job.job_id), False):
                         self.released_endpoints[str(job.job_id)] = True
 
