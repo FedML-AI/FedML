@@ -537,7 +537,7 @@ class JobRunnerUtils(Singleton):
 
                         # Release the gpu ids
                         self.release_gpu_ids(job.job_id, job.edge_id)
-                        print(f"[Run/Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
+                        print(f"[Run/EndpointWorker][{job.job_id}:{job.edge_id}] Release gpu ids.")
 
         except Exception as e:
             logging.info(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
