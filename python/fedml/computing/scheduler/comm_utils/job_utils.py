@@ -23,10 +23,12 @@ import threading
 
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
+from ..model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from ..slave import client_constants
 from ..master import server_constants
 from ..model_scheduler import device_client_constants
 from ..model_scheduler import device_server_constants
+from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 
 
 class JobRunnerUtils(Singleton):
@@ -49,6 +51,8 @@ class JobRunnerUtils(Singleton):
             self.reported_runs = dict()
         if not hasattr(self, "reported_runs_on_edges"):
             self.reported_runs_on_edges = dict()
+        if not hasattr(self, "mqtt_config"):
+            self.mqtt_config = dict()
 
     @staticmethod
     def get_instance():
@@ -688,10 +692,10 @@ class JobRunnerUtils(Singleton):
 
         # Run inference request to check if endpoint is running normally.
         while True:
-            response_ok, inference_response = \
-                FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                    endpoint_id, inference_url, input_list, output_list,
-                    timeout=SchedulerConstants.ENDPOINT_STATUS_CHECK_TIMEOUT)
+            response_ok, inference_response = self.inference(
+                device_id, endpoint_id, inference_url, input_list, output_list,
+                timeout=SchedulerConstants.ENDPOINT_STATUS_CHECK_TIMEOUT
+            )
             if self.endpoint_unavailable_counter.get(str(endpoint_id)) is None:
                 self.endpoint_unavailable_counter[str(endpoint_id)] = 0
             if not response_ok:
@@ -717,6 +721,47 @@ class JobRunnerUtils(Singleton):
                         run_id=endpoint_id, edge_id=device_id, is_from_model=True, enable_broadcast=True)
                 return False
             time.sleep(2)
+
+    def inference(
+            self, device_id, endpoint_id, inference_url, input_list, output_list,
+            inference_type="default", timeout=None):
+        try:
+            response_ok, inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, input_list, output_list, inference_type=inference_type, timeout=timeout)
+            if response_ok:
+                print("Use http inference.")
+                return response_ok, inference_response
+            print("Use http inference failed.")
+
+            response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
+                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type,
+                timeout=timeout)
+            if response_ok:
+                print("Use http proxy inference.")
+                return response_ok, inference_response
+            print("Use http proxy inference failed.")
+
+            agent_config = dict()
+            agent_config["mqtt_config"] = dict()
+            agent_config["mqtt_config"]["BROKER_HOST"] = self.mqtt_config["BROKER_HOST"]
+            agent_config["mqtt_config"]["BROKER_PORT"] = self.mqtt_config["BROKER_PORT"]
+            agent_config["mqtt_config"]["MQTT_USER"] = self.mqtt_config["MQTT_USER"]
+            agent_config["mqtt_config"]["MQTT_PWD"] = self.mqtt_config["MQTT_PWD"]
+            agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = self.mqtt_config["MQTT_KEEPALIVE"]
+            mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
+            response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
+                device_id, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+            if not response_ok:
+                inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
+
+            print("Use mqtt inference.")
+            return response_ok, inference_response
+        except Exception as e:
+            inference_response = {"error": True, "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
+            logging.info("Inference Exception: {}".format(traceback.format_exc()))
+            return False, inference_response
+
+        return False, None
 
     def monitor_master_endpoint_status(self):
         try:
