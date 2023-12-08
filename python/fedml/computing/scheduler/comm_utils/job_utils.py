@@ -540,8 +540,10 @@ class JobRunnerUtils(Singleton):
                     print(f"[Master][{job.job_id}:{job.edge_id}:{server_id}] Due to timeout, set run status to failed.")
 
                 # Request all running process list from the edge device.
+                running_timeout = timeout_threshold if timeout_threshold is not None else \
+                    SchedulerConstants.TRAIN_INIT_TIMEOUT
                 if not SchedulerConstants.is_run_completed(job.status) and \
-                        timeout > SchedulerConstants.TRAIN_INIT_TIMEOUT:
+                        timeout > running_timeout:
                     run_completed_on_all_edges = True
                     job_run_json = json.loads(job.running_json)
                     edge_ids = job_run_json.get("edgeids", [])
