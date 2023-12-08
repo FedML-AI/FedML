@@ -9,9 +9,7 @@ import time
 import uuid
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
-from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
-
-from ....core.mlops.mlops_metrics import MLOpsMetrics
+from .device_http_inference_protocol import FedMLHttpInference
 
 
 class FedMLMqttInference:
@@ -24,7 +22,6 @@ class FedMLMqttInference:
         self.client_mqtt_mgr = None
         self.running_request_json = dict()
         self.endpoint_inference_runners = dict()
-        self.mlops_metrics = None
         self.client_mqtt_lock = None
         self.client_mqtt_is_connected = False
         self.agent_config = agent_config
@@ -73,7 +70,7 @@ class FedMLMqttInference:
 
         self.setup_client_mqtt_mgr()
 
-        inference_response = run_http_inference_with_curl_request(
+        inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
             inference_url, inference_input_list, inference_output_list, inference_type=inference_type)
 
         self.response_endpoint_inference(endpoint_id, inference_request_id, inference_response)
@@ -152,12 +149,6 @@ class FedMLMqttInference:
         self.client_mqtt_lock.release()
 
     def on_client_mqtt_connected(self, mqtt_client_object):
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        self.mlops_metrics.run_id = self.run_id
-
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
 
@@ -185,11 +176,6 @@ class FedMLMqttInference:
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
         self.client_mqtt_mgr.connect()
         self.client_mqtt_mgr.loop_start()
-
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        self.mlops_metrics.run_id = self.run_id
 
     def release_client_mqtt_mgr(self):
         try:
