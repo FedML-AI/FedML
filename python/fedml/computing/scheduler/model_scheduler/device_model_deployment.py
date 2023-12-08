@@ -826,7 +826,8 @@ async def stream_generator(inference_url, input_json):
         async with client.stream("POST", inference_url, json=input_json,
                                  timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
             async for chunk in response.aiter_lines():
-                yield chunk
+                # we consumed a newline, need to put it back
+                yield f"{chunk}\n"
 
 def convert_model_to_onnx(
         torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True
