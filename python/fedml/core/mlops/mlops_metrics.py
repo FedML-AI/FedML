@@ -92,7 +92,7 @@ class MLOpsMetrics(object):
         topic_name = "fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status, "version": "v1.0"}
         message_json = json.dumps(msg)
-        logging.info("report_client_device_status. message_json = %s" % message_json)
+        # logging.info("report_client_device_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 

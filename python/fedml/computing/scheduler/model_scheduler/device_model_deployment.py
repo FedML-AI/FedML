@@ -798,7 +798,12 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
         if model_inference_json.get("stream", False):
             model_inference_result = StreamingResponse(
                 stream_generator(inference_url, input_json=model_inference_json),
-                media_type="text/event-stream")
+                media_type="text/event-stream",
+                headers={
+                    "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
+                    "Cache-Control": "no-cache",
+                }
+            )
             response_ok = True
         else:
             if timeout is None:
@@ -826,7 +831,8 @@ async def stream_generator(inference_url, input_json):
         async with client.stream("POST", inference_url, json=input_json,
                                  timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
             async for chunk in response.aiter_lines():
-                yield chunk
+                # we consumed a newline, need to put it back
+                yield f"{chunk}\n"
 
 def convert_model_to_onnx(
         torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True

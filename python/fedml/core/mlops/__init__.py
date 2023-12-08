@@ -221,7 +221,7 @@ def log_llm_record(metrics: dict, version="release", commit: bool = True) -> Non
         MLOpsStore.mlops_log_records_lock.release()
 
 
-def log_training_status(status, run_id=None, edge_id=None):
+def log_training_status(status, run_id=None, edge_id=None, is_from_model=False, enable_broadcast=False):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -242,10 +242,14 @@ def log_training_status(status, run_id=None, edge_id=None):
     setup_log_mqtt_mgr()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         MLOpsStore.mlops_metrics.report_client_training_status(
-            edge_id, status, run_id=run_id)
+            edge_id, status, is_from_model=is_from_model, run_id=run_id)
     else:
         MLOpsStore.mlops_metrics.report_client_id_status(
-            edge_id, status, run_id=run_id)
+            edge_id, status, is_from_model=is_from_model, run_id=run_id)
+
+        if enable_broadcast:
+            MLOpsStore.mlops_metrics.report_client_training_status(
+                edge_id, status, is_from_model=is_from_model, run_id=run_id)
 
 
 def log_aggregation_status(status, run_id=None, edge_id=None):
@@ -291,7 +295,7 @@ def log_aggregation_status(status, run_id=None, edge_id=None):
         )
 
 
-def log_training_finished_status(run_id=None, edge_id=None):
+def log_training_finished_status(run_id=None, is_from_model=False, edge_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id, edge_id=edge_id)
         time.sleep(2)
@@ -316,7 +320,8 @@ def log_training_finished_status(run_id=None, edge_id=None):
 
     setup_log_mqtt_mgr()
     MLOpsStore.mlops_metrics.report_client_id_status(
-        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id)
+        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+        is_from_model=is_from_model, run_id=run_id)
 
 
 def send_exit_train_msg(run_id=None):
@@ -334,7 +339,7 @@ def send_exit_train_msg(run_id=None):
         MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
 
-def log_training_failed_status(run_id=None, edge_id=None, enable_broadcast=False):
+def log_training_failed_status(run_id=None, edge_id=None, is_from_model=False, enable_broadcast=False):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id, edge_id=edge_id)
         time.sleep(2)
@@ -360,10 +365,10 @@ def log_training_failed_status(run_id=None, edge_id=None, enable_broadcast=False
     setup_log_mqtt_mgr()
 
     MLOpsStore.mlops_metrics.report_client_id_status(
-        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id)
+        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, is_from_model=is_from_model, run_id=run_id)
     if enable_broadcast:
         MLOpsStore.mlops_metrics.report_client_training_status(
-            edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id=run_id)
+            edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, is_from_model=is_from_model, run_id=run_id)
 
 
 def log_aggregation_finished_status(run_id=None, edge_id=None):

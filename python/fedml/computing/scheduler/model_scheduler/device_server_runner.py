@@ -1654,12 +1654,12 @@ class FedMLServerRunner:
             if str(edge_id) == str(self.edge_id):
                 continue
             # subscribe deployment result message for each model device
-            deployment_results_topic = "model_ops/model_device/return_deployment_result/{}".format(edge_id)
+            deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(edge_id)
             self.mqtt_mgr.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
             self.mqtt_mgr.subscribe_msg(deployment_results_topic)
 
             # subscribe deployment status message for each model device
-            deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(edge_id)
+            deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(edge_id)
             self.mqtt_mgr.add_message_listener(deployment_status_topic, self.callback_deployment_status_message)
             self.mqtt_mgr.subscribe_msg(deployment_status_topic)
 
