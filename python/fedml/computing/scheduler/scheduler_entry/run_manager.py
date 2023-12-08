@@ -193,8 +193,7 @@ class FedMLRunManager(Singleton):
                                                     cluster=cluster, config_id=job_config.config_id,
                                                     feature_entry_point=feature_entry_point)
         response = self._request(request_url=ServerConstants.get_run_start_url(),
-                                 request_json=run_create_json,
-                                 config_version=self.config_version)
+                                 request_json=run_create_json)
         response_data = self._get_data_from_response(response=response)
         inner_id = job_config.serving_endpoint_id \
             if job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
@@ -219,8 +218,7 @@ class FedMLRunManager(Singleton):
                                                   feature_entry_point=feature_entry_point)
 
         response = self._request(request_url=ServerConstants.get_run_start_url(),
-                                 request_json=run_start_json,
-                                 config_version=self.config_version)
+                                 request_json=run_start_json)
 
         response_data = self._get_data_from_response(response=response)
 
@@ -242,8 +240,7 @@ class FedMLRunManager(Singleton):
             "userApiKey": user_api_key
         }
         response = self._request(request_url=ServerConstants.get_run_list_url(),
-                                 request_json=run_list_json,
-                                 config_version=self.config_version)
+                                 request_json=run_list_json)
 
         response_data = self._get_data_from_response(response=response)
         if response_data is not None and response_data.get("jobList", None) is not None:
@@ -257,8 +254,7 @@ class FedMLRunManager(Singleton):
             "apiKey": user_api_key
         }
         response = self._request(request_url=ServerConstants.get_run_stop_url(),
-                                 request_json=run_stop_json,
-                                 config_version=self.config_version)
+                                 request_json=run_stop_json)
         response_data = self._get_data_from_response(response=response)
         return False if response_data is None else True
 
@@ -273,8 +269,7 @@ class FedMLRunManager(Singleton):
             "timeZone": Constants.get_current_time_zone()
         }
         response = self._request(request_url=ServerConstants.get_run_logs_url(),
-                                 request_json=run_logs_json,
-                                 config_version=self.config_version)
+                                 request_json=run_logs_json)
         response_data = self._get_data_from_response(response=response)
         if response_data is not None:
             run_log_list_result = FedMLRunLogModelList(response_data)
@@ -351,10 +346,9 @@ class FedMLRunManager(Singleton):
         return run_start_json
 
     @staticmethod
-    def _request(request_url: str, request_json: dict, config_version: str) -> requests.Response:
+    def _request(request_url: str, request_json: dict) -> requests.Response:
         request_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-        args = {"config_version": config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path:
             try:
                 requests.session().verify = cert_path

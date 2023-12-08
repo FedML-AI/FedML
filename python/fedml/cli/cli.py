@@ -3,7 +3,7 @@ import click
 
 import fedml
 from fedml.cli.modules import login, logs, launch, diagnosis, logout, build, run, model, device, cluster, \
-    run, train, federate
+    run, train, federate, storage
 from fedml.cli.modules.utils import OrderedGroup
 from fedml.computing.scheduler.env.collect_env import collect_env
 
@@ -46,6 +46,9 @@ cli.add_command(train.fedml_train)
 
 # Add federate subcommand module
 cli.add_command(federate.fedml_federate)
+
+# Add dataset subcommand module
+cli.add_command(storage.fedml_storage)
 
 
 @cli.command(

@@ -2,6 +2,8 @@ import json
 import logging
 
 import redis
+
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
 
@@ -34,12 +36,42 @@ class FedMLModelCache(object):
         self.model_deployment_db.create_table()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
-        if redis_password is None or redis_password == "" or redis_password == "fedml_default":
-            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
-        else:
-            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
-                                                   password=redis_password, decode_responses=True)
-        self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+        _, env_redis_addr, env_redis_port, env_redis_pwd = \
+            SchedulerConstants.get_redis_and_infer_host_env_addr()
+        redis_addr = env_redis_addr if env_redis_addr is not None else redis_addr
+        redis_addr = "localhost" if redis_addr is not None and redis_addr == "local" else redis_addr
+        redis_port = env_redis_port if env_redis_port is not None else redis_port
+        redis_password = env_redis_pwd if env_redis_pwd is not None else redis_password
+
+        is_connected = False
+        try:
+            if redis_password is None or redis_password == "" or redis_password == "fedml_default":
+                self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
+            else:
+                self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
+                                                       password=redis_password, decode_responses=True)
+            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
+            is_connected = True
+        except Exception as e:
+            is_connected = False
+
+        if not is_connected:
+            self.setup_public_redis_connection()
+
+    def setup_public_redis_connection(self):
+        is_connected = False
+        try:
+            self.redis_pool = redis.ConnectionPool(
+                host=SchedulerConstants.PUBLIC_REDIS_ADDR, port=SchedulerConstants.PUBLIC_REDIS_PORT,
+                password=SchedulerConstants.PUBLIC_REDIS_PASSWORD, decode_responses=True)
+            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
+            is_connected = True
+        except Exception as e:
+            pass
+
+        return is_connected
 
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         if self.redis_pool is None:
@@ -107,6 +139,8 @@ class FedMLModelCache(object):
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)
+        if not isinstance(result_item_json, dict):
+            return "", {}
         device_id = result_item_json["cache_device_id"]
         result_payload = json.loads(result_item_json["result"])
         return device_id, result_payload
@@ -193,6 +227,21 @@ class FedMLModelCache(object):
             print(e)
 
         return None, None
+
+    def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        try:
+            result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
+            for result_item in result_list:
+                result_device_id, result_payload = self.get_result_item_info(result_item)
+                found_end_point_id = result_payload["end_point_id"]
+
+                end_point_activated = self.get_end_point_activation(found_end_point_id)
+                if str(found_end_point_id) == str(end_point_id) and str(result_device_id) == str(device_id):
+                    return result_payload, end_point_activated
+        except Exception as e:
+            print(e)
+
+        return None, False
 
     def set_end_point_status(self, end_point_id, end_point_name, status):
         self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)

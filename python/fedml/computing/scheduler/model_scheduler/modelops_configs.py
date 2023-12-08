@@ -31,7 +31,8 @@ class ModelOpsConfigs(Singleton):
 
         return ModelOpsConfigs._config_instance
 
-    def get_request_params(self, in_config_version="release"):
+    @staticmethod
+    def get_request_params():
         url = fedml._get_backend_service()
         url = "{}/fedmlOpsServer/configs/fetch".format(url)
         cert_path = None
@@ -59,7 +60,7 @@ class ModelOpsConfigs(Singleton):
             outfile.write(open_root_ca_file)
 
     def fetch_configs(self, config_version="release"):
-        url, cert_path = self.get_request_params(config_version)
+        url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config"],
                        "device_send_time": int(time.time() * 1000)}
 

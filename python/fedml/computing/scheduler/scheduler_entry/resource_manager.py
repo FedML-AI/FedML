@@ -23,7 +23,7 @@ class FedMLResourceManager(Singleton):
         }
 
         args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -54,7 +54,7 @@ class FedMLResourceManager(Singleton):
     def show_resource_type(self):
         resource_url = ServerConstants.get_resource_url()
         args = {"config_version": self.config_version}
-        cert_path = MLOpsConfigs.get_instance(args).get_cert_path_with_version()
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path

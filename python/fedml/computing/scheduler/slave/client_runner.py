@@ -304,6 +304,12 @@ class FedMLClientRunner:
         if fedml_conf_object.get("device_args", None) is not None:
             fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
+        data_args = fedml_conf_object.get("data_args")
+        if data_args is not None:
+            data_cache_dir = fedml_conf_object["data_args"].get("data_cache_dir")
+            if data_cache_dir is not None:
+                data_cache_dir = os.path.join(data_cache_dir, str(self.edge_id))
+                fedml_conf_object["data_args"]["data_cache_dir"] = data_cache_dir
         if fedml_conf_object.get("tracking_args", None) is not None:
             fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
             fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
@@ -827,7 +833,7 @@ class FedMLClientRunner:
         logging.info("start the log processor")
 
         try:
-            _, _ = MLOpsConfigs.get_instance(self.args).fetch_configs()
+            MLOpsConfigs.fetch_all_configs()
         except Exception as e:
             pass
 
@@ -1040,6 +1046,14 @@ class FedMLClientRunner:
         elif cmd == ClientConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")
 
+    def get_all_run_process_list_map(self):
+        run_process_dict = dict()
+        for run_id_str, process in self.run_process_map.items():
+            cur_run_process_list = ClientConstants.get_learning_process_list(run_id_str)
+            run_process_dict[run_id_str] = cur_run_process_list
+
+        return run_process_dict
+
     def callback_report_device_info(self, topic, payload):
         payload_json = json.loads(payload)
         server_id = payload_json.get("server_id", 0)
@@ -1072,7 +1086,8 @@ class FedMLClientRunner:
                 "networkTraffic": sent_bytes + recv_bytes,
                 "updateTime": int(MLOpsUtils.get_ntp_time()),
                 "fedml_version": fedml.__version__,
-                "user_id": self.args.user
+                "user_id": self.args.user,
+                "run_process_list_map": self.get_all_run_process_list_map()
             }
             response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
                                 "master_device_id": self.model_device_server.get_edge_id(),
@@ -1236,7 +1251,7 @@ class FedMLClientRunner:
             json_params["extra_infos"]["gpu_available_id_list"] = []
             json_params["extra_infos"]["gpu_list"] = []
 
-        _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+        _, cert_path = MLOpsConfigs.get_request_params()
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
@@ -1274,7 +1289,7 @@ class FedMLClientRunner:
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
-        return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
+        return MLOpsConfigs.fetch_all_configs()
 
     def send_agent_active_msg(self):
         active_topic = "flclient_agent/active"
@@ -1434,6 +1449,14 @@ class FedMLClientRunner:
             self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
                                                                     self.args.os_name, self.args.is_from_docker,
                                                                     self.agent_config)
+            if infer_host is not None:
+                self.model_device_client.infer_host = infer_host
+            if infer_redis_addr is not None:
+                self.model_device_client.redis_addr = infer_redis_addr
+            if infer_redis_port is not None:
+                self.model_device_client.redis_port = infer_redis_port
+            if infer_redis_password is not None:
+                self.model_device_client.redis_password = infer_redis_password
             self.model_device_client.start()
 
         if self.model_device_server is None:
@@ -1451,9 +1474,7 @@ class FedMLClientRunner:
 
             self.model_device_server.start()
 
-        JobRunnerUtils.get_instance().sync_run_process_gpu()
-        JobRunnerUtils.get_instance().sync_endpoint_process_gpu()
-        JobRunnerUtils.get_instance().reset_available_gpu_id_list(self.edge_id)
+        JobRunnerUtils.get_instance().sync_data_on_startup(self.edge_id)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

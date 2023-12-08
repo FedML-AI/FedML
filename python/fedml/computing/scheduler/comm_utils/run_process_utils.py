@@ -94,7 +94,16 @@ class RunProcessUtils:
                     if process_id is None or process_id == "":
                         continue
 
-                    run_process_list.append(process_id)
+                    is_running = False
+                    try:
+                        process = psutil.Process(int(process_id))
+                        if process.status() == psutil.STATUS_RUNNING:
+                            is_running = True
+                    except Exception as e:
+                        pass
+
+                    if is_running:
+                        run_process_list.append(process_id)
         except Exception as e:
             pass
 

@@ -40,7 +40,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         if hasattr(args, "is_browser"):
             self.isBrowser = args.is_browser
         logging.info(args.__dict__)
-        self.dataSetType = args.dataset
+        if hasattr(args, "dataset"):
+            self.dataSetType = args.dataset
+        else:
+            self.dataSetType = None
         logging.info("is browser device: " + str(self.isBrowser))
         logging.info("origin client object " + str(args.client_id_list))
         logging.info("client object " + client_objects_str)
