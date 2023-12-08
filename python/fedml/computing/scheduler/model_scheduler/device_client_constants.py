@@ -73,7 +73,7 @@ class ClientConstants(object):
     K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
     K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
 
-    LOCAL_CLIENT_API_PORT = 40804
+    LOCAL_CLIENT_API_PORT = 22030
 
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
