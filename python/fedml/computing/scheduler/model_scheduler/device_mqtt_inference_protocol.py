@@ -46,7 +46,7 @@ class FedMLMqttInference:
             return
         run_id = str(run_id)
         inference_request_id = request_json.get("inference_id", "0")
-        client_runner = FedMLMqttInfernce(
+        client_runner = FedMLMqttInference(
             request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         if self.endpoint_inference_runners.get(run_id, None) is None:
@@ -57,7 +57,7 @@ class FedMLMqttInference:
     def response_endpoint_inference(self, endpoint_id, inference_request_id, response):
         inference_response_topic = f"fedml_model_worker/fedml_model_master/inference/{endpoint_id}"
         payload_json = dict()
-        payload_json["inference_id"]  = inference_request_id
+        payload_json["inference_id"] = inference_request_id
         payload_json["response"] = response
 
         self.client_mqtt_mgr.send_message_json(inference_response_topic, json.dumps(payload_json))
