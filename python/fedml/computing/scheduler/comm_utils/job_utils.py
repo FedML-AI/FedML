@@ -43,6 +43,8 @@ class JobRunnerUtils(Singleton):
             self.sync_data_proc = None
         if not hasattr(self, "released_endpoints"):
             self.released_endpoints = dict()
+        if not hasattr(self, "released_runs"):
+            self.released_runs = dict()
         if not hasattr(self, "reported_runs"):
             self.reported_runs = dict()
         if not hasattr(self, "reported_runs_on_edges"):
@@ -212,7 +214,10 @@ class JobRunnerUtils(Singleton):
             ):
                 count = 0
                 FedMLModelCache.get_instance().set_redis_params()
-                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+                try:
+                    device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+                except Exception as e:
+                    pass
                 job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
                 for job in job_list.job_list:
                     count += 1
@@ -473,6 +478,11 @@ class JobRunnerUtils(Singleton):
                 # Check if all processes of the specific run are exited
                 run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                 all_run_processes_exited = True if len(run_process_list) <= 0 else False
+                if all_run_processes_exited:
+                    if not self.released_runs.get(str(job.job_id), False):
+                        self.released_runs[str(job.job_id)] = True
+                        # Release the gpu ids
+                        self.release_gpu_ids(job.job_id, job.edge_id)
 
                 # Get the timeout threshold
                 timeout_threshold = None
@@ -493,9 +503,6 @@ class JobRunnerUtils(Singleton):
                 # timeout is out of the range, then release gpu ids and report failed status to the master agent.
                 if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
                         timeout_threshold is not None and timeout > timeout_threshold:
-                    # Release the gpu ids
-                    self.release_gpu_ids(job.job_id, job.edge_id)
-
                     # Report failed status to the master agent
                     mlops.log_training_failed_status(
                         run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
@@ -505,6 +512,35 @@ class JobRunnerUtils(Singleton):
 
         except Exception as e:
             logging.info(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
+            pass
+
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            FedMLModelCache.get_instance().set_redis_params()
+            try:
+                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
+            job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+
+                if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                    job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+                    if not self.released_endpoints.get(str(job.job_id), False):
+                        self.released_endpoints[str(job.job_id)] = True
+
+                        # Release the gpu ids
+                        self.release_gpu_ids(job.job_id, job.edge_id)
+                        print(f"[Run/Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
+
+        except Exception as e:
+            logging.info(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
@@ -591,7 +627,10 @@ class JobRunnerUtils(Singleton):
             ComputeCacheManager.get_instance().set_redis_params()
             count = 0
             FedMLModelCache.get_instance().set_redis_params()
-            device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            try:
+                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1
@@ -681,7 +720,10 @@ class JobRunnerUtils(Singleton):
             ComputeCacheManager.get_instance().set_redis_params()
             count = 0
             FedMLModelCache.get_instance().set_redis_params()
-            device_server_data_interface.FedMLServerDataInterface.get_instance().create_job_table()
+            try:
+                device_server_data_interface.FedMLServerDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
             job_list = device_server_data_interface.FedMLServerDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1
