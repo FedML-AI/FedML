@@ -469,7 +469,7 @@ class FedMLClientRunner:
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
-        deployment_results_topic = "model_ops/model_device/return_deployment_result/{}".format(device_id)
+        deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -489,7 +489,7 @@ class FedMLClientRunner:
                                model_id, model_name, model_version,
                                model_inference_url, model_status,
                                inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
-        deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(device_id)
+        deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
                                      "model_id": model_id, "model_name": model_name,

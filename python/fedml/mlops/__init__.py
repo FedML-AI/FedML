@@ -29,16 +29,17 @@ def log_llm_record(metrics: dict, version="release") -> None:
 
 
 # status list : ClientStatus
-def log_training_status(status, run_id=None, edge_id=None):
-    mlops.log_training_status(status, run_id, edge_id=edge_id)
+def log_training_status(status, run_id=None, edge_id=None, is_from_model=False, enable_broadcast=False):
+    mlops.log_training_status(
+        status, run_id, edge_id=edge_id, is_from_model=is_from_model, enable_broadcast=enable_broadcast)
 
 
-def log_training_finished_status(run_id=None, edge_id=None):
-    mlops.log_training_finished_status(run_id, edge_id=edge_id)
+def log_training_finished_status(run_id=None, is_from_model=False, edge_id=None):
+    mlops.log_training_finished_status(run_id, is_from_model=is_from_model, edge_id=edge_id)
 
 
-def log_training_failed_status(run_id=None, edge_id=None, enable_broadcast=False):
-    mlops.log_training_failed_status(run_id, edge_id=edge_id, enable_broadcast=enable_broadcast)
+def log_training_failed_status(run_id=None, edge_id=None, is_from_model=False, enable_broadcast=False):
+    mlops.log_training_failed_status(run_id, edge_id=edge_id, is_from_model=is_from_model, enable_broadcast=enable_broadcast)
 
 
 # status list : ServerStatus
