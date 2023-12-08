@@ -798,7 +798,12 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
         if model_inference_json.get("stream", False):
             model_inference_result = StreamingResponse(
                 stream_generator(inference_url, input_json=model_inference_json),
-                media_type="text/event-stream")
+                media_type="text/event-stream",
+                headers={
+                    "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
+                    "Cache-Control": "no-cache",
+                }
+            )
             response_ok = True
         else:
             if timeout is None:
