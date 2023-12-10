@@ -34,7 +34,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
-enable_simulation_gpu = False
+enable_simulation_gpu = True
 
 
 def get_sys_runner_info():
@@ -73,7 +73,8 @@ def get_sys_runner_info():
         pass
 
     try:
-        from mpi4py import MPI
+        import mpi4py
+        mpi_obj = mpi4py.MPI
         mpi_installed = True
     except:
         pass

@@ -1,4 +1,4 @@
-from mpi4py import MPI
+import mpi4py
 
 from .guest_manager import GuestManager
 from .guest_trainer import GuestTrainer
@@ -7,7 +7,7 @@ from .host_trainer import HostTrainer
 
 
 def FedML_init():
-    comm = MPI.COMM_WORLD
+    comm = mpi4py.MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()
     return comm, process_id, worker_number

@@ -212,9 +212,9 @@ def _update_client_specific_args(args):
 
 
 def _init_simulation_mpi(args):
-    from mpi4py import MPI
+    import mpi4py
 
-    comm = MPI.COMM_WORLD
+    comm = mpi4py.MPI.COMM_WORLD
     process_id = comm.Get_rank()
     world_size = comm.Get_size()
     args.comm = comm
@@ -310,9 +310,9 @@ def _manage_cuda_rpc_args(args):
 
 def _manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
-        from mpi4py import MPI
+        import mpi4py
 
-        comm = MPI.COMM_WORLD
+        comm = mpi4py.MPI.COMM_WORLD
         process_id = comm.Get_rank()
         world_size = comm.Get_size()
         args.comm = comm

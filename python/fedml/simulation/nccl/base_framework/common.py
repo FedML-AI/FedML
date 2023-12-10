@@ -147,7 +147,7 @@ def FedML_NCCL_Similulation_init(args):
 
 
 # def FedML_NCCL_init(args):
-#     # comm = MPI.COMM_WORLD
+#     # comm = mpi4py.MPI.COMM_WORLD
 #     # process_id = comm.Get_rank()
 #     # worker_number = comm.Get_size()
 #     comm, global_rank, world_size = FedML_NCCL_Similulation_init(args)

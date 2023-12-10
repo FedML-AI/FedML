@@ -1,4 +1,4 @@
-from mpi4py import MPI
+import mpi4py
 from torch import nn
 
 from .client import SplitNN_client

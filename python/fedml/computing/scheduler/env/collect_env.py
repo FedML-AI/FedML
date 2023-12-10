@@ -32,8 +32,8 @@ def collect_env():
         print("PyTorch is not installed properly")
 
     try:
-        from mpi4py import MPI
-
+        import mpi4py
+        mpi_obj = mpi4py.MPI
         print("MPI4py is installed")
     except:
         print("MPI4py is NOT installed")

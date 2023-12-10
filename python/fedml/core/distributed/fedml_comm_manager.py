@@ -66,9 +66,9 @@ class FedMLCommManager(Observer):
     def finish(self):
         logging.info("__finish")
         if self.backend == "MPI":
-            from mpi4py import MPI
+            import mpi4py
 
-            MPI.COMM_WORLD.Abort()
+            mpi4py.MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()
         elif self.backend == "MQTT_S3":
