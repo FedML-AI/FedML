@@ -1413,11 +1413,6 @@ class FedMLServerRunner:
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
                 run_id, request_json.get("server_id", "0"), SchedulerConstants.get_log_source(request_json)
             )
-
-            # report server running status
-            self.mlops_metrics.report_server_id_status(
-                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
-                server_id=self.edge_id, server_agent_id=self.edge_id)
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             run_id = request_json["runId"]
