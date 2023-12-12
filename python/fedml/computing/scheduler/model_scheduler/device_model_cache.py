@@ -63,7 +63,7 @@ class FedMLModelCache(object):
         is_connected = False
         try:
             self.redis_pool = redis.ConnectionPool(
-                host=SchedulerConstants.PUBLIC_REDIS_ADDR, port=SchedulerConstants.PUBLIC_REDIS_PORT,
+                host=SchedulerConstants.get_public_redis_addr(), port=SchedulerConstants.PUBLIC_REDIS_PORT,
                 password=SchedulerConstants.PUBLIC_REDIS_PASSWORD, decode_responses=True)
             self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
             self.redis_connection.set("FEDML_TEST_KEYS", "TEST")

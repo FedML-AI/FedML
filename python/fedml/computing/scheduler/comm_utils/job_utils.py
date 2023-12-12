@@ -578,9 +578,12 @@ class JobRunnerUtils(Singleton):
 
                 # Check if the timout is greater than the threshold value
                 if timeout_threshold is not None and timeout > timeout_threshold:
-                    # Report failed status to the master agent
-                    mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
-                    print(f"[Master][{job.job_id}:{job.edge_id}:{server_id}] Due to timeout, set run status to failed.")
+                    if not self.reported_runs.get(str(job.job_id), False):
+                        self.reported_runs[str(job.job_id)] = True
+
+                        # Report failed status to the master agent
+                        mlops.log_aggregation_failed_status(run_id=job.job_id, edge_id=server_id)
+                        print(f"[Master][{job.job_id}:{job.edge_id}:{server_id}] Due to timeout, set run status to failed.")
 
                 # Request all running process list from the edge device.
                 running_timeout = timeout_threshold if timeout_threshold is not None else \

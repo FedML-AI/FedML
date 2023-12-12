@@ -26,9 +26,8 @@ import io
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
-from fastapi.responses import Response
-from fastapi.responses import StreamingResponse
-import httpx
+from .device_http_inference_protocol import FedMLHttpInference
+
 
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
@@ -215,7 +214,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
-                usr_indicated_wait_time = config.get('deploy_timeout', 100)
+                usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
                     usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
@@ -263,6 +262,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
+                entry_cmd = config.get('entry_cmd', "")
                 if src_bootstrap_file_path != "":
                     dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
                 else:
@@ -272,6 +272,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 docker_registry_user_name = config.get("docker_registry_user_name", "")
                 docker_registry_user_password = config.get("docker_registry_user_password", "")
                 docker_registry = config.get("docker_registry", "")
+                logging.info(f"entry_cmd is {entry_cmd}, enable_custom_image is {enable_custom_image} ")
 
                 port_inside_container = int(config.get("port_inside_container", 2345))
                 use_triton = config.get("use_triton", False)
@@ -336,7 +337,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         try:
             client = docker.from_env()
-            if enable_custom_image:
+            if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != ""\
+                and docker_registry != "":
                 client.login(username=docker_registry_user_name, password=docker_registry_user_password,
                              registry=docker_registry)
         except Exception:
@@ -368,7 +370,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 device_requests.append(
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info(f"device_requests: {device_requests}")
-        logging.info("Start pulling the inference image..., may take a few minutes...")
+        logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
         # Detect if the image is already at the local
         try:
             client.images.get(inference_image_name)
@@ -383,6 +385,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         # Optional
         if src_data_cache_dir != "":
+            logging.info("Start copying the data cache to the container...")
             if os.path.exists(src_data_cache_dir):
                 volumns.append(src_data_cache_dir)
                 binds[src_data_cache_dir] = {
@@ -392,13 +395,22 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
 
         # Default
-        volumns.append(src_code_dir)
-        binds[src_code_dir] = {
-            "bind": dst_model_serving_dir,
-            "mode": "rw"
-        }
+        if not enable_custom_image or (enable_custom_image and relative_entry != ""):
+            logging.info("Start copying the source code to the container...")
+            volumns.append(src_code_dir)
+            binds[src_code_dir] = {
+                "bind": dst_model_serving_dir,
+                "mode": "rw"
+            }
+            environment["MAIN_ENTRY"] = relative_entry
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
-        environment["MAIN_ENTRY"] = relative_entry
+        logging.info(f"volume: {volumns}, binds: {binds}, environment: {environment}")
+        logging.info(f"dst_model_serving_dir: {dst_model_serving_dir}")
+        logging.info(f"relative_entry: {relative_entry}")
+        logging.info(f"src_bootstrap_file_path: {src_bootstrap_file_path}")
+        logging.info(f"dst_bootstrap_dir: {dst_bootstrap_dir}")
+        logging.info(f"src_code_dir: {src_code_dir}")
+        logging.info(f"model_serving_dir: {model_serving_dir}")
 
         if extra_envs is not None:
             for key in extra_envs:
@@ -420,7 +432,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # mem_limit = "8g",   # Could also be configured in the docker desktop setting
             ),
             detach=True,
-            command=relative_entry if enable_custom_image else None
+            command=entry_cmd if enable_custom_image else None
         )
         client.api.start(container=new_container.get("Id"))
 
@@ -778,61 +790,10 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
 
 def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list,
                                          inference_type="default", engine_type="default", timeout=None):
-    model_inference_result = {}
-    if inference_type == "default":
-        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
-                             'Accept': 'application/json'}
-    else:
-        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
-                             'Accept': inference_type}
-    if engine_type == "default":
-        model_inference_json = inference_input_list
-    else:  # triton
-        model_inference_json = {
-            "inputs": inference_input_list,
-            "outputs": inference_output_list
-        }
+    return FedMLHttpInference.run_http_inference_with_curl_request(
+        inference_url, inference_input_list, inference_output_list,
+        inference_type=inference_type, engine_type=engine_type, timeout=timeout)
 
-    response_ok = False
-    try:
-        if model_inference_json.get("stream", False):
-            model_inference_result = StreamingResponse(
-                stream_generator(inference_url, input_json=model_inference_json),
-                media_type="text/event-stream",
-                headers={
-                    "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
-                    "Cache-Control": "no-cache",
-                }
-            )
-            response_ok = True
-        else:
-            if timeout is None:
-                response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
-            else:
-                response = requests.post(
-                    inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout)
-            if response.status_code == 200:
-                response_ok = True
-                if inference_type == "default":
-                    model_inference_result = response.json()
-                elif inference_type == "image/png":
-                    binary_content: bytes = response.content
-                    model_inference_result = Response(content=binary_content, media_type="image/png")
-                else:
-                    model_inference_result = response.json()
-    except Exception as e:
-        # print("Error in running inference: {}".format(e))
-        pass
-
-    return response_ok, model_inference_result
-
-async def stream_generator(inference_url, input_json):
-    async with httpx.AsyncClient() as client:
-        async with client.stream("POST", inference_url, json=input_json,
-                                 timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
-            async for chunk in response.aiter_lines():
-                # we consumed a newline, need to put it back
-                yield f"{chunk}\n"
 
 def convert_model_to_onnx(
         torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True

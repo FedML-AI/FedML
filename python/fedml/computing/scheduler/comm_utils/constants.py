@@ -1,5 +1,7 @@
 import os
 
+import fedml
+
 
 class SchedulerConstants:
     ERR_MSG_BINDING_EXCEPTION_1 = "[1] Exception occurs when logging to MLOps."
@@ -81,9 +83,10 @@ class SchedulerConstants:
     TRAIN_RUNNING_TIMEOUT = 60 * 60 * 12
     TRAIN_INIT_TIMEOUT = 60 * 5
 
-    PUBLIC_REDIS_ADDR = "34.83.240.2" #f"open-{fedml.get_env_version()}.fedml.ai"
     PUBLIC_REDIS_PORT = 6379
     PUBLIC_REDIS_PASSWORD = "share-fedml-secret@@DD#D#*&^"
+
+    STATUS_CHECK_FRO_RUN_STOP_CONTEXT = "run_stop"
 
     MLOPS_RUN_COMPLETED_STATUS_LIST = [
         MLOPS_RUN_STATUS_FINISHED, MLOPS_RUN_STATUS_KILLED, MLOPS_RUN_STATUS_FAILED,
@@ -127,3 +130,8 @@ class SchedulerConstants:
         infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
         infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
         return infer_host, infer_redis_addr, infer_redis_port, infer_redis_password
+
+    @staticmethod
+    def get_public_redis_addr():
+        return "cache{}.fedml.ai".format(
+            "-" + fedml.get_env_version() if fedml.get_env_version() != "release" else "")
