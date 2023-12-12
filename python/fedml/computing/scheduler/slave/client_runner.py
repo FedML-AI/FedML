@@ -641,6 +641,8 @@ class FedMLClientRunner:
         self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_list):
+        self.check_runner_stop_event()
+
         error_str = "\n".join(error_list)
         raise Exception(f"Error occurs when running the job... {error_str}")
 
