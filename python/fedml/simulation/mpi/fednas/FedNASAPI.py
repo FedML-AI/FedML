@@ -1,4 +1,4 @@
-from mpi4py import MPI
+import mpi4py
 
 from fedml.core import ClientTrainer, ServerAggregator
 from .FedNASAggregator import FedNASAggregator
@@ -8,7 +8,7 @@ from .FedNASTrainer import FedNASTrainer
 
 
 def FedML_init():
-    comm = MPI.COMM_WORLD
+    comm = mpi4py.MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()
     return comm, process_id, worker_number

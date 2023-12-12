@@ -1,3 +1,5 @@
+import traceback
+
 import httpx
 
 from .device_client_constants import ClientConstants
@@ -35,7 +37,12 @@ class FedMLHttpInference:
             if model_inference_json.get("stream", False):
                 model_inference_result = StreamingResponse(
                     stream_generator(inference_url, input_json=model_inference_json),
-                    media_type="text/event-stream")
+                    media_type="text/event-stream",
+                    headers={
+                        "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
+                        "Cache-Control": "no-cache",
+                    }
+                )
                 response_ok = True
             else:
                 if timeout is None:
@@ -52,9 +59,11 @@ class FedMLHttpInference:
                         model_inference_result = Response(content=binary_content, media_type="image/png")
                     else:
                         model_inference_result = response.json()
+                else:
+                    model_inference_result = {"response": f"{response.content}"}
         except Exception as e:
-            # print("Error in running inference: {}".format(e))
-            pass
+            response_ok = False
+            model_inference_result = {"response": f"{traceback.format_exc()}"}
 
         return response_ok, model_inference_result
 
@@ -64,4 +73,5 @@ async def stream_generator(inference_url, input_json):
         async with client.stream("POST", inference_url, json=input_json,
                                  timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
             async for chunk in response.aiter_lines():
-                yield chunk
+                # we consumed a newline, need to put it back
+                yield f"{chunk}\n"

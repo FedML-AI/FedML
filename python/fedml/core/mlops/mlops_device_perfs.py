@@ -117,24 +117,29 @@ class MLOpsDevicePerfStats(object):
         JobRunnerUtils.get_instance().mqtt_config = self.args.mqtt_config_path
 
         # Notify MLOps with system information.
+        sleep_time_interval = 10
         while not self.should_stop_device_realtime_stats():
             try:
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
                 elif role == ROLE_RUN_SLAVE:
                     JobRunnerUtils.get_instance().monitor_slave_run_process_status()
+                    sleep_time_interval = 60
                 elif role == ROLE_ENDPOINT_SLAVE:
                     JobRunnerUtils.get_instance().monitor_slave_endpoint_status()
+                    sleep_time_interval = 70
                 elif role == ROLE_ENDPOINT_MASTER:
                     JobRunnerUtils.get_instance().monitor_master_endpoint_status()
+                    sleep_time_interval = 80
                 elif role == ROLE_RUN_MASTER:
                     JobRunnerUtils.get_instance().monitor_master_run_process_status(
                         self.edge_id, device_info_reporter=device_info_reporter)
+                    sleep_time_interval = 90
             except Exception as e:
                 logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
                 pass
 
-            time.sleep(10)
+            time.sleep(sleep_time_interval)
 
             if role == ROLE_DEVICE_INFO_REPORTER:
                 self.check_fedml_client_parent_process()

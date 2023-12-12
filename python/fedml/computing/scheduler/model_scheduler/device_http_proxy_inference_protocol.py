@@ -1,3 +1,4 @@
+import traceback
 from urllib.parse import urlparse
 from .device_client_constants import ClientConstants
 import requests
@@ -32,7 +33,7 @@ class FedMLHttpProxyInference:
             model_inference_json["inference_timeout"] = timeout
 
         response_ok = False
-        inference_response = {}
+        model_inference_result = {}
         try:
             if timeout is None:
                 inference_response = requests.post(http_proxy_url, headers=model_api_headers, json=model_inference_json)
@@ -42,8 +43,10 @@ class FedMLHttpProxyInference:
             if inference_response.status_code == 200:
                 response_ok = True
                 return response_ok, inference_response.content
+            else:
+                model_inference_result = {"response": f"{inference_response.content}"}
         except Exception as e:
-            # print("Error in http proxy inference: {}".format(e))
-            pass
+            response_ok = False
+            model_inference_result = {"response": f"{traceback.format_exc()}"}
 
-        return response_ok, inference_response
+        return response_ok, model_inference_result

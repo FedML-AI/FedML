@@ -1,4 +1,4 @@
-from mpi4py import MPI
+import mpi4py
 
 from .central_manager import BaseCentralManager
 from .central_worker import BaseCentralWorker
@@ -7,7 +7,7 @@ from .client_worker import BaseClientWorker
 
 
 def FedML_init():
-    comm = MPI.COMM_WORLD
+    comm = mpi4py.MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()
     return comm, process_id, worker_number
