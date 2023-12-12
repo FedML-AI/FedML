@@ -47,6 +47,7 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
+        self.is_fhe_enabled = hasattr(args, "enable_fhe") and args.enable_fhe
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -58,7 +59,7 @@ class FedMLAggregator(object):
         logging.info("add_model. index = %d" % index)
 
         # for dictionary model_params, we let the user level code to control the device
-        if type(model_params) is not dict:
+        if type(model_params) is not dict and (not self.is_fhe_enabled):
             model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.model_dict[index] = model_params
@@ -97,7 +98,8 @@ class FedMLAggregator(object):
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
-        self.set_global_model_params(averaged_params)
+        if not self.is_fhe_enabled:
+            self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
@@ -173,6 +175,10 @@ class FedMLAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        if self.is_fhe_enabled:
+            logging.info("Encrypted global model cannot be tested on the server")
+            return
+
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             self.aggregator.test_all(
