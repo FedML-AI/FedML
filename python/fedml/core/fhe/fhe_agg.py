@@ -28,6 +28,9 @@ class FedMLFHE:
         return self.is_enabled   
 
     def init(self, args):
+        if not self.is_enabled:
+            return
+
         import tenseal as fhe_core
 
         if hasattr(args, "enable_fhe") and args.enable_fhe:
