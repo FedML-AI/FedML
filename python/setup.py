@@ -94,7 +94,7 @@ requirements_extra_crypto = [
 
 setup(
     name="fedml",
-    version="0.8.14.dev5",
+    version="0.8.14a5",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
