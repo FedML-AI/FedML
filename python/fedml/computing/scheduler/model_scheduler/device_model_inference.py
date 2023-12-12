@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 import os
 
 from fastapi import FastAPI, Request
+
+from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
@@ -166,7 +168,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list, inference_type="default"):
     try:
-        response_ok, inference_response = run_http_inference_with_curl_request(
+        response_ok, inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
             inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
             print("Use http inference.")

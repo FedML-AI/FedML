@@ -1058,6 +1058,7 @@ class FedMLClientRunner:
         payload_json = json.loads(payload)
         server_id = payload_json.get("server_id", 0)
         run_id = payload_json.get("run_id", 0)
+        context = payload_json.get("context", None)
         response_topic = f"client/server/response_device_info/{server_id}"
         if self.mlops_metrics is not None and self.model_device_client is not None and \
                 self.model_device_server is not None:
@@ -1093,6 +1094,8 @@ class FedMLClientRunner:
                                 "master_device_id": self.model_device_server.get_edge_id(),
                                 "run_id": run_id, "edge_id": self.edge_id,
                                 "edge_info": device_info_json}
+            if context is not None:
+                response_payload["context"] = context
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def callback_client_logout(self, topic, payload):

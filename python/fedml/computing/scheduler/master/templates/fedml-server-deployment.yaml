@@ -29,6 +29,8 @@ spec:
       - key: "node.kubernetes.io/ci"
         operator: "Exists"
         effect: "NoSchedule"
+      serviceAccountName: fedml-kubectl-sa-ops
+      serviceAccount: fedml-kubectl-sa-ops
       containers:
       - name: fedml-aggregator
         image: $FEDML_AGGREGATOR_IMAGE_PATH

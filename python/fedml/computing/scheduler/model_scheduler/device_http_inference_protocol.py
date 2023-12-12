@@ -1,3 +1,5 @@
+import traceback
+
 import httpx
 
 from .device_client_constants import ClientConstants
@@ -52,9 +54,11 @@ class FedMLHttpInference:
                         model_inference_result = Response(content=binary_content, media_type="image/png")
                     else:
                         model_inference_result = response.json()
+                else:
+                    model_inference_result = {"response": f"{response.content}"}
         except Exception as e:
-            # print("Error in running inference: {}".format(e))
-            pass
+            response_ok = False
+            model_inference_result = {"response": f"{traceback.format_exc()}"}
 
         return response_ok, model_inference_result
 
