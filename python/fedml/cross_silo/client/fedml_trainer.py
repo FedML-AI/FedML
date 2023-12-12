@@ -36,9 +36,14 @@ class FedMLTrainer(object):
         self.device = device
         self.args = args
         self.args.device = device
+        self.is_fhe_enabled = hasattr(args, "enable_fhe") and args.enable_fhe
 
     def update_model(self, weights):
-        self.trainer.set_model_params(weights)
+        # update enc model if fhe is enabled
+        if self.is_fhe_enabled:
+            self.trainer.set_enc_model_params(weights)
+        else:
+            self.trainer.set_model_params(weights)
 
     def update_dataset(self, client_index):
         self.client_index = client_index
@@ -72,7 +77,10 @@ class FedMLTrainer(object):
         self.trainer.on_after_local_training(self.train_local, self.device, self.args)
 
         MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
-        weights = self.trainer.get_model_params()
+        if self.is_fhe_enabled:
+            weights = self.trainer.get_enc_model_params()
+        else:
+            weights = self.trainer.get_model_params()
         # transform Tensor to list
         return weights, self.local_sample_number
 
