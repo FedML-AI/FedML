@@ -1,4 +1,4 @@
-import tenseal as fhe_core
+
 import torch
 import copy
 from collections import OrderedDict
@@ -28,6 +28,8 @@ class FedMLFHE:
         return self.is_enabled   
 
     def init(self, args):
+        import tenseal as fhe_core
+
         if hasattr(args, "enable_fhe") and args.enable_fhe:
             logging.info(
                 ".......init homomorphic encryption......."
@@ -58,6 +60,8 @@ class FedMLFHE:
         return self.is_enabled
 
     def fhe_enc(self, enc_type, model_params):
+        import tenseal as fhe_core
+
         # transform tensor to encrypted form
         weight_factors = copy.deepcopy(model_params)
         for key in weight_factors.keys():
@@ -90,6 +94,8 @@ class FedMLFHE:
             return enc_raw_client_model_or_grad_list
 
     def fhe_fedavg(self, list_enc_model_parmas):
+        import tenseal as fhe_core
+
         # init a template model
         n_clients = len(list_enc_model_parmas)
         temp_sample_number, temp_model_params = list_enc_model_parmas[0]
