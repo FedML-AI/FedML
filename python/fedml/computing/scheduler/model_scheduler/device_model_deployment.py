@@ -137,24 +137,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if str(out_str) != "":
                     triton_server_is_running = True
 
-        logging.info("install nvidia docker...")
-
-        # Setup nvidia docker related packages.
-        if not ClientConstants.is_running_on_k8s():
-            if sys_name == "Linux":
-                if not triton_server_is_running:
-                    os.system(sudo_prefix + "apt-get update")
-                    os.system(
-                        sudo_prefix + "apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin")
-                    os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-                  && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-                  && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
-                     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-                     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
-                    os.system(sudo_prefix + "apt-get update")
-                    os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
-                    os.system(sudo_prefix + "systemctl restart docker")
-
     # Convert models from pytorch to onnx format
     if model_is_from_open:
         if model_from_open is None:
@@ -218,11 +200,16 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
                     usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
-                
+
                 if usr_indicated_worker_port == "":
                     usr_indicated_worker_port = None
                 else:
                     usr_indicated_worker_port = int(usr_indicated_worker_port)
+
+                worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
+                worker_port_from_config = config.get('worker_port', "")
+                print(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
+                      f"worker port from config {worker_port_from_config}")
 
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
@@ -337,8 +324,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         try:
             client = docker.from_env()
-            if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != ""\
-                and docker_registry != "":
+            if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != "" \
+                    and docker_registry != "":
                 client.login(username=docker_registry_user_name, password=docker_registry_user_password,
                              registry=docker_registry)
         except Exception:
@@ -421,7 +408,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             name=default_server_container_name,
             volumes=volumns,
             ports=[port_inside_container],  # port open inside the container
-            # entrypoint=["python3", relative_entry],
             environment=environment,
             host_config=client.api.create_host_config(
                 binds=binds,
@@ -446,7 +432,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     break
                 else:
                     # Find the random port
-                    port_info = client.api.port(new_container.get("Id"), port_inside_container)  
+                    port_info = client.api.port(new_container.get("Id"), port_inside_container)
                     inference_http_port = port_info[0]["HostPort"]
                     logging.info("inference_http_port: {}".format(inference_http_port))
                     break
@@ -741,7 +727,8 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
         triton_server_url = "{}:{}".format(infer_url_host, inference_http_port)
         if model_version == "" or model_version is None:
             model_version = ClientConstants.INFERENCE_MODEL_VERSION
-        logging.info(f"triton_server_url: {triton_server_url} model_version: {model_version} model_name: {inference_model_name}")
+        logging.info(
+            f"triton_server_url: {triton_server_url} model_version: {model_version} model_name: {inference_model_name}")
         triton_client = http_client.InferenceServerClient(url=triton_server_url, verbose=False)
         if not triton_client.is_model_ready(
             model_name=inference_model_name, model_version=model_version
@@ -767,7 +754,6 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host="127.0.0.1", is_hg_model=False,
                    inference_type="default", request_input_example=None, enable_custom_image=False):
-
     if model_name is None:
         return "", "", {}, {}
 
