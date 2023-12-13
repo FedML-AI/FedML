@@ -73,7 +73,8 @@ def get_sys_runner_info():
         pass
 
     try:
-        from mpi4py import MPI
+        import mpi4py
+        mpi_obj = mpi4py.MPI
         mpi_installed = True
     except:
         pass

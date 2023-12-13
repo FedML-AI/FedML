@@ -2,6 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from ..security.fedml_attacker import FedMLAttacker
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
+from ..fhe.fhe_agg import FedMLFHE
 
 
 class ClientTrainer(ABC):
@@ -19,8 +20,12 @@ class ClientTrainer(ABC):
         self.local_train_dataset = None
         self.local_test_dataset = None
         self.local_sample_number = 0
+        self.rid = 0
+        self.template_model_params = self.get_model_params()
+        self.enc_model_params =  None
         FedMLDifferentialPrivacy.get_instance().init(args)
         FedMLAttacker.get_instance().init(args)
+        FedMLFHE.get_instance().init(args)
 
     def set_id(self, trainer_id):
         self.id = trainer_id
@@ -45,18 +50,36 @@ class ClientTrainer(ABC):
     def set_model_params(self, model_parameters):
         pass
 
+    def get_enc_model_params(self):
+        return self.enc_model_params
+
+    def set_enc_model_params(self, enc_model_parameters):
+        self.enc_model_params = enc_model_parameters
+
     def on_before_local_training(self, train_data, device, args):
-        pass
+        if FedMLFHE.get_instance().is_fhe_enabled():
+            if self.rid != 0:
+                # get encrypted global params, and decrypt then set params
+                logging.info(" ---- decrypting aggregated model ----")
+                dec_aggregated_model = FedMLFHE.get_instance().fhe_dec(self.template_model_params, self.get_enc_model_params())
+                self.set_model_params(dec_aggregated_model)
+            self.rid += 1
 
     @abstractmethod
     def train(self, train_data, device, args):
         pass
 
     def on_after_local_training(self, train_data, device, args):
-        if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
-            logging.info("-----add local DP noise ----")
-            model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_local_noise(self.get_model_params())
-            self.set_model_params(model_params_with_dp_noise)
+        if FedMLFHE.get_instance().is_fhe_enabled():
+            # encrypt before sending to server
+            logging.info(" ---- encrypting client model ----")
+            encrypted_model_params = FedMLFHE.get_instance().fhe_enc('local', self.get_model_params())
+            self.set_enc_model_params(encrypted_model_params)
+        else:
+            if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
+                logging.info("-----add local DP noise ----")
+                model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_local_noise(self.get_model_params())
+                self.set_model_params(model_params_with_dp_noise)
 
     def test(self, test_data, device, args):
         pass

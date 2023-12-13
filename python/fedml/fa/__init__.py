@@ -32,9 +32,9 @@ def init(args=None):
 
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
-        from mpi4py import MPI
+        import mpi4py
 
-        comm = MPI.COMM_WORLD
+        comm = mpi4py.MPI.COMM_WORLD
         process_id = comm.Get_rank()
         world_size = comm.Get_size()
         args.comm = comm

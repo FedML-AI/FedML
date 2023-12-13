@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import time
 import traceback
 import uuid
@@ -40,7 +41,7 @@ class FedMLModelMetrics:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
-        print(f"Calculated metrics_item: {metrics_item}")
+        logging.info(f"Calculated metrics_item: {metrics_item}")
         if metrics_item is not None:
             total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
@@ -90,7 +91,7 @@ class FedMLModelMetrics:
             try:
                 index = self.send_monitoring_metrics(index)
             except Exception as e:
-                print("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
+                logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
 
         self.monitor_mqtt_mgr.disconnect()
         self.monitor_mqtt_mgr.loop_stop()
@@ -115,7 +116,7 @@ class FedMLModelMetrics:
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp,
                                          "edgeId": device_id}
-        # print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
+        # logging.info("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
 
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,

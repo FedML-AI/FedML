@@ -74,8 +74,6 @@ requirements_extra_tf = [
 ]
 
 requirements_extra_jax = [
-
-
 ]
 
 # https://github.com/apache/incubator-mxnet/issues/18329
@@ -88,13 +86,17 @@ requirements_extra_crypto = [
     "PyNaCl"
 ]
 
+requirements_extra_fhe = [
+    "tenseal",
+]
+
 
 # if platform.machine() == "x86_64":
 #    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.8.13",
+    version="0.8.14a7",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -151,6 +153,7 @@ setup(
         "tensorflow": requirements_extra_tf,
         "jax": requirements_extra_jax,
         "mxnet": requirements_extra_mxnet,
+        "fhe": requirements_extra_fhe,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
