@@ -167,20 +167,20 @@ class FedMLModelCache(object):
         for status_item in status_list:
             try:
                 device_id, status_payload = self.get_status_item_info(status_item)
-                print(f"status_payload {status_payload}")
+                logging.info(f"status_payload {status_payload}")
                 model_status = status_payload["model_status"]
                 model_version_cached = status_payload["model_version"]
                 end_point_id_cache = status_payload["end_point_id"]
-                print(f"model_version {model_version}, model_version_cache {model_version_cached}")
+                logging.info(f"model_version {model_version}, model_version_cache {model_version_cached}")
                 if model_version == model_version_cached and \
                         model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
             except Exception as e:
-                print(f"Get idle device list Failed: {e}, status_item {status_item}")
+                logging.info(f"Get idle device list Failed: {e}, status_item {status_item}")
                 pass
         if len(idle_device_list) <= 0:
             return None, None
-        print(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
+        logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
         # Randomly shuffle
         # shuffle the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
@@ -201,10 +201,10 @@ class FedMLModelCache(object):
             next_selected_device_index = (selected_device_index + 1) % total_device_num
             self.redis_connection.set(redis_round_robin_key, str(next_selected_device_index))
         except Exception as e:
-            print("Inference Device selection Failed:")
-            print(str(e))
+            logging.info("Inference Device selection Failed:")
+            logging.info(e)
 
-        print(f"Using Round Robin, the device index is {selected_device_index}")
+        logging.info(f"Using Round Robin, the device index is {selected_device_index}")
         idle_device_dict = idle_device_list[selected_device_index]
         # Find deployment result from the target idle device.
         try:
@@ -221,10 +221,10 @@ class FedMLModelCache(object):
 
                 if found_end_point_id == idle_device_dict["end_point_id"] \
                         and device_id == idle_device_dict["device_id"]:
-                    print(f"The chosen device is {device_id}")
+                    logging.info(f"The chosen device is {device_id}")
                     return result_payload, device_id
         except Exception as e:
-            print(e)
+            logging.info(str(e))
 
         return None, None
 
@@ -239,7 +239,7 @@ class FedMLModelCache(object):
                 if str(found_end_point_id) == str(end_point_id) and str(result_device_id) == str(device_id):
                     return result_payload, end_point_activated
         except Exception as e:
-            print(e)
+            logging.info(e)
 
         return None, False
 
