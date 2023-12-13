@@ -75,8 +75,9 @@ class FedMLMqttInference:
 
         self.response_endpoint_inference(endpoint_id, inference_request_id, inference_response)
 
-    def run_mqtt_inference_with_request(self, edge_id, endpoint_id, inference_url, inference_input_list, inference_output_list,
-                                        inference_type="default"):
+    def run_mqtt_inference_with_request(
+            self, edge_id, endpoint_id, inference_url, inference_input_list,
+            inference_output_list, inference_type="default"):
         self.setup_client_mqtt_mgr()
         self.setup_listener_for_endpoint_inference_response(endpoint_id)
 
