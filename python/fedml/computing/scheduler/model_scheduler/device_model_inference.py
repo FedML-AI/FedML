@@ -65,7 +65,12 @@ async def predict(request: Request):
     # Get header
     header = request.headers
 
-    return _predict(end_point_id, input_json, header)
+    try:
+        response = _predict(end_point_id, input_json, header)
+    except Exception as e:
+        response = {"error": True, "message": f"{traceback.format_exc()}"}
+
+    return response
 
 
 @api.post('/inference/{end_point_id}')
@@ -76,7 +81,12 @@ async def predict_with_end_point_id(end_point_id, request: Request):
     # Get header
     header = request.headers
 
-    return _predict(end_point_id, input_json, header)
+    try:
+        response = _predict(end_point_id, input_json, header)
+    except Exception as e:
+        response = {"error": True, "message": f"{traceback.format_exc()}"}
+
+    return response
 
 
 def _predict(end_point_id, input_json, header=None):
@@ -92,7 +102,7 @@ def _predict(end_point_id, input_json, header=None):
     if in_model_version is None:
         in_model_version = "latest"
 
-    # print("Inference json: {}".format(input_json))
+    # logging.info("Inference json: {}".format(input_json))
 
     start_time = time.time_ns()
 
@@ -112,7 +122,7 @@ def _predict(end_point_id, input_json, header=None):
         model_metrics.set_start_time(start_time)
 
         # Send inference request to idle device
-        print("inference url {}.".format(inference_output_url))
+        logging.info("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
             input_list = input_json["inputs"]
             stream_flag = input_json.get("stream", False)
@@ -127,7 +137,7 @@ def _predict(end_point_id, input_json, header=None):
                                        model_id, model_name, model_version,
                                        inference_output_url, idle_device)
         except Exception as e:
-            print("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
+            logging.info("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
             pass
 
         logging_inference_request(input_json, inference_response)
@@ -153,7 +163,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
-        print("found idle deployment result {}".format(payload))
+        logging.info("found idle deployment result {}".format(payload))
         deployment_result = payload
         model_name = deployment_result["model_name"]
         model_version = deployment_result["model_version"]
@@ -171,16 +181,16 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         response_ok, inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
             inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
-            print("Use http inference.")
+            logging.info("Use http inference.")
             return inference_response
-        print("Use http inference failed.")
+        logging.info("Use http inference failed.")
 
         response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
             endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
-            print("Use http proxy inference.")
+            logging.info("Use http proxy inference.")
             return inference_response
-        print("Use http proxy inference failed.")
+        logging.info("Use http proxy inference failed.")
 
         connect_str = "@FEDML@"
         random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
@@ -198,7 +208,7 @@ def send_inference_request(idle_device, endpoint_id, inference_url, input_list, 
         if not response_ok:
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
 
-        print("Use mqtt inference.")
+        logging.info("Use mqtt inference.")
         return inference_response
     except Exception as e:
         inference_response = {"error": True, "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
@@ -230,7 +240,7 @@ def logging_inference_request(request, response):
         with open(inference_log_file, "a") as f:
             f.writelines([f"request: {request}, response: {response}\n"])
     except Exception as ex:
-        print("failed to log inference request and response to file.")
+        logging.info("failed to log inference request and response to file.")
 
 
 if __name__ == "__main__":

@@ -409,7 +409,7 @@ class ClientConstants(object):
         try:
             ip = requests.get('https://checkip.amazonaws.com').text.strip()
         except Exception as e:
-            print("Failed to get public ip: {}".format(e))
+            logging.info("Failed to get public ip: {}".format(e))
         return ip
 
     @staticmethod
