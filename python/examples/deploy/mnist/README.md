@@ -60,4 +60,6 @@ Login to your Nexus account and push the model card:
 fedml login $api_key
 fedml model push --name mnist
 ```
-Once the model is pushed, login to the Nexus platform. To deploy your model on the server, navigate to the `Deploy` tab and then select `Create Endpoint`. Once the model is deployed go to the `Endpoints` tab, select the endpoint and copy (upper right corner button) the `curl` command. From there you can pass different inputs to the endpoint by changing the json value of the `"inputs"` key.
+Once the model is pushed, login to the Nexus platform. To deploy your model on the server, navigate to the `Deploy` tab and then select `Create Endpoint`. Once the model is deployed go to the `Endpoints` tab, select the endpoint and copy (upper right corner button) the `curl` command. Paste the command to your terminal and test the endpoint by passing different inputs to the value of the `"inputs"` key. From there you can pass different inputs to the endpoint by changing the value of the `"inputs"` key.
+
+> **_NOTE:_** Make sure the server where the model is deployed accepts incoming requests so that you can query the model from different locations. 
