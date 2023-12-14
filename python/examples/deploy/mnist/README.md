@@ -1,7 +1,7 @@
 ## Create Model
 ```sh
-#FedML/python/fedml/serving/example/mnist/
-fedml model create --name mnist --config_file mnist.yaml
+#FedML/python/examples/deploy/mnist/
+fedml model create --name mnist --model_config mnist.yaml
 ```
 ## Option 1: Deploy locally
 ```sh
@@ -28,7 +28,7 @@ Deploy
 ```sh
 fedml model deploy --name mnist_serverless
 ```
-## Option 3: On-premsie Deploy
+## Option 3: On-premise Deploy
 Device Login
 ```sh
 # On Master or Worker Devices
