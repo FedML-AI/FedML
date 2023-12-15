@@ -726,8 +726,9 @@ class FedMLClientRunner:
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
         try:
-            ClientConstants.remove_deployment(model_msg_object.end_point_name,
-                                              model_msg_object.model_name, model_msg_object.model_version)
+            ClientConstants.remove_deployment(
+                model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
+                model_msg_object.run_id, model_msg_object.model_id)
         except Exception as e:
             logging.info(f"Exception when removing deployment {traceback.format_exc()}")
             pass

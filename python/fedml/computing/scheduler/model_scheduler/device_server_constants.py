@@ -261,10 +261,12 @@ class ServerConstants(object):
         return model_ops_url
 
     @staticmethod
-    def get_running_model_name(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
-        running_model_name = "model_endpoint_{}_model_{}_ver_-{}".format(end_point_name, model_name, model_version)
+    def get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id):
+        running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}".format(
+            end_point_id, end_point_name, model_id, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
+        running_model_name = running_model_name.replace('@', '-')
         return running_model_name
 
     @staticmethod
