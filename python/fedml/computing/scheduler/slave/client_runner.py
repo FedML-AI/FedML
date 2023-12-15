@@ -611,7 +611,7 @@ class FedMLClientRunner:
             self.check_runner_stop_event()
 
             self.mlops_metrics.report_client_id_status(
-                self.edge_id, ClientConstants.MSG_MLOPS_SERVER_DEVICE_STATUS_RUNNING, run_id=self.run_id)
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING, run_id=self.run_id)
 
             # Generate the job executing commands
             job_executing_commands = JobRunnerUtils.generate_job_execute_commands(
