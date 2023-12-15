@@ -633,6 +633,7 @@ class FedMLServerRunner:
                 break
 
             # Calc the timeout value to wait to device killed.
+            self.check_runner_stop_event()
             time.sleep(sleep_seconds)
             total_sleep_seconds += sleep_seconds
             no_response_edge_ids = list()
@@ -653,7 +654,8 @@ class FedMLServerRunner:
             given_edge_ids = list(set(edge_id_list) - set(inactivate_edge_list))
             status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
                 edge_device_info_queue, need_to_trigger_exception=False, status_timeout=60,
-                given_edge_ids=given_edge_ids
+                given_edge_ids=given_edge_ids, callback_when_detecting=self.callback_when_detecting_on_aggregation,
+                args_for_callback_when_detecting=(run_metrics_queue, run_logs_queue)
             )
             if not status_ok:
                 inactivate_edge_list.extend(inactivate_edges)
@@ -674,6 +676,13 @@ class FedMLServerRunner:
             self.mlops_metrics.report_server_id_status(
                 self.run_id, status_to_report, edge_id=self.edge_id,
                 server_id=self.edge_id, server_agent_id=self.edge_id)
+
+    def callback_when_detecting_on_aggregation(self, detecting_args):
+        # Process run metrics
+        self._process_run_metrics_queue(detecting_args[0])
+
+        # Process run logs
+        self._process_run_logs_queue(detecting_args[1])
 
     def _process_run_metrics_queue(self, run_metrics_queue):
         # Fetch metrics from the run metrics queue
@@ -1108,8 +1117,11 @@ class FedMLServerRunner:
 
         return False, self.async_check_timeout
 
-    def detect_edges_status(self, edge_device_info_queue, callback_when_edges_ready=None, status_timeout=None,
-                            need_to_trigger_exception=True, status_check_context=None, given_edge_ids=None):
+    def detect_edges_status(
+            self, edge_device_info_queue, callback_when_edges_ready=None, status_timeout=None,
+            need_to_trigger_exception=True, status_check_context=None, given_edge_ids=None,
+            callback_when_detecting=None, args_for_callback_when_detecting=None
+    ):
         run_id = self.request_json["runId"]
         run_id_str = str(run_id)
         edge_id_list = self.request_json["edgeids"]
@@ -1132,6 +1144,9 @@ class FedMLServerRunner:
         inactivate_edges = list()
         active_edge_info_dict = dict()
         while True:
+            if callback_when_detecting is not None:
+                callback_when_detecting(args_for_callback_when_detecting)
+
             # Fetch edge info from the edge status queue, which will be added to realtime status map
             while True:
                 self.check_runner_stop_event()
