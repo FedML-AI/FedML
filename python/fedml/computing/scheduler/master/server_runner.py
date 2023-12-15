@@ -532,7 +532,7 @@ class FedMLServerRunner:
                 while True:
                     time.sleep(30)
             # Check if the run status is normal
-            self.check_run_status_timeout(
+            self.aggregate_run_status_metrics_logs(
                 run_id, edge_ids, edge_id_status_queue, edge_device_info_queue,
                 run_metrics_queue, run_logs_queue)
             return
@@ -541,25 +541,30 @@ class FedMLServerRunner:
         self._start_runner_process(run_id, self.request_json, is_server_job=True)
 
         # Check if the run status is normal
-        self.check_run_status_timeout(
+        self.aggregate_run_status_metrics_logs(
             run_id, edge_ids, edge_id_status_queue, edge_device_info_queue,
             run_metrics_queue, run_logs_queue)
 
-    def check_run_status_timeout(
+    def aggregate_run_status_metrics_logs(
             self, run_id, edge_id_list, edge_id_status_queue, edge_device_info_queue,
             run_metrics_queue, run_logs_queue):
         total_sleep_seconds = 0
         sleep_seconds = 3
         allowed_status_check_sleep_seconds = 60 * 25
         server_id = self.edge_id
-        no_response_status_list = [ClientConstants.MSG_MLOPS_CLIENT_STATUS_QUEUED,
-                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING]
-        no_response_edges_map = dict()
-        number_of_completed_edges = 0
+        normal_response_status_list = [
+            ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
+            ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED,
+            ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+            ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION, ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING
+        ]
+        edges_id_status_timeout_map = dict()
         number_of_failed_edges = 0
         number_of_finished_edges = 0
         number_of_killed_edges = 0
         running_edges_list = list()
+        inactivate_edge_list = list()
+        current_edge_id_status_map = dict()
 
         while True:
             self.check_runner_stop_event()
@@ -571,89 +576,104 @@ class FedMLServerRunner:
             self._process_run_logs_queue(run_logs_queue)
 
             # Fetch edge id and status from the edge id status queue
-            edge_id_status_dict = None
             while True:
                 try:
                     queue_item = edge_id_status_queue.get(block=False, timeout=3)
                     if queue_item is not None:
-                        edge_id_status_dict = queue_item
+                        current_edge_id_status_map.update(queue_item)
                 except queue.Empty as e:  # If queue is empty, then break loop
                     break
-            if edge_id_status_dict is None:
-                edge_id_status_dict = dict()
 
             # Calc the total completed device number
-            server_id = edge_id_status_dict.get("server", 0)
+            server_id = current_edge_id_status_map.get("server", 0)
             running_edges_list.clear()
-            number_of_completed_edges = 0
             number_of_failed_edges = 0
             number_of_finished_edges = 0
             number_of_killed_edges = 0
-            for edge_id_item, status_item in edge_id_status_dict.items():
+            for edge_id_item, status_item in current_edge_id_status_map.items():
                 if edge_id_item == "server":
                     continue
 
-                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+                if status_item is None or status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
                     number_of_failed_edges += 1
-                elif status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
-                    number_of_finished_edges += 1
-                elif status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED:
-                    number_of_killed_edges += 1
+                    continue
 
-                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
-                    number_of_completed_edges += 1
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+                    number_of_finished_edges += 1
+                    continue
+
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED:
+                    number_of_killed_edges += 1
+                    continue
+
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
                     continue
 
                 running_edges_list.append(edge_id_item)
 
-                status_dict = no_response_edges_map.get(str(edge_id_item))
+            # Process the no response edges and accumulate the counter.
+            for edge_id_item in edge_id_list:
+                status_dict = edges_id_status_timeout_map.get(str(edge_id_item))
+                status_item = current_edge_id_status_map.get(str(edge_id_item))
+                if status_item is None:
+                    continue
                 if status_dict is None:
                     status_dict = {"status": status_item, "count": 0}
                 else:
-                    if status_item in no_response_status_list:
-                        status_dict["count"] += 1
-                    else:
+                    if status_item in normal_response_status_list:
                         status_dict["count"] = 0
-                no_response_edges_map[str(edge_id_item)] = status_dict
+                    else:
+                        status_dict["count"] += 1
+                edges_id_status_timeout_map[str(edge_id_item)] = status_dict
 
             # If the completed device number is equal total device number, then break
-            if number_of_completed_edges == len(edge_id_list):
+            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list)+1:
                 break
 
             # Calc the timeout value to wait to device killed.
             time.sleep(sleep_seconds)
             total_sleep_seconds += sleep_seconds
             no_response_edge_ids = list()
-            for no_res_edge, no_res_status in no_response_edges_map.items():
+            for no_res_edge, no_res_status in edges_id_status_timeout_map.items():
                 if no_res_status.get("count") * sleep_seconds > allowed_status_check_sleep_seconds:
                     no_response_edge_ids.append(no_res_edge)
 
             # If timeout, then report killed device status
             if len(no_response_edge_ids) > 0:
-                self.send_training_stop_request_to_edges(no_response_edge_ids, run_id=run_id)
                 for edge_id_item in no_response_edge_ids:
                     self.mlops_metrics.report_client_id_status(
                         edge_id_item, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED,
-                        server_id=server_id, run_id=self.run_id)
+                        server_id=self.edge_id, run_id=self.run_id)
 
             # Check if we can get the response device info from edge devices
+            # and set the inactive edges to killed status.
             self.check_runner_stop_event()
+            given_edge_ids = list(set(edge_id_list) - set(inactivate_edge_list))
             status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
-                edge_device_info_queue, status_timeout=120)
+                edge_device_info_queue, need_to_trigger_exception=False, status_timeout=60,
+                given_edge_ids=given_edge_ids
+            )
             if not status_ok:
-                break
+                inactivate_edge_list.extend(inactivate_edges)
+                for edge_id_item in inactivate_edges:
+                    self.mlops_metrics.report_client_id_status(
+                        edge_id_item, ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE,
+                        server_id=self.edge_id, run_id=self.run_id)
 
+        # Calc the final run status based on the completed device numbers and fault tolerance parameters.
         enable_fault_tolerance, fault_tolerance_rate = self.parse_fault_tolerance_params(run_id)
+        running_edges_list = list(set(running_edges_list))
         status_to_report = self.calculate_server_status(
             run_id, len(edge_id_list), number_of_failed_edges, number_of_finished_edges,
             number_of_killed_edges, running_edges_list, enable_fault_tolerance=enable_fault_tolerance,
             fault_tolerance_rate=fault_tolerance_rate)
         if status_to_report is not None:
+            logging.info(f"Run completed when aggregating status, metrics and logs, will report status {status_to_report}")
             self.mlops_metrics.report_server_id_status(
                 self.run_id, status_to_report, edge_id=self.edge_id,
-                server_id=server_id)
+                server_id=self.edge_id, server_agent_id=self.edge_id)
 
     def _process_run_metrics_queue(self, run_metrics_queue):
         # Fetch metrics from the run metrics queue
@@ -953,6 +973,7 @@ class FedMLServerRunner:
             running_edges_list, enable_fault_tolerance=enable_fault_tolerance,
             fault_tolerance_rate=fault_tolerance_rate)
         if status_to_report is not None:
+            logging.info(f"Run completed when processing edge status, will report status {status_to_report}")
             self.report_server_status(run_id, server_id, status_to_report)
 
     def calculate_server_status(
@@ -969,9 +990,13 @@ class FedMLServerRunner:
                 if actual_failed_rate >= fault_tolerance_rate:
                     status_to_report = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
                     self.send_training_stop_request_to_edges_when_exception(
-                        running_edges_list, run_id=run_id)
+                        running_edges_list, run_id=run_id, status=status_to_report)
+                    return status_to_report
                 else:
-                    status_to_report = ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
+                    if number_of_killed_edges == total_edge_nums:
+                        status_to_report = ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED
+                    else:
+                        status_to_report = ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
             else:
                 if number_of_failed_edges > 0:
                     status_to_report = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
@@ -983,7 +1008,9 @@ class FedMLServerRunner:
             return status_to_report
 
     def parse_fault_tolerance_params(self, run_id):
-        run_json = self.running_request_json.get(str(run_id), {})
+        run_json = self.running_request_json.get(str(run_id), None)
+        if run_json is None:
+            run_json = self.request_json
         run_config = run_json.get("run_config", {})
         run_params = run_config.get("parameters", {})
         common_args = run_params.get("common_args", {})
@@ -1002,11 +1029,13 @@ class FedMLServerRunner:
 
         payload = self.running_request_json.get(str(run_id))
         if payload is not None:
-            self.send_training_stop_request_to_edges(edge_id_list, json.dumps(payload), run_id=run_id)
+            self.send_training_stop_request_to_edges(edge_id_list, payload=json.dumps(payload), run_id=run_id)
 
         # logging.info("Stop run successfully when starting failed.")
 
-        self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        self.mlops_metrics.report_server_id_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
+            server_id=self.edge_id, server_agent_id=self.edge_id)
 
     def cleanup_run_when_finished(self, should_send_server_id_status=True):
         # logging.info("Cleanup run successfully when finished.")
@@ -1016,9 +1045,9 @@ class FedMLServerRunner:
         )
 
         if should_send_server_id_status:
-            self.mlops_metrics.report_server_id_status(self.run_id,
-                                                       ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                       edge_id=self.edge_id)
+            self.mlops_metrics.report_server_id_status(
+                self.run_id,  ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id,
+                server_id=self.edge_id, server_agent_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -1047,7 +1076,8 @@ class FedMLServerRunner:
 
         if should_send_server_id_status:
             self.mlops_metrics.report_server_id_status(
-                self.run_id, status, edge_id=self.edge_id)
+                self.run_id, status, edge_id=self.edge_id,
+                server_id=self.edge_id, server_agent_id=self.edge_id)
 
         try:
             self.mlops_metrics.stop_sys_perf()
@@ -1079,10 +1109,12 @@ class FedMLServerRunner:
         return False, self.async_check_timeout
 
     def detect_edges_status(self, edge_device_info_queue, callback_when_edges_ready=None, status_timeout=None,
-                            need_to_trigger_exception=True, status_check_context=None):
+                            need_to_trigger_exception=True, status_check_context=None, given_edge_ids=None):
         run_id = self.request_json["runId"]
         run_id_str = str(run_id)
         edge_id_list = self.request_json["edgeids"]
+        if given_edge_ids is not None:
+            edge_id_list = given_edge_ids
 
         # Init realtime status of all edges
         run_edges_realtime_status = dict()
@@ -1156,12 +1188,13 @@ class FedMLServerRunner:
                 return False, active_edge_info_dict, inactivate_edges
 
             # If we enable the mode for async cluster, then sleep some time and send messages to all clients.
-            should_async, async_timeout = self.should_process_async_cluster()
-            if should_async and total_sleep_seconds >= allowed_status_check_sleep_seconds_for_async:
-                if async_timeout > allowed_status_check_sleep_seconds_for_async:
-                    time.sleep(async_timeout - allowed_status_check_sleep_seconds_for_async)
-                self.send_training_request_to_edges()
-                return True, active_edge_info_dict, inactivate_edges
+            if callback_when_edges_ready is not None:
+                should_async, async_timeout = self.should_process_async_cluster()
+                if should_async and total_sleep_seconds >= allowed_status_check_sleep_seconds_for_async:
+                    if async_timeout > allowed_status_check_sleep_seconds_for_async:
+                        time.sleep(async_timeout - allowed_status_check_sleep_seconds_for_async)
+                    self.send_training_request_to_edges()
+                    return True, active_edge_info_dict, inactivate_edges
 
         return True, active_edge_info_dict, inactivate_edges
 
@@ -1765,11 +1798,16 @@ class FedMLServerRunner:
             pass
 
     def send_training_stop_request_to_edges(
-            self, edge_id_list, payload, run_id=0, report_status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
+            self, edge_id_list, payload=None, run_id=0):
+        if payload is None:
+            payload_obj = {"runId": run_id, "edgeids": edge_id_list}
+        else:
+            payload_obj = json.loads(payload)
+
         for edge_id in edge_id_list:
             topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
             logging.info("stop_train: send topic " + topic_stop_train)
-            self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+            self.client_mqtt_mgr.send_message(topic_stop_train, json.dumps(payload_obj))
 
     def send_training_stop_request_to_specific_edge(self, edge_id, payload):
         topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
@@ -1919,39 +1957,49 @@ class FedMLServerRunner:
         total_sleep_seconds = 0
         allowed_status_check_sleep_seconds = 60
         server_id = self.edge_id
+        running_edges_list = list()
+        current_edge_id_status_map = dict()
+
         while True:
             # Fetch edge id and status from the edge id status queue
-            edge_id_status_dict = None
             while True:
                 try:
                     queue_item = edge_id_status_queue.get(block=False, timeout=3)
                     if queue_item is not None:
-                        edge_id_status_dict = queue_item
+                        current_edge_id_status_map.update(queue_item)
                 except queue.Empty as e:  # If queue is empty, then break loop
                     break
-            if edge_id_status_dict is None:
-                edge_id_status_dict = dict()
 
             # Calc the total killed device number
-            number_of_completed_edges = 0
-            server_id = edge_id_status_dict.get("server", 0)
-            no_response_edges = list()
-            for edge_id_item, status_item in edge_id_status_dict.items():
+            running_edges_list.clear()
+            number_of_failed_edges = 0
+            number_of_finished_edges = 0
+            number_of_killed_edges = 0
+            for edge_id_item, status_item in current_edge_id_status_map.items():
                 if edge_id_item == "server":
                     continue
 
-                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
-                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
-                    number_of_completed_edges += 1
+                if status_item is None or status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
+                    number_of_failed_edges += 1
                     continue
 
-                no_response_edges.append(edge_id_item)
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+                    number_of_finished_edges += 1
+                    continue
+
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED:
+                    number_of_killed_edges += 1
+                    continue
+
+                if status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                        status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+                    continue
+
+                running_edges_list.append(edge_id_item)
 
             # If the killed device number is equal total device number, then break
-            if number_of_completed_edges == len(edge_id_list):
+            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list)+1:
                 break
 
             # Calc the timeout value to wait to device killed.
@@ -1961,12 +2009,13 @@ class FedMLServerRunner:
                 continue
 
             # If timeout, then report killed device status
+            no_response_edges = list(set(edge_id_list) - set(running_edges_list))
+            if len(no_response_edges) <= 0:
+                break
             for edge_id_item in no_response_edges:
                 self.mlops_metrics.report_client_id_status(
                     edge_id_item, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED,
-                    server_id=server_id, run_id=self.run_id)
-            if len(no_response_edges) <= 0:
-                break
+                    server_id=self.edge_id, run_id=self.run_id)
 
         if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
             # Stop log processor for current run
