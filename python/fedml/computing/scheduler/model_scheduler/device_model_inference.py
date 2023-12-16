@@ -7,7 +7,6 @@ import os
 from fastapi import FastAPI, Request
 
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
-from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
@@ -185,18 +184,14 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
         if response_ok:
             logging.info("Use http inference.")
             return inference_response
-        else:
-            if has_public_ip:
-                print("Use http inference failed.")
-                return False, inference_response
-        print("Use http inference failed. Could be caused by the private ip.")
+        logging.info("Use http inference failed. Could be blocked by firewall.")
         
         response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
             endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
             logging.info("Use http proxy inference.")
             return inference_response
-        logging.info("Use http proxy inference failed.")
+        logging.info("Use http proxy inference failed. Could be blocked by firewall.")
 
         connect_str = "@FEDML@"
         random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")

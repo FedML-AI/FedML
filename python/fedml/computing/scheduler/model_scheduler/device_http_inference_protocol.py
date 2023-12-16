@@ -74,6 +74,7 @@ async def stream_generator(inference_url, input_json):
                 # we consumed a newline, need to put it back
                 yield f"{chunk}\n"
 
+
 async def redirect_request_to_worker(inference_type, inference_url, model_api_headers, model_inference_json, timeout=None):
     response_ok = False
 
