@@ -16,12 +16,12 @@ import traceback
 import urllib
 import uuid
 import zipfile
-from urllib.parse import unquote
 
 import requests
 
 import fedml
 from ..comm_utils.constants import SchedulerConstants
+from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_entry.constants import Constants
@@ -1479,7 +1479,7 @@ class FedMLClientRunner:
 
             self.model_device_server.start()
 
-        JobRunnerUtils.get_instance().sync_data_on_startup(self.edge_id)
+        JobCleanup.get_instance().sync_data_on_startup(self.edge_id)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

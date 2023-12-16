@@ -23,7 +23,10 @@ class MLOpsRuntimeLogProcessor:
 
     ENABLE_UPLOAD_LOG_USING_MQTT = False
 
-    def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
+    def __init__(
+            self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None,
+            log_file_prefix=None
+    ):
         self.args = in_args
         self.is_log_reporting = False
         self.log_reporting_status_file = os.path.join(log_file_dir,
@@ -44,11 +47,13 @@ class MLOpsRuntimeLogProcessor:
         self.log_config = dict()
         self.load_log_config()
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
+                                                 + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                                  + str(self.run_id)
                                                  + "-edge-"
                                                  + str(self.device_id)
                                                  + ".log")
         self.log_file_path = os.path.join(self.args.log_file_dir, "fedml-run-"
+                                          + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                           + str(self.run_id)
                                           + "-edge-"
                                           + str(self.device_id)
@@ -427,11 +432,11 @@ class MLOpsRuntimeLogDaemon:
     def set_log_source(self, source):
         self.log_source = source
 
-    def start_log_processor(self, log_run_id, log_device_id, log_source=None):
+    def start_log_processor(self, log_run_id, log_device_id, log_source=None, log_file_prefix=None):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
-                                                 in_args=self.args)
+                                                 in_args=self.args, log_file_prefix=log_file_prefix)
         if log_source is not None:
             log_processor.set_log_source(log_source)
         else:
@@ -461,6 +466,7 @@ class MLOpsRuntimeLogDaemon:
                     self.log_process_event.set()
                 else:
                     log_child_process.terminate()
+                self.log_child_process_list.remove((log_child_process, run_id, device_id))
                 break
 
     def stop_all_log_processor(self):
@@ -469,6 +475,13 @@ class MLOpsRuntimeLogDaemon:
                 self.log_process_event.set()
             else:
                 log_child_process.terminate()
+
+    def is_log_processor_running(self, in_run_id, in_device_id):
+        for (log_child_process, log_run_id, log_device_id) in self.log_child_process_list:
+            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id):
+                return True
+
+        return False
 
 
 if __name__ == "__main__":

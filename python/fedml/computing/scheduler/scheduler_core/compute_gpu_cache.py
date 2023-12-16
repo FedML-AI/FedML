@@ -1,5 +1,4 @@
-from .compute_utils import ComputeUitls
-import redis
+from .compute_utils import ComputeUtils
 
 
 class ComputeGpuCache(object):
@@ -158,9 +157,9 @@ class ComputeGpuCache(object):
         return f"{ComputeGpuCache.FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG}{run_id}"
 
     def map_list_to_str(self, list_obj):
-        return ComputeUitls.map_list_to_str(list_obj)
+        return ComputeUtils.map_list_to_str(list_obj)
 
     def map_str_list_to_int_list(self, list_obj):
-        return ComputeUitls.map_str_list_to_int_list(list_obj)
+        return ComputeUtils.map_str_list_to_int_list(list_obj)
 
 

@@ -6,13 +6,12 @@ import traceback
 import uuid
 from os.path import expanduser
 
-import chardet
 import multiprocess as multiprocessing
 import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from .system_stats import SysStats
-from ... import mlops
+from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
 from ...computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -24,6 +23,7 @@ ROLE_ENDPOINT_MASTER = 2
 ROLE_ENDPOINT_SLAVE = 3
 ROLE_RUN_MASTER = 4
 ROLE_RUN_SLAVE = 5
+ROLE_ENDPOINT_LOGS = 6
 
 
 class MLOpsDevicePerfStats(object):
@@ -34,6 +34,7 @@ class MLOpsDevicePerfStats(object):
         self.monitor_run_master_process = None
         self.monitor_endpoint_master_process = None
         self.monitor_endpoint_slave_process = None
+        self.monitor_endpoint_logs_process = None
         self.args = None
         self.device_id = None
         self.run_id = None
@@ -87,6 +88,11 @@ class MLOpsDevicePerfStats(object):
                 target=perf_stats.report_device_realtime_stats_entry,
                 args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
             self.monitor_run_slave_process.start()
+
+            self.monitor_endpoint_logs_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
+            self.monitor_endpoint_logs_process.start()
         else:
             self.monitor_run_master_process = multiprocessing.Process(
                 target=perf_stats.report_device_realtime_stats_entry,
@@ -123,18 +129,21 @@ class MLOpsDevicePerfStats(object):
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
                 elif role == ROLE_RUN_SLAVE:
-                    JobRunnerUtils.get_instance().monitor_slave_run_process_status()
+                    JobMonitor.get_instance().monitor_slave_run_process_status()
                     sleep_time_interval = 60
                 elif role == ROLE_ENDPOINT_SLAVE:
-                    JobRunnerUtils.get_instance().monitor_slave_endpoint_status()
+                    JobMonitor.get_instance().monitor_slave_endpoint_status()
                     sleep_time_interval = 70
                 elif role == ROLE_ENDPOINT_MASTER:
-                    JobRunnerUtils.get_instance().monitor_master_endpoint_status()
+                    JobMonitor.get_instance().monitor_master_endpoint_status()
                     sleep_time_interval = 80
                 elif role == ROLE_RUN_MASTER:
-                    JobRunnerUtils.get_instance().monitor_master_run_process_status(
+                    JobMonitor.get_instance().monitor_master_run_process_status(
                         self.edge_id, device_info_reporter=device_info_reporter)
                     sleep_time_interval = 90
+                elif role == ROLE_ENDPOINT_LOGS:
+                    JobMonitor.get_instance().monitor_endpoint_logs()
+                    sleep_time_interval = 30
             except Exception as e:
                 logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
                 pass
