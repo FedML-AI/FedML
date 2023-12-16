@@ -214,6 +214,21 @@ class MLOpsRuntimeLog:
 
         return log_file_path, program_prefix
 
+    @staticmethod
+    def build_log_file_path_with_run_params(
+            run_id, edge_id, log_file_dir, is_server=False, log_file_prefix=None
+    ):
+        program_prefix = "FedML-{} @device-id-{}".format(
+            "Server" if is_server else "Client", edge_id)
+        if not os.path.exists(log_file_dir):
+            os.makedirs(log_file_dir, exist_ok=True)
+        log_file_path = os.path.join(
+            log_file_dir, "fedml-run{}-{}-edge-{}.log".format(
+                "" if log_file_prefix is None else f"-{log_file_prefix}", run_id, edge_id
+            ))
+
+        return log_file_path, program_prefix
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

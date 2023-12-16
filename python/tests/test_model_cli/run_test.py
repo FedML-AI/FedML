@@ -4,10 +4,13 @@ import logging
 import os
 import time
 import uuid
+from os.path import expanduser
 
 import fedml
 from fedml.api.modules import model
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.job_monitor import JobMonitor
+from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
@@ -155,6 +158,10 @@ def test_create_container():
             time.sleep(3)
 
 
+def test_get_endpoint_logs():
+    JobMonitor.get_instance().monitor_endpoint_logs()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="dev")
@@ -166,6 +173,6 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     fedml.set_env_version("dev")
 
-    test_create_container()
+    test_get_endpoint_logs()
 
     time.sleep(1000000)

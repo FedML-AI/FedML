@@ -185,6 +185,14 @@ def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=Fal
         run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
 
 
+def enable_logging_to_file(edge_id):
+    mlops.enable_logging_to_file(edge_id)
+
+
+def get_fedml_args():
+    return mlops.get_fedml_args()
+
+
 from ..computing.scheduler.slave.client_constants import ClientConstants
 from ..computing.scheduler.master.server_constants import ServerConstants
 
