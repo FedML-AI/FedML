@@ -120,7 +120,7 @@ class MLOpsDevicePerfStats(object):
         if role == ROLE_RUN_MASTER:
             device_info_reporter = FedMLDeviceInfoReportProtocol(run_id=self.run_id, mqtt_mgr=mqtt_mgr)
 
-        JobRunnerUtils.get_instance().mqtt_config = self.args.mqtt_config_path
+        JobMonitor.get_instance().mqtt_config = self.args.mqtt_config_path
 
         # Notify MLOps with system information.
         sleep_time_interval = 10
