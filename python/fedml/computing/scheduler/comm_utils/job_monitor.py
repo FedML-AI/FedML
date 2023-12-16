@@ -5,6 +5,8 @@ import time
 import traceback
 from urllib.parse import urlparse
 
+import asyncio
+
 from fedml import mlops
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
@@ -30,6 +32,7 @@ from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 
 class JobMonitor(Singleton):
     ENDPOINT_CONTAINER_LOG_PREFIX = "endpoint"
+    TIME_INTERVAL_FOR_INFERENCE_ON_GATEWAY = 60 * 10
 
     def __init__(self):
         if not hasattr(self, "endpoint_unavailable_counter"):
@@ -44,6 +47,10 @@ class JobMonitor(Singleton):
             self.reported_runs_on_edges = dict()
         if not hasattr(self, "mqtt_config"):
             self.mqtt_config = dict()
+        if not hasattr(self, "is_first_inference_on_gateway"):
+            self.is_first_inference_on_gateway = True
+        if not hasattr(self, "last_time_on_inference_gateway"):
+            self.last_time_on_inference_gateway = None
 
     @staticmethod
     def get_instance():
@@ -344,8 +351,8 @@ class JobMonitor(Singleton):
             self, device_id, endpoint_id, inference_url, input_list, output_list,
             inference_type="default", timeout=None):
         try:
-            response_ok, inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
-                inference_url, input_list, output_list, inference_type=inference_type, timeout=timeout)
+            response_ok, inference_response = asyncio.run(FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, input_list, output_list, inference_type=inference_type, timeout=timeout))
             if response_ok:
                 print("Use http inference.")
                 return response_ok, inference_response
@@ -386,6 +393,8 @@ class JobMonitor(Singleton):
     def _check_all_slave_endpoint_status(self, endpoint_id, endpoint_name, model_name):
         # Get model deployment result
         is_endpoint_offline = True
+        gateway_device_id = None
+        gateway_result_payload_for_ready = None
         result_list = FedMLModelCache.get_instance().get_deployment_result_list(
             endpoint_id, endpoint_name, model_name)
         for result_item in result_list:
@@ -409,12 +418,22 @@ class JobMonitor(Singleton):
                 model_url = result_payload.get("model_url", "")
                 url_parsed = urlparse(model_url)
                 if url_parsed.path.startswith("/inference"):
-                    continue
-                if not self._check_and_reset_endpoint_status(
-                        endpoint_id, result_device_id, result_payload, only_check_inference_ready_status=True):
-                    is_endpoint_offline = False
+                    gateway_device_id = result_device_id
+                    gateway_result_payload_for_ready = result_payload
+                    url_parsed = urlparse(result_payload.get("model_url", ""))
+                    gateway_result_payload_for_ready["model_url"] = f"http://localhost:{url_parsed.port}{url_parsed.path}"
+                else:
+                    if self._check_and_reset_endpoint_status(
+                            endpoint_id, result_device_id, result_payload, only_check_inference_ready_status=True):
+                        is_endpoint_offline = False
 
-        return is_endpoint_offline
+        if gateway_result_payload_for_ready is not None and is_endpoint_offline is False:
+            if not self._check_and_reset_endpoint_status(
+                    endpoint_id, gateway_device_id, gateway_result_payload_for_ready,
+                    only_check_inference_ready_status=True):
+                is_endpoint_offline = True
+
+        return not is_endpoint_offline
 
     def monitor_master_endpoint_status(self):
         try:
@@ -441,24 +460,24 @@ class JobMonitor(Singleton):
                     # Release the gpu ids
                     JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                    if model_name is not None:
-                        try:
-                            # If the endpoint is offline, then report offline status to the MLOps.
-                            is_endpoint_online = self._check_all_slave_endpoint_status(
-                                job.job_id, endpoint_name, model_name)
-                            if not is_endpoint_online:
-                                print(f"[Master][{job.job_id}] Due to all worker is offline, set endpoint status to "
-                                      f"offline after deployed .")
-                                mlops.log_endpoint_status(
-                                    job.job_id,
-                                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
-                                FedMLModelCache.get_instance().set_end_point_status(
-                                    job.job_id, endpoint_name,
-                                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+                    if model_name is None:
+                        continue
+                    try:
+                        # If the endpoint is offline, then report offline status to the MLOps.
+                        is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name, model_name)
+                        if not is_endpoint_online:
+                            print(f"[Master][{job.job_id}] Due to all worker is offline, set endpoint status to "
+                                  f"offline after deployed .")
+                            mlops.log_endpoint_status(
+                                job.job_id,
+                                device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+                            FedMLModelCache.get_instance().set_end_point_status(
+                                job.job_id, endpoint_name,
+                                device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
 
-                        except Exception as e:
-                            print(f"[Master][{job.job_id}] Exception when check endpoint status: "
-                                  f"{traceback.format_exc()}")
+                    except Exception as e:
+                        print(f"[Master][{job.job_id}] Exception when check endpoint status: "
+                              f"{traceback.format_exc()}")
                 elif endpoint_status == \
                         device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING:
                     started_time = int(float(job.started_time))
@@ -487,8 +506,7 @@ class JobMonitor(Singleton):
                             device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
                     # If the endpoint is offline, then report offline status to the MLOps.
-                    is_endpoint_online = self._check_all_slave_endpoint_status(
-                        job.job_id, endpoint_name, model_name)
+                    is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name, model_name)
                     if is_endpoint_online:
                         print(f"[Master][{job.job_id}] Due to all worker is from offline to online, "
                               f"set endpoint status to online.")

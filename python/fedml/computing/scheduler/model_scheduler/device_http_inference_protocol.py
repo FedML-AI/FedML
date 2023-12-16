@@ -1,4 +1,5 @@
 import traceback
+from urllib.parse import urlparse
 
 import httpx
 
@@ -14,7 +15,8 @@ class FedMLHttpInference:
 
     @staticmethod    
     def is_inference_ready(url, timeout=None) -> bool:
-        url = url.replace("/predict", "/ready")
+        url_parsed = urlparse(url)
+        url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
         try:
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
