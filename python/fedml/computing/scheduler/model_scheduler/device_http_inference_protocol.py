@@ -12,8 +12,20 @@ class FedMLHttpInference:
     def __init__(self):
         pass
 
+    @staticmethod    
+    def is_inference_ready(url, timeout=None) -> bool:
+        url = url.replace("/predict", "/ready")
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+        except Exception as e:
+            return False
+
     @staticmethod
-    def run_http_inference_with_curl_request(
+    async def run_http_inference_with_curl_request(
             inference_url, inference_input_list, inference_output_list,
             inference_type="default", engine_type="default", timeout=None
     ):
@@ -45,22 +57,8 @@ class FedMLHttpInference:
                 )
                 response_ok = True
             else:
-                if timeout is None:
-                    response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
-                else:
-                    response = requests.post(
-                        inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout)
-                if response.status_code == 200:
-                    response_ok = True
-                    if inference_type == "default":
-                        model_inference_result = response.json()
-                    elif inference_type == "image/png":
-                        binary_content: bytes = response.content
-                        model_inference_result = Response(content=binary_content, media_type="image/png")
-                    else:
-                        model_inference_result = response.json()
-                else:
-                    model_inference_result = {"response": f"{response.content}"}
+                response_ok, model_inference_result = await redirect_request_to_worker(
+                    inference_type, inference_url, model_api_headers, model_inference_json, timeout)
         except Exception as e:
             response_ok = False
             model_inference_result = {"response": f"{traceback.format_exc()}"}
@@ -75,3 +73,26 @@ async def stream_generator(inference_url, input_json):
             async for chunk in response.aiter_lines():
                 # we consumed a newline, need to put it back
                 yield f"{chunk}\n"
+
+async def redirect_request_to_worker(inference_type, inference_url, model_api_headers, model_inference_json, timeout=None):
+    response_ok = False
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
+        )
+    
+    if response.status_code == 200:
+        response_ok = True
+        if inference_type == "default":
+            model_inference_result = response.json()
+        elif inference_type == "image/png":
+            binary_content: bytes = response.content
+            model_inference_result = Response(content=binary_content, media_type="image/png")
+        else:
+            model_inference_result = response.json()
+    else:
+        model_inference_result = {"response": f"{response.content}"}
+
+    return response_ok, model_inference_result
+    
