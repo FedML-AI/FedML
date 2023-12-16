@@ -66,7 +66,7 @@ async def predict(request: Request):
     header = request.headers
 
     try:
-        response = _predict(end_point_id, input_json, header)
+        response = await _predict(end_point_id, input_json, header)
     except Exception as e:
         response = {"error": True, "message": f"{traceback.format_exc()}"}
 
@@ -82,14 +82,14 @@ async def predict_with_end_point_id(end_point_id, request: Request):
     header = request.headers
 
     try:
-        response = _predict(end_point_id, input_json, header)
+        response = await _predict(end_point_id, input_json, header)
     except Exception as e:
         response = {"error": True, "message": f"{traceback.format_exc()}"}
 
     return response
 
 
-def _predict(end_point_id, input_json, header=None):
+async def _predict(end_point_id, input_json, header=None):
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
@@ -128,7 +128,7 @@ def _predict(end_point_id, input_json, header=None):
             stream_flag = input_json.get("stream", False)
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
-            inference_response = send_inference_request(
+            inference_response = await send_inference_request(
                 idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
 
         # Calculate model metrics
@@ -172,19 +172,25 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
         inference_output_url = deployment_result["model_url"]
         url_parsed = urlparse(inference_output_url)
         inference_host = url_parsed.hostname
+    else:
+        logging.info("not found idle deployment result")
 
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list, inference_type="default"):
+async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list, inference_type="default", has_public_ip=True):
     try:
-        response_ok, inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
+        response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
             inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
             logging.info("Use http inference.")
             return inference_response
-        logging.info("Use http inference failed.")
-
+        else:
+            if has_public_ip:
+                print("Use http inference failed.")
+                return False, inference_response
+        print("Use http inference failed. Could be caused by the private ip.")
+        
         response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
             endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
         if response_ok:
