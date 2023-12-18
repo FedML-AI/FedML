@@ -185,9 +185,9 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
     try:
         response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
             inference_url, input_list, output_list, inference_type=inference_type)
-        if response_ok:
-            logging.info("Use http inference.")
+        if has_public_ip:
             return inference_response
+        
         logging.info("Use http inference failed. Could be blocked by firewall.")
 
         response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
