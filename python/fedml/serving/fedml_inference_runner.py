@@ -27,7 +27,10 @@ class FedMLInferenceRunner(ABC):
                     else:
                         return StreamingResponse(resp)
                 else:
-                    return self.client_predictor.predict(input_json)
+                    resp = self.client_predictor.predict(input_json)
+                    if asyncio.iscoroutine(resp):
+                        resp = await resp
+                    return resp
             else:
                 response_obj = self.client_predictor.predict(input_json, request.headers.get("Accept"))
                 return FileResponse(response_obj)
