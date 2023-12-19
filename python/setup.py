@@ -96,7 +96,7 @@ requirements_extra_fhe = [
 
 setup(
     name="fedml",
-    version="0.8.14.dev10",
+    version="0.8.14.dev11",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
