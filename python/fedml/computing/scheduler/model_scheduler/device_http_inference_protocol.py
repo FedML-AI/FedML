@@ -81,15 +81,18 @@ async def stream_generator(inference_url, input_json):
 
 
 async def redirect_request_to_worker(inference_type, inference_url, model_api_headers, model_inference_json, timeout=None):
-    response_ok = False
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
-        )
+    response_ok = True
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
+            )
+    except Exception as e:
+        response_ok = False
+        model_inference_result = {"error": e}
+        return response_ok, model_inference_result
     
     if response.status_code == 200:
-        response_ok = True
         if inference_type == "default":
             model_inference_result = response.json()
         elif inference_type == "image/png":
