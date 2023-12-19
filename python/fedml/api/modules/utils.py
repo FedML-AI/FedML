@@ -41,6 +41,8 @@ def authenticate(api_key):
         raise SystemExit(f"Failed to authenticate with apikey: '{api_key}'. Please make sure your login "
                          f"credentials are valid.")
 
+    return api_key
+
 
 def build_mlops_package(
         ignore,
