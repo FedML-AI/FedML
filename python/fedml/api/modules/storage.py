@@ -7,7 +7,7 @@ from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 
 
-def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc) -> str | None:
+def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc) -> str:
     api_key = authenticate(api_key)
     user_id = _get_user_id_from_api_key(api_key)
     if user_id is None:
@@ -40,7 +40,7 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
     return file_uploaded_url
 
 
-def download(data_name, api_key=None, dest_path=None) -> str | None:
+def download(data_name, api_key=None, dest_path=None):
     api_key = authenticate(api_key)
     user_id = _get_user_id_from_api_key(api_key)
     if user_id is None:
