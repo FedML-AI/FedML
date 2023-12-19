@@ -124,26 +124,27 @@ class MLOpsDevicePerfStats(object):
 
         # Notify MLOps with system information.
         sleep_time_interval = 10
+        time_interval_map = {
+            ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
+            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30}
         while not self.should_stop_device_realtime_stats():
             try:
+                time.sleep(time_interval_map[role])
+
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
                 elif role == ROLE_RUN_SLAVE:
                     JobMonitor.get_instance().monitor_slave_run_process_status()
-                    sleep_time_interval = 60
-                elif role == ROLE_ENDPOINT_SLAVE:
-                    JobMonitor.get_instance().monitor_slave_endpoint_status()
-                    sleep_time_interval = 70
-                elif role == ROLE_ENDPOINT_MASTER:
-                    JobMonitor.get_instance().monitor_master_endpoint_status()
-                    sleep_time_interval = 80
                 elif role == ROLE_RUN_MASTER:
                     JobMonitor.get_instance().monitor_master_run_process_status(
                         self.edge_id, device_info_reporter=device_info_reporter)
-                    sleep_time_interval = 90
+                elif role == ROLE_ENDPOINT_SLAVE:
+                    JobMonitor.get_instance().monitor_slave_endpoint_status()
+                elif role == ROLE_ENDPOINT_MASTER:
+                    JobMonitor.get_instance().monitor_master_endpoint_status()
                 elif role == ROLE_ENDPOINT_LOGS:
                     JobMonitor.get_instance().monitor_endpoint_logs()
-                    sleep_time_interval = 30
+
             except Exception as e:
                 logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
                 pass

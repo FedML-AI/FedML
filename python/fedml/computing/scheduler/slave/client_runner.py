@@ -1439,10 +1439,6 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         # MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
-
-        self.mlops_metrics.stop_device_realtime_perf()
-        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
-
         self.recover_start_train_msg_after_upgrading()
 
         infer_host = os.getenv("FEDML_INFER_HOST", None)
@@ -1480,6 +1476,9 @@ class FedMLClientRunner:
             self.model_device_server.start()
 
         JobCleanup.get_instance().sync_data_on_startup(self.edge_id)
+
+        self.mlops_metrics.stop_device_realtime_perf()
+        self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

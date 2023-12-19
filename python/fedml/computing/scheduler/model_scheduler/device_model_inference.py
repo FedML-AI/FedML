@@ -183,19 +183,19 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
     try:
-        response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-            inference_url, input_list, output_list, inference_type=inference_type)
-        if has_public_ip:
-            return inference_response
-        
-        logging.info("Use http inference failed. Could be blocked by firewall.")
-
-        response_ok, inference_response = FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-            endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+        response_ok = await FedMLHttpInference.is_inference_ready(inference_url)
         if response_ok:
-            logging.info("Use http proxy inference.")
+            response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, input_list, output_list, inference_type=inference_type)
+            logging.info(f"Use http inference. return {response_ok}")
             return inference_response
-        logging.info("Use http proxy inference failed. Could be blocked by firewall.")
+
+        response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url)
+        if response_ok:
+            response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
+                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+            logging.info(f"Use http proxy inference. return {response_ok}")
+            return inference_response
 
         connect_str = "@FEDML@"
         random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
@@ -208,12 +208,16 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
         agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
         agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
         mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
-        response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-            idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+        response_ok = mqtt_inference.run_mqtt_health_check_with_request(
+            idle_device, endpoint_id, inference_url)
+        if response_ok:
+            response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
+                idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+
         if not response_ok:
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
 
-        logging.info("Use mqtt inference.")
+        logging.info(f"Use mqtt inference. return {response_ok}.")
         return inference_response
     except Exception as e:
         inference_response = {"error": True,

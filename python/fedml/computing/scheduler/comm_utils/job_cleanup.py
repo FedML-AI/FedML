@@ -81,5 +81,5 @@ class JobCleanup(Singleton):
                             job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
-            logging.info("Exception when syncing endpoint process.")
+            logging.info(F"Exception when syncing endpoint process.{traceback.format_exc()}")
             pass

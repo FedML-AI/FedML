@@ -14,17 +14,20 @@ class FedMLHttpInference:
         pass
 
     @staticmethod    
-    def is_inference_ready(url, timeout=None) -> bool:
-        url_parsed = urlparse(url)
-        url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
+    async def is_inference_ready(inference_url, timeout=None) -> bool:
+        url_parsed = urlparse(inference_url)
+        ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
+        response_ok = False
         try:
-            response = requests.get(url, timeout=timeout)
-            if response.status_code == 200:
-                return True
-            else:
-                return False
+            async with httpx.AsyncClient() as client:
+                ready_response = await client.get(url=ready_url, timeout=timeout)
+
+            if ready_response.status_code == 200:
+                response_ok = True
         except Exception as e:
-            return False
+            response_ok = False
+
+        return response_ok
 
     @staticmethod
     async def run_http_inference_with_curl_request(
