@@ -60,6 +60,7 @@ async def ready(request: Request, response: Response):
     response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=inference_timeout)
     if not response_ok:
         response.status_code = status.HTTP_404_NOT_FOUND
+        return {'message': f'{inference_url} for inference is not ready.', 'status_code': response.status_code}
 
     return {'message': 'Http-proxy server for inference is ready.'}
 
@@ -83,6 +84,7 @@ async def predict(request: Request, response: Response):
         inference_type=inference_type, engine_type=engine_type, timeout=inference_timeout)
     if not response_ok:
         response.status_code = status.HTTP_404_NOT_FOUND
+        inference_response["status_code": response.status_code]
 
     return inference_response
 
