@@ -6,13 +6,12 @@ import traceback
 import uuid
 from os.path import expanduser
 
-import chardet
 import multiprocess as multiprocessing
 import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from .system_stats import SysStats
-from ... import mlops
+from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
 from ...computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -24,6 +23,7 @@ ROLE_ENDPOINT_MASTER = 2
 ROLE_ENDPOINT_SLAVE = 3
 ROLE_RUN_MASTER = 4
 ROLE_RUN_SLAVE = 5
+ROLE_ENDPOINT_LOGS = 6
 
 
 class MLOpsDevicePerfStats(object):
@@ -34,6 +34,7 @@ class MLOpsDevicePerfStats(object):
         self.monitor_run_master_process = None
         self.monitor_endpoint_master_process = None
         self.monitor_endpoint_slave_process = None
+        self.monitor_endpoint_logs_process = None
         self.args = None
         self.device_id = None
         self.run_id = None
@@ -87,6 +88,11 @@ class MLOpsDevicePerfStats(object):
                 target=perf_stats.report_device_realtime_stats_entry,
                 args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
             self.monitor_run_slave_process.start()
+
+            self.monitor_endpoint_logs_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
+            self.monitor_endpoint_logs_process.start()
         else:
             self.monitor_run_master_process = multiprocessing.Process(
                 target=perf_stats.report_device_realtime_stats_entry,
@@ -114,27 +120,31 @@ class MLOpsDevicePerfStats(object):
         if role == ROLE_RUN_MASTER:
             device_info_reporter = FedMLDeviceInfoReportProtocol(run_id=self.run_id, mqtt_mgr=mqtt_mgr)
 
-        JobRunnerUtils.get_instance().mqtt_config = self.args.mqtt_config_path
+        JobMonitor.get_instance().mqtt_config = self.args.mqtt_config_path
 
         # Notify MLOps with system information.
         sleep_time_interval = 10
+        time_interval_map = {
+            ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
+            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30}
         while not self.should_stop_device_realtime_stats():
             try:
+                time.sleep(time_interval_map[role])
+
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
                 elif role == ROLE_RUN_SLAVE:
-                    JobRunnerUtils.get_instance().monitor_slave_run_process_status()
-                    sleep_time_interval = 60
-                elif role == ROLE_ENDPOINT_SLAVE:
-                    JobRunnerUtils.get_instance().monitor_slave_endpoint_status()
-                    sleep_time_interval = 70
-                elif role == ROLE_ENDPOINT_MASTER:
-                    JobRunnerUtils.get_instance().monitor_master_endpoint_status()
-                    sleep_time_interval = 80
+                    JobMonitor.get_instance().monitor_slave_run_process_status()
                 elif role == ROLE_RUN_MASTER:
-                    JobRunnerUtils.get_instance().monitor_master_run_process_status(
+                    JobMonitor.get_instance().monitor_master_run_process_status(
                         self.edge_id, device_info_reporter=device_info_reporter)
-                    sleep_time_interval = 90
+                elif role == ROLE_ENDPOINT_SLAVE:
+                    JobMonitor.get_instance().monitor_slave_endpoint_status()
+                elif role == ROLE_ENDPOINT_MASTER:
+                    JobMonitor.get_instance().monitor_master_endpoint_status()
+                elif role == ROLE_ENDPOINT_LOGS:
+                    JobMonitor.get_instance().monitor_endpoint_logs()
+
             except Exception as e:
                 logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
                 pass

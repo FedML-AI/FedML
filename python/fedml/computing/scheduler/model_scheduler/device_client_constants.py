@@ -696,6 +696,19 @@ class ClientConstants(object):
 
         return is_bootstrap_run_ok
 
+    @staticmethod
+    def get_endpoint_container_name(end_point_name, model_name, model_version, end_point_id, model_id):
+        running_model_name = ClientConstants.get_running_model_name(
+            end_point_name, model_name, model_version, end_point_id, model_id)
+        return ClientConstants.get_endpoint_container_name_with_running_model_name(running_model_name)
+
+    @staticmethod
+    def get_endpoint_container_name_with_running_model_name(running_model_name):
+        endpoint_container_name = f"{ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX}__" \
+                                  f"{security_utils.get_content_hash(running_model_name)}"
+
+        return endpoint_container_name
+
 
 if __name__ == "__main__":
     ignore = "*test*,abc*"

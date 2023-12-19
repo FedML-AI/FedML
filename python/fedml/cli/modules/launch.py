@@ -110,6 +110,10 @@ def _resources_matched(result_code: int, result_message: str, create_run_result:
         return False
 
     if result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED]:
+        if create_run_result.job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY or \
+                create_run_result.job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE:
+            click.echo(f"\nNo resource available now, please modify the resource type or try it again later.")
+            return False
         click.echo("\nNo resource available now, but we can keep your job in the waiting queue and run your job "
                    "whenever requested resources are available.")
         if click.confirm("Do you want to join the queue?", abort=False):

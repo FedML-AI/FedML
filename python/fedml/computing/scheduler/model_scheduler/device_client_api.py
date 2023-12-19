@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Response, status
 from fedml.computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
-from fedml.computing.scheduler.model_scheduler.device_model_deployment import run_http_inference_with_curl_request
+from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 
 
 api = FastAPI()
@@ -51,6 +51,20 @@ async def get_history_job_status(request: Request):
     return responses
 
 
+@api.post('/ready')
+async def ready(request: Request, response: Response):
+    input_json = await request.json()
+    inference_url = input_json.get("inference_url", "0")
+    inference_timeout = input_json.get("inference_timeout", None)
+
+    response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=inference_timeout)
+    if not response_ok:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {'message': f'{inference_url} for inference is not ready.', 'status_code': response.status_code}
+
+    return {'message': 'Http-proxy server for inference is ready.'}
+
+
 @api.post('/api/v1/predict')
 async def predict(request: Request, response: Response):
     # Get json data
@@ -62,12 +76,16 @@ async def predict(request: Request, response: Response):
     inference_input_list = input_json.get("input", {})
     inference_output_list = input_json.get("output", [])
     inference_type = input_json.get("inference_type", "default")
+    engine_type = input_json.get("engine_type", "default")
     inference_timeout = input_json.get("inference_timeout", None)
 
-    response_ok, inference_response = run_http_inference_with_curl_request(
+    response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
         inference_url, inference_input_list, inference_output_list,
-        inference_type=inference_type, timeout=inference_timeout)
+        inference_type=inference_type, engine_type=engine_type, timeout=inference_timeout)
     if not response_ok:
         response.status_code = status.HTTP_404_NOT_FOUND
+        inference_response["status_code": response.status_code]
 
     return inference_response
+
+

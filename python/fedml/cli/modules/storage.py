@@ -85,6 +85,9 @@ def list_data(version, api_key):
 @fedml_storage.command("download", help="Download data stored on FedML® Nexus AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_name", nargs=1, callback=validate_argument)
+@click.option("--dest_path", "-d", default=None, type=str, help="Destination path to download data. By default, "
+                                                                "it would be downloaded to working directory from "
+                                                                "where the command is executed.")
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
 )
@@ -95,9 +98,9 @@ def list_data(version, api_key):
     default="release",
     help=version_help,
 )
-def download(data_name, version, api_key):
+def download(data_name, dest_path, version, api_key):
     fedml.set_env_version(version)
-    data_download_path = fedml.api.download(data_name, api_key)
+    data_download_path = fedml.api.download(data_name=data_name, dest_path=dest_path, api_key=api_key)
     if data_download_path:
         click.echo(f"Data downloaded successfully at: {data_download_path}")
     else:

@@ -8,6 +8,9 @@ import threading
 import time
 import uuid
 
+import asyncio
+
+from ..comm_utils.constants import SchedulerConstants
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -67,17 +70,24 @@ class FedMLMqttInference:
         inference_input_list = self.request_json.get("input", "0")
         inference_output_list = self.request_json.get("output", "0")
         inference_type = self.request_json.get("inference_type", "0")
+        inference_timeout = self.request_json.get("inference_timeout", None)
+        health_check = self.request_json.get("health_check", False)
 
         self.setup_client_mqtt_mgr()
 
-        inference_response = FedMLHttpInference.run_http_inference_with_curl_request(
-            inference_url, inference_input_list, inference_output_list, inference_type=inference_type)
+        if health_check:
+            inference_response = asyncio.run(FedMLHttpInference.is_inference_ready(
+                inference_url, timeout=inference_timeout))
+        else:
+            inference_response = asyncio.run(FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, inference_input_list, inference_output_list, inference_type=inference_type,
+                timeout=inference_timeout))
 
         self.response_endpoint_inference(endpoint_id, inference_request_id, inference_response)
 
     def run_mqtt_inference_with_request(
             self, edge_id, endpoint_id, inference_url, inference_input_list,
-            inference_output_list, inference_type="default"):
+            inference_output_list, inference_type="default", only_do_health_check=False, timeout=None):
         self.setup_client_mqtt_mgr()
         self.setup_listener_for_endpoint_inference_response(endpoint_id)
 
@@ -90,25 +100,44 @@ class FedMLMqttInference:
 
         self.send_mqtt_endpoint_inference_request(
             edge_id, endpoint_id, inference_req_id, inference_url,
-            inference_input_list, inference_output_list, inference_type=inference_type)
+            inference_input_list, inference_output_list, inference_type=inference_type,
+            only_do_health_check=only_do_health_check, timeout=timeout
+        )
 
+        allowed_inference_timeout = SchedulerConstants.MQTT_INFERENCE_TIMEOUT if timeout is None else timeout
+        sleep_time_interval = 0.05
+        total_sleep_time = 0
         while True:
             if self.run_inference_event_map[str_endpoint_id][inference_req_id].is_set():
                 return self.run_inference_response_map[str_endpoint_id][inference_req_id]
 
-            time.sleep(0.05)
+            total_sleep_time += sleep_time_interval
+            time.sleep(sleep_time_interval)
+            if total_sleep_time > allowed_inference_timeout:
+                break
+
+        if only_do_health_check:
+            return False
+
+        return False, {"message": "timeout"}
+
+    def run_mqtt_health_check_with_request(self, edge_id, endpoint_id, inference_url, timeout=None):
+        return self.run_mqtt_inference_with_request(
+            edge_id, endpoint_id, inference_url, [], [], only_do_health_check=True, timeout=timeout)
 
     def send_mqtt_endpoint_inference_request(
             self, edge_id, endpoint_id, inference_req_id, inference_url, inference_input_list,
-            inference_output_list, inference_type="default"):
+            inference_output_list, inference_type="default", only_do_health_check=False, timeout=None):
         inference_topic = f"fedml_model_master/fedml_model_worker/inference/{edge_id}"
         inference_request_json = dict()
         inference_request_json["endpoint_id"] = endpoint_id
         inference_request_json["inference_id"] = inference_req_id
-        inference_request_json["inference_url"]  = inference_url
+        inference_request_json["inference_url"] = inference_url
         inference_request_json["input"] = inference_input_list
         inference_request_json["output"] = inference_output_list
         inference_request_json["inference_type"] = inference_type
+        inference_request_json["inference_timeout"] = 0 if timeout is None else timeout
+        inference_request_json["health_check"] = only_do_health_check
 
         self.client_mqtt_mgr.send_message_json(inference_topic, json.dumps(inference_request_json))
 

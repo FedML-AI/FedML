@@ -1267,11 +1267,9 @@ def fetch_config(args, version="release"):
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
         setattr(args, "device_id", FedMLServerRunner.get_device_id())
-        runner = FedMLServerRunner(args)
     else:
         setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
         setattr(args, "device_id", FedMLClientRunner.get_device_id())
-        runner = FedMLClientRunner(args)
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
@@ -1281,12 +1279,11 @@ def fetch_config(args, version="release"):
     edge_id = 0
     while config_try_count < 5:
         try:
-            mqtt_config, s3_config, mlops_config, docker_config = runner.fetch_configs()
+            mqtt_config, s3_config, mlops_config, docker_config = MLOpsConfigs.fetch_all_configs()
             service_config["mqtt_config"] = mqtt_config
             service_config["s3_config"] = s3_config
             service_config["ml_ops_config"] = mlops_config
             service_config["docker_config"] = docker_config
-            runner.agent_config = service_config
             MLOpsStore.mlops_log_agent_config = service_config
             setattr(args, "mqtt_config_path", mqtt_config)
             setattr(args, "s3_config_path", s3_config)
@@ -1366,3 +1363,17 @@ def mlops_enabled(args):
         return True
     else:
         return False
+
+
+def enable_logging_to_file(edge_id):
+    args = get_fedml_args()
+    # Init runtime logs
+    args.log_file_dir = ""
+    args.run_id = 0
+    args.role = "client"
+    client_ids = list()
+    client_ids.append(edge_id)
+    args.client_id_list = json.dumps(client_ids)
+    setattr(args, "using_mlops", True)
+    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
+    return args

@@ -24,6 +24,7 @@ from os import listdir
 import requests
 
 import fedml
+from ..comm_utils.job_cleanup import JobCleanup
 from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils
@@ -454,6 +455,8 @@ class FedMLServerRunner:
                 server_id=self.edge_id, server_agent_id=self.edge_id)
         finally:
             logging.info("Release resources.")
+            self._process_run_metrics_queue(run_metrics_queue)
+            self._process_run_logs_queue(run_logs_queue)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -2597,7 +2600,7 @@ class FedMLServerRunner:
         if not self.run_as_cloud_server:
             self.recover_start_train_msg_after_upgrading()
 
-        JobRunnerUtils.get_instance().sync_data_on_startup(self.edge_id)
+        JobCleanup.get_instance().sync_data_on_startup(self.edge_id)
 
         self.master_api_daemon = MasterApiDaemon()
         self.master_api_process = Process(target=self.master_api_daemon.run)

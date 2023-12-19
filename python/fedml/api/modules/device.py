@@ -121,7 +121,10 @@ def _bind(
         client_daemon_cmd = "client_daemon.py"
         client_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(client_daemon_cmd)
         if client_daemon_pids is not None and len(client_daemon_pids) > 0:
-            print("There is another login process running on your system. Please check and exit the previous login with the command 'fedml logout -c'.")
+            print("Your computer has been logged into the FedML® Nexus AI Platform. "
+                  "Before logging in again, please log out of the previous login using the command "
+                  "'fedml logout -c'. If it still doesn't work, run the command 'fedml logout -c' "
+                  "using your computer's administrator account.")
             return
 
         pip_source_dir = os.path.dirname(__file__)

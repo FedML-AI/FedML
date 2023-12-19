@@ -1,6 +1,7 @@
 import logging
 import os
 import platform
+import requests
 from ..comm_utils import subprocess_with_live_logs
 import subprocess
 import sys
@@ -9,6 +10,7 @@ from urllib.parse import urlparse, unquote
 
 import yaml
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.run_process_utils import RunProcessUtils
 
@@ -240,6 +242,12 @@ class ServerConstants(object):
             ServerConstants.get_mlops_url())
         print("resource_url: ", resource_url)
         return resource_url
+
+    @staticmethod
+    def get_user_url():
+        user_url = "{}/fedmlOpsServer/api/v1/cli/getUser".format(
+            ServerConstants.get_mlops_url())
+        return user_url
 
     @staticmethod
     def cleanup_run_process(run_id):
@@ -496,3 +504,24 @@ class ServerConstants(object):
                 os.remove(ppid_file)
         except Exception as e:
             pass
+
+    @staticmethod
+    def request(url: str, json_data: dict):
+        cert_path = MLOpsConfigs.get_cert_path_with_version()
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
+                )
+        else:
+            response = requests.post(
+                url, verify=True, headers=ServerConstants.API_HEADERS, json=json_data
+            )
+        return response
+

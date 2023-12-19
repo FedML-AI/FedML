@@ -201,7 +201,8 @@ class FedMLRunManager(Singleton):
         run_start_result = FedMLRunStartedModel(response=response, data=response_data,
                                                 project_name=job_config.project_name,
                                                 application_name=job_config.application_name, inner_id=inner_id,
-                                                app_job_id=job_config.job_id, app_job_name=job_config.job_name)
+                                                app_job_id=job_config.job_id, app_job_name=job_config.job_name,
+                                                job_type=job_config.task_type)
         return run_start_result
 
     def start_run(self, platform: str, create_run_result: FedMLRunStartedModel, device_server: str,
@@ -226,7 +227,8 @@ class FedMLRunManager(Singleton):
                                                 project_name=create_run_result.project_name,
                                                 application_name=create_run_result.application_name,
                                                 app_job_id=create_run_result.app_job_id,
-                                                app_job_name=create_run_result.app_job_name)
+                                                app_job_name=create_run_result.app_job_name,
+                                                job_type=create_run_result.job_type)
         return run_start_result
 
     def list_run(self, platform: str, project_name: str, run_name: str, user_api_key: str,

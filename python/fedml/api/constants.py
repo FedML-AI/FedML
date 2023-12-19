@@ -7,6 +7,10 @@ class ApiConstants:
         """
         No resource available now, job queued in waiting queue
         """
+    RESOURCE_MATCHED_STATUS_QUEUED_FOR_DEPLOY = \
+        """
+        No resource available now, please modify the resource type or try it again later
+        """
     RESOURCE_MATCHED_STATUS_QUEUE_CANCELED = "QUEUE_CANCELED"
 
     RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST = \
