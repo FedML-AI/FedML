@@ -228,6 +228,10 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
                 f"\nBecause the value of maximum_cost_per_hour is too low, we can not find exactly matched machines "
                 f"for your job. \n")
     elif result.status == Constants.JOB_START_STATUS_QUEUED:
+        if result.job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY or \
+                result.job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE:
+            return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
+                    f"\nNo resource available now, please modify the resource type or try it again later.")
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_QUEUED],
                 f"\nNo resource available now, job queued in waiting queue.")
     elif result.status == Constants.JOB_START_STATUS_BIND_CREDIT_CARD_FIRST:

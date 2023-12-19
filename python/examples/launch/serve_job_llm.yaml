@@ -16,7 +16,7 @@ computing:
     minimum_num_gpus: 1
     resource_type: A100-80G
 
-task_type: deploy              # options: train, deploy, federate
+job_type: deploy              # options: train, deploy, federate
 
 serving_args:
     model_name: demo-pythia-70m

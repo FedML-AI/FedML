@@ -20,7 +20,7 @@ job: |
 bootstrap: |
   echo "Bootstrap finished."
 
-task_type: deploy              # options: train, deploy, federate
+job_type: deploy              # options: train, deploy, federate
 
 # If you want to use the model created by the MLOps platform or create your own model card with a specified name,
 # just uncomment the following four lines, then set model_name to your desired model name or set your desired endpoint name
