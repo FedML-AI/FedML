@@ -196,10 +196,18 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
+                gpu_ids = config.get('gpu_ids', gpu_ids)
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
                     usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
+                shm_size = config.get('shm_size', None)
+                storage_opt = config.get('storage_opt', None)
+                tmpfs = config.get('tmpfs', None)
+                cpus = config.get('cpus', None)
+                if cpus is not None:
+                    cpus = str(cpus)
+                memory = config.get('memory', None)
 
                 if usr_indicated_worker_port == "":
                     usr_indicated_worker_port = None
@@ -415,7 +423,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
                 },
                 device_requests=device_requests,
-                # mem_limit = "8g",   # Could also be configured in the docker desktop setting
+                shm_size=shm_size,
+                storage_opt=storage_opt,
+                tmpfs=tmpfs,
+                cpuset_cpus=cpus,
+                mem_limit=memory,
             ),
             detach=True,
             command=entry_cmd if enable_custom_image else None

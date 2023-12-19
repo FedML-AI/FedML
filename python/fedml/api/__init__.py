@@ -180,8 +180,8 @@ def upload(data_path, api_key=None, name=None, show_progress=False, out_progress
                           show_progress=show_progress, out_progress_to_err=out_progress_to_err)
 
 
-def download(data_name, api_key=None):
-    return storage.download(data_name, api_key)
+def download(data_name, api_key=None, dest_path=None):
+    return storage.download(data_name=data_name, api_key=api_key, dest_path=dest_path)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

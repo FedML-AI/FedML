@@ -30,7 +30,8 @@ class MnistPredictor(FedMLPredictor):
     def predict(self, request):
         arr = request["arr"]
         input_tensor = self.list_to_tensor_func(arr)
-        return self.model(input_tensor)
+        prediction = self.model(input_tensor).tolist()
+        return prediction
 
 if __name__ == "__main__":
     predictor = MnistPredictor()

@@ -21,9 +21,13 @@ else:
    print("The bucket does not exist")
    s3.create_bucket(Bucket='fedml')
 
-s3.Bucket('fedml').upload_file('./remote_storage.py','remote_storage.xxx')
+
+curr_dir = os.path.dirname(os.path.realpath(__file__))
+remote_storage_file_path_py = os.path.join(curr_dir, 'remote_storage.py')
+s3.Bucket('fedml').upload_file(remote_storage_file_path_py,'remote_storage.xxx')
 print("uploaded")
 
 # download the object 'piano.mp3' from the bucket 'songs' and save it to local FS as /tmp/classical.mp3
-s3.Bucket('fedml').download_file('remote_storage.xxx', './remote_storage.yyy')
+remote_storage_file_path_yyy = os.path.join(curr_dir, 'remote_storage.yyy')
+s3.Bucket('fedml').download_file('remote_storage.xxx', remote_storage_file_path_yyy)
 print("downloaded")

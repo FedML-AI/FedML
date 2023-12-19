@@ -85,11 +85,11 @@ def fedml_model_push(name, model_storage_url, version):
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
-    "--master_ids", "-m", type=str, default="", help=" Device Id(s) for on-premise master node(s)."
+    "--master_ids", "-m", type=str, default=None, help=" Device Id(s) for on-premise master node(s)."
                                                      " Please indicate master device id(s), seperated with ','"
 )
 @click.option(
-    "--worker_ids", "-w", type=str, default="", help=" Device Id(s) for on-premise worker node(s)."
+    "--worker_ids", "-w", type=str, default=None, help=" Device Id(s) for on-premise worker node(s)."
                                                      " Please indicate worker device id(s), seperated with ','"
 )
 @click.option(
