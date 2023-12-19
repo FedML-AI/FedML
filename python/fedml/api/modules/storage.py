@@ -40,7 +40,7 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
     return file_uploaded_url
 
 
-def download(data_name, api_key=None, dest_path=None) -> str:
+def download(data_name, api_key=None, dest_path=None):
     api_key = authenticate(api_key)
     user_id = _get_user_id_from_api_key(api_key)
     if user_id is None:
