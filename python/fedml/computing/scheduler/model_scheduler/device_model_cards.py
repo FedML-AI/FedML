@@ -680,8 +680,8 @@ class FedMLModelCards(Singleton):
             "apiKey": user_api_key,
             "isFromOpen": int(is_from_open),
             "modelNetUrl": model_net_url,
-            "tagList": [] if tag_names is None else tag_list
-
+            "tagList": [] if tag_names is None else tag_list,
+            # "modelVersion": "v1",
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_request_params()

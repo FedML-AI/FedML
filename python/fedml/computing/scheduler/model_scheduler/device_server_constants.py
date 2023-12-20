@@ -137,6 +137,7 @@ class ServerConstants(object):
 
     DEVICE_DIFF_ADD_OPERATION = "op: add"
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"
+    DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")

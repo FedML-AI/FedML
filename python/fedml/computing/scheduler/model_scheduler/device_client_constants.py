@@ -130,6 +130,10 @@ class ClientConstants(object):
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
+    DEVICE_DIFF_ADD_OPERATION = "op: add"
+    DEVICE_DIFF_DELETE_OPERATION = "op: delete"
+    DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
+
     LOGIN_MODE_ON_PREMISE_INDEX = 0
     LOGIN_MODE_FEDML_CLOUD_INDEX = 1
     LOGIN_MODE_PUBLIC_CLOUD_INDEX = 2
