@@ -7,7 +7,7 @@ from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 
 
-def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc) -> str:
+def upload(data_path, api_key, name, show_progress, out_progress_to_err, progress_desc, metadata) -> str:
     api_key = authenticate(api_key)
     user_id = _get_user_id_from_api_key(api_key)
     if user_id is None:
@@ -35,7 +35,7 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
     file_uploaded_url = s3.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                      show_progress=show_progress,
                                                      out_progress_to_err=out_progress_to_err,
-                                                     progress_desc=progress_desc)
+                                                     progress_desc=progress_desc, metadata=metadata)
     os.remove(archive_path)
     return file_uploaded_url
 
@@ -64,6 +64,20 @@ def download(data_name, api_key=None, dest_path=None):
     else:
         logging.error(f"Failed to download data: {data_name}")
         return None
+
+
+def get_metadata(data_name, api_key=None):
+    api_key = authenticate(api_key)
+    user_id = _get_user_id_from_api_key(api_key)
+    if user_id is None:
+        print(f"Failed to get user id from api key: {api_key}")
+        return None
+    configs = MLOpsConfigs.fetch_remote_storage_configs()
+    r2_config = configs[Configs.R2_CONFIG]
+    s3 = S3Storage(r2_config)
+    zip_file_name = data_name + ".zip"
+    path_s3 = os.path.join(user_id, zip_file_name)
+    return s3.get_object_metadata(path_s3=path_s3)
 
 
 def _get_user_id_from_api_key(api_key: str) -> str:
