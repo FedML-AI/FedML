@@ -1,4 +1,3 @@
-
 import logging
 import time
 import traceback
@@ -78,6 +77,30 @@ async def predict(request: Request):
     return response
 
 
+@api.post("/inference/{end_point_id}/completions")
+@api.post("/inference/{end_point_id}/chat/completions")
+async def predict_openai(end_point_id, request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    # Get header
+    header = request.headers
+
+    # translate request keys
+    input_json["end_point_name"] = input_json.get("model", None)
+
+    authorization = request.headers.get("Authorization", None)
+    if authorization is not None and authorization.startswith("Bearer "):
+        input_json["token"] = authorization.split("Bearer ")[-1].strip()
+
+    try:
+        response = await _predict(end_point_id, input_json, header)
+    except Exception as e:
+        response = {"error": True, "message": f"{traceback.format_exc()}"}
+
+    return response
+
+
 @api.post('/inference/{end_point_id}')
 async def predict_with_end_point_id(end_point_id, request: Request):
     # Get json data
@@ -127,7 +150,7 @@ async def _predict(end_point_id, input_json, header=None):
         # Send inference request to idle device
         logging.info("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
-            input_list = input_json["inputs"]
+            input_list = input_json.get("inputs", input_json)
             stream_flag = input_json.get("stream", False)
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
