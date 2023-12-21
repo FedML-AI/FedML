@@ -43,6 +43,8 @@ class FedMLServerManager(FedMLCommManager):
 
     def callback_mlops_run_status(self, run_id, run_status):
         logging.info(f"Server run id {run_id}, status {run_status}")
+        # if run_status == "FAILED":
+        #     raise Exception("Server run failed")
 
     def is_main_process(self):
         return getattr(self.aggregator, "aggregator", None) is None or self.aggregator.aggregator.is_main_process()
