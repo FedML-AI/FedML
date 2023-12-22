@@ -18,8 +18,7 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
     s3 = S3Storage(r2_config)
     src_local_path = os.path.abspath(data_path)
     root_dir = os.path.dirname(src_local_path)
-    file_name = os.path.basename(src_local_path) if name is None else name
-    archive_name = file_name + '.zip'
+    archive_name = os.path.basename(src_local_path) + '.zip'
     archive_path = os.path.join(root_dir, archive_name)
     try:
         # Create a zip archive
@@ -31,7 +30,8 @@ def upload(data_path, api_key, name, show_progress, out_progress_to_err, progres
         print(f"Error archiving data: {e}")
         return None
 
-    dest_path = os.path.join(user_id, os.path.basename(archive_path))
+    file_name = (os.path.basename(archive_path) if name is None else name) + ".zip"
+    dest_path = os.path.join(user_id, file_name)
     file_uploaded_url = s3.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                      show_progress=show_progress,
                                                      out_progress_to_err=out_progress_to_err,
