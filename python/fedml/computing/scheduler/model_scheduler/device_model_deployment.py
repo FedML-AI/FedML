@@ -15,6 +15,7 @@ import tritonclient.http as http_client
 import collections.abc
 
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 for type_name in collections.abc.__all__:
@@ -341,9 +342,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                           "installed Docker Desktop or Docker Engine, and the docker is running")
             return "", "", None, None, None
 
-        default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+        container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                                         security_utils.get_content_hash(running_model_name)
+        
+        same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
+        default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)

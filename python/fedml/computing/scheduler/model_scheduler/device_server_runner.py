@@ -1070,6 +1070,9 @@ class FedMLServerRunner:
         # "op: replace" -> need to restart the container of the device on same port with new model pkg
         try:
             request_json = self.running_request_json.get(str(run_id))
+            usr_in_worker_op = request_json["model_config"].get("worker_operation", 
+                                                            ServerConstants.USER_INPUT_WORKER_SCALE_OPERATION)
+            
             diff_devices = {}
             FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
             device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -1089,8 +1092,12 @@ class FedMLServerRunner:
                     if new_device_id not in device_ids:
                         diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
                     else:
-                        diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_REPLACE_OPERATION
-
+                        if usr_in_worker_op == ServerConstants.USER_INPUT_WORKER_SCALE_OPERATION:
+                            diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+                        elif usr_in_worker_op == ServerConstants.USER_INPUT_WORKER_UPATE_OPERATION:
+                            diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_REPLACE_OPERATION
+                        else:
+                            raise Exception(f"Unknown worker operation: {usr_in_worker_op}")
         except Exception as e:
             error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/{run_id}_error.txt"
             if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):

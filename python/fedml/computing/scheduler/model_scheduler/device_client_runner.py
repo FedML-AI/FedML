@@ -27,6 +27,8 @@ from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from .device_model_cache import FedMLModelCache
 from ..comm_utils import sys_utils, security_utils
 
+from ..comm_utils.container_utils import ContainerUtils
+
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -489,20 +491,25 @@ class FedMLClientRunner:
                                     model_version=model_version, end_point_id=end_point_id, model_id=model_id)
         logging.info("running_model_name: {}".format(running_model_name))
 
-        default_server_container_name = "{}".format(
+        # TODO: Scroll update
+        container_prefix = "{}".format(
             ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                                         security_utils.get_content_hash(running_model_name)
-        logging.info("default_server_container_name: {}".format(default_server_container_name))
+        num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
 
-        try:
-            exist_container_obj = client.containers.get(default_server_container_name)
-        except docker.errors.NotFound:
-            exist_container_obj = None
-        except docker.errors.APIError:
-            raise Exception("Failed to get the container object")
+        for i in range(num_containers):
+            container_name = "{}__{}".format(container_prefix, i)
+            logging.info("default_server_container_name: {}".format(container_name))
 
-        if exist_container_obj is not None:
-            client.api.remove_container(exist_container_obj.id, v=True, force=True)
+            try:
+                exist_container_obj = client.containers.get(container_name)
+            except docker.errors.NotFound:
+                exist_container_obj = None
+            except docker.errors.APIError:
+                raise Exception("Failed to get the container object")
+
+            if exist_container_obj is not None:
+                client.api.remove_container(exist_container_obj.id, v=True, force=True)
 
 
     def send_deployment_results(self, end_point_name, device_id, model_status,
