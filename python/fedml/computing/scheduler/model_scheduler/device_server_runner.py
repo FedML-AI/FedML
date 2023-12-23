@@ -736,7 +736,8 @@ class FedMLServerRunner:
         edge_id_list = []
         for device_id in self.request_json["device_ids"]:
             if device_id in self.request_json["diff_devices"] and \
-                    self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_ADD_OPERATION:
+                    (self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_ADD_OPERATION or
+                     self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_REPLACE_OPERATION):
                 edge_id_list.append(device_id)
 
         logging.info("Edge ids before diff: " + str(self.request_json["device_ids"]))
@@ -800,7 +801,7 @@ class FedMLServerRunner:
                             delete_devices_status_list.append(device_status)
 
                     for delete_item in delete_devices_status_list:
-                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_status(
                             delete_item, self.request_json["end_point_id"],
                             self.request_json["end_point_name"],
                             self.request_json["model_config"]["model_name"]
@@ -830,9 +831,6 @@ class FedMLServerRunner:
                         f.write(str(self.request_json))
                         f.write(str(e))
                         f.write('\n')
-                        # f.write(self.request_json["run_id"])
-                        # f.write('\n')
-                        # f.write(self.request_json["end_point_name"])
                     raise e
 
         else:   # Delete the whole endpoint
@@ -991,6 +989,17 @@ class FedMLServerRunner:
         self.running_request_json[run_id_str] = request_json
 
         diff_devices = self.get_diff_devices(run_id)
+        try:
+            self.handle_replaced_devices(diff_devices)
+        except Exception as e:
+            run_id = self.request_json["run_id"]
+            error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_handle_{run_id}.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+            with open(os.path.expanduser(error_log_path), "w") as f:
+                f.write(str(e))
+                f.write('\n')
+            raise e
         request_json["diff_devices"] = diff_devices
 
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -1055,10 +1064,15 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"])
 
     def get_diff_devices(self, run_id) -> dict:
-        # {device_id(int): "op: add" | "op: delete"}
-        # "op: add" -> need to add | "op: delete" -> need to delete device
+        # {device_id(int): "op: add" | "op: delete" | "op: replace"}
+        # "op: add" -> need to add 
+        # "op: delete" -> need to delete device
+        # "op: replace" -> need to restart the container of the device on same port with new model pkg
         try:
             request_json = self.running_request_json.get(str(run_id))
+            usr_in_worker_op = request_json["model_config"].get("worker_operation", 
+                                                            ServerConstants.USER_INPUT_WORKER_SCALE_OPERATION)
+            
             diff_devices = {}
             FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
             device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -1077,6 +1091,13 @@ class FedMLServerRunner:
                 for new_device_id in request_json["device_ids"]:
                     if new_device_id not in device_ids:
                         diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+                    else:
+                        if usr_in_worker_op == ServerConstants.USER_INPUT_WORKER_SCALE_OPERATION:
+                            diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
+                        elif usr_in_worker_op == ServerConstants.USER_INPUT_WORKER_UPATE_OPERATION:
+                            diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_REPLACE_OPERATION
+                        else:
+                            raise Exception(f"Unknown worker operation: {usr_in_worker_op}")
         except Exception as e:
             error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/{run_id}_error.txt"
             if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
@@ -1085,6 +1106,70 @@ class FedMLServerRunner:
                 f.write(str(e))
             raise e
         return diff_devices
+    
+    def handle_replaced_devices(self, diff_devices):
+        '''
+        Strategy-1: Delete the replaced device from the device list in local redis
+        '''
+        edge_id_list_to_delete = []
+        for device_id in diff_devices:
+            if diff_devices[device_id] == ServerConstants.DEVICE_DIFF_REPLACE_OPERATION:
+                edge_id_list_to_delete.append(device_id)
+        
+        # Remove the record of the replaced device
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+        # 1. Get & Delete Deployment Status in Redis / SQLite
+        devices_status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_deployment_status_list(self.request_json["end_point_id"],
+                                        self.request_json["end_point_name"],
+                                        self.request_json["model_config"]["model_name"])
+        delete_devices_status_list = []
+        for device_status in devices_status_list:
+            device_status_dict = json.loads(device_status)
+            if int(device_status_dict["cache_device_id"]) in edge_id_list_to_delete:
+                delete_devices_status_list.append(device_status)
+        
+        for delete_item in delete_devices_status_list:
+            FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_status(
+                delete_item, self.request_json["end_point_id"],
+                self.request_json["end_point_name"],
+                self.request_json["model_config"]["model_name"]
+            )
+
+        # 2. Get & Delete the endpoint device info in Redis / SQLite
+        device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_end_point_device_info(self.request_json["run_id"])
+
+        if device_objs is None:
+            return
+        
+        total_device_objs_list = json.loads(device_objs)
+        for device_obj in total_device_objs_list:
+            if device_obj["id"] in edge_id_list_to_delete:
+                total_device_objs_list.remove(device_obj)
+        
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
+            self.request_json["end_point_id"], self.request_json["end_point_name"],
+            json.dumps(total_device_objs_list))
+
+        # 3. Delete the result in deployment result list in Redis / SQLite
+        device_result_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_deployment_result_list(self.request_json["end_point_id"],
+                                        self.request_json["end_point_name"],
+                                        self.request_json["model_config"]["model_name"])
+        delete_device_result_list = []
+        for device_result in device_result_list:
+            device_result_dict = json.loads(device_result)
+            if int(device_result_dict["cache_device_id"]) in edge_id_list_to_delete:
+                delete_device_result_list.append(device_result)
+        
+        for delete_item in delete_device_result_list:
+            FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                delete_item, self.request_json["end_point_id"],
+                self.request_json["end_point_name"],
+                self.request_json["model_config"]["model_name"]
+            )
+
 
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))

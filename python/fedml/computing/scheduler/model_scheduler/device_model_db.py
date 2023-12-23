@@ -49,6 +49,20 @@ class FedMLModelDatabase(object):
             ret_result_list.append(json.dumps(result_dict))
         return ret_result_list
 
+    def delete_deployment_result(self, device_id, end_point_id, end_point_name, model_name, model_version=None):
+        self.open_job_db()
+        result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
+            filter(and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                        FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                        FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}',
+                        # FedMLDeploymentResultInfoModel.model_version == f'{model_version}',
+                        )).first()
+        if result_info is not None:
+            self.db_connection.delete(result_info)
+            self.db_connection.commit()
+        return True
+
     def get_deployment_status_list(self, end_point_id, end_point_name, model_name, model_version=None):
         result_list = self.get_deployment_results_info(end_point_id, end_point_name, model_name, model_version)
         ret_status_list = list()

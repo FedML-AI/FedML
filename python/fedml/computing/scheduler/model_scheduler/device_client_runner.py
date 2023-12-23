@@ -18,13 +18,16 @@ import zipfile
 from urllib.parse import urlparse
 
 import requests
+import docker
 
 import fedml
 from fedml import mlops
 from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from .device_model_cache import FedMLModelCache
-from ..comm_utils import sys_utils
+from ..comm_utils import sys_utils, security_utils
+
+from ..comm_utils.container_utils import ContainerUtils
 
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -301,6 +304,11 @@ class FedMLClientRunner:
         scale_max = model_config.get("instance_scale_max", 0)
         inference_port = model_config.get("inference_external_api_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
         model_config_parameters = self.request_json["parameters"]
+
+        if "diff_devices" in self.request_json and self.device_id in self.request_json["diff_devices"] and \
+            self.request_json["diff_devices"][self.device_id] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
+                self.handle_replaced_device()
+
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
         else:
@@ -464,6 +472,45 @@ class FedMLClientRunner:
             self.mlops_metrics.broadcast_client_training_status(
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 is_from_model=True, run_id=self.run_id)
+
+    def handle_replaced_device(self):
+        end_point_id = self.request_json["end_point_id"]
+        end_point_name = self.request_json["end_point_name"]
+        model_config = self.request_json["model_config"]
+        model_name = model_config["model_name"]
+        model_id = model_config["model_id"]
+        model_version = model_config["model_version"]
+        
+        '''
+        Strategy-1:
+        Clean the current container
+        '''
+        client = docker.from_env()
+
+        running_model_name = ClientConstants.get_running_model_name(end_point_name=end_point_name,model_name=model_name,
+                                    model_version=model_version, end_point_id=end_point_id, model_id=model_id)
+        logging.info("running_model_name: {}".format(running_model_name))
+
+        # TODO: Scroll update
+        container_prefix = "{}".format(
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+                                        security_utils.get_content_hash(running_model_name)
+        num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
+
+        for i in range(num_containers):
+            container_name = "{}__{}".format(container_prefix, i)
+            logging.info("default_server_container_name: {}".format(container_name))
+
+            try:
+                exist_container_obj = client.containers.get(container_name)
+            except docker.errors.NotFound:
+                exist_container_obj = None
+            except docker.errors.APIError:
+                raise Exception("Failed to get the container object")
+
+            if exist_container_obj is not None:
+                client.api.remove_container(exist_container_obj.id, v=True, force=True)
+
 
     def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,

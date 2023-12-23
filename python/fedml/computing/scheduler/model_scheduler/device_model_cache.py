@@ -100,10 +100,11 @@ class FedMLModelCache(object):
                                                        model_name, model_version,
                                                        device_id, deployment_status)
 
-    def delete_deployment_result(self, element: str, end_point_id, end_point_name, model_name):
+    def delete_deployment_status(self, element: str, end_point_id, end_point_name, model_name):
         self.redis_connection.lrem(self.get_deployment_status_key(end_point_id, end_point_name, model_name),
                                    0, element)
-        # TODO: delete from SQLite database
+        device_id, _ = self.get_status_item_info(element)
+        self.model_deployment_db.delete_deployment_result(device_id, end_point_id, end_point_name, model_name)
 
     def get_deployment_result_list(self, end_point_id, end_point_name, model_name):
         result_list = self.redis_connection.lrange(self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
@@ -113,6 +114,12 @@ class FedMLModelCache(object):
                 self.redis_connection.rpush(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
                                             json.dumps(result))
         return result_list
+
+    def delete_deployment_result(self, element: str, end_point_id, end_point_name, model_name):
+        self.redis_connection.lrem(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
+                                   0, element)
+        device_id, _ = self.get_result_item_info(element)
+        self.model_deployment_db.delete_deployment_result(device_id, end_point_id, end_point_name, model_name)
 
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
         result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
@@ -206,6 +213,14 @@ class FedMLModelCache(object):
 
         logging.info(f"Using Round Robin, the device index is {selected_device_index}")
         idle_device_dict = idle_device_list[selected_device_index]
+
+        # Note that within the same endpoint_id, there could be one device with multiple same models
+        same_model_device_rank = 0
+        start = selected_device_index
+        while(start != 0 and idle_device_list[start]["device_id"] == idle_device_list[start-1]["device_id"]):
+            start -= 1
+            same_model_device_rank += 1
+
         # Find deployment result from the target idle device.
         try:
             result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
@@ -221,6 +236,9 @@ class FedMLModelCache(object):
 
                 if found_end_point_id == idle_device_dict["end_point_id"] \
                         and device_id == idle_device_dict["device_id"]:
+                    if same_model_device_rank > 0:
+                        same_model_device_rank -= 1
+                        continue
                     logging.info(f"The chosen device is {device_id}")
                     return result_payload, device_id
         except Exception as e:

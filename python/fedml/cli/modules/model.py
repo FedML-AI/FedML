@@ -203,3 +203,24 @@ def fedml_model_delete(name, local, version):
         click.echo("You must provide a model name (use -n option).")
         return
     fedml.api.model_delete(name, local)
+
+
+@fedml_model.command("package", help="Pakcage a local or remote model card. So that can be uploaded through UI\
+                     to Nexus AI Platform.")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+@click.help_option("--help", "-h")
+@click.option(
+    "--name", "-n", type=str, default=None, help=
+    '''
+    Model card(s) name. "*" means all model cards. To select multiple model cards, use "," to separate them.
+    e.g. "model1,model2".
+    '''
+)
+def fedml_model_pacakge(name, version):
+    fedml.api.model_package(name)

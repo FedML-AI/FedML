@@ -107,8 +107,6 @@ async def _predict(end_point_id, input_json, header=None):
     if in_model_version is None:
         in_model_version = "latest"
 
-    # logging.info("Inference json: {}".format(input_json))
-
     start_time = time.time_ns()
 
     # Authenticate request token
@@ -256,4 +254,5 @@ def logging_inference_request(request, response):
 if __name__ == "__main__":
     import uvicorn
     port = 2204
-    uvicorn.run(api, host="0.0.0.0", port=port)
+    logging.basicConfig(level=logging.INFO)
+    uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")

@@ -19,6 +19,7 @@ import fedml
 import docker
 
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
@@ -129,6 +130,10 @@ class ClientConstants(object):
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
+
+    DEVICE_DIFF_ADD_OPERATION = "op: add"
+    DEVICE_DIFF_DELETE_OPERATION = "op: delete"
+    DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
 
     LOGIN_MODE_ON_PREMISE_INDEX = 0
     LOGIN_MODE_FEDML_CLOUD_INDEX = 1
@@ -331,54 +336,60 @@ class ClientConstants(object):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
                                                                     end_point_id, model_id)
         # Stop and delete the container
-        container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+        container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                          security_utils.get_content_hash(running_model_name)
-        try:
-            client = docker.from_env()
-        except Exception:
-            logging.error("Failed to connect to the docker daemon, please ensure that you have "
-                          "installed Docker Desktop or Docker Engine, and the docker is running")
-            return False
 
-        try:
-            exist_container_obj = client.containers.get(container_name)
-        except docker.errors.NotFound:
-            logging.info("The container {} does not exist, cannot remove.".format(container_name))
-            exist_container_obj = None
-        except docker.errors.APIError:
-            logging.error("Failed to get the container object")
-            return False
+        num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
+        
+        for i in range(num_containers):
+            container_name = container_prefix + "__" + str(i)
 
-        if exist_container_obj is not None:
-            exist_container_obj.stop()
-            exist_container_obj.remove(v=True)
-            logging.info("Stopped and removed the container {}".format(container_name))
+            try:
+                client = docker.from_env()
+            except Exception:
+                logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                            "installed Docker Desktop or Docker Engine, and the docker is running")
+                return False
 
-        # Delete the deployment
-        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
-                                 ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-        if os.path.exists(model_dir):
-            model_dir_list = os.listdir(model_dir)
-            for dir_item in model_dir_list:
+            try:
+                exist_container_obj = client.containers.get(container_name)
+            except docker.errors.NotFound:
+                logging.info("The container {} does not exist, cannot remove.".format(container_name))
+                exist_container_obj = None
+            except docker.errors.APIError:
+                logging.error("Failed to get the container object")
+                return False
+
+            if exist_container_obj is not None:
+                exist_container_obj.stop()
+                exist_container_obj.remove(v=True)
+                logging.info("Stopped and removed the container {}".format(container_name))
+
+            # Delete the deployment
+            model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
+                                    ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
+            if os.path.exists(model_dir):
+                model_dir_list = os.listdir(model_dir)
+                for dir_item in model_dir_list:
+                    if not dir_item.startswith(running_model_name):
+                        continue
+                    logging.info("remove model file {}.".format(dir_item))
+                    model_file_path = os.path.join(model_dir, dir_item)
+                    shutil.rmtree(model_file_path, ignore_errors=True)
+                    os.system("sudo rm -Rf {}".format(model_file_path))
+
+            # Delete the serving file
+            model_serving_dir = ClientConstants.get_model_serving_dir()
+            if not os.path.exists(model_serving_dir):
+                return False
+            serving_dir_list = os.listdir(model_serving_dir)
+            for dir_item in serving_dir_list:
                 if not dir_item.startswith(running_model_name):
                     continue
-                logging.info("remove model file {}.".format(dir_item))
-                model_file_path = os.path.join(model_dir, dir_item)
+                logging.info("remove model serving file {}.".format(dir_item))
+                model_file_path = os.path.join(model_serving_dir, dir_item)
                 shutil.rmtree(model_file_path, ignore_errors=True)
                 os.system("sudo rm -Rf {}".format(model_file_path))
-
-        # Delete the serving file
-        model_serving_dir = ClientConstants.get_model_serving_dir()
-        if not os.path.exists(model_serving_dir):
-            return False
-        serving_dir_list = os.listdir(model_serving_dir)
-        for dir_item in serving_dir_list:
-            if not dir_item.startswith(running_model_name):
-                continue
-            logging.info("remove model serving file {}.".format(dir_item))
-            model_file_path = os.path.join(model_serving_dir, dir_item)
-            shutil.rmtree(model_file_path, ignore_errors=True)
-            os.system("sudo rm -Rf {}".format(model_file_path))
 
         return True
 
