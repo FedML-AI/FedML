@@ -56,12 +56,24 @@ def fedml_model_create(version, name, model, model_config):
 @click.option(
     "--model_storage_url", "-s", type=str, help="A S3 address to the model card zip file.",
 )
-def fedml_model_push(name, model_storage_url, version):
+@click.option(
+    "--api_key", "-k", type=str, help="API key for the Nexus AI Platform.",
+)
+@click.option(
+    "--tag_names", "-t", type=str, default=None, help="Tag for the model card.",
+)
+@click.option(
+    "--model_id", "-i", type=int, default=None, help="Model card version."
+)
+@click.option(
+    "--model_version", "-m", type=str, default=None, help="Model card version."
+)
+def fedml_model_push(name, model_storage_url, version, api_key, tag_names, model_id, model_version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_push(name, model_storage_url)
+    fedml.api.model_push(name, model_storage_url, api_key, tag_names, model_id, model_version)
 
 
 @fedml_model.command("deploy", help="Deploy model to the local | on-premise | GPU Cloud.")

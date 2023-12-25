@@ -238,8 +238,8 @@ def model_package(name):
     model_module.package(name)
 
 
-def model_push(name, model_storage_url):
-    model_module.push(name, model_storage_url)
+def model_push(name, model_storage_url, api_key, tag_names, model_id, model_version):
+    model_module.push(name, model_storage_url, api_key, tag_names, model_id, model_version)
 
 
 def model_pull(name):

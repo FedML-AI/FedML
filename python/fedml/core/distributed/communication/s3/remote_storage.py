@@ -447,7 +447,7 @@ class S3Storage:
 
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
                                   show_progress=True,
-                                  out_progress_to_err=True, progress_desc=None, metadata=None):
+                                  out_progress_to_err=True, progress_desc=None, metadata=dict()):
         """
         upload file
         :param out_progress_to_err:
