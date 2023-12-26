@@ -132,6 +132,14 @@ async def _predict(end_point_id, input_json, header=None):
 
     start_time = time.time_ns()
 
+    # Allow missing end_point_name and model_name in the input parameters.
+    if in_model_name is None or in_end_point_name is None:
+        ret_endpoint_name, ret_model_name = retrieve_info_by_endpoint_id(in_end_point_id, in_end_point_name)
+        if in_model_name is None:
+            in_model_name = ret_model_name
+        if in_end_point_name is None:
+            in_end_point_name = ret_endpoint_name
+
     # Authenticate request token
     inference_response = {}
     if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
@@ -174,6 +182,31 @@ async def _predict(end_point_id, input_json, header=None):
         logging_inference_request(input_json, inference_response)
         return inference_response
 
+
+def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_name=None,
+                                 in_model_version=None, enable_check=False):
+    """
+    We allow missing end_point_name and model_name in the input parameters.
+    return end_point_name, model_name
+    """
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
+    redis_key = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+        get_end_point_full_key_by_id(end_point_id)
+    if redis_key is not None:
+        if in_end_point_name is not None:
+            end_point_name = in_end_point_name
+            model_name = redis_key[len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
+        else:
+            # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
+            end_point_id, end_point_name, model_name = redis_key.split("--")[1].split("-")
+
+        if enable_check:
+            if end_point_name != in_end_point_name or model_name != in_model_name:
+                raise Exception("end_point_name or model_name is not matched.")
+    else:
+        raise Exception("end_point_id is not found.")
+
+    return end_point_name, model_name
 
 def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
