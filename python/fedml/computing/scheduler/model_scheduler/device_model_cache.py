@@ -301,6 +301,17 @@ class FedMLModelCache(object):
         status = True if int(status_int) == 1 else False
         return status
 
+    def get_end_point_full_key_by_id(self, end_point_id):
+        # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
+        target_prefix = f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-*"
+        status_list = list()
+        for key in self.redis_connection.scan_iter(target_prefix):
+            status_list.append(key)
+        if len(status_list) <= 0:
+            return None
+        status_key = status_list[0]
+        return status_key
+
     def set_end_point_device_info(self, end_point_id, end_point_name, device_info):
         self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
         self.model_deployment_db.set_end_point_device_info(end_point_id, end_point_name, device_info)
