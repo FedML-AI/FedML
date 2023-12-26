@@ -102,6 +102,10 @@ def __login_as_edge_server_and_agent(args, userid, version, api_key="", use_extr
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
+        except SystemExit as e:
+            click.echo("Your account does not exist. Please make sure your account correct.")
+            os.system("fedml logout -s")
+            return
         except Exception as e:
             click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
             click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
@@ -201,6 +205,10 @@ def __login_as_cloud_agent(args, userid, version):
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
+        except SystemExit as e:
+            click.echo("Your account does not exist. Please make sure your account correct.")
+            os.system("fedml logout -s")
+            return
         except Exception as e:
             click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
             click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
@@ -300,6 +308,10 @@ def __login_as_cloud_server(args, userid, version):
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
+        except SystemExit as e:
+            click.echo("Your account does not exist. Please make sure your account correct.")
+            os.system("fedml logout -s")
+            return
         except Exception as e:
             click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
             click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)

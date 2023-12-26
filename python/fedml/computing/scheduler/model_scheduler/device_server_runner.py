@@ -43,6 +43,8 @@ from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 #from ....serving.fedml_server import FedMLModelServingServer
 from ....core.mlops.mlops_utils import MLOpsUtils
+from ..comm_utils.constants import SchedulerConstants
+from .device_model_db import FedMLModelDatabase
 
 
 class RunnerError(BaseException):
@@ -800,7 +802,7 @@ class FedMLServerRunner:
                             delete_devices_status_list.append(device_status)
 
                     for delete_item in delete_devices_status_list:
-                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_status(
                             delete_item, self.request_json["end_point_id"],
                             self.request_json["end_point_name"],
                             self.request_json["model_config"]["model_name"]
@@ -1178,6 +1180,14 @@ class FedMLServerRunner:
         self.stop_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
                                            model_msg_object.model_id, model_msg_object.model_name,
                                            model_msg_object.model_version)
+
+        FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
+        FedMLModelDatabase.get_instance().delete_deployment_status(
+            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
+            model_version=model_msg_object.model_version)
+        FedMLModelDatabase.get_instance().delete_deployment_result(
+            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
+            model_version=model_msg_object.model_version)
 
     def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
         self.send_deployment_results(end_point_id, end_point_name,
@@ -1621,6 +1631,8 @@ class FedMLServerRunner:
                     print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                           f"response.content: {response.content}")
             else:
+                if status_code == SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR:
+                    raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return 0, None, None
@@ -1785,6 +1797,11 @@ class FedMLServerRunner:
 
         # Init local database
         FedMLServerDataInterface.get_instance().create_job_table()
+        try:
+            FedMLModelDatabase.get_instance().set_database_base_dir(ServerConstants.get_database_dir())
+            FedMLModelDatabase.get_instance().create_table()
+        except Exception as e:
+            pass
 
         server_api_cmd = "fedml.computing.scheduler.model_scheduler.device_server_api:api"
         server_api_pids = RunProcessUtils.get_pid_from_cmd_line(server_api_cmd)
@@ -1840,7 +1857,7 @@ class FedMLServerRunner:
             if str(e) == "Restarting after upgraded...":
                 logging.info("Restarting after upgraded...")
             else:
-                logging.info("Server tracing: {}".format(traceback.format_exc()))
+                print("Server tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()

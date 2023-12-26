@@ -37,6 +37,49 @@ class CPUUnpickler(pickle.Unpickler):
             return super().find_class(module, name)
 
 
+def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None):
+    try:
+        ComputeCacheManager.get_instance().set_redis_params()
+        with ComputeCacheManager.get_instance().lock(
+                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
+        ):
+            if num_gpus is None:
+                num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
+                num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
+            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
+            if gpu_ids is not None:
+                logging.info(f"cuda visible gpu ids: {gpu_ids}")
+                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
+                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
+                if len(gpu_list) != num_gpus:
+                    _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
+                        num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
+                    gpu_ids = list(matched_gpu_ids)
+                else:
+                    gpu_ids = gpu_list
+            else:
+                _, matched_gpu_num, gpu_ids = JobRunnerUtils.request_gpu_ids(
+                    num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
+
+    except Exception as e:
+        logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
+        gpu_ids = None
+        raise e
+
+    if gpu_ids is None:
+        raise Exception("No available gpu resources!")
+
+    if not torch.cuda.is_available():
+        gpu_attach_cmd = ""
+    else:
+        gpu_attach_cmd = "--gpus 1"
+        gpu_id_map = map(lambda x: str(x), gpu_ids)
+        gpu_ids_str = ','.join(gpu_id_map)
+        gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
+
+    return gpu_ids, gpu_attach_cmd
+
+
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
@@ -73,50 +116,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
-    num_gpus = 1
-    try:
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().get_redis_connection().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
-        ):
-            num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
-            num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
-            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
-            if gpu_ids is not None:
-                logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
-                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-                if len(gpu_list) != num_gpus:
-                    _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                        num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
-                    gpu_ids = list(matched_gpu_ids)
-                else:
-                    gpu_ids = gpu_list
-    except Exception as e:
-        logging.info(f"Execption when fetching gpu ids. {traceback.format_exc()}")
-        gpu_ids = None
-        pass
-
-    if not torch.cuda.is_available():
-        gpu_attach_cmd = ""
-    else:
-        gpu_attach_cmd = "--gpus 1"
-        if gpu_ids is not None and str(gpu_ids).strip() != "":
-            gpu_id_map = map(lambda x: str(x), gpu_ids)
-            gpu_ids_str = ','.join(gpu_id_map)
-            gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
-        elif num_gpus is not None and str(num_gpus).strip() != "" and num_gpus > 0:
-            gpu_attach_cmd = f"--gpus {num_gpus}"
-        else:
-            num_gpus = 1
-
-    logging.info("Update docker environments...")
-
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
-        gpu_attach_cmd = ""
+    num_gpus = 0
+    gpu_ids, gpu_attach_cmd = None, ""
 
     running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                 inference_model_name,
@@ -197,6 +202,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
                 gpu_ids = config.get('gpu_ids', gpu_ids)
+                num_gpus = config.get('num_gpus', 1 if use_gpu else 0)
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
@@ -281,6 +287,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if relative_entry == "":
                 logging.warning("You missed main_entry in the fedml_model_config.yaml")
 
+        if num_gpus > 0:
+            gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus)
+
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli
             input_size = model_params["input_size"]
@@ -341,9 +350,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                           "installed Docker Desktop or Docker Engine, and the docker is running")
             return "", "", None, None, None
 
-        default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                        security_utils.get_content_hash(running_model_name)
+        default_server_container_name = ClientConstants.get_deployment_container_name_with_running_model_name(
+            running_model_name)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)

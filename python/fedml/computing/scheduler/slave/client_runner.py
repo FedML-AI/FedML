@@ -1288,6 +1288,8 @@ class FedMLClientRunner:
                     print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                           f"response.content: {response.content}")
             else:
+                if status_code == SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR:
+                    raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return 0, None, None

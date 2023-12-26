@@ -1,3 +1,5 @@
+import threading
+
 import redis
 from .compute_gpu_cache import ComputeGpuCache
 from .compute_logs_cache import ComputeLogsCache
@@ -21,6 +23,7 @@ class ComputeCacheManager(object):
         self.redis_connection = None
         self.gpu_cache = ComputeGpuCache(self.redis_connection)
         self.logs_cache = ComputeLogsCache(self.redis_connection)
+        self.local_lock = threading.Lock()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
         is_connected = False
@@ -73,6 +76,12 @@ class ComputeCacheManager(object):
 
     def get_redis_connection(self):
         return self.redis_connection
+
+    def lock(self, key):
+        if self.redis_connection is None:
+            return self.local_lock
+
+        return self.redis_connection.lock(key)
 
     @staticmethod
     def get_instance(redis_addr="local", redis_port=6379):

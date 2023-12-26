@@ -12,6 +12,7 @@ from .job_utils import JobRunnerUtils
 from ..model_scheduler.device_model_cache import FedMLModelCache
 from ..slave import client_constants
 from ..model_scheduler import device_client_constants
+from ..model_scheduler.device_model_db import FedMLModelDatabase
 
 
 class JobCleanup(Singleton):
@@ -23,13 +24,15 @@ class JobCleanup(Singleton):
     def get_instance():
         return JobCleanup()
 
-    def sync_data_on_startup(self, edge_id):
+    def sync_data_on_startup(self, edge_id, is_client=True):
         if self.sync_data_proc is None:
-            self.sync_data_proc = Process(target=JobCleanup.sync_proc, args=(edge_id,))
+            self.sync_data_proc = Process(target=JobCleanup.sync_proc, args=(edge_id, is_client))
             self.sync_data_proc.start()
 
     @staticmethod
-    def sync_proc(edge_id):
+    def sync_proc(edge_id, is_client):
+        if is_client:
+            FedMLModelDatabase.get_instance().set_database_base_dir(device_client_constants.ClientConstants.get_database_dir())
         JobRunnerUtils.get_instance().reset_available_gpu_id_list(edge_id)
         JobCleanup.get_instance().sync_run_process_gpu()
         JobCleanup.get_instance().sync_endpoint_process_gpu()
@@ -37,7 +40,7 @@ class JobCleanup(Singleton):
     def sync_run_process_gpu(self):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
-            with ComputeCacheManager.get_instance().get_redis_connection().lock(
+            with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_run_info_sync_lock_key("")
             ):
                 count = 0
@@ -63,11 +66,10 @@ class JobCleanup(Singleton):
     def sync_endpoint_process_gpu(self):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
-            with ComputeCacheManager.get_instance().get_redis_connection().lock(
+            with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_run_info_sync_lock_key("")
             ):
                 count = 0
-                FedMLModelCache.get_instance().set_redis_params()
                 try:
                     device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
                 except Exception as e:

@@ -2,6 +2,7 @@
 import argparse
 import os
 import time
+import platform
 
 from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_server_api_processes,\
     cleanup_all_fedml_server_learning_processes,cleanup_all_fedml_server_login_processes, get_python_program, \
@@ -37,34 +38,52 @@ if __name__ == "__main__":
 
         daemon_ota_upgrade(args)
 
-        login_pid = ServerConstants.exec_console_with_shell_script_list(
-            [
-                get_python_program(),
-                "-W",
-                "ignore",
-                login_cmd,
-                "-t",
-                "login",
-                "-u",
-                str(args.user),
-                "-v",
-                args.version,
-                "-r",
-                args.role,
-                "-rc",
-                args.runner_cmd,
-                "-id",
-                args.device_id,
-                "-os",
-                args.os_name,
-                "-k",
-                args.api_key
-            ]
-        )
-        ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
-        time.sleep(3)
+        if platform.system() == "Windows" or \
+                args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
+            login_pid = ServerConstants.exec_console_with_shell_script_list(
+                [
+                    get_python_program(),
+                    "-W",
+                    "ignore",
+                    login_cmd,
+                    "-t",
+                    "login",
+                    "-u",
+                    str(args.user),
+                    "-v",
+                    args.version,
+                    "-r",
+                    args.role,
+                    "-rc",
+                    args.runner_cmd,
+                    "-id",
+                    args.device_id,
+                    "-os",
+                    args.os_name,
+                    "-k",
+                    args.api_key
+                ]
+            )
+            ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
+            time.sleep(3)
 
-        if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
-            break
+            if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
+                break
+        else:
+            login_logs = "nohup.out"
+            os.system("echo '' > nohup.out")
+            run_login_cmd = f"nohup {get_python_program()} -W ignore {login_cmd} -t login -u {args.user} " \
+                            f"-v {args.version} -r {args.role} -rc {args.runner_cmd} -id {args.device_id} " \
+                            f"-k {args.api_key} &"
+            if args.os_name != "":
+                run_login_cmd += f" -os {args.os_name}"
+            os.system(run_login_cmd)
+
+            login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
+            while len(login_pids) > 0:
+                os.system(f"tail -f {login_logs}")
+                time.sleep(3)
+                login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
+                continue
 
 

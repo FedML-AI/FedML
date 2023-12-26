@@ -2434,6 +2434,8 @@ class FedMLServerRunner:
                     print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                           f"response.content: {response.content}")
             else:
+                if status_code == SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR:
+                    raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return 0, None, None
@@ -2600,7 +2602,7 @@ class FedMLServerRunner:
         if not self.run_as_cloud_server:
             self.recover_start_train_msg_after_upgrading()
 
-        JobCleanup.get_instance().sync_data_on_startup(self.edge_id)
+        JobCleanup.get_instance().sync_data_on_startup(self.edge_id, is_client=False)
 
         self.master_api_daemon = MasterApiDaemon()
         self.master_api_process = Process(target=self.master_api_daemon.run)

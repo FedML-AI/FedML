@@ -315,6 +315,17 @@ class FedMLClientDataInterface(Singleton):
             pass
         self.db_connection.close()
 
+    def delete_job_from_db(self, job):
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            delete_statement = f"DELETE from jobs where job_id={job}"
+            current_cursor.execute(delete_statement)
+            self.db_connection.commit()
+        except Exception as e:
+            pass
+        self.db_connection.close()
+
     def handle_database_compatibility(self):
         self.open_job_db()
         should_alter_old_table = False
