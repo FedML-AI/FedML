@@ -1,3 +1,5 @@
+import os
+
 import click
 
 import fedml.api
@@ -31,7 +33,11 @@ from fedml.api.modules.utils import authenticate
     help="Login as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://nexus.fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
          "You can specify the option -p and -c simultaneously (can be used as provider for others as well compute node for your own jobs), but you can not specify -p and -s simultaneously.",
 )
-def fedml_login(api_key, version, compute_node, server, provider):
+@click.option(
+    "--deploy_worker_num", "-dpn", default=1, type=int,
+    help="Deploy worker number will be started when logged in successfully.",
+)
+def fedml_login(api_key, version, compute_node, server, provider, deploy_worker_num):
     fedml.set_env_version(version)
 
     api_key = api_key[0] if len(api_key) > 0 else None
@@ -41,4 +47,5 @@ def fedml_login(api_key, version, compute_node, server, provider):
         print(f"{str(e)}\n")
         print(f"Maybe you are using account id to login, we will try to login with account {api_key}.")
         pass
+    os.environ["FEDML_MODEL_WORKER_NUM"] = str(deploy_worker_num)
     fedml.api.login(api_key, compute_node, server, provider)

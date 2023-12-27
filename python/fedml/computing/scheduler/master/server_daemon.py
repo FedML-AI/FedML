@@ -70,20 +70,27 @@ if __name__ == "__main__":
             if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
                 break
         else:
-            login_logs = "nohup.out"
-            os.system("echo '' > nohup.out")
+            login_logs = os.path.join(ClientConstants.get_log_file_dir(), "login.log")
             run_login_cmd = f"nohup {get_python_program()} -W ignore {login_cmd} -t login -u {args.user} " \
                             f"-v {args.version} -r {args.role} -rc {args.runner_cmd} -id {args.device_id} " \
-                            f"-k {args.api_key} &"
+                            f"-k {args.api_key} > {login_logs} 2>&1 &"
             if args.os_name != "":
                 run_login_cmd += f" -os {args.os_name}"
             os.system(run_login_cmd)
 
             login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
             while len(login_pids) > 0:
-                os.system(f"tail -f {login_logs}")
+                with open(login_logs, "r") as f:
+                    log_list = f.readlines()
+                    if len(log_list) > log_line_count:
+                        print("".join(log_list[log_line_count:len(log_list)]))
+                        log_line_count = len(log_list)
                 time.sleep(3)
                 login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
-                continue
+
+                if os.path.exists(login_exit_file):
+                    break
+
+            print("continue to start the login process.")
 
 

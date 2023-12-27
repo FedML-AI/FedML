@@ -128,12 +128,12 @@ class FedMLClientRunner:
         local_package_path = ClientConstants.get_model_package_dir()
         os.makedirs(local_package_path, exist_ok=True)
         filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
-        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
+        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
-                                          f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
+                                          f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         try:
             shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
@@ -738,7 +738,7 @@ class FedMLClientRunner:
         try:
             ClientConstants.remove_deployment(
                 model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
-                model_msg_object.run_id, model_msg_object.model_id)
+                model_msg_object.run_id, model_msg_object.model_id, edge_id=self.edge_id)
         except Exception as e:
             logging.info(f"Exception when removing deployment {traceback.format_exc()}")
             pass

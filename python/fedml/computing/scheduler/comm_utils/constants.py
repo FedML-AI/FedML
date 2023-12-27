@@ -88,6 +88,7 @@ class SchedulerConstants:
 
     PUBLIC_REDIS_PORT = 6379
     PUBLIC_REDIS_PASSWORD = "share-fedml-secret@@DD#D#*&^"
+    REDIS_CONN_TIMEOUT = 15
 
     STATUS_CHECK_FRO_RUN_STOP_CONTEXT = "run_stop"
     BINDING_ACCOUNT_NOT_EXIST_ERROR = "DATA_NO_EXIST_ERROR"
@@ -133,7 +134,8 @@ class SchedulerConstants:
         infer_redis_addr = os.getenv("FEDML_INFER_REDIS_ADDR", None)
         infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
         infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
-        return infer_host, infer_redis_addr, infer_redis_port, infer_redis_password
+        disable_redis = os.getenv("FEDML_DISABLE_REDIS_CONNECTION", None)
+        return infer_host, infer_redis_addr, infer_redis_port, infer_redis_password, disable_redis
 
     @staticmethod
     def get_public_redis_addr():

@@ -81,7 +81,7 @@ class ComputeGpuCache(object):
                 pass
 
         if device_available_gpu_ids is not None:
-            device_available_gpu_ids = self.map_str_list_to_int_list(device_available_gpu_ids.split(','))
+            device_available_gpu_ids = self.map_str_list_to_int_list(device_available_gpu_ids)
 
         return device_available_gpu_ids
 

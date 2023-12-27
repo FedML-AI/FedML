@@ -38,6 +38,7 @@ class CPUUnpickler(pickle.Unpickler):
 
 
 def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None):
+    gpu_ids = None
     try:
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().lock(
@@ -72,7 +73,6 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None):
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
     else:
-        gpu_attach_cmd = "--gpus 1"
         gpu_id_map = map(lambda x: str(x), gpu_ids)
         gpu_ids_str = ','.join(gpu_id_map)
         gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
@@ -123,9 +123,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     num_gpus = 0
     gpu_ids, gpu_attach_cmd = None, ""
 
-    running_model_name = ClientConstants.get_running_model_name(end_point_name,
-                                                                inference_model_name,
-                                                                model_version, end_point_id, model_id)
+    running_model_name = ClientConstants.get_running_model_name(
+        end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
 
     # Check whether triton server is running.
     triton_server_is_running = False
@@ -201,8 +200,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
-                gpu_ids = config.get('gpu_ids', gpu_ids)
-                num_gpus = config.get('num_gpus', 1 if use_gpu else 0)
+                in_gpu_ids = config.get('gpu_ids', gpu_ids)
+                num_gpus = config.get('num_gpus', None)
+                if not use_gpu:
+                    num_gpus = 0
+                else:
+                    num_gpus = len(in_gpu_ids) if num_gpus is None else num_gpus
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":

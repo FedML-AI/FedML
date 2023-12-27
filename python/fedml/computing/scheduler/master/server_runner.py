@@ -1319,13 +1319,15 @@ class FedMLServerRunner:
                 edge_info = active_edge_info_dict.get(str(edge_id), {})
                 model_master_device_id = edge_info.get("master_device_id", None)
                 model_slave_device_id = edge_info.get("slave_device_id", None)
+                model_slave_device_id_list = edge_info.get("slave_device_id_list", None)
 
                 if should_match_gpu:
                     request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
                         edge_id, edge_id_list, master_node_addr, master_node_port,
                         assigned_gpu_num_dict, assigned_gpu_ids_dict,
                         model_master_device_id=model_master_device_id,
-                        model_slave_device_id=model_slave_device_id
+                        model_slave_device_id=model_slave_device_id,
+                        model_slave_device_id_list=model_slave_device_id_list
                     )
 
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
@@ -2192,10 +2194,12 @@ class FedMLServerRunner:
         context = payload_json.get("context", None)
         master_device_id = payload_json.get("master_device_id", 0)
         slave_device_id = payload_json.get("slave_device_id", 0)
+        slave_device_id_list = payload_json.get("slave_device_id_list", 0)
         edge_id = payload_json.get("edge_id", 0)
         device_info = payload_json.get("edge_info", 0)
         device_info["master_device_id"] = master_device_id
         device_info["slave_device_id"] = slave_device_id
+        device_info["slave_device_id_list"] = slave_device_id_list
         run_id_str = str(run_id)
 
         # Put device info into a multiprocessing queue so master runner checks if all edges are ready
@@ -2204,13 +2208,14 @@ class FedMLServerRunner:
                 self.run_edge_device_info_queue_map[run_id_str] = Queue()
             self.run_edge_device_info_queue_map[run_id_str].put(device_info)
 
-            self.check_model_device_ready_and_deploy(run_id, master_device_id, slave_device_id)
+            self.check_model_device_ready_and_deploy(run_id, master_device_id, slave_device_id,
+                                                     slave_device_id_list=slave_device_id_list)
         elif context == SchedulerConstants.STATUS_CHECK_FRO_RUN_STOP_CONTEXT:
             if self.run_edge_device_info_queue_map_for_stop.get(run_id_str, None) is None:
                 self.run_edge_device_info_queue_map_for_stop[run_id_str] = Queue()
             self.run_edge_device_info_queue_map_for_stop[run_id_str].put(device_info)
 
-    def check_model_device_ready_and_deploy(self, run_id, master_device_id, slave_device_id):
+    def check_model_device_ready_and_deploy(self, run_id, master_device_id, slave_device_id, slave_device_id_list=None):
         request_json = self.running_request_json.get(str(run_id), None)
         if request_json is None:
             return
@@ -2629,6 +2634,10 @@ class FedMLServerRunner:
 
             if self.model_device_server is not None:
                 self.model_device_server.stop()
+
+            login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+            with open(login_logs, "w") as f:
+                f.writelines(f"{os.getpid()}.")
 
             time.sleep(5)
             sys_utils.cleanup_all_fedml_server_login_processes(

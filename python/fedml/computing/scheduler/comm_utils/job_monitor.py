@@ -259,7 +259,7 @@ class JobMonitor(Singleton):
                             if deployment_result is None:
                                 continue
                             generated_container_name = device_client_constants.ClientConstants.get_deployment_container_name(
-                                endpoint_name, model_name, model_version, job.job_id, model_id)
+                                endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
 
                             # Check the endpoint status
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
@@ -285,7 +285,7 @@ class JobMonitor(Singleton):
                         if deployment_result is None:
                             continue
                         generated_container_name = device_client_constants.ClientConstants.get_deployment_container_name(
-                            endpoint_name, model_name, model_version, job.job_id, model_id)
+                            endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
                         is_endpoint_ready = self._check_and_reset_endpoint_status(
                             job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
                         if is_endpoint_ready:
@@ -605,7 +605,7 @@ class JobMonitor(Singleton):
 
                 # Get endpoint container name
                 endpoint_container_name = device_client_constants.ClientConstants.get_endpoint_container_name(
-                    endpoint_name, model_name, model_version, job.job_id, model_id
+                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
                 # Get endpoint logs from the container

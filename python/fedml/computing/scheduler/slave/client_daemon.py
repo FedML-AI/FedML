@@ -29,12 +29,21 @@ if __name__ == "__main__":
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "client_login.py")
+    login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+    log_line_count = 0
+
     while True:
         try:
             ClientConstants.cleanup_run_process(None)
             cleanup_all_fedml_client_api_processes()
             cleanup_all_fedml_client_learning_processes()
             cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+        except Exception as e:
+            pass
+
+        try:
+            if os.path.exists(login_exit_file):
+                os.remove(login_exit_file)
         except Exception as e:
             pass
 
@@ -68,18 +77,25 @@ if __name__ == "__main__":
             ret_code, exec_out, exec_err = ClientConstants.get_console_sys_out_pipe_err_results(login_pid)
             time.sleep(3)
         else:
-            login_logs = "nohup.out"
-            os.system("echo '' > nohup.out")
+            login_logs = os.path.join(ClientConstants.get_log_file_dir(), "login.log")
             run_login_cmd = f"nohup {get_python_program()} -W ignore {login_cmd} -t login -u {args.user} " \
                             f"-v {args.version} -r {args.role} -id {args.device_id} " \
-                            f"-k {args.api_key} -ngc {str(args.no_gpu_check)} &"
+                            f"-k {args.api_key} -ngc {str(args.no_gpu_check)} > {login_logs} 2>&1 &"
             if args.os_name != "":
                 run_login_cmd += f" -os {args.os_name}"
             os.system(run_login_cmd)
 
             login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
             while len(login_pids) > 0:
-                os.system(f"tail -f {login_logs}")
+                with open(login_logs, "r") as f:
+                    log_list = f.readlines()
+                    if len(log_list) > log_line_count:
+                        print("".join(log_list[log_line_count:len(log_list)]))
+                        log_line_count = len(log_list)
                 time.sleep(3)
                 login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
-                continue
+
+                if os.path.exists(login_exit_file):
+                    break
+
+            print("continue to start the login process.")

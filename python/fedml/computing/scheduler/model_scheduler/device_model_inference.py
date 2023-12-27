@@ -241,7 +241,7 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
         get_end_point_token(end_point_id, end_point_name, model_name)
-    if cached_token is not None and cached_token == token:
+    if cached_token is not None and str(cached_token) == str(token):
         return True
 
     return False
