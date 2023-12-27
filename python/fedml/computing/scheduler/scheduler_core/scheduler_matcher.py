@@ -49,7 +49,7 @@ class SchedulerMatcher:
     @staticmethod
     def generate_match_info_for_scheduler(
             edge_id, edge_id_list, master_node_addr, master_node_port, assigned_gpu_num_dict, assigned_gpu_ids_dict,
-            model_master_device_id=None, model_slave_device_id=None
+            model_master_device_id=None, model_slave_device_id=None, model_slave_device_id_list=None
     ):
         scheduler_info = dict()
         scheduler_info["master_node_addr"] = master_node_addr
@@ -59,6 +59,7 @@ class SchedulerMatcher:
         scheduler_info["matched_gpu_ids"] = assigned_gpu_ids_dict[str(edge_id)]
         scheduler_info["model_master_device_id"] = model_master_device_id if model_master_device_id is not None else ""
         scheduler_info["model_slave_device_id"] = model_slave_device_id if model_slave_device_id is not None else ""
+        scheduler_info["model_slave_device_id_list"] = model_slave_device_id_list if model_slave_device_id_list is not None else []
 
         return scheduler_info
 

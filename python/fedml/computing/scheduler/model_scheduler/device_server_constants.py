@@ -102,6 +102,7 @@ class ServerConstants(object):
 
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
     MODEL_INFERENCE_DEFAULT_PORT = 2203
+    MODEL_CACHE_KEY_EXPIRE_TIME = 1 * 10
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
@@ -266,9 +267,9 @@ class ServerConstants(object):
         return model_ops_url
 
     @staticmethod
-    def get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id):
-        running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}".format(
-            end_point_id, end_point_name, model_id, model_name, model_version)
+    def get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=None):
+        running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}_{}".format(
+            end_point_id, end_point_name, model_id, model_name, model_version, edge_id)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         running_model_name = running_model_name.replace('@', '-')

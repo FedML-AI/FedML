@@ -4,7 +4,7 @@ import traceback
 from urllib.parse import urlparse
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response, status
 
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -102,7 +102,7 @@ async def predict_openai(end_point_id, request: Request):
 
 
 @api.post('/inference/{end_point_id}')
-async def predict_with_end_point_id(end_point_id, request: Request):
+async def predict_with_end_point_id(end_point_id, request: Request, response: Response):
     # Get json data
     input_json = await request.json()
 
@@ -110,11 +110,14 @@ async def predict_with_end_point_id(end_point_id, request: Request):
     header = request.headers
 
     try:
-        response = await _predict(end_point_id, input_json, header)
+        inference_response = await _predict(end_point_id, input_json, header)
+        error_code = inference_response.get("error_code")
+        if error_code == status.HTTP_404_NOT_FOUND:
+            response.status_code = status.HTTP_404_NOT_FOUND
     except Exception as e:
-        response = {"error": True, "message": f"{traceback.format_exc()}"}
+        inference_response = {"error": True, "message": f"{traceback.format_exc()}"}
 
-    return response
+    return inference_response
 
 
 async def _predict(end_point_id, input_json, header=None):
@@ -146,6 +149,8 @@ async def _predict(end_point_id, input_json, header=None):
         # Found idle inference device
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
+        if idle_device is None or idle_device == "":
+            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND, "message": "can not found the active endpoint."}
 
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
@@ -214,6 +219,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     model_id = ""
     inference_host = ""
     inference_output_url = ""
+    model_version = ""
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
@@ -289,7 +295,7 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
         get_end_point_token(end_point_id, end_point_name, model_name)
-    if cached_token is not None and cached_token == token:
+    if cached_token is not None and str(cached_token) == str(token):
         return True
 
     return False

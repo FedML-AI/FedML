@@ -323,18 +323,29 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
-    def get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id):
-        running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}".format(
-            end_point_id, end_point_name, model_id, model_name, model_version)
+    def get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=None):
+        running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}_{}".format(
+            end_point_id, end_point_name, model_id, model_name, model_version, edge_id)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         running_model_name = running_model_name.replace('@', '-')
         return running_model_name
 
     @staticmethod
-    def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
+    def get_deployment_container_name_with_running_model_name(running_model_name):
+        container_name = "{}".format(
+            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + security_utils.get_content_hash(running_model_name)
+        return container_name
+
+    @staticmethod
+    def get_deployment_container_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=None):
+        return ClientConstants.get_deployment_container_name_with_running_model_name(
+            ClientConstants.get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=edge_id))
+
+    @staticmethod
+    def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None, edge_id=None):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
-                                                                    end_point_id, model_id)
+                                                                    end_point_id, model_id, edge_id=edge_id)
         # Stop and delete the container
         container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                          security_utils.get_content_hash(running_model_name)
@@ -708,9 +719,9 @@ class ClientConstants(object):
         return is_bootstrap_run_ok
 
     @staticmethod
-    def get_endpoint_container_name(end_point_name, model_name, model_version, end_point_id, model_id):
+    def get_endpoint_container_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=None):
         running_model_name = ClientConstants.get_running_model_name(
-            end_point_name, model_name, model_version, end_point_id, model_id)
+            end_point_name, model_name, model_version, end_point_id, model_id, edge_id=edge_id)
         return ClientConstants.get_endpoint_container_name_with_running_model_name(running_model_name)
 
     @staticmethod

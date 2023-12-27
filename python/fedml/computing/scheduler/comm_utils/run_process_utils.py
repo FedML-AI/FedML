@@ -166,7 +166,15 @@ class RunProcessUtils:
             try:
                 for cmd in pid.cmdline():
                     if cmd.find(cmd_line) != -1:
-                        ret_pids.append(pid.pid)
+                        is_running = False
+                        try:
+                            process = psutil.Process(pid.pid)
+                            if process.status() == psutil.STATUS_RUNNING:
+                                is_running = True
+                        except Exception as e:
+                            pass
+                        if is_running:
+                            ret_pids.append(pid.pid)
                         if break_on_first:
                             return ret_pids
             except Exception as e:
