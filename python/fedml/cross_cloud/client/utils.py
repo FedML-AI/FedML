@@ -16,3 +16,12 @@ def convert_model_params_to_ddp(ddp_model_params):
         name = f"module.{k}"  # add 'module.' of DataParallel/DistributedDataParallel
         model_params[name] = v
     return model_params
+
+
+def check_method_override(cls_obj, method_name: str) -> bool:
+    # check if method has been overriden by class
+    return (
+            method_name in cls_obj.__class__.__dict__ and
+            hasattr(cls_obj, method_name) and
+            callable(getattr(cls_obj, method_name))
+    )
