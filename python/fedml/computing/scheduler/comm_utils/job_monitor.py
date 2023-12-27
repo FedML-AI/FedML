@@ -626,9 +626,28 @@ class JobMonitor(Singleton):
                         log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
                     )
 
-                # Write container logs to the log file
-                with open(log_file_path, "w") as f:
-                    f.write(endpoint_logs)
+                # Get endpoint container name
+                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                    endpoint_name, model_name, model_version, job.job_id, model_id
+                )
+
+                # Could be multiple containers for the same endpoint
+                num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                    endpoint_container_name_prefix)
+
+                for i in range(num_containers):
+                    endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+
+                    # Get endpoint logs from the container
+                    endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                    
+                    # Write container logs to the log file
+                    if i == 0:
+                        with open(log_file_path, "w") as f:
+                            f.write(endpoint_logs)
+                    else:
+                        with open(log_file_path, "a") as f:
+                            f.write(endpoint_logs)
 
         except Exception as e:
             logging.info(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")

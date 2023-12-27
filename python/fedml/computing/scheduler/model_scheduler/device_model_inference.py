@@ -1,4 +1,3 @@
-
 import logging
 import time
 import traceback
@@ -78,6 +77,30 @@ async def predict(request: Request):
     return response
 
 
+@api.post("/inference/{end_point_id}/completions")
+@api.post("/inference/{end_point_id}/chat/completions")
+async def predict_openai(end_point_id, request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    # Get header
+    header = request.headers
+
+    # translate request keys
+    input_json["end_point_name"] = input_json.get("model", None)
+
+    authorization = request.headers.get("Authorization", None)
+    if authorization is not None and authorization.startswith("Bearer "):
+        input_json["token"] = authorization.split("Bearer ")[-1].strip()
+
+    try:
+        response = await _predict(end_point_id, input_json, header)
+    except Exception as e:
+        response = {"error": True, "message": f"{traceback.format_exc()}"}
+
+    return response
+
+
 @api.post('/inference/{end_point_id}')
 async def predict_with_end_point_id(end_point_id, request: Request, response: Response):
     # Get json data
@@ -110,9 +133,15 @@ async def _predict(end_point_id, input_json, header=None):
     if in_model_version is None:
         in_model_version = "latest"
 
-    # logging.info("Inference json: {}".format(input_json))
-
     start_time = time.time_ns()
+
+    # Allow missing end_point_name and model_name in the input parameters.
+    if in_model_name is None or in_end_point_name is None:
+        ret_endpoint_name, ret_model_name = retrieve_info_by_endpoint_id(in_end_point_id, in_end_point_name)
+        if in_model_name is None:
+            in_model_name = ret_model_name
+        if in_end_point_name is None:
+            in_end_point_name = ret_endpoint_name
 
     # Authenticate request token
     inference_response = {}
@@ -134,7 +163,7 @@ async def _predict(end_point_id, input_json, header=None):
         # Send inference request to idle device
         logging.info("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
-            input_list = input_json["inputs"]
+            input_list = input_json.get("inputs", input_json)
             stream_flag = input_json.get("stream", False)
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
@@ -158,6 +187,31 @@ async def _predict(end_point_id, input_json, header=None):
         logging_inference_request(input_json, inference_response)
         return inference_response
 
+
+def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_name=None,
+                                 in_model_version=None, enable_check=False):
+    """
+    We allow missing end_point_name and model_name in the input parameters.
+    return end_point_name, model_name
+    """
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
+    redis_key = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+        get_end_point_full_key_by_id(end_point_id)
+    if redis_key is not None:
+        if in_end_point_name is not None:
+            end_point_name = in_end_point_name
+            model_name = redis_key[len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
+        else:
+            # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
+            end_point_id, end_point_name, model_name = redis_key.split("--")[1].split("-")
+
+        if enable_check:
+            if end_point_name != in_end_point_name or model_name != in_model_name:
+                raise Exception("end_point_name or model_name is not matched.")
+    else:
+        raise Exception("end_point_id is not found.")
+
+    return end_point_name, model_name
 
 def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
@@ -262,4 +316,5 @@ def logging_inference_request(request, response):
 if __name__ == "__main__":
     import uvicorn
     port = 2204
-    uvicorn.run(api, host="0.0.0.0", port=port)
+    logging.basicConfig(level=logging.INFO)
+    uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")

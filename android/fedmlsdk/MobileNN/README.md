@@ -14,7 +14,7 @@ cd build/train
 sh build_x86_linux.sh
 ./build_x86_linux/demo.out mnist ../../../data/lenet_mnist.mnn ../../../data/mnist
 
-# Use high percision model (Customized Softmax Operator):
+# Use high precision model (Customized Softmax Operator):
 ./build_x86_linux/demo.out mnist ../../../data/lenet_mnist_high_precision.mnn ../../../data/mnist
 
 # Use tabular type dataset for functional testing:

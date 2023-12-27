@@ -93,7 +93,7 @@ Options:
 -app, --application_name TEXT  Application name in the My Application list at FedML® Nexus AI Platform
 -jn, --job_name TEXT           The job name at FedML® Nexus AI Platform If you don't specify here, the job name from the job yaml file will be used.
 -ds, --devices_server TEXT     The server to run the launching job, for the launch platform, we do not need to set this option.
--de, --devices_edges TEXT      The edge devices to run the launching job. Seperated with ',', e.g. 705,704. For the launch platform, we do not need to set this option.
+-de, --devices_edges TEXT      The edge devices to run the launching job. Separated with ',', e.g. 705,704. For the launch platform, we do not need to set this option.
 -u, --user TEXT                user id or api key.
 -k, --api_key TEXT             user api key.
 -v, --version TEXT             start job at which version of MLOps platform. It should be dev, test or release

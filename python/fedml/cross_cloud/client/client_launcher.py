@@ -3,9 +3,9 @@ import subprocess
 import torch
 from fedml.arguments import load_arguments
 from fedml.constants import (
-    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
-    FEDML_TRAINING_PLATFORM_CROSS_SILO,
-    FEDML_CROSS_SILO_SCENARIO_HORIZONTAL,
+    FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL,
+    FEDML_TRAINING_PLATFORM_CROSS_CLOUD,
+    FEDML_CROSS_CLOUD_SCENARIO_HORIZONTAL,
 )
 from fedml.device import get_device_type
 
@@ -24,26 +24,26 @@ from fedml.device import get_device_type
 # }
 
 
-class CrossSiloLauncher:
+class CrossCloudLauncher:
     @staticmethod
     def launch_dist_trainers(torch_client_filename, inputs):
         # this is only used by the client (DDP or single process), so there is no need to specify the backend.
-        args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_SILO)
-        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            CrossSiloLauncher._run_cross_silo_hierarchical(args, torch_client_filename, inputs)
-        elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
-            CrossSiloLauncher._run_cross_silo_horizontal(args, torch_client_filename, inputs)
+        args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_CLOUD)
+        if args.scenario == FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL:
+            CrossCloudLauncher._run_cross_cloud_hierarchical(args, torch_client_filename, inputs)
+        elif args.scenario == FEDML_CROSS_CLOUD_SCENARIO_HORIZONTAL:
+            CrossCloudLauncher._run_cross_cloud_horizontal(args, torch_client_filename, inputs)
         else:
             raise Exception("we do not support {}, check whether this is typo in args.scenario".format(args.scenario))
 
     @staticmethod
-    def _run_cross_silo_horizontal(args, torch_client_filename, inputs):
+    def _run_cross_cloud_horizontal(args, torch_client_filename, inputs):
         python_path = subprocess.run(["which", "python"], capture_output=True, text=True).stdout.strip()
         process_arguments = [python_path, torch_client_filename] + inputs
         subprocess.run(process_arguments)
 
     @staticmethod
-    def _run_cross_silo_hierarchical(args, torch_client_filename, inputs):
+    def _run_cross_cloud_hierarchical(args, torch_client_filename, inputs):
         def get_torchrun_arguments(node_rank):
             torchrun_path = subprocess.run(["which", "torchrun"], capture_output=True, text=True).stdout.strip()
 

@@ -149,7 +149,8 @@ def package(name: str) -> str:
         return ""
 
 
-def push(name: str, model_storage_url: str = None, api_key: str = None, tag_names: list = None) -> bool:
+def push(name: str, model_storage_url: str = None, api_key: str = None, tag_names: list = None,
+          model_id: int = None, model_version: str = None) -> bool:
     if api_key is None or str(api_key).strip() == "":
         api_key = get_api_key()
     if api_key == "":
@@ -165,7 +166,9 @@ def push(name: str, model_storage_url: str = None, api_key: str = None, tag_name
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, "", api_key,
                                                                              model_storage_url=model_storage_url,
                                                                              model_net_url="",
-                                                                             tag_names=tag_names)
+                                                                             tag_names=tag_names,
+                                                                             model_id=model_id,
+                                                                             model_version=model_version)
     if model_is_from_open:
         click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
         return True

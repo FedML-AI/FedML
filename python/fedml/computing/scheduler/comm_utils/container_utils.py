@@ -152,9 +152,32 @@ class ContainerUtils(Singleton):
                 time.sleep(3)
 
         return inference_http_port
+    
+    @staticmethod
+    def get_container_rank_same_model(prefix:str):
+        '''
+        Rank (from 0) for the container that run the same model, i.e.
+        running_model_name = hash(
+            "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}"
+        )
+        '''
+        try:
+            client = docker.from_env()
+        except Exception:
+            logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                        "installed Docker Desktop or Docker Engine, and the docker is running")
+            return -1
 
+        try:
+            container_list = client.containers.list()
+        except docker.errors.APIError:
+            logging.error("The API cannot be accessed")
+            return -1
 
+        same_model_container_rank = 0
+        for container in container_list:
+            if container.name.startswith(prefix):
+                same_model_container_rank += 1
 
-
-
+        return same_model_container_rank
 

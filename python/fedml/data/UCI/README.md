@@ -16,7 +16,7 @@ Fedml framework provides APIs or references of various dataset for users to do e
 - fed_shakespeare
 - stackoverflow
 
-## Trasnportation
+## Transportation
 - AutonomousDriving
 
 ## Finance
