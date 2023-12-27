@@ -61,7 +61,7 @@ conda activate fedml-pip
 conda install --name fedml-pip pip
 pip install fedml
 ```
-(Note: please use python 3.8 if you met any compatability issues. Currently, we support 3.7, 3.8, 3.9, 3.10, 3.11.
+(Note: please use python 3.8 if you met any compatibility issues. Currently, we support 3.7, 3.8, 3.9, 3.10, 3.11.
 on MacOS and Python 3.11, if you meet any issues, please run the command:
 brew install autoconf automake libffi libtool pkg-config,
 then run the command to install fedml again: pip install fedml)
