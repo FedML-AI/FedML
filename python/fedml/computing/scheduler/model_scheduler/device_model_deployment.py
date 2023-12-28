@@ -206,7 +206,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not use_gpu:
                     num_gpus = 0
                 else:
-                    num_gpus = len(in_gpu_ids) if num_gpus is None else num_gpus
+                    if num_gpus is None:
+                        num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
