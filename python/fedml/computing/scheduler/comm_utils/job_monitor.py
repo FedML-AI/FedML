@@ -604,43 +604,32 @@ class JobMonitor(Singleton):
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
                 # Get endpoint container name
-                endpoint_container_name = device_client_constants.ClientConstants.get_endpoint_container_name(
+                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
                     endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
-                # Get endpoint logs from the container
-                endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                if endpoint_logs is None:
-                    continue
-
-                log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
-                    job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
-                    log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
-                )
-                if not MLOpsRuntimeLogDaemon.get_instance(fedml_args).is_log_processor_running(job.job_id, job.edge_id):
-                    setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
-                        job.job_id, job.edge_id,
-                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
-                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
-                    )
-
-                # Get endpoint container name
-                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
-                    endpoint_name, model_name, model_version, job.job_id, model_id
-                )
-
-                # Could be multiple containers for the same endpoint
                 num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
                     endpoint_container_name_prefix)
 
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
 
-                    # Get endpoint logs from the container
                     endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                    
+                    if endpoint_logs is None:
+                        continue
+
+                    log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
+                        job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
+                    )
+                    if not MLOpsRuntimeLogDaemon.get_instance(fedml_args).is_log_processor_running(job.job_id, job.edge_id):
+                        setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
+                        MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
+                        MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
+                            job.job_id, job.edge_id,
+                            log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
+                            log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
+                        )
                     # Write container logs to the log file
                     if i == 0:
                         with open(log_file_path, "w") as f:

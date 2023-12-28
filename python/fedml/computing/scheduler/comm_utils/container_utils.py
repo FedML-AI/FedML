@@ -47,7 +47,6 @@ class ContainerUtils(Singleton):
         if container_obj is None:
             return None
 
-        container_obj.restart()
         logs_content = container_obj.logs(stdout=True, stderr=True, stream=False, follow=False)
         if logs_content is None:
             return None
