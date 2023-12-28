@@ -169,7 +169,8 @@ class RunProcessUtils:
                         is_running = False
                         try:
                             process = psutil.Process(pid.pid)
-                            if process.status() == psutil.STATUS_RUNNING:
+                            if process.status() == psutil.STATUS_RUNNING or\
+                                process.status() == psutil.STATUS_SLEEPING:
                                 is_running = True
                         except Exception as e:
                             pass

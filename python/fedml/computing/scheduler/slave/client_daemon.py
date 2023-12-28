@@ -96,6 +96,10 @@ if __name__ == "__main__":
                 login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
 
                 if os.path.exists(login_exit_file):
+                    print(f"[Client] Login process is exited, check the exit file {login_exit_file}")
                     break
-
-            print("continue to start the login process.")
+                if len(login_pids) == 0:
+                    print(f"[Client] Cannot find login pid {login_pids}, check the log file {login_logs}")
+                    break
+            time.sleep(3)
+            print("[Client] Retry to start the login process.")
