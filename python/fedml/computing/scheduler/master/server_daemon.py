@@ -27,6 +27,8 @@ if __name__ == "__main__":
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "server_login.py")
+    login_exit_file = os.path.join(ServerConstants.get_log_file_dir(), "exited.log")
+    log_line_count = 0
 
     while True:
         try:
@@ -72,7 +74,6 @@ if __name__ == "__main__":
                 break
         else:
             login_logs = os.path.join(ServerConstants.get_log_file_dir(), "login.log")
-            login_exit_file = os.path.join(ServerConstants.get_log_file_dir(), "exited.log")
             run_login_cmd = f"nohup {get_python_program()} -W ignore {login_cmd} -t login -u {args.user} " \
                             f"-v {args.version} -r {args.role} -rc {args.runner_cmd} -id {args.device_id} " \
                             f"-k {args.api_key} > {login_logs} 2>&1 &"
