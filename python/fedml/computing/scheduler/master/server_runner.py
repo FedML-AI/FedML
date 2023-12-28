@@ -2635,7 +2635,7 @@ class FedMLServerRunner:
             if self.model_device_server is not None:
                 self.model_device_server.stop()
 
-            login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+            login_exit_file = os.path.join(ServerConstants.get_log_file_dir(), "exited.log")
             with open(login_logs, "w") as f:
                 f.writelines(f"{os.getpid()}.")
 

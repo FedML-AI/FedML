@@ -8,6 +8,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.scheduler_core.scheduler_matcher import SchedulerMatcher
 from fedml.computing.scheduler.scheduler_core.compute_gpu_db import ComputeGpuDatabase
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler import device_model_deployment
 
 
 def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
@@ -181,6 +182,11 @@ def test_gpu_db():
     print("OK")
 
 
+def test_request_gpu_ids_on_deployment():
+    gpu_ids, gpu_attach_cmd = device_model_deployment.request_gpu_ids_on_deployment(111, 2, 222)
+    print(f"test_request_gpu_ids_on_deployment result: gpu_ids {gpu_ids}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="dev")
@@ -196,7 +202,7 @@ if __name__ == "__main__":
 
     print("Hi everyone, I am testing the server runner.\n")
 
-    test_gpu_db();
+    test_request_gpu_ids_on_deployment()
     time.sleep(1000000)
 
     print("Test for mapping config dictionaries to environment variables.")

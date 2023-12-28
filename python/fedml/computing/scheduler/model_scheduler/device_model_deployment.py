@@ -26,6 +26,7 @@ import io
 
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from ..scheduler_core.compute_utils import ComputeUtils
 
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -38,8 +39,11 @@ class CPUUnpickler(pickle.Unpickler):
             return super().find_class(module, name)
 
 
-def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None):
+def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_device_id=None):
     gpu_ids = None
+    client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
+    should_release_gpu_ids = False
+
     try:
         ComputeCacheManager.get_instance().set_redis_params()
         with ComputeCacheManager.get_instance().lock(
@@ -54,19 +58,23 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None):
                 gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
                 logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
                 if len(gpu_list) != num_gpus:
-                    _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                        num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
-                    gpu_ids = list(matched_gpu_ids)
+                    gpu_ids = None
+                    should_release_gpu_ids = True
                 else:
                     gpu_ids = gpu_list
-            else:
-                _, matched_gpu_num, gpu_ids = JobRunnerUtils.request_gpu_ids(
-                    num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
-
     except Exception as e:
         logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
         gpu_ids = None
         raise e
+
+    if should_release_gpu_ids:
+        JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, edge_id)
+    if gpu_ids is None:
+        cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
+            end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
+            model_master_device_id=master_device_id, model_slave_device_id=edge_id)
+        gpu_ids = cuda_visable_gpu_ids.split(',')
+        gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
 
     if gpu_ids is None:
         raise Exception("No available gpu resources!")
@@ -87,7 +95,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip, edge_id):
+                     model_from_open, token, master_ip, edge_id, master_device_id=None):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
@@ -206,7 +214,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not use_gpu:
                     num_gpus = 0
                 else:
-                    num_gpus = len(in_gpu_ids) if num_gpus is None else num_gpus
+                    if num_gpus is None:
+                        num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
@@ -292,7 +301,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 logging.warning("You missed main_entry in the fedml_model_config.yaml")
 
         if num_gpus > 0:
-            gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus)
+            gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(
+                edge_id, end_point_id, num_gpus=num_gpus, master_device_id=master_device_id)
 
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli

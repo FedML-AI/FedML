@@ -42,7 +42,7 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
         return device_run_gpu_ids
 
     def get_device_available_gpu_ids(self, device_id):
-        device_available_gpu_ids = list()
+        device_available_gpu_ids = ""
         gpu_info_list = self.get_device_gpu_info(device_id)
         for gpu_info in gpu_info_list:
             device_available_gpu_ids = gpu_info.available_gpu_ids

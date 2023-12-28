@@ -432,7 +432,7 @@ class FedMLClientRunner:
                     self.model_is_from_open, model_config_parameters,
                     model_from_open,
                     token,
-                    master_ip, self.edge_id)
+                    master_ip, self.edge_id, master_device_id=device_ids[0])
         except Exception as e:
             inference_output_url = ""
             logging.error(f"Exception at deployment: {traceback.format_exc()}")

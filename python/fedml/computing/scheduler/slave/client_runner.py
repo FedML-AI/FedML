@@ -1454,6 +1454,7 @@ class FedMLClientRunner:
         infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
         infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
         model_client_num = os.getenv("FEDML_MODEL_WORKER_NUM", None)
+        os.environ["FEDML_CURRENT_EDGE_ID"] = str(self.edge_id)
 
         if not ComputeCacheManager.get_instance().set_redis_params():
            os.environ["FEDML_DISABLE_REDIS_CONNECTION"] = "1"
