@@ -360,6 +360,22 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
         default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
+        
+        error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/docker_info.txt"
+        if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+            os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+        with open(os.path.expanduser(error_log_path), "a") as f:
+            # end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id
+            f.write(f'''
+            end_point_name: {end_point_name}
+            inference_model_name: {inference_model_name}
+            model_version: {model_version}
+            end_point_id: {end_point_id}
+            model_id: {model_id}
+            edge_id: {edge_id}
+            ''')
+            f.write('\n')
+
         try:
             exist_container_obj = client.containers.get(default_server_container_name)
         except docker.errors.NotFound:

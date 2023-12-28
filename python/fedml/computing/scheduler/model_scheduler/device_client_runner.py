@@ -498,7 +498,7 @@ class FedMLClientRunner:
         client = docker.from_env()
 
         running_model_name = ClientConstants.get_running_model_name(end_point_name=end_point_name,model_name=model_name,
-                                    model_version=model_version, end_point_id=end_point_id, model_id=model_id)
+                                    model_version=model_version, end_point_id=end_point_id, model_id=model_id, edge_id=self.edge_id)
         logging.info("running_model_name: {}".format(running_model_name))
 
         # TODO: Scroll update

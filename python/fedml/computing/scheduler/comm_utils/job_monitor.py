@@ -588,6 +588,15 @@ class JobMonitor(Singleton):
             except Exception as e:
                 pass
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+
+            error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/query_info.txt"
+            if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+            with open(os.path.expanduser(error_log_path), "a") as f:
+                # end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id
+                f.write(f"step 1: {len(job_list.job_list)}")
+                f.write('\n')
+
             for job in job_list.job_list:
                 count += 1
                 if count >= 1000:
@@ -604,42 +613,61 @@ class JobMonitor(Singleton):
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
                 # Get endpoint container name
-                endpoint_container_name = device_client_constants.ClientConstants.get_endpoint_container_name(
+                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
                     endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
                 # Get endpoint logs from the container
-                endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                if endpoint_logs is None:
-                    continue
-
-                log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
-                    job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
-                    log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
-                )
-                if not MLOpsRuntimeLogDaemon.get_instance(fedml_args).is_log_processor_running(job.job_id, job.edge_id):
-                    setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
-                        job.job_id, job.edge_id,
-                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
-                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
-                    )
-
-                # Get endpoint container name
-                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
-                    endpoint_name, model_name, model_version, job.job_id, model_id
-                )
-
-                # Could be multiple containers for the same endpoint
+                # error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/query_info.txt"
+                # if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
+                #     os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
+                
                 num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
                     endpoint_container_name_prefix)
+                
+                # with open(os.path.expanduser(error_log_path), "a") as f:
+                #     # end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id
+                #     f.write(f"step 2: {endpoint_container_name_prefix}")
+                #     f.write(f'''
+                #     end_point_name: {endpoint_name}
+                #     inference_model_name: {model_name}
+                #     model_version: {model_version}
+                #     end_point_id: {job.job_id}
+                #     model_id: {model_id}
+                #     edge_id: {job.edge_id}
+                #     num_containers: {num_containers}
+                #     ''')
+                #     f.write('\n')
 
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
-
-                    # Get endpoint logs from the container
                     endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+
+                    with open(os.path.expanduser(error_log_path), "a") as f:
+                        f.write(f"step 3: {endpoint_container_name}")
+                        f.write(f"if endpoint_logs is None: {endpoint_logs is None}")
+                        f.write('\n')
+
+                    if endpoint_logs is None:
+                        continue
+
+                    log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
+                        job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
+                    )
+
+                    with open(os.path.expanduser(error_log_path), "a") as f:
+                        f.write(f"step 4: {log_file_path}")
+                        f.write('\n')
+
+                    if not MLOpsRuntimeLogDaemon.get_instance(fedml_args).is_log_processor_running(job.job_id, job.edge_id):
+                        setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
+                        MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
+                        MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
+                            job.job_id, job.edge_id,
+                            log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
+                            log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
+                        )
                     
                     # Write container logs to the log file
                     if i == 0:
