@@ -9,6 +9,7 @@ from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_ser
     daemon_ota_upgrade
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler import device_login_entry
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -70,7 +71,8 @@ if __name__ == "__main__":
             if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
                 break
         else:
-            login_logs = os.path.join(ClientConstants.get_log_file_dir(), "login.log")
+            login_logs = os.path.join(ServerConstants.get_log_file_dir(), "login.log")
+            login_exit_file = os.path.join(ServerConstants.get_log_file_dir(), "exited.log")
             run_login_cmd = f"nohup {get_python_program()} -W ignore {login_cmd} -t login -u {args.user} " \
                             f"-v {args.version} -r {args.role} -rc {args.runner_cmd} -id {args.device_id} " \
                             f"-k {args.api_key} > {login_logs} 2>&1 &"
@@ -89,8 +91,13 @@ if __name__ == "__main__":
                 login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
 
                 if os.path.exists(login_exit_file):
+                    print(f"[Server] Login process is exited, check the exit file {login_exit_file}")
                     break
+                if len(login_pids) == 0:
+                    print(f"[Server] Login process is exited, check the log file {login_logs}")
+                    break
+            time.sleep(3)
 
-            print("continue to start the login process.")
+            print("[Server] Retry to start the login process.")
 
 
