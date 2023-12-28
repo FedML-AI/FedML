@@ -824,6 +824,25 @@ class FedMLServerRunner:
                     FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
                         self.request_json["end_point_id"], self.request_json["end_point_name"],
                         json.dumps(total_device_objs_list))
+                    
+                    # 3. Delete the result in deployment result list in Redis / SQLite
+                    device_result_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                        get_deployment_result_list(self.request_json["end_point_id"],
+                                                    self.request_json["end_point_name"],
+                                                    self.request_json["model_config"]["model_name"])
+                    delete_device_result_list = []
+                    for device_result in device_result_list:
+                        device_result_dict = json.loads(device_result)
+                        if int(device_result_dict["cache_device_id"]) in edge_id_list_to_delete:
+                            delete_device_result_list.append(device_result)
+                    
+                    for delete_item in delete_device_result_list:
+                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
+                            delete_item, self.request_json["end_point_id"],
+                            self.request_json["end_point_name"],
+                            self.request_json["model_config"]["model_name"]
+                        )
+
                 except Exception as e:
                     run_id = self.request_json["run_id"]
                     error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_delete_{run_id}.txt"
