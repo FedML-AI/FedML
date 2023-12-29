@@ -4,9 +4,8 @@ import platform
 
 from setuptools import setup, find_packages
 
-
 try:
-    #from wheel.bdist_wheel import bdist_wheel
+    # from wheel.bdist_wheel import bdist_wheel
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 
@@ -90,6 +89,23 @@ requirements_extra_fhe = [
     "tenseal",
 ]
 
+requirements_extra_llm = [
+    "accelerate",
+    "peft>=0.4.0",
+    "transformers[torch]>=4.31.0",
+    "datasets>=2.14.0",
+    "safetensors",
+    "evaluate",
+    "einops",
+    "sentencepiece",
+    "zstandard",
+    "ninja",
+    "packaging",
+]
+
+requirements_extra_deepspeed = [
+    "deepspeed>=0.10.2",
+]
 
 # if platform.machine() == "x86_64":
 #    requirements.append("MNN==1.1.6")
@@ -154,6 +170,8 @@ setup(
         "jax": requirements_extra_jax,
         "mxnet": requirements_extra_mxnet,
         "fhe": requirements_extra_fhe,
+        "llm": requirements_extra_llm,
+        "deepspeed": requirements_extra_deepspeed,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
@@ -163,5 +181,5 @@ setup(
         ]
     },
     cmdclass={"bdist_wheel": bdist_wheel},
-    #options={"bdist_wheel": {"universal": True}}
+    # options={"bdist_wheel": {"universal": True}}
 )
