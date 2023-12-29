@@ -2,15 +2,11 @@ import os
 from argparse import ArgumentParser
 import json
 from pathlib import Path
-import sys
 from typing import Optional
 
+from fedml.train.llm.utils import is_directory, is_file
 from huggingface_hub import HfApi
 from transformers.utils import CONFIG_NAME
-
-sys.path.append(str(Path(__file__).parent / "../.."))
-
-from src.utils import is_directory, is_file
 
 if __name__ == '__main__':
     parser = ArgumentParser()

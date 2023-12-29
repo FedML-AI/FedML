@@ -4,10 +4,11 @@ import gc
 import json
 from pathlib import Path
 import shutil
-import sys
 from typing import Dict, List
 
 import einops
+from fedml.train.llm.typing import PathType
+from fedml.train.llm.utils import get_real_path, is_directory, is_file
 from huggingface_hub import scan_cache_dir
 from safetensors.torch import load_file as safe_load_file, save_file as safe_save_file
 import torch
@@ -21,11 +22,6 @@ from transformers.utils import (
     WEIGHTS_INDEX_NAME,
 )
 from tqdm import tqdm
-
-sys.path.append(str(Path(__file__).parent / "../.."))
-
-from src.typing import PathType
-from src.utils import get_real_path, is_directory, is_file
 
 KV_NAME_MAPPING = {
     LlamaConfig: ("k_proj", "v_proj"),

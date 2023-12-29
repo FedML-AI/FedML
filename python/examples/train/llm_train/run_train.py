@@ -3,16 +3,16 @@ import logging
 from pathlib import Path
 from timeit import default_timer as timer
 
-from src.configurations import DatasetArguments, ExperimentArguments, ModelArguments
-from src.hf_trainer import HFTrainer
-from src.modeling_utils import get_data_collator
-from src.train_utils import (
+from fedml.train.llm.configurations import DatasetArguments, ExperimentArguments, ModelArguments
+from fedml.train.llm.hf_trainer import HFTrainer
+from fedml.train.llm.modeling_utils import get_data_collator
+from fedml.train.llm.train_utils import (
     get_dataset,
     get_max_seq_length,
     get_model,
     get_tokenizer,
 )
-from src.utils import parse_hf_args, save_config
+from fedml.train.llm.utils import parse_hf_args, save_config
 
 
 def train() -> None:
