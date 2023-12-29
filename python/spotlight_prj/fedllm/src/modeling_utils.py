@@ -1,62 +1,9 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, List, Optional
 
-from fedml.train.llm.distributed import is_deepspeed_initialized, is_deepspeed_module
+from fedml.train.llm.distributed import gather_parameter, get_rank, is_deepspeed_initialized, is_deepspeed_module
 from fedml.train.llm.integrations import is_deepspeed_zero3_enabled
-import torch
-from torch import Tensor
-from torch.nn import Module, Parameter
+from torch.nn import Module
 from torch.nn.modules.module import _IncompatibleKeys
-
-from .distributed import gather_parameter, get_rank
-
-T = TypeVar("T")
-
-
-def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = False) -> T:
-    if isinstance(data, list):
-        data = [to_device(d, device, non_blocking) for d in data]
-
-    elif isinstance(data, tuple):
-        data = tuple(to_device(d, device, non_blocking) for d in data)
-
-    elif isinstance(data, MutableMapping):
-        for k in data.keys():
-            data[k] = to_device(data[k], device, non_blocking)
-
-    elif isinstance(data, (Tensor, Parameter, Module)):
-        data = data.to(device=device, non_blocking=non_blocking)
-
-    return data
-
-
-def to_dtype(
-        data: T,
-        dtype: Union[torch.dtype, str],
-        non_blocking: bool = False,
-        floating_point_only: bool = True
-) -> T:
-    if isinstance(data, list):
-        data = [to_dtype(d, dtype, non_blocking, floating_point_only) for d in data]
-
-    elif isinstance(data, tuple):
-        data = tuple(to_dtype(d, dtype, non_blocking, floating_point_only) for d in data)
-
-    elif isinstance(data, MutableMapping):
-        for k in data.keys():
-            data[k] = to_dtype(data[k], dtype, non_blocking, floating_point_only)
-
-    elif isinstance(data, (Tensor, Parameter)) and not floating_point_only or data.dtype.is_floating_point:
-        data = data.to(dtype=dtype, non_blocking=non_blocking)
-
-    return data
 
 
 def load_state_dict(

@@ -1,9 +1,11 @@
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, TypeVar, Union
 
 import warnings
 
 import numpy as np
-from torch.nn import Module
+import torch
+from torch import Tensor
+from torch.nn import Module, Parameter
 from transformers import AutoConfig, AutoModelForCausalLM, DataCollatorForLanguageModeling
 from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
 from transformers.models.auto.auto_factory import _BaseAutoModelClass, _get_model_class
@@ -18,6 +20,8 @@ from .typing import (
     TokenizerType,
 )
 from .utils import is_directory
+
+T = TypeVar("T")
 
 
 # Adapted from https://github.com/huggingface/trl/blob/01c4a35928f41ba25b1d0032a085519b8065c843/trl/trainer/utils.py#L56
@@ -242,3 +246,42 @@ def get_model_class_from_config(
         raise ValueError(
             f"Unrecognized configuration class {config.__class__} for this kind of AutoModel: {cls.__name__}."
         )
+
+
+def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = False) -> T:
+    if isinstance(data, list):
+        data = [to_device(d, device, non_blocking) for d in data]
+
+    elif isinstance(data, tuple):
+        data = tuple(to_device(d, device, non_blocking) for d in data)
+
+    elif isinstance(data, MutableMapping):
+        for k in data.keys():
+            data[k] = to_device(data[k], device, non_blocking)
+
+    elif isinstance(data, (Tensor, Parameter, Module)):
+        data = data.to(device=device, non_blocking=non_blocking)
+
+    return data
+
+
+def to_dtype(
+        data: T,
+        dtype: torch.dtype,
+        non_blocking: bool = False,
+        floating_point_only: bool = True
+) -> T:
+    if isinstance(data, list):
+        data = [to_dtype(d, dtype, non_blocking, floating_point_only) for d in data]
+
+    elif isinstance(data, tuple):
+        data = tuple(to_dtype(d, dtype, non_blocking, floating_point_only) for d in data)
+
+    elif isinstance(data, MutableMapping):
+        for k in data.keys():
+            data[k] = to_dtype(data[k], dtype, non_blocking, floating_point_only)
+
+    elif isinstance(data, (Tensor, Parameter)) and not floating_point_only or data.dtype.is_floating_point:
+        data = data.to(dtype=dtype, non_blocking=non_blocking)
+
+    return data

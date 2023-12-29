@@ -17,7 +17,7 @@ from fedml.core import ClientTrainer, ServerAggregator
 from fedml.train.llm.configurations import DatasetArguments, ExperimentArguments, ModelArguments
 from fedml.train.llm.distributed import barrier
 from fedml.train.llm.hf_trainer import HFTrainer
-from fedml.train.llm.modeling_utils import get_data_collator
+from fedml.train.llm.modeling_utils import get_data_collator, to_device
 from fedml.train.llm.train_utils import (
     get_dataset,
     get_model,
@@ -39,7 +39,6 @@ from transformers import PreTrainedModel
 from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from src.fedllm_trainer import FedLLMTrainer
-from src.modeling_utils import to_device
 from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
 from src.utils import log_helper
