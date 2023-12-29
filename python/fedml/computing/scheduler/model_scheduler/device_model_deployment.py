@@ -6,6 +6,7 @@ import shutil
 import time
 import traceback
 import yaml
+import datetime
 
 import requests
 import torch
@@ -661,6 +662,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           request_input_example=None, infer_host="127.0.0.1",
                           enable_custom_image=False):
     deploy_attempt = 0
+    last_log_time = datetime.datetime.now()
     last_out_logs = ""
     last_err_logs = ""
 
@@ -685,32 +687,26 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 break
 
             if container_obj is not None:
-                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False)
-                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False)
+                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False, since=last_log_time)
+                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False, since=last_log_time)
+
+                last_log_time = datetime.datetime.now()
+
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
-                    added_logs = str(err_logs).replace(last_err_logs, "")
-                    if len(added_logs) > 0:
-                        log_str = f"logs from docker: {format(added_logs)}"
-                        if added_logs.startswith("ERROR:") or added_logs.startswith("CRITICAL:"):
-                            logging.error(log_str)
-                            last_err_logs = err_logs
-                        elif added_logs.startswith("WARNING:"):
-                            logging.warning(log_str)
-                            last_out_logs = err_logs
-                        elif added_logs.startswith("DEBUG:"):
-                            logging.debug(log_str)
-                            last_out_logs = err_logs
-                        else:
-                            logging.info(log_str)
-                            last_out_logs = err_logs
+                    err_logs = f"logs from docker: {format(err_logs)}"
+                    if err_logs.startswith("ERROR:") or err_logs.startswith("CRITICAL:"):
+                        logging.error(err_logs)
+                    elif err_logs.startswith("WARNING:"):
+                        logging.warning(err_logs)
+                    elif err_logs.startswith("DEBUG:"):
+                        logging.debug(err_logs)
+                    else:
+                        logging.info(err_logs)
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
-                    added_logs = str(out_logs).replace(last_out_logs, "")
-                    if len(added_logs) > 0:
-                        logging.info(f"Logs from docker: {format(added_logs)}")
-                    last_out_logs = out_logs
+                    logging.info(f"Logs from docker: {format(out_logs)}")
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically"
