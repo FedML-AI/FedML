@@ -297,7 +297,7 @@ class ModelArguments:
 
         if self.peft_type == "lora":
             if self.lora_on_all_modules:
-                from src.peft_utils import LORA_LAYER_TYPES
+                from fedml.train.llm.peft_utils import LORA_LAYER_TYPES
 
                 additional_target_modules = []
                 for n, m in model.named_modules():
@@ -387,7 +387,7 @@ class DatasetArguments:
         metadata={"help": "Prompt template style.", "choices": PROMPT_STYLES}
     )
     response_template: str = field(
-        default="### Response:\n",
+        default="",
         metadata={
             "help": f"The response template for instruction fine-tuning such as `### Response:`. If set to"
                     f" a non-empty string, the response template and all text before it will be excluded"

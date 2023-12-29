@@ -9,7 +9,7 @@ safetensors
 datasets>=2.14.0
 evaluate
 einops
-fedml>=0.8.11.post2
+fedml>=0.8.13
 sentencepiece
 tensorboard
 tqdm
