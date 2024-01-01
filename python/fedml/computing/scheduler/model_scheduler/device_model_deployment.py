@@ -226,7 +226,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 tmpfs = config.get('tmpfs', None)
                 cpus = config.get('cpus', None)
                 if cpus is not None:
-                    cpus = str(cpus)
+                    cpus = int(cpus)
                 memory = config.get('memory', None)
 
                 if usr_indicated_worker_port == "":
@@ -452,7 +452,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 shm_size=shm_size,
                 storage_opt=storage_opt,
                 tmpfs=tmpfs,
-                cpuset_cpus=cpus,
+                cpu_count=cpus,
                 mem_limit=memory,
             ),
             detach=True,
