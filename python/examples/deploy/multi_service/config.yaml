@@ -1,0 +1,9 @@
+workspace: "./src"
+entry_point: "main_entry.py"
+# If you want to install some packages
+# Please write the command in the bootstrap.sh
+bootstrap: |
+  echo "Bootstrap start..."
+  sh ./setup/bootstrap.sh
+  echo "Bootstrap finished"
+

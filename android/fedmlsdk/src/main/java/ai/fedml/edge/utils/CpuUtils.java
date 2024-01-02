@@ -42,9 +42,9 @@ public class CpuUtils {
     }
 
     private Float getCpuUsageForLowerVersion() {
-        Long cpuTime = 0L;
-        Long appTime = 0L;
-        Float value = 0.0f;
+        long cpuTime = 0L;
+        long appTime = 0L;
+        float value = 0.0f;
         try {
             if (procStatFile == null || appStatFile == null) {
                 procStatFile = new RandomAccessFile("/proc/stat", "r");
@@ -73,7 +73,7 @@ public class CpuUtils {
             lastCpuTime = cpuTime;
             lastAppCpuTime = appTime;
         } catch (Exception e) {
-            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         }
         return value;
     }
@@ -112,7 +112,7 @@ public class CpuUtils {
                 }
             }
         } catch (IOException e) {
-            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         } finally {
             if (null != process) {
                 process.destroy();

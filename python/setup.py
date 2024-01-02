@@ -4,9 +4,8 @@ import platform
 
 from setuptools import setup, find_packages
 
-
 try:
-    #from wheel.bdist_wheel import bdist_wheel
+    # from wheel.bdist_wheel import bdist_wheel
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 
@@ -27,7 +26,6 @@ requirements = [
     "wget",
     "paho-mqtt",
     "boto3",
-    "pynvml",
     "scikit-learn",
     "networkx<3.0",
     "click",
@@ -37,13 +35,10 @@ requirements = [
     "gensim",
     "multiprocess",
     "smart-open==6.3.0",
-    "nvidia-ml-py3",
     "matplotlib",
     "dill",
     "pandas",
     "wandb==0.13.2",
-    "eciespy",
-    "PyNaCl",
     "httpx",
     "attrs",
     "fastapi==0.92.0",
@@ -59,6 +54,12 @@ requirements = [
     "chardet",
     "graphviz<0.9.0,>=0.8.1",
     "sqlalchemy",
+    "onnx",
+    "docker==6.1.3",
+    "prettytable",
+    "GPUtil",
+    "tzlocal",
+    "py-machineid"
 ]
 
 requirements_extra_mpi = [
@@ -72,8 +73,6 @@ requirements_extra_tf = [
 ]
 
 requirements_extra_jax = [
-
-
 ]
 
 # https://github.com/apache/incubator-mxnet/issues/18329
@@ -81,13 +80,39 @@ requirements_extra_mxnet = [
     "mxnet==2.0.0b1"
 ]
 
+requirements_extra_crypto = [
+    "eciespy",
+    "PyNaCl"
+]
+
+requirements_extra_fhe = [
+    "tenseal",
+]
+
+requirements_extra_llm = [
+    "accelerate",
+    "peft>=0.4.0",
+    "transformers[torch]>=4.31.0",
+    "datasets>=2.14.0",
+    "safetensors",
+    "evaluate",
+    "einops",
+    "sentencepiece",
+    "zstandard",
+    "ninja",
+    "packaging",
+]
+
+requirements_extra_deepspeed = [
+    "deepspeed>=0.10.2",
+]
 
 # if platform.machine() == "x86_64":
 #    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.8.6a1",
+    version="0.8.14.dev14",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -122,14 +147,14 @@ setup(
             [
                 "fedml/config/simulation_sp/fedml_config.yaml",
                 "fedml/config/simulaton_mpi/fedml_config.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-server/server-package/conf/fedml.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
-                "fedml/cli/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
-                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pv.yaml",
-                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pvc.yaml",
-                "fedml/cli/server_deployment/templates/fedml-server-deployment.yaml",
-                "fedml/cli/server_deployment/templates/fedml-server-svc.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-server/server-package/conf/fedml.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
+                "fedml/computing/scheduler/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-aggregator-data-pv.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-aggregator-data-pvc.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-server-deployment.yaml",
+                "fedml/computing/scheduler/master/templates/fedml-server-svc.yaml",
                 "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
@@ -144,6 +169,9 @@ setup(
         "tensorflow": requirements_extra_tf,
         "jax": requirements_extra_jax,
         "mxnet": requirements_extra_mxnet,
+        "fhe": requirements_extra_fhe,
+        "llm": requirements_extra_llm,
+        "deepspeed": requirements_extra_deepspeed,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
@@ -153,5 +181,5 @@ setup(
         ]
     },
     cmdclass={"bdist_wheel": bdist_wheel},
-    #options={"bdist_wheel": {"universal": True}}
+    # options={"bdist_wheel": {"universal": True}}
 )

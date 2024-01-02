@@ -16,7 +16,7 @@ conda config --add channels bioconda
 
 conda create -y -n fedml-docs python=3.8
 conda activate fedml-docs
-conda install sphinx
+conda install sphinx==6.2.1
 conda install -c conda-forge myst-parser
 
 cd doc/en/

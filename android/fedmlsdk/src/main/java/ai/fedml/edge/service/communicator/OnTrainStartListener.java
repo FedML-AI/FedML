@@ -10,7 +10,7 @@ import ai.fedml.edge.utils.LogHelper;
 public interface OnTrainStartListener extends OnJsonReceivedListener {
     @Override
     default void onJsonReceived(String topic, JSONObject jsonMsg) {
-        LogHelper.d("OnTrainStartListener", "FedMLDebug. handleTrainStart: " + jsonMsg);
+        LogHelper.i("FedMLDebug. OnTrainStartListener handleTrainStart:%s", jsonMsg.toString());
         handleTrainStart(jsonMsg);
     }
 

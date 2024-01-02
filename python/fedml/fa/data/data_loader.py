@@ -19,7 +19,7 @@ def load_synthetic_data(args):
     if dataset_name == "fake":
         data_cache_dir = os.path.join(args.data_cache_dir, "fake_numeric_data")
         if not os.path.exists(data_cache_dir):
-            os.makedirs(data_cache_dir)
+            os.makedirs(data_cache_dir, exist_ok=True)
         generate_fake_data(data_cache_dir)
         logging.info("load_data. dataset_name = %s" % dataset_name)
         (
@@ -65,7 +65,7 @@ def load_synthetic_data(args):
     elif dataset_name == "self_defined":
         data_cache_dir = args.data_cache_dir
         if not os.path.exists(data_cache_dir):
-            os.makedirs(data_cache_dir)
+            os.makedirs(data_cache_dir, exist_ok=True)
         if hasattr(args, "data_col_idx") and isinstance(args.data_col_idx, int) and args.data_col_idx >= 0:
             if hasattr(args, "seperator"):
                 separator = args.seperator

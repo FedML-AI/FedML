@@ -31,7 +31,7 @@ def test_defense():
     print("-----test defense-----")
     gm = _get_geometric_median_obj()
     model_list = create_fake_model_list(gm.client_num_per_round)
-    res = gm.run(model_list)
+    res = gm.defend_on_aggregation(model_list)
     print(f"aggregation result = {res}")
 
 

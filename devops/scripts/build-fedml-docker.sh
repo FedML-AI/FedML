@@ -16,12 +16,14 @@ NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04"
 PYTORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu116"
 PYTORCH_GEOMETRIC_URL="https://data.pyg.org/whl/torch-1.13.1+cu116.html"
 
+DOCKER_REGISTRY="docker.io"
+
 if [ "$build_arm_arch_images" = "" ]; then
   # Build X86_64 docker
   ARCH="x86_64"
 
-  OUTPUT_IMAGE="fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel"
-  CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-torch1.13.1-cuda11.6-cudnn8-devel"
+  OUTPUT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel"
+  CURRENT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-torch1.13.1-cuda11.6-cudnn8-devel"
 
   cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
@@ -36,9 +38,9 @@ fi
 if [ "$build_arm_arch_images" != "" ]; then
   # Build ARM_64 docker
   ARCH="arm64"
-  OUTPUT_IMAGE="fedml/fedml:latest-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
-  NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
-  CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
+  OUTPUT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:latest-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
+  NVIDIA_BASE_IMAGE="${DOCKER_REGISTRY}/nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
+  CURRENT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
 
   cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
@@ -52,9 +54,9 @@ if [ "$build_arm_arch_images" != "" ]; then
 
   # Build nvidia_jetson docker
   ARCH="jetson"
-  OUTPUT_IMAGE="fedml/fedml:latest-nvidia-jetson-l4t-ml-r35.1.0-py3"
-  NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu18.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
-  CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-nvidia-jetson-l4t-ml-r35.1.0-py3"
+  OUTPUT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:latest-nvidia-jetson-l4t-ml-r35.1.0-py3"
+  NVIDIA_BASE_IMAGE="${DOCKER_REGISTRY}/nvidia/cuda:11.6.1-cudnn8-devel-ubuntu18.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
+  CURRENT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-nvidia-jetson-l4t-ml-r35.1.0-py3"
 
   cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
@@ -84,9 +86,9 @@ if [ "$build_arm_arch_images" != "" ]; then
 
   # Build rpi64 docker
   ARCH="rpi64"
-  OUTPUT_IMAGE="fedml/fedml:latest-raspberrypi4-64-py38"
-  NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
-  CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-raspberrypi4-64-py38"
+  OUTPUT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:latest-raspberrypi4-64-py38"
+  NVIDIA_BASE_IMAGE="${DOCKER_REGISTRY}/nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
+  CURRENT_IMAGE="${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-raspberrypi4-64-py38"
 
   cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
@@ -98,3 +100,8 @@ if [ "$build_arm_arch_images" != "" ]; then
 
   cd $pwd
 fi
+
+docker build -f ./installation/build_fedml_docker/light/Dockerfile \
+    --network=host \
+    -t ${DOCKER_REGISTRY}/fedml/fedml:light .
+cd $pwd

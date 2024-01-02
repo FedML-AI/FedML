@@ -1,0 +1,37 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: serve_custom_image
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
+    echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+    echo "Hello, Here is the launch platform."
+    echo "Current directory is as follows."
+    pwd
+    sleep 40
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  echo "Bootstrap finished."
+
+job_type: deploy              # options: train, deploy, federate
+
+# If you want to use the model created by the MLOps platform or create your own model card with a specified name,
+# just uncomment the following four lines, then set model_name to your desired model name or set your desired endpoint name
+#serving_args:
+#  model_name: "fedml-launch-sample-model" # Model card from MLOps platform or create your own model card with a specified name
+#  model_version: "" # Model version from MLOps platform or set as empty string "" which will use the latest version.
+#  endpoint_name: "fedml-launch-endpoint" # Set your end point name which will be deployed, it can be empty string "" which will be auto generated.
+
+computing:
+  minimum_num_gpus: 1           # minimum # of GPUs to provision
+  maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: CPU              # options: GPU, CPU, hybrid
+  resource_type: TESLA_T4       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type

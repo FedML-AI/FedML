@@ -31,11 +31,11 @@ class GeometricMedianDefense(BaseDefenseMethod):
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, OrderedDict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
+    def defend_on_aggregation(
+            self,
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
     ):
         batch_grad_list = Bucket.bucketization(raw_client_grad_list, self.batch_size)
         (num0, avg_params) = batch_grad_list[0]

@@ -1,0 +1,79 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: hello_world
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job:
+  run_on_windows: |
+    echo "I am running on Windows"
+  run_on_posix: |
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
+    echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+    echo "Hello, Here is the launch platform."
+    echo "Current directory is as follows."
+    pwd
+    python3 hello_world.py
+    #sleep 20
+    #exit 1
+    #echo "Current GPU information is as follows."
+    #nvidia-smi # Print GPU information
+    #gpustat
+    #echo "Download the file from http://212.183.159.230/200MB.zip ..."
+    #wget http://212.183.159.230/200MB.zip
+    #rm ./200MB.zip*
+    #echo "The downloading task has finished."
+    # echo "Training the vision transformer model using PyTorch..."
+    # python vision_transformer.py --epochs 1
+
+# If you want to use the job created by the MLOps platform,
+# just uncomment the following three, then set job_id and config_id to your desired job id and related config.
+#job_args:
+#  job_id: 2070
+#  config_id: 111
+
+# If you want to create the job with specific name, just uncomment the following line and set job_name to your desired job name
+#job_name: cv_job
+
+job_type: train              # options: train, deploy, federate
+
+# train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
+# federate subtype: cross_silo, simulation, web, smart_phone
+# deploy subtype: none
+job_subtype: generate_training
+
+server_job:
+  run_on_windows: |
+    echo "I am a server job running on Windows"
+  run_on_posix: |
+    echo "I am a server job running on Posix"
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap:
+  run_on_windows: |
+    echo "Bootstrap finished."
+  run_on_posix: |
+    # pip install -r requirements.txt
+    echo "Bootstrap finished."
+
+computing:
+  minimum_num_gpus: 1           # minimum # of GPUs to provision
+  maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+  #allow_cross_cloud_resources: true # true, false
+  #device_type: CPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+
+data_args:
+  dataset_name: mnist
+  dataset_path: ./dataset
+  dataset_type: csv
+
+model_args:
+  input_dim: '784'
+  model_cache_path: /Users/alexliang/fedml_models
+  model_name: lr
+  output_dim: '10'

@@ -85,7 +85,7 @@ class FedMLAggregator(object):
         return True
 
     def _test_individual_model_perf_before_agg(self, model_file_path, round_idx):
-        self.test_on_server_for_all_clients_mnn(model_file_path, round_idx)
+        self.test_on_server_for_all_clients_mnn(model_file_path, round_idx, report_metrics=False)
 
     def aggregate(self):
         logging.info("FedMLDebug. Individual model performance:")
@@ -240,10 +240,13 @@ class FedMLAggregator(object):
             else:
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
             logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
+
+            if round_idx == self.args.comm_round - 1:
+                mlops.log({"round_idx": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
 
-    def test_on_server_for_all_clients_mnn(self, mnn_file_path, round_idx):
+    def test_on_server_for_all_clients_mnn(self, mnn_file_path, round_idx, report_metrics=True):
         # load global model from MNN
         var_map = F.load_as_dict(mnn_file_path)
         input_dicts, output_dicts = F.get_inputs_and_outputs(var_map)
@@ -277,18 +280,20 @@ class FedMLAggregator(object):
         logging.info(f"correct = {correct}, self.test_global.size = {self.test_global.size}")
         test_accuracy = correct / self.test_global.size
         test_loss = loss.read()
-        logging.info("test acc = {}".format(test_accuracy))
-        logging.info("test loss = {}".format(test_loss))
 
-        mlops.log(
-            {
-                "round_idx": round_idx,
-                "accuracy": round(np.round(test_accuracy, 4), 4),
-                "loss": round(np.round(test_loss, 4)),
-            }
-        )
+        if report_metrics:
+            logging.info("test acc = {}".format(test_accuracy))
+            logging.info("test loss = {}, round loss {}".format(test_loss, round(float(np.round(test_loss, 4)), 4)))
 
-        if self.args.enable_wandb:
-            wandb.log(
-                {"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss, }
+            mlops.log(
+                {
+                    "round_idx": round_idx,
+                    "accuracy": round(float(np.round(test_accuracy, 4)), 4),
+                    "loss": round(float(np.round(test_loss, 4)), 4),
+                }
             )
+
+            if self.args.enable_wandb:
+                wandb.log(
+                    {"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss, }
+                )

@@ -1,0 +1,51 @@
+common_args:
+  training_type: "cross_silo"
+  using_mlops: false
+  random_seed: 0
+
+environment_args:
+  bootstrap: config/bootstrap.sh
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: "../../../../data/mnist"
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 50
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 2
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
+
+tracking_args:
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr

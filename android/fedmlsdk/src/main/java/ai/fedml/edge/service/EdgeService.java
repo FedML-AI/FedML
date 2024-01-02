@@ -27,6 +27,7 @@ import ai.fedml.edge.R;
 import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
+
 import androidx.annotation.NonNull;
 
 public class EdgeService extends Service implements EdgeMessageDefine {
@@ -49,7 +50,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void onEpochAccuracy(int round, int epoch, float accuracy) {
-            LogHelper.d("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
+            LogHelper.i("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
             Message message = Message.obtain();
             message.what = MSG_TRAIN_ACCURACY;
             message.arg1 = round;
@@ -66,7 +67,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
             Message message = Message.obtain();
             message.what = MSG_TRAIN_PROGRESS;
             message.arg1 = round;
-            message.arg2 = (int)progress;
+            message.arg2 = (int) progress;
             sendMessageToClient(message);
         }
     };
@@ -82,8 +83,8 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void handleMessage(Message msg) {
-            LogHelper.d("receive message from client:%d", msg.what);
-            LogHelper.d("ClientMessenger=" + msg.replyTo);
+            LogHelper.i("receive message from client:%d", msg.what);
+            LogHelper.i("ClientMessenger=" + msg.replyTo);
             mClientMessenger = msg.replyTo;
             if (msg.what == MSG_START_TRAIN) {
                 LogHelper.d("receive message from client:%s", msg.getData().getString(TRAIN_ARGS));
@@ -106,10 +107,10 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 callbackMessage(msg.replyTo, message);
             } else if (MSG_BIND_EDGE == msg.what) {
                 String bindId = msg.getData().getString(BIND_EDGE_ID);
-                LogHelper.d("FedMLDebug. bindId = " + bindId);
+                LogHelper.i("FedMLDebug. bindId = " + bindId);
                 fedEdgeTrainApi.bindEdge(bindId);
             } else if (MSG_STOP_EDGE_SERVICE == msg.what) {
-                LogHelper.d("FedMLDebug. STOP_EDGE_SERVICE");
+                LogHelper.i("FedMLDebug. STOP_EDGE_SERVICE");
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         }
@@ -122,16 +123,16 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public void onCreate() {
         super.onCreate();
         // Add power control and use the PowerManager.WakeLock object to keep CPU running.
-        PowerManager pm = (PowerManager) getSystemService (this.POWER_SERVICE);
-        mWakeLock = pm.newWakeLock (PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName ());
-        mWakeLock.acquire ();
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName());
+        mWakeLock.acquire();
         // Play silent music to prevent resources from being released
         mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.no_kill);
         mMediaPlayer.setLooping(true);
         // Train init
         fedEdgeTrainApi.init(getApplicationContext(), onTrainingStatusListener, onAccuracyLossListener);
-        LogHelper.d("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
-        LogHelper.d("FedMLDebug. EdgeService onCreate()");
+        LogHelper.i("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
+        LogHelper.i("FedMLDebug. EdgeService onCreate()");
     }
 
     @Override
@@ -165,7 +166,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
     private void sendMessageToClient(@NonNull final Message message) {
         if (mClientMessenger == null) {
-            LogHelper.wtf("sendMessageToClient mClientMessenger is null.");
+            LogHelper.w("sendMessageToClient mClientMessenger is null.");
             return;
         }
         try {
@@ -187,21 +188,22 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         this.stopSelf();
     }
 
-    private static final String NOTIFICATION_CHANNEL_NAME = "LBSbackgroundLocation";
+    private static final String NOTIFICATION_CHANNEL_NAME = "FedMLEdge";
     private NotificationManager notificationManager = null;
     boolean isCreateChannel = false;
+
     @SuppressLint("NewApi")
     private Notification buildNotification() {
         Context appContext = ContextHolder.getAppContext();
         Notification.Builder builder = null;
         Notification notification = null;
-        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Android O Notification need NotificationChannel
             if (null == notificationManager) {
                 notificationManager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
             }
-            final String channelId =  NOTIFY_CHANNEL_ID;
-            if(!isCreateChannel) {
+            final String channelId = NOTIFY_CHANNEL_ID;
+            if (!isCreateChannel) {
                 NotificationChannel notificationChannel = new NotificationChannel(channelId,
                         NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
                 // Whether to display small dots in the upper right corner of the desktop icon
@@ -213,9 +215,9 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 notificationManager.createNotificationChannel(notificationChannel);
                 isCreateChannel = true;
             }
-            builder = new Notification.Builder( appContext.getApplicationContext(), channelId);
+            builder = new Notification.Builder(appContext.getApplicationContext(), channelId);
         } else {
-            builder = new Notification.Builder( appContext.getApplicationContext());
+            builder = new Notification.Builder(appContext.getApplicationContext());
         }
         builder.setSmallIcon(R.mipmap.ic_logo)
                 .setContentTitle(appContext.getPackageName())

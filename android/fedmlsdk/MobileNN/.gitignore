@@ -11,6 +11,7 @@ build/train/build_x86_linux
 build/train/build_arm_android_64
 .DS_Store
 /build/MNN/build_x86_linux/
+/build/MNN/build_x86_linux_debug/
 /build/MNN/build_arm_android_64/
 /build/torch/build_x86_linux/
 /build/torch/build_arm_android_64/

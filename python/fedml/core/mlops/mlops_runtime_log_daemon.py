@@ -1,8 +1,5 @@
 import argparse
 import json
-import logging
-import traceback
-from os.path import expanduser
 
 import multiprocess as multiprocessing
 import os
@@ -12,24 +9,31 @@ import time
 
 import requests
 import yaml
+
 from ...core.mlops.mlops_configs import MLOpsConfigs
+import fedml
+
 
 class MLOpsRuntimeLogProcessor:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
     FED_LOG_UPLOAD_FREQUENCY = 3
+    FED_LOG_UPLOAD_S3_FREQUENCY = 30
     FEDML_LOG_REPORTING_STATUS_FILE_NAME = "log_status"
     FEDML_RUN_LOG_STATUS_DIR = "run_log_status"
 
-    def __init__(self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None):
+    ENABLE_UPLOAD_LOG_USING_MQTT = False
+
+    def __init__(
+            self, using_mlops, log_run_id, log_device_id, log_file_dir, log_server_url, in_args=None,
+            log_file_prefix=None
+    ):
         self.args = in_args
+        self.is_log_reporting = False
         self.log_reporting_status_file = os.path.join(log_file_dir,
                                                       MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR,
                                                       MLOpsRuntimeLogProcessor.FEDML_LOG_REPORTING_STATUS_FILE_NAME +
                                                       "-" + str(log_run_id) + ".conf")
-        try:
-            os.makedirs(os.path.join(log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR))
-        except Exception as e:
-            pass
+        os.makedirs(os.path.join(log_file_dir, MLOpsRuntimeLogProcessor.FEDML_RUN_LOG_STATUS_DIR), exist_ok=True)
         self.logger = None
         self.should_upload_log_file = using_mlops
         self.log_file_dir = log_file_dir
@@ -43,17 +47,20 @@ class MLOpsRuntimeLogProcessor:
         self.log_config = dict()
         self.load_log_config()
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
+                                                 + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                                  + str(self.run_id)
                                                  + "-edge-"
                                                  + str(self.device_id)
                                                  + ".log")
         self.log_file_path = os.path.join(self.args.log_file_dir, "fedml-run-"
+                                          + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                           + str(self.run_id)
                                           + "-edge-"
                                           + str(self.device_id)
                                           + "-upload.log")
         self.run_list = list()
         self.log_source = None
+        self.log_process_event = None
 
     def set_log_source(self, source):
         self.log_source = source
@@ -88,7 +95,7 @@ class MLOpsRuntimeLogProcessor:
             program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
 
         if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir)
+            os.makedirs(in_args.log_file_dir, exist_ok=True)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
                                      + str(in_args.run_id)
                                      + "-edge-"
@@ -168,39 +175,41 @@ class MLOpsRuntimeLogProcessor:
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 
-            log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-
-            # send log data to the log server
-            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
-            if cert_path is not None:
-                try:
-                    requests.session().verify = cert_path
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                    response = requests.post(
-                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                    )
-                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-
-                except requests.exceptions.SSLError as err:
-                    MLOpsConfigs.install_root_ca_file()
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                    response = requests.post(
-                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                    )
-                    # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+            if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
+                fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
             else:
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-            if response.status_code != 200:
-                pass
-            else:
-                self.log_line_index += (line_end_req - line_start_req)
-                self.log_uploaded_line_index += len(upload_lines)
-                line_count += (line_end_req - line_start_req)
-                line_start_req = line_end_req
-                self.save_log_config()
-                resp_data = response.json()
+                log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+
+                # send log data to the log server
+                _, cert_path = MLOpsConfigs.get_request_params()
+                if cert_path is not None:
+                    try:
+                        requests.session().verify = cert_path
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                        response = requests.post(
+                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                        )
+                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+
+                    except requests.exceptions.SSLError as err:
+                        MLOpsConfigs.install_root_ca_file()
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                        response = requests.post(
+                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                        )
+                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+                else:
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                    response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+                if response.status_code != 200:
+                    return
+
+            self.log_line_index += (line_end_req - line_start_req)
+            self.log_uploaded_line_index += len(upload_lines)
+            line_count += (line_end_req - line_start_req)
+            line_start_req = line_end_req
+            self.save_log_config()
 
     @staticmethod
     def should_ignore_log_line(log_line):
@@ -217,14 +226,42 @@ class MLOpsRuntimeLogProcessor:
 
         return False
 
-    def log_process(self):
-        while True:
+    def log_process(self, process_event):
+        print(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
+
+        self.log_process_event = process_event
+
+        only_push_artifact = False
+        log_artifact_time_counter = 0
+        log_file_prev_size = 0
+        artifact_url_logged = False
+        while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
                 self.log_upload(self.run_id, self.device_id)
+
+                log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
+                if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
+                    log_artifact_time_counter = 0
+                    log_file_current_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
+                    if log_file_prev_size != log_file_current_size:
+                        upload_result, artifact_storage_url =self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact)
+                        if upload_result:
+                            only_push_artifact = True
+                            if artifact_url_logged is False:
+                                artifact_url_logged = True
+                                fedml.mlops.log_run_log_lines(
+                                    self.run_id, self.device_id, [f"The original log url is {artifact_storage_url}"],
+                                    log_source=self.log_source
+                                )
+                        log_file_prev_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
             except Exception as e:
+                log_artifact_time_counter = 0
                 pass
-        print("FedDebug log_process STOPPED")
+
+        self.log_upload(self.run_id, self.device_id)
+        self.upload_log_file_as_artifact(only_push_artifact=True)
+        print("Log Process exits normally.")
 
     def log_relocation(self):
         log_line_count = self.log_line_index
@@ -304,10 +341,35 @@ class MLOpsRuntimeLogProcessor:
         except Exception as e:
             pass
 
+    def should_stop(self):
+        if self.log_process_event is not None and self.log_process_event.is_set():
+            return True
+
+        return False
+
+    def upload_log_file_as_artifact(self, only_push_artifact=False):
+        try:
+            if not os.path.exists(self.log_file_path):
+                return False, ""
+            
+            log_file_name = "{}".format(os.path.basename(self.log_file_path))
+            log_file_name_no_ext = os.path.splitext(os.path.basename(self.log_file_path))[0]
+            artifact = fedml.mlops.Artifact(name=log_file_name_no_ext, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
+            artifact.add_file(self.log_file_path)
+
+            artifact_storage_url = fedml.core.mlops.log_mlops_running_logs(
+                artifact, run_id=self.run_id, edge_id=self.device_id, only_push_artifact=only_push_artifact)
+
+            return True, artifact_storage_url
+        except Exception as e:
+            return False, ""
+
 
 class MLOpsRuntimeLogDaemon:
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
+
+    ENABLE_SYNC_LOG_TO_MASTER = False
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsRuntimeLogDaemon, "_instance"):
@@ -344,15 +406,20 @@ class MLOpsRuntimeLogDaemon:
 
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
-                self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
+                url = fedml._get_backend_service()
+                self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
             else:
                 self.log_server_url = self.args.log_server_url
         except Exception as e:
-            self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
+            self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
+
+        if MLOpsRuntimeLogDaemon.ENABLE_SYNC_LOG_TO_MASTER:
+            self.log_server_url = f"http://localhost:42000/fedml/api/v2/fedmlLogsServer/logs/update"
 
         self.log_file_dir = self.args.log_file_dir
         self.log_child_process_list = list()
         self.log_child_process = None
+        self.log_process_event = None
 
     @staticmethod
     def get_instance(args):
@@ -365,13 +432,21 @@ class MLOpsRuntimeLogDaemon:
     def set_log_source(self, source):
         self.log_source = source
 
-    def start_log_processor(self, log_run_id, log_device_id):
+    def start_log_processor(self, log_run_id, log_device_id, log_source=None, log_file_prefix=None):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
-                                                 in_args=self.args)
-        log_processor.set_log_source(self.log_source)
-        self.log_child_process = multiprocessing.Process(target=log_processor.log_process)
+                                                 in_args=self.args, log_file_prefix=log_file_prefix)
+        if log_source is not None:
+            log_processor.set_log_source(log_source)
+        else:
+            log_processor.set_log_source(self.log_source)
+        if self.log_process_event is None:
+            self.log_process_event = multiprocessing.Event()
+        self.log_process_event.clear()
+        log_processor.log_process_event = self.log_process_event
+        self.log_child_process = multiprocessing.Process(target=log_processor.log_process,
+                                                         args=(self.log_process_event,))
         # process = threading.Thread(target=log_processor.log_process)
         if self.log_child_process is not None:
             self.log_child_process.start()
@@ -381,16 +456,32 @@ class MLOpsRuntimeLogDaemon:
                 self.log_child_process_list.append((self.log_child_process, log_run_id, log_device_id))
 
     def stop_log_processor(self, log_run_id, log_device_id):
+        if log_run_id is None or log_device_id is None:
+            return
+
         # logging.info(f"FedMLDebug. stop log processor. log_run_id = {log_run_id}, log_device_id = {log_device_id}")
         for (log_child_process, run_id, device_id) in self.log_child_process_list:
             if str(run_id) == str(log_run_id) and str(device_id) == str(log_device_id):
-                log_child_process.terminate()
-                # logging.info("FedMLDebug. log_processor.set_log_reporting_status FALSE")
+                if self.log_process_event is not None:
+                    self.log_process_event.set()
+                else:
+                    log_child_process.terminate()
+                self.log_child_process_list.remove((log_child_process, run_id, device_id))
                 break
 
     def stop_all_log_processor(self):
         for (log_child_process, _, _) in self.log_child_process_list:
-            log_child_process.terminate()
+            if self.log_process_event is not None:
+                self.log_process_event.set()
+            else:
+                log_child_process.terminate()
+
+    def is_log_processor_running(self, in_run_id, in_device_id):
+        for (log_child_process, log_run_id, log_device_id) in self.log_child_process_list:
+            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id):
+                return True
+
+        return False
 
 
 if __name__ == "__main__":

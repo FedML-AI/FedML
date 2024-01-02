@@ -8,6 +8,7 @@ import logging
 from ..common.ml_engine_backend import MLEngineBackend
 from typing import List, Tuple, Any
 from collections import OrderedDict
+import random
 
 
 class FedMLAttacker:
@@ -39,6 +40,11 @@ class FedMLAttacker:
                 self.attacker = ModelReplacementBackdoorAttack(args)
             elif self.attack_type == ATTACK_METHOD_DLG:
                 self.attacker = DLGAttack(args=args)
+
+            if hasattr(args, "attack_prob") and isinstance(args.attack_prob, float):
+                self.attack_prob = args.attack_prob # the possibility of an attack happens
+            else:
+                self.attack_prob = 1
         else:
             self.is_enabled = False
 
@@ -56,7 +62,10 @@ class FedMLAttacker:
                 self.is_enabled = False
 
     def is_attack_enabled(self):
-        return self.is_enabled
+        if self.is_enabled:
+            if self.attack_prob == 1 or random.random() <= self.attack_prob:
+                return True
+        return False
 
     def get_attack_types(self):
         return self.attack_type

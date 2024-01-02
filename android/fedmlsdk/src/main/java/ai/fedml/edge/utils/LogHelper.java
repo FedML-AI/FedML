@@ -2,10 +2,9 @@ package ai.fedml.edge.utils;
 
 import android.util.Log;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -18,24 +17,36 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 public class LogHelper {
     private static final String TAG = "FedML-Mobile-Client";
     private static final String DATE_FORMAT_PATTER = "EEE, dd MMM yyyy HH:mm:ss";
-    private static final int LOG_LINE_NUMBER = 100;
-    private static final boolean DEBUG = true;
-    private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE",
-            Log.DEBUG, "DEBUG",Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
+    private static final boolean DEBUG = false;
+
+    private static final Map<Integer, String> LEVEL_MAP;
     private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private static final Lock rLock = rwl.readLock();
     private static final Lock wLock = rwl.writeLock();
     private static volatile List<String> sLogLines = new LinkedList<>();
 
-    private static int lineNumber = 1;
+    private static int lineNumber = 0;
+
+    static {
+        LEVEL_MAP = new HashMap<>();
+        LEVEL_MAP.put(Log.VERBOSE, "VERBOSE");
+        LEVEL_MAP.put(Log.DEBUG, "DEBUG");
+        LEVEL_MAP.put(Log.INFO, "INFO");
+        LEVEL_MAP.put(Log.WARN, "WARN");
+        LEVEL_MAP.put(Log.ERROR, "ERROR");
+    }
 
     public static void resetLog() {
         sLogLines = new LinkedList<>();
-        lineNumber = 1;
+        lineNumber = 0;
     }
 
     public static int getLineNumber() {
         return lineNumber;
+    }
+
+    public static void addLineNumber(int count) {
+        lineNumber += count;
     }
 
     public static void v(Object arg) {
@@ -64,6 +75,18 @@ public class LogHelper {
         }
     }
 
+    public static void i(String format, Object... args) {
+        print(Log.INFO, TAG, buildMessage(format, args));
+    }
+
+    public static void w(String format, Object... args) {
+        print(Log.WARN, TAG, buildMessage(format, args));
+    }
+
+    public static void w(Throwable tr, String format, Object... args) {
+        print(Log.WARN, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
+    }
+
     public static void e(Object arg) {
         String message = arg == null ? "null" : arg.toString();
         print(Log.ERROR, TAG, buildMessage("%s", message));
@@ -73,20 +96,8 @@ public class LogHelper {
         print(Log.ERROR, TAG, buildMessage(format, args));
     }
 
-    public static void i(String format, Object... args) {
-        print(Log.INFO, TAG, buildMessage(format, args));
-    }
-
     public static void e(Throwable tr, String format, Object... args) {
         print(Log.ERROR, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
-    }
-
-    public static void wtf(String format, Object... args) {
-        print(Log.WARN, TAG, buildMessage(format, args));
-    }
-
-    public static void wtf(Throwable tr, String format, Object... args) {
-        print(Log.WARN, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
     }
 
     /**

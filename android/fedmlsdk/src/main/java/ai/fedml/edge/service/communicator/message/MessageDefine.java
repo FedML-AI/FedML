@@ -21,6 +21,7 @@ public interface MessageDefine {
     String EDGE_ID = "edge_id";
     String ROUND_IDX = "round_idx";
     String CLIENT_MODEL_ADDRESS = "client_model_s3_address";
+    String EDGE_ID_ALIAS = "ID";
 
     String MSG_TYPE = "msg_type";
     String MSG_ARG_KEY_SENDER = "sender";
@@ -44,9 +45,9 @@ public interface MessageDefine {
 
 
     // Client Status
-    String MQTT_LAST_WILL_TOPIC = "flclient_agent/last_will_msg";
-    String MQTT_REPORT_ACTIVE_STATUS_TOPIC = "flclient_agent/active";
-
+    interface ClientStatus{
+        void syncClientStatus(final long edgeId);
+    }
     String MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE";
     String MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE";
     String MSG_MLOPS_CLIENT_STATUS_UPGRADING = "UPGRADING";

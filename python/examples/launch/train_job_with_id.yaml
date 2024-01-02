@@ -1,0 +1,10 @@
+computing:
+  maximum_cost_per_hour: $10
+  minimum_num_gpus: 1
+  resource_type: A100-80G
+environment_args:
+  bootstrap: bootstrap.sh
+job_args:
+  job_id: 2176
+  config_id: 308
+run_api_key: my_api_key

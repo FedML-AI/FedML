@@ -43,13 +43,13 @@ def load_data(args):
     max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
 
     if not os.path.exists(args.data_cache_dir):
-        os.makedirs(args.data_cache_dir)
+        os.makedirs(args.data_cache_dir, exist_ok=True)
 
     if args.rank == 0:
         for i, device_name in enumerate(device_list):
             device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
             if not os.path.exists(device_data_cache_dir):
-                os.makedirs(device_data_cache_dir)
+                os.makedirs(device_data_cache_dir, exist_ok=True)
                 logging.info(
                     "Downloading dataset for device {} on server".format(i + 1)
                 )
@@ -102,7 +102,7 @@ def load_data(args):
         device_name = device_list[args.rank - 1]
         device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
         if not os.path.exists(device_data_cache_dir):
-            os.makedirs(device_data_cache_dir)
+            os.makedirs(device_data_cache_dir, exist_ok=True)
             logging.info(
                 "Downloading dataset for device {} on client".format(args.rank)
             )

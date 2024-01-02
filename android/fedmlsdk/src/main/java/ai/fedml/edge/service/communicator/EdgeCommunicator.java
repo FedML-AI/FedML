@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.request.response.ConfigResponse;
 import ai.fedml.edge.service.Initializer;
 import ai.fedml.edge.service.communicator.message.BaseMessage;
@@ -28,6 +29,7 @@ import ai.fedml.edge.utils.DeviceUtils;
 import ai.fedml.edge.utils.GsonUtils;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
+
 import androidx.annotation.NonNull;
 
 public class EdgeCommunicator implements MqttCallbackExtended {
@@ -58,7 +60,8 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         if (mqttConfig == null) {
             throw new EdgeCommunicatorException("fetch Mqtt Config failed!");
         }
-        String MQTT_BROKER = String.format(Locale.US, "tcp://%s:%d",
+
+        String serverURI = String.format(Locale.US, "tcp://%s:%d",
                 mqttConfig.getHost(), mqttConfig.getPort());
         // EMQX Connect Options
         connOpts = new MqttConnectOptions();
@@ -69,21 +72,22 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setConnectionTimeout(30);
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
-        String edge_id = SharePreferencesData.getBindingId();
-        connOpts.setWill(MessageDefine.MQTT_LAST_WILL_TOPIC,
-                // {"ID": "EDGE_ID", "status": "OFFLINE"}
-                ("{\"ID\":\"" + edge_id + "\",\"status\":\"" +
-                        MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes(),
+        connOpts.setMaxInflight(10000);
+        connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC, buildLastWillPayload(),
                 2, true);
-        client = createMqttClient(MQTT_BROKER, deviceId);
+        client = createMqttClient(serverURI, deviceId + "_" + System.currentTimeMillis());
+    }
+
+    private byte[] buildLastWillPayload() {
+        String edgeId = SharePreferencesData.getBindingId();
+        return ("{\"ID\":\"" + edgeId + "\",\"status\":\"" +
+                MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes();
     }
 
     private void connectMqtt() {
         try {
-            // connect
-            LogHelper.d("EdgeCommunicator Connecting to broker:" + client.getServerURI());
+            LogHelper.i("EdgeCommunicator Connecting to broker:" + client.getServerURI());
             client.connect(connOpts);
-            LogHelper.d("EdgeCommunicator Connecting to broker (END)");
         } catch (MqttException e) {
             LogHelper.e(e, "mqtt connect exception.");
             disconnect();
@@ -92,14 +96,14 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         }
     }
 
-    public void connect(){
+    public void connect() {
         connectMqtt();
     }
 
-    private MqttClient createMqttClient(@NonNull final String broker, @NonNull final String deviceId) {
+    private MqttClient createMqttClient(@NonNull final String serverURI, @NonNull final String clientId) {
         MqttClient mqttClient;
         try {
-            mqttClient = new MqttClient(broker, deviceId, persistence);
+            mqttClient = new MqttClient(serverURI, clientId, persistence);
             mqttClient.setCallback(this);
             mqttClient.setTimeToWait(5000);
         } catch (MqttException e) {
@@ -110,14 +114,14 @@ public class EdgeCommunicator implements MqttCallbackExtended {
 
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
-        LogHelper.d("FedMLDebug. EdgeCommunicator Connected reconnect:" + reconnect + ", uri:" + serverURI + ", subscribeTopics: " + subscribeTopics);
+        LogHelper.i("FedMLDebug. EdgeCommunicator Connected reconnect:" + reconnect + ", uri:" + serverURI + ", subscribeTopics: " + subscribeTopics);
         try {
             // subscribe the default topic
             client.subscribe("edge/" + DeviceUtils.getDeviceId());
             // subscribe the topics
             if (!subscribeTopics.isEmpty()) {
                 client.subscribe(subscribeTopics.keySet().toArray(new String[0]));
-                LogHelper.d("EdgeCommunicator Connected subscribe:" + subscribeTopics.keySet());
+                LogHelper.i("EdgeCommunicator Connected subscribe:" + subscribeTopics.keySet());
                 for (Map.Entry<String, OnReceivedListener> entry : subscribeTopics.entrySet()) {
                     if (entry.getKey().startsWith("fedml_")) {
                         notifyConnectionReady(entry.getKey(), entry.getValue());
@@ -125,7 +129,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
                 }
             }
             if (!receivedListeners.isEmpty()) {
-                for (OnReceivedListener listener: receivedListeners){
+                for (OnReceivedListener listener : receivedListeners) {
                     notifyConnectionReady("connectionReady", listener);
                 }
             }
@@ -136,12 +140,12 @@ public class EdgeCommunicator implements MqttCallbackExtended {
 
     @Override
     public void connectionLost(Throwable cause) {
-        LogHelper.wtf(cause, "connection Lost can re-connect!");
+        LogHelper.w(cause, "connection Lost can re-connect!");
     }
 
     @Override
     public void messageArrived(@NonNull String topic, @NonNull MqttMessage message) {
-        LogHelper.d("FedMLDebug. EdgeCommunicator messageArrived topic:%s, Qos:%d, Content:%s", topic, message.getQos(),
+        LogHelper.i("FedMLDebug. EdgeCommunicator messageArrived topic:%s, Qos:%d, Content:%s", topic, message.getQos(),
                 new String(message.getPayload()));
         OnReceivedListener receivedListener = subscribeTopics.get(topic);
         if (receivedListener != null) {
@@ -153,13 +157,13 @@ public class EdgeCommunicator implements MqttCallbackExtended {
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {
-        LogHelper.d("EdgeCommunicator deliveryComplete---------" + token.isComplete());
+        //LogHelper.d("EdgeCommunicator deliveryComplete---------" + token.isComplete());
     }
 
     public void subscribe(@NonNull String topic, @NonNull OnReceivedListener listener) {
         // TODO: try three times
         subscribeTopics.put(topic, listener);
-        LogHelper.d("FedMLDebug. EdgeCommunicator subscribe topic:%s", topic);
+        LogHelper.i("FedMLDebug. EdgeCommunicator subscribe topic:%s", topic);
         if (client != null && client.isConnected()) {
             try {
                 client.subscribe(topic, QOS);
@@ -176,7 +180,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
     }
 
     public void unsubscribe(@NonNull final String topic) {
-        LogHelper.d("EdgeCommunicator unsubscribe topic:%s", topic);
+        LogHelper.i("EdgeCommunicator unsubscribe topic:%s", topic);
         subscribeTopics.remove(topic);
         if (client != null && client.isConnected()) {
             try {
@@ -198,10 +202,10 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         message.setRetained(true);
         try {
             client.publish(topic, message);
-            LogHelper.d("FedMLDebug. sendMessage(%s, %s)", topic, msg);
+            LogHelper.i("FedMLDebug. sendMessage(%s)", topic);
             return true;
         } catch (MqttException e) {
-            LogHelper.e(e, "FedMLDebug. Mqtt publish failed！");
+            LogHelper.e(e, "FedMLDebug. Mqtt publish failed！(%s, %s)", topic, msg);
         }
         return false;
     }
@@ -213,7 +217,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         }
         try {
             client.disconnect();
-            LogHelper.d("MQTT Disconnected");
+            LogHelper.i("MQTT Disconnected");
         } catch (MqttException e) {
             LogHelper.e(e, "disconnect exception.");
         }
@@ -224,7 +228,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
     }
 
     private void notifyConnectionReady(final String topic, final OnReceivedListener receivedListener) {
-        if (receivedListener != null) {
+        if (receivedListener instanceof OnMqttConnectionReadyListener) {
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put(MessageDefine.MSG_TYPE, MessageDefine.MSG_TYPE_CONNECTION_IS_READY);
@@ -233,6 +237,6 @@ public class EdgeCommunicator implements MqttCallbackExtended {
             }
             receivedListener.onReceived(topic, jsonObject.toString().getBytes(StandardCharsets.UTF_8));
         }
-        LogHelper.d("FedMLDebug. notifyConnectionReady");
+        LogHelper.i("FedMLDebug. notifyConnectionReady");
     }
 }

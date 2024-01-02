@@ -1,0 +1,55 @@
+common_args:
+  training_type: "cross_silo"
+  scenario: "horizontal"
+  using_mlops: false
+  random_seed: 0
+  config_version: release
+
+environment_args:
+  bootstrap: config/bootstrap.sh
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: ~/.cache/fedml_data
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
+  client_id_list:
+  client_num_in_total: 1
+  client_num_per_round: 1
+  comm_round: 10
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 1
+
+device_args:
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MQTT_THETASTORE"
+  mqtt_config_path: config/mqtt_config.yaml
+  # If you want to use your customized MQTT or theta edgestore server as training backends, you should uncomment and set the following lines.
+  #customized_training_mqtt_config: {'BROKER_HOST': 'your mqtt server address or domain name', 'MQTT_PWD': 'your mqtt password', 'BROKER_PORT': 1883, 'MQTT_KEEPALIVE': 180, 'MQTT_USER': 'your mqtt user'}
+  customized_training_thetastore_config: {'store_home_dir': '~/edge-store-playground', 'upload_uri': 'http://localhost:19888/rpc', 'download_uri': 'http://localhost:19888/rpc'}
+
+tracking_args:
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr

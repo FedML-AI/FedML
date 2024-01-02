@@ -8,7 +8,6 @@ import android.net.NetworkInfo;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.os.Process;
 
 import androidx.core.app.ActivityCompat;
@@ -46,7 +45,7 @@ public class DeviceUtils {
         try (BufferedReader mBufferedReader = new BufferedReader(new FileReader(file))) {
             return mBufferedReader.readLine().trim();
         } catch (IOException e) {
-            Log.e(TAG, "getProcessName", e);
+            LogHelper.w(e, "getProcessName failed!");
         }
         return null;
     }
@@ -71,7 +70,13 @@ public class DeviceUtils {
             return "no permission";
         }
 
-        int networkType = telephonyManager.getNetworkType();
+        int networkType = 0;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            networkType = telephonyManager.getDataNetworkType();
+        } else {
+            networkType = telephonyManager.getNetworkType();
+        }
+
         switch (networkType) {
             case TelephonyManager.NETWORK_TYPE_GPRS:
             case TelephonyManager.NETWORK_TYPE_EDGE:
@@ -91,6 +96,8 @@ public class DeviceUtils {
                 return "3G";
             case TelephonyManager.NETWORK_TYPE_LTE:
                 return "4G";
+            case TelephonyManager.NETWORK_TYPE_NR:
+                return "5G";
             default:
                 return "unknown";
 

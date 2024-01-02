@@ -44,9 +44,10 @@ class FedMLAggregator(object):
         logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
-
-        self.buffer_size = self.agg_strategy.get_buffer_size()
-        logging.info("buffer_size = {}".format(self.buffer_size))
+        self.flag_client_model_uploaded_dict = dict()
+        for idx in range(self.client_num):
+            self.flag_client_model_uploaded_dict[idx] = False
+        self.is_fhe_enabled = hasattr(args, "enable_fhe") and args.enable_fhe
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -62,7 +63,7 @@ class FedMLAggregator(object):
         logging.info(f"client_index = {client_index}")
 
         # for dictionary model_params, we let the user level code to control the device
-        if type(model_params) is not dict:
+        if type(model_params) is not dict and (not self.is_fhe_enabled):
             model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.agg_strategy.add_client_update_index_to_buffer(client_index)
@@ -110,10 +111,9 @@ class FedMLAggregator(object):
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
-        self.set_global_model_params(averaged_params)
-        
-        self._reset_buffer()
-        
+        if not self.is_fhe_enabled:
+            self.set_global_model_params(averaged_params)
+
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
         return averaged_params, model_list, model_list_idxes
@@ -145,13 +145,12 @@ class FedMLAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
-        ):
-            logging.info(
-                "################test_on_server_for_all_clients : {}".format(round_idx)
-            )
+        if self.is_fhe_enabled:
+            logging.info("Encrypted global model cannot be tested on the server")
+            return
+
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             self.aggregator.test_all(
                 self.train_data_local_dict,
                 self.test_data_local_dict,
@@ -188,9 +187,10 @@ class FedMLAggregator(object):
                     Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round
                 )
             key_metrics_on_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
-            logging.info(
-                "key_metrics_on_last_round = {}".format(key_metrics_on_last_round)
-            )
+            logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
+
+            if round_idx == self.args.comm_round - 1:
+                mlops.log({"round_idx": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
 

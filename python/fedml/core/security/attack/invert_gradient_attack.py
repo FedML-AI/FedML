@@ -5,15 +5,15 @@ import warnings
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
 from functools import partial
-from typing import Dict, Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from torch.nn.modules.utils import _pair, _quadruple
-
+from typing import List, Tuple, Any
+from python.fedml.model.cv.resnet_torch import resnet18
+from python.fedml.model.mobile.torch_lenet import LeNet
 from .attack_base import BaseAttackMethod
-from ..constants import cifar10_mean, cifar10_std
 
 """
 ref: Geiping, Jonas, et al. "Inverting gradients-how easy is it to break privacy in federated learning?." 
@@ -32,24 +32,70 @@ TODO: add more description abour different settings and variables
 
 """
 
+"""
+Dataset Constants
+"""
+cifar10_mean = [0.4914672374725342, 0.4822617471218109, 0.4467701315879822]
+cifar10_std = [0.24703224003314972, 0.24348513782024384, 0.26158785820007324]
+cifar100_mean = [0.5071598291397095, 0.4866936206817627, 0.44120192527770996]
+cifar100_std = [0.2673342823982239, 0.2564384639263153, 0.2761504650115967]
+mnist_mean = (0.13066373765468597,)
+mnist_std = (0.30810782313346863,)
+imagenet_mean = [0.485, 0.456, 0.406]
+imagenet_std = [0.229, 0.224, 0.225]
+
+DEFAULT_CONFIG = dict(
+    signed=False,
+    boxed=True,
+    cost_fn="sim",
+    indices="def",
+    weights="equal",
+    lr=0.1,
+    optim="adam",
+    restarts=1,
+    max_iterations=4800,
+    total_variation=1e-1,
+    init="randn",
+    filter="none",
+    lr_decay=True,
+    scoring_choice="loss",
+    model_type="resnet18",
+    use_updates=False,
+    num_images=1
+)
+
 
 class InvertAttack(BaseAttackMethod):
-    def __init__(
-        self, attack_client_idx=0, trained_model=False, model=None, num_images=1, use_updates=False,
-    ):
-        defs = ConservativeStrategy()
-        loss_fn = Classification()
-        self.use_updates = use_updates
+    def __init__(self, args):
+        # defs = ConservativeStrategy()
+        # loss_fn = Classification()
+        self.use_updates = args.use_updates
         self.img_shape = (3, 32, 32)
-        self.model = model
+        self.model = self.get_model(args.model_type)
         self.model.eval()
         self.dm = torch.as_tensor(cifar10_mean)[:, None, None]
         self.ds = torch.as_tensor(cifar10_std)[:, None, None]
-        self.num_images = num_images  # = batch_size in local training
+        self.num_images = args.num_images  # = batch_size in local training
+        self.args = vars(args)
 
-    def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
-        self.ground_truth = extra_auxiliary_info[0][0]
-        self.labels = extra_auxiliary_info[0][1]
+    @staticmethod
+    def get_model(model_type):
+        if model_type == "LeNet":
+            return LeNet()
+        # elif model_type == "resnet56":
+        #     return resnet56(10, pretrained=False, path=None)
+        elif model_type == "resnet18":
+            return resnet18()
+        else:
+            raise Exception(f"do not support this model: {model_type}")
+
+    def reconstruct_data(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
+        pass
+
+    # def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+    def reconstruct_data_using_a_model(self, a_gradient, extra_auxiliary_info: Any = None):
+        self.ground_truth = extra_auxiliary_info[0]
+        self.labels = extra_auxiliary_info[1]
 
         if not self.use_updates:
             rec_machine = GradientReconstructor(
@@ -59,11 +105,11 @@ class InvertAttack(BaseAttackMethod):
             output, stats = rec_machine.reconstruct(self.input_gradient, self.labels, self.img_shape)
         else:
             rec_machine = FedAvgReconstructor(
-                self.model,
-                (self.dm, self.ds),
+                model=self.model,
+                mean_std=(self.dm, self.ds),
                 # self.local_steps,
                 # self.local_lr,
-                config=extra_auxiliary_info[1],
+                config=self.args,
                 use_updates=self.use_updates,
             )
             self.input_parameters = a_gradient
@@ -135,6 +181,7 @@ class Classification(Loss):
 
     def __init__(self):
         """Init with torch MSE."""
+        super().__init__()
         self.loss_fn = torch.nn.CrossEntropyLoss(
             weight=None, size_average=None, ignore_index=-100, reduce=None, reduction="mean",
         )
@@ -162,23 +209,6 @@ class Classification(Loss):
 
 """Reconstructor setups."""
 
-DEFAULT_CONFIG = dict(
-    signed=False,
-    boxed=True,
-    cost_fn="sim",
-    indices="def",
-    weights="equal",
-    lr=0.1,
-    optim="adam",
-    restarts=1,
-    max_iterations=4800,
-    total_variation=1e-1,
-    init="randn",
-    filter="none",
-    lr_decay=True,
-    scoring_choice="loss",
-)
-
 
 def _label_to_onehot(target, num_classes=100):
     target = torch.unsqueeze(target, 1)
@@ -200,7 +230,7 @@ def _validate_config(config):
 class GradientReconstructor:
     """Instantiate a reconstruction algorithm."""
 
-    def __init__(self, model, mean_std=(0.0, 1.0), config=DEFAULT_CONFIG, num_images=1):
+    def __init__(self, model, mean_std, config, num_images=1):
         """Initialize with algorithm setup."""
         self.config = _validate_config(config)
         self.model = model
@@ -216,7 +246,7 @@ class GradientReconstructor:
         self.iDLG = True
 
     def reconstruct(
-        self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, eval=True, tol=None,
+            self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, eval=True, tol=None,
     ):
         """Reconstruct image from gradient."""
         start_time = time.time()
@@ -269,7 +299,7 @@ class GradientReconstructor:
         stats["opt"] = scores[optimal_index].item()
         x_optimal = x[optimal_index]
 
-        print(f"Total time: {time.time()-start_time}.")
+        print(f"Total time: {time.time() - start_time}.")
         return x_optimal.detach(), stats
 
     def _init_images(self, img_shape):
@@ -303,7 +333,7 @@ class GradientReconstructor:
         if self.config["lr_decay"]:
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer,
-                milestones=[max_iterations // 2.667, max_iterations // 1.6, max_iterations // 1.142,],
+                milestones=[max_iterations // 2.667, max_iterations // 1.6, max_iterations // 1.142, ],
                 gamma=0.1,
             )  # 3/8 5/8 7/8
         try:
@@ -380,15 +410,15 @@ class FedAvgReconstructor(GradientReconstructor):
     """Reconstruct an image from weights after n gradient descent steps."""
 
     def __init__(
-        self,
-        model,
-        mean_std=(0.0, 1.0),
-        local_steps=2,
-        local_lr=1e-4,
-        config=DEFAULT_CONFIG,
-        num_images=1,
-        use_updates=True,
-        batch_size=0,
+            self,
+            model,
+            config,
+            mean_std=(0.0, 1.0),
+            local_steps=2,
+            local_lr=1e-4,
+            num_images=1,
+            use_updates=True,
+            batch_size=0,
     ):
         """Initialize with model, (mean, std) and config."""
         super().__init__(model, mean_std, config, num_images)
@@ -449,7 +479,8 @@ class FedAvgReconstructor(GradientReconstructor):
 
 
 def loss_steps(
-    model, inputs, labels, loss_fn=torch.nn.CrossEntropyLoss(), lr=1e-4, local_steps=4, use_updates=True, batch_size=0,
+        model, inputs, labels, loss_fn=torch.nn.CrossEntropyLoss(), lr=1e-4, local_steps=4, use_updates=True,
+        batch_size=0,
 ):
     """Take a few gradient descent steps to fit the model to the given input."""
     patched_model = MetaMonkey(model)
@@ -461,8 +492,8 @@ def loss_steps(
             labels_ = labels
         else:
             idx = i % (inputs.shape[0] // batch_size)
-            outputs = patched_model(inputs[idx * batch_size : (idx + 1) * batch_size], patched_model.parameters,)
-            labels_ = labels[idx * batch_size : (idx + 1) * batch_size]
+            outputs = patched_model(inputs[idx * batch_size: (idx + 1) * batch_size], patched_model.parameters, )
+            labels_ = labels[idx * batch_size: (idx + 1) * batch_size]
         loss = loss_fn(outputs, labels_).sum()
         grad = torch.autograd.grad(
             loss, patched_model.parameters.values(), retain_graph=True, create_graph=True, only_inputs=True,
@@ -686,7 +717,7 @@ class InceptionScore(torch.nn.Module):
         batches = B // self.batch_size
         scores = []
         for batch in range(batches):
-            input = self.preprocessing(image_batch[batch * self.batch_size : (batch + 1) * self.batch_size])
+            input = self.preprocessing(image_batch[batch * self.batch_size: (batch + 1) * self.batch_size])
             scores.append(self.model(input))  # pylint: disable=E1102
         prob_yx = torch.nn.functional.softmax(torch.cat(scores, 0), dim=1)
         entropy = torch.where(prob_yx > 0, -prob_yx * prob_yx.log(), torch.zeros_like(prob_yx))

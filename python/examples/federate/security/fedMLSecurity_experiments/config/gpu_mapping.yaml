@@ -1,0 +1,9 @@
+
+mapping_default:
+  host1: [2,1,1,1,1,1,2,2]  
+
+mapping_100clients:
+  host1: [13,12,12,12,13,13,13,13]  
+
+mapping_1000clients:
+  host1: [126,125,125,125,125,125,125,125]  

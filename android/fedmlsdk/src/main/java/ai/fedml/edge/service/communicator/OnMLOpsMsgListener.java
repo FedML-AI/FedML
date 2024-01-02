@@ -7,7 +7,7 @@ import ai.fedml.edge.utils.LogHelper;
 public interface OnMLOpsMsgListener extends OnJsonReceivedListener {
     @Override
     default void onJsonReceived(String topic, JSONObject jsonMsg) {
-        LogHelper.d("OnMLOpsMsgListener", "FedMLDebug. handleMLOpsMsg: " + jsonMsg.toString());
+        LogHelper.i("FedMLDebug OnMLOpsMsgListener handleMLOpsMsg:%s", jsonMsg.toString());
         handleMLOpsMsg(jsonMsg);
     }
 

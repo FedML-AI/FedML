@@ -1,0 +1,5 @@
+*.pyc
+
+/mlops/dist-packages/
+
+fedml-federate-packages

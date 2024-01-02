@@ -1,0 +1,41 @@
+# include all in this folder and its subfolders
+!/**
+
+# CMake
+cmake-build-*/
+
+# JetBrains IDE
+.idea/
+
+# VS Code
+.vscode/
+
+# Mac
+*.DS_Store
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info
+/build
+/dist
+
+# Jupyter notebook
+.ipynb_checkpoints
+
+# pyenv files
+.python-version
+
+# wandb
+/wandb
+
+# project files
+*_host_file
+/.data
+/.logs
+/cache
+devops/geo-distributed-cluster/*
