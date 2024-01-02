@@ -113,9 +113,13 @@ class FedMLModelCards(Singleton):
         devices = master_device_ids + worker_device_ids
         return devices
 
-    def parse_config_yaml(self, yaml_file):
-        with open(yaml_file, 'r') as f:
-            launch_params = yaml.safe_load(f)
+    def parse_config_yaml(self, yaml_file_path:str):
+        try:
+            with open(yaml_file_path, 'r') as f:
+                launch_params = yaml.safe_load(f)
+        except:
+            print(f"Failed to load the config file {yaml_file_path}.")
+            return None
         return launch_params
 
     def copy_config_yaml_to_src_folder(self, src_folder, yaml_file):
@@ -145,10 +149,14 @@ class FedMLModelCards(Singleton):
             return False
 
         model_config = self.parse_config_yaml(config_file)
-        if "workspace" not in model_config:
-            print("Please specify the workspace in the config file.")
+        if model_config is None:
+            print("[Error] Failed to parse the config file {}.".format(config_file))
             return False
 
+        if not self.validate_model_config(model_config):
+            print("[Error] The config file {} is not valid.".format(config_file))
+            return False
+        
         if not os.path.isabs(model_config["workspace"]):
             # Use config_file_path + workspace if workspace is a relative path
             base_path = os.path.dirname(config_file)  # Avoid scene like: ./src
@@ -172,6 +180,15 @@ class FedMLModelCards(Singleton):
         else:
             print(f"Failed to add your workspace {workspace_abs_path} to the model {model_name}.")
             return False
+    
+    def validate_model_config(self, model_config: dict) -> bool:
+        if "workspace" not in model_config:
+            print("Please specify the workspace in the config file.")
+            return False
+
+        # TODO: add the check for deployment_type, etc
+
+        return True
 
     def recreate_model(self, model_name):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
