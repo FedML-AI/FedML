@@ -36,9 +36,14 @@ class FedMLTrainer(object):
         self.device = device
         self.args = args
         self.args.device = device
+        self.is_fhe_enabled = hasattr(args, "enable_fhe") and args.enable_fhe
 
     def update_model(self, weights):
-        self.trainer.set_model_params(weights)
+        # update enc model if fhe is enabled
+        if self.is_fhe_enabled:
+            self.trainer.set_enc_model_params(weights)
+        else:
+            self.trainer.set_model_params(weights)
 
     def update_dataset(self, client_index):
         self.client_index = client_index
@@ -72,32 +77,14 @@ class FedMLTrainer(object):
         self.trainer.on_after_local_training(self.train_local, self.device, self.args)
 
         MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
-        weights = self.trainer.get_model_params()
+        if self.is_fhe_enabled:
+            weights = self.trainer.get_enc_model_params()
+        else:
+            weights = self.trainer.get_model_params()
         # transform Tensor to list
         return weights, self.local_sample_number
 
-    def test(self):
-        # train data
-        train_metrics = self.trainer.test(self.train_local, self.device, self.args)
-        train_tot_correct, train_num_sample, train_loss = (
-            train_metrics["test_correct"],
-            train_metrics["test_total"],
-            train_metrics["test_loss"],
-        )
-
-        # test data
-        test_metrics = self.trainer.test(self.test_local, self.device, self.args)
-        test_tot_correct, test_num_sample, test_loss = (
-            test_metrics["test_correct"],
-            test_metrics["test_total"],
-            test_metrics["test_loss"],
-        )
-
-        return (
-            train_tot_correct,
-            train_loss,
-            train_num_sample,
-            test_tot_correct,
-            test_loss,
-            test_num_sample,
-        )
+    def test(self, round_idx=None):
+        self.args.round_idx = round_idx
+        if hasattr(self.trainer, "test"):
+            self.trainer.test(self.test_local, self.device, self.args)

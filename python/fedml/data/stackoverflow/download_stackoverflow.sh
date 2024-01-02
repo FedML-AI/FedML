@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DATA_PATH=~/fedml_data/stackoverflow
+DATA_PATH=~/.cache/fedml_data/stackoverflow
 mkdir $DATA_PATH
 cd $DATA_PATH
 wget --no-check-certificate --no-proxy https://fedml.s3-us-west-1.amazonaws.com/stackoverflow.tag_count.tar.bz2

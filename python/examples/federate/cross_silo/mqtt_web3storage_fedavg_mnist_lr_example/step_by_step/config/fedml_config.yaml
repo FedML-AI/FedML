@@ -1,0 +1,55 @@
+common_args:
+  training_type: "cross_silo"
+  scenario: "horizontal"
+  using_mlops: false
+  random_seed: 0
+
+environment_args:
+  bootstrap: config/bootstrap.sh
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: ~/.cache/fedml_data
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 1000
+  client_num_per_round: 2
+  comm_round: 50
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 2
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MQTT_WEB3"
+  mqtt_config_path: config/mqtt_config.yaml
+  # If you want to use your customized MQTT or web3storage server as training backends, you should uncomment and set the following lines.
+  #customized_training_mqtt_config: {'BROKER_HOST': 'your mqtt server address or domain name', 'MQTT_PWD': 'your mqtt password', 'BROKER_PORT': 1883, 'MQTT_KEEPALIVE': 180, 'MQTT_USER': 'your mqtt user'}
+  #customized_training_web3_config: {'token': 'your ipfs token at web3.storage', 'upload_uri': 'https://api.web3.storage/upload', 'download_uri': 'ipfs.w3s.link'}
+  customized_training_web3_config: { 'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDEwMjdFNzE2MDdmNzkzQTNmRjVDODIzZTAwQzcyQ2RERDcxODYwRUQiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NjUxOTk2ODQwNDIsIm5hbWUiOiJmZWRtbC10ZXN0In0.UejyT2d3N9wCD1cNqOei77rgn8Q7or3jTj7ucBAsBtQ', 'upload_uri': 'https://api.web3.storage/upload', 'download_uri': 'ipfs.w3s.link' }
+
+tracking_args:
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr

@@ -22,5 +22,5 @@ WORKDIR /fedml
 
 ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux INFER_HOST="127.0.0.1"
 
-CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p \
+CMD python3 ./fedml-pip/fedml/computing/scheduler/model_scheduler/device_client_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r client \
     -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME} -ih ${INFER_HOST}; ./runner.sh

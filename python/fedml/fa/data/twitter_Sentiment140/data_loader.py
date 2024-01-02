@@ -10,7 +10,7 @@ from fedml.fa.data.utils import equally_partition_a_dataset, equally_partition_a
 
 def download_twitter_Sentiment140(data_cache_dir):
     if not os.path.exists(data_cache_dir):
-        os.makedirs(data_cache_dir)
+        os.makedirs(data_cache_dir, exist_ok=True)
     file_path = os.path.join(data_cache_dir, "trainingandtestdata.zip")
 
     if not os.path.exists(file_path):  # Download the file (if we haven't already)

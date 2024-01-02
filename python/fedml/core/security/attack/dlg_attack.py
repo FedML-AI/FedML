@@ -1,9 +1,7 @@
 from collections import OrderedDict
-# import time
 import numpy as np
 import torch
 import torch.nn.functional as F
-# from matplotlib import pyplot as plt
 from torchvision import transforms
 from typing import List, Tuple, Any
 import fedml

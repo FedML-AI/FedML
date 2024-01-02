@@ -1,0 +1,22 @@
+workspace:
+
+job: |
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
+    echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+    echo "Hello, Here is the launch platform."
+    echo "Current directory is as follows."
+    pwd
+    sleep 40
+
+bootstrap: |
+    #pip install -r requirements.txt
+    echo "Bootstrap finished."
+
+computing:
+    minimum_num_gpus: 1
+    resource_type: A100-80G
+
+job_type: deploy              # options: train, deploy, federate
+
+serving_args:
+    model_name: demo-pythia-70m

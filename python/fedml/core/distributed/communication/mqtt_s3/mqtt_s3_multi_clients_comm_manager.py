@@ -40,7 +40,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         if hasattr(args, "is_browser"):
             self.isBrowser = args.is_browser
         logging.info(args.__dict__)
-        self.dataSetType = args.dataset
+        if hasattr(args, "dataset"):
+            self.dataSetType = args.dataset
+        else:
+            self.dataSetType = None
         logging.info("is browser device: " + str(self.isBrowser))
         logging.info("origin client object " + str(args.client_id_list))
         logging.info("client object " + client_objects_str)
@@ -223,9 +226,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 model_params = self.s3_storage.read_model(s3_key_str)
 
             if not hasattr(self.args, "fa_task"):
-                logging.info(
-                    "mqtt_s3.on_message: model params length %d" % len(model_params)
-                )
+                if model_params:
+                    logging.info(
+                        "mqtt_s3.on_message: model params length %d" % len(model_params)
+                    )
 
             model_url = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
             logging.info("mqtt_s3.on_message: model url {}".format(model_url))

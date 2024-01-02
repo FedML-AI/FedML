@@ -1,0 +1,24 @@
+workspace: "./src"
+entry_point: "main_entry.py"
+### This folder will NOT be upload to MLOps,
+### the inference server (Docker) will mount from local directory
+data_cache_dir: "~/.fedml/fedml_serving/model_and_config"
+# If you want to install some packages
+# Please write the command in the bootstrap.sh
+bootstrap: |
+  echo "Bootstrap start..."
+  sh ./config/bootstrap.sh
+  echo "Bootstrap finished"
+
+# If you do not have any GPU resource but want to serve the model
+# Try FedML® Nexus AI Platform, and Uncomment the following lines.
+# ------------------------------------------------------------
+# computing:
+#   minimum_num_gpus: 1           # minimum # of GPUs to provision
+#   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+#   #allow_cross_cloud_resources: true # true, false
+#   #device_type: CPU              # options: GPU, CPU, hybrid
+#   resource_type: A100-80G       # e.g., A100-80G,
+#   # please check the resource type list by "fedml show-resource-type"
+#   # or visiting URL: https://open.fedml.ai/accelerator_resource_type
+# ------------------------------------------------------------

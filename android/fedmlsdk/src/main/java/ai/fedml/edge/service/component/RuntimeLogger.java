@@ -25,8 +25,7 @@ public class RuntimeLogger {
         mRunnable = new Runnable() {
             @Override
             public void run() {
-                List<String> logs = LogHelper.getLogLines();
-                uploadLog(logs);
+                flush();
                 mBgHandler.postDelayed(this, 10000L);
             }
         };
@@ -37,7 +36,14 @@ public class RuntimeLogger {
     }
 
     public void release() {
+        flush();
+        LogHelper.resetLog();
         mBgHandler.removeCallbacksAndMessages(null);
+    }
+
+    public void flush() {
+        List<String> logs = LogHelper.getLogLines();
+        uploadLog(logs);
     }
 
     private void uploadLog(final List<String> logs) {
@@ -54,11 +60,14 @@ public class RuntimeLogger {
                 continue;
             }
             if (log.contains(" [ERROR] ")) {
-                error.setErrLine(i + LogHelper.getLineNumber());
+                int errorLine = i + LogHelper.getLineNumber();
+                error.setErrLine(errorLine);
                 error.setErrMsg(log);
                 errorLines.add(error);
             }
         }
+
+        LogHelper.addLineNumber(logs.size());
 
         RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines, new OnLogUploadListener() {
             private int retryCnt = 3;

@@ -3,7 +3,7 @@ FEDML_TRAINING_PLATFORM_SIMULATION = "simulation"
 FEDML_TRAINING_PLATFORM_CROSS_SILO = "cross_silo"
 FEDML_TRAINING_PLATFORM_CROSS_DEVICE = "cross_device"
 FEDML_TRAINING_PLATFORM_DISTRIBUTED = "distributed"
-FEDML_TRAINING_PLATFORM_CHEETAH = "cheetah"
+FEDML_TRAINING_PLATFORM_CROSS_CLOUD = "cross_cloud"
 FEDML_TRAINING_PLATFORM_SERVING = "fedml_serving"
 
 # FedML TRAINING PLATFORM TYPE
@@ -11,13 +11,18 @@ FEDML_TRAINING_PLATFORM_CROSS_SILO_TYPE = 1
 FEDML_TRAINING_PLATFORM_SIMULATION_TYPE = 2
 FEDML_TRAINING_PLATFORM_DISTRIBUTED_TYPE = 3
 FEDML_TRAINING_PLATFORM_CROSS_DEVICE_TYPE = 4
-FEDML_TRAINING_PLATFORM_CHEETAH_TYPE = 5
+FEDML_TRAINING_PLATFORM__CROSS_CLOUD_TYPE = 5
 FEDML_TRAINING_PLATFORM_SERVING_TYPE = 6
 
+# FedML CROSS-CLOUD SCENARIO
+FEDML_CROSS_CLOUD_SCENARIO_HORIZONTAL = "horizontal"
+FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL = "hierarchical"
+FEDML_CROSS_CLOUD_CUSTOMIZED_HIERARCHICAL_KEY = "use_customized_hierarchical"
 
 # FedML CROSS-SILO SCENARIO
 FEDML_CROSS_SILO_SCENARIO_HORIZONTAL = "horizontal"
 FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL = "hierarchical"
+FEDML_CROSS_SILO_CUSTOMIZED_HIERARCHICAL_KEY = "use_customized_hierarchical"
 
 # FedML SIMULATION TYPE
 FEDML_SIMULATION_TYPE_SP = "sp"
@@ -54,6 +59,24 @@ FedML_FEDERATED_OPTIMIZER_FEDSGD = "FedSGD"
 FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD = "FedLocalSGD"
 FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG = "Async_FedAvg"
 
+# FedML backend service entrypoints
 
+# These variables define the domain and URL for the backend service in different environments
+# (development, testing, and release). The domain is the IP address and port number of the backend
+# service, while the URL is the complete URL including the protocol (http or https). These variables
+# are used to configure the backend service connection in the code.
 
+FEDML_BACKEND_SERVICE_URL_LOCAL = "http://34.83.130.103:18080"
 
+FEDML_BACKEND_SERVICE_URL_DEV = "https://open-dev.fedml.ai"
+
+FEDML_BACKEND_SERVICE_URL_TEST = "https://open-test.fedml.ai"
+
+FEDML_BACKEND_SERVICE_URL_RELEASE = "https://open.fedml.ai"
+
+FEDML_MQTT_DOMAIN_LOCAL = "34.83.130.103"
+FEDML_MQTT_DOMAIN_DEV = "mqtt-dev.fedml.ai"
+FEDML_MQTT_DOMAIN_TEST = "mqtt.fedml.ai"
+FEDML_MQTT_DOMAIN_RELEASE = "mqtt.fedml.ai"
+
+FEDML_S3_DOMAIN_LOCAL = "http://127.0.0.1:9000"

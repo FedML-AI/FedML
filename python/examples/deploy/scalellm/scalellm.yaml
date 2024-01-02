@@ -1,0 +1,17 @@
+workspace: "./src"
+entry_point: "inference_entry.py"
+bootstrap: |
+  echo "Bootstrap start..."
+  echo "Bootstrap finished"
+inference_image_name: "fedml/fedml-scalellm:latest"
+use_gpu: true
+request_input_example: {"text": "Born in north-east France, Soyer trained as a"}
+# data_cache_dir: "~/data_cache"
+deploy_timeout: 1000
+
+# computing:
+#   minimum_num_gpus: 1           # minimum # of GPUs to provision
+#   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
+#   resource_type: A100-80G       # e.g., A100-80G,
+#   #allow_cross_cloud_resources: true # true, false
+#   #device_type: CPU              # options: GPU, CPU, hybrid

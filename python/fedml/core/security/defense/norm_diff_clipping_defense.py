@@ -14,13 +14,12 @@ https://arxiv.org/pdf/1911.07963.pdf
 class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.config = config
-        self.norm_bound = config.norm_bound  # for norm diff clipping and weak DP defenses
+        self.norm_bound = config.norm_bound  # for norm diff clipping; in the paper, they set it to 0.1, 0.17, and 0.33.
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, OrderedDict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
+    def defend_before_aggregation(
+            self,
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
     ):
         global_model = extra_auxiliary_info
         vec_global_w = utils.vectorize_weight(global_model)
@@ -32,7 +31,7 @@ class NormDiffClippingDefense(BaseDefenseMethod):
                 local_w, global_model, clipped_weight_diff
             )
             new_grad_list.append((sample_num, clipped_w))
-        return base_aggregation_func(self.config, new_grad_list)  # avg_params
+        return new_grad_list
 
     def _get_clipped_norm_diff(self, vec_local_w, vec_global_w):
         vec_diff = vec_local_w - vec_global_w
@@ -43,12 +42,12 @@ class NormDiffClippingDefense(BaseDefenseMethod):
     @staticmethod
     def _get_clipped_weights(local_w, global_w, weight_diff):
         #  rule: global_w + clipped(local_w - global_w)
-        recons_local_w = {}
+        recons_local_w = OrderedDict()
         index_bias = 0
         for item_index, (k, v) in enumerate(local_w.items()):
             if utils.is_weight_param(k):
                 recons_local_w[k] = (
-                    weight_diff[index_bias : index_bias + v.numel()].view(v.size())
+                    weight_diff[index_bias: index_bias + v.numel()].view(v.size())
                     + global_w[k]
                 )
                 index_bias += v.numel()

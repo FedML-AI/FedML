@@ -113,8 +113,10 @@ public class MainFragment extends Fragment {
                 App.runOnUiThread(() -> {
                     Log.d("setTrainingStatusListener", "FedMLDebug status = " + status);
                     if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING ||
-                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED) {
-                        LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
+                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_IDLE ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_FAILED) {
+                        LogHelper.i("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
                         mProgressView.setProgress(0);
                         mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));

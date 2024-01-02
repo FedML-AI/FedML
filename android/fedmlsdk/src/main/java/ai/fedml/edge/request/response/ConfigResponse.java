@@ -26,6 +26,8 @@ public class ConfigResponse extends BaseResponse {
         private MqttConfig mqttConfig;
         @SerializedName("s3_config")
         private S3Config s3Config;
+        @SerializedName("ml_ops_config")
+        private MlopsConfig mlopsConfig;
     }
 
     @Data
@@ -64,5 +66,27 @@ public class ConfigResponse extends BaseResponse {
 
         @SerializedName("BUCKET_NAME")
         private String bucket;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MlopsConfig {
+        @SerializedName("NTP_RESPONSE")
+        private NtpResponse ntpResponse;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NtpResponse {
+        @SerializedName("deviceSendTime")
+        private Long deviceSendTime;
+
+        @SerializedName("serverRecvTime")
+        private Long serverRecvTime;
+
+        @SerializedName("serverSendTime")
+        private Long serverSendTime;
     }
 }

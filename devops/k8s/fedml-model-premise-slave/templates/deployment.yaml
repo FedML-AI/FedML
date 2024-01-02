@@ -56,7 +56,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: home-dir
-              mountPath: {{ .Values.volume.clientHomeDirMountPath }}
+              mountPath: {{ .Values.volume.slaveHomeDirMountPath }}
             - name: docker-sock
               mountPath: /var/run/docker.sock
         - name: {{ .Values.inferenceBackend.name }}
@@ -82,7 +82,7 @@ spec:
               memory: {{ .Values.inferenceBackend.resources.requestsMemory }}
           volumeMounts:
             - name: home-dir
-              mountPath: {{ .Values.volume.clientHomeDirMountPath }}
+              mountPath: {{ .Values.volume.servingHomeDirMountPath }}
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - mountPath: /dev/shm

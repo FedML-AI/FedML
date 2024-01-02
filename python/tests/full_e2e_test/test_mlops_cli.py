@@ -8,7 +8,7 @@ from os.path import expanduser
 import psutil
 import requests
 import yaml
-from fedml.cli.comm_utils.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
@@ -156,7 +156,7 @@ def test_login_with_start_run_by_sending_client_agent_msg(args):
         "timestamp": "1651664950759"
     }
 
-    mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
     mqtt_mgr = MqttManager(
         mqtt_config["BROKER_HOST"],
         mqtt_config["BROKER_PORT"],
@@ -185,7 +185,7 @@ def test_login_with_stop_run_by_sending_client_agent_msg(args):
         "runId": test_run_id,
     }
 
-    mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
     mqtt_mgr = MqttManager(
         mqtt_config["BROKER_HOST"],
         mqtt_config["BROKER_PORT"],

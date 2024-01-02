@@ -9,6 +9,7 @@ import paho.mqtt.publish as mqtt_publish
 import time
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
+import fedml
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
@@ -90,9 +91,9 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, publish_single_message=False):
-        logging.info(
-            f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        # )
         self.check_connection()
 
         mqtt_send_start_time = time.time()
@@ -110,9 +111,9 @@ class MqttManager(object):
         return True
 
     def send_message_json(self, topic, message, publish_single_message=False):
-        logging.info(
-            f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        )
+        # logging.info(
+        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        # )
         self.check_connection()
 
         if publish_single_message:
@@ -285,6 +286,9 @@ class MqttManager(object):
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
 
+    def unsubscribe_msg(self, topic):
+        self._client.unsubscribe(topic)
+
     def check_connection(self):
         count = 0
         while not self._client.connected_flag and self._client.bad_conn_flag:
@@ -330,7 +334,8 @@ if __name__ == "__main__":
 
     last_will_topic = "fedml/mqtt-test/lastwill"
     last_will_msg = {"ID": 1, "status": "OFFLINE"}
-    mqtt_manager = MqttManager("mqtt.fedml.ai", 1883, "admin", "test",
+    mqtt_url = fedml._get_mqtt_service("release")
+    mqtt_manager = MqttManager(mqtt_url, 1883, "admin", "test",
                                30, args.client_id,
                                last_will_topic=last_will_topic,
                                last_will_msg=json.dumps(last_will_msg))

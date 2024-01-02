@@ -41,6 +41,14 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
+        mlops.register_run_status_callback(self.callback_mlops_run_status)
+
+    def callback_mlops_run_status(self, run_id, run_status):
+        logging.info(f"Server run id {run_id}, status {run_status}")
+
+    def is_main_process(self):
+        return getattr(self.aggregator, "aggregator", None) is None or self.aggregator.aggregator.is_main_process()
+
     def run(self):
         super().run()
 
@@ -101,10 +109,17 @@ class FedMLServerManager(FedMLCommManager):
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
-            global_model_url, global_model_key = self.send_message_init_config(
-                client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
-                global_model_url, global_model_key
-            )
+            if type(global_model_params) is dict:
+                client_index = self.data_silo_index_list[client_idx_in_this_round]
+                global_model_url, global_model_key = self.send_message_init_config(
+                    client_id, global_model_params[client_index], client_index,
+                    None, None
+                )
+            else:
+                global_model_url, global_model_key = self.send_message_init_config(
+                    client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
+                    global_model_url, global_model_key
+                )
             client_idx_in_this_round += 1
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
@@ -113,8 +128,8 @@ class FedMLServerManager(FedMLCommManager):
             # get input type and shape for inference
             dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
 
-            model_net_url = mlops.log_training_model_net_info(
-                self.aggregator.aggregator.model, dummy_input_tensor)
+            if not getattr(self.args, "skip_log_model_net", False):
+                model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
 
             # type and shape for later configuration
             input_shape, input_type = self.aggregator.get_input_shape_type()
@@ -181,8 +196,10 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if all_client_is_finished:
-            mlops.log_aggregation_finished_status()
-            time.sleep(3)
+            mlops.stop_sys_perf()
+            if self.is_main_process():
+                mlops.log_aggregation_finished_status()
+            time.sleep(5)
             self.finish()
 
     def handle_message_client_status_update(self, msg_params):
@@ -203,36 +220,100 @@ class FedMLServerManager(FedMLCommManager):
         local_model_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
         logging.info(f"===========local_model_round_idx = {local_model_round_idx}, current index = {self.args.round_idx}")
 
-        current_global_step_on_server = int(self.args.round_idx)
-        current_global_step_on_client = int(local_model_round_idx)
-        if self.aggregator.whether_to_accept(current_global_step_on_server, current_global_step_on_client):
-            self.aggregator.add_local_trained_result(
-                current_global_step_on_server, current_global_step_on_client,
-                self.client_real_ids.index(sender_id), model_params, local_sample_number
+        self.aggregator.add_local_trained_result(
+            self.client_real_ids.index(sender_id), model_params, local_sample_number
+        )
+        # TODO (fedml-dimitris): Check for async.
+        # current_global_step_on_server = int(self.args.round_idx)
+        # current_global_step_on_client = int(local_model_round_idx)
+        # if self.aggregator.whether_to_accept(current_global_step_on_server, current_global_step_on_client):
+        #     self.aggregator.add_local_trained_result(
+        #         current_global_step_on_server, current_global_step_on_client,
+        #         self.client_real_ids.index(sender_id), model_params, local_sample_number
+        b_all_received = self.aggregator.check_whether_all_receive()
+        logging.info("b_all_received = " + str(b_all_received))
+        if b_all_received:
+            mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
+            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
+            tick = time.time()
+            global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
+
+            logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
+            new_client_id_list_in_this_round = []
+            for client_idx in model_list_idxes:
+                new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
+            logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
+            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
+
+            if self.is_main_process():
+                MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
+
+            self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+
+            self.aggregator.assess_contribution()
+
+            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
+
+            # send round info to the MQTT backend
+            mlops.log_round_info(self.round_num, self.args.round_idx)
+
+            self.client_id_list_in_this_round = self.aggregator.client_selection(
+                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
 
-            if self.aggregator.whether_to_aggregate(): # timeout 5 minutes
-                logging.info("==========start to aggregate============")
-                mlops.event("server.wait", event_started=False,
-                            event_value=str(self.args.round_idx))
-                mlops.event("server.agg_and_eval", event_started=True,
-                            event_value=str(self.args.round_idx))
+            # TODO (fedml-dimitris): Check for async.
+            # if self.aggregator.whether_to_aggregate(): # timeout 5 minutes
+            #     logging.info("==========start to aggregate============")
+            #     mlops.event("server.wait", event_started=False,
+            #                 event_value=str(self.args.round_idx))
+            #     mlops.event("server.agg_and_eval", event_started=True,
+            #                 event_value=str(self.args.round_idx))
 
-                tick = time.time()
-                self.global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
+            #     tick = time.time()
+            #     self.global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
 
-                # used by security-enabled setting (e.g., outlier removal algorithm)
-                logging.info("self.client_id_list_in_this_round = {}".format(
-                    self.client_id_list_in_this_round))
-                new_client_id_list_in_this_round = []
-                for client_idx in model_list_idxes:
-                    new_client_id_list_in_this_round.append(
-                        self.client_id_list_in_this_round[client_idx])
-                logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
-                Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
+            #     # used by security-enabled setting (e.g., outlier removal algorithm)
+            #     logging.info("self.client_id_list_in_this_round = {}".format(
+            #         self.client_id_list_in_this_round))
+            #     new_client_id_list_in_this_round = []
+            #     for client_idx in model_list_idxes:
+            #         new_client_id_list_in_this_round.append(
+            #             self.client_id_list_in_this_round[client_idx])
+            #     logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
+            #     Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
 
-                MLOpsProfilerEvent.log_to_wandb(
-                    {"AggregationTime": time.time() - tick, "round": self.args.round_idx})
+            #     MLOpsProfilerEvent.log_to_wandb(
+            #         {"AggregationTime": time.time() - tick, "round": self.args.round_idx})
+
+            if self.args.round_idx == 0 and self.is_main_process():
+                MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
+
+            client_idx_in_this_round = 0
+            global_model_url = None
+            global_model_key = None
+            for receiver_id in self.client_id_list_in_this_round:
+                client_index = self.data_silo_index_list[client_idx_in_this_round]
+                if type(global_model_params) is dict:
+                    # compatible with the old version that, user did not give {-1 : global_params_dict}
+                    global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                        receiver_id, global_model_params[client_index], client_index
+                    )
+                else:
+                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                        receiver_id, global_model_params, client_index, global_model_url, global_model_key
+                    )
+                client_idx_in_this_round += 1
+
+            # if user give {-1 : global_params_dict}, then record global_model url separately
+            # Note MPI backend does not have rank -1
+            if self.backend != "MPI" and type(global_model_params) is dict and (-1 in global_model_params.keys()):
+                global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                    -1, global_model_params[-1], -1
+                )
+
+            self.args.round_idx += 1
+            if self.is_main_process():
+                mlops.log_aggregated_model_info(self.args.round_idx, model_url=global_model_url)
 
                 self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
                 self.aggregator.assess_contribution()
@@ -264,20 +345,21 @@ class FedMLServerManager(FedMLCommManager):
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index,
                                  global_model_url=None, global_model_key=None):
-        tick = time.time()
-        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
-        if global_model_url is not None:
-            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
-        if global_model_key is not None:
-            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, int(self.args.round_idx))
-        self.send_message(message)
-        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
-        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+        if self.is_main_process():
+            tick = time.time()
+            message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
+            if global_model_url is not None:
+                message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
+            if global_model_key is not None:
+                message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+            message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, int(self.args.round_idx))
+            self.send_message(message)
+            global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+            global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+            MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
         return global_model_url, global_model_key
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
@@ -297,192 +379,44 @@ class FedMLServerManager(FedMLCommManager):
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index,
                                           global_model_url=None, global_model_key=None):
-        tick = time.time()
-        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
-                          self.get_sender_id(), receive_id, )
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+        if self.is_main_process():
+            tick = time.time()
+            logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+            message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+            if global_model_url is not None:
+                message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
+            if global_model_key is not None:
+                message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+            message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+            self.send_message(message)
 
-        if global_model_url is not None:
-            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
-        if global_model_key is not None:
-            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
-        self.send_message(message)
+            MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
-        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
-
-        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+            global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+            global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
         return global_model_url, global_model_key
 
     def send_message_diff_sync_model_to_client(self, receive_id, client_model_params, client_index):
-        tick = time.time()
-        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id)
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_model_params)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
-        self.send_message(message)
+        global_model_url = None
+        global_model_key = None
 
-        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+        if self.is_main_process():
+            tick = time.time()
+            logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+            message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_model_params)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+            message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
+            message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+            self.send_message(message)
 
-        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+            MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+
+            global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+            global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
         return global_model_url, global_model_key
-
-
-class FedMLJobLifeCycleMgr(threading.Thread):
-    """select client_num_per_round users: 
-    1. uniformly random picks M clients which are ONLINE, and send check messages
-    2. wait for 5 seconds, if they are all ONLINE, go to send the models
-    3. if M' doesn't respond, we continue to select M' clients and wait for their response
-    4. if the 2nd try still cannot match with M ONLINE clients, we then allow dropout 10% dropout rate during selection
-
-    reference implementation of the threading with callback: https://gist.github.com/amirasaran/e91c7253c03518b8f7b7955df0e954bb
-    """
-
-    def __init__(self, round_idx, client_num_in_total, client_num_per_round, client_real_ids, client_online_status_mapping,
-                 callback_on_success=None, callback_on_finished_message=None, callback_on_exception=None, *args, **kwargs):
-        super(FedMLJobLifeCycleMgr, self).__init__(target=self.run, *args, **kwargs)
-        self.callback_on_success = callback_on_success
-        self.callback_on_finished_message = callback_on_finished_message
-        self.callback_on_exception = callback_on_exception
-
-        self.round_idx = round_idx
-        self.client_num_in_total = client_num_in_total
-        self.client_num_per_round = client_num_per_round
-        self.dropout_rate = 0.1
-        self.timeout = 60  # 20 * 5 seconds = 5 minutes timeout
-
-        self.client_online_status_mapping = client_online_status_mapping
-        self.client_real_ids = client_real_ids
-
-    def run(self):
-        selected_client_in_this_round = []
-        selected_data_silo_index_list = []
-
-        to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
-        to_be_selected_client_num = self.client_num_per_round
-
-        while self.timeout > 0:
-            """
-            select and pull client status
-            """
-            print(f"to_be_selected_client_real_id_list = {to_be_selected_client_real_id_list}")
-            random_seed = self.round_idx + self.timeout  # avoid repeat the same selected devices
-            selected_client_list = self.client_selection(
-                random_seed, to_be_selected_client_real_id_list, to_be_selected_client_num
-            )
-            client_idx = 0
-            for client_id in selected_client_list:
-                self.callback_on_check_client_status(
-                    int(client_id), self.client_real_ids.index(int(client_id)),
-                )
-                client_idx += 1
-
-            """
-            wait for 5 seconds
-            """
-            times_wait_for_online_clients = 5
-            is_selected_client_all_onlne = False
-            while not is_selected_client_all_onlne and times_wait_for_online_clients > 0:
-                is_selected_client_all_onlne = True
-                for client_id in selected_client_list:
-                    if not self.client_online_status_mapping.get(str(client_id), False):
-                        is_selected_client_all_onlne = False
-                        break
-
-                logging.info(
-                    f"need to select {selected_client_list} clients. Current online clients = {self.client_online_status_mapping}"
-                )
-                time.sleep(1)
-                times_wait_for_online_clients -= 1
-
-            for client_id in selected_client_list:
-                client_online_status = self.client_online_status_mapping.get(str(client_id), False)
-                if client_online_status:
-                    # add online clients to selected_client_in_this_round
-                    selected_client_in_this_round.append(int(client_id))
-
-                    # only remove online clients
-                    to_be_selected_client_real_id_list.remove(int(client_id))
-
-            logging.info(f"selected_client_in_this_round = {selected_client_in_this_round}")
-            if len(selected_client_in_this_round) == self.client_num_per_round:
-                # find the connected clients and notify the message queue thread
-                selected_data_silo_index_list = self.data_silo_selection(
-                    self.round_idx, self.client_num_in_total, len(selected_client_in_this_round),
-                )
-                self.callback_on_success(selected_client_in_this_round, selected_data_silo_index_list)
-                break
-            else:
-                # update to_be_selected_client_real_id_list and try again
-                to_be_selected_client_num = self.client_num_per_round - len(selected_client_in_this_round)
-                # edge case: if there aren't enough client left, we will try again but use the full client real id list
-                if len(to_be_selected_client_real_id_list) < to_be_selected_client_num:
-                    logging.info("not enough client left, we still try again but use the full client real id list")
-                    to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
-                    to_be_selected_client_num = self.client_num_per_round
-                    selected_client_in_this_round.clear()
-
-            self.timeout -= 1
-
-        # still cannot find enough connected clients, notify exception
-        if len(selected_client_in_this_round) != self.client_num_per_round:
-            self.callback_on_exception()
-        print("thread ended successfully!")
-
-    def client_selection(
-        self, random_seed, client_id_list_in_total, client_num_per_round
-    ):
-        """
-        Args:
-            round_idx: round index, starting from 0
-            client_id_list_in_total: this is the real edge IDs.
-                                    In MLOps, its element is real edge ID, e.g., [64, 65, 66, 67];
-                                    in simulated mode, its element is client index starting from 1, e.g., [1, 2, 3, 4]
-            client_num_per_round:
-
-        Returns:
-            client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
-        """
-        if client_num_per_round == len(client_id_list_in_total):
-            return client_id_list_in_total
-        # make sure for each comparison, we are selecting the same clients each round
-        np.random.seed(random_seed)
-        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
-        return client_id_list_in_this_round
-
-    def data_silo_selection(self, random_seed, client_num_in_total, client_num_per_round):
-        """
-
-        Args:
-            random_seed: random seed
-            client_num_in_total: this is equal to the users in a synthetic data,
-                                    e.g., in synthetic_1_1, this value is 30
-            client_num_per_round: the number of edge devices that can train
-
-        Returns:
-            data_silo_index_list: e.g., when client_num_in_total = 30, client_num_in_total = 3,
-                                        this value is the form of [0, 11, 20]
-
-        """
-        logging.info(
-            "client_num_in_total = %d, client_num_per_round = %d"
-            % (client_num_in_total, client_num_per_round)
-        )
-        assert client_num_in_total >= client_num_per_round
-
-        if client_num_in_total == client_num_per_round:
-            return [i for i in range(client_num_per_round)]
-        else:
-            # make sure for each comparison, we are selecting the same clients each round
-            np.random.seed(random_seed)
-            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
-            return data_silo_index_list

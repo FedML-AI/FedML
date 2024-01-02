@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $FEDML_AGGREGATOR_NAME
+  namespace: fedml-devops-aggregator-$FEDML_AGGREGATOR_VERSION
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedml-aggregator
+  template:
+    metadata:
+      labels:
+        app: fedml-aggregator
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: fedml-aggregator
+                operator: In
+                values:
+                - "true"
+      tolerations:
+      - key: "fedml-devops"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/ci"
+        operator: "Exists"
+        effect: "NoSchedule"
+      serviceAccountName: fedml-kubectl-sa-ops
+      serviceAccount: fedml-kubectl-sa-ops
+      containers:
+      - name: fedml-aggregator
+        image: $FEDML_AGGREGATOR_IMAGE_PATH
+        imagePullPolicy: Always
+        env:
+        - name: ACCOUNT_ID
+          value: "$FEDML_ACCOUNT_ID"
+        - name: SERVER_DEVICE_ID
+          value: "$FEDML_SERVER_DEVICE_ID"
+        - name: FEDML_VERSION
+          value: $FEDML_VERSION
+        - name: FEDML_PACKAGE_NAME
+          value: $FEDML_PACKAGE_NAME
+        - name: FEDML_PACKAGE_URL
+          value: $FEDML_PACKAGE_URL
+        - name: FEDML_RUNNER_CMD
+          value: $FEDML_RUNNER_CMD
+        ports:
+        - name: server-port
+          containerPort: 9000
+        volumeMounts:
+          - name: localtime
+            mountPath: "/etc/localtime"
+        resources:
+          requests:
+            memory: "1400Mi"
+            cpu: "1000m"
+          limits:
+            memory: "4096Mi"
+            cpu: "4000m"
+      volumes:
+        - name: localtime
+          hostPath:
+            type: File
+            path: /etc/localtime

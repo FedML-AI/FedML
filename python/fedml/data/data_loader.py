@@ -105,7 +105,7 @@ def setup_s3_service(s3_config):
 
 
 def data_server_preprocess(args):
-    mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    mqtt_config, s3_config, _, _ = MLOpsConfigs.fetch_all_configs()
     s3_obj, BUCKET_NAME = setup_s3_service(s3_config)
 
     args.private_local_data = ""

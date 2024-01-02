@@ -29,7 +29,7 @@ public class BatteryUtils {
                 battery.setPower(getBatteryCapacity(context));
             }
         } catch (Exception e) {
-            LogHelper.e(e.toString());
+            LogHelper.w(e, "getBattery failed.");
         }
         return battery;
     }
@@ -48,7 +48,7 @@ public class BatteryUtils {
                     .getMethod("getBatteryCapacity")
                     .invoke(mPowerProfile);
         } catch (Exception e) {
-            LogHelper.e(e.toString());
+            LogHelper.w(e, "getBatteryCapacity failed.");
         }
         // unit is mAh
         return batteryCapacity + "";

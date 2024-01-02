@@ -1,10 +1,7 @@
-name: Build-Wheels-PyPi
+name: Build-Wheels-PyPi-Release
 # https://github.com/pypa/cibuildwheel
 # Controls when the workflow will run
 on:
-  pull_request:
-    branches: [ master ]
-
   workflow_run:
     workflows: [ LightSecAgg-Linux ]
     types:

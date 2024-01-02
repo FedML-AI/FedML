@@ -125,7 +125,9 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
                 runOnUiThread(() -> {
                     if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING ||
-                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED) {
+                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_IDLE ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_FAILED) {
                         LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
                         mProgressView.setProgress(0);

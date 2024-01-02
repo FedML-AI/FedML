@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 
 
 class Bucket:
@@ -13,7 +14,7 @@ class Bucket:
             sample_num = cls._get_total_sample_num_for_current_batch(
                 batch_idx * batch_size, client_num, client_grad_list
             )
-            batch_weight = dict()
+            batch_weight = OrderedDict()
             for i in range(0, client_num):
                 local_sample_num, local_model_params = client_grad_list[
                     batch_idx * batch_size + i
