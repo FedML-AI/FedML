@@ -120,12 +120,11 @@ def run_stop(run_id: str, platform: str = "falcon", api_key: str = None) -> bool
     return run.stop(run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_list(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
+def run_list(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
     return run.list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_status(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (
-FedMLRunModelList, str):
+def run_status(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (FedMLRunModelList, str):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
@@ -174,10 +173,14 @@ def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
 
 
-def upload(data_path, api_key=None, name=None, show_progress=False, out_progress_to_err=True, progress_desc=None) \
+def upload(data_path, api_key=None, name=None, show_progress=False, out_progress_to_err=True, progress_desc=None, metadata=None) \
         -> str:
     return storage.upload(data_path=data_path, api_key=api_key, name=name, progress_desc=progress_desc,
-                          show_progress=show_progress, out_progress_to_err=out_progress_to_err)
+                          show_progress=show_progress, out_progress_to_err=out_progress_to_err, metadata=metadata)
+
+
+def get_metadata(data_name, api_key=None):
+    return storage.get_metadata(data_name=data_name, api_key=api_key)
 
 
 def download(data_name, api_key=None, dest_path=None):
@@ -234,8 +237,8 @@ def model_package(name):
     model_module.package(name)
 
 
-def model_push(name, model_storage_url):
-    model_module.push(name, model_storage_url)
+def model_push(name, model_storage_url, api_key, tag_names, model_id, model_version):
+    model_module.push(name, model_storage_url, api_key, tag_names, model_id, model_version)
 
 
 def model_pull(name):

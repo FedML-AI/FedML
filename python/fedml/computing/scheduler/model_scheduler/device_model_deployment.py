@@ -6,6 +6,7 @@ import shutil
 import time
 import traceback
 import yaml
+import datetime
 
 import requests
 import torch
@@ -15,6 +16,7 @@ import tritonclient.http as http_client
 import collections.abc
 
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 for type_name in collections.abc.__all__:
@@ -25,6 +27,7 @@ import io
 
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from ..scheduler_core.compute_utils import ComputeUtils
 
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -37,13 +40,63 @@ class CPUUnpickler(pickle.Unpickler):
             return super().find_class(module, name)
 
 
+def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_device_id=None):
+    gpu_ids = None
+    client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
+    should_release_gpu_ids = False
+
+    try:
+        ComputeCacheManager.get_instance().set_redis_params()
+        with ComputeCacheManager.get_instance().lock(
+                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
+        ):
+            if num_gpus is None:
+                num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
+                num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
+            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
+            if gpu_ids is not None:
+                logging.info(f"cuda visible gpu ids: {gpu_ids}")
+                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
+                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
+                if len(gpu_list) != num_gpus:
+                    gpu_ids = None
+                    should_release_gpu_ids = True
+                else:
+                    gpu_ids = gpu_list
+    except Exception as e:
+        logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
+        gpu_ids = None
+        raise e
+
+    if should_release_gpu_ids:
+        JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, edge_id)
+    if gpu_ids is None:
+        cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
+            end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
+            model_master_device_id=master_device_id, model_slave_device_id=edge_id)
+        gpu_ids = cuda_visable_gpu_ids.split(',')
+        gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
+
+    if gpu_ids is None:
+        raise Exception("No available gpu resources!")
+
+    if not torch.cuda.is_available():
+        gpu_attach_cmd = ""
+    else:
+        gpu_id_map = map(lambda x: str(x), gpu_ids)
+        gpu_ids_str = ','.join(gpu_id_map)
+        gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
+
+    return gpu_ids, gpu_attach_cmd
+
+
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip, edge_id):
+                     model_from_open, token, master_ip, edge_id, master_device_id=None):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
@@ -73,54 +126,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
-    num_gpus = 1
-    try:
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().get_redis_connection().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
-        ):
-            num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
-            num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
-            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
-            if gpu_ids is not None:
-                logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
-                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-                if len(gpu_list) != num_gpus:
-                    _, matched_gpu_num, matched_gpu_ids = JobRunnerUtils.request_gpu_ids(
-                        num_gpus, JobRunnerUtils.get_realtime_gpu_available_ids())
-                    gpu_ids = list(matched_gpu_ids)
-                else:
-                    gpu_ids = gpu_list
-    except Exception as e:
-        logging.info(f"Execption when fetching gpu ids. {traceback.format_exc()}")
-        gpu_ids = None
-        pass
-
-    if not torch.cuda.is_available():
-        gpu_attach_cmd = ""
-    else:
-        gpu_attach_cmd = "--gpus 1"
-        if gpu_ids is not None and str(gpu_ids).strip() != "":
-            gpu_id_map = map(lambda x: str(x), gpu_ids)
-            gpu_ids_str = ','.join(gpu_id_map)
-            gpu_attach_cmd = f"--gpus '\"device={gpu_ids_str}\"'"
-        elif num_gpus is not None and str(num_gpus).strip() != "" and num_gpus > 0:
-            gpu_attach_cmd = f"--gpus {num_gpus}"
-        else:
-            num_gpus = 1
-
-    logging.info("Update docker environments...")
-
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
-        gpu_attach_cmd = ""
+    num_gpus = 0
+    gpu_ids, gpu_attach_cmd = None, ""
 
-    running_model_name = ClientConstants.get_running_model_name(end_point_name,
-                                                                inference_model_name,
-                                                                model_version, end_point_id, model_id)
+    running_model_name = ClientConstants.get_running_model_name(
+        end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
 
     # Check whether triton server is running.
     triton_server_is_running = False
@@ -196,7 +210,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 config = yaml.safe_load(file)
                 # Resource related
                 use_gpu = config.get('use_gpu', False)
-                gpu_ids = config.get('gpu_ids', gpu_ids)
+                in_gpu_ids = config.get('gpu_ids', gpu_ids)
+                num_gpus = config.get('num_gpus', None)
+                if not use_gpu:
+                    num_gpus = 0
+                else:
+                    if num_gpus is None:
+                        num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
                 usr_indicated_worker_port = config.get('worker_port', "")
                 if usr_indicated_worker_port == "":
@@ -206,7 +226,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 tmpfs = config.get('tmpfs', None)
                 cpus = config.get('cpus', None)
                 if cpus is not None:
-                    cpus = str(cpus)
+                    cpus = int(cpus)
                 memory = config.get('memory', None)
 
                 if usr_indicated_worker_port == "":
@@ -281,6 +301,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if relative_entry == "":
                 logging.warning("You missed main_entry in the fedml_model_config.yaml")
 
+        if num_gpus > 0:
+            gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(
+                edge_id, end_point_id, num_gpus=num_gpus, master_device_id=master_device_id)
+
         if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
             # configuration passed by user in the Cli
             input_size = model_params["input_size"]
@@ -341,9 +365,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                           "installed Docker Desktop or Docker Engine, and the docker is running")
             return "", "", None, None, None
 
-        default_server_container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
+        container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
                                         security_utils.get_content_hash(running_model_name)
+        
+        same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
+        default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
         try:
             exist_container_obj = client.containers.get(default_server_container_name)
@@ -426,7 +452,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 shm_size=shm_size,
                 storage_opt=storage_opt,
                 tmpfs=tmpfs,
-                cpuset_cpus=cpus,
+                cpu_count=cpus,
                 mem_limit=memory,
             ),
             detach=True,
@@ -636,6 +662,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           request_input_example=None, infer_host="127.0.0.1",
                           enable_custom_image=False):
     deploy_attempt = 0
+    last_log_time = datetime.datetime.now()
     last_out_logs = ""
     last_err_logs = ""
 
@@ -660,32 +687,26 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 break
 
             if container_obj is not None:
-                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False)
-                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False)
+                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False, since=last_log_time)
+                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False, since=last_log_time)
+
+                last_log_time = datetime.datetime.now()
+
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
-                    added_logs = str(err_logs).replace(last_err_logs, "")
-                    if len(added_logs) > 0:
-                        log_str = f"logs from docker: {format(added_logs)}"
-                        if added_logs.startswith("ERROR:") or added_logs.startswith("CRITICAL:"):
-                            logging.error(log_str)
-                            last_err_logs = err_logs
-                        elif added_logs.startswith("WARNING:"):
-                            logging.warning(log_str)
-                            last_out_logs = err_logs
-                        elif added_logs.startswith("DEBUG:"):
-                            logging.debug(log_str)
-                            last_out_logs = err_logs
-                        else:
-                            logging.info(log_str)
-                            last_out_logs = err_logs
+                    err_logs = f"logs from docker: {format(err_logs)}"
+                    if err_logs.startswith("ERROR:") or err_logs.startswith("CRITICAL:"):
+                        logging.error(err_logs)
+                    elif err_logs.startswith("WARNING:"):
+                        logging.warning(err_logs)
+                    elif err_logs.startswith("DEBUG:"):
+                        logging.debug(err_logs)
+                    else:
+                        logging.info(err_logs)
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
-                    added_logs = str(out_logs).replace(last_out_logs, "")
-                    if len(added_logs) > 0:
-                        logging.info(f"Logs from docker: {format(added_logs)}")
-                    last_out_logs = out_logs
+                    logging.info(f"Logs from docker: {format(out_logs)}")
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically"

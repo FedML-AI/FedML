@@ -1,10 +1,14 @@
 import argparse
+import time
 
 import pynvml
 
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.scheduler_core.scheduler_matcher import SchedulerMatcher
+from fedml.computing.scheduler.scheduler_core.compute_gpu_db import ComputeGpuDatabase
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler import device_model_deployment
 
 
 def test_match_multi_nodes_with_multi_gpus(in_args, run_id, node_num=1, gpu_num_per_node=1, request_gpu_num=1):
@@ -150,6 +154,39 @@ def test_gpu_info():
             print(f"Exception when getting gpu info: {str(e)} ")
 
 
+def test_gpu_db():
+    ComputeGpuDatabase.get_instance().set_database_base_dir(ClientConstants.get_database_dir())
+    ComputeGpuDatabase.get_instance().create_table()
+    run_id = 2000
+    device_id = 1111
+    ComputeGpuDatabase.get_instance().set_device_run_gpu_ids(device_id, run_id, [0,1,2])
+    gpu_ids = ComputeGpuDatabase.get_instance().get_device_run_gpu_ids(device_id, run_id)
+
+    ComputeGpuDatabase.get_instance().set_device_run_num_gpus(device_id, run_id, 3)
+    num_gpus = ComputeGpuDatabase.get_instance().get_device_run_num_gpus(device_id, run_id)
+
+    ComputeGpuDatabase.get_instance().set_device_available_gpu_ids(device_id, [0,1,2])
+    gpu_ids = ComputeGpuDatabase.get_instance().get_device_available_gpu_ids(device_id)
+
+    ComputeGpuDatabase.get_instance().set_device_total_num_gpus(device_id, 3)
+    total_num_gpus = ComputeGpuDatabase.get_instance().get_device_total_num_gpus(device_id)
+
+    ComputeGpuDatabase.get_instance().set_run_device_ids(run_id, [0,1,2])
+    gpu_ids = ComputeGpuDatabase.get_instance().get_run_device_ids(run_id)
+
+    ComputeGpuDatabase.get_instance().set_run_total_num_gpus(run_id, 3)
+    total_num_gpus = ComputeGpuDatabase.get_instance().get_run_total_num_gpus(run_id)
+
+    ComputeGpuDatabase.get_instance().set_edge_model_id_map(run_id, 1122, 1133, 1144)
+    edge_id, master_id, worker_id = ComputeGpuDatabase.get_instance().get_edge_model_id_map(run_id)
+    print("OK")
+
+
+def test_request_gpu_ids_on_deployment():
+    gpu_ids, gpu_attach_cmd = device_model_deployment.request_gpu_ids_on_deployment(111, 2, 222)
+    print(f"test_request_gpu_ids_on_deployment result: gpu_ids {gpu_ids}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="dev")
@@ -164,6 +201,9 @@ if __name__ == "__main__":
     run_id = 1000
 
     print("Hi everyone, I am testing the server runner.\n")
+
+    test_request_gpu_ids_on_deployment()
+    time.sleep(1000000)
 
     print("Test for mapping config dictionaries to environment variables.")
     test_config_map_to_env_variables()

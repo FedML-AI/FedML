@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 
@@ -6,30 +7,28 @@ from fedml.computing.scheduler.model_scheduler.device_server_constants import Se
 from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from fedml.core.common.singleton import Singleton
 
 Base = declarative_base()
 
 
-class FedMLModelDatabase(object):
+class FedMLModelDatabase(Singleton):
     MODEL_DEPLOYMENT_DB = "model-deployment.db"
 
     def __init__(self):
-        self.db_connection = None
-        self.db_engine = None
-
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, "_instance"):
-            orig = super(FedMLModelDatabase, cls)
-            cls._instance = orig.__new__(cls, *args, **kw)
-            cls._instance.init()
-        return cls._instance
-
-    def init(self):
-        pass
+        if not hasattr(self, "db_connection"):
+            self.db_connection = None
+        if not hasattr(self, "db_engine"):
+            self.db_engine = None
+        if not hasattr(self, "db_base_dir"):
+            self.db_base_dir = None
 
     @staticmethod
     def get_instance():
         return FedMLModelDatabase()
+
+    def set_database_base_dir(self, database_base_dir):
+        self.db_base_dir = database_base_dir
 
     def set_deployment_result(self, end_point_id, end_point_name, model_name, model_version,
                               device_id, deployment_result):
@@ -49,6 +48,20 @@ class FedMLModelDatabase(object):
             ret_result_list.append(json.dumps(result_dict))
         return ret_result_list
 
+    def delete_deployment_result(self, device_id, end_point_id, end_point_name, model_name, model_version=None):
+        self.open_job_db()
+        result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
+            filter(and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                        FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                        FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}',
+                        # FedMLDeploymentResultInfoModel.model_version == f'{model_version}',
+                        )).first()
+        if result_info is not None:
+            self.db_connection.delete(result_info)
+            self.db_connection.commit()
+        return True
+
     def get_deployment_status_list(self, end_point_id, end_point_name, model_name, model_version=None):
         result_list = self.get_deployment_results_info(end_point_id, end_point_name, model_name, model_version)
         ret_status_list = list()
@@ -56,6 +69,86 @@ class FedMLModelDatabase(object):
             status_dict = {"cache_device_id": result.device_id, "status": result.deployment_status}
             ret_status_list.append(json.dumps(status_dict))
         return ret_status_list
+
+    def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        try:
+            result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
+            for result_item in result_list:
+                result_device_id, result_payload = self.get_result_item_info(result_item)
+                found_end_point_id = result_payload["end_point_id"]
+
+                if str(found_end_point_id) == str(end_point_id) and str(result_device_id) == str(device_id):
+                    return result_payload
+        except Exception as e:
+            logging.info(e)
+
+        return None
+
+    def get_deployment_status_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        try:
+            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)
+            for status_item in status_list:
+                status_device_id, status_payload = self.get_status_item_info(status_item)
+                found_end_point_id = status_payload["end_point_id"]
+
+                if str(found_end_point_id) == str(end_point_id) and str(status_device_id) == str(device_id):
+                    return status_payload
+        except Exception as e:
+            logging.info(e)
+
+        return None
+
+    def delete_deployment_status(self, end_point_id, end_point_name, model_name, model_version=None):
+        self.open_job_db()
+        if model_version is None:
+            self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+                and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                     FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                     FedMLDeploymentResultInfoModel.model_name == f'{model_name}')).delete()
+        else:
+            self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+                and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                     FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                     FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                     FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
+        self.db_connection.commit()
+
+    def delete_deployment_result(self, end_point_id, end_point_name, model_name, model_version=None):
+        self.open_job_db()
+        if model_version is None:
+            self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+                and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                     FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                     FedMLDeploymentResultInfoModel.model_name == f'{model_name}')).delete()
+        else:
+            self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+                and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                     FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                     FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                     FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
+        self.db_connection.commit()
+
+    def get_result_item_info(self, result_item):
+        result_item_json = json.loads(result_item)
+        if isinstance(result_item_json, dict):
+            result_item_json = json.loads(result_item)
+        device_id = result_item_json["cache_device_id"]
+        if isinstance(result_item_json["result"], str):
+            result_payload = json.loads(result_item_json["result"])
+        else:
+            result_payload = result_item_json["result"]
+        return device_id, result_payload
+
+    def get_status_item_info(self, status_item):
+        status_item_json = json.loads(status_item)
+        if isinstance(status_item_json, dict):
+            status_item_json = json.loads(status_item)
+        device_id = status_item_json["cache_device_id"]
+        if isinstance(status_item_json["status"], str):
+            status_payload = json.loads(status_item_json["status"])
+        else:
+            status_payload = status_item_json["status"]
+        return device_id, status_payload
 
     def set_end_point_status(self, end_point_id, end_point_name, status):
         self.set_deployment_run_info(end_point_id, end_point_name, end_point_status=status)
@@ -132,9 +225,12 @@ class FedMLModelDatabase(object):
         if self.db_connection is not None:
             return
 
-        if not os.path.exists(ServerConstants.get_database_dir()):
-            os.makedirs(ServerConstants.get_database_dir(), exist_ok=True)
-        job_db_path = os.path.join(ServerConstants.get_database_dir(), FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
+        if self.db_base_dir is None:
+            if not os.path.exists(ServerConstants.get_database_dir()):
+                os.makedirs(ServerConstants.get_database_dir(), exist_ok=True)
+            self.db_base_dir = ServerConstants.get_database_dir()
+
+        job_db_path = os.path.join(self.db_base_dir, FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
         self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)

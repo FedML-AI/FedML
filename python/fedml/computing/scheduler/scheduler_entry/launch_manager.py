@@ -405,6 +405,7 @@ class FedMLJobConfig(object):
         self.job_config_dict = load_yaml_config(job_yaml_file)
         self.fedml_env = self.job_config_dict.get("fedml_env", {})
         self.project_name = self.fedml_env.get("project_name", None)
+        self.federate_project_name = self.fedml_env.get("federate_project_name", None)
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"

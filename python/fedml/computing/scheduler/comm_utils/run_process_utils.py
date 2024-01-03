@@ -97,7 +97,10 @@ class RunProcessUtils:
                     is_running = False
                     try:
                         process = psutil.Process(int(process_id))
-                        if process.status() == psutil.STATUS_RUNNING:
+                        process.is_running()
+                        if process.status() == psutil.STATUS_RUNNING or \
+                                process.status() == psutil.STATUS_SLEEPING or \
+                                process.status() == psutil.STATUS_IDLE:
                             is_running = True
                     except Exception as e:
                         pass
@@ -166,7 +169,17 @@ class RunProcessUtils:
             try:
                 for cmd in pid.cmdline():
                     if cmd.find(cmd_line) != -1:
-                        ret_pids.append(pid.pid)
+                        is_running = False
+                        try:
+                            process = psutil.Process(pid.pid)
+                            if process.status() == psutil.STATUS_RUNNING or \
+                                    process.status() == psutil.STATUS_SLEEPING or \
+                                    process.status() == psutil.STATUS_IDLE:
+                                is_running = True
+                        except Exception as e:
+                            pass
+                        if is_running:
+                            ret_pids.append(pid.pid)
                         if break_on_first:
                             return ret_pids
             except Exception as e:

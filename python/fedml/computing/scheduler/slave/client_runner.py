@@ -16,6 +16,7 @@ import traceback
 import urllib
 import uuid
 import zipfile
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -43,6 +44,7 @@ from ....core.mlops.mlops_utils import MLOpsUtils
 from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
+from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class RunnerError(Exception):
@@ -61,7 +63,7 @@ class FedMLClientRunner:
                  cuda_visible_gpu_ids_str=None):
         self.disable_client_login = False
         self.model_device_server = None
-        self.model_device_client = None
+        self.model_device_client_list = None
         self.run_process_event = None
         self.run_process_event_map = dict()
         self.run_process_completed_event = None
@@ -187,7 +189,8 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
@@ -872,6 +875,7 @@ class FedMLClientRunner:
         matched_gpu_num = scheduler_match_info.get("matched_gpu_num", 0)
         model_master_device_id = scheduler_match_info.get("model_master_device_id", None)
         model_slave_device_id = scheduler_match_info.get("model_slave_device_id", None)
+        model_slave_device_id_list = scheduler_match_info.get("model_slave_device_id_list", None)
         run_config = request_json.get("run_config", {})
         run_params = run_config.get("parameters", {})
         serving_args = run_params.get("serving_args", {})
@@ -1062,7 +1066,7 @@ class FedMLClientRunner:
         run_id = payload_json.get("run_id", 0)
         context = payload_json.get("context", None)
         response_topic = f"client/server/response_device_info/{server_id}"
-        if self.mlops_metrics is not None and self.model_device_client is not None and \
+        if self.mlops_metrics is not None and self.model_device_client_list is not None and \
                 self.model_device_server is not None:
             total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(
@@ -1092,7 +1096,11 @@ class FedMLClientRunner:
                 "user_id": self.args.user,
                 "run_process_list_map": self.get_all_run_process_list_map()
             }
-            response_payload = {"slave_device_id": self.model_device_client.get_edge_id(),
+            salve_device_ids = list()
+            for model_client in self.model_device_client_list:
+                salve_device_ids.append(model_client.get_edge_id())
+            response_payload = {"slave_device_id": self.model_device_client_list[0].get_edge_id(),
+                                "slave_device_id_list": salve_device_ids,
                                 "master_device_id": self.model_device_server.get_edge_id(),
                                 "run_id": run_id, "edge_id": self.edge_id,
                                 "edge_info": device_info_json}
@@ -1288,6 +1296,8 @@ class FedMLClientRunner:
                     print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                           f"response.content: {response.content}")
             else:
+                if status_code == SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR:
+                    raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
                 return 0, None, None
@@ -1378,15 +1388,20 @@ class FedMLClientRunner:
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
+        worker_deploy_id_list = [modeld_device_clint.edge_id for index, modeld_device_clint in enumerate(self.model_device_client_list)]
         print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
               f"master deploy ID is {str(self.model_device_server.edge_id)}, "
-              f"worker deploy ID is {str(self.model_device_client.edge_id)}"
+              f"worker deploy ID is {worker_deploy_id_list}"
               )
         if self.edge_extra_url is not None and self.edge_extra_url != "":
             print(f"You may visit the following url to fill in more information with your device.\n"
                   f"{self.edge_extra_url}")
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=False)
+
+        from fedml.core.mlops import sync_deploy_id
+        sync_deploy_id(
+            self.edge_id, self.model_device_server.edge_id, worker_deploy_id_list)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
@@ -1445,20 +1460,28 @@ class FedMLClientRunner:
         infer_redis_addr = os.getenv("FEDML_INFER_REDIS_ADDR", None)
         infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
         infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
+        model_client_num = os.getenv("FEDML_MODEL_WORKER_NUM", None)
+        os.environ["FEDML_CURRENT_EDGE_ID"] = str(self.edge_id)
 
-        if self.model_device_client is None:
-            self.model_device_client = FedMLModelDeviceClientRunner(self.args, self.args.current_device_id,
-                                                                    self.args.os_name, self.args.is_from_docker,
-                                                                    self.agent_config)
-            if infer_host is not None:
-                self.model_device_client.infer_host = infer_host
-            if infer_redis_addr is not None:
-                self.model_device_client.redis_addr = infer_redis_addr
-            if infer_redis_port is not None:
-                self.model_device_client.redis_port = infer_redis_port
-            if infer_redis_password is not None:
-                self.model_device_client.redis_password = infer_redis_password
-            self.model_device_client.start()
+        if not ComputeCacheManager.get_instance().set_redis_params():
+           os.environ["FEDML_DISABLE_REDIS_CONNECTION"] = "1"
+
+        if self.model_device_client_list is None:
+            model_client_num = 1 if model_client_num is None else int(model_client_num)
+            self.model_device_client_list = list()
+            for client_index in range(model_client_num):
+                model_device_client = FedMLModelDeviceClientRunner(
+                    self.args, f"{self.args.current_device_id}_{client_index+1}", self.args.os_name, self.args.is_from_docker, self.agent_config)
+                if infer_host is not None:
+                    model_device_client.infer_host = infer_host
+                if infer_redis_addr is not None:
+                    model_device_client.redis_addr = infer_redis_addr
+                if infer_redis_port is not None:
+                    model_device_client.redis_port = infer_redis_port
+                if infer_redis_password is not None:
+                    model_device_client.redis_password = infer_redis_password
+                model_device_client.start()
+                self.model_device_client_list.append(model_device_client)
 
         if self.model_device_server is None:
             self.model_device_server = FedMLModelDeviceServerRunner(self.args, self.args.current_device_id,
@@ -1496,8 +1519,14 @@ class FedMLClientRunner:
             if self.model_device_server is not None:
                 self.model_device_server.stop()
 
-            if self.model_device_client is not None:
-                self.model_device_client.stop()
+            if self.model_device_client_list is not None:
+                for model_device_client in self.model_device_client_list:
+                    model_device_client.stop()
+                self.model_device_client_list.clear()
+
+            login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+            with open(login_exit_file, "w") as f:
+                f.writelines(f"{os.getpid()}.")
 
             time.sleep(5)
             sys_utils.cleanup_all_fedml_client_login_processes(

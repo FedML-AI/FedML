@@ -196,6 +196,9 @@ class FedMLAggregator(object):
                 Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round)
             key_metrics_on_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
             logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
+
+            if round_idx == self.args.comm_round - 1:
+                mlops.log({"round_idx": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
     

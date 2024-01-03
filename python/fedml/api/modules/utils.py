@@ -34,6 +34,7 @@ def _check_api_key(api_key=None):
 
 
 def authenticate(api_key):
+
     error_code, api_key = fedml_login(api_key)
 
     # Exit if not able to authenticate successfully

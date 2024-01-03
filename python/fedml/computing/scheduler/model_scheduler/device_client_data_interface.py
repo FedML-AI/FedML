@@ -139,8 +139,9 @@ class FedMLClientDataInterface(Singleton):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         try:
+            # Job id is not unique, because one job may be executed by different edges node.
             current_cursor.execute('''CREATE TABLE IF NOT EXISTS jobs
-                   (job_id INT PRIMARY KEY NOT NULL,
+                   (job_id INT NOT NULL,
                    edge_id INT NOT NULL,
                    started_time TEXT NULL,
                    ended_time TEXT,
@@ -270,11 +271,6 @@ class FedMLClientDataInterface(Singleton):
     def insert_job_to_db(self, job):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        job_query_results = current_cursor.execute("SELECT * from jobs where job_id={};".format(job.job_id))
-        for row in job_query_results:
-            self.db_connection.close()
-            self.update_job_to_db(job)
-            return
 
         try:
             current_cursor.execute("INSERT INTO jobs (\
@@ -294,7 +290,8 @@ class FedMLClientDataInterface(Singleton):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         try:
-            update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} {} where job_id={}".format(
+            update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} {} where job_id={} \
+            and edge_id={}".format(
                 f"edge_id={job.edge_id}" if job.edge_id != 0 else "",
                 f",started_time='{job.started_time}'" if job.started_time != "" else "",
                 f",ended_time='{job.ended_time}'" if job.ended_time != "" else "",
@@ -308,8 +305,20 @@ class FedMLClientDataInterface(Singleton):
                 f",round_index={job.round_index}" if job.round_index != 0 else "",
                 f",total_rounds={job.total_rounds}" if job.total_rounds != 0 else "",
                 f",deployment_result='{job.deployment_result}'" if job.deployment_result != "" else "",
-                job.job_id)
+                job.job_id,
+                job.edge_id)
             current_cursor.execute(update_statement)
+            self.db_connection.commit()
+        except Exception as e:
+            pass
+        self.db_connection.close()
+
+    def delete_job_from_db(self, job):
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            delete_statement = f"DELETE from jobs where job_id={job}"
+            current_cursor.execute(delete_statement)
             self.db_connection.commit()
         except Exception as e:
             pass

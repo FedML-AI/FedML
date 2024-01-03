@@ -119,6 +119,10 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
                 runner.edge_user_name = user_name
                 runner.edge_extra_url = extra_url
                 break
+        except SystemExit as e:
+            click.echo("Your account does not exist. Please make sure your account correct.")
+            os.system("fedml logout -c")
+            return
         except Exception as e:
             click.echo("{}\n{}".format(SchedulerConstants.ERR_MSG_BINDING_EXCEPTION_2, traceback.format_exc()))
             click.echo(SchedulerConstants.ERR_MSG_BINDING_EXIT_RETRYING)
@@ -216,6 +220,10 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
+        except SystemExit as e:
+            click.echo("Your account does not exist. Please make sure your account correct.")
+            os.system("fedml logout -c")
+            return
         except Exception as e:
             register_try_count += 1
             time.sleep(3)
@@ -324,7 +332,7 @@ if __name__ == "__main__":
     args.user = args.user
     if args.api_key == "":
         args.api_key = args.user
-    
+
     fedml.set_env_version(args.version)
     if args.type == 'login':
         login(args)

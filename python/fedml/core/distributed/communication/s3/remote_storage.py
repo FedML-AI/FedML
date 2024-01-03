@@ -6,6 +6,7 @@ import pickle
 import sys
 import time
 import uuid
+import urllib.parse
 from os.path import expanduser
 
 import boto3
@@ -17,6 +18,7 @@ import dill
 import torch
 import tqdm
 import yaml
+
 
 import fedml
 from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
@@ -390,7 +392,7 @@ class S3Storage:
     #             print("Exception " + str(e))
     #     return model
 
-    def upload_file(self, src_local_path, dest_key):
+    def upload_file(self, src_local_path, dest_key, metadata=None):
         """
         upload file
         :param src_local_path:
@@ -400,7 +402,7 @@ class S3Storage:
         try:
             with open(src_local_path, "rb") as f:
                 self.aws_s3_client.upload_fileobj(
-                    f, self.bucket_name, dest_key, ExtraArgs={"ACL": "public-read"}
+                    f, self.bucket_name, dest_key, ExtraArgs={"ACL": "public-read", "Metadata": metadata}
                 )
 
             model_url = self.aws_s3_client.generate_presigned_url(
@@ -445,7 +447,7 @@ class S3Storage:
 
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
                                   show_progress=True,
-                                  out_progress_to_err=True, progress_desc=None):
+                                  out_progress_to_err=True, progress_desc=None, metadata=dict()):
         """
         upload file
         :param out_progress_to_err:
@@ -469,12 +471,12 @@ class S3Storage:
                                    file=sys.stderr if out_progress_to_err else sys.stdout,
                                    desc=progress_desc_text) as pbar:
                         self.aws_s3_client.upload_fileobj(
-                            f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
+                            f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read", "Metadata": metadata},
                             Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
                         )
                 else:
                     self.aws_s3_client.upload_fileobj(
-                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
+                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read", "Metadata": metadata}
                     )
 
                 file_uploaded_url = self.aws_s3_client.generate_presigned_url(
@@ -628,3 +630,8 @@ class S3Storage:
 
         except Exception as e:
             logging.exception("Failed to load s3 config from objects: {}".format(str(e)))
+
+    def get_object_metadata(self, path_s3):
+        obj = self.aws_s3_client.head_object(Bucket=self.bucket_name, Key=path_s3)
+        metadata = obj.get("Metadata", None)
+        return {urllib.parse.unquote(k): urllib.parse.unquote(v) for k, v in metadata.items()}

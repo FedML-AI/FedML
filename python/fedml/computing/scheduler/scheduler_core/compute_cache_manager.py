@@ -1,3 +1,5 @@
+import threading
+
 import redis
 from .compute_gpu_cache import ComputeGpuCache
 from .compute_logs_cache import ComputeLogsCache
@@ -21,15 +23,18 @@ class ComputeCacheManager(object):
         self.redis_connection = None
         self.gpu_cache = ComputeGpuCache(self.redis_connection)
         self.logs_cache = ComputeLogsCache(self.redis_connection)
+        self.local_lock = threading.Lock()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
         is_connected = False
-        _, env_redis_addr, env_redis_port, env_redis_pwd = \
+        _, env_redis_addr, env_redis_port, env_redis_pwd, disable_redis = \
             SchedulerConstants.get_redis_and_infer_host_env_addr()
         redis_addr = env_redis_addr if env_redis_addr is not None else redis_addr
         redis_addr = "localhost" if redis_addr is not None and redis_addr == "local" else redis_addr
         redis_port = env_redis_port if env_redis_port is not None else redis_port
         redis_password = env_redis_pwd if env_redis_pwd is not None else redis_password
+        if disable_redis is not None:
+            return False
 
         try:
             if redis_password is None or redis_password == "" or redis_password == "fedml_default":
@@ -37,7 +42,9 @@ class ComputeCacheManager(object):
             else:
                 self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
                                                        password=redis_password, decode_responses=True)
-            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection = redis.Redis(
+                connection_pool=self.redis_pool, socket_timeout=SchedulerConstants.REDIS_CONN_TIMEOUT,
+                socket_connect_timeout=SchedulerConstants.REDIS_CONN_TIMEOUT)
             self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
@@ -46,7 +53,9 @@ class ComputeCacheManager(object):
             is_connected = False
 
         if not is_connected:
-            self.setup_public_redis_connection()
+            is_connected = self.setup_public_redis_connection()
+
+        return is_connected
 
     def setup_public_redis_connection(self):
         is_connected = False
@@ -54,7 +63,9 @@ class ComputeCacheManager(object):
             self.redis_pool = redis.ConnectionPool(
                 host=SchedulerConstants.get_public_redis_addr(), port=SchedulerConstants.PUBLIC_REDIS_PORT,
                 password=SchedulerConstants.PUBLIC_REDIS_PASSWORD, decode_responses=True)
-            self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+            self.redis_connection = redis.Redis(
+                connection_pool=self.redis_pool, socket_timeout=SchedulerConstants.REDIS_CONN_TIMEOUT,
+                socket_connect_timeout=SchedulerConstants.REDIS_CONN_TIMEOUT)
             self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
@@ -67,12 +78,20 @@ class ComputeCacheManager(object):
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         if self.redis_pool is None:
             if redis_addr is None or redis_addr == "local":
-                self.setup_redis_connection("localhost", redis_port, redis_password)
+                return self.setup_redis_connection("localhost", redis_port, redis_password)
             else:
-                self.setup_redis_connection(redis_addr, redis_port, redis_password)
+                return self.setup_redis_connection(redis_addr, redis_port, redis_password)
+
+        return False
 
     def get_redis_connection(self):
         return self.redis_connection
+
+    def lock(self, key):
+        if self.redis_connection is None:
+            return self.local_lock
+
+        return self.redis_connection.lock(key)
 
     @staticmethod
     def get_instance(redis_addr="local", redis_port=6379):

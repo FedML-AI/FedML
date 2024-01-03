@@ -34,9 +34,9 @@ class FeatureEntryPoint(Enum):
 
 
 class FedMLRunStartedModel(object):
-    def __init__(self, response: Response, data: dict, project_name: str = None, application_name: str = None,
-                 job_type: str = None,
-                 inner_id: str = None, app_job_id: str = None, app_job_name: str = None):
+    def __init__(self, response: Response, data: dict, project_name: str = None, federate_project_name: str = None,
+                 application_name: str = None, job_type: str = None, inner_id: str = None, app_job_id: str = None,
+                 app_job_name: str = None):
         if data is not None:
             self.run_id = data.get("job_id", "0")
             self.run_name = data.get("job_name", None)
@@ -54,6 +54,7 @@ class FedMLRunStartedModel(object):
                     self.gpu_matched.append(FedMLGpuDevices(gpu_dev_json))
             self.started_time = data.get("started_time", time.time())
             self.user_check = data.get("user_check", True)
+            self.server_agent_id = data.get("server_agent_id", None)
         else:
             self.status = None
             self.message = None
@@ -65,10 +66,12 @@ class FedMLRunStartedModel(object):
             self.user_check = True
             self.status = None
             self.message = None
+            self.server_agent_id = None
         self.status = response.status_code if self.status is None else self.status
         self.message = response.content if self.message is None else self.message
         self.inner_id = inner_id
         self.project_name = project_name
+        self.federate_project_name = federate_project_name
         self.application_name = application_name
         self.job_type = job_type
         self.app_job_id = app_job_id
@@ -200,6 +203,7 @@ class FedMLRunManager(Singleton):
                job_config.task_type == Constants.JOB_TASK_TYPE_SERVE else None
         run_start_result = FedMLRunStartedModel(response=response, data=response_data,
                                                 project_name=job_config.project_name,
+                                                federate_project_name=job_config.federate_project_name,
                                                 application_name=job_config.application_name, inner_id=inner_id,
                                                 app_job_id=job_config.job_id, app_job_name=job_config.job_name,
                                                 job_type=job_config.task_type)
@@ -211,12 +215,14 @@ class FedMLRunManager(Singleton):
         run_start_result = None
         run_start_json = self._get_run_start_json(run_id=create_run_result.run_id, platform=platform,
                                                   project_name=create_run_result.project_name,
+                                                  federate_project_name=create_run_result.federate_project_name,
                                                   application_name=create_run_result.application_name,
                                                   device_server=device_server, device_edges=device_edges,
                                                   api_key=api_key, task_type=create_run_result.job_type,
                                                   app_job_id=create_run_result.app_job_id,
                                                   app_job_name=create_run_result.app_job_name,
-                                                  feature_entry_point=feature_entry_point)
+                                                  feature_entry_point=feature_entry_point,
+                                                  inner_id=create_run_result.inner_id)
 
         response = self._request(request_url=ServerConstants.get_run_start_url(),
                                  request_json=run_start_json)
@@ -225,6 +231,7 @@ class FedMLRunManager(Singleton):
 
         run_start_result = FedMLRunStartedModel(response=response, data=response_data,
                                                 project_name=create_run_result.project_name,
+                                                federate_project_name=create_run_result.federate_project_name,
                                                 application_name=create_run_result.application_name,
                                                 app_job_id=create_run_result.app_job_id,
                                                 app_job_name=create_run_result.app_job_name,
@@ -280,7 +287,7 @@ class FedMLRunManager(Singleton):
     def _get_run_create_json(self, platform: str, project_name: str, application_name: str,
                              device_server: str, device_edges: List[str], api_key: str, task_type: str, app_job_id: str,
                              app_job_name: str, cluster: str = None, config_id: str = None,
-                             feature_entry_point: FeatureEntryPoint = None):
+                             feature_entry_point: FeatureEntryPoint = None, federate_project_name: str = None):
 
         if not (device_server and device_edges):
             device_lists = [{"account": "", "edgeIds": [], "serverId": 0}]
@@ -289,7 +296,10 @@ class FedMLRunManager(Singleton):
             device_item = dict()
             device_item["account"] = 0
             device_item["serverId"] = device_server
-            device_item["edgeIds"] = str(device_edges).split(',')
+            if isinstance(device_edges, list):
+                device_item["edgeIds"] = device_edges
+            else:
+                device_item["edgeIds"] = str(device_edges).split(',')
             device_lists.append(device_item)
         run_create_json = {
             "platformType": platform,
@@ -313,8 +323,8 @@ class FedMLRunManager(Singleton):
             run_create_json["jobType"] = task_type
 
         if platform == "octopus":
-            if project_name and len(str(project_name).strip(' ')) > 0:
-                run_create_json["projectName"] = project_name
+            if federate_project_name and len(str(federate_project_name).strip(' ')) > 0:
+                run_create_json["projectName"] = federate_project_name
             else:
                 run_create_json["projectName"] = "Cheetah_HelloWorld"
             run_create_json["name"] = str(uuid.uuid4())
@@ -336,8 +346,10 @@ class FedMLRunManager(Singleton):
     def _get_run_start_json(self, run_id: str, platform: str, project_name: str, application_name: str,
                             device_server: str, device_edges: List[str], api_key: str,
                             task_type: str, app_job_id: str, app_job_name: str,
-                            feature_entry_point: FeatureEntryPoint = None):
+                            feature_entry_point: FeatureEntryPoint = None, inner_id=None,
+                            federate_project_name: str = None):
         run_start_json = self._get_run_create_json(platform=platform, project_name=project_name,
+                                                   federate_project_name=federate_project_name,
                                                    application_name=application_name,
                                                    device_server=device_server, device_edges=device_edges,
                                                    api_key=api_key, task_type=task_type,
@@ -345,6 +357,8 @@ class FedMLRunManager(Singleton):
                                                    feature_entry_point=feature_entry_point)
         run_start_json["jobId"] = run_id
         run_start_json["needConfirmation"] = False
+        if inner_id is not None:
+            run_start_json["innerId"] = inner_id
         return run_start_json
 
     @staticmethod
