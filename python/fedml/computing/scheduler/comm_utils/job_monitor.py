@@ -229,6 +229,10 @@ class JobMonitor(Singleton):
                 pass
             FedMLModelDatabase.get_instance().set_database_base_dir(device_client_constants.ClientConstants.get_database_dir())
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+            agent_config = dict()
+            agent_config["mqtt_config"] = self.mqtt_config
+            endpoint_sync_protocol = FedMLEndpointSyncProtocol(agent_config=agent_config)
+            endpoint_sync_protocol.setup_client_mqtt_mgr()
             for job in job_list.job_list:
                 count += 1
                 if count >= 1000:
@@ -258,20 +262,36 @@ class JobMonitor(Singleton):
                                 job.job_id, endpoint_name, model_name, job.edge_id)
                             if deployment_result is None:
                                 continue
-                            generated_container_name = device_client_constants.ClientConstants.get_deployment_container_name(
-                                endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                            status_result = FedMLModelDatabase.get_instance().get_deployment_status_with_device_id(
+                                job.job_id, endpoint_name, model_name, job.edge_id)
 
                             # Check the endpoint status
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
-                            if not is_endpoint_ready:
-                                started, inference_port = ContainerUtils.get_instance().restart_container(generated_container_name)
-                            else:
-                                started, inference_port = ContainerUtils.get_instance().start_container(generated_container_name)
-                            if started and inference_port != 0:
-                                FedMLEndpointSyncProtocol.send_sync_inference_info(
-                                    device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                    model_id, model_version, inference_port)
+
+                            # Get endpoint container name prefix
+                            endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                                endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                            # Could be multiple containers for the same endpoint
+                            num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                                endpoint_container_name_prefix)
+
+                            for i in range(num_containers):
+                                endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+                                if not is_endpoint_ready:
+                                    started, inference_port = ContainerUtils.get_instance().restart_container(endpoint_container_name)
+                                else:
+                                    started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
+                                if started and inference_port != 0:
+                                    endpoint_sync_protocol.send_sync_inference_info(
+                                        device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
+                                        model_id, model_version, inference_port)
+
+                                    endpoint_sync_protocol.set_local_deployment_status_result(
+                                        job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                        inference_port, status_result, deployment_result)
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
                         endpoint_json = json.loads(job.running_json)
                         model_config = endpoint_json.get("model_config", {})
@@ -284,16 +304,32 @@ class JobMonitor(Singleton):
                             job.job_id, endpoint_name, model_name, job.edge_id)
                         if deployment_result is None:
                             continue
-                        generated_container_name = device_client_constants.ClientConstants.get_deployment_container_name(
-                            endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                        status_result = FedMLModelDatabase.get_instance().get_deployment_status_with_device_id(
+                            job.job_id, endpoint_name, model_name, job.edge_id)
+
                         is_endpoint_ready = self._check_and_reset_endpoint_status(
                             job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
                         if is_endpoint_ready:
-                            started, inference_port = ContainerUtils.get_instance().start_container(generated_container_name)
-                            if started and inference_port != 0:
-                                FedMLEndpointSyncProtocol.send_sync_inference_info(
-                                    device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                    model_id, model_version, inference_port)
+                            # Get endpoint container name prefix
+                            endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                                endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                            # Could be multiple containers for the same endpoint
+                            num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                                endpoint_container_name_prefix)
+
+                            for i in range(num_containers):
+                                endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+                                started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
+                                if started and inference_port != 0:
+                                    endpoint_sync_protocol.send_sync_inference_info(
+                                        device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
+                                        model_id, model_version, inference_port)
+
+                                    endpoint_sync_protocol.set_local_deployment_status_result(
+                                        job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                        inference_port, status_result, deployment_result)
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING:
                         started_time = int(float(job.started_time))
                         timeout = time.time() - started_time
@@ -603,16 +639,6 @@ class JobMonitor(Singleton):
                 model_version = model_config.get("model_version", None)
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
-                # Get endpoint container name
-                endpoint_container_name = device_client_constants.ClientConstants.get_endpoint_container_name(
-                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
-                )
-
-                # Get endpoint logs from the container
-                endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                if endpoint_logs is None:
-                    continue
-
                 log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
                     job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
                     log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
@@ -628,7 +654,7 @@ class JobMonitor(Singleton):
 
                 # Get endpoint container name
                 endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
-                    endpoint_name, model_name, model_version, job.job_id, model_id
+                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
                 # Could be multiple containers for the same endpoint
@@ -640,6 +666,8 @@ class JobMonitor(Singleton):
 
                     # Get endpoint logs from the container
                     endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                    if endpoint_logs is None:
+                        continue
                     
                     # Write container logs to the log file
                     if i == 0:

@@ -83,6 +83,7 @@ class ContainerUtils(Singleton):
         try:
             client.api.restart(container=container_obj.id)
             inference_port = self.get_host_port(container_obj, container_port)
+            container_obj.reload()
             return container_obj.status == "running", inference_port
         except Exception as e:
             logging.error("Failed to restart container ")
@@ -121,7 +122,7 @@ class ContainerUtils(Singleton):
                 client.api.start(container=container_obj.id)
             inference_port = self.get_host_port(container_obj, container_port)
             container_obj.reload()
-            return  container_obj.status == "running", inference_port
+            return container_obj.status == "running", inference_port
         except Exception as e:
             logging.error(f"Failed to restart container {traceback.format_exc()}")
 
@@ -169,7 +170,7 @@ class ContainerUtils(Singleton):
             return -1
 
         try:
-            container_list = client.containers.list()
+            container_list = client.containers.list(all=True)
         except docker.errors.APIError:
             logging.error("The API cannot be accessed")
             return -1

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 
@@ -83,6 +84,20 @@ class FedMLModelDatabase(Singleton):
 
         return None
 
+    def get_deployment_status_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        try:
+            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)
+            for status_item in status_list:
+                status_device_id, status_payload = self.get_status_item_info(status_item)
+                found_end_point_id = status_payload["end_point_id"]
+
+                if str(found_end_point_id) == str(end_point_id) and str(status_device_id) == str(device_id):
+                    return status_payload
+        except Exception as e:
+            logging.info(e)
+
+        return None
+
     def delete_deployment_status(self, end_point_id, end_point_name, model_name, model_version=None):
         self.open_job_db()
         if model_version is None:
@@ -123,6 +138,17 @@ class FedMLModelDatabase(Singleton):
         else:
             result_payload = result_item_json["result"]
         return device_id, result_payload
+
+    def get_status_item_info(self, status_item):
+        status_item_json = json.loads(status_item)
+        if isinstance(status_item_json, dict):
+            status_item_json = json.loads(status_item)
+        device_id = status_item_json["cache_device_id"]
+        if isinstance(status_item_json["status"], str):
+            status_payload = json.loads(status_item_json["status"])
+        else:
+            status_payload = status_item_json["status"]
+        return device_id, status_payload
 
     def set_end_point_status(self, end_point_id, end_point_name, status):
         self.set_deployment_run_info(end_point_id, end_point_name, end_point_status=status)

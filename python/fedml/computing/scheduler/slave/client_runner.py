@@ -16,6 +16,7 @@ import traceback
 import urllib
 import uuid
 import zipfile
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -188,7 +189,8 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
+        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
@@ -1386,15 +1388,20 @@ class FedMLClientRunner:
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
+        worker_deploy_id_list = [modeld_device_clint.edge_id for index, modeld_device_clint in enumerate(self.model_device_client_list)]
         print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
               f"master deploy ID is {str(self.model_device_server.edge_id)}, "
-              f"worker deploy ID is {str(self.model_device_client_list[0].edge_id)}"
+              f"worker deploy ID is {worker_deploy_id_list}"
               )
         if self.edge_extra_url is not None and self.edge_extra_url != "":
             print(f"You may visit the following url to fill in more information with your device.\n"
                   f"{self.edge_extra_url}")
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=False)
+
+        from fedml.core.mlops import sync_deploy_id
+        sync_deploy_id(
+            self.edge_id, self.model_device_server.edge_id, worker_deploy_id_list)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
@@ -1518,7 +1525,7 @@ class FedMLClientRunner:
                 self.model_device_client_list.clear()
 
             login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
-            with open(login_logs, "w") as f:
+            with open(login_exit_file, "w") as f:
                 f.writelines(f"{os.getpid()}.")
 
             time.sleep(5)
