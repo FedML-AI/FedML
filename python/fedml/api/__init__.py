@@ -120,12 +120,11 @@ def run_stop(run_id: str, platform: str = "falcon", api_key: str = None) -> bool
     return run.stop(run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_list(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
+def run_list(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
     return run.list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_status(run_name: str, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (
-FedMLRunModelList, str):
+def run_status(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (FedMLRunModelList, str):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 

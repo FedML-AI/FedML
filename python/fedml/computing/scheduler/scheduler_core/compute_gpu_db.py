@@ -88,6 +88,15 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
 
         return edge_id, model_master_device_id, model_slave_device_id
 
+    def get_endpoint_run_id_map(self, endpoint_id):
+        run_id = None
+        endpoint_run_info_list = self.get_endpoint_run_info(endpoint_id)
+        for run_info in endpoint_run_info_list:
+            run_id = run_info.run_id
+            break
+
+        return run_id
+
     def set_device_run_num_gpus(self, device_id, run_id, num_gpus):
         self.set_device_run_gpu_info(device_id, run_id, num_gpus=num_gpus)
 
@@ -113,6 +122,9 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
         self.set_run_gpu_info(
             run_id, edge_id=edge_id, model_master_device_id=model_master_device_id,
             model_slave_device_id=model_slave_device_id)
+
+    def set_endpoint_run_id_map(self, endpoint_id, run_id):
+        self.set_endpoint_run_info(endpoint_id, run_id)
 
     def set_database_base_dir(self, database_base_dir):
         self.db_base_dir = database_base_dir
@@ -213,6 +225,31 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
 
         self.db_connection.commit()
 
+    def get_endpoint_run_info(self, endpoint_id):
+        self.open_job_db()
+        endpoint_run_info_list = self.db_connection.query(FedMLEndpointRunInfoModel). \
+            filter(FedMLEndpointRunInfoModel.endpoint_id == f'{endpoint_id}').all()
+
+        return endpoint_run_info_list
+
+    def set_endpoint_run_info(self, endpoint_id, run_id):
+        self.open_job_db()
+        endpoint_run_info = self.db_connection.query(FedMLEndpointRunInfoModel).filter(
+            FedMLEndpointRunInfoModel.endpoint_id == f'{endpoint_id}').first()
+        if endpoint_run_info is None:
+            endpoint_run_info = FedMLEndpointRunInfoModel(
+                endpoint_id=endpoint_id, run_id=run_id)
+            self.db_connection.add(endpoint_run_info)
+            self.db_connection.commit()
+            return
+
+        if endpoint_id is not None:
+            endpoint_run_info.endpoint_id = endpoint_id
+        if run_id is not None:
+            endpoint_run_info.run_id = run_id
+
+        self.db_connection.commit()
+
     def create_table(self):
         self.open_job_db()
         try:
@@ -257,4 +294,12 @@ class FedMLRunGpuInfoModel(Base):
     edge_id = Column(String)
     model_master_device_id = Column(String)
     model_slave_device_id = Column(String)
+
+
+class FedMLEndpointRunInfoModel(Base):
+    __tablename__ = 'endpoint_run_info'
+
+    id = Column(Integer, primary_key=True)
+    endpoint_id = Column(TEXT)
+    run_id = Column(TEXT)
 

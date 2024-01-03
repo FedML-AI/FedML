@@ -66,7 +66,7 @@ FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG = "Async_FedAvg"
 # service, while the URL is the complete URL including the protocol (http or https). These variables
 # are used to configure the backend service connection in the code.
 
-FEDML_BACKEND_SERVICE_URL_LOCAL = "http://34.83.130.103:18080"
+FEDML_BACKEND_SERVICE_URL_LOCAL = "http://127.0.0.1:18080"
 
 FEDML_BACKEND_SERVICE_URL_DEV = "https://open-dev.fedml.ai"
 

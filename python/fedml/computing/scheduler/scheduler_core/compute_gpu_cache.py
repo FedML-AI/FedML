@@ -18,6 +18,7 @@ class ComputeGpuCache(object):
     FEDML_RUN_INFO_LOCK_TAG = "FEDML_RUN_INFO_LOCK_TAG-"
     FEDML_RUN_INFO_SYNC_LOCK_TAG = "FEDML_RUN_INFO_SYNC_LOCK_TAG-"
     FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG = "FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG-"
+    FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG = "FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG-"
 
     def __init__(self, redis_connection):
         self.redis_connection = redis_connection
@@ -167,6 +168,24 @@ class ComputeGpuCache(object):
 
         return edge_id, model_master_device_id, model_slave_device_id
 
+    def get_endpoint_run_id_map(self, endpoint_id):
+        run_id = None
+        try:
+            if self.redis_connection.exists(self.get_endpoint_run_id_map_key(endpoint_id)):
+                run_id = self.redis_connection.get(self.get_endpoint_run_id_map_key(endpoint_id))
+                return run_id
+        except Exception as e:
+            pass
+
+        if run_id is None:
+            run_id = ComputeGpuDatabase.get_instance().get_endpoint_run_id_map(endpoint_id)
+            try:
+                self.redis_connection.set(self.get_endpoint_run_id_map_key(endpoint_id), f"{run_id}")
+            except Exception as e:
+                pass
+
+        return run_id
+
     def set_device_run_num_gpus(self, device_id, run_id, num_gpus):
         try:
             self.redis_connection.set(self.get_device_run_num_gpus_key(device_id, run_id), num_gpus)
@@ -231,6 +250,14 @@ class ComputeGpuCache(object):
 
         ComputeGpuDatabase.get_instance().set_edge_model_id_map(run_id, edge_id, model_master_device_id, model_slave_device_id)
 
+    def set_endpoint_run_id_map(self, endpoint_id, run_id):
+        try:
+            self.redis_connection.set(self.get_endpoint_run_id_map_key(endpoint_id), f"{run_id}")
+        except Exception as e:
+            pass
+
+        ComputeGpuDatabase.get_instance().set_endpoint_run_id_map(endpoint_id, run_id)
+
     def get_device_run_num_gpus_key(self, device_id, run_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG}{device_id}_{run_id}"
 
@@ -266,6 +293,9 @@ class ComputeGpuCache(object):
 
     def get_edge_model_id_map_key(self, run_id):
         return f"{ComputeGpuCache.FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG}{run_id}"
+
+    def get_endpoint_run_id_map_key(self, endpoint_id):
+        return f"{ComputeGpuCache.FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG}{endpoint_id}"
 
     def map_list_to_str(self, list_obj):
         return ComputeUtils.map_list_to_str(list_obj)

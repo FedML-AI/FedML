@@ -26,6 +26,7 @@ from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUti
 
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
+from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -229,7 +230,6 @@ class FedMLServerRunner:
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
-            time.sleep(3)
             time.sleep(3)
             sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
                                                                clean_process_group=False)
@@ -1823,6 +1823,9 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_server_status, qos=2)
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+
+        self.endpoint_sync_protocol = FedMLEndpointSyncProtocol(agent_config=self.agent_config, mqtt_mgr=self.mqtt_mgr)
+        self.endpoint_sync_protocol.setup_listener_for_sync_device_info(self.edge_id)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()

@@ -26,4 +26,4 @@ ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
     AWS_IAM_ACCESS_KEY=0 \
     AWS_REGION=0
 
-CMD bash ./start-redis.sh; ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_agent -id ${SERVER_AGENT_ID}; bash ./runner.sh
+CMD bash ./start-redis.sh; ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -k ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_agent -id ${SERVER_AGENT_ID}; bash ./runner.sh

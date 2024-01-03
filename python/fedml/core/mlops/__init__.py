@@ -34,6 +34,8 @@ from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from .mlops_utils import MLOpsUtils
+from .mlops_constants import MLOpsConstants
+
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -1377,3 +1379,24 @@ def enable_logging_to_file(edge_id):
     setattr(args, "using_mlops", True)
     MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
     return args
+
+
+def release_resources(run_id, device_id):
+    fedml_args = get_fedml_args()
+
+    setup_log_mqtt_mgr()
+
+    payload = {"run_id": run_id, "device_id": device_id, "gpu_count": 0}
+    MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
+        MLOpsConstants.MSG_TOPIC_LAUNCH_RELEASE_GPU_IDS, json.dumps(payload))
+
+
+def sync_deploy_id(device_id, master_deploy_id, worker_deploy_id_list):
+    fedml_args = get_fedml_args()
+
+    setup_log_mqtt_mgr()
+
+    payload = {"device_id": device_id, "master_deploy_id": master_deploy_id, "worker_deploy_ids": worker_deploy_id_list}
+    MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
+        MLOpsConstants.MSG_TOPIC_LAUNCH_SYNC_DEPLOY_IDS, json.dumps(payload))
+

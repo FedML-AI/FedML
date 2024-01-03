@@ -336,17 +336,6 @@ class ClientConstants(object):
         return running_model_name
 
     @staticmethod
-    def get_deployment_container_name_with_running_model_name(running_model_name):
-        container_name = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + security_utils.get_content_hash(running_model_name)
-        return container_name
-
-    @staticmethod
-    def get_deployment_container_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=None):
-        return ClientConstants.get_deployment_container_name_with_running_model_name(
-            ClientConstants.get_running_model_name(end_point_name, model_name, model_version, end_point_id, model_id, edge_id=edge_id))
-
-    @staticmethod
     def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None, edge_id=None):
         running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
                                                                     end_point_id, model_id, edge_id=edge_id)

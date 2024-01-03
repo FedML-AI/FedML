@@ -1,3 +1,5 @@
+import json
+
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
 
@@ -74,7 +76,15 @@ class SchedulerMatcher:
         return matched_edge_id_list
 
     @staticmethod
-    def match_and_assign_gpu_resources_to_devices(request_gpu_num, edge_id_list, active_edge_info_dict):
+    def match_and_assign_gpu_resources_to_devices(request_gpu_num, edge_id_list, active_edge_info_dict, job_gpu_id_list=None):
+        assigned_gpu_num_dict = dict()
+        assigned_gpu_ids_dict = dict()
+        if job_gpu_id_list is not None:
+            job_gpu_id_list_json = json.loads(job_gpu_id_list)
+            for edge_id, edge_info in active_edge_info_dict.items():
+                assigned_gpu_num_dict[str(edge_id)] = job_gpu_id_list_json.get(f"gpu_{edge_id}")
+            return assigned_gpu_num_dict, assigned_gpu_ids_dict
+
         # Calculate total available gpu count
         total_available_gpu_count = 0
         for edge_id, edge_info in active_edge_info_dict.items():
@@ -87,7 +97,6 @@ class SchedulerMatcher:
             return None, None
 
         # First, allocate GPUs equally to each device.
-        assigned_gpu_num_dict = dict()
         assigned_gpu_num = 0
         average_gpu_num_per_edge = int(request_gpu_num / len(edge_id_list))
         for edge_id, edge_info in active_edge_info_dict.items():
@@ -105,7 +114,6 @@ class SchedulerMatcher:
             assigned_gpu_num += gpu_num_to_add
             assigned_gpu_num_dict[str(edge_id)] += gpu_num_to_add
 
-        assigned_gpu_ids_dict = dict()
         for edge_id, edge_info in active_edge_info_dict.items():
             cur_gpu_num = int(assigned_gpu_num_dict[str(edge_id)])
             gpu_available_ids = edge_info.get("gpu_available_ids", [])
