@@ -149,7 +149,7 @@ class ModelArguments:
     )
     tokenizer_revision: Optional[str] = field(
         default=None,
-        metadata={"help": "Tokenizer repo revision. If set to empty string, will use ."}
+        metadata={"help": "Tokenizer repo revision. If set to empty string, will use the HEAD of the main branch."}
     )
     model_dtype: Optional[str] = field(
         default=None,
@@ -281,6 +281,7 @@ class ModelArguments:
                 self.tokenizer_name_or_path if bool(self.tokenizer_name_or_path) else self.model_name_or_path
             ),
             revision=self.tokenizer_revision if bool(self.tokenizer_revision) else self.model_revision,
+            use_fast=self.use_fast_tokenizer,
             trust_remote_code=True,
         )
         tokenizer_kwargs.update(kwargs)
