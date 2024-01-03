@@ -82,7 +82,9 @@ class SchedulerMatcher:
         if job_gpu_id_list is not None:
             job_gpu_id_list_json = json.loads(job_gpu_id_list)
             for edge_id, edge_info in active_edge_info_dict.items():
-                assigned_gpu_num_dict[str(edge_id)] = job_gpu_id_list_json.get(f"gpu_{edge_id}")
+                gpu_count = job_gpu_id_list_json.get(f"gpu_{edge_id}")
+                gpu_count = int(gpu_count) if gpu_count is not None else 1
+                assigned_gpu_num_dict[str(edge_id)] = gpu_count
             return assigned_gpu_num_dict, assigned_gpu_ids_dict
 
         # Calculate total available gpu count
