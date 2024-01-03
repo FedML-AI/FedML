@@ -8,12 +8,21 @@ cd "${BASE_DIR}"
 MASTER_ADDR="${1:-"localhost"}"
 MASTER_PORT="${2:-12355}"
 NUM_NODES="${3:-1}"
+HOST_FILE="${4}"
 NUM_GPU="$(python3 -c "import torch; print(torch.cuda.device_count())")"
 
 CMD=(
   --master_addr="${MASTER_ADDR}"
   --master_port="${MASTER_PORT}"
 )
+
+if [[ -n "${HOST_FILE}" ]]; then
+  echo "Using hostfile ${HOST_FILE}"
+  CMD+=(
+    --hostfile "${HOST_FILE}"
+  )
+fi
+
 if [[ -z "${CUDA_VISIBLE_DEVICES+x}" ]]; then
   # when `CUDA_VISIBLE_DEVICES` is not specified, use all GPUs by setting `--num_nodes`
   CMD+=(
@@ -60,4 +69,4 @@ deepspeed \
   --do_eval "True" \
   --do_predict "True" \
   --remove_long_seq "True" \
-  "${@:4}" # skip first 3 arguments
+  "${@:5}" # skip first 4 arguments

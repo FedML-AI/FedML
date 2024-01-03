@@ -657,18 +657,16 @@ class JobMonitor(Singleton):
                     endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
-                # Could be multiple containers for the same endpoint
                 num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
                     endpoint_container_name_prefix)
 
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
 
-                    # Get endpoint logs from the container
                     endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
                     if endpoint_logs is None:
                         continue
-                    
+
                     # Write container logs to the log file
                     if i == 0:
                         with open(log_file_path, "w") as f:
