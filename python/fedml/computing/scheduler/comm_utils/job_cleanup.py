@@ -50,6 +50,10 @@ class JobCleanup(Singleton):
                     if count >= 1000:
                         break
 
+                    job_type = JobRunnerUtils.parse_job_type(job.running_json)
+                    if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                        continue
+
                     run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                     all_run_processes_exited = True if len(run_process_list) <= 0 else False
 

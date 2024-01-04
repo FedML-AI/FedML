@@ -70,6 +70,7 @@ class FedMLClientRunner:
         self.run_process_completed_event_map = dict()
         self.run_process = None
         self.run_process_map = dict()
+        self.running_request_json = dict()
         self.local_api_process = None
         self.start_request_json = None
         self.device_status = None
@@ -891,6 +892,7 @@ class FedMLClientRunner:
         # Start server with multiprocessing mode
         self.request_json = request_json
         run_id_str = str(run_id)
+        self.running_request_json[run_id_str] = request_json
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id,
             cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str
@@ -1015,7 +1017,18 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            FedMLClientRunner.release_gpu_ids(run_id, edge_id)
+            running_json = self.running_request_json.get(run_id_str)
+            if running_json is None:
+                try:
+                    current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+                    running_json = json.loads(current_job.running_json)
+                except Exception as e:
+                    current_job = None
+
+            if running_json is not None:
+                job_type = JobRunnerUtils.parse_job_type(running_json)
+                if not SchedulerConstants.is_deploy_job(job_type):
+                    FedMLClientRunner.release_gpu_ids(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:
