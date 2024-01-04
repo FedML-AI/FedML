@@ -277,7 +277,9 @@ class FedMLModelDatabase(Singleton):
             filter(and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
                         FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
                         FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
-                        FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).first()
+                        FedMLDeploymentResultInfoModel.model_version == f'{model_version}'),
+                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}').first()
+        # Insert
         if result_info is None:
             result_info = FedMLDeploymentResultInfoModel(end_point_id=end_point_id,
                                                          end_point_name=end_point_name,
@@ -289,7 +291,7 @@ class FedMLModelDatabase(Singleton):
             self.db_connection.add(result_info)
             self.db_connection.commit()
             return
-
+        # Update
         if deployment_result is not None:
             result_info.deployment_result = deployment_result
         if deployment_status is not None:

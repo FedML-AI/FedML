@@ -14,7 +14,12 @@ class FedMLHttpInference:
         pass
 
     @staticmethod    
-    async def is_inference_ready(inference_url, timeout=None) -> bool:
+    async def is_inference_ready(inference_url, timeout=None):
+        '''
+        True: inference is ready
+        False: cannot be reached, will try other protocols
+        None: can be reached, but not ready
+        '''
         url_parsed = urlparse(inference_url)
         ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
         response_ok = False
@@ -24,6 +29,8 @@ class FedMLHttpInference:
 
             if ready_response.status_code == 200:
                 response_ok = True
+            else:
+                response_ok = None
         except Exception as e:
             response_ok = False
 
