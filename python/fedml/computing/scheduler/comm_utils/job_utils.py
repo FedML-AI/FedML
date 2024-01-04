@@ -11,6 +11,7 @@ from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from fedml.core.common.singleton import Singleton
 import threading
+import json
 
 
 class JobRunnerUtils(Singleton):
@@ -388,4 +389,15 @@ class JobRunnerUtils(Singleton):
             env_name_value_map["FEDML_NUM_NODES"] = num_nodes
 
         return export_env_command_list, env_name_value_map
+
+    @staticmethod
+    def parse_job_type(running_json):
+        if running_json is None:
+            return None
+        running_json_obj = json.loads(running_json) if not isinstance(running_json, dict) else running_json
+        run_config = running_json_obj.get("run_config", {})
+        parameters = run_config.get("parameters", {})
+        job_yaml = parameters.get("job_yaml", {})
+        job_type = job_yaml.get("job_type", None)
+        return job_type
 

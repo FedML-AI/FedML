@@ -71,6 +71,10 @@ class JobMonitor(Singleton):
                 started_time = int(float(job.started_time))
                 timeout = time.time() - started_time
 
+                job_type = JobRunnerUtils.parse_job_type(job.running_json)
+                if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                    continue
+
                 # Check if all processes of the specific run are exited
                 run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                 all_run_processes_exited = True if len(run_process_list) <= 0 else False
@@ -290,7 +294,7 @@ class JobMonitor(Singleton):
                                     
                                     # [Critical] 
                                     # 1. After restart,
-                                    # the "running" status of cotainer does NOT mean the endpoint is ready.
+                                    # the "running" status of container does NOT mean the endpoint is ready.
                                     # 2. if local db has status updating, do not restart again
                                     result_json = deployment_result
                                     status = result_json.get("model_status", None)
@@ -358,6 +362,14 @@ class JobMonitor(Singleton):
                                         job.job_id, endpoint_name, model_name, model_version, job.edge_id,
                                         inference_port, status_result, deployment_result)
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING:
+                        endpoint_json = json.loads(job.running_json)
+                        model_config = endpoint_json.get("model_config", {})
+                        model_name = model_config.get("model_name", None)
+                        model_version = model_config.get("model_version", None)
+                        model_id = model_config.get("model_id", None)
+                        endpoint_name = endpoint_json.get("end_point_name", None)
+                        device_ids = endpoint_json.get("device_ids", [])
+
                         started_time = int(float(job.started_time))
                         timeout = time.time() - started_time
                         if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
@@ -375,6 +387,19 @@ class JobMonitor(Singleton):
 
                                 # Release the gpu ids
                                 JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
+
+                                # Get endpoint container name prefix
+                                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                                # Could be multiple containers for the same endpoint
+                                num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                                    endpoint_container_name_prefix)
+
+                                for i in range(num_containers):
+                                    endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+                                    stopped = ContainerUtils.get_instance().stop_container(endpoint_container_name)
+
                                 print(f"[Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
                 except Exception as e:
                     logging.info(
