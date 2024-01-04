@@ -5,6 +5,7 @@ from ..model_scheduler.device_model_cache import FedMLModelCache
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_server_data_interface import FedMLServerDataInterface
 from .endpoint_monitor_protocol import EndpointDeviceDeploymentResultModel, EndpointDeviceDeploymentStatusModel, EndpointDeviceDeploymentInfoModel
+from ..model_scheduler.device_server_constants import ServerConstants
 from urllib.parse import urlparse
 import logging
 
@@ -66,11 +67,12 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
 
     def send_sync_inference_info(
             self, master_id, worker_device_id, end_point_id, end_point_name, model_name,
-            model_id, model_version, inference_port):
+            model_id, model_version, inference_port, disable=False):
         deployment_info_topic = f"{EndpointSyncMsgConstants.SLAVE_MASTER_DEPLOYMENT_INFO_MSG}/{master_id}"
         deployment_info_payload = {
             "device_id": worker_device_id, "end_point_id": end_point_id, "end_point_name": end_point_name,
-            "model_id": model_id, "model_name": model_name, "model_version": model_version,"inference_port": inference_port}
+            "model_id": model_id, "model_name": model_name, "model_version": model_version,
+            "inference_port": inference_port, "disable": disable}
         logging.info("send_sync_inference_port: topic {}, payload {}.".format(
             deployment_info_topic, deployment_info_payload))
         self.client_mqtt_mgr.send_message_json(deployment_info_topic, json.dumps(deployment_info_payload))
@@ -113,6 +115,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
         master_device_id = topic_splits[-1]
         deployment_info = EndpointDeviceDeploymentInfoModel(payload)
 
+        # Status
         status_item_found = None
         status_payload_found = None
         FedMLModelCache.get_instance().set_redis_params()
@@ -128,9 +131,17 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
 
         if status_item_found is not None:
             print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
+            # Delete Status
             FedMLModelCache.get_instance().delete_deployment_status(
                 status_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)
+
+            if deployment_info.disable: 
+                status_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
+            else:
+                status_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+
+            # Update Status
             model_url_parsed = urlparse(status_payload_found.get("model_url", ""))
             status_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
             status_payload_found["inference_port"] = deployment_info.inference_port
@@ -138,6 +149,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name,
                 deployment_info.model_version, deployment_info.device_id, json.dumps(status_payload_found))
 
+        # Result
         result_item_found = None
         result_payload_found = None
         FedMLModelCache.get_instance().set_redis_params()
@@ -155,6 +167,12 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
             FedMLModelCache.get_instance().delete_deployment_result(
                 result_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)
+            
+            if deployment_info.disable:
+                result_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
+            else:
+                result_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+            
             model_url_parsed = urlparse(result_payload_found.get("model_url", ""))
             result_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
             result_payload_found["inference_port"] = deployment_info.inference_port

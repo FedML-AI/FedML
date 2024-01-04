@@ -267,6 +267,7 @@ class JobMonitor(Singleton):
                                 job.job_id, endpoint_name, model_name, job.edge_id)
 
                             # Check the endpoint status
+                            # TODO: Parallel this check
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
 
@@ -281,17 +282,43 @@ class JobMonitor(Singleton):
                             for i in range(num_containers):
                                 endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
                                 if not is_endpoint_ready:
-                                    started, inference_port = ContainerUtils.get_instance().restart_container(endpoint_container_name)
-                                else:
-                                    started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
-                                if started and inference_port != 0:
+                                    # send unavailable status to the master agent
                                     endpoint_sync_protocol.send_sync_inference_info(
                                         device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                        model_id, model_version, inference_port)
+                                        model_id, model_version, inference_port=None,
+                                        disable=True)
+                                    
+                                    # [Critical] 
+                                    # 1. After restart,
+                                    # the "running" status of cotainer does NOT mean the endpoint is ready.
+                                    # 2. if local db has status updating, do not restart again
+                                    result_json = deployment_result
+                                    status = result_json.get("model_status", None)
 
-                                    endpoint_sync_protocol.set_local_deployment_status_result(
-                                        job.job_id, endpoint_name, model_name, model_version, job.edge_id,
-                                        inference_port, status_result, deployment_result)
+                                    if status != device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING:
+                                        started, inference_port = ContainerUtils.get_instance().restart_container(endpoint_container_name)
+                                        deployment_result["model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
+                                        
+                                        # Change the local port for next ready check
+                                        endpoint_sync_protocol.set_local_deployment_status_result(
+                                            job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                            inference_port, status_result, deployment_result)
+                                else:
+                                    started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
+                            
+                            if is_endpoint_ready:
+                                deployment_result["model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+
+                                # Send the inference info to the master agent
+                                endpoint_sync_protocol.send_sync_inference_info(
+                                    device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
+                                    model_id, model_version, inference_port)
+
+                                # Change the local port for next ready check
+                                endpoint_sync_protocol.set_local_deployment_status_result(
+                                    job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                    inference_port, status_result, deployment_result)
+                                
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
                         endpoint_json = json.loads(job.running_json)
                         model_config = endpoint_json.get("model_config", {})
@@ -408,6 +435,12 @@ class JobMonitor(Singleton):
         if response_ok:
             print("Use http health check.")
             return response_ok
+        
+        if response_ok is None:
+            # Internal server can response, but reply is not ready
+            return False
+        
+        # Cannot reach the server, will try other protocols
         print("Use http health check failed.")
 
         response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(
