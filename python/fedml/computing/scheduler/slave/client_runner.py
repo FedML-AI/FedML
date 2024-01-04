@@ -655,7 +655,8 @@ class FedMLClientRunner:
 
         if should_send_client_id_status:
             if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
-                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION:
                 self.mlops_metrics.report_client_id_status(
                     edge_id, status, server_id=self.server_id, run_id=self.run_id)
 
