@@ -141,3 +141,7 @@ class SchedulerConstants:
     def get_public_redis_addr():
         return "cache{}.fedml.ai".format(
             "-" + fedml.get_env_version() if fedml.get_env_version() != "release" else "")
+
+    @staticmethod
+    def is_deploy_job(job_type):
+        return True if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY else False

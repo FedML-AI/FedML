@@ -32,6 +32,9 @@ from ..scheduler_core.compute_utils import ComputeUtils
 from .device_http_inference_protocol import FedMLHttpInference
 
 
+no_real_gpu_allocation = None
+
+
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if module == 'torch.storage' and name == '_load_from_bytes':
@@ -43,7 +46,6 @@ class CPUUnpickler(pickle.Unpickler):
 def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_device_id=None):
     gpu_ids = None
     client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
-    should_release_gpu_ids = False
 
     try:
         ComputeCacheManager.get_instance().set_redis_params()
@@ -54,31 +56,21 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
                 num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
                 num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
             gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
-            if gpu_ids is not None:
-                logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
-                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-                if len(gpu_list) != num_gpus:
-                    gpu_ids = None
-                    should_release_gpu_ids = True
-                else:
-                    gpu_ids = gpu_list
     except Exception as e:
         logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
         gpu_ids = None
         raise e
 
-    if should_release_gpu_ids:
-        JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, edge_id)
     if gpu_ids is None:
         cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
             end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
             model_master_device_id=master_device_id, model_slave_device_id=edge_id)
-        gpu_ids = cuda_visable_gpu_ids.split(',')
-        gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
+        if cuda_visable_gpu_ids is not None:
+            gpu_ids = cuda_visable_gpu_ids.split(',')
+            gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
 
     if gpu_ids is None:
-        raise Exception("No available gpu resources!")
+        raise Exception("Failed to request gpu ids!")
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
@@ -381,6 +373,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         if exist_container_obj is not None:
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
+        if no_real_gpu_allocation is not None:
+            use_gpu = not no_real_gpu_allocation
         if use_gpu:
             logging.info("Number of GPUs: {}".format(num_gpus))
             if gpu_ids is not None:
