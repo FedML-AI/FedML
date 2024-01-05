@@ -684,19 +684,16 @@ class FedMLServerRunner:
             return
 
         device_id_list = request_json["device_ids"]
-        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping[run_id_str].keys()) + 1:
-            is_exist_deployed_model = False
-            failed_to_deploy_all_models = True
+        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping[run_id_str].keys()) + 1: # Recv all
+            failed_to_deploy_all_models = False
             for device_item in device_id_list:
+                if device_item == self.edge_id: # Skip the master
+                    continue
                 status = self.slave_deployment_statuses_mapping[run_id_str]. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
-                    pass
-                else:
-                    failed_to_deploy_all_models = False
-                    if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                        is_exist_deployed_model = True
-                        break
+                    failed_to_deploy_all_models = True
+                    break
 
             # Failed to deploy the model to all devices
             if failed_to_deploy_all_models:
@@ -708,8 +705,6 @@ class FedMLServerRunner:
                 self.send_deployment_status(end_point_id, end_point_name,
                                             payload_json["model_name"], "",
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                return
-            if not is_exist_deployed_model:
                 return
 
             # Send deployment finished message to ModelOps
