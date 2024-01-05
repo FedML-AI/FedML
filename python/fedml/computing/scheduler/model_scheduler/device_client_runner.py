@@ -438,19 +438,10 @@ class FedMLClientRunner:
         if inference_output_url == "":
             logging.error("failed to deploy the model...")
 
-            status_payload = self.send_deployment_status(
-                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
             result_payload = self.send_deployment_results(
                 end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                 model_id, model_name, inference_output_url, inference_model_version, inference_port,
                 inference_engine, model_metadata, model_config)
-
-            FedMLModelDatabase.get_instance().set_deployment_result(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(result_payload))
-
-            FedMLModelDatabase.get_instance().set_deployment_status(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(status_payload))
 
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.broadcast_client_training_status(
@@ -459,6 +450,12 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+        
+            # After sending the deployment status, we should wait for the master to delete the deployment status
+            status_payload = self.send_deployment_status(
+                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
+                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
+
             return False
         else:
             logging.info("finished deployment, continue to send results to master...")
