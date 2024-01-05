@@ -250,12 +250,15 @@ class FedMLClientRunner:
             self.setup_client_mqtt_mgr()
 
             if not self.run_impl():
+                logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
                 self.release_gpu_ids(run_id)
         except RunnerError:
             logging.info("Runner stopped.")
+            logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
             self.release_gpu_ids(run_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except RunnerCompletedError:
+            logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
             self.release_gpu_ids(run_id)
             logging.info("Runner completed.")
         except Exception as e:
@@ -263,6 +266,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
             self.release_gpu_ids(run_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             time.sleep(2)
@@ -793,10 +797,8 @@ class FedMLClientRunner:
 
         self.set_runner_stopped_event(model_msg_object.run_id)
 
-        logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+        logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment deleted.")
         JobRunnerUtils.get_instance().release_gpu_ids(model_msg_object.run_id, self.edge_id)
-        logging.info(
-            f"Endpoint deleted, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
 
         if self.running_request_json.get(str(model_msg_object.run_id)) is not None:
             try:

@@ -959,11 +959,8 @@ class FedMLClientRunner:
         try:
             if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
                     job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-                logging.info(
-                    f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+                logging.info(f"[run/device][{run_id}/{device_id}] Release gpu resource actually.")
                 JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-                logging.info(
-                    f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
         except Exception as e:
             pass
 
@@ -1028,6 +1025,7 @@ class FedMLClientRunner:
             if running_json is not None:
                 job_type = JobRunnerUtils.parse_job_type(running_json)
                 if not SchedulerConstants.is_deploy_job(job_type):
+                    logging.info(f"[run/device][{run_id}/{edge_id}] Release gpu resource when run ended.")
                     FedMLClientRunner.release_gpu_ids(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)

@@ -155,7 +155,9 @@ class JobRunnerUtils(Singleton):
 
         if edge_device_id is not None:
             from fedml.core import mlops
-            mlops.release_resources(run_id if original_run_id is None else original_run_id, edge_device_id)
+            released_run_id = run_id if original_run_id is None else original_run_id
+            logging.info(f"[run/device][{released_run_id}/{edge_device_id}] notify MLOps to release gpu resources.")
+            mlops.release_resources(released_run_id, edge_device_id)
 
     def get_available_gpu_id_list(self, device_id):
         try:
