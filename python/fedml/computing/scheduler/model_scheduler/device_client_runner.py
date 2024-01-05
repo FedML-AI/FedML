@@ -797,7 +797,8 @@ class FedMLClientRunner:
 
         self.set_runner_stopped_event(model_msg_object.run_id)
 
-        logging.info(f"[endpint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment deleted.")
+        logging.info(f"[endpint/device][{model_msg_object.run_id}/{self.edge_id}] "
+                     f"Release gpu resource when the worker deployment deleted.")
         JobRunnerUtils.get_instance().release_gpu_ids(model_msg_object.run_id, self.edge_id)
 
         if self.running_request_json.get(str(model_msg_object.run_id)) is not None:
