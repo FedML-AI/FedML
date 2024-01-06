@@ -3,8 +3,10 @@ import time
 import traceback
 from urllib.parse import urlparse
 import os
+from typing import Any, Mapping, MutableMapping, Union
 
 from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import StreamingResponse
 
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -111,7 +113,14 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
 
     try:
         inference_response = await _predict(end_point_id, input_json, header)
-        error_code = inference_response.get("error_code")
+
+        if isinstance(inference_response, (Response, StreamingResponse)):
+            error_code = inference_response.status_code
+        elif isinstance(inference_response, Mapping):
+            error_code = inference_response.get("error_code")
+        else:
+            error_code = response.status_code
+
         if error_code == status.HTTP_404_NOT_FOUND:
             response.status_code = status.HTTP_404_NOT_FOUND
     except Exception as e:
@@ -120,7 +129,11 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     return inference_response
 
 
-async def _predict(end_point_id, input_json, header=None):
+async def _predict(
+        end_point_id,
+        input_json,
+        header=None
+) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)

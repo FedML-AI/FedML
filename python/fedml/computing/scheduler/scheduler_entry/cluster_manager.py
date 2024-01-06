@@ -16,6 +16,7 @@ class ClusterConstants(object):
     JOB_ID = "jobId"
     API_KEY = "apiKey"
     CLUSTER_ID = "clusterId"
+    CLUSTER_NAME = "clusterName"
     MACHINE_SELECTED_LIST = "machineSelectedList"
     STATUS = "status"
     ID = "id"
@@ -63,9 +64,10 @@ class FedMLClusterManager(Singleton):
         data = self._get_data_from_response(command="Stop", response=response)
         return True if data is not None else False
 
-    def autostop_clusters(self, cluster_id: int, time: int) -> bool:
+    def autostop_clusters(self, cluster_name: str, time: int) -> bool:
         cluster_autostop_url = ServerConstants.get_cluster_autostop_url()
-        cluster_autostop_json = {ClusterConstants.CLUSTER_ID: cluster_id,
+        cluster_autostop_json = {ClusterConstants.API_KEY: get_api_key(),
+                                 ClusterConstants.CLUSTER_NAME: cluster_name,
                                  ClusterConstants.AUTOSTOP_TIME: time}
         response = self._request(cluster_autostop_url, cluster_autostop_json, self.config_version)
         data = self._get_data_from_response(command="Autostop", response=response)
