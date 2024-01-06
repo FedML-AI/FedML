@@ -68,6 +68,7 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
         if cuda_visable_gpu_ids is not None:
             gpu_ids = cuda_visable_gpu_ids.split(',')
             gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
+            logging.info(f"Requested cuda visible gpu ids: {gpu_ids}")
 
     if gpu_ids is None:
         raise Exception("Failed to request gpu ids!")
