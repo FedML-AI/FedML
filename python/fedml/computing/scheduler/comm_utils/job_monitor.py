@@ -448,7 +448,7 @@ class JobMonitor(Singleton):
                     self.released_endpoints[str(endpoint_id)] = True
 
                     # Release the gpu ids
-                    print(f"[endpint/device][{endpoint_id}/{device_id}] Release gpu resource when the worker endpoint is not ready on monitoring periodically.")
+                    print(f"[endpoint/device][{endpoint_id}/{device_id}] Release gpu resource when the worker endpoint is not ready on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(endpoint_id, device_id)
 
                 return False
@@ -609,7 +609,7 @@ class JobMonitor(Singleton):
 
                 if endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     # Release the gpu ids
-                    print(f"[endpint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the master endpoint failed on monitoring periodically.")
+                    print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the master endpoint failed on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     if model_name is None:
