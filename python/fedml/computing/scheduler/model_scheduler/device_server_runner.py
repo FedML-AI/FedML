@@ -1196,43 +1196,22 @@ class FedMLServerRunner:
                 self.request_json["model_config"]["model_name"]
             )
 
-
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))
 
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        # If the previous deployment did not complete successfully, we need to restart the deployment.
+        # Get the previous deployment status.
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        prev_status = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+        endpoint_status = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             get_end_point_status(model_msg_object.inference_end_point_id)
-        if prev_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-            prev_deployment_result = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                get_idle_device(model_msg_object.inference_end_point_id,
-                                model_msg_object.end_point_name,
-                                model_msg_object.model_id,
-                                model_msg_object.model_name,
-                                model_msg_object.model_version,
-                                check_end_point_status=False)
-            if prev_deployment_result is None:
-                self.callback_start_deployment(topic, payload)
-                return
+        if endpoint_status != ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+            return
 
         # Set end point as activated status
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            set_end_point_activation(model_msg_object.inference_end_point_id,
-                                     model_msg_object.end_point_name, True)
-
-        # Send deployment status to the ModelOps backend
-        if prev_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-            self.send_deployment_status(model_msg_object.inference_end_point_id,
-                                        model_msg_object.end_point_name,
-                                        model_msg_object.model_name, "", prev_status)
-
-        self.start_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
-                                            model_msg_object.model_id, model_msg_object.model_name,
-                                            model_msg_object.model_version, check_stopped_event=False)
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_activation(
+            model_msg_object.inference_end_point_id, model_msg_object.end_point_name, True)
 
     def callback_deactivate_deployment(self, topic, payload):
         logging.info("callback_deactivate_deployment: topic = %s, payload = %s" % (topic, payload))
@@ -1240,17 +1219,16 @@ class FedMLServerRunner:
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        # Set end point as deactivated status
+        # Get the endpoint status
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-            set_end_point_activation(model_msg_object.inference_end_point_id,
-                                     model_msg_object.model_name, False)
+        endpoint_status = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_end_point_status(model_msg_object.inference_end_point_id)
+        if endpoint_status != ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+            return
 
-        self.set_runner_stopped_event(model_msg_object.run_id)
-
-        self.stop_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
-                                           model_msg_object.model_id, model_msg_object.model_name,
-                                           model_msg_object.model_version)
+        # Set end point as deactivated status
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_activation(
+            model_msg_object.inference_end_point_id, model_msg_object.model_name, False)
 
     def set_runner_stopped_event(self, run_id):
         run_id_str = str(run_id)
