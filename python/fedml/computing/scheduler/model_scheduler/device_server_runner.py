@@ -511,6 +511,10 @@ class FedMLServerRunner:
                     shutil.rmtree(os.path.join(local_package_path, package_file), ignore_errors=True)
         except Exception as e:
             pass
+    
+    def cleanup_run_when_deploy_failed(self):
+        topic = f"model_ops/model_device/delete_deployment/{self.edge_id}"
+        self.callback_delete_deployment(topic, payload=json.dumps(self.request_json))
 
     def callback_deployment_result_message(self, topic=None, payload=None):
         # Save deployment result to local cache
@@ -548,18 +552,15 @@ class FedMLServerRunner:
         # When all deployments are finished
         device_id_list = request_json["device_ids"]
         if len(device_id_list) <= len(self.slave_deployment_results_mapping[run_id_str].keys()) + 1:
-            is_exist_deployed_model = False
-            failed_to_deploy_all_models = True
+            failed_to_deploy_all_models = False
             for device_item in device_id_list:
+                if device_item == self.edge_id: # Skip the master
+                    continue
                 status = self.slave_deployment_results_mapping[run_id_str]. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
-                    pass
-                else:
-                    failed_to_deploy_all_models = False
-                    if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                        is_exist_deployed_model = True
-                        break
+                    failed_to_deploy_all_models = True
+                    break
 
             # Failed to deploy models.
             if failed_to_deploy_all_models:
@@ -569,12 +570,13 @@ class FedMLServerRunner:
                                             ServerConstants.MODEL_DEPLOYMENT_STAGE5["index"],
                                             ServerConstants.MODEL_DEPLOYMENT_STAGE5["text"],
                                             "Failed to deploy the model to all devices.")
-                FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                    set_deployment_result(end_point_id, end_point_name,
-                                          model_name, model_version,
-                                          self.edge_id, payload)
-                return
-            if not is_exist_deployed_model:
+                FedMLModelDatabase.get_instance().delete_deployment_status(
+                    run_id_str, end_point_name, model_name, model_version=model_version)
+                FedMLModelDatabase.get_instance().delete_deployment_result(
+                    run_id_str, end_point_name, model_name, model_version=model_version)
+
+                # reset slave_deployment_results_mapping, incase user might use this for redeployment
+                self.slave_deployment_results_mapping[run_id_str] = dict()
                 return
 
             # 1. We should generate one unified inference api
@@ -612,6 +614,7 @@ class FedMLServerRunner:
                                               "outputs": []}
                 payload_json["output_json"] = model_metadata["outputs"]
             else:
+                # triton model, auto generate inputs
                 for input_item in model_inputs:
                     ret_item = input_item
                     shape = ret_item["shape"]
@@ -684,19 +687,16 @@ class FedMLServerRunner:
             return
 
         device_id_list = request_json["device_ids"]
-        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping[run_id_str].keys()) + 1:
-            is_exist_deployed_model = False
-            failed_to_deploy_all_models = True
+        if len(device_id_list) <= len(self.slave_deployment_statuses_mapping[run_id_str].keys()) + 1: # Recv all
+            failed_to_deploy_all_models = False
             for device_item in device_id_list:
+                if device_item == self.edge_id: # Skip the master
+                    continue
                 status = self.slave_deployment_statuses_mapping[run_id_str]. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
-                    pass
-                else:
-                    failed_to_deploy_all_models = False
-                    if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                        is_exist_deployed_model = True
-                        break
+                    failed_to_deploy_all_models = True
+                    break
 
             # Failed to deploy the model to all devices
             if failed_to_deploy_all_models:
@@ -708,8 +708,12 @@ class FedMLServerRunner:
                 self.send_deployment_status(end_point_id, end_point_name,
                                             payload_json["model_name"], "",
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                return
-            if not is_exist_deployed_model:
+                
+                time.sleep(2)
+                self.cleanup_run_when_deploy_failed()
+
+                # reset slave_deployment_statuses_mapping, incase user might use this for redeployment
+                self.slave_deployment_statuses_mapping[run_id_str] = dict()
                 return
 
             # Send deployment finished message to ModelOps
@@ -1319,6 +1323,7 @@ class FedMLServerRunner:
                                       "input_json": input_json,
                                       "output_json": output_json,
                                       "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+        logging.info(f"deployment_results_payload to mlops: {deployment_results_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))

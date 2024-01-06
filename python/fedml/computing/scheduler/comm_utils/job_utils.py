@@ -36,7 +36,7 @@ class JobRunnerUtils(Singleton):
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
             with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(switchable_device_id, run_id)
+                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(run_id, run_id)
             ):
                 if inner_id is not None and str(original_run_id) != str(inner_id):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id, original_run_id)
