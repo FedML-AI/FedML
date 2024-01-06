@@ -82,6 +82,7 @@ class JobMonitor(Singleton):
                     if not self.released_runs.get(str(job.job_id), False):
                         self.released_runs[str(job.job_id)] = True
                         # Release the gpu ids
+                        print(f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                 # Get the timeout threshold
@@ -111,7 +112,7 @@ class JobMonitor(Singleton):
                           f"set run status of slave to failed.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
             pass
 
         try:
@@ -134,11 +135,11 @@ class JobMonitor(Singleton):
                         self.released_endpoints[str(job.job_id)] = True
 
                         # Release the gpu ids
+                        print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when monioring worker endpoint periodically.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
-                        print(f"[Run/EndpointWorker][{job.job_id}:{job.edge_id}] Release gpu ids.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
@@ -221,7 +222,7 @@ class JobMonitor(Singleton):
                                   f"Due to job failed on all slave agents, set run status to failed.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
             pass
 
     def monitor_slave_endpoint_status(self):
@@ -248,8 +249,8 @@ class JobMonitor(Singleton):
                             self.released_endpoints[str(job.job_id)] = True
 
                             # Release the gpu ids
+                            print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when woker endpoint failed on monitoring periodically.")
                             JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
-                            print(f"[Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
 
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
                         endpoint_json = json.loads(job.running_json)
@@ -386,6 +387,7 @@ class JobMonitor(Singleton):
                                 self.released_endpoints[str(job.job_id)] = True
 
                                 # Release the gpu ids
+                                print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the worker endpoint runs timeout on monioring periodically.")
                                 JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                                 # Get endpoint container name prefix
@@ -402,11 +404,9 @@ class JobMonitor(Singleton):
 
                                 print(f"[Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
                 except Exception as e:
-                    logging.info(
-                        f"[Worker][{job.job_id}:{job.edge_id}] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
+                    print(f"[Worker][{job.job_id}:{job.edge_id}] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
         except Exception as e:
-            logging.info(
-                f"[Worker] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
+            print(f"[Worker] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
             pass
 
     def _check_and_reset_endpoint_status(
@@ -448,6 +448,7 @@ class JobMonitor(Singleton):
                     self.released_endpoints[str(endpoint_id)] = True
 
                     # Release the gpu ids
+                    print(f"[endpoint/device][{endpoint_id}/{device_id}] Release gpu resource when the worker endpoint is not ready on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(endpoint_id, device_id)
 
                 return False
@@ -533,7 +534,7 @@ class JobMonitor(Singleton):
         except Exception as e:
             inference_response = {"error": True,
                                   "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
-            logging.info("Inference Exception: {}".format(traceback.format_exc()))
+            print("Inference Exception: {}".format(traceback.format_exc()))
             return False, inference_response
 
         return False, None
@@ -608,6 +609,7 @@ class JobMonitor(Singleton):
 
                 if endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     # Release the gpu ids
+                    print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the master endpoint failed on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     if model_name is None:
@@ -669,7 +671,7 @@ class JobMonitor(Singleton):
                             device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
         except Exception as e:
-            logging.info(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
+            print(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
             pass
 
     def monitor_endpoint_logs(self):
@@ -734,4 +736,4 @@ class JobMonitor(Singleton):
                             f.write(endpoint_logs)
 
         except Exception as e:
-            logging.info(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")
+            print(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")
