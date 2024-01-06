@@ -233,7 +233,7 @@ def status(cluster_name, version, api_key):
 
 @fedml_clusters.command("autostop", help="Autostop clusters after some minutes of inactivity. Defaults to 10 minutes")
 @click.help_option("--help", "-h")
-@click.argument("cluster_id", type=int,nargs=1)
+@click.argument("cluster_name", type=str,nargs=1)
 @click.option("--time", "-t", type=int, default=10, help="Number of minutes of inactivity before autostop")
 @click.option(
     "--api_key", "-k", type=str, help=api_key_help,
@@ -245,9 +245,9 @@ def status(cluster_name, version, api_key):
     default="release",
     help=version_help,
 )
-def autostop(cluster_id, time, version, api_key):
+def autostop(cluster_name, time, version, api_key):
     fedml.set_env_version(version)
-    is_configured = fedml.api.cluster_autostop(cluster_id=cluster_id, time=time, api_key=api_key)
+    is_configured = fedml.api.cluster_autostop(cluster_name=cluster_name, time=time, api_key=api_key)
     if is_configured:
         click.echo(f"Cluster has been successfully configured to autostop after {time} of inactivity.")
     else:
