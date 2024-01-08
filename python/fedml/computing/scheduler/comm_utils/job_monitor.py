@@ -552,17 +552,7 @@ class JobMonitor(Singleton):
 
             # Check if the endpoint is activated
             endpoint_activated = FedMLModelCache.get_instance().get_end_point_activation(endpoint_id)
-            if not endpoint_activated:
-                print(f"[Master][{endpoint_id}] Endpoint is not activated, set status to "
-                      f"offline after deployed")
-                mlops.log_endpoint_status(
-                    endpoint_id,
-                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
-                FedMLModelCache.get_instance().set_end_point_status(
-                    endpoint_id, endpoint_name,
-                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
-                break
-            else:
+            if endpoint_activated:
                 # Check if the endpoint is running
                 model_url = result_payload.get("model_url", "")
                 url_parsed = urlparse(model_url)
