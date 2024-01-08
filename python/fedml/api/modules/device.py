@@ -1,4 +1,5 @@
 import os
+import platform
 
 import click
 from prettytable import PrettyTable
@@ -67,7 +68,21 @@ def _bind(
         os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD] = redis_password
 
     url = fedml._get_backend_service()
+    platform_name = platform.system()
+    docker_config_text = None
+    if platform_name == "Darwin":
+        docker_install_url = "https://docs.docker.com/desktop/install/mac-install/"
+    elif platform_name == "Windows":
+        docker_install_url ="https://docs.docker.com/desktop/install/windows-install/"
+    else:
+        docker_install_url = "https://docs.docker.com/engine/install/"
+        docker_config_text = " Moreover, you need to config the docker engine to run as a non-root user. Here is the docs. https://docs.docker.com/engine/install/linux-postinstall/"
     print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Nexus AI Platform\n")
+    print(" If you want to deploy models into this computer, you need to install the docker engine to serve your models.")
+    print(f" Here is the docs for installation docker engine. {docker_install_url}")
+    if docker_config_text is not None:
+        print(docker_config_text)
+
     if api_key is None:
         click.echo("Please specify your API key, usage: fedml login $your_api_key")
         return
@@ -121,7 +136,10 @@ def _bind(
         client_daemon_cmd = "client_daemon.py"
         client_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(client_daemon_cmd)
         if client_daemon_pids is not None and len(client_daemon_pids) > 0:
-            print("There is another login process running on your system. Please check and exit the previous login with the command 'fedml logout -c'.")
+            print("Your computer has been logged into the FedML® Nexus AI Platform. "
+                  "Before logging in again, please log out of the previous login using the command "
+                  "'fedml logout -c'. If it still doesn't work, run the command 'fedml logout -c' "
+                  "using your computer's administrator account.")
             return
 
         pip_source_dir = os.path.dirname(__file__)
@@ -168,7 +186,10 @@ def _bind(
         server_daemon_cmd = "server_daemon.py"
         server_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(server_daemon_cmd)
         if server_daemon_pids is not None and len(server_daemon_pids) > 0:
-            print("There is another login process running on your system. Please check and exit the previous login with the command 'fedml logout -s'.")
+            print("Your computer has been logged into the FedML® Nexus AI Platform. "
+                  "Before logging in again, please log out of the previous login using the command "
+                  "'fedml logout -s'. If it still doesn't work, run the command 'fedml logout -s' "
+                  "using your computer's administrator account.")
             return
 
         pip_source_dir = os.path.dirname(__file__)

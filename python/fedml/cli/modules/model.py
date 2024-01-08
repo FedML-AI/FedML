@@ -56,12 +56,24 @@ def fedml_model_create(version, name, model, model_config):
 @click.option(
     "--model_storage_url", "-s", type=str, help="A S3 address to the model card zip file.",
 )
-def fedml_model_push(name, model_storage_url, version):
+@click.option(
+    "--api_key", "-k", type=str, help="API key for the Nexus AI Platform.",
+)
+@click.option(
+    "--tag_names", "-t", type=str, default=None, help="Tag for the model card.",
+)
+@click.option(
+    "--model_id", "-i", type=int, default=None, help="Model card version."
+)
+@click.option(
+    "--model_version", "-m", type=str, default=None, help="Model card version."
+)
+def fedml_model_push(name, model_storage_url, version, api_key, tag_names, model_id, model_version):
     fedml.set_env_version(version)
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
-    fedml.api.model_push(name, model_storage_url)
+    fedml.api.model_push(name, model_storage_url, api_key, tag_names, model_id, model_version)
 
 
 @fedml_model.command("deploy", help="Deploy model to the local | on-premise | GPU Cloud.")
@@ -85,11 +97,11 @@ def fedml_model_push(name, model_storage_url, version):
     "--local", "-l", default=False, is_flag=True, help="Deploy model locally.",
 )
 @click.option(
-    "--master_ids", "-m", type=str, default="", help=" Device Id(s) for on-premise master node(s)."
+    "--master_ids", "-m", type=str, default=None, help=" Device Id(s) for on-premise master node(s)."
                                                      " Please indicate master device id(s), seperated with ','"
 )
 @click.option(
-    "--worker_ids", "-w", type=str, default="", help=" Device Id(s) for on-premise worker node(s)."
+    "--worker_ids", "-w", type=str, default=None, help=" Device Id(s) for on-premise worker node(s)."
                                                      " Please indicate worker device id(s), seperated with ','"
 )
 @click.option(
@@ -203,3 +215,24 @@ def fedml_model_delete(name, local, version):
         click.echo("You must provide a model name (use -n option).")
         return
     fedml.api.model_delete(name, local)
+
+
+@fedml_model.command("package", help="Pakcage a local or remote model card. So that can be uploaded through UI\
+                     to Nexus AI Platform.")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+@click.help_option("--help", "-h")
+@click.option(
+    "--name", "-n", type=str, default=None, help=
+    '''
+    Model card(s) name. "*" means all model cards. To select multiple model cards, use "," to separate them.
+    e.g. "model1,model2".
+    '''
+)
+def fedml_model_pacakge(name, version):
+    fedml.api.model_package(name)

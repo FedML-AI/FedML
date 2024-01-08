@@ -75,7 +75,10 @@ class SchedulerConstants:
     ENDPOINT_FAIL_THRESHOLD_VALUE = 3
     ENDPOINT_DEPLOYMENT_PROVISIONING_TIMEOUT = 60 * 25
     ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT = 60 * 60 * 2
+    ENDPOINT_INFERENCE_READY_TIMEOUT = 15
     ENDPOINT_STATUS_CHECK_TIMEOUT = 60 * 3
+
+    MQTT_INFERENCE_TIMEOUT = 60 * 6
 
     TRAIN_PROVISIONING_TIMEOUT = 60 * 25
     TRAIN_STARTING_TIMEOUT = 60 * 15
@@ -85,8 +88,10 @@ class SchedulerConstants:
 
     PUBLIC_REDIS_PORT = 6379
     PUBLIC_REDIS_PASSWORD = "share-fedml-secret@@DD#D#*&^"
+    REDIS_CONN_TIMEOUT = 15
 
     STATUS_CHECK_FRO_RUN_STOP_CONTEXT = "run_stop"
+    BINDING_ACCOUNT_NOT_EXIST_ERROR = "DATA_NO_EXIST_ERROR"
 
     MLOPS_RUN_COMPLETED_STATUS_LIST = [
         MLOPS_RUN_STATUS_FINISHED, MLOPS_RUN_STATUS_KILLED, MLOPS_RUN_STATUS_FAILED,
@@ -129,9 +134,14 @@ class SchedulerConstants:
         infer_redis_addr = os.getenv("FEDML_INFER_REDIS_ADDR", None)
         infer_redis_port = os.getenv("FEDML_INFER_REDIS_PORT", None)
         infer_redis_password = os.getenv("FEDML_INFER_REDIS_PASSWORD", None)
-        return infer_host, infer_redis_addr, infer_redis_port, infer_redis_password
+        disable_redis = os.getenv("FEDML_DISABLE_REDIS_CONNECTION", None)
+        return infer_host, infer_redis_addr, infer_redis_port, infer_redis_password, disable_redis
 
     @staticmethod
     def get_public_redis_addr():
         return "cache{}.fedml.ai".format(
             "-" + fedml.get_env_version() if fedml.get_env_version() != "release" else "")
+
+    @staticmethod
+    def is_deploy_job(job_type):
+        return True if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY else False

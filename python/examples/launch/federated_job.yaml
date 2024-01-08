@@ -26,6 +26,8 @@ server_job: |
   python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_RUN_ID
 
 job_type: federate              # options: train, deploy, federate
+fedml_env:
+  federate_project_name: Cheetah_HelloWorld
 
 # train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
 # federate subtype: cross_silo, simulation, web, smart_phone
@@ -42,5 +44,5 @@ computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
-  #device_type: CPU              # options: GPU, CPU, hybrid
-  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  device_type: CPU              # options: GPU, CPU, hybrid
+  #resource_type: A100-800G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type

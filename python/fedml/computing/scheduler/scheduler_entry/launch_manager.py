@@ -125,12 +125,13 @@ class FedMLLaunchManager(Singleton):
             self.job_config.model_app_name = model_app_name
 
             # Apply model endpoint id and act as job id
-            self.job_config.serving_endpoint_id = FedMLModelCards.get_instance().apply_endpoint_api(
-                user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
-                model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version)
             if self.job_config.serving_endpoint_id is None:
-                print("Failed to apply endpoint for your model.")
-                exit(-1)
+                self.job_config.serving_endpoint_id = FedMLModelCards.get_instance().apply_endpoint_api(
+                    user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
+                    model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version)
+                if self.job_config.serving_endpoint_id is None:
+                    print("Failed to apply endpoint for your model.")
+                    exit(-1)
             self.job_config.serving_model_name = models.model_list[0].model_name
             self.job_config.serving_model_version = models.model_list[0].model_version
             self.job_config.serving_model_id = models.model_list[0].id
@@ -405,6 +406,7 @@ class FedMLJobConfig(object):
         self.job_config_dict = load_yaml_config(job_yaml_file)
         self.fedml_env = self.job_config_dict.get("fedml_env", {})
         self.project_name = self.fedml_env.get("project_name", None)
+        self.federate_project_name = self.fedml_env.get("federate_project_name", None)
         self.base_dir = os.path.dirname(job_yaml_file)
         self.using_easy_mode = True
         self.executable_interpreter = "bash"
@@ -506,7 +508,7 @@ class FedMLJobConfig(object):
         self.serving_endpoint_name = serving_args.get("endpoint_name", None)
         if self.serving_endpoint_name is None or self.serving_endpoint_name == "":
             self.serving_endpoint_name = f"Endpoint-{str(uuid.uuid4())}"
-        self.serving_endpoint_id = None
+        self.serving_endpoint_id = serving_args.get("endpoint_id", None)
 
         job_args = self.job_config_dict.get("job_args", {})
         self.job_id = job_args.get("job_id", None)

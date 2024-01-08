@@ -1,0 +1,48 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: .
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+  echo "Current directory is: \"$(pwd)\"."
+
+  export WANDB_MODE="disabled"  # disable wandb
+  export TOKENIZERS_PARALLELISM="true"
+
+  echo "Starting training job."
+  bash scripts/train_auto.sh "" "" "" \
+    --model_name_or_path "EleutherAI/pythia-70m" \
+    --dataset_name "FedML/databricks-dolly-15k-niid" \
+    --cleanup_data_cache "True" \
+    --test_dataset_size 1000 \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 8 \
+    --custom_logger "fedml" \
+    --report_to "none" \
+    --num_train_epochs 0 \
+    --max_steps 100
+
+  echo "job finished."
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  bash configs/bootstrap.sh
+  echo "Bootstrap finished."
+
+task_type: train              # options: serve, train, dev-environment
+
+computing:
+  minimum_num_gpus: 1             # minimum # of GPUs to provision
+
+  # max cost per hour of all machines for your job.
+  # E.g., if your job are assigned 2 x A100 nodes (8 GPUs), each GPU cost $1/GPU/Hour, "maximum_cost_per_hour" = 16 * $1 = $16
+  maximum_cost_per_hour: $5
+
+  allow_cross_cloud_resources: false # true, false
+  device_type: GPU              # options: GPU, CPU, hybrid
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://nexus.fedml.ai/accelerator_resource_type

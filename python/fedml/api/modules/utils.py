@@ -34,12 +34,15 @@ def _check_api_key(api_key=None):
 
 
 def authenticate(api_key):
+
     error_code, api_key = fedml_login(api_key)
 
     # Exit if not able to authenticate successfully
     if error_code:
         raise SystemExit(f"Failed to authenticate with apikey: '{api_key}'. Please make sure your login "
                          f"credentials are valid.")
+
+    return api_key
 
 
 def build_mlops_package(

@@ -44,6 +44,33 @@ class EndpointDeviceDeploymentResultModel:
         self.inference_port = payload_json.get("inference_port", None)
 
 
+class EndpointDeviceDeploymentStatusModel:
+    def __init__(self, payload):
+        payload_json = json.loads(payload)
+        self.endpoint_id = payload_json.get("end_point_id", None)
+        self.endpoint_name = payload_json.get("end_point_name", None)
+        self.model_id = payload_json.get("model_id", None)
+        self.model_name = payload_json.get("model_name", None)
+        self.model_url = payload_json.get("model_url", None)
+        self.model_version = payload_json.get("model_version", None)
+        self.model_status = payload_json.get("model_status", None)
+        self.inference_port = payload_json.get("inference_port", None)
+        self.device_id = payload_json.get("device_id", None)
+
+
+class EndpointDeviceDeploymentInfoModel:
+    def __init__(self, payload):
+        payload_json = json.loads(payload)
+        self.endpoint_id = payload_json.get("end_point_id", None)
+        self.endpoint_name = payload_json.get("end_point_name", None)
+        self.model_id = payload_json.get("model_id", None)
+        self.model_name = payload_json.get("model_name", None)
+        self.model_version = payload_json.get("model_version", None)
+        self.inference_port = payload_json.get("inference_port", None)
+        self.device_id = payload_json.get("device_id", None)
+        self.disable = payload_json.get("disable", None)
+
+
 class FedMLEndpointMonitorProtocol(FedMLBaseProtocol):
 
     def __init__(self, agent_config=None, mqtt_mgr=None):
