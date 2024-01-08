@@ -723,10 +723,6 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
-        # Terminate previous process about starting or stopping run command
-        ClientConstants.cleanup_run_process(run_id)
-        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
-
         # Start log processor for current run
         run_id = inference_end_point_id
         self.args.run_id = run_id
@@ -761,6 +757,7 @@ class FedMLClientRunner:
         # client_runner.run()
         self.run_process_map[run_id_str].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
+        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
     def set_runner_stopped_event(self, run_id):
         run_id_str = str(run_id)

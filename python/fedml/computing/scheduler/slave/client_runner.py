@@ -866,7 +866,6 @@ class FedMLClientRunner:
         # Terminate previous process about starting or stopping run command
         logging.info("cleanup and save runner information")
         server_agent_id = request_json["cloud_agent_id"]
-        ClientConstants.cleanup_run_process(run_id)
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # OTA upgrade
