@@ -550,7 +550,16 @@ class FedMLServerRunner:
             return
 
         # When all deployments are finished
-        device_id_list = request_json["device_ids"]
+        all_device_id_list = request_json["device_ids"]
+
+        device_id_list = []
+
+        for device in all_device_id_list:
+            if device in request_json["diff_devices"] and \
+                    (request_json["diff_devices"][device] == ServerConstants.DEVICE_DIFF_ADD_OPERATION or
+                     request_json["diff_devices"][device] == ServerConstants.DEVICE_DIFF_REPLACE_OPERATION):
+                device_id_list.append(device)
+
         if len(device_id_list) <= len(self.slave_deployment_results_mapping[run_id_str].keys()) + 1:
             failed_to_deploy_all_models = False
             for device_item in device_id_list:
