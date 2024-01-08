@@ -23,7 +23,7 @@ train_args:
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
-  lr: 0.03
+  learning_rate: 0.03
 
 validation_args:
   frequency_of_the_test: 5

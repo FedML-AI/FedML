@@ -7,21 +7,20 @@ from fedml.core import ServerAggregator
 
 
 class ClassificationAggregator(ServerAggregator):
+    
+    def __init__(self, model, args=None):
+        super().__init__(model, args)
+
     def get_model_params(self):
-        return self.model.cpu().state_dict()
+        return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
     def test(self, test_data, device, args):
-        pass
-
-    def _test(self, test_data, device):
-        model = self.model
-
-        model.eval()
-        model.to(device)
+        self.model.to(device)
+        self.model.eval()
 
         metrics = {
             "test_correct": 0,
@@ -36,12 +35,12 @@ class ClassificationAggregator(ServerAggregator):
             for batch_idx, (x, target) in enumerate(test_data):
                 x = x.to(device)
                 target = target.to(device)
-                pred = model(x)
+                pred = self.model(x)
                 loss = criterion(pred, target)  # pylint: disable=E1102
-                _, predicted = torch.max(pred, 1)
-                correct = predicted.eq(target).sum()
+                # _, predicted = torch.max(pred, 1)
+                # correct = predicted.eq(target).sum()
 
-                metrics["test_correct"] += correct.item()
+                # metrics["test_correct"] += correct.item()
 
         return metrics
 

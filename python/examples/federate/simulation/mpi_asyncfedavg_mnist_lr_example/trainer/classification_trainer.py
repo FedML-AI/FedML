@@ -3,12 +3,16 @@ import logging
 import torch
 from torch import nn
 
-from fedml.core import ClientTrainer
+from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 
 class ClassificationTrainer(ClientTrainer):
+
+    def __init__(self, model, args=None):
+        super().__init__(model, args)
+
     def get_model_params(self):
-        return self.model.cpu().state_dict()
+        return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
@@ -21,11 +25,11 @@ class ClassificationTrainer(ClientTrainer):
 
         criterion = nn.CrossEntropyLoss().to(device)
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
+            optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
+                lr=args.learning_rate,
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
