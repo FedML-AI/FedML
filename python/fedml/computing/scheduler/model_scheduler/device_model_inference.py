@@ -159,6 +159,12 @@ async def _predict(
     # Authenticate request token
     inference_response = {}
     if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
+        # Check the endpoint is activated
+        if not is_endpoint_activated(in_end_point_id):
+            inference_response = {"error": True, "message": "endpoint is not activated."}
+            logging_inference_request(input_json, inference_response)
+            return inference_response
+
         # Found idle inference device
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
@@ -225,6 +231,7 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
         raise Exception("end_point_id is not found.")
 
     return end_point_name, model_name
+
 
 def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
@@ -312,6 +319,16 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
         return True
 
     return False
+
+
+def is_endpoint_activated(end_point_id):
+    if end_point_id is None:
+        return False
+
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
+    activated = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_end_point_activation(
+        end_point_id)
+    return activated
 
 
 def logging_inference_request(request, response):
