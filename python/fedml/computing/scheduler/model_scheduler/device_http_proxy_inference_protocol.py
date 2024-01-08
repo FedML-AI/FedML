@@ -1,8 +1,12 @@
 import traceback
+from typing import Mapping
 from urllib.parse import urlparse
 from .device_client_constants import ClientConstants
 import requests
 import httpx
+from fastapi.responses import Response
+from fastapi.responses import StreamingResponse
+
 
 class FedMLHttpProxyInference:
     def __init__(self):
@@ -12,7 +16,7 @@ class FedMLHttpProxyInference:
     async def is_inference_ready(inference_url, timeout=None) -> bool:
         http_proxy_url = f"http://{urlparse(inference_url).hostname}:{ClientConstants.LOCAL_CLIENT_API_PORT}/ready"
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
-                                 'Accept': 'application/json'}
+                             'Accept': 'application/json'}
         model_ready_json = {
             "inference_url": inference_url,
         }
@@ -26,7 +30,14 @@ class FedMLHttpProxyInference:
                     url=http_proxy_url, headers=model_api_headers, json=model_ready_json, timeout=timeout
                 )
 
-            if ready_response.status_code == 200:
+            if isinstance(ready_response, (Response, StreamingResponse)):
+                error_code = ready_response.status_code
+            elif isinstance(ready_response, Mapping):
+                error_code = ready_response.get("error_code")
+            else:
+                error_code = ready_response.status_code
+
+            if error_code == 200:
                 response_ok = True
         except Exception as e:
             response_ok = False
@@ -65,7 +76,14 @@ class FedMLHttpProxyInference:
                     url=http_proxy_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
                 )
 
-            if inference_response.status_code == 200:
+            if isinstance(inference_response, (Response, StreamingResponse)):
+                error_code = inference_response.status_code
+            elif isinstance(inference_response, Mapping):
+                error_code = inference_response.get("error_code")
+            else:
+                error_code = inference_response.status_code
+
+            if error_code == 200:
                 response_ok = True
                 return response_ok, inference_response.content
             else:
