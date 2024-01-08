@@ -114,6 +114,13 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
+    
+    def delete_deployment_run_info(self, end_point_id):
+        # db / table -> model-deployment.db / "deployment_run_info"
+        self.open_job_db()
+        self.db_connection.query(FedMLDeploymentRunInfoModel).filter_by(
+            end_point_id=f'{end_point_id}').delete()
+        self.db_connection.commit()
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)

@@ -534,7 +534,7 @@ class FedMLClientRunner:
                                       "model_status": model_status,
                                       "inference_port": inference_port}
 
-        logging.info("send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
+        logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                              deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
@@ -551,7 +551,7 @@ class FedMLClientRunner:
                                      "model_url": model_inference_url, "model_status": model_status,
                                      "inference_port": inference_port}
 
-        logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
+        logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         return deployment_status_payload

@@ -1297,6 +1297,8 @@ class FedMLServerRunner:
         FedMLModelDatabase.get_instance().delete_deployment_result(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
             model_version=model_msg_object.model_version)
+        FedMLModelDatabase.get_instance().delete_deployment_run_info(
+            end_point_id=model_msg_object.inference_end_point_id)
 
     def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
         self.send_deployment_results(end_point_id, end_point_name,
@@ -1323,7 +1325,7 @@ class FedMLServerRunner:
                                       "input_json": input_json,
                                       "output_json": output_json,
                                       "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
-        logging.info(f"deployment_results_payload to mlops: {deployment_results_payload}")
+        logging.info(f"[Server] deployment_results_payload to mlops: {deployment_results_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
@@ -1336,6 +1338,7 @@ class FedMLServerRunner:
                                      "model_url": model_inference_url,
                                      "model_status": model_status,
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+        logging.info(f"[Server] deployment_status_payload to mlops: {deployment_status_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
@@ -1352,8 +1355,7 @@ class FedMLServerRunner:
                                      "model_stage_title": model_stages_title,
                                      "model_stage_detail": model_stage_detail,
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
-        logging.info("-----Stages{}:{}-----".format(model_stages_index, model_stages_title))
-        logging.info("-----Stages{}:{}.....".format(model_stages_index, model_stage_detail))
+        logging.info("-------- Stages{}:{} --------".format(model_stages_index, deployment_stages_payload))
 
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic_prefix, json.dumps(deployment_stages_payload))
