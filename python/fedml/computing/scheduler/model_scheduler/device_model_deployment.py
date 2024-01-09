@@ -32,6 +32,9 @@ from ..scheduler_core.compute_utils import ComputeUtils
 from .device_http_inference_protocol import FedMLHttpInference
 
 
+no_real_gpu_allocation = None
+
+
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if module == 'torch.storage' and name == '_load_from_bytes':
@@ -43,7 +46,6 @@ class CPUUnpickler(pickle.Unpickler):
 def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_device_id=None):
     gpu_ids = None
     client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
-    should_release_gpu_ids = False
 
     try:
         ComputeCacheManager.get_instance().set_redis_params()
@@ -54,31 +56,22 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
                 num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
                 num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
             gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
-            if gpu_ids is not None:
-                logging.info(f"cuda visible gpu ids: {gpu_ids}")
-                gpu_list = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_ids)
-                logging.info(f"trimmed gpu ids {gpu_list}, num gpus {num_gpus}")
-                if len(gpu_list) != num_gpus:
-                    gpu_ids = None
-                    should_release_gpu_ids = True
-                else:
-                    gpu_ids = gpu_list
     except Exception as e:
         logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
         gpu_ids = None
         raise e
 
-    if should_release_gpu_ids:
-        JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, edge_id)
     if gpu_ids is None:
         cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
             end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
             model_master_device_id=master_device_id, model_slave_device_id=edge_id)
-        gpu_ids = cuda_visable_gpu_ids.split(',')
-        gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
+        if cuda_visable_gpu_ids is not None:
+            gpu_ids = cuda_visable_gpu_ids.split(',')
+            gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
+            logging.info(f"Requested cuda visible gpu ids: {gpu_ids}")
 
     if gpu_ids is None:
-        raise Exception("No available gpu resources!")
+        raise Exception("Failed to request gpu ids!")
 
     if not torch.cuda.is_available():
         gpu_attach_cmd = ""
@@ -259,21 +252,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 request_input_example = config.get('request_input_example', None)
                 extra_envs = config.get('environment_variables', None)
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path},"
-                    f" data_cache_dir_input: {data_cache_dir_input}")
-                src_data_cache_dir, dst_data_cache_dir = "", ""
-                if data_cache_dir_input != "":
-                    if data_cache_dir_input[0] == "~":
-                        src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
-                        dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
-                    else:
-                        # check if the data_cache_dir is a relative path
-                        if data_cache_dir_input[0] != "/":
-                            raise "data_cache_dir_input has to be an absolute path or start with ~"
-                        else:
-                            src_data_cache_dir = data_cache_dir_input
-                            dst_data_cache_dir = data_cache_dir_input
-                    logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}")
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
@@ -381,6 +360,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         if exist_container_obj is not None:
             client.api.remove_container(exist_container_obj.id, v=True, force=True)
         device_requests = []
+        if no_real_gpu_allocation is not None:
+            use_gpu = not no_real_gpu_allocation
         if use_gpu:
             logging.info("Number of GPUs: {}".format(num_gpus))
             if gpu_ids is not None:
@@ -404,16 +385,43 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         binds = {}
         environment = {}
 
-        # Optional
-        if src_data_cache_dir != "":
-            logging.info("Start copying the data cache to the container...")
-            if os.path.exists(src_data_cache_dir):
-                volumns.append(src_data_cache_dir)
-                binds[src_data_cache_dir] = {
-                    "bind": dst_data_cache_dir,
-                    "mode": "rw"
-                }
-                environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+        assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
+        if type(data_cache_dir_input) == str:
+            # In this case, we mount to the same folder, if has ~, we replace it with /home/fedml
+            src_data_cache_dir, dst_data_cache_dir = "", ""
+            if data_cache_dir_input != "":
+                if data_cache_dir_input[0] == "~":
+                    src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                    dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+                else:
+                    # check if the data_cache_dir is a relative path
+                    if data_cache_dir_input[0] != "/":
+                        raise "data_cache_dir_input has to be an absolute path or start with ~"
+                    else:
+                        src_data_cache_dir = data_cache_dir_input
+                        dst_data_cache_dir = data_cache_dir_input
+                logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                
+                if type(src_data_cache_dir) == str and src_data_cache_dir != "":
+                    logging.info("Start copying the data cache to the container...")
+                    if os.path.exists(src_data_cache_dir):
+                        volumns.append(src_data_cache_dir)
+                        binds[src_data_cache_dir] = {
+                            "bind": dst_data_cache_dir,
+                            "mode": "rw"
+                        }
+                        environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+        else:
+            for k, v in data_cache_dir_input.items():
+                if os.path.exists(k):
+                    volumns.append(v)
+                    binds[k] = {
+                        "bind": v,
+                        "mode": "rw"
+                    }
+                else:
+                    logging.warning(f"{k} does not exist, skip mounting it to the container")
+            logging.info(f"Data cache mount: {volumns}, {binds}")
 
         # Default
         if not enable_custom_image or (enable_custom_image and relative_entry != ""):

@@ -57,8 +57,8 @@ class SchedulerMatcher:
         scheduler_info["master_node_addr"] = master_node_addr
         scheduler_info["master_node_port"] = master_node_port
         scheduler_info["num_nodes"] = len(edge_id_list)
-        scheduler_info["matched_gpu_num"] = assigned_gpu_num_dict[str(edge_id)]
-        scheduler_info["matched_gpu_ids"] = assigned_gpu_ids_dict[str(edge_id)]
+        scheduler_info["matched_gpu_num"] = assigned_gpu_num_dict.get(str(edge_id), 0)
+        scheduler_info["matched_gpu_ids"] = assigned_gpu_ids_dict.get(str(edge_id), list())
         scheduler_info["model_master_device_id"] = model_master_device_id if model_master_device_id is not None else ""
         scheduler_info["model_slave_device_id"] = model_slave_device_id if model_slave_device_id is not None else ""
         scheduler_info["model_slave_device_id_list"] = model_slave_device_id_list if model_slave_device_id_list is not None else []
@@ -82,7 +82,9 @@ class SchedulerMatcher:
         if job_gpu_id_list is not None:
             job_gpu_id_list_json = json.loads(job_gpu_id_list)
             for edge_id, edge_info in active_edge_info_dict.items():
-                assigned_gpu_num_dict[str(edge_id)] = job_gpu_id_list_json.get(f"gpu_{edge_id}")
+                gpu_count = job_gpu_id_list_json.get(f"gpu_{edge_id}")
+                gpu_count = int(gpu_count) if gpu_count is not None else 1
+                assigned_gpu_num_dict[str(edge_id)] = gpu_count
             return assigned_gpu_num_dict, assigned_gpu_ids_dict
 
         # Calculate total available gpu count

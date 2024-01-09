@@ -70,6 +70,7 @@ class FedMLClientRunner:
         self.run_process_completed_event_map = dict()
         self.run_process = None
         self.run_process_map = dict()
+        self.running_request_json = dict()
         self.local_api_process = None
         self.start_request_json = None
         self.device_status = None
@@ -655,7 +656,8 @@ class FedMLClientRunner:
 
         if should_send_client_id_status:
             if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
-                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                    status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION:
                 self.mlops_metrics.report_client_id_status(
                     edge_id, status, server_id=self.server_id, run_id=self.run_id)
 
@@ -864,7 +866,6 @@ class FedMLClientRunner:
         # Terminate previous process about starting or stopping run command
         logging.info("cleanup and save runner information")
         server_agent_id = request_json["cloud_agent_id"]
-        ClientConstants.cleanup_run_process(run_id)
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # OTA upgrade
@@ -890,6 +891,7 @@ class FedMLClientRunner:
         # Start server with multiprocessing mode
         self.request_json = request_json
         run_id_str = str(run_id)
+        self.running_request_json[run_id_str] = request_json
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id,
             cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str
@@ -956,11 +958,8 @@ class FedMLClientRunner:
         try:
             if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
                     job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-                logging.info(
-                    f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
+                logging.info(f"[run/device][{run_id}/{device_id}] Release gpu resource actually.")
                 JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-                logging.info(
-                    f"Run finished, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(device_id)}")
         except Exception as e:
             pass
 
@@ -1014,7 +1013,19 @@ class FedMLClientRunner:
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
-            FedMLClientRunner.release_gpu_ids(run_id, edge_id)
+            running_json = self.running_request_json.get(run_id_str)
+            if running_json is None:
+                try:
+                    current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+                    running_json = json.loads(current_job.running_json)
+                except Exception as e:
+                    current_job = None
+
+            if running_json is not None:
+                job_type = JobRunnerUtils.parse_job_type(running_json)
+                if not SchedulerConstants.is_deploy_job(job_type):
+                    logging.info(f"[run/device][{run_id}/{edge_id}] Release gpu resource when run ended.")
+                    FedMLClientRunner.release_gpu_ids(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:

@@ -3,8 +3,10 @@ import time
 import traceback
 from urllib.parse import urlparse
 import os
+from typing import Any, Mapping, MutableMapping, Union
 
 from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import StreamingResponse
 
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -111,7 +113,14 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
 
     try:
         inference_response = await _predict(end_point_id, input_json, header)
-        error_code = inference_response.get("error_code")
+
+        if isinstance(inference_response, (Response, StreamingResponse)):
+            error_code = inference_response.status_code
+        elif isinstance(inference_response, Mapping):
+            error_code = inference_response.get("error_code")
+        else:
+            error_code = response.status_code
+
         if error_code == status.HTTP_404_NOT_FOUND:
             response.status_code = status.HTTP_404_NOT_FOUND
     except Exception as e:
@@ -120,7 +129,11 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     return inference_response
 
 
-async def _predict(end_point_id, input_json, header=None):
+async def _predict(
+        end_point_id,
+        input_json,
+        header=None
+) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
@@ -146,6 +159,12 @@ async def _predict(end_point_id, input_json, header=None):
     # Authenticate request token
     inference_response = {}
     if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
+        # Check the endpoint is activated
+        if not is_endpoint_activated(in_end_point_id):
+            inference_response = {"error": True, "message": "endpoint is not activated."}
+            logging_inference_request(input_json, inference_response)
+            return inference_response
+
         # Found idle inference device
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
@@ -212,6 +231,7 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
         raise Exception("end_point_id is not found.")
 
     return end_point_name, model_name
+
 
 def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
@@ -299,6 +319,16 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
         return True
 
     return False
+
+
+def is_endpoint_activated(end_point_id):
+    if end_point_id is None:
+        return False
+
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
+    activated = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_end_point_activation(
+        end_point_id)
+    return activated
 
 
 def logging_inference_request(request, response):

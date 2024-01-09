@@ -17,9 +17,9 @@ def stop(cluster_names, api_key) -> bool:
     return is_stopped
 
 
-def autostop(cluster_id, time, api_key) -> bool:
+def autostop(cluster_name: str, time, api_key) -> bool:
     authenticate(api_key)
-    is_configured = FedMLClusterManager.get_instance().autostop_clusters(cluster_id, time)
+    is_configured = FedMLClusterManager.get_instance().autostop_clusters(cluster_name, time)
     return is_configured
 
 

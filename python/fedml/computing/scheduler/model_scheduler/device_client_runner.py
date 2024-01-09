@@ -250,12 +250,15 @@ class FedMLClientRunner:
             self.setup_client_mqtt_mgr()
 
             if not self.run_impl():
+                logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
                 self.release_gpu_ids(run_id)
         except RunnerError:
             logging.info("Runner stopped.")
+            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
             self.release_gpu_ids(run_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except RunnerCompletedError:
+            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
             self.release_gpu_ids(run_id)
             logging.info("Runner completed.")
         except Exception as e:
@@ -263,6 +266,7 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
             self.release_gpu_ids(run_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             time.sleep(2)
@@ -438,19 +442,10 @@ class FedMLClientRunner:
         if inference_output_url == "":
             logging.error("failed to deploy the model...")
 
-            status_payload = self.send_deployment_status(
-                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
             result_payload = self.send_deployment_results(
                 end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                 model_id, model_name, inference_output_url, inference_model_version, inference_port,
                 inference_engine, model_metadata, model_config)
-
-            FedMLModelDatabase.get_instance().set_deployment_result(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(result_payload))
-
-            FedMLModelDatabase.get_instance().set_deployment_status(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(status_payload))
 
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.broadcast_client_training_status(
@@ -459,6 +454,12 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+        
+            # After sending the deployment status, we should wait for the master to delete the deployment status
+            status_payload = self.send_deployment_status(
+                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
+                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
+
             return False
         else:
             logging.info("finished deployment, continue to send results to master...")
@@ -537,7 +538,7 @@ class FedMLClientRunner:
                                       "model_status": model_status,
                                       "inference_port": inference_port}
 
-        logging.info("send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
+        logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                              deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
@@ -554,7 +555,7 @@ class FedMLClientRunner:
                                      "model_url": model_inference_url, "model_status": model_status,
                                      "inference_port": inference_port}
 
-        logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
+        logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         return deployment_status_payload
@@ -722,10 +723,6 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
-        # Terminate previous process about starting or stopping run command
-        ClientConstants.cleanup_run_process(run_id)
-        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
-
         # Start log processor for current run
         run_id = inference_end_point_id
         self.args.run_id = run_id
@@ -760,6 +757,7 @@ class FedMLClientRunner:
         # client_runner.run()
         self.run_process_map[run_id_str].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
+        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
     def set_runner_stopped_event(self, run_id):
         run_id_str = str(run_id)
@@ -793,10 +791,9 @@ class FedMLClientRunner:
 
         self.set_runner_stopped_event(model_msg_object.run_id)
 
-        logging.info(f"Now, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+        logging.info(f"[endpoint/device][{model_msg_object.run_id}/{self.edge_id}] "
+                     f"Release gpu resource when the worker deployment deleted.")
         JobRunnerUtils.get_instance().release_gpu_ids(model_msg_object.run_id, self.edge_id)
-        logging.info(
-            f"Endpoint deleted, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
 
         if self.running_request_json.get(str(model_msg_object.run_id)) is not None:
             try:

@@ -71,6 +71,10 @@ class JobMonitor(Singleton):
                 started_time = int(float(job.started_time))
                 timeout = time.time() - started_time
 
+                job_type = JobRunnerUtils.parse_job_type(job.running_json)
+                if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                    continue
+
                 # Check if all processes of the specific run are exited
                 run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                 all_run_processes_exited = True if len(run_process_list) <= 0 else False
@@ -78,6 +82,7 @@ class JobMonitor(Singleton):
                     if not self.released_runs.get(str(job.job_id), False):
                         self.released_runs[str(job.job_id)] = True
                         # Release the gpu ids
+                        print(f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                 # Get the timeout threshold
@@ -107,7 +112,7 @@ class JobMonitor(Singleton):
                           f"set run status of slave to failed.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
             pass
 
         try:
@@ -130,11 +135,11 @@ class JobMonitor(Singleton):
                         self.released_endpoints[str(job.job_id)] = True
 
                         # Release the gpu ids
+                        print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when monioring worker endpoint periodically.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
-                        print(f"[Run/EndpointWorker][{job.job_id}:{job.edge_id}] Release gpu ids.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
@@ -217,7 +222,7 @@ class JobMonitor(Singleton):
                                   f"Due to job failed on all slave agents, set run status to failed.")
 
         except Exception as e:
-            logging.info(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
+            print(f"Exception when monitoring run process on the master agent.{traceback.format_exc()}")
             pass
 
     def monitor_slave_endpoint_status(self):
@@ -244,8 +249,8 @@ class JobMonitor(Singleton):
                             self.released_endpoints[str(job.job_id)] = True
 
                             # Release the gpu ids
+                            print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when woker endpoint failed on monitoring periodically.")
                             JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
-                            print(f"[Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
 
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
                         endpoint_json = json.loads(job.running_json)
@@ -267,6 +272,7 @@ class JobMonitor(Singleton):
                                 job.job_id, endpoint_name, model_name, job.edge_id)
 
                             # Check the endpoint status
+                            # TODO: Parallel this check
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
 
@@ -281,17 +287,43 @@ class JobMonitor(Singleton):
                             for i in range(num_containers):
                                 endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
                                 if not is_endpoint_ready:
-                                    started, inference_port = ContainerUtils.get_instance().restart_container(endpoint_container_name)
-                                else:
-                                    started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
-                                if started and inference_port != 0:
+                                    # send unavailable status to the master agent
                                     endpoint_sync_protocol.send_sync_inference_info(
                                         device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                        model_id, model_version, inference_port)
+                                        model_id, model_version, inference_port=None,
+                                        disable=True)
+                                    
+                                    # [Critical] 
+                                    # 1. After restart,
+                                    # the "running" status of container does NOT mean the endpoint is ready.
+                                    # 2. if local db has status updating, do not restart again
+                                    result_json = deployment_result
+                                    status = result_json.get("model_status", None)
 
-                                    endpoint_sync_protocol.set_local_deployment_status_result(
-                                        job.job_id, endpoint_name, model_name, model_version, job.edge_id,
-                                        inference_port, status_result, deployment_result)
+                                    if status != device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING:
+                                        started, inference_port = ContainerUtils.get_instance().restart_container(endpoint_container_name)
+                                        deployment_result["model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
+                                        
+                                        # Change the local port for next ready check
+                                        endpoint_sync_protocol.set_local_deployment_status_result(
+                                            job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                            inference_port, status_result, deployment_result)
+                                else:
+                                    started, inference_port = ContainerUtils.get_instance().start_container(endpoint_container_name)
+                            
+                            if is_endpoint_ready:
+                                deployment_result["model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+
+                                # Send the inference info to the master agent
+                                endpoint_sync_protocol.send_sync_inference_info(
+                                    device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
+                                    model_id, model_version, inference_port)
+
+                                # Change the local port for next ready check
+                                endpoint_sync_protocol.set_local_deployment_status_result(
+                                    job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                    inference_port, status_result, deployment_result)
+                                
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
                         endpoint_json = json.loads(job.running_json)
                         model_config = endpoint_json.get("model_config", {})
@@ -331,6 +363,14 @@ class JobMonitor(Singleton):
                                         job.job_id, endpoint_name, model_name, model_version, job.edge_id,
                                         inference_port, status_result, deployment_result)
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING:
+                        endpoint_json = json.loads(job.running_json)
+                        model_config = endpoint_json.get("model_config", {})
+                        model_name = model_config.get("model_name", None)
+                        model_version = model_config.get("model_version", None)
+                        model_id = model_config.get("model_id", None)
+                        endpoint_name = endpoint_json.get("end_point_name", None)
+                        device_ids = endpoint_json.get("device_ids", [])
+
                         started_time = int(float(job.started_time))
                         timeout = time.time() - started_time
                         if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
@@ -347,14 +387,26 @@ class JobMonitor(Singleton):
                                 self.released_endpoints[str(job.job_id)] = True
 
                                 # Release the gpu ids
+                                print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the worker endpoint runs timeout on monioring periodically.")
                                 JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
+
+                                # Get endpoint container name prefix
+                                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+
+                                # Could be multiple containers for the same endpoint
+                                num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                                    endpoint_container_name_prefix)
+
+                                for i in range(num_containers):
+                                    endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+                                    stopped = ContainerUtils.get_instance().stop_container(endpoint_container_name)
+
                                 print(f"[Worker][{job.job_id}:{job.edge_id}] Release gpu ids.")
                 except Exception as e:
-                    logging.info(
-                        f"[Worker][{job.job_id}:{job.edge_id}] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
+                    print(f"[Worker][{job.job_id}:{job.edge_id}] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
         except Exception as e:
-            logging.info(
-                f"[Worker] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
+            print(f"[Worker] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
             pass
 
     def _check_and_reset_endpoint_status(
@@ -396,6 +448,7 @@ class JobMonitor(Singleton):
                     self.released_endpoints[str(endpoint_id)] = True
 
                     # Release the gpu ids
+                    print(f"[endpoint/device][{endpoint_id}/{device_id}] Release gpu resource when the worker endpoint is not ready on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(endpoint_id, device_id)
 
                 return False
@@ -408,6 +461,12 @@ class JobMonitor(Singleton):
         if response_ok:
             print("Use http health check.")
             return response_ok
+        
+        if response_ok is None:
+            # Internal server can response, but reply is not ready
+            return False
+        
+        # Cannot reach the server, will try other protocols
         print("Use http health check failed.")
 
         response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(
@@ -475,7 +534,7 @@ class JobMonitor(Singleton):
         except Exception as e:
             inference_response = {"error": True,
                                   "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
-            logging.info("Inference Exception: {}".format(traceback.format_exc()))
+            print("Inference Exception: {}".format(traceback.format_exc()))
             return False, inference_response
 
         return False, None
@@ -493,17 +552,7 @@ class JobMonitor(Singleton):
 
             # Check if the endpoint is activated
             endpoint_activated = FedMLModelCache.get_instance().get_end_point_activation(endpoint_id)
-            if not endpoint_activated:
-                print(f"[Master][{endpoint_id}] Endpoint is not activated, set status to "
-                      f"offline after deployed")
-                mlops.log_endpoint_status(
-                    endpoint_id,
-                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
-                FedMLModelCache.get_instance().set_end_point_status(
-                    endpoint_id, endpoint_name,
-                    device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
-                break
-            else:
+            if endpoint_activated:
                 # Check if the endpoint is running
                 model_url = result_payload.get("model_url", "")
                 url_parsed = urlparse(model_url)
@@ -550,6 +599,7 @@ class JobMonitor(Singleton):
 
                 if endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     # Release the gpu ids
+                    print(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when the master endpoint failed on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     if model_name is None:
@@ -611,7 +661,7 @@ class JobMonitor(Singleton):
                             device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
         except Exception as e:
-            logging.info(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
+            print(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
             pass
 
     def monitor_endpoint_logs(self):
@@ -676,4 +726,4 @@ class JobMonitor(Singleton):
                             f.write(endpoint_logs)
 
         except Exception as e:
-            logging.info(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")
+            print(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")

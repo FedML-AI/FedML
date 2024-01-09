@@ -50,6 +50,10 @@ class JobCleanup(Singleton):
                     if count >= 1000:
                         break
 
+                    job_type = JobRunnerUtils.parse_job_type(job.running_json)
+                    if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                        continue
+
                     run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                     all_run_processes_exited = True if len(run_process_list) <= 0 else False
 
@@ -58,6 +62,7 @@ class JobCleanup(Singleton):
                         all_run_processes_exited = True
 
                     if all_run_processes_exited:
+                        logging.info(f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when sync runs on startup.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
             logging.info(f"Exception when syncing run process.{traceback.format_exc()}")
@@ -81,6 +86,7 @@ class JobCleanup(Singleton):
                         break
                     if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
                             job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
+                        logging.info(f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when sync endpoints on startup.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
         except Exception as e:
             logging.info(F"Exception when syncing endpoint process.{traceback.format_exc()}")

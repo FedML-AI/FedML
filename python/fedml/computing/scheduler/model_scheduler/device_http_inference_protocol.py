@@ -1,4 +1,5 @@
 import traceback
+from typing import Mapping
 from urllib.parse import urlparse
 
 import httpx
@@ -14,7 +15,12 @@ class FedMLHttpInference:
         pass
 
     @staticmethod    
-    async def is_inference_ready(inference_url, timeout=None) -> bool:
+    async def is_inference_ready(inference_url, timeout=None):
+        '''
+        True: inference is ready
+        False: cannot be reached, will try other protocols
+        None: can be reached, but not ready
+        '''
         url_parsed = urlparse(inference_url)
         ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
         response_ok = False
@@ -22,8 +28,17 @@ class FedMLHttpInference:
             async with httpx.AsyncClient() as client:
                 ready_response = await client.get(url=ready_url, timeout=timeout)
 
-            if ready_response.status_code == 200:
+            if isinstance(ready_response, (Response, StreamingResponse)):
+                error_code = ready_response.status_code
+            elif isinstance(ready_response, Mapping):
+                error_code = ready_response.get("error_code")
+            else:
+                error_code = ready_response.status_code
+
+            if error_code == 200:
                 response_ok = True
+            else:
+                response_ok = None
         except Exception as e:
             response_ok = False
 
