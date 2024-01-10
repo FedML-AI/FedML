@@ -2,7 +2,7 @@ import threading
 import traceback
 from contextlib import contextmanager
 
-import mpi4py
+from mpi4py import MPI
 
 
 @contextmanager
@@ -15,7 +15,7 @@ def raise_MPI_error():
     except Exception as e:
         logging.info(e)
         logging.info("traceback.format_exc():\n%s" % traceback.format_exc())
-        mpi4py.MPI.COMM_WORLD.Abort()
+        MPI.COMM_WORLD.Abort()
 
 
 @contextmanager
