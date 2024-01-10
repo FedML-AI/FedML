@@ -204,6 +204,7 @@ def download(data_name, api_key=None, service="R2", dest_path=None) -> FedMLResp
 def delete(data_name, service, api_key=None):
     return storage.delete(data_name=data_name, service=service, api_key=api_key)
 
+
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 

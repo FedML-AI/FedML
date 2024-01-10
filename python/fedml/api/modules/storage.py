@@ -16,11 +16,12 @@ class StorageMetadata(object):
         self.dataName = data.get("datasetName", None)
         self.description = data.get("description", None)
         self.tags = data.get("description", None)
-        self.createdAt = data.get("createdAt", None)
-        self.updatedAt = data.get("updatedAt", None)
+        self.createdAt = data.get("createTime", None)
+        self.updatedAt = data.get("updateTime", None)
 
 
 # Todo (alaydshah): Add file size while creating objects. Store service name in metadata
+# Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
 def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
     api_key = authenticate(api_key)
@@ -34,14 +35,14 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     if not archive_path:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    s3 = _get_storage_service(service)
-    name = os.path.basename(archive_path) if name is None else name
+    store = _get_storage_service(service)
+    name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
     file_name = name + ".zip"
     dest_path = os.path.join(user_id, file_name)
-    file_uploaded_url = s3.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
-                                                     show_progress=show_progress,
-                                                     out_progress_to_err=out_progress_to_err,
-                                                     progress_desc=progress_desc, metadata=metadata)
+    file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
+                                                        show_progress=show_progress,
+                                                        out_progress_to_err=out_progress_to_err,
+                                                        progress_desc=progress_desc, metadata=metadata)
     os.remove(archive_path)
     if not file_uploaded_url:
         return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {archive_path}")
@@ -73,12 +74,12 @@ def download(data_name, api_key, service, dest_path) -> FedMLResponse:
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    s3 = _get_storage_service(service)
+    store = _get_storage_service(service)
     zip_file_name = data_name + ".zip"
     key = os.path.join(user_id, zip_file_name)
     path_local = os.path.abspath(zip_file_name)
     dest_path = os.path.abspath(dest_path) if dest_path else data_name
-    if s3.download_file_with_progress(path_s3=key, path_local=path_local):
+    if store.download_file_with_progress(path_s3=key, path_local=path_local):
         try:
             shutil.unpack_archive(path_local, dest_path)
             os.remove(path_local)
@@ -104,13 +105,15 @@ def get_user_metadata(data_name, api_key=None) -> FedMLResponse:
 
     configs = MLOpsConfigs.fetch_remote_storage_configs()
     r2_config = configs[Configs.R2_CONFIG]
-    s3 = S3Storage(r2_config)
+    store = S3Storage(r2_config)
     zip_file_name = data_name + ".zip"
     path_s3 = os.path.join(user_id, zip_file_name)
-    data, message = s3.get_object_metadata(path_s3=path_s3)
-    if data:
-        return FedMLResponse(code=ResponseCode.SUCCESS, message=message, data=data)
-    return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+    data, message = store.get_object_metadata(path_s3=path_s3)
+
+    # Data can be {} if no metadata exists. That should be a valid response. It's an failure only if data is None
+    if data is None:
+        return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+    return FedMLResponse(code=ResponseCode.SUCCESS, message=message, data=data)
 
 
 def get_metadata(data_name, api_key=None) -> FedMLResponse:
@@ -120,11 +123,15 @@ def get_metadata(data_name, api_key=None) -> FedMLResponse:
         response = _get_dataset_metadata(api_key=api_key, data_name=data_name)
         code, message, data = _get_data_from_response(message="Failed to upload data", response=response)
     except Exception as e:
-        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to get metadata of {data_name} with "
+        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to get metadata of '{data_name}' with "
                                                                 f"exception: {e}")
 
     if data:
-        message = f"Successfully retrieved metadata for {data_name}"
+        if data.get("datasetName", None) is None:
+            message = f"Failed to get metadata of '{data_name}'. Data doesn't exists."
+            logging.error(message)
+            return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+        message = f"Successfully retrieved metadata for '{data_name}'."
         logging.info(message)
         return FedMLResponse(code=code, message=message, data=StorageMetadata(data))
     return FedMLResponse(code=code, message=message)
@@ -158,22 +165,22 @@ def delete(data_name, service, api_key=None) -> FedMLResponse:
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    s3 = _get_storage_service(service)
+    store = _get_storage_service(service)
     zip_file_name = data_name + ".zip"
     key = os.path.join(user_id, zip_file_name)
-    result, message = s3.delete_s3_zip(path_s3=key)
+    result, message = store.delete_s3_zip(path_s3=key)
     if result:
         logging.info(f"Successfully deleted object from storage service.")
         try:
             response = _delete_dataset(api_key=api_key, data_name=data_name)
-            code, message, data = _get_data_from_response(message="Failed to delete object metadata", response=response)
+            code, message, data = _get_data_from_response(message="Failed to delete data", response=response)
         except Exception as e:
-            message=(f"Deleted object from storage service but failed to delete object metadata from Nexus Backend "
-                     f"with exception {e}")
+            message = (f"Deleted object from storage service but failed to delete object metadata from Nexus Backend "
+                       f"with exception {e}")
             logging.error(message, data_name, service)
             return FedMLResponse(code=ResponseCode.FAILURE, message=message, data=False)
         if data:
-            message = f"Successfully deleted {data_name} from storage service and object metadata from Nexus Backend"
+            message = f"Successfully deleted '{data_name}' from storage service and object metadata from Nexus Backend"
             logging.info(message, data_name, service)
             return FedMLResponse(code=code, message=message, data=data)
         logging.error(message, data_name, service)
@@ -332,8 +339,9 @@ def _get_data_from_response(message: str, response: requests.Response) -> (Respo
         resp_data = response.json()
         code = resp_data.get("code", None)
         data = resp_data.get("data", None)
+        message = resp_data.get("message", None)
         if code is None or data is None or code == "FAILURE":
-            message = f"{message} with response.status_code = {response.status_code} response.content: {response.content}"
+            message = f"{message}, response.code = {code}, response.message: {message}"
             return ResponseCode.FAILURE, message, None
 
     return ResponseCode.SUCCESS, "Successfully parsed data from response", data

@@ -16,6 +16,7 @@ version_help: str = "specify version of FedML® Nexus AI Platform. It should be 
 api_key_help: str = "user api key."
 
 
+# Todo (alaydshah): Add support to update already stored data
 @click.group("storage")
 @click.help_option("--help", "-h")
 @click.option(
@@ -70,7 +71,8 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
                                 description=description, metadata=metadata)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Data uploaded successfully. | url: {response.data}")
-    click.echo(f"Failed to upload data. Error message: {response.message}")
+    else:
+        click.echo(f"Failed to upload data. Error message: {response.message}")
 
 
 @fedml_storage.command("list", help="List data stored on FedML® Nexus AI Platform")
@@ -146,16 +148,20 @@ def get_user_metadata(data_name, version, api_key):
 )
 def get_metadata(data_name, version, api_key):
     fedml.set_env_version(version)
-    metadata = fedml.api.get_storage_metadata(api_key=api_key, data_name=data_name)
-    if not metadata or not isinstance(metadata, StorageMetadata):
-        click.echo(f"No metadata exists for object {data_name}")
-        return
-    click.echo(f"Successfully fetched metadata for object {data_name}:")
-    # Todo (alaydshah): Add file size and tags
-    metadata_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
-    metadata_table.add_row([metadata.dataName, metadata.description, metadata.createdAt, metadata.updatedAt])
-    click.echo(metadata_table)
-    click.echo("")
+    response = fedml.api.get_storage_metadata(api_key=api_key, data_name=data_name)
+    if response.code == ResponseCode.SUCCESS:
+        metadata = response.data
+        if not metadata or not isinstance(metadata, StorageMetadata):
+            click.echo(f"No metadata exists for object {data_name}")
+            return
+        click.echo(f"Successfully fetched metadata for object {data_name}:")
+        # Todo (alaydshah): Add file size and tags
+        metadata_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
+        metadata_table.add_row([metadata.dataName, metadata.description, metadata.createdAt, metadata.updatedAt])
+        click.echo(metadata_table)
+        click.echo("")
+    else:
+        click.echo(f"Fetching metadata failed. Error message: {response.message}")
 
 
 @fedml_storage.command("download", help="Download data stored on FedML® Nexus AI Platform")
@@ -191,6 +197,8 @@ def download(data_name, dest_path, version, api_key, service):
 @click.option(
     "--api_key", "-k", type=str, help=api_key_help,
 )
+@click.option('--service', "-s", type=click.Choice(['R2']), default="R2", help="Storage service for object storage. "
+                                                                               "Only R2 is supported as of now")
 @click.option(
     "--version",
     "-v",
@@ -198,10 +206,13 @@ def download(data_name, dest_path, version, api_key, service):
     default="release",
     help=version_help,
 )
-def delete(version, data_name, api_key):
+def delete(version, data_name, api_key, service):
     fedml.set_env_version(version)
-    click.echo("This feature is actively being worked on. Coming soon...")
-    pass
+    response = fedml.api.delete(data_name=data_name, api_key=api_key, service=service)
+    if response.code == ResponseCode.SUCCESS:
+        click.echo(f"Data '{data_name}' deleted successfully.")
+    else:
+        click.echo(f"Failed to delete data {data_name}. Error message: {response.message}")
 
 
 def _parse_metadata(metadata: str):
