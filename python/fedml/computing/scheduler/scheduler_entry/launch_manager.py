@@ -112,12 +112,14 @@ class FedMLLaunchManager(Singleton):
                     exit(-1)
 
                 model_update_result.model_id = models.model_list[0].id
-                model_update_result.model_version = models.model_list[0].model_version
+                model_update_result.model_version = models.model_list[0].model_version \
+                    if self.job_config.serving_model_version is None else self.job_config.serving_model_version
                 model_update_result.endpoint_name = self.job_config.serving_endpoint_name
             else:
                 model_update_result = FedMLModelUploadResult(
                     self.job_config.model_app_name, model_id=models.model_list[0].id,
-                    model_version=models.model_list[0].model_version,
+                    model_version=models.model_list[0].model_version \
+                        if self.job_config.serving_model_version is None else self.job_config.serving_model_version,
                     model_storage_url=self.job_config.serving_model_s3_url,
                     endpoint_name=self.job_config.serving_endpoint_name)
 
@@ -133,7 +135,8 @@ class FedMLLaunchManager(Singleton):
                     print("Failed to apply endpoint for your model.")
                     exit(-1)
             self.job_config.serving_model_name = models.model_list[0].model_name
-            self.job_config.serving_model_version = models.model_list[0].model_version
+            self.job_config.serving_model_version = models.model_list[0].model_version \
+                if self.job_config.serving_model_version is None else self.job_config.serving_model_version
             self.job_config.serving_model_id = models.model_list[0].id
 
             if self.job_config.job_config_dict.get("serving_args") is None:
@@ -146,7 +149,7 @@ class FedMLLaunchManager(Singleton):
 
             model_update_result = FedMLModelUploadResult(
                 self.job_config.model_app_name, model_id=models.model_list[0].id,
-                model_version=models.model_list[0].model_version,
+                model_version=self.job_config.serving_model_version,
                 model_storage_url=self.job_config.serving_model_s3_url,
                 endpoint_name=self.job_config.serving_endpoint_name)
             model_update_result.endpoint_id = self.job_config.serving_endpoint_id
@@ -503,7 +506,7 @@ class FedMLJobConfig(object):
         serving_args = self.job_config_dict.get("serving_args", {})
         self.serving_model_name = serving_args.get("model_name", None)
         self.serving_model_id = serving_args.get("model_id", None)
-        self.serving_model_version = serving_args.get("model_version", "")
+        self.serving_model_version = serving_args.get("model_version", None)
         self.serving_model_s3_url = serving_args.get("model_storage_url", "")
         self.serving_endpoint_name = serving_args.get("endpoint_name", None)
         if self.serving_endpoint_name is None or self.serving_endpoint_name == "":
