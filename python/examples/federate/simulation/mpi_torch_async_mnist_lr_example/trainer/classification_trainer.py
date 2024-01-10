@@ -1,15 +1,40 @@
 import logging
-
+import time
 import torch
+
+import numpy as np
+
+from scipy.stats import expon
 from torch import nn
 
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
-
-class ClassificationTrainer(ClientTrainer):
+class ClassificationTrainer_Async(ClientTrainer):
 
     def __init__(self, model, args=None):
         super().__init__(model, args)
+        
+        # In classical FL, the time a client requires to perform local 
+        # training is proportional to the client's number of examples.
+        # For our simulation here, since clients have an equal number 
+        # of samples, we assume the time delay is proportional to the 
+        # client's rank in the FL environment.
+        
+        # Formally, let (ni)/(ri) be the (number of examples)/(rank) 
+        # of client i, and let Ti be the amount of time required by 
+        # client i to perform local training, with λ > 0 being a
+        # constant number controlling stragglers' behavior:
+        #   T(n) ~ exp(1/λn) OR 
+        #   T(r) ~ exp(1/λr)
+        
+        # Smulation References:
+        # - Speeding Up Distributed Machine Learning Using Codes 
+        #   https://arxiv.org/pdf/1512.02673.pdf
+        # - Federated Learning with Buffered Asynchronous Aggregation
+        #   https://proceedings.mlr.press/v151/nguyen22b/nguyen22b.pdf 
+        self.expon_lambda = 0.5
+        self.expon_scale = np.divide(1, self.expon_lambda)
+        self.sleep_time_max = args.sleep_time_max
 
     def get_model_params(self):
         return self.model.state_dict()
@@ -18,6 +43,14 @@ class ClassificationTrainer(ClientTrainer):
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args):
+        # Adding following line to emulate random sleeping patterns 
+        # across clients for testing asynchronous FL strategies.
+        # x is client's rank
+        sleep_time = expon.pdf(args.rank + 1, self.expon_scale) 
+        sleep_time = np.round(sleep_time, 2)
+        sleep_time *= self.sleep_time_max
+        logging.info("Sleep time for client - {}: {}secs".format(args.rank, sleep_time))
+        time.sleep(sleep_time)
         model = self.model
 
         model.to(device)

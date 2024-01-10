@@ -24,6 +24,7 @@ train_args:
   batch_size: 10
   client_optimizer: sgd
   learning_rate: 0.03
+  sleep_time_max: 3  # maximum number of seconds a client can sleep betwene training cycles.
 
 validation_args:
   frequency_of_the_test: 5

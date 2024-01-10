@@ -4,7 +4,7 @@ import torch
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 from trainer.classification_aggregator import ClassificationAggregator
-from trainer.classification_trainer import ClassificationTrainer
+from trainer.classification_trainer import ClassificationTrainer_Async
 
 def load_data(args):
     download_mnist(args.data_cache_dir)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     # load model (the size of MNIST image is 28 x 28)
     model = LogisticRegression(28 * 28, output_dim)
-    trainer = ClassificationTrainer(model=model, args=args)
+    trainer = ClassificationTrainer_Async(model=model, args=args)
     aggregator = ClassificationAggregator(model=model, args=args)
 
     # start training
