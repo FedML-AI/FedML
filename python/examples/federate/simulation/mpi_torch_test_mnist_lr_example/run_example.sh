@@ -10,4 +10,4 @@ hostname > mpi_host_file
 mpirun \
 -np $PROCESS_NUM \
 -hostfile mpi_host_file --oversubscribe \
-python torch_main.py --cf config/fedml_config.yaml
+python -m mpi4py torch_main.py --cf config/fedml_config.yaml

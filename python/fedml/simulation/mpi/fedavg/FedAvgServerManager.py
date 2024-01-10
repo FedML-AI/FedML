@@ -27,6 +27,7 @@ class FedAVGServerManager(FedMLCommManager):
         self.preprocessed_client_lists = preprocessed_client_lists
 
     def run(self):
+        logging.info("")
         super().run()
 
     def send_init_msg(self):

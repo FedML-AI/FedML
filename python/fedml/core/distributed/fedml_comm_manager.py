@@ -7,7 +7,6 @@ from .communication.constants import CommunicationConstants
 from .communication.observer import Observer
 from ..mlops.mlops_configs import MLOpsConfigs
 
-
 class FedMLCommManager(Observer):
     def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
         self.args = args
@@ -66,9 +65,10 @@ class FedMLCommManager(Observer):
     def finish(self):
         logging.info("__finish")
         if self.backend == "MPI":
-            import mpi4py
-
-            mpi4py.MPI.COMM_WORLD.Abort()
+            from mpi4py import MPI
+            self.com_manager.stop_receive_message()
+            MPI.Finalize()
+                        
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()
         elif self.backend == "MQTT_S3":

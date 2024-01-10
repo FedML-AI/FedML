@@ -112,11 +112,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-<<<<<<< HEAD
-    version="0.8.6a1",
-=======
     version="0.8.14.dev14",
->>>>>>> dev/v0.7.0
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
