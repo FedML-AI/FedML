@@ -19,7 +19,6 @@ import torch
 import tqdm
 import yaml
 
-
 import fedml
 from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -185,8 +184,9 @@ class S3Storage:
             self.aws_s3_client.upload_fileobj(f, Bucket=self.bucket_name, Key=message_key)
 
         model_input_url = self.aws_s3_client.generate_presigned_url("get_object",
-                                                               ExpiresIn=60 * 60 * 24 * 5,
-                                                               Params={"Bucket": self.bucket_name, "Key": message_key})
+                                                                    ExpiresIn=60 * 60 * 24 * 5,
+                                                                    Params={"Bucket": self.bucket_name,
+                                                                            "Key": message_key})
         return model_input_url
 
     def write_model_web(self, message_key, model):
@@ -250,7 +250,7 @@ class S3Storage:
 
         with open(temp_file_path, 'wb') as f:
             self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                           Callback=read_model_progress)
+                                                Callback=read_model_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -298,7 +298,7 @@ class S3Storage:
 
         with open(temp_file_path, 'wb') as f:
             self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                           Callback=read_model_net_progress)
+                                                Callback=read_model_net_progress)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -517,8 +517,8 @@ class S3Storage:
                                desc=progress_desc_text) as pbar:
                     with open(path_local, 'wb') as f:
                         self.aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
-                                                       Callback=lambda bytes_transferred: pbar.update(
-                                                           bytes_transferred), )
+                                                            Callback=lambda bytes_transferred: pbar.update(
+                                                                bytes_transferred), )
                 break
             except Exception as e:
                 logging.error(f"Download zip failed. | Exception: {e}")
@@ -557,14 +557,28 @@ class S3Storage:
 
         return True
 
-    def delete_s3_zip(self, path_s3):
+    def delete_s3_zip(self, path_s3) -> (bool, str):
         """
         delete s3 object
         :param path_s3: s3 key
         :return:
         """
-        self.aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
-        logging.info(f"Delete s3 file Successful. | path_s3 = {path_s3}")
+        result, message = False, None
+        retry = 0
+        while retry < 3:
+            try:
+                self.aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
+                break
+            except Exception as e:
+                message = f"Deleting object from storage service failed. | Exception: {e}"
+                logging.error(message)
+                retry += 1
+        if retry >= 3:
+            logging.error(f"Deleting object from storage service failed after max retry.")
+            return False, message
+        message=f"Deleting object from storage service successful. | path_s3 = {path_s3}"
+        logging.info(message)
+        return True, message
 
     def set_config_from_file(self, config_file_path):
         try:
@@ -631,7 +645,22 @@ class S3Storage:
         except Exception as e:
             logging.exception("Failed to load s3 config from objects: {}".format(str(e)))
 
-    def get_object_metadata(self, path_s3):
-        obj = self.aws_s3_client.head_object(Bucket=self.bucket_name, Key=path_s3)
-        metadata = obj.get("Metadata", None)
-        return {urllib.parse.unquote(k): urllib.parse.unquote(v) for k, v in metadata.items()}
+    def get_object_metadata(self, path_s3) -> (dict, str):
+        data, message = None, None
+        retry = 0
+        while retry < 3:
+            try:
+                obj = self.aws_s3_client.head_object(Bucket=self.bucket_name, Key=path_s3)
+                metadata = obj.get("Metadata", None)
+                data = {urllib.parse.unquote(k): urllib.parse.unquote(v) for k, v in metadata.items()}
+                message=f"Successfully fetched metadata for key: {path_s3}"
+                logging.info(message)
+                return data, message
+            except Exception as e:
+                message = f"Failed to fetch metadata for key {path_s3} with Exception: {e}"
+                logging.error(message)
+                retry += 1
+        if retry >= 3:
+            logging.error(f"Failed to fetch metadata for key {path_s3} after max retry.")
+            return data, message
+        return data, message
