@@ -130,7 +130,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if status_item_found is not None:
-            print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
+            #print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
             # Delete Status
             FedMLModelCache.get_instance().delete_deployment_status(
                 status_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
@@ -163,7 +163,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if result_item_found is not None:
-            print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
+            #print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
             FedMLModelCache.get_instance().delete_deployment_result(
                 result_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)

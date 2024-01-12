@@ -27,6 +27,7 @@ if __name__ == "__main__":
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "server_login.py")
     login_exit_file = os.path.join(ServerConstants.get_log_file_dir(), "exited.log")
+
     log_line_count = 0
 
     while True:
@@ -35,6 +36,12 @@ if __name__ == "__main__":
             cleanup_all_fedml_server_api_processes()
             cleanup_all_fedml_server_learning_processes()
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
+        except Exception as e:
+            pass
+
+        try:
+            if os.path.exists(login_exit_file):
+                os.remove(login_exit_file)
         except Exception as e:
             pass
 
