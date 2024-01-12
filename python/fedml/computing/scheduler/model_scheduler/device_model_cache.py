@@ -178,8 +178,8 @@ class FedMLModelCache(Singleton):
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)
-        if isinstance(result_item_json, dict):
-            result_item_json = json.loads(result_item)
+        if isinstance(result_item_json, str):
+            result_item_json = json.loads(result_item_json)
         device_id = result_item_json["cache_device_id"]
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
