@@ -115,6 +115,9 @@ class FedMLServerRunner:
         self.model_runner_mapping = dict()
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
 
+        self.subscribed_topics = list()
+        self.user_name = None
+
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
@@ -231,8 +234,6 @@ class FedMLServerRunner:
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
-                                                               clean_process_group=False)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
@@ -328,6 +329,7 @@ class FedMLServerRunner:
             run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port)
 
         # start inference monitor server
+        self.stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
         self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
 
         self.mlops_metrics.broadcast_server_training_status(
@@ -1383,7 +1385,7 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelServerAgent_Metrics_{}_{}_{}".format(self.args.current_device_id,
+            "FedML_ModelServerAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
                                                              str(os.getpid()),
                                                              str(uuid.uuid4()))
         )
@@ -1500,10 +1502,6 @@ class FedMLServerRunner:
             self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
 
             self.exit_run_with_exception()
-
-            if not self.run_as_cloud_server:
-                sys_utils.cleanup_all_fedml_server_login_processes(
-                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
 
     def callback_runner_id_status(self, topic, payload):
         logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
@@ -1704,6 +1702,9 @@ class FedMLServerRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
+        edge_id = -1
+        user_name = None
+        extra_url = None
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
@@ -1723,7 +1724,7 @@ class FedMLServerRunner:
                     raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return 0, None, None
+                return -1, None, None
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
@@ -1807,6 +1808,15 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
 
+        self.subscribed_topics.clear()
+        self.subscribed_topics.append(topic_start_deployment)
+        self.subscribed_topics.append(topic_activate_deployment)
+        self.subscribed_topics.append(topic_deactivate_deployment)
+        self.subscribed_topics.append(topic_delete_deployment)
+        self.subscribed_topics.append(topic_server_status)
+        self.subscribed_topics.append(topic_report_status)
+        self.subscribed_topics.append(topic_ota_msg)
+
         self.endpoint_sync_protocol = FedMLEndpointSyncProtocol(agent_config=self.agent_config, mqtt_mgr=self.mqtt_mgr)
         self.endpoint_sync_protocol.setup_listener_for_sync_device_info(self.edge_id)
 
@@ -1821,7 +1831,7 @@ class FedMLServerRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
@@ -1852,6 +1862,7 @@ class FedMLServerRunner:
                 self.start_device_inference_gateway(run_id, end_point_name, model_id, model_name, model_version,
                                                     inference_port=inference_port)
 
+                self.stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
                 self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
         except Exception as e:
             logging.info("recover inference and monitor: {}".format(traceback.format_exc()))
@@ -1880,9 +1891,9 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelServerAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
+            "FedML_ModelServerAgent_Daemon_@" + self.user_name + "@_" + self.args.current_device_id + str(uuid.uuid4()),
             "flserver_agent/last_will_msg",
-            json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
+            json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
             )
         self.agent_config = service_config
 
@@ -1937,8 +1948,16 @@ class FedMLServerRunner:
             self.run_process_event.set()
 
         if self.mqtt_mgr is not None:
+            try:
+                for topic in self.subscribed_topics:
+                    self.mqtt_mgr.unsubscribe_msg(topic)
+            except Exception as e:
+                pass
+
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
+
+        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self, should_exit_sys=True):
         # Start MQTT message loop
@@ -1949,11 +1968,11 @@ class FedMLServerRunner:
                 logging.info("Restarting after upgraded...")
             else:
                 print("Server tracing: {}".format(traceback.format_exc()))
-            self.mqtt_mgr.loop_stop()
-            self.mqtt_mgr.disconnect()
-            self.release_client_mqtt_mgr()
-            if should_exit_sys:
-                time.sleep(5)
-                sys_utils.cleanup_all_fedml_server_login_processes(
-                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-                sys.exit(1)
+        finally:
+           self.stop_agent()
+
+           if should_exit_sys:
+               time.sleep(5)
+               sys_utils.cleanup_all_fedml_server_login_processes(
+                   ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+               sys.exit(1)

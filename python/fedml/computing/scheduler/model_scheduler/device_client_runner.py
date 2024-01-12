@@ -116,6 +116,9 @@ class FedMLClientRunner:
         self.endpoint_inference_runners = dict()
         self.mqtt_inference_obj = None
 
+        self.subscribed_topics = list()
+        self.user_name = None
+
     def unzip_file(self, zip_file, unzip_file_path) -> str:
         unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
@@ -270,8 +273,6 @@ class FedMLClientRunner:
             self.release_gpu_ids(run_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             time.sleep(2)
-            sys_utils.cleanup_all_fedml_client_login_processes(ClientConstants.CLIENT_LOGIN_PROGRAM,
-                                                               clean_process_group=False)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
@@ -629,7 +630,7 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelClientAgent_Metrics_{}_{}_{}".format(self.args.current_device_id,
+            "FedML_ModelClientAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
                                                              str(os.getpid()),
                                                              str(uuid.uuid4()))
         )
@@ -815,8 +816,6 @@ class FedMLClientRunner:
             self.exit_run_with_exception()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_client_login_processes(
-                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -1059,6 +1058,9 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
+        edge_id = -1
+        user_name = None
+        extra_url = None
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
@@ -1078,7 +1080,7 @@ class FedMLClientRunner:
                     raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return 0, None, None
+                return -1, None, None
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
@@ -1159,6 +1161,14 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
 
+        self.subscribed_topics.clear()
+        self.subscribed_topics.append(topic_start_deployment)
+        self.subscribed_topics.append(topic_delete_deployment)
+        self.subscribed_topics.append(topic_client_status)
+        self.subscribed_topics.append(topic_report_status)
+        self.subscribed_topics.append(topic_exit_train_with_exception)
+        self.subscribed_topics.append(topic_ota_msg)
+
         # Broadcast the first active message.
         self.send_agent_active_msg()
 
@@ -1191,9 +1201,9 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelClientAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
+            "FedML_ModelClientAgent_Daemon_@" + self.user_name + "@_" + self.args.current_device_id + str(uuid.uuid4()),
             "flclient_agent/last_will_msg",
-            json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
+            json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE})
         )
         self.agent_config = service_config
 
@@ -1243,8 +1253,16 @@ class FedMLClientRunner:
             self.run_process_event.set()
 
         if self.mqtt_mgr is not None:
+            try:
+                for topic in self.subscribed_topics:
+                    self.mqtt_mgr.unsubscribe_msg(topic)
+            except Exception as e:
+                pass
+
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
+
+        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self, should_exit_sys=False):
         # Start MQTT message loop
@@ -1255,11 +1273,9 @@ class FedMLClientRunner:
                 logging.info("Restarting after upgraded...")
             else:
                 logging.info("Client tracing: {}".format(traceback.format_exc()))
-            self.mqtt_mgr.loop_stop()
-            self.mqtt_mgr.disconnect()
-            self.release_client_mqtt_mgr()
+        finally:
+            self.stop_agent()
+
             if should_exit_sys:
                 time.sleep(5)
-                sys_utils.cleanup_all_fedml_client_login_processes(
-                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
                 sys.exit(1)

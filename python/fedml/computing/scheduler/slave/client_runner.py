@@ -124,6 +124,9 @@ class FedMLClientRunner:
         self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
+        self.subscribed_topics = list()
+        self.user_name = None
+
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
@@ -752,7 +755,7 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Metrics_{}_{}_{}".format(self.args.current_device_id,
+            "FedML_ClientAgent_Metrics_{}_@{}@_{}_{}".format(self.user_name, self.args.current_device_id,
                                                         str(os.getpid()),
                                                         str(uuid.uuid4()))
         )
@@ -1311,7 +1314,7 @@ class FedMLClientRunner:
                     raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return 0, None, None
+                return -1, None, None
         return edge_id, user_name, extra_url
 
     def fetch_configs(self):
@@ -1394,6 +1397,15 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
         mqtt_client_object.subscribe(topic_client_logout, qos=2)
 
+        self.subscribed_topics.clear()
+        self.subscribed_topics.append(topic_start_train)
+        self.subscribed_topics.append(topic_stop_train)
+        self.subscribed_topics.append(topic_client_status)
+        self.subscribed_topics.append(topic_report_status)
+        self.subscribed_topics.append(topic_ota_msg)
+        self.subscribed_topics.append(topic_request_device_info)
+        self.subscribed_topics.append(topic_client_logout)
+
         # Broadcast the first active message.
         self.send_agent_active_msg()
 
@@ -1428,9 +1440,9 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Daemon_" + self.args.current_device_id + str(uuid.uuid4()),
+            "FedML_ClientAgent_Daemon_@" + self.user_name + "@_" + self.args.current_device_id + str(uuid.uuid4()),
             "flclient_agent/last_will_msg",
-            json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
+            json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE})
         )
         self.agent_config = service_config
 
@@ -1523,23 +1535,41 @@ class FedMLClientRunner:
                 logging.info("Restarting after upgraded...")
             else:
                 logging.info("Client tracing: {}".format(traceback.format_exc()))
-            self.mqtt_mgr.loop_stop()
-            self.mqtt_mgr.disconnect()
-            self.release_client_mqtt_mgr()
-
-            if self.model_device_server is not None:
-                self.model_device_server.stop()
-
-            if self.model_device_client_list is not None:
-                for model_device_client in self.model_device_client_list:
-                    model_device_client.stop()
-                self.model_device_client_list.clear()
-
+        finally:
+            print("finally")
             login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
             with open(login_exit_file, "w") as f:
                 f.writelines(f"{os.getpid()}.")
+
+            self.stop_agent()
 
             time.sleep(5)
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
+
+    def stop_agent(self):
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+
+        if self.model_device_server is not None:
+            self.model_device_server.stop()
+            self.model_device_server = None
+
+        if self.model_device_client_list is not None:
+            for model_client in self.model_device_client_list:
+                model_client.stop()
+            self.model_device_client_list.clear()
+            self.model_device_client_list = None
+
+        if self.mqtt_mgr is not None:
+            try:
+                for topic in self.subscribed_topics:
+                    self.mqtt_mgr.unsubscribe_msg(topic)
+            except Exception as e:
+                pass
+
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
+
+        self.release_client_mqtt_mgr()

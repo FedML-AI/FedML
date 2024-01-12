@@ -84,6 +84,7 @@ class FedMLMqttInference:
                 timeout=inference_timeout))
 
         self.response_endpoint_inference(endpoint_id, inference_request_id, inference_response)
+        self.release_client_mqtt_mgr()
 
     def run_mqtt_inference_with_request(
             self, edge_id, endpoint_id, inference_url, inference_input_list,
@@ -109,6 +110,7 @@ class FedMLMqttInference:
         total_sleep_time = 0
         while True:
             if self.run_inference_event_map[str_endpoint_id][inference_req_id].is_set():
+                self.release_client_mqtt_mgr()
                 return self.run_inference_response_map[str_endpoint_id][inference_req_id]
 
             total_sleep_time += sleep_time_interval
@@ -116,6 +118,7 @@ class FedMLMqttInference:
             if total_sleep_time > allowed_inference_timeout:
                 break
 
+        self.release_client_mqtt_mgr()
         if only_do_health_check:
             return False
 
@@ -199,7 +202,7 @@ class FedMLMqttInference:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelInference_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
+            "FedML_DeviceMqttInference_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
