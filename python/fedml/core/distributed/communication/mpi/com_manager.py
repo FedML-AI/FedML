@@ -12,6 +12,7 @@ from ..observer import Observer
 
 
 class MpiCommunicationManager(BaseCommunicationManager):
+    
     def __init__(self, comm, rank, size):
         self.comm = comm
         self.rank = rank
@@ -19,63 +20,53 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
         self._observers: List[Observer] = []
 
+        self._stop_running = False
+        self._server_receive_thread = None # Server-Thread
+        self._client_receive_thread = None # Client-Thread
+        self.q_sender = None # Queue-1
+        self.q_receiver = None # Queue-2
+
         node_type = "server" if self.rank == 0 else "client"
         if node_type == "client":
             self.q_sender, self.q_receiver = self.init_client_communication()
         elif node_type == "server":
             self.q_sender, self.q_receiver = self.init_server_communication()
 
-        self.server_send_thread = None
-        self.server_receive_thread = None
-        self.server_collective_thread = None
-
-        # self.client_send_thread = None
-        self.client_receive_thread = None
-        self.client_collective_thread = None
-
-        self.is_running = True
-
-        time.sleep(5)
-        # assert False
+        time.sleep(0.001)
 
     def init_server_communication(self):
+        # SEND
         server_send_queue = queue.Queue(0)
-        # self.server_send_thread = MPISendThread(
-        #     self.comm, self.rank, self.size, "ServerSendThread", server_send_queue
-        # )
-        # self.server_send_thread.start()
 
+        # RECEIVE
         server_receive_queue = queue.Queue(0)
-        self.server_receive_thread = MPIReceiveThread(
-            self.comm, self.rank, self.size, "ServerReceiveThread", server_receive_queue
-        )
-        self.server_receive_thread.start()
+        self._server_receive_thread = MPIReceiveThread(
+            self.comm,
+            self.rank,
+            self.size,
+            "ServerReceiveThread",
+            server_receive_queue)
+        self._server_receive_thread.start()
 
         return server_send_queue, server_receive_queue
 
     def init_client_communication(self):
         # SEND
         client_send_queue = queue.Queue(0)
-        # self.client_send_thread = MPISendThread(
-        #     self.comm, self.rank, self.size, "ClientSendThread", client_send_queue
-        # )
-        # self.client_send_thread.start()
 
         # RECEIVE
         client_receive_queue = queue.Queue(0)
-        self.client_receive_thread = MPIReceiveThread(
-            self.comm, self.rank, self.size, "ClientReceiveThread", client_receive_queue
-        )
-        self.client_receive_thread.start()
+        self._client_receive_thread = MPIReceiveThread(
+            self.comm, 
+            self.rank, 
+            self.size, 
+            "ClientReceiveThread", 
+            client_receive_queue)
+        self._client_receive_thread.start()
 
         return client_send_queue, client_receive_queue
 
-    # Ugly delete comments
-    # def send_message(self, msg: Message):
-    #     self.q_sender.put(msg)
-
     def send_message(self, msg: Message):
-        # self.q_sender.put(msg)
         dest_id = msg.get(Message.MSG_ARG_KEY_RECEIVER)
         tick = time.time()
         self.comm.send(msg, dest=dest_id)
@@ -88,12 +79,11 @@ class MpiCommunicationManager(BaseCommunicationManager):
         self._observers.remove(observer)
 
     def handle_receive_message(self):
-        self.is_running = True
         # the first message after connection, aligned the protocol with MQTT + S3
         self._notify_connection_ready()
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
-        while self.is_running:
+        while not self._stop_running:
             if self.q_receiver.qsize() > 0:
                 message_handler_start_time = time.time()
                 msg_params = self.q_receiver.get()
@@ -105,16 +95,30 @@ class MpiCommunicationManager(BaseCommunicationManager):
         MLOpsProfilerEvent.log_to_wandb(
             {"TotalTime": time.time() - start_listening_time}
         )
-        logging.info("!!!!!!handle_receive_message stopped!!!")
+        logging.info("Handle receive message stopped!")
 
     def stop_receive_message(self):
-        self.is_running = False
-        # self.__stop_thread(self.server_send_thread)
-        self.__stop_thread(self.server_receive_thread)
-        self.__stop_thread(self.server_collective_thread)
-        # self.__stop_thread(self.client_send_thread)
-        self.__stop_thread(self.client_receive_thread)
-        self.__stop_thread(self.client_collective_thread)
+        self._stop_manager()        
+
+    def _stop_manager(self):        
+        self._stop_running = True
+        self._release_resources()
+
+    def _release_resources(self):
+        for t in [self._server_receive_thread, self._client_receive_thread]:
+            self._stop_thread(t)
+        for q in [self.q_sender, self.q_receiver]:
+            self._free_q(q)      
+
+    def _stop_thread(self, mpi_rcv_thread):
+        if mpi_rcv_thread and isinstance(mpi_rcv_thread, MPIReceiveThread):
+            mpi_rcv_thread.stop()
+            mpi_rcv_thread.join()
+
+    def _free_q(self, q):
+        while not q.empty():            
+            q.get_no_wait()
+            q.task_done()            
 
     def notify(self, msg_params):
         msg_type = msg_params.get_type()
@@ -130,9 +134,5 @@ class MpiCommunicationManager(BaseCommunicationManager):
             try:
                 observer.receive_message(msg_type, msg_params)
             except Exception as e:
-                logging.warn("Cannot handle connection ready")
-
-    def __stop_thread(self, thread):
-        if thread:
-            thread.raise_exception()
-            thread.join()
+                logging.warn("Cannot handle connection ready.")
+            

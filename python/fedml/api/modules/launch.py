@@ -225,13 +225,15 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],
                 ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED)
+
     if not result.run_url:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
+
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                 ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
-    if result.status == Constants.JOB_START_STATUS_INVALID:
+    elif result.status == Constants.JOB_START_STATUS_INVALID:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_INVALID],
                 f"\nPlease check your {os.path.basename(yaml_file)} file "
                 f"to make sure the syntax is valid, e.g. "
@@ -286,6 +288,10 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     elif result.status != Constants.JOB_START_STATUS_SUCCESS:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_NO_SPECIFIC_ERROR],
                 result.message)
+
+    if result.gpu_matched is None or len(result.gpu_matched) == 0:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES],
+                f"\nNo resource available now, please modify the resource type or try it again later.")
 
     return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
             ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)

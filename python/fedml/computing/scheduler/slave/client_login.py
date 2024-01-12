@@ -107,7 +107,9 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
 
     # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
-    edge_id = 0
+    edge_id = -1
+    user_name = None
+    extra_url = None
     while register_try_count < 5:
         try:
             edge_id, user_name, extra_url = runner.bind_account_and_device_id(
@@ -147,10 +149,19 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     # logging.info("login: unique_device_id = %s" % str(unique_device_id))
     # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
+    runner.user_name = user_name
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
-    runner.setup_agent_mqtt_connection(service_config)
+    try:
+        runner.setup_agent_mqtt_connection(service_config)
+    except Exception as e:
+        login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+        with open(login_exit_file, "w") as f:
+            f.writelines(f"{os.getpid()}.")
+        print("finally")
+        runner.stop_agent()
+        raise e
 
     # Start mqtt looper
     runner.start_agent_mqtt_loop()
@@ -210,7 +221,9 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
 
     # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
-    edge_id = 0
+    edge_id = -1
+    user_name = None
+    extra_url = None
     while register_try_count < 5:
         try:
             edge_id, _, _ = runner.bind_account_and_device_id(

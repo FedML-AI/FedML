@@ -252,21 +252,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 request_input_example = config.get('request_input_example', None)
                 extra_envs = config.get('environment_variables', None)
                 logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path},"
-                    f" data_cache_dir_input: {data_cache_dir_input}")
-                src_data_cache_dir, dst_data_cache_dir = "", ""
-                if data_cache_dir_input != "":
-                    if data_cache_dir_input[0] == "~":
-                        src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
-                        dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
-                    else:
-                        # check if the data_cache_dir is a relative path
-                        if data_cache_dir_input[0] != "/":
-                            raise "data_cache_dir_input has to be an absolute path or start with ~"
-                        else:
-                            src_data_cache_dir = data_cache_dir_input
-                            dst_data_cache_dir = data_cache_dir_input
-                    logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}")
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
@@ -399,16 +385,43 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         binds = {}
         environment = {}
 
-        # Optional
-        if src_data_cache_dir != "":
-            logging.info("Start copying the data cache to the container...")
-            if os.path.exists(src_data_cache_dir):
-                volumns.append(src_data_cache_dir)
-                binds[src_data_cache_dir] = {
-                    "bind": dst_data_cache_dir,
-                    "mode": "rw"
-                }
-                environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+        assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
+        if type(data_cache_dir_input) == str:
+            # In this case, we mount to the same folder, if has ~, we replace it with /home/fedml
+            src_data_cache_dir, dst_data_cache_dir = "", ""
+            if data_cache_dir_input != "":
+                if data_cache_dir_input[0] == "~":
+                    src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                    dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+                else:
+                    # check if the data_cache_dir is a relative path
+                    if data_cache_dir_input[0] != "/":
+                        raise "data_cache_dir_input has to be an absolute path or start with ~"
+                    else:
+                        src_data_cache_dir = data_cache_dir_input
+                        dst_data_cache_dir = data_cache_dir_input
+                logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+                
+                if type(src_data_cache_dir) == str and src_data_cache_dir != "":
+                    logging.info("Start copying the data cache to the container...")
+                    if os.path.exists(src_data_cache_dir):
+                        volumns.append(src_data_cache_dir)
+                        binds[src_data_cache_dir] = {
+                            "bind": dst_data_cache_dir,
+                            "mode": "rw"
+                        }
+                        environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+        else:
+            for k, v in data_cache_dir_input.items():
+                if os.path.exists(k):
+                    volumns.append(v)
+                    binds[k] = {
+                        "bind": v,
+                        "mode": "rw"
+                    }
+                else:
+                    logging.warning(f"{k} does not exist, skip mounting it to the container")
+            logging.info(f"Data cache mount: {volumns}, {binds}")
 
         # Default
         if not enable_custom_image or (enable_custom_image and relative_entry != ""):

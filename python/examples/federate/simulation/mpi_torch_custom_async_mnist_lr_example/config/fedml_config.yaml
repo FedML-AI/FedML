@@ -1,0 +1,43 @@
+common_args:
+  training_type: "simulation"
+  using_mlops: false
+  random_seed: 0
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: ~/.cache/fedml_data
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+
+train_args:
+  federated_optimizer: "FedAvg" # others "FedAsync", "FedBuff"
+  # is_async: false
+  # buffer_size: 0 # 
+  # max_acceptable_staleness: 0
+  client_num_in_total: 3
+  client_num_per_round: 3
+  comm_round: 3
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  sleep_time_max: 3  # maximum number of seconds a client can sleep betwene training cycles.
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 3
+  using_gpu: false
+  gpu_mapping_file:
+  gpu_mapping_key:
+
+comm_args:
+  backend: "MPI"
+
+tracking_args:
+   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
+  enable_wandb: false

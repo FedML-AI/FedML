@@ -15,9 +15,11 @@ Usages:
 """
 from typing import List, Tuple
 
+from fedml.api.fedml_response import FedMLResponse
 from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, storage, \
-    model as model_module   # Since "model" has conflict with one of the input parameters, we need to rename it
+    model as model_module  # Since "model" has conflict with one of the input parameters, we need to rename it
 from fedml.api.modules.launch import FeatureEntryPoint
+from fedml.api.modules.storage import StorageMetadata
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FedMLGpuDevices, \
     FedMLRunModelList, FeatureEntryPoint
@@ -120,11 +122,13 @@ def run_stop(run_id: str, platform: str = "falcon", api_key: str = None) -> bool
     return run.stop(run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_list(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> FedMLRunModelList:
+def run_list(run_name: str = None, run_id: str = None, platform: str = "falcon",
+             api_key: str = None) -> FedMLRunModelList:
     return run.list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
-def run_status(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (FedMLRunModelList, str):
+def run_status(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (
+        FedMLRunModelList, str):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 
@@ -153,6 +157,7 @@ def cluster_start(cluster_names: Tuple[str], api_key: str = None) -> bool:
 def cluster_startall(api_key: str = None) -> bool:
     return cluster.start(cluster_names=(), api_key=api_key)
 
+
 def cluster_stop(cluster_names: Tuple[str], api_key: str = None) -> bool:
     return cluster.stop(cluster_names=cluster_names, api_key=api_key)
 
@@ -173,18 +178,31 @@ def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
 
 
-def upload(data_path, api_key=None, name=None, show_progress=False, out_progress_to_err=True, progress_desc=None, metadata=None) \
-        -> str:
-    return storage.upload(data_path=data_path, api_key=api_key, name=name, progress_desc=progress_desc,
-                          show_progress=show_progress, out_progress_to_err=out_progress_to_err, metadata=metadata)
+def upload(data_path, api_key=None, service="R2", name=None, description=None, metadata=None, show_progress=False,
+           out_progress_to_err=True, progress_desc=None) -> FedMLResponse:
+    return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description,
+                          service=service, progress_desc=progress_desc, show_progress=show_progress,
+                          out_progress_to_err=out_progress_to_err, metadata=metadata)
 
 
-def get_metadata(data_name, api_key=None):
-    return storage.get_metadata(data_name=data_name, api_key=api_key)
+def get_storage_user_defined_metadata(data_name, api_key=None) -> FedMLResponse:
+    return storage.get_user_metadata(data_name=data_name, api_key=api_key)
 
 
-def download(data_name, api_key=None, dest_path=None):
-    return storage.download(data_name=data_name, api_key=api_key, dest_path=dest_path)
+def get_storage_metadata(data_name, api_key=None) -> FedMLResponse:
+    return storage.get_metadata(api_key=api_key, data_name=data_name)
+
+
+def list_storage_obects(api_key=None) -> FedMLResponse:
+    return storage.list_objects(api_key=api_key)
+
+
+def download(data_name, api_key=None, service="R2", dest_path=None) -> FedMLResponse:
+    return storage.download(data_name=data_name, api_key=api_key, service=service, dest_path=dest_path)
+
+
+def delete(data_name, service, api_key=None):
+    return storage.delete(data_name=data_name, service=service, api_key=api_key)
 
 
 def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):

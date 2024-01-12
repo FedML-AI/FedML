@@ -42,7 +42,7 @@ class FedMLBaseProtocol:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelInference_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
+            "FedML_Base_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
@@ -55,7 +55,10 @@ class FedMLBaseProtocol:
             if self.client_mqtt_mgr is not None:
                 self.client_mqtt_mgr.loop_stop()
                 self.client_mqtt_mgr.disconnect()
+        except Exception:
+            pass
 
+        try:
             self.client_mqtt_lock.acquire()
             if self.client_mqtt_mgr is not None:
                 self.client_mqtt_is_connected = False

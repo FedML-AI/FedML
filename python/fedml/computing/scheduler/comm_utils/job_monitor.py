@@ -226,6 +226,7 @@ class JobMonitor(Singleton):
             pass
 
     def monitor_slave_endpoint_status(self):
+        endpoint_sync_protocol = None
         try:
             count = 0
             try:
@@ -408,6 +409,12 @@ class JobMonitor(Singleton):
         except Exception as e:
             print(f"[Worker] Exception when syncing endpoint process on the slave agent. {traceback.format_exc()}")
             pass
+        finally:
+            if endpoint_sync_protocol is not None:
+                try:
+                    endpoint_sync_protocol.release_client_mqtt_mgr()
+                except Exception as e:
+                    pass
 
     def _check_and_reset_endpoint_status(
             self, endpoint_id, device_id, deployment_result, only_check_inference_ready_status=False,

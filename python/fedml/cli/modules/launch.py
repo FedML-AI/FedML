@@ -46,10 +46,17 @@ def fedml_launch(yaml_file, cluster, version, api_key, group):
     """
     set_env_version(version)
 
-    if cluster is None:
-        _launch_job(yaml_file[0], api_key)
+    # Input YAML file is recognized as tuple ().
+    # If empty, print help msg and exit.
+    if not yaml_file:        
+        ctx = click.get_current_context()
+        click.echo(ctx.get_help())
+        ctx.exit()        
     else:
-        _launch_job_on_cluster(yaml_file[0], api_key, cluster)
+        if cluster is None:
+            _launch_job(yaml_file[0], api_key)
+        else:
+            _launch_job_on_cluster(yaml_file[0], api_key, cluster)
 
 
 def _launch_job(yaml_file, api_key):
