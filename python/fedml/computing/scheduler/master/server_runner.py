@@ -980,8 +980,9 @@ class FedMLServerRunner:
             running_edges_list.append(edge_id_item)
 
         # Report client status
-        self.mlops_metrics.report_client_training_status(edge_id, status, run_id=run_id)
-        self.mlops_metrics.report_client_device_status_to_web_ui(edge_id, status, run_id=run_id)
+        edge_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION else status
+        self.mlops_metrics.report_client_training_status(edge_id, edge_status, run_id=run_id)
+        self.mlops_metrics.report_client_device_status_to_web_ui(edge_id, edge_status, run_id=run_id)
 
         # Report server status based on the fault tolerance model and parameters
         edge_nums = len(edge_id_status_dict.keys()) - 1
@@ -1793,7 +1794,7 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
+            "FedML_ServerAgent_Metrics_@{}@_@{}@_@{}@_@{}@".format(self.user_name, self.args.current_device_id,
                                                         str(os.getpid()),
                                                         str(uuid.uuid4()))
         )
@@ -2578,7 +2579,7 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Daemon_@" + self.user_name + "@_" + self.args.current_device_id + str(uuid.uuid4()),
+            f"FedML_ServerAgent_Daemon_@{self.user_name}@_@{self.args.current_device_id}@_@{str(uuid.uuid4())}@",
             "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
         )
