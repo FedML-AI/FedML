@@ -230,10 +230,6 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR],
                 ApiConstants.RESOURCE_MATCHED_STATUS_JOB_URL_ERROR)
 
-    if result.gpu_matched is None or len(result.gpu_matched) == 0:
-        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES],
-                f"\nNo resource available now, please modify the resource type or try it again later.")
-
     if result.status == Constants.JOB_START_STATUS_LAUNCHED:
         return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
                 ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)
@@ -292,6 +288,10 @@ def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     elif result.status != Constants.JOB_START_STATUS_SUCCESS:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_NO_SPECIFIC_ERROR],
                 result.message)
+
+    if result.gpu_matched is None or len(result.gpu_matched) == 0:
+        return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_NO_RESOURCES],
+                f"\nNo resource available now, please modify the resource type or try it again later.")
 
     return (ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED],
             ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED)

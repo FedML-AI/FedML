@@ -59,7 +59,8 @@ requirements = [
     "prettytable",
     "GPUtil",
     "tzlocal",
-    "py-machineid"
+    "py-machineid",
+    "cachetools"
 ]
 
 requirements_extra_mpi = [
