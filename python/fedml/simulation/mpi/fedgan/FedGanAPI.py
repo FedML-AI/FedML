@@ -1,4 +1,4 @@
-import mpi4py
+from mpi4py import MPI
 
 from .FedGANAggregator import FedGANAggregator
 from .FedGANTrainer import FedGANTrainer
@@ -8,7 +8,7 @@ from .gan_trainer import GANTrainer
 
 
 def FedML_init():
-    comm = mpi4py.MPI.COMM_WORLD
+    comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()
 

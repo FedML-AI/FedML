@@ -13,7 +13,8 @@ import fedml
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
-                 client_id, last_will_topic=None, last_will_msg=None):
+                 client_id, last_will_topic=None, last_will_msg=None,
+                 clean_session=True, retain_msg=False):
         self._client = None
         self.mqtt_connection_id = None
         self._host = host
@@ -28,6 +29,8 @@ class MqttManager(object):
         self._passthrough_listeners = list()
         self.last_will_topic = last_will_topic
         self.last_will_msg = last_will_msg
+        self.clean_session = clean_session
+        self.retain_msg = retain_msg
 
         self.user = user
         self.pwd = pwd
@@ -46,7 +49,7 @@ class MqttManager(object):
 
     def init_connect(self):
         self.mqtt_connection_id = "{}_{}".format(self._client_id, "ID")
-        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
+        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=self.clean_session)
         self._client.connected_flag = False
         self._client.bad_conn_flag = False
         self._client.on_connect = self.on_connect
@@ -67,7 +70,7 @@ class MqttManager(object):
                 self.last_will_msg = json.dumps({"ID": f"{self._client_id}", "status": "OFFLINE"})
             self._client.will_set(self.last_will_topic,
                                   payload=self.last_will_msg,
-                                  qos=2, retain=True)
+                                  qos=2, retain=self.retain_msg)
         self._client.connect(self._host, self._port, self.keepalive_time)
 
     def reconnect(self):
@@ -86,6 +89,7 @@ class MqttManager(object):
 
     def loop_stop(self):
         self._client.loop_stop()
+        self._client.unsubscribe
 
     def loop_forever(self):
         self._client.loop_forever(retry_first_connection=True)
@@ -102,10 +106,10 @@ class MqttManager(object):
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
             mqtt_publish.single(topic, payload=message, qos=2,
                                 hostname=self._host, port=self._port,
-                                client_id=connection_id, retain=True,
+                                client_id=connection_id, retain=self.retain_msg,
                                 auth={'username': self.user, 'password': self.pwd})
         else:
-            ret_info = self._client.publish(topic, payload=message, qos=2, retain=True)
+            ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
             return ret_info.is_published()
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
         return True
@@ -121,10 +125,10 @@ class MqttManager(object):
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
             mqtt_publish.single(topic, payload=message, qos=2,
                                 hostname=self._host, port=self._port,
-                                client_id=connection_id, retain=True,
+                                client_id=connection_id, retain=self.retain_msg,
                                 auth={'username': self.user, 'password': self.pwd})
         else:
-            ret_info = self._client.publish(topic, payload=message, qos=2, retain=True)
+            ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
             return ret_info.is_published()
         return True
 

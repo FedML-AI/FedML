@@ -56,14 +56,30 @@ class FedMLModelDeviceClientRunner:
 
         while not self.agent_process_event.is_set():
             try:
+                try:
+                    if self.real_client_runner is not None:
+                        self.real_client_runner.stop_agent()
+                except Exception as e:
+                    pass
+
                 self.bind_device()
 
                 self.start_agent()
             except Exception as e:
                 logging.info("Restart model device client: {}".format(traceback.format_exc()))
                 pass
+            finally:
+                try:
+                    if self.real_client_runner is not None:
+                        self.real_client_runner.stop_agent()
+                except Exception as e:
+                    pass
+                time.sleep(15)
 
-            time.sleep(3)
+        try:
+            self.stop()
+        except Exception as e:
+            pass
 
     def check_runner_stop_event(self):
         if self.agent_process_event is not None and self.agent_process_event.is_set():
@@ -119,7 +135,9 @@ class FedMLModelDeviceClientRunner:
 
         # Bind account id to the ModelOps platform.
         register_try_count = 0
-        edge_id = 0
+        edge_id = -1
+        user_name = None
+        extra_url = None
         while register_try_count < 5:
             try:
                 edge_id, user_name, extra_url = self.real_client_runner.bind_account_and_device_id(
@@ -148,6 +166,7 @@ class FedMLModelDeviceClientRunner:
             setattr(self.args, "client_id", edge_id)
             self.init_logs_param(edge_id)
             self.real_client_runner.args = self.args
+            self.real_client_runner.user_name = user_name
 
         return edge_id
 

@@ -250,6 +250,24 @@ class ServerConstants(object):
         return user_url
 
     @staticmethod
+    def get_dataset_url():
+        create_dataset_url = "{}/fedmlOpsServer/api/v1/cli/dataset".format(
+            ServerConstants.get_mlops_url())
+        return create_dataset_url
+
+    @staticmethod
+    def list_dataset_url():
+        list_dataset_url = "{}/fedmlOpsServer/api/v1/cli/dataset/list".format(
+            ServerConstants.get_mlops_url())
+        return list_dataset_url
+
+    @staticmethod
+    def get_dataset_metadata_url():
+        get_dataset_metadata_url = "{}/fedmlOpsServer/api/v1/cli/dataset/meta".format(
+            ServerConstants.get_mlops_url())
+        return get_dataset_metadata_url
+
+    @staticmethod
     def cleanup_run_process(run_id):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)

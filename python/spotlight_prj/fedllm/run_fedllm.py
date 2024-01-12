@@ -662,7 +662,7 @@ def main(args: Arguments) -> None:
 
     training_args, *_ = parse_hf_args(ExperimentArguments, args)
     # verify and update configs
-    training_args.add_and_verify_args(model_args, dataset_args, args)
+    training_args.add_and_verify_args(model_args, dataset_args)
 
     # update cross-silo hierarchical related settings
     if args.use_customized_hierarchical:

@@ -1,7 +1,8 @@
 import os
 import time
 from enum import Enum
-from typing import List
+
+
 
 import certifi
 import requests

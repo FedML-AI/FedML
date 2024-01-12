@@ -242,6 +242,8 @@ def log_training_status(status, run_id=None, edge_id=None, is_from_model=False, 
         return
 
     setup_log_mqtt_mgr()
+    if MLOpsStore.mlops_metrics is None:
+        return
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         MLOpsStore.mlops_metrics.report_client_training_status(
             edge_id, status, is_from_model=is_from_model, run_id=run_id)
@@ -321,9 +323,10 @@ def log_training_finished_status(run_id=None, is_from_model=False, edge_id=None)
         return
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.report_client_id_status(
-        edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-        is_from_model=is_from_model, run_id=run_id)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_client_id_status(
+            edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+            is_from_model=is_from_model, run_id=run_id)
 
 
 def send_exit_train_msg(run_id=None):
@@ -336,9 +339,10 @@ def send_exit_train_msg(run_id=None):
         return
 
     setup_log_mqtt_mgr()
-    MLOpsStore.mlops_metrics.client_send_exit_train_msg(
-        MLOpsStore.mlops_run_id if run_id is None else run_id,
-        MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.client_send_exit_train_msg(
+            MLOpsStore.mlops_run_id if run_id is None else run_id,
+            MLOpsStore.mlops_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
 
 def log_training_failed_status(run_id=None, edge_id=None, is_from_model=False, enable_broadcast=False):
@@ -365,6 +369,9 @@ def log_training_failed_status(run_id=None, edge_id=None, is_from_model=False, e
         return
 
     setup_log_mqtt_mgr()
+
+    if MLOpsStore.mlops_metrics is None:
+        return
 
     MLOpsStore.mlops_metrics.report_client_id_status(
         edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, is_from_model=is_from_model, run_id=run_id)
@@ -398,6 +405,9 @@ def log_aggregation_finished_status(run_id=None, edge_id=None):
 
     setup_log_mqtt_mgr()
 
+    if MLOpsStore.mlops_metrics is None:
+        return
+
     MLOpsStore.mlops_metrics.report_server_id_status(
         run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
         edge_id=edge_id, server_id=edge_id, server_agent_id=edge_id
@@ -427,6 +437,10 @@ def log_aggregation_failed_status(run_id=None, edge_id=None):
         return
 
     setup_log_mqtt_mgr()
+
+    if MLOpsStore.mlops_metrics is None:
+        return
+
     MLOpsStore.mlops_metrics.report_server_id_status(
         run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=edge_id,
         server_id=edge_id, server_agent_id=edge_id
@@ -456,6 +470,10 @@ def log_aggregation_exception_status(run_id=None, edge_id=None):
         return
 
     setup_log_mqtt_mgr()
+
+    if MLOpsStore.mlops_metrics is None:
+        return
+
     MLOpsStore.mlops_metrics.report_server_id_status(
         run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION, edge_id=edge_id,
         server_id=edge_id, server_agent_id=edge_id
@@ -514,6 +532,10 @@ def log_aggregated_model_info(round_index, model_url):
         "round_idx": round_index,
         "global_aggregated_model_s3_address": model_url,
     }
+
+    if MLOpsStore.mlops_metrics is None:
+        return
+
     MLOpsStore.mlops_metrics.report_aggregated_model_info(model_info)
 
 
@@ -543,7 +565,8 @@ def log_training_model_net_info(model_net, dummy_input_tensor):
         "run_id": MLOpsStore.mlops_run_id,
         "training_model_net_s3_address": model_url,
     }
-    MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
     return model_url
 
 
@@ -602,7 +625,8 @@ def log_client_model_info(round_index, total_rounds, model_url):
         "round_idx": round_index,
         "client_model_s3_address": model_url,
     }
-    MLOpsStore.mlops_metrics.report_client_model_info(model_info)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_client_model_info(model_info)
 
     FedMLClientDataInterface.get_instance().save_running_job(MLOpsStore.mlops_run_id, MLOpsStore.mlops_edge_id,
                                                              round_index,
@@ -642,6 +666,8 @@ def log_server_payload(run_id, edge_id, payload):
     setup_log_mqtt_mgr()
     topic = "fedml_{}_{}".format(run_id, edge_id)
     logging.info("log json message, topic {}, payload {}.".format(topic, payload))
+    if MLOpsStore.mlops_metrics is None:
+        return
     MLOpsStore.mlops_metrics.report_json_message(topic, payload)
 
 
@@ -736,6 +762,8 @@ def _log_artifact_sync(
     if edge_id is None:
         edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
+    if MLOpsStore.mlops_metrics is None:
+        return
     MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
                                                   artifact_archive_zip_file, artifact_storage_url,
                                                   artifact.ext_info, artifact.artifact_desc,
@@ -841,7 +869,8 @@ def log_run_logs(logs_json: dict, run_id=0):
 
     setup_log_mqtt_mgr()
 
-    MLOpsStore.mlops_metrics.report_fedml_run_logs(logs_json, run_id=run_id)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_fedml_run_logs(logs_json, run_id=run_id)
 
 
 def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
@@ -849,8 +878,9 @@ def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=Fal
 
     setup_log_mqtt_mgr()
 
-    MLOpsStore.mlops_metrics.report_run_log(
-        run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_run_log(
+            run_id, device_id, log_list, log_source=log_source, use_mqtt=use_mqtt)
 
 
 def _append_to_list(list_data, list_item):
@@ -936,10 +966,11 @@ def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=
     if edge_id is None:
         edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
     timestamp = MLOpsUtils.get_ntp_time()
-    MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
-                                                  artifact_archive_zip_file, artifact_storage_url,
-                                                  artifact.ext_info, artifact.artifact_desc,
-                                                  timestamp)
+    if MLOpsStore.mlops_metrics is not None:
+        MLOpsStore.mlops_metrics.report_artifact_info(run_id, edge_id, artifact.artifact_name, artifact.artifact_type,
+                                                      artifact_archive_zip_file, artifact_storage_url,
+                                                      artifact.ext_info, artifact.artifact_desc,
+                                                      timestamp)
 
     return artifact_storage_url
 
@@ -967,6 +998,8 @@ def log_round_info(total_rounds, round_index):
         "running_time": round(time.time() - MLOpsStore.mlops_log_round_start_time, 4),
     }
     logging.info("log round info {}".format(round_info))
+    if MLOpsStore.mlops_metrics is None:
+        return
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
 
 
@@ -976,6 +1009,8 @@ def log_endpoint_status(endpoint_id, status):
     setup_log_mqtt_mgr()
     run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    if MLOpsStore.mlops_metrics is None:
+        return
     MLOpsStore.mlops_metrics.report_endpoint_status(
         endpoint_id, status, timestamp=MLOpsUtils.get_ntp_time() * 1000.0)
 
@@ -1229,7 +1264,7 @@ def bind_simulation_device(args, userid):
 
     # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
-    edge_id = 0
+    edge_id = -1
     while register_try_count < 5:
         try:
             edge_id, _, _ = runner.bind_account_and_device_id(

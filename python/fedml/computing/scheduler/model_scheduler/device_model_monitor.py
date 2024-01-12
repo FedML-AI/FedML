@@ -93,8 +93,8 @@ class FedMLModelMetrics:
             except Exception as e:
                 logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
 
-        self.monitor_mqtt_mgr.disconnect()
         self.monitor_mqtt_mgr.loop_stop()
+        self.monitor_mqtt_mgr.disconnect()
 
     def send_monitoring_metrics(self, index):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
