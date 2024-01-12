@@ -980,8 +980,9 @@ class FedMLServerRunner:
             running_edges_list.append(edge_id_item)
 
         # Report client status
-        self.mlops_metrics.report_client_training_status(edge_id, status, run_id=run_id)
-        self.mlops_metrics.report_client_device_status_to_web_ui(edge_id, status, run_id=run_id)
+        edge_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION else status
+        self.mlops_metrics.report_client_training_status(edge_id, edge_status, run_id=run_id)
+        self.mlops_metrics.report_client_device_status_to_web_ui(edge_id, edge_status, run_id=run_id)
 
         # Report server status based on the fault tolerance model and parameters
         edge_nums = len(edge_id_status_dict.keys()) - 1
