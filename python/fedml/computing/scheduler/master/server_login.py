@@ -241,7 +241,7 @@ def __login_as_cloud_agent(args, userid, version):
     logging.info("login: unique_device_id = %s" % str(unique_device_id))
     logging.info("login: server_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
-    runner.user_name = user_name
+    runner.user_name = "cloud_agent" if user_name is None else user_name
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
@@ -346,7 +346,7 @@ def __login_as_cloud_server(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
-    runner.user_name = user_name
+    runner.user_name = "cloud_server" if user_name is None else user_name
     init_logs(args, edge_id)
 
     # Log arguments and binding results.
