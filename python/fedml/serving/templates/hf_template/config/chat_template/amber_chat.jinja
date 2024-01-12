@@ -1,0 +1,12 @@
+{% for message in messages %}
+    {% if message['role'] == 'user' %}
+        {{ '### Human: ' + message['content'] + '\n' }}
+    {% elif message['role'] == 'system' %}
+        {{ '\n' + message['content'] + '\n\n' }}
+    {% elif message['role'] == 'assistant' %}
+        {{ '### Assistant: '  + message['content'] + '\n' }}
+    {% endif %}
+    {% if loop.last and add_generation_prompt %}
+        {{ '### Assistant:' }}
+    {% endif %}
+{% endfor %}
