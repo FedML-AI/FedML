@@ -34,5 +34,5 @@ def is_flash_attn_available() -> bool:
 def is_jinja2_available() -> bool:
     return (
             _jinja2_available
-            and compare_versions("jinja2", "<", "3.0.0")
+            and compare_versions("jinja2", ">=", "3.0.0")
     )
