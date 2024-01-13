@@ -59,6 +59,17 @@ class ChatCompletionRequest(BaseModel):
 
         return [s for s in v if len(s) > 0]
 
+    @validator("messages")
+    def validate_messages(cls, v: Union[str, List[Dict[str, str]]]) -> List[str]:
+        if isinstance(v, str):
+            v = [{"role": "user", "content": v}]
+        elif isinstance(v, list):
+            for d in v:
+                # force `role` to be lower case
+                d["role"] = d["role"].lower()
+
+        return v
+
 
 class HFChatCompletionRequest(ChatCompletionRequest):
     # see https://huggingface.co/docs/transformers/v4.36.1/en/main_classes/text_generation#transformers.GenerationConfig
