@@ -107,7 +107,7 @@ class FedMLDeviceInfoReportProtocol:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ModelInference_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
+            "FedML_DeviceInfoReporter_Metrics_{}_{}".format(str(os.getpid()), str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)

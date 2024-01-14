@@ -62,8 +62,6 @@ class ServerConstants(object):
     INFERENCE_GRPC_PORT = 8001
     INFERENCE_METRIC_PORT = 8002
 
-    SERVER_LOGIN_PROGRAM = "device_server_login.py"
-
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
 
     INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"

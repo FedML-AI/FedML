@@ -178,8 +178,8 @@ class FedMLModelCache(Singleton):
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)
-        if isinstance(result_item_json, dict):
-            result_item_json = json.loads(result_item)
+        if isinstance(result_item_json, str):
+            result_item_json = json.loads(result_item_json)
         device_id = result_item_json["cache_device_id"]
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
@@ -192,7 +192,7 @@ class FedMLModelCache(Singleton):
                         check_end_point_status=True):
         # Find all deployed devices
         try:
-            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)   # get from redis
+            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)  # DEPLOYMENT_STATUS
         except Exception as e:
             logging.error(f"get_deployment_status_list failed {e}")
             return None, None
@@ -202,8 +202,8 @@ class FedMLModelCache(Singleton):
 
         idle_device_list = list()
         if model_version == "latest":
-            _, status_payload = self.get_status_item_info(status_list[-1])
-            model_version = status_payload["model_version"]
+            model_version = self.get_latest_version(status_list)
+        logging.info(f"model_version {model_version}")
 
         # iterate all devices, find those with correct version and deployed
         for status_item in status_list:
@@ -214,7 +214,7 @@ class FedMLModelCache(Singleton):
                 model_version_cached = status_payload["model_version"]
                 end_point_id_cache = status_payload["end_point_id"]
                 logging.info(f"model_version {model_version}, model_version_cache {model_version_cached}")
-                if model_version == model_version_cached and \
+                if (model_version == model_version_cached or model_version == "*") and \
                         model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
             except Exception as e:
@@ -281,6 +281,27 @@ class FedMLModelCache(Singleton):
             logging.info(str(e))
 
         return None, None
+
+    def get_latest_version(self, status_list):
+        latest_version = None
+        latest_version_int = -1
+        for status_item in status_list:
+            try:
+                _, status_payload = self.get_status_item_info(status_item)
+                model_version = status_payload["model_version"]
+                prefix = model_version.split("-")[0]    # version-date
+                prefix_int = int(prefix[1:])    # v12 -> 12
+
+                if latest_version is None:
+                    latest_version = model_version
+                    latest_version_int = prefix_int
+                elif prefix_int > latest_version_int:
+                    latest_version = model_version
+                    latest_version_int = prefix_int
+            except Exception as e:
+                pass
+
+        return latest_version
 
     def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
         try:
