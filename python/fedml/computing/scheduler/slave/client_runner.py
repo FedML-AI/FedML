@@ -23,7 +23,7 @@ import requests
 import fedml
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_cleanup import JobCleanup
-from ..comm_utils.job_utils import JobRunnerUtils
+from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -124,6 +124,14 @@ class FedMLClientRunner:
         self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
         # logging.info("Current directory of client agent: " + self.cur_dir)
 
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+        )
+
+
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
@@ -191,7 +199,8 @@ class FedMLClientRunner:
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
@@ -206,6 +215,7 @@ class FedMLClientRunner:
             local_package_file, unzip_package_path, unzip_package_full_path))
 
         return unzip_package_full_path
+
 
     def update_local_fedml_config(self, run_id, run_config):
         packages_config = run_config["packages_config"]
@@ -270,6 +280,7 @@ class FedMLClientRunner:
             return None, None
 
         return unzip_package_path, package_conf_object
+
 
     def build_dynamic_args(self, run_id, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
@@ -398,6 +409,7 @@ class FedMLClientRunner:
     def callback_run_bootstrap(self, job_pid):
         ClientConstants.save_bootstrap_process(self.run_id, job_pid)
 
+
     def run(self, process_event, completed_event):
         print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
 
@@ -446,6 +458,7 @@ class FedMLClientRunner:
         if self.run_process_completed_event.is_set():
             logging.info("Received completed event.")
             raise RunnerCompletedError("Runner completed")
+
 
     def run_impl(self):
         run_id = self.request_json["runId"]
@@ -521,13 +534,16 @@ class FedMLClientRunner:
         logging.info("                          ")
         logging.info("                          ")
         logging.info("====Your Run Logs Begin===")
-        process, is_launch_task, error_list = self.execute_job_task(entry_file_full_path, conf_file_full_path,
-                                                                    dynamic_args_config)
+
+        process, is_launch_task, error_list = self.execute_job_task(unzip_package_path=unzip_package_path,
+                                                                    entry_file_full_path=entry_file_full_path,
+                                                                    conf_file_full_path=conf_file_full_path,
+                                                                    dynamic_args_config=dynamic_args_config)
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
 
-        ret_code, out, err = process.returncode, None, None
+        ret_code, out, err = process.returncode if process else None, None, None
         is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if is_launch_task:
             is_run_ok = True
@@ -579,7 +595,8 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 server_id=self.server_id, run_id=run_id)
 
-    def execute_job_task(self, entry_file_full_path, conf_file_full_path, dynamic_args_config):
+
+    def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config):
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         client_rank = self.request_json.get("client_rank", 1)
@@ -589,6 +606,8 @@ class FedMLClientRunner:
         job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
+        containerize = job_yaml.get("containerize", True)
+        # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
         entry_args_dict = conf_file_object.get("fedml_entry_args", {})
@@ -622,9 +641,25 @@ class FedMLClientRunner:
                 self.run_id, self.edge_id, self.version,
                 self.package_type, executable_interpreter, entry_file_full_path,
                 conf_file_object, entry_args, assigned_gpu_ids,
-                job_api_key, client_rank, job_yaml=job_yaml_default_none,
-                scheduler_match_info=scheduler_match_info,
+                job_api_key, client_rank, scheduler_match_info=scheduler_match_info,
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
+
+            if containerize:
+                docker_args = DockerArgs()
+                try:
+                    job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args = docker_args,
+                                                                                           run_id=self.run_id,
+                                                                                           edge_id = self.edge_id,
+                                                                                           unzip_package_path = unzip_package_path,
+                                                                                           executable_interpreter = executable_interpreter,
+                                                                                           entry_file_full_path = entry_file_full_path,
+                                                                                           cuda_visible_gpu_ids_str = self.cuda_visible_gpu_ids_str)
+                except Exception:
+                    logging.error(f"Exception while generating containerized launch commands: {traceback.format_exc()}")
+                    return None, None, None
+
+                if not job_executing_commands:
+                    raise Exception("Failed to generate docker execution command")
 
             # Run the job executing commands
             logging.info(f"Run the client job with job id {self.run_id}, device id {self.edge_id}.")
@@ -822,6 +857,7 @@ class FedMLClientRunner:
 
             raise Exception("Restarting after upgraded...")
 
+
     def callback_start_train(self, topic, payload):
         # Get training params
 
@@ -910,6 +946,7 @@ class FedMLClientRunner:
         self.run_process_map[run_id_str].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
 
+
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
         # logging.info(
@@ -962,6 +999,7 @@ class FedMLClientRunner:
                 JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
         except Exception as e:
             pass
+
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1036,6 +1074,7 @@ class FedMLClientRunner:
 
             # Stop log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
+
 
     def callback_report_current_status(self, topic, payload):
         logging.info(
@@ -1354,6 +1393,7 @@ class FedMLClientRunner:
         except Exception as e:
             logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
 
+
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
@@ -1399,7 +1439,8 @@ class FedMLClientRunner:
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
-        worker_deploy_id_list = [modeld_device_clint.edge_id for index, modeld_device_clint in enumerate(self.model_device_client_list)]
+        worker_deploy_id_list = [modeld_device_clint.edge_id for index, modeld_device_clint in
+                                 enumerate(self.model_device_client_list)]
         print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(f"Your FedML Edge ID is {str(self.edge_id)}, unique device ID is {str(self.unique_device_id)}, "
               f"master deploy ID is {str(self.model_device_server.edge_id)}, "
@@ -1475,14 +1516,15 @@ class FedMLClientRunner:
         os.environ["FEDML_CURRENT_EDGE_ID"] = str(self.edge_id)
 
         if not ComputeCacheManager.get_instance().set_redis_params():
-           os.environ["FEDML_DISABLE_REDIS_CONNECTION"] = "1"
+            os.environ["FEDML_DISABLE_REDIS_CONNECTION"] = "1"
 
         if self.model_device_client_list is None:
             model_client_num = 1 if model_client_num is None else int(model_client_num)
             self.model_device_client_list = list()
             for client_index in range(model_client_num):
                 model_device_client = FedMLModelDeviceClientRunner(
-                    self.args, f"{self.args.current_device_id}_{client_index+1}", self.args.os_name, self.args.is_from_docker, self.agent_config)
+                    self.args, f"{self.args.current_device_id}_{client_index + 1}", self.args.os_name,
+                    self.args.is_from_docker, self.agent_config)
                 if infer_host is not None:
                     model_device_client.infer_host = infer_host
                 if infer_redis_addr is not None:

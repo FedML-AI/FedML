@@ -4,14 +4,28 @@ import os
 import platform
 import traceback
 import GPUtil
+import docker
 
+from dataclasses import dataclass
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+from dataclasses import dataclass, field
 from fedml.core.common.singleton import Singleton
+from typing import List
 import threading
 import json
+
+
+@dataclass
+class DockerArgs:
+    image: str = SchedulerConstants.FEDML_DEFAULT_LAUNCH_IMAGE
+    username: str = ""
+    password: str = ""
+    registry: str = ""
+    ports: List[int] = field(default_factory=lambda: [2345])
 
 
 class JobRunnerUtils(Singleton):
@@ -218,12 +232,9 @@ class JobRunnerUtils(Singleton):
     def generate_job_execute_commands(run_id, edge_id, version,
                                       package_type, executable_interpreter, entry_file_full_path,
                                       conf_file_object, entry_args, assigned_gpu_ids,
-                                      job_api_key, client_rank, job_yaml=None, request_gpu_num=None,
-                                      scheduler_match_info=None, cuda_visible_gpu_ids_str=None):
+                                      job_api_key, client_rank, scheduler_match_info=None, cuda_visible_gpu_ids_str=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
-        computing = job_yaml.get("computing", {})
-        request_gpu_num = computing.get("minimum_num_gpus", None) if request_gpu_num is None else request_gpu_num
 
         # Read entry commands if job is from launch
         if package_type == SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH or \
@@ -272,6 +283,8 @@ class JobRunnerUtils(Singleton):
             random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
             random_list = random_out.split("FEDML_NEXUS@")
             entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={random_list[1]}\n")
+
+        # TODO: Remove adding this command entirely once we fully retire running launch on bare metal
         if cuda_visible_gpu_ids_str is not None and str(cuda_visible_gpu_ids_str).strip() != "":
             entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={cuda_visible_gpu_ids_str}\n")
         print(f"cuda_visible_gpu_ids_str {cuda_visible_gpu_ids_str}")
@@ -310,6 +323,95 @@ class JobRunnerUtils(Singleton):
         shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
 
         return shell_cmd_list
+
+
+    @staticmethod
+    def generate_launch_docker_command(docker_args: DockerArgs, run_id: str, edge_id: str, unzip_package_path: str,
+                                       executable_interpreter: str, entry_file_full_path: str,
+                                       cuda_visible_gpu_ids_str=None) -> List[str]:
+
+        shell_command = list()
+
+        # Docker client login
+        try:
+            client = docker.from_env()
+            client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
+        except Exception as e:
+            logging.error(f"Failed to connect to the docker daemon, please ensure that you have "
+                          f"installed Docker Desktop or Docker Engine, and the docker is running. Exception {e}")
+            return shell_command
+
+        container_prefix = f"{SchedulerConstants.FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX}"
+        container_name = f"{container_prefix}__{run_id}"
+        port_mapping = "2345:2345"
+
+        # Remove container if it already exists
+        try:
+            exist_container_obj = client.containers.get(container_name)
+        except docker.errors.NotFound:
+            exist_container_obj = None
+        except docker.errors.APIError:
+            raise Exception("Failed to get the container object")
+
+        if exist_container_obj is not None:
+            client.api.remove_container(exist_container_obj.id, v=True, force=True)
+
+        docker_command = ["docker", "run", "-t", "--rm", "--name", f"{container_name}"]
+
+        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as dockeer command instead:
+        if cuda_visible_gpu_ids_str is not None:
+            JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
+            docker_command.extend(["--gpus", f'"{cuda_visible_gpu_ids_str}"'])
+
+        # Add Port Mapping
+        for port in docker_args.ports:
+            docker_command.extend(["-p", f"0:{port}"])
+
+        # Mount Volumes
+        home_dir = os.path.expanduser("~")
+        log_file = "{}/.fedml/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
+            home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
+        )
+
+        volumes = [log_file, unzip_package_path]
+        for volume in volumes:
+            docker_command.extend(["-v", f"{volume}:{volume}:rw"])
+
+        # Add working directory
+        working_directory = os.path.join(unzip_package_path, "fedml")
+        docker_command.extend(["-w", working_directory])
+
+        # Add image
+        docker_command.append(docker_args.image)
+
+        # Add executable interpreter
+        docker_command.append(executable_interpreter)
+
+        # Add entry command
+        docker_command.extend(["-c", f'"chmod +x {entry_file_full_path} && {entry_file_full_path}"'])
+
+        # Generate docker command to be executed in shell
+        shell_command.append(" ".join(docker_command))
+
+        return shell_command
+
+    @staticmethod
+    def remove_cuda_visible_devices_lines(file_path):
+        try:
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+
+            # Remove lines containing 'export CUDA_VISIBLE_DEVICES='
+            modified_lines = [line for line in lines if 'export CUDA_VISIBLE_DEVICES=' not in line]
+
+            with open(file_path, 'w') as f:
+                f.writelines(modified_lines)
+
+            logging.info(f"Lines containing 'export CUDA_VISIBLE_DEVICES=' removed successfully from {file_path}")
+        except FileNotFoundError:
+            logging.info(f"Error: File '{file_path}' not found.")
+        except Exception as e:
+            logging.info(f"An error occurred while removing cuda visible devices from {file_path} : {e}")
 
     @staticmethod
     def replace_entry_command_with_env_variable(entry_commands, env_name_value_map):

@@ -917,10 +917,10 @@ class FedMLServerRunner:
 
             # Generate the job executing commands
             job_executing_commands = JobRunnerUtils.generate_job_execute_commands(
-                self.run_id, self.edge_id, self.version,
-                self.package_type, executable_interpreter, entry_file_full_path,
-                conf_file_object, entry_args, assigned_gpu_ids,
-                job_api_key, 0, job_yaml=job_yaml_default_none)
+                run_id=self.run_id, edge_id=self.edge_id, version=self.version, package_type=self.package_type,
+                executable_interpreter=executable_interpreter, entry_file_full_path=entry_file_full_path,
+                conf_file_object=conf_file_object, entry_args=entry_args, assigned_gpu_ids=assigned_gpu_ids,
+                job_api_key=job_api_key, client_rank=0)
 
             # Run the job executing commands
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")
