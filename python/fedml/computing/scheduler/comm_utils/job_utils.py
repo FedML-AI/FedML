@@ -1,12 +1,12 @@
-
 import logging
 import os
 import platform
 import traceback
 import GPUtil
 import docker
+from docker import errors, DockerClient
+import stat
 
-from dataclasses import dataclass
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
@@ -52,11 +52,12 @@ class JobRunnerUtils(Singleton):
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
             with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
-                    device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
+                        device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
                 if inner_id is not None and str(original_run_id) != str(inner_id):
-                    ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id, original_run_id)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
+                                                                                               original_run_id)
 
                 available_gpu_ids = self.get_available_gpu_id_list(device_id)
 
@@ -77,8 +78,10 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
 
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id, run_id, matched_gpu_num)
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id, run_id, run_gpu_ids)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id, run_id,
+                                                                                           matched_gpu_num)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id, run_id,
+                                                                                          run_gpu_ids)
                 ComputeCacheManager.get_instance().get_gpu_cache().set_run_device_ids(run_id, [switchable_device_id])
                 ComputeCacheManager.get_instance().get_gpu_cache().set_run_total_num_gpus(run_id, matched_gpu_num)
 
@@ -154,7 +157,8 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
                         edge_device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
-                run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id, run_id)
+                run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
+                                                                                                        run_id)
                 if run_gpu_ids is None:
                     return
 
@@ -185,9 +189,10 @@ class JobRunnerUtils(Singleton):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
             with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
-                available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(device_id)
+                available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                    device_id)
                 if available_gpu_ids is None:
                     gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, gpu_ids)
@@ -207,7 +212,8 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
                 current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, current_available_gpu_ids)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id,
+                                                                                                current_available_gpu_ids)
                 gpu_list = sys_utils.get_gpu_list()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_total_num_gpus(device_id, len(gpu_list))
         except Exception as e:
@@ -229,10 +235,30 @@ class JobRunnerUtils(Singleton):
         return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
+    def generate_bootstrap_commands(bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file):
+        if os.path.exists(bootstrap_script_path):
+            bootstrap_stat = os.stat(bootstrap_script_path)
+            if platform.system() == 'Windows':
+                os.chmod(bootstrap_script_path,
+                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                bootstrap_scripts = "{}".format(bootstrap_script_path)
+            else:
+                os.chmod(bootstrap_script_path,
+                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                bootstrap_scripts = "cd {}; ./{}".format(
+                    bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+
+            bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
+            shell_cmd_list = list()
+            shell_cmd_list.append(bootstrap_scripts)
+            return shell_cmd_list
+
+    @staticmethod
     def generate_job_execute_commands(run_id, edge_id, version,
                                       package_type, executable_interpreter, entry_file_full_path,
                                       conf_file_object, entry_args, assigned_gpu_ids,
-                                      job_api_key, client_rank, scheduler_match_info=None, cuda_visible_gpu_ids_str=None):
+                                      job_api_key, client_rank, scheduler_match_info=None,
+                                      cuda_visible_gpu_ids_str=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
 
@@ -324,11 +350,10 @@ class JobRunnerUtils(Singleton):
 
         return shell_cmd_list
 
-
     @staticmethod
-    def generate_launch_docker_command(docker_args: DockerArgs, run_id: str, edge_id: str, unzip_package_path: str,
+    def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int, unzip_package_path: str,
                                        executable_interpreter: str, entry_file_full_path: str,
-                                       cuda_visible_gpu_ids_str=None) -> List[str]:
+                                       boostrap_cmd_list: List[str], cuda_visible_gpu_ids_str=None) -> List[str]:
 
         shell_command = list()
 
@@ -343,7 +368,6 @@ class JobRunnerUtils(Singleton):
 
         container_prefix = f"{SchedulerConstants.FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX}"
         container_name = f"{container_prefix}__{run_id}"
-        port_mapping = "2345:2345"
 
         # Remove container if it already exists
         try:
@@ -388,7 +412,11 @@ class JobRunnerUtils(Singleton):
         docker_command.append(executable_interpreter)
 
         # Add entry command
-        docker_command.extend(["-c", f'"chmod +x {entry_file_full_path} && {entry_file_full_path}"'])
+        docker_command.append("-c")
+        if boostrap_cmd_list is not None and len(boostrap_cmd_list) > 0:
+            docker_command.extend(" && ".join(boostrap_cmd_list))
+            docker_command.append(" && ")
+        docker_command.append(f'"chmod +x {entry_file_full_path} && {entry_file_full_path}"')
 
         # Generate docker command to be executed in shell
         shell_command.append(" ".join(docker_command))
@@ -512,4 +540,3 @@ class JobRunnerUtils(Singleton):
         job_yaml = parameters.get("job_yaml", {})
         job_type = job_yaml.get("job_type", None)
         return job_type
-
