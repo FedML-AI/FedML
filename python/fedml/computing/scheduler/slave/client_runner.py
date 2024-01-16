@@ -44,6 +44,7 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from fedml.utils.debugging import debug
 
 
 class RunnerError(Exception):
@@ -118,7 +119,7 @@ class FedMLClientRunner:
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.server_id = None
         self.computing_started_time = 0
-        self.origin_fedml_config_object = None
+        self.fedml_config_object = None
         self.package_type = SchedulerConstants.JOB_PACKAGE_TYPE_DEFAULT
         self.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
         # logging.info("Current directory of client agent: " + self.cur_dir)
@@ -278,13 +279,13 @@ class FedMLClientRunner:
         self.build_dynamic_args(run_id, run_config, package_conf_object, unzip_package_path)
         return unzip_package_path, package_conf_object
 
+    @debug
     def build_dynamic_args(self, run_id, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
         fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
                                        os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
-        self.origin_fedml_config_object = fedml_conf_object.copy()
         run_params = run_config.get("parameters", {})
         job_yaml = run_params.get("job_yaml", {})
 
@@ -331,6 +332,7 @@ class FedMLClientRunner:
         #     pass
 
         fedml_conf_object["dynamic_args"] = package_dynamic_args
+        self.fedml_config_object = fedml_conf_object.copy()
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
     def run_bootstrap_script(self, bootstrap_cmd_list, bootstrap_script_file):
@@ -500,7 +502,7 @@ class FedMLClientRunner:
                                                                     entry_file_full_path=entry_file_full_path,
                                                                     conf_file_full_path=conf_file_full_path,
                                                                     dynamic_args_config=dynamic_args_config,
-                                                                    fedml_config_object=fedml_config_object)
+                                                                    fedml_config_object=self.fedml_config_object)
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
@@ -557,6 +559,7 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 server_id=self.server_id, run_id=run_id)
 
+    @debug
     def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
                          fedml_config_object):
         run_config = self.request_json["run_config"]
@@ -579,9 +582,12 @@ class FedMLClientRunner:
         # Bootstrap Info
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
         env_args = fedml_config_object.get("environment_args", None)
+        logging.info(f"Alay Debug: {env_args}")
         if env_args is not None:
+
             bootstrap_script_file = env_args.get("bootstrap", None)
             if bootstrap_script_file is not None:
+                logging.info(f"Alay Debug: {bootstrap_script_file}")
                 bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
                 if platform.system() == 'Windows':
                     bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
@@ -591,8 +597,11 @@ class FedMLClientRunner:
                     bootstrap_script_path = os.path.join(
                         bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
                     )
+                    logging.info(f"Alay Debug: {bootstrap_script_dir}, {bootstrap_script_path}")
+
 
         bootstrap_cmd_list = list()
+        logging.info(f"Alay Debug: {bootstrap_cmd_list}, {bootstrap_cmd_list}")
         if bootstrap_script_path:
             logging.info("Bootstrap commands are being generated...")
             bootstrap_cmd_list = JobRunnerUtils.generate_bootstrap_commands(bootstrap_script_path=bootstrap_script_path,
@@ -656,8 +665,8 @@ class FedMLClientRunner:
                                                                                            edge_id=self.edge_id,
                                                                                            unzip_package_path=unzip_package_path,
                                                                                            executable_interpreter=executable_interpreter,
-                                                                                           bootstrap_cmd_list=bootstrap_cmd_list,
                                                                                            entry_file_full_path=entry_file_full_path,
+                                                                                           bootstrap_cmd_list=bootstrap_cmd_list,
                                                                                            cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
                 except Exception:
                     logging.error(f"Exception while generating containerized launch commands: {traceback.format_exc()}")
