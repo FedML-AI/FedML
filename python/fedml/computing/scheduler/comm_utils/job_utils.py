@@ -352,8 +352,8 @@ class JobRunnerUtils(Singleton):
 
     @staticmethod
     def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int, unzip_package_path: str,
-                                       executable_interpreter: str, entry_file_full_path: str,
-                                       boostrap_cmd_list: List[str], cuda_visible_gpu_ids_str=None) -> List[str]:
+                                       executable_interpreter: str, entry_file_full_path: str, bootstrap_cmd_list,
+                                       cuda_visible_gpu_ids_str=None) -> List[str]:
 
         shell_command = list()
 
@@ -413,10 +413,12 @@ class JobRunnerUtils(Singleton):
 
         # Add entry command
         docker_command.append("-c")
-        if boostrap_cmd_list is not None and len(boostrap_cmd_list) > 0:
-            docker_command.extend(" && ".join(boostrap_cmd_list))
-            docker_command.append(" && ")
-        docker_command.append(f'"chmod +x {entry_file_full_path} && {entry_file_full_path}"')
+        command_list = []
+        if bootstrap_cmd_list:
+            command_list.extend(bootstrap_cmd_list[0].split("; "))
+        command_list.extend([f"chmod +x {entry_file_full_path}", f"{entry_file_full_path}"])
+        cmd = " && ".join(command_list)
+        docker_command.append(f'"{cmd}"')
 
         # Generate docker command to be executed in shell
         shell_command.append(" ".join(docker_command))
