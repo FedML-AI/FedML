@@ -7,7 +7,6 @@ from multiprocessing import Process
 import os
 import platform
 import shutil
-import stat
 import subprocess
 import threading
 
@@ -126,14 +125,12 @@ class FedMLClientRunner:
         self.subscribed_topics = list()
         self.user_name = None
 
-
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
             klass=self.__class__.__name__,
             id=id(self) & 0xFFFFFF,
             attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
         )
-
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -219,7 +216,6 @@ class FedMLClientRunner:
 
         return unzip_package_full_path
 
-
     def update_local_fedml_config(self, run_id, run_config):
         packages_config = run_config["packages_config"]
 
@@ -279,11 +275,8 @@ class FedMLClientRunner:
         ClientConstants.generate_yaml_doc(package_conf_object, fedml_updated_config_file)
 
         # Build dynamic arguments and set arguments to fedml config object
-        if not self.build_dynamic_args(run_id, run_config, package_conf_object, unzip_package_path):
-            return None, None
-
+        self.build_dynamic_args(run_id, run_config, package_conf_object, unzip_package_path)
         return unzip_package_path, package_conf_object
-
 
     def build_dynamic_args(self, run_id, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
@@ -332,86 +325,49 @@ class FedMLClientRunner:
             fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
             fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
 
-        bootstrap_script_path = None
-        env_args = fedml_conf_object.get("environment_args", None)
-        if env_args is not None:
-            bootstrap_script_file = env_args.get("bootstrap", None)
-            if bootstrap_script_file is not None:
-                bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
-                if platform.system() == 'Windows':
-                    bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
-                if bootstrap_script_file is not None:
-                    bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
-                    bootstrap_script_path = os.path.join(
-                        bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
-                    )
         # try:
         #     os.makedirs(package_dynamic_args["data_cache_dir"], exist_ok=True)
         # except Exception as e:
         #     pass
-        fedml_conf_object["dynamic_args"] = package_dynamic_args
 
+        fedml_conf_object["dynamic_args"] = package_dynamic_args
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
-        job_type = job_yaml.get("task_type", None)
-        job_type = job_yaml.get("job_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
-        if job_type == Constants.JOB_TASK_TYPE_DEPLOY or job_type == Constants.JOB_TASK_TYPE_SERVE:
-            return True
-
-        is_bootstrap_run_ok = True
+    def run_bootstrap_script(self, bootstrap_cmd_list, bootstrap_script_file):
         try:
-            if bootstrap_script_path is not None:
-                if os.path.exists(bootstrap_script_path):
-                    bootstrap_stat = os.stat(bootstrap_script_path)
-                    if platform.system() == 'Windows':
-                        os.chmod(bootstrap_script_path,
-                                 bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                        bootstrap_scripts = "{}".format(bootstrap_script_path)
-                    else:
-                        os.chmod(bootstrap_script_path,
-                                 bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                        bootstrap_scripts = "cd {}; ./{}".format(
-                            bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+            logging.info("Bootstrap commands are being executed...")
+            process, error_list = ClientConstants.execute_commands_with_live_logs(bootstrap_cmd_list,
+                                                                                  callback=self.callback_run_bootstrap)
 
-                    bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
-                    logging.info("Bootstrap scripts are being executed...")
+            ret_code, out, err = process.returncode, None, None
+            if ret_code is None or ret_code <= 0:
+                if error_list is not None and len(error_list) > 0:
+                    is_bootstrap_run_ok = False
+                else:
+                    if out is not None:
+                        out_str = sys_utils.decode_our_err_result(out)
+                        if out_str != "":
+                            logging.info("{}".format(out_str))
 
-                    shell_cmd_list = list()
-                    shell_cmd_list.append(bootstrap_scripts)
-                    process, error_list = ClientConstants.execute_commands_with_live_logs(
-                        shell_cmd_list, callback=self.callback_run_bootstrap)
+                    sys_utils.log_return_info(bootstrap_script_file, 0)
 
-                    ret_code, out, err = process.returncode, None, None
-                    if ret_code is None or ret_code <= 0:
-                        if error_list is not None and len(error_list) > 0:
-                            is_bootstrap_run_ok = False
-                        else:
-                            if out is not None:
-                                out_str = sys_utils.decode_our_err_result(out)
-                                if out_str != "":
-                                    logging.info("{}".format(out_str))
+                    is_bootstrap_run_ok = True
+            else:
+                if err is not None:
+                    err_str = sys_utils.decode_our_err_result(err)
+                    if err_str != "":
+                        logging.error("{}".format(err_str))
 
-                            sys_utils.log_return_info(bootstrap_script_file, 0)
+                sys_utils.log_return_info(bootstrap_script_file, ret_code)
 
-                            is_bootstrap_run_ok = True
-                    else:
-                        if err is not None:
-                            err_str = sys_utils.decode_our_err_result(err)
-                            if err_str != "":
-                                logging.error("{}".format(err_str))
-
-                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
-
-                        is_bootstrap_run_ok = False
-        except Exception as e:
+                is_bootstrap_run_ok = False
+        except Exception:
             logging.error("Bootstrap script error: {}".format(traceback.format_exc()))
             is_bootstrap_run_ok = False
-
         return is_bootstrap_run_ok
 
     def callback_run_bootstrap(self, job_pid):
         ClientConstants.save_bootstrap_process(self.run_id, job_pid)
-
 
     def run(self, process_event, completed_event):
         print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
@@ -462,7 +418,6 @@ class FedMLClientRunner:
             logging.info("Received completed event.")
             raise RunnerCompletedError("Runner completed")
 
-
     def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
@@ -498,18 +453,18 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        logging.info("download packages and run the bootstrap script...")
+        logging.info("Download packages")
 
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
-        if unzip_package_path is None or fedml_config_object is None:
-            logging.info("failed to update local fedml config.")
-            self.check_runner_stop_event()
-            # Send failed msg when exceptions.
-            self.cleanup_run_when_starting_failed(status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION)
-            return
+        # if unzip_package_path is None or fedml_config_object is None:
+        #     logging.info("failed to update local fedml config.")
+        #     self.check_runner_stop_event()
+        #     # Send failed msg when exceptions.
+        #     self.cleanup_run_when_starting_failed(status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION)
+        #     return
 
-        logging.info("cleanup the previous learning process and check downloaded packages...")
+        logging.info("Check downloaded packages...")
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
@@ -517,8 +472,11 @@ class FedMLClientRunner:
         entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
-        ClientConstants.cleanup_learning_process(run_id)
-        ClientConstants.cleanup_bootstrap_process(run_id)
+        #####
+        # ClientConstants.cleanup_learning_process(run_id)
+        # ClientConstants.cleanup_bootstrap_process(run_id)
+        #####
+
         if not os.path.exists(unzip_package_path):
             logging.info("failed to unzip file.")
             self.check_runner_stop_event()
@@ -541,7 +499,8 @@ class FedMLClientRunner:
         process, is_launch_task, error_list = self.execute_job_task(unzip_package_path=unzip_package_path,
                                                                     entry_file_full_path=entry_file_full_path,
                                                                     conf_file_full_path=conf_file_full_path,
-                                                                    dynamic_args_config=dynamic_args_config)
+                                                                    dynamic_args_config=dynamic_args_config,
+                                                                    fedml_config_object=fedml_config_object)
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
@@ -598,8 +557,8 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 server_id=self.server_id, run_id=run_id)
 
-
-    def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config):
+    def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
+                         fedml_config_object):
         run_config = self.request_json["run_config"]
         run_params = run_config.get("parameters", {})
         client_rank = self.request_json.get("client_rank", 1)
@@ -616,6 +575,48 @@ class FedMLClientRunner:
         entry_args_dict = conf_file_object.get("fedml_entry_args", {})
         entry_args = entry_args_dict.get("arg_items", None)
         scheduler_match_info = self.request_json.get("scheduler_match_info", {})
+
+        # Bootstrap Info
+        bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
+        env_args = fedml_config_object.get("environment_args", None)
+        if env_args is not None:
+            bootstrap_script_file = env_args.get("bootstrap", None)
+            if bootstrap_script_file is not None:
+                bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+                if platform.system() == 'Windows':
+                    bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
+                if bootstrap_script_file is not None:
+                    bootstrap_script_dir = os.path.join(unzip_package_path, "fedml",
+                                                        os.path.dirname(bootstrap_script_file))
+                    bootstrap_script_path = os.path.join(
+                        bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
+                    )
+
+        bootstrap_cmd_list = list()
+        if bootstrap_script_path:
+            logging.info("Bootstrap commands are being generated...")
+            bootstrap_cmd_list = JobRunnerUtils.generate_bootstrap_commands(bootstrap_script_path=bootstrap_script_path,
+                                                                            bootstrap_script_dir=bootstrap_script_dir,
+                                                                            bootstrap_script_file=bootstrap_script_file)
+            logging.info(f"Generated following Bootstrap commands: {bootstrap_cmd_list}")
+
+        if not containerize:
+            if len(bootstrap_cmd_list) and not (job_type == Constants.JOB_TASK_TYPE_DEPLOY or
+                                                job_type == Constants.JOB_TASK_TYPE_SERVE):
+                bootstrapping_successful = self.run_bootstrap_script(bootstrap_cmd_list=bootstrap_cmd_list,
+                                                                     bootstrap_script_file=bootstrap_script_file)
+
+                if not bootstrapping_successful:
+                    logging.info("failed to update local fedml config.")
+                    self.check_runner_stop_event()
+                    # Send failed msg when exceptions.
+                    self.cleanup_run_when_starting_failed(status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION)
+                    raise Exception(f"Failed to execute following bootstrap commands: {bootstrap_cmd_list}")
+
+                logging.info("cleanup the previous learning process and bootstrap process...")
+                ClientConstants.cleanup_learning_process(self.request_json["runId"])
+                ClientConstants.cleanup_bootstrap_process(self.request_json["runId"])
+
         executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
             if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
 
@@ -650,13 +651,14 @@ class FedMLClientRunner:
             if containerize:
                 docker_args = DockerArgs()
                 try:
-                    job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args = docker_args,
+                    job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
                                                                                            run_id=self.run_id,
-                                                                                           edge_id = self.edge_id,
-                                                                                           unzip_package_path = unzip_package_path,
-                                                                                           executable_interpreter = executable_interpreter,
-                                                                                           entry_file_full_path = entry_file_full_path,
-                                                                                           cuda_visible_gpu_ids_str = self.cuda_visible_gpu_ids_str)
+                                                                                           edge_id=self.edge_id,
+                                                                                           unzip_package_path=unzip_package_path,
+                                                                                           executable_interpreter=executable_interpreter,
+                                                                                           bootstrap_cmd_list=bootstrap_cmd_list,
+                                                                                           entry_file_full_path=entry_file_full_path,
+                                                                                           cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
                 except Exception:
                     logging.error(f"Exception while generating containerized launch commands: {traceback.format_exc()}")
                     return None, None, None
@@ -791,8 +793,8 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ClientAgent_Metrics_@{}@_@{}@_@{}@_@{}@".format(self.user_name, self.args.current_device_id,
-                                                        str(os.getpid()),
-                                                        str(uuid.uuid4()))
+                                                                   str(os.getpid()),
+                                                                   str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
@@ -859,7 +861,6 @@ class FedMLClientRunner:
             sys_utils.do_upgrade(self.version, upgrade_version)
 
             raise Exception("Restarting after upgraded...")
-
 
     def callback_start_train(self, topic, payload):
         # Get training params
@@ -949,7 +950,6 @@ class FedMLClientRunner:
         self.run_process_map[run_id_str].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
 
-
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
         # logging.info(
@@ -1002,7 +1002,6 @@ class FedMLClientRunner:
                 JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
         except Exception as e:
             pass
-
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1077,7 +1076,6 @@ class FedMLClientRunner:
 
             # Stop log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
-
 
     def callback_report_current_status(self, topic, payload):
         logging.info(
@@ -1395,7 +1393,6 @@ class FedMLClientRunner:
                 self.callback_start_train(topic_start_train, current_job.running_json)
         except Exception as e:
             logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
-
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
