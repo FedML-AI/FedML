@@ -571,7 +571,8 @@ class FedMLClientRunner:
         job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
-        containerize = job_yaml.get("containerize", True)
+        containerize = fedml_config_object.get("containerize", True)
+        logging.info(f"DEBUG Alay containerize: {containerize}")
         # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
@@ -587,7 +588,6 @@ class FedMLClientRunner:
 
             bootstrap_script_file = env_args.get("bootstrap", None)
             if bootstrap_script_file is not None:
-                logging.info(f"Alay Debug: {bootstrap_script_file}")
                 bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
                 if platform.system() == 'Windows':
                     bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
@@ -597,11 +597,9 @@ class FedMLClientRunner:
                     bootstrap_script_path = os.path.join(
                         bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
                     )
-                    logging.info(f"Alay Debug: {bootstrap_script_dir}, {bootstrap_script_path}")
 
 
         bootstrap_cmd_list = list()
-        logging.info(f"Alay Debug: {bootstrap_cmd_list}, {bootstrap_cmd_list}")
         if bootstrap_script_path:
             logging.info("Bootstrap commands are being generated...")
             bootstrap_cmd_list = JobRunnerUtils.generate_bootstrap_commands(bootstrap_script_path=bootstrap_script_path,
@@ -658,7 +656,10 @@ class FedMLClientRunner:
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             if containerize:
-                docker_args = DockerArgs()
+                docker_args = fedml_config_object.get("docker", None)
+                logging.info(f"DEBUG Alay docker_args: {docker_args}")
+                docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
+                logging.info(f"DEBUG Alay docker_args from instance: {docker_args}")
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
                                                                                            run_id=self.run_id,

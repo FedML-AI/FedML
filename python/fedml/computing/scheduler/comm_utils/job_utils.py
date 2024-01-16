@@ -12,11 +12,12 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from fedml.core.common.singleton import Singleton
 from typing import List
 import threading
 import json
+from fedml.utils.debugging import debug
 
 
 @dataclass
@@ -233,6 +234,22 @@ class JobRunnerUtils(Singleton):
         gpu_count = len(gpu_list)
         realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
         return gpu_list, realtime_available_gpu_ids
+
+    @staticmethod
+    @debug
+    def create_instance_from_dict(data_class, input_dict):
+        # Get the fields of the data class
+        data_class_fields = fields(data_class)
+
+        # Create an instance of the data class
+        instance = data_class()
+
+        # Set attributes based on input_dict
+        for field in data_class_fields:
+            if field.name in input_dict:
+                setattr(instance, field.name, input_dict[field.name])
+
+        return instance
 
     @staticmethod
     def generate_bootstrap_commands(bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file):
