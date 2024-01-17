@@ -44,7 +44,6 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
-from fedml.utils.debugging import debug
 
 
 class RunnerError(Exception):
@@ -279,7 +278,6 @@ class FedMLClientRunner:
         self.build_dynamic_args(run_id, run_config, package_conf_object, unzip_package_path)
         return unzip_package_path, package_conf_object
 
-    @debug
     def build_dynamic_args(self, run_id, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
         fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
@@ -559,7 +557,6 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 server_id=self.server_id, run_id=run_id)
 
-    @debug
     def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
                          fedml_config_object):
         run_config = self.request_json["run_config"]
@@ -571,7 +568,7 @@ class FedMLClientRunner:
         job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
-        containerize = job_yaml.get("containerize", True)
+        containerize = fedml_config_object.get("containerize", True)
         # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
@@ -582,12 +579,11 @@ class FedMLClientRunner:
         # Bootstrap Info
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
         env_args = fedml_config_object.get("environment_args", None)
-        logging.info(f"Alay Debug: {env_args}")
+
         if env_args is not None:
 
             bootstrap_script_file = env_args.get("bootstrap", None)
             if bootstrap_script_file is not None:
-                logging.info(f"Alay Debug: {bootstrap_script_file}")
                 bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
                 if platform.system() == 'Windows':
                     bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
@@ -597,11 +593,8 @@ class FedMLClientRunner:
                     bootstrap_script_path = os.path.join(
                         bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
                     )
-                    logging.info(f"Alay Debug: {bootstrap_script_dir}, {bootstrap_script_path}")
-
 
         bootstrap_cmd_list = list()
-        logging.info(f"Alay Debug: {bootstrap_cmd_list}, {bootstrap_cmd_list}")
         if bootstrap_script_path:
             logging.info("Bootstrap commands are being generated...")
             bootstrap_cmd_list = JobRunnerUtils.generate_bootstrap_commands(bootstrap_script_path=bootstrap_script_path,
@@ -658,7 +651,8 @@ class FedMLClientRunner:
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             if containerize:
-                docker_args = DockerArgs()
+                docker_args = fedml_config_object.get("docker", None)
+                docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
                                                                                            run_id=self.run_id,
