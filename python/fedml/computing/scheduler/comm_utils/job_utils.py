@@ -238,16 +238,24 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     @debug
     def create_instance_from_dict(data_class, input_dict):
+
         # Get the fields of the data class
         data_class_fields = fields(data_class)
 
         # Create an instance of the data class
         instance = data_class()
 
-        # Set attributes based on input_dict
+        # Set attributes based on input_dict with type checking
         for field in data_class_fields:
             if field.name in input_dict:
-                setattr(instance, field.name, input_dict[field.name])
+                input_value = input_dict[field.name]
+
+                # Perform type checking
+                if not isinstance(input_value, field.type):
+                    raise TypeError(
+                        f"Type mismatch for field '{field.name}'. Expected {field.type}, got {type(input_value)}.")
+
+                setattr(instance, field.name, input_value)
 
         return instance
 
