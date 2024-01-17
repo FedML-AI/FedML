@@ -572,7 +572,6 @@ class FedMLClientRunner:
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
         containerize = fedml_config_object.get("containerize", True)
-        logging.info(f"DEBUG Alay containerize: {containerize}")
         # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
@@ -583,7 +582,7 @@ class FedMLClientRunner:
         # Bootstrap Info
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
         env_args = fedml_config_object.get("environment_args", None)
-        logging.info(f"Alay Debug: {env_args}")
+
         if env_args is not None:
 
             bootstrap_script_file = env_args.get("bootstrap", None)
@@ -657,9 +656,7 @@ class FedMLClientRunner:
 
             if containerize:
                 docker_args = fedml_config_object.get("docker", None)
-                logging.info(f"DEBUG Alay docker_args: {docker_args}")
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
-                logging.info(f"DEBUG Alay docker_args from instance: {docker_args}")
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
                                                                                            run_id=self.run_id,

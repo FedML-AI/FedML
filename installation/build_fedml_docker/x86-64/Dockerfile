@@ -30,7 +30,7 @@ RUN apt update -y && apt install -y --no-install-recommends \
         curl wget vim tmux emacs less unzip \
         htop iftop iotop ca-certificates openssh-client openssh-server \
         rsync iputils-ping net-tools sudo \
-        llvm-9-dev python3-pip git git-lfs
+        python3-pip git git-lfs
 
 RUN git lfs install
 
@@ -94,23 +94,3 @@ RUN eval `ssh-agent -s` && ssh-add ${SSHDIR}/id_rsa
 RUN sudo apt install -y iproute2
 
 EXPOSE 22
-
-
-###############################################################################
-## Supervisor container startup
-###############################################################################
-#ADD ./x86-64/supervisord.conf /etc/supervisor/supervisord.conf
-
-
-##############################################################################
-# Add docker location file
-##############################################################################
-#ADD ./x86-64/docker-location.yml /home/fedml/fedml-client/fedml/data/docker-location.yml
-
-
-##############################################################################
-# Entry Point Script
-##############################################################################
-#ADD ./x86-64/entry-point.sh /batch-runtime-scripts/entry-point.sh
-#RUN sudo chmod 0755 /batch-runtime-scripts/entry-point.sh
-#CMD /batch-runtime-scripts/entry-point.sh
