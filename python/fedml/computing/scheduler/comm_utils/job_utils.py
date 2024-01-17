@@ -17,7 +17,6 @@ from fedml.core.common.singleton import Singleton
 from typing import List
 import threading
 import json
-from fedml.utils.debugging import debug
 
 
 @dataclass
@@ -236,7 +235,6 @@ class JobRunnerUtils(Singleton):
         return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
-    @debug
     def create_instance_from_dict(data_class, input_dict):
 
         # Get the fields of the data class
