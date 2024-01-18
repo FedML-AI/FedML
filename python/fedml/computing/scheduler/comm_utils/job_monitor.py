@@ -316,6 +316,7 @@ class JobMonitor(Singleton):
                                 deployment_result["model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
 
                                 # Send the inference info to the master agent
+                                # TODO: Consistency control
                                 endpoint_sync_protocol.send_sync_inference_info(
                                     device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
                                     model_id, model_version, inference_port)
