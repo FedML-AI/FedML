@@ -238,35 +238,42 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
 
-                # Get the bootstrap commands inside the yaml file
+                # Get the bootstrap and job commands inside the yaml file
                 bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
-                if bootstrap_cmds_str_frm_yaml != "":
-                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-auto-gen.sh"
+                job_cmds_str_frm_yaml = config.get('job', "")
+
+                if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
+                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
                     src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
                     with open(src_bootstrap_file_path, 'w') as f:
+                        f.write("cd /home/fedml/models_serving/\n")
                         f.write(bootstrap_cmds_str_frm_yaml)
+                        f.write("\n")
+                        f.write("cd /home/fedml/models_serving/\n")
+                        f.write(job_cmds_str_frm_yaml)
                 else:
                     src_bootstrap_file_path = ""
 
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', None)
                 extra_envs = config.get('environment_variables', None)
-                logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}")
+
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
-                entry_cmd = config.get('entry_cmd', "")
                 if src_bootstrap_file_path != "":
                     dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
                 else:
                     dst_bootstrap_dir = ""
 
+                # If using customized image, then bootstrap + job will be the entry point
                 enable_custom_image = config.get("enable_custom_image", False)
+                customized_image_entry_cmd = \
+                    "/bin/bash /home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
+
                 docker_registry_user_name = config.get("docker_registry_user_name", "")
                 docker_registry_user_password = config.get("docker_registry_user_password", "")
                 docker_registry = config.get("docker_registry", "")
-                logging.info(f"entry_cmd is {entry_cmd}, enable_custom_image is {enable_custom_image} ")
 
                 port_inside_container = int(config.get("port_inside_container", 2345))
                 use_triton = config.get("use_triton", False)
@@ -464,7 +471,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 mem_limit=memory,
             ),
             detach=True,
-            command=entry_cmd if enable_custom_image else None
+            command=customized_image_entry_cmd if enable_custom_image else None
         )
         client.api.start(container=new_container.get("Id"))
 
