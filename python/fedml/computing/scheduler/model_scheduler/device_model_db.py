@@ -115,6 +115,15 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
     
+    def delete_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        self.open_job_db()
+        self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+            and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                 FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                 FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                 FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).delete()
+        self.db_connection.commit()
+
     def delete_deployment_run_info(self, end_point_id):
         # db / table -> model-deployment.db / "deployment_run_info"
         self.open_job_db()
@@ -266,13 +275,16 @@ class FedMLModelDatabase(Singleton):
     def set_deployment_results_info(self, end_point_id, end_point_name,
                                     model_name, model_version, device_id,
                                     deployment_result=None, deployment_status=None):
+        '''
+        end_point_id + device_id is unique identifier, 
+        we do not allow duplicate records
+        '''
         self.open_job_db()
         result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
             filter(and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
                         FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
                         FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
-                        FedMLDeploymentResultInfoModel.model_version == f'{model_version}'),
-                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}').first()
+                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).first()
         # Insert
         if result_info is None:
             result_info = FedMLDeploymentResultInfoModel(end_point_id=end_point_id,
@@ -286,6 +298,8 @@ class FedMLModelDatabase(Singleton):
             self.db_connection.commit()
             return
         # Update
+        if model_version is not None:
+            result_info.model_version = model_version
         if deployment_result is not None:
             result_info.deployment_result = deployment_result
         if deployment_status is not None:
