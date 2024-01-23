@@ -31,6 +31,8 @@ from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
+from ..model_scheduler.device_server_constants import ServerConstants
+
 
 class JobMonitor(Singleton):
     ENDPOINT_CONTAINER_LOG_PREFIX = "endpoint"
@@ -547,7 +549,8 @@ class JobMonitor(Singleton):
 
         return False, None
 
-    def _check_all_slave_endpoint_status(self, endpoint_id, endpoint_name, model_name):
+    def _check_all_slave_endpoint_status(self, endpoint_id, endpoint_name, model_name, 
+                                         server_internal_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
         # Get model deployment result
         is_endpoint_offline = True
         gateway_device_id = None
@@ -569,7 +572,7 @@ class JobMonitor(Singleton):
                     gateway_result_payload_for_ready = result_payload
                     url_parsed = urlparse(result_payload.get("model_url", ""))
                     gateway_result_payload_for_ready[
-                        "model_url"] = f"http://localhost:{url_parsed.port}{url_parsed.path}"
+                        "model_url"] = f"http://localhost:{server_internal_port}{url_parsed.path}"
                 else:
                     if self._check_and_reset_endpoint_status(
                             endpoint_id, result_device_id, result_payload, only_check_inference_ready_status=True,
@@ -614,8 +617,11 @@ class JobMonitor(Singleton):
                         continue
                     try:
                         # If the endpoint is offline, then report offline status to the MLOps.
+                        model_config_parameters = model_config.get("parameters", {})
+                        server_internal_port = model_config_parameters.get("server_internal_port", 
+                                                                    ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                         is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name,
-                                                                                   model_name)
+                                                                                   model_name, server_internal_port)
                         if not is_endpoint_online:
                             print(f"[Master][{job.job_id}] Due to all worker is offline, set endpoint status to "
                                   f"offline after deployed .")
@@ -657,7 +663,11 @@ class JobMonitor(Singleton):
                             device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
                     # If the endpoint is offline, then report offline status to the MLOps.
-                    is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name, model_name)
+                    model_config_parameters = model_config.get("parameters", {})
+                    server_internal_port = model_config_parameters.get("server_internal_port", 
+                                                                ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                    is_endpoint_online = self._check_all_slave_endpoint_status(
+                        job.job_id, endpoint_name, model_name, server_internal_port)
                     if is_endpoint_online:
                         print(f"[Master][{job.job_id}] Due to all worker is from offline to online, "
                               f"set endpoint status to online.")
