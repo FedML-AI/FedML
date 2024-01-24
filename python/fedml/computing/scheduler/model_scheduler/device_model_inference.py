@@ -144,7 +144,7 @@ async def _predict(
         in_return_type = header.get("Accept", "default")
 
     if in_model_version is None:
-        in_model_version = "latest"
+        in_model_version = "*"  # * | latest | specific version
 
     start_time = time.time_ns()
 

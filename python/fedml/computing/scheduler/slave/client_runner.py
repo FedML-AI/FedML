@@ -568,7 +568,7 @@ class FedMLClientRunner:
         job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
-        containerize = fedml_config_object.get("containerize", True)
+        containerize = fedml_config_object.get("containerize", None)
         # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
@@ -581,7 +581,6 @@ class FedMLClientRunner:
         env_args = fedml_config_object.get("environment_args", None)
 
         if env_args is not None:
-
             bootstrap_script_file = env_args.get("bootstrap", None)
             if bootstrap_script_file is not None:
                 bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
@@ -650,7 +649,7 @@ class FedMLClientRunner:
                 job_api_key, client_rank, scheduler_match_info=scheduler_match_info,
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
-            if containerize:
+            if containerize is not None and containerize is True:
                 docker_args = fedml_config_object.get("docker", None)
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
                 try:

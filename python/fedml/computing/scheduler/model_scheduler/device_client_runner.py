@@ -137,6 +137,8 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
+        logging.info("Download from package_url {}".format(package_url))
+
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
         urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
@@ -211,13 +213,19 @@ class FedMLClientRunner:
         # Load the config to memory
         package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
-        if model_config_parameters is not None:
-            package_conf_object = model_config_parameters
-            with open(fedml_local_config_file, 'w') as f:
-                json.dump(package_conf_object, f)
+        if os.path.exists(fedml_local_config_file):
+            package_conf_object = load_yaml_config(fedml_local_config_file)
         else:
-            if os.path.exists(fedml_local_config_file):
-                package_conf_object = load_yaml_config(fedml_local_config_file)
+            if model_config_parameters is not None:
+                logging.warning(f"The fedml_local_config_file {fedml_local_config_file} does not exist, will \
+                                    create a new one with the model_config_parameters from json.")
+                package_conf_object = model_config_parameters
+                with open(fedml_local_config_file, 'w') as f:
+                    json.dump(package_conf_object, f)
+            else:
+                logging.info(f"The fedml_local_config_file {fedml_local_config_file} does not exist,\
+                             and the model_config_parameters is None.")
+        logging.info("The package_conf_object is {}".format(package_conf_object))
 
         return unzip_package_path, model_bin_file, package_conf_object
 
@@ -803,12 +811,9 @@ class FedMLClientRunner:
                 pass
 
         FedMLClientDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
-        FedMLModelDatabase.get_instance().delete_deployment_status(
+        FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
-        FedMLModelDatabase.get_instance().delete_deployment_result(
-            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
+            self.edge_id)
 
     def exit_run_with_exception_entry(self):
         try:
