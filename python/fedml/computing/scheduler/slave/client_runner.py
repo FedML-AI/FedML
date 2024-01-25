@@ -575,6 +575,8 @@ class FedMLClientRunner:
         entry_args_dict = conf_file_object.get("fedml_entry_args", {})
         entry_args = entry_args_dict.get("arg_items", None)
         scheduler_match_info = self.request_json.get("scheduler_match_info", {})
+        if job_type == Constants.JOB_TASK_TYPE_TRAIN:
+            containerize = True if containerize is None else containerize
 
         # Bootstrap Info
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
