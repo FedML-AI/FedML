@@ -1,7 +1,7 @@
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
-workspace: federated_mnist
+workspace: federated_mnist_sp
 
 # Running entry commands which will be executed as the job entry point.
 # If an error occurs, you should exit with a non-zero code, e.g. exit 1.
@@ -25,14 +25,12 @@ server_job: |
   echo "Current directory is as follows."
   python3 torch_server.py --cf config/fedml_config.yaml --rank 0 --role server --run_id $FEDML_CURRENT_RUN_ID
 
-job_type: federate              # options: train, deploy, federate
-fedml_env:
-  federate_project_name: Cheetah_HelloWorld
+job_type: train              # options: train, deploy, federate
 
 # train subtype: general_training, single_machine_training, cluster_distributed_training, cross_cloud_training
 # federate subtype: cross_silo, simulation, web, smart_phone
 # deploy subtype: none
-job_subtype: simulation
+job_subtype: general_training
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
@@ -45,4 +43,4 @@ computing:
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
   #device_type: CPU              # options: GPU, CPU, hybrid
-  resource_type: A100-80GB-SXM      # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: A100-80GB      # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
