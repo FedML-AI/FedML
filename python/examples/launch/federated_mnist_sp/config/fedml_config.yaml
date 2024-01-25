@@ -1,7 +1,5 @@
 common_args:
-  training_type: "simulation" # "simulation", "cross_silo"
-  # scenario: "horizontal"
-  # using_mlops: false
+  training_type: "simulation"
   random_seed: 0
 
 environment_args:
