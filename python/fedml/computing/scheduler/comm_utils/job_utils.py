@@ -405,10 +405,12 @@ class JobRunnerUtils(Singleton):
 
         docker_command = ["docker", "run", "-t", "--rm", "--name", f"{container_name}"]
 
-        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as dockeer command instead:
+        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as docker command instead:
         if cuda_visible_gpu_ids_str is not None:
             JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
-            docker_command.extend(["--gpus", f'"{cuda_visible_gpu_ids_str}"'])
+            # docker command expects device ids in such format: '"device=0,2,3"'
+            device_str = f'"device={cuda_visible_gpu_ids_str}"'
+            docker_command.extend(["--gpus", f"'{device_str}'"])
 
         # Add Port Mapping
         for port in docker_args.ports:
