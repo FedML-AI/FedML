@@ -652,7 +652,7 @@ class FedMLClientRunner:
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             if containerize is not None and containerize is True:
-                docker_args = fedml_config_object.get("docker", None)
+                docker_args = fedml_config_object.get("docker", {})
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
@@ -1075,6 +1075,12 @@ class FedMLClientRunner:
             if run_process is not None:
                 if run_process.pid is not None:
                     RunProcessUtils.kill_process(run_process.pid)
+
+                    # Terminate the run docker container if exists
+                    container_name = JobRunnerUtils.get_run_container_name(run_id)
+                    docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                    logging.info(f"Terminating the run docker container {container_name} if exists...")
+                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
 
                 self.run_process_map.pop(run_id_str)
 
