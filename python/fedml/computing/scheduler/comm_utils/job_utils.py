@@ -235,7 +235,7 @@ class JobRunnerUtils(Singleton):
         return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
-    def create_instance_from_dict(data_class, input_dict):
+    def create_instance_from_dict(data_class, input_dict: {}):
 
         # Get the fields of the data class
         data_class_fields = fields(data_class)
@@ -374,11 +374,13 @@ class JobRunnerUtils(Singleton):
         return shell_cmd_list
 
     @staticmethod
-    def generate_launch_docker_command(docker_args: DockerArgs, docker_client: DockerClient, run_id: int, edge_id: int,
+    def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int,
                                        unzip_package_path: str, executable_interpreter: str, entry_file_full_path: str,
                                        bootstrap_cmd_list, cuda_visible_gpu_ids_str=None) -> List[str]:
 
         shell_command = list()
+
+        docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
 
         container_name = JobRunnerUtils.get_run_container_name(run_id)
         JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)

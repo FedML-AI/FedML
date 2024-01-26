@@ -76,7 +76,6 @@ class FedMLClientRunner:
         self.current_training_status = None
         self.mqtt_mgr = None
         self.client_mqtt_mgr = None
-        self.docker_client = None
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.edge_id = edge_id
@@ -653,12 +652,10 @@ class FedMLClientRunner:
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             if containerize is not None and containerize is True:
-                docker_args = fedml_config_object.get("docker", None)
+                docker_args = fedml_config_object.get("docker", {})
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
-                docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
-                                                                                           docker_client=docker_client,
                                                                                            run_id=self.run_id,
                                                                                            edge_id=self.edge_id,
                                                                                            unzip_package_path=unzip_package_path,
@@ -1078,13 +1075,12 @@ class FedMLClientRunner:
             if run_process is not None:
                 if run_process.pid is not None:
                     RunProcessUtils.kill_process(run_process.pid)
-                    if self.docker_client:
-                        # Terminate the run docker container if exists
-                        container_name = JobRunnerUtils.get_run_container_name(run_id)
-                        logging.info(f"Terminating the run docker container {container_name} if exists...")
-                        JobRunnerUtils.remove_run_container_if_exists(container_name, self.docker_client)
-                    else:
-                        logging.info(f"Docker client is not initialized, skip terminating the run docker container.")
+
+                    # Terminate the run docker container if exists
+                    container_name = JobRunnerUtils.get_run_container_name(run_id)
+                    docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                    logging.info(f"Terminating the run docker container {container_name} if exists...")
+                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
 
                 self.run_process_map.pop(run_id_str)
 
