@@ -117,12 +117,28 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     def request_gpu_ids(request_gpu_num, available_gpu_ids):
         available_gpu_count = len(available_gpu_ids)
-        request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
-        matched_gpu_num = min(available_gpu_count, request_gpu_num)
-        if matched_gpu_num <= 0 or matched_gpu_num != request_gpu_num:
+        logging.info(
+            f"FedMLDebug - request_gpu_ids: request_gpu_mun ({request_gpu_num}), "
+            f"available_gpu_count: ({available_gpu_count}), available_gpu_ids ({available_gpu_ids})")
+
+        if request_gpu_num is None or request_gpu_num <= 0:
+            logging.info("FedMLDebug - request_gpu_ids: request_gpu_num is None or <= 0. Return None.")
             return None, None, None
 
+        matched_gpu_num = min(available_gpu_count, request_gpu_num)
+
+        logging.info(
+            f"FedMLDebug - request_gpu_ids: request_gpu_mun ({request_gpu_num}), "
+            f"available_gpu_count: ({available_gpu_count}), available_gpu_ids ({available_gpu_ids})")
+
+        if matched_gpu_num <= 0 or matched_gpu_num != request_gpu_num:
+            raise Exception(f"Failed to request {request_gpu_num} GPUs, only {matched_gpu_num} GPUs available.")
+
         matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
+
+        logging.info(
+            f"FedMLDebug - request_gpu_ids: request_gpu_mun ({request_gpu_num}), mat")
+
         cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
         return cuda_visible_gpu_ids_str, matched_gpu_num, matched_gpu_ids
 

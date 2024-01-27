@@ -926,7 +926,7 @@ class FedMLClientRunner:
         serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
-            run_id, matched_gpu_num, self.edge_id, inner_id=endpoint_id,
+            run_id=run_id, request_gpu_num=matched_gpu_num, device_id=self.edge_id, inner_id=endpoint_id,
             model_master_device_id=model_master_device_id,
             model_slave_device_id=model_slave_device_id)
         logging.info(
