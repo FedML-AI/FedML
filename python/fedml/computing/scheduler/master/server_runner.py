@@ -1259,6 +1259,13 @@ class FedMLServerRunner:
                            f"Total available GPU count {gpu_available_count} is less than " \
                            f"request GPU count {request_num_gpus}"
                 logging.error(err_info)
+
+                # Bug fix: This mqtt message needs to be sent so platform can clean up the failed run and change the
+                # status from running to failed.
+                self.mlops_metrics.report_server_training_status(
+                    self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id
+                )
+
                 self.mlops_metrics.report_server_id_status(
                     run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
                     server_id=self.edge_id, server_agent_id=self.server_agent_id)
