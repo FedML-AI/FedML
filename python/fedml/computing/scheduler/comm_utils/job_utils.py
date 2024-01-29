@@ -235,7 +235,7 @@ class JobRunnerUtils(Singleton):
         return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
-    def create_instance_from_dict(data_class, input_dict):
+    def create_instance_from_dict(data_class, input_dict: {}):
 
         # Get the fields of the data class
         data_class_fields = fields(data_class)
@@ -374,41 +374,25 @@ class JobRunnerUtils(Singleton):
         return shell_cmd_list
 
     @staticmethod
-    def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int, unzip_package_path: str,
-                                       executable_interpreter: str, entry_file_full_path: str, bootstrap_cmd_list,
-                                       cuda_visible_gpu_ids_str=None) -> List[str]:
+    def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int,
+                                       unzip_package_path: str, executable_interpreter: str, entry_file_full_path: str,
+                                       bootstrap_cmd_list, cuda_visible_gpu_ids_str=None) -> List[str]:
 
         shell_command = list()
 
-        # Docker client login
-        try:
-            client = docker.from_env()
-            client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
-        except Exception as e:
-            logging.error(f"Failed to connect to the docker daemon, please ensure that you have "
-                          f"installed Docker Desktop or Docker Engine, and the docker is running. Exception {e}")
-            return shell_command
+        docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
 
-        container_prefix = f"{SchedulerConstants.FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX}"
-        container_name = f"{container_prefix}__{run_id}"
-
-        # Remove container if it already exists
-        try:
-            exist_container_obj = client.containers.get(container_name)
-        except docker.errors.NotFound:
-            exist_container_obj = None
-        except docker.errors.APIError:
-            raise Exception("Failed to get the container object")
-
-        if exist_container_obj is not None:
-            client.api.remove_container(exist_container_obj.id, v=True, force=True)
+        container_name = JobRunnerUtils.get_run_container_name(run_id)
+        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
 
         docker_command = ["docker", "run", "-t", "--rm", "--name", f"{container_name}"]
 
-        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as dockeer command instead:
+        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as docker command instead:
         if cuda_visible_gpu_ids_str is not None:
             JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
-            docker_command.extend(["--gpus", f'"{cuda_visible_gpu_ids_str}"'])
+            # docker command expects device ids in such format: '"device=0,2,3"'
+            device_str = f'"device={cuda_visible_gpu_ids_str}"'
+            docker_command.extend(["--gpus", f"'{device_str}'"])
 
         # Add Port Mapping
         for port in docker_args.ports:
@@ -447,6 +431,38 @@ class JobRunnerUtils(Singleton):
         shell_command.append(" ".join(docker_command))
 
         return shell_command
+
+    @staticmethod
+    def get_run_container_name(run_id: int) -> str:
+        container_prefix = f"{SchedulerConstants.FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX}"
+        container_name = f"{container_prefix}__{run_id}"
+        return container_name
+
+    @staticmethod
+    def get_docker_client(docker_args: DockerArgs) -> DockerClient:
+        try:
+            client = docker.from_env()
+            client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
+        except Exception as e:
+            raise Exception(f"Failed to connect to the docker daemon, please ensure that you have "
+                            f"installed Docker Desktop or Docker Engine, and the docker is running. Exception {e}")
+        return client
+
+    @staticmethod
+    def remove_run_container_if_exists(container_name: str, client: DockerClient):
+
+        try:
+            exist_container_obj = client.containers.get(container_name)
+            logging.info(f"Container {container_name} found")
+        except docker.errors.NotFound:
+            logging.info(f"Container {container_name} not found")
+            exist_container_obj = None
+        except docker.errors.APIError:
+            raise Exception("Failed to get the container object")
+
+        if exist_container_obj is not None:
+            client.api.remove_container(exist_container_obj.id, v=True, force=True)
+            logging.info(f"Container {container_name} removed")
 
     @staticmethod
     def remove_cuda_visible_devices_lines(file_path):

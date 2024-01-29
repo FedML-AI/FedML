@@ -100,19 +100,19 @@ def run(create_run_result: FedMLRunStartedModel, api_key: str, device_server: st
     if create_run_result.job_type == Constants.JOB_TASK_TYPE_FEDERATE:
         device_server = create_run_result.server_agent_id
         device_edges = [int(gpu_machine.gpu_id) for gpu_machine in create_run_result.gpu_matched]
-        federate_launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_OCTOPUS,
-                                       create_run_result=create_run_result,
-                                       device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
-                                       feature_entry_point=feature_entry_point)
+        launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_OCTOPUS,
+                              create_run_result=create_run_result,
+                              device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                              feature_entry_point=feature_entry_point)
+        if launch_result is not None:
+            launch_result.inner_id = launch_result.run_id
+    else:
+        # Start the run
+        launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, create_run_result=create_run_result,
+                              device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
+                              feature_entry_point=feature_entry_point)
 
-    # Start the run
-    launch_result = start(platform=SchedulerConstants.PLATFORM_TYPE_FALCON, create_run_result=create_run_result,
-                          device_server=device_server, device_edges=device_edges, api_key=get_api_key(),
-                          feature_entry_point=feature_entry_point)
-    if federate_launch_result is not None:
-        launch_result.inner_id = federate_launch_result.run_id
-
-    return federate_launch_result if federate_launch_result is not None else launch_result
+    return launch_result
 
 
 def job(

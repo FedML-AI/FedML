@@ -110,9 +110,10 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     edge_id = -1
     user_name = None
     extra_url = None
+    general_edge_id = None
     while register_try_count < 5:
         try:
-            edge_id, user_name, extra_url = runner.bind_account_and_device_id(
+            edge_id, user_name, extra_url, general_edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
                 api_key=api_key, role=role
             )
@@ -150,6 +151,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     runner.user_name = user_name
+    runner.general_edge_id = general_edge_id
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
@@ -224,9 +226,10 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
     edge_id = -1
     user_name = None
     extra_url = None
+    general_edge_id = None
     while register_try_count < 5:
         try:
-            edge_id, _, _ = runner.bind_account_and_device_id(
+            edge_id, _, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id,
                 unique_device_id, args.os_name, role="simulator"
             )

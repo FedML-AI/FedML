@@ -1179,6 +1179,7 @@ class FedMLServerRunner:
             for edge_id in edge_id_list:
                 edge_info_dict = run_edges_realtime_status.get(run_id_str, {})
                 edge_info = edge_info_dict.get(edge_id, None)
+                edge_info = edge_info_dict.get(str(edge_id), None) if edge_info is None else edge_info
                 if edge_info is not None:
                     active_edges_count += 1
                     active_edge_info_dict[str(edge_id)] = edge_info

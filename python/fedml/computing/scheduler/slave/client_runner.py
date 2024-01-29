@@ -124,6 +124,7 @@ class FedMLClientRunner:
         # logging.info("Current directory of client agent: " + self.cur_dir)
         self.subscribed_topics = list()
         self.user_name = None
+        self.general_edge_id = None
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -135,8 +136,8 @@ class FedMLClientRunner:
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
         server_edge_id_list = self.request_json["edgeids"]
-        local_edge_id_list = [1]
-        local_edge_id_list[0] = self.edge_id
+        local_edge_id_list = list()
+        local_edge_id_list.append(int(self.edge_id))
         is_using_local_data = 0
         private_data_dir = data_config.get("privateLocalData", "")
         synthetic_data_url = data_config.get("syntheticDataUrl", "")
@@ -156,7 +157,11 @@ class FedMLClientRunner:
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.SYNTHETIC_DATA_URL}"] = synthetic_data_url.replace(" ", "")
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.IS_USING_LOCAL_DATA}"] = str(is_using_local_data)
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_NUM}"] = len(server_edge_id_list)
-        self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_INDEX}"] = server_edge_id_list.index(self.edge_id) + 1
+        self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_INDEX}"] = 1
+        for cur_index, id_value in enumerate(server_edge_id_list):
+            if str(id_value) == str(self.edge_id):
+                self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_INDEX}"] = cur_index + 1
+                break
         client_objects = str(json.dumps(edges))
         client_objects = client_objects.replace(" ", "").replace("\n", "").replace('"', '\\"')
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_OBJECT_LIST}"] = client_objects
@@ -652,7 +657,7 @@ class FedMLClientRunner:
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
             if containerize is not None and containerize is True:
-                docker_args = fedml_config_object.get("docker", None)
+                docker_args = fedml_config_object.get("docker", {})
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
                 try:
                     job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=docker_args,
@@ -876,11 +881,12 @@ class FedMLClientRunner:
         run_id = request_json["runId"]
 
         # Start log processor for current run
+        train_edge_id = str(topic).split("/")[-2]
         self.args.run_id = run_id
-        self.args.edge_id = self.edge_id
+        self.args.edge_id = train_edge_id
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
-            run_id, self.edge_id, log_source=SchedulerConstants.get_log_source(request_json))
+            run_id, train_edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")
 
         try:
@@ -898,9 +904,9 @@ class FedMLClientRunner:
             )
             # Send failed msg when exceptions.
             self.mlops_metrics.report_client_id_status(
-                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION, run_id=run_id,
-                msg=f"the client agent {self.edge_id} is disabled")
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
+                train_edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION, run_id=run_id,
+                msg=f"the client agent {train_edge_id} is disabled")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, train_edge_id)
             return
 
         logging.info(
@@ -910,7 +916,7 @@ class FedMLClientRunner:
         # Terminate previous process about starting or stopping run command
         logging.info("cleanup and save runner information")
         server_agent_id = request_json["cloud_agent_id"]
-        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
+        ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, train_edge_id, run_id=run_id)
 
         # OTA upgrade
         self.ota_upgrade(payload, request_json)
@@ -926,18 +932,18 @@ class FedMLClientRunner:
         serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
         cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
-            run_id, matched_gpu_num, self.edge_id, inner_id=endpoint_id,
+            run_id, matched_gpu_num, train_edge_id, inner_id=endpoint_id,
             model_master_device_id=model_master_device_id,
             model_slave_device_id=model_slave_device_id)
         logging.info(
-            f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)}")
+            f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(train_edge_id)}")
 
         # Start server with multiprocessing mode
         self.request_json = request_json
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
         client_runner = FedMLClientRunner(
-            self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id,
+            self.args, edge_id=train_edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id,
             cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str
         )
         client_runner.start_request_json = payload
@@ -974,7 +980,7 @@ class FedMLClientRunner:
         # Stop client with multiprocessing mode
         run_id_str = str(run_id)
         client_runner = FedMLClientRunner(
-            self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
+            self.args, edge_id=train_edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         client_runner.run_process_event = self.run_process_event_map.get(run_id_str, None)
         client_runner.run_process = self.run_process_map.get(run_id_str, None)
@@ -1029,7 +1035,7 @@ class FedMLClientRunner:
         if is_retain:
             return
         run_id = request_json["run_id"]
-        edge_id = request_json["edge_id"]
+        edge_id = str(topic).split("/")[-2].split('_')[-1]
         status = request_json["status"]
         run_id_str = str(run_id)
 
@@ -1047,7 +1053,7 @@ class FedMLClientRunner:
             # Stop client with multiprocessing mode
             client_runner = FedMLClientRunner(
                 self.args,
-                edge_id=self.edge_id,
+                edge_id=edge_id,
                 request_json=request_json,
                 agent_config=self.agent_config,
                 run_id=run_id,
@@ -1060,7 +1066,7 @@ class FedMLClientRunner:
             running_json = self.running_request_json.get(run_id_str)
             if running_json is None:
                 try:
-                    current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+                    current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
                     running_json = json.loads(current_job.running_json)
                 except Exception as e:
                     current_job = None
@@ -1076,6 +1082,12 @@ class FedMLClientRunner:
                 if run_process.pid is not None:
                     RunProcessUtils.kill_process(run_process.pid)
 
+                    # Terminate the run docker container if exists
+                    container_name = JobRunnerUtils.get_run_container_name(run_id)
+                    docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                    logging.info(f"Terminating the run docker container {container_name} if exists...")
+                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+
                 self.run_process_map.pop(run_id_str)
 
             # Stop log processor for current run
@@ -1087,6 +1099,8 @@ class FedMLClientRunner:
         )
 
         self.send_agent_active_msg()
+        if self.general_edge_id is not None:
+            self.send_agent_active_msg(self.general_edge_id)
 
     @staticmethod
     def process_ota_upgrade_msg():
@@ -1119,6 +1133,7 @@ class FedMLClientRunner:
         payload_json = json.loads(payload)
         server_id = payload_json.get("server_id", 0)
         run_id = payload_json.get("run_id", 0)
+        listen_edge_id = str(topic).split("/")[-1]
         context = payload_json.get("context", None)
         response_topic = f"client/server/response_device_info/{server_id}"
         if self.mlops_metrics is not None and self.model_device_client_list is not None and \
@@ -1132,7 +1147,7 @@ class FedMLClientRunner:
             gpu_cores_available = len(gpu_available_ids)
             gpu_list = sys_utils.get_gpu_list()
             device_info_json = {
-                "edge_id": self.edge_id,
+                "edge_id": listen_edge_id,
                 "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
                 "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
                 "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
@@ -1157,7 +1172,7 @@ class FedMLClientRunner:
             response_payload = {"slave_device_id": self.model_device_client_list[0].get_edge_id(),
                                 "slave_device_id_list": salve_device_ids,
                                 "master_device_id": self.model_device_server.get_edge_id(),
-                                "run_id": run_id, "edge_id": self.edge_id,
+                                "run_id": run_id, "edge_id": listen_edge_id,
                                 "edge_info": device_info_json}
             if context is not None:
                 response_payload["context"] = context
@@ -1335,7 +1350,7 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
-        edge_id, user_name, extra_url = -1, None, None
+        edge_id, user_name, extra_url, general_edge_id = -1, None, None, None
         if response.status_code != 200:
             print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                   f"response.content: {response.content}")
@@ -1347,6 +1362,7 @@ class FedMLClientRunner:
                 edge_id = response.json().get("data").get("id")
                 user_name = response.json().get("data").get("userName", None)
                 extra_url = response.json().get("data").get("url", None)
+                general_edge_id = response.json().get("data").get("general_edge_id", None)
                 if edge_id is None or edge_id <= 0:
                     print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                           f"response.content: {response.content}")
@@ -1355,15 +1371,15 @@ class FedMLClientRunner:
                     raise SystemExit(SchedulerConstants.BINDING_ACCOUNT_NOT_EXIST_ERROR)
                 print(f"Binding to MLOps with response.status_code = {response.status_code}, "
                       f"response.content: {response.content}")
-                return -1, None, None
-        return edge_id, user_name, extra_url
+                return -1, None, None, None
+        return edge_id, user_name, extra_url, general_edge_id
 
     def fetch_configs(self):
         return MLOpsConfigs.fetch_all_configs()
 
-    def send_agent_active_msg(self):
+    def send_agent_active_msg(self, edge_id):
         active_topic = "flclient_agent/active"
-        status = MLOpsStatus.get_instance().get_client_agent_status(self.edge_id)
+        status = MLOpsStatus.get_instance().get_client_agent_status(edge_id)
         if (
                 status is not None
                 and status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE
@@ -1382,8 +1398,8 @@ class FedMLClientRunner:
                 return
         else:
             status = ClientConstants.get_device_state_from_run_edge_state(current_job.status)
-        active_msg = {"ID": self.edge_id, "status": status}
-        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
+        active_msg = {"ID": edge_id, "status": status}
+        MLOpsStatus.get_instance().set_client_agent_status(edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
         logging.info(f"Send agent active msg {active_msg}")
 
@@ -1447,8 +1463,13 @@ class FedMLClientRunner:
         self.subscribed_topics.append(topic_request_device_info)
         self.subscribed_topics.append(topic_client_logout)
 
+        # Subscribe the messages for federated learning.
+        self.subscribe_fl_msgs()
+
         # Broadcast the first active message.
-        self.send_agent_active_msg()
+        self.send_agent_active_msg(self.edge_id)
+        if self.general_edge_id is not None:
+            self.send_agent_active_msg(self.general_edge_id)
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
@@ -1467,6 +1488,37 @@ class FedMLClientRunner:
         from fedml.core.mlops import sync_deploy_id
         sync_deploy_id(
             self.edge_id, self.model_device_server.edge_id, worker_deploy_id_list)
+
+    def subscribe_fl_msgs(self):
+        if self.general_edge_id is None:
+            return
+
+        # Setup MQTT message listener for starting training
+        topic_start_train = "flserver_agent/" + str(self.general_edge_id) + "/start_train"
+        self.mqtt_mgr.add_message_listener(topic_start_train, self.callback_start_train)
+
+        # Setup MQTT message listener for stopping training
+        topic_stop_train = "flserver_agent/" + str(self.general_edge_id) + "/stop_train"
+        self.mqtt_mgr.add_message_listener(topic_stop_train, self.callback_stop_train)
+
+        # Setup MQTT message listener for client status switching
+        topic_client_status = "fl_client/flclient_agent_" + str(self.general_edge_id) + "/status"
+        self.mqtt_mgr.add_message_listener(topic_client_status, self.callback_runner_id_status)
+
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_request_device_info = "server/client/request_device_info/" + str(self.general_edge_id)
+        self.mqtt_mgr.add_message_listener(topic_request_device_info, self.callback_report_device_info)
+
+        # Subscribe topics for starting train, stopping train and fetching client status.
+        self.mqtt_mgr.subscribe_msg(topic_start_train)
+        self.mqtt_mgr.subscribe_msg(topic_stop_train)
+        self.mqtt_mgr.subscribe_msg(topic_client_status)
+        self.mqtt_mgr.subscribe_msg(topic_request_device_info)
+
+        self.subscribed_topics.append(topic_start_train)
+        self.subscribed_topics.append(topic_stop_train)
+        self.subscribed_topics.append(topic_client_status)
+        self.subscribed_topics.append(topic_request_device_info)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
