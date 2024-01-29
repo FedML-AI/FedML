@@ -278,11 +278,23 @@ class MLOpsMetrics(object):
         # logging.info("report_server_training_metric. message_json = %s" % metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_fedml_train_metric(self, metric_json, run_id=0):
+    def report_endpoint_metric(self, metric_json, payload=None):
+        # if not self.comm_sanity_check():
+        #     return
+        topic_name = "fl_server/mlops/deploy_progress_and_eval"
+        if payload is not None:
+            message_json = payload
+        else:
+            message_json = json.dumps(metric_json)
+        # logging.info("report_endpoint_metric. message_json = %s" % metric_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
+    def report_fedml_train_metric(self, metric_json, run_id=0, is_endpoint=False):
         # if not self.comm_sanity_check():
         #     return
         topic_name = f"fedml_slave/fedml_master/metrics/{run_id}"
         logging.info("report_fedml_train_metric. message_json = %s" % metric_json)
+        metric_json["is_endpoint"] = is_endpoint
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 

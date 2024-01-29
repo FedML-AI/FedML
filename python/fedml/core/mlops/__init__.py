@@ -189,6 +189,23 @@ def log(metrics: dict, step: int = None, customized_step_key: str = None, commit
                run_id=MLOpsStore.mlops_run_id, edge_id=MLOpsStore.mlops_edge_id)
 
 
+def log_endpoint(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+    if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
+        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
+        return
+
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit,
+               run_id=MLOpsStore.mlops_run_id, edge_id=MLOpsStore.mlops_edge_id, is_endpoint_metric=True)
+
+
 def log_llm_record(metrics: dict, version="release", commit: bool = True) -> None:
     if MLOpsStore.mlops_log_records_lock is None:
         MLOpsStore.mlops_log_records_lock = threading.Lock()
@@ -815,7 +832,7 @@ def log_model(model_name, model_file_path, version=None):
 
 
 def log_metric(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True,
-               run_id=None, edge_id=None):
+               run_id=None, edge_id=None, is_endpoint_metric=False):
     fedml_args = get_fedml_args()
 
     if MLOpsStore.mlops_log_metrics_lock is None:
@@ -843,7 +860,8 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
             return
         MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
         setup_log_mqtt_mgr()
-        MLOpsStore.mlops_metrics.report_fedml_train_metric(MLOpsStore.mlops_log_metrics, run_id=run_id)
+        MLOpsStore.mlops_metrics.report_fedml_train_metric(
+            MLOpsStore.mlops_log_metrics, run_id=run_id, is_endpoint=is_endpoint_metric)
         MLOpsStore.mlops_log_metrics.clear()
         if step is None:
             MLOpsStore.mlops_log_metrics_steps = current_step + 1
