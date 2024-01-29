@@ -1,0 +1,5 @@
+torch>=2.1.0
+vllm>=0.2.7
+xformers
+stanford-stk
+megablocks

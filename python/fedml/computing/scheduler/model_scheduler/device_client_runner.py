@@ -137,6 +137,8 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
+        logging.info("Download from package_url {}".format(package_url))
+
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
         urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
@@ -211,13 +213,19 @@ class FedMLClientRunner:
         # Load the config to memory
         package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
-        if model_config_parameters is not None:
-            package_conf_object = model_config_parameters
-            with open(fedml_local_config_file, 'w') as f:
-                json.dump(package_conf_object, f)
+        if os.path.exists(fedml_local_config_file):
+            package_conf_object = load_yaml_config(fedml_local_config_file)
         else:
-            if os.path.exists(fedml_local_config_file):
-                package_conf_object = load_yaml_config(fedml_local_config_file)
+            if model_config_parameters is not None:
+                logging.warning(f"The fedml_local_config_file {fedml_local_config_file} does not exist, will \
+                                    create a new one with the model_config_parameters from json.")
+                package_conf_object = model_config_parameters
+                with open(fedml_local_config_file, 'w') as f:
+                    json.dump(package_conf_object, f)
+            else:
+                logging.info(f"The fedml_local_config_file {fedml_local_config_file} does not exist,\
+                             and the model_config_parameters is None.")
+        logging.info("The package_conf_object is {}".format(package_conf_object))
 
         return unzip_package_path, model_bin_file, package_conf_object
 
@@ -324,8 +332,10 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config.get("instance_scale_min", 0)
         scale_max = model_config.get("instance_scale_max", 0)
-        inference_port = model_config.get("inference_external_api_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
         model_config_parameters = self.request_json["parameters"]
+
+        inference_port = model_config_parameters.get("worker_internal_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
+        inference_port_external = model_config_parameters.get("worker_external_port", inference_port)
 
         if "diff_devices" in self.request_json and self.device_id in self.request_json["diff_devices"] and \
             self.request_json["diff_devices"][self.device_id] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
@@ -464,13 +474,24 @@ class FedMLClientRunner:
             return False
         else:
             logging.info("finished deployment, continue to send results to master...")
-            status_payload = self.send_deployment_status(
+            status_payload = self.send_deployment_status(   # Send Master the external port
                 end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port)
+                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port_external)
             result_payload = self.send_deployment_results(
                 end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                model_id, model_name, inference_output_url, model_version, inference_port,
+                model_id, model_name, inference_output_url, model_version, inference_port_external,
                 inference_engine, model_metadata, model_config)
+
+            if inference_port_external != inference_port:   # For Worker, use internal port
+                logging.info("inference_port_external {} != inference_port {}".format(
+                    inference_port_external, inference_port))
+                status_payload = self.construct_deployment_status(
+                    end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
+                    ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port)
+                result_payload = self.construct_deployment_results(
+                    end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                    model_id, model_name, inference_output_url, model_version, inference_port,
+                    inference_engine, model_metadata, model_config)
 
             FedMLModelDatabase.get_instance().set_deployment_result(
                 run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(result_payload))
@@ -523,12 +544,10 @@ class FedMLClientRunner:
             if exist_container_obj is not None:
                 client.api.remove_container(exist_container_obj.id, v=True, force=True)
 
-
-    def send_deployment_results(self, end_point_name, device_id, model_status,
+    def construct_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
-        deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -538,6 +557,30 @@ class FedMLClientRunner:
                                       "model_config": model_config,
                                       "model_status": model_status,
                                       "inference_port": inference_port}
+        return deployment_results_payload
+    
+    def construct_deployment_status(self, end_point_name, device_id,
+                               model_id, model_name, model_version,
+                               model_inference_url, model_status,
+                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+        deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
+                                     "device_id": device_id,
+                                     "model_id": model_id, "model_name": model_name,
+                                     "model_version": model_version,
+                                     "model_url": model_inference_url, "model_status": model_status,
+                                     "inference_port": inference_port}
+        return deployment_status_payload
+
+    def send_deployment_results(self, end_point_name, device_id, model_status,
+                                model_id, model_name, model_inference_url,
+                                model_version, inference_port, inference_engine,
+                                model_metadata, model_config):
+        deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(device_id)
+        deployment_results_payload = self.construct_deployment_results(
+            end_point_name, device_id, model_status,
+            model_id, model_name, model_inference_url,
+            model_version, inference_port, inference_engine,
+            model_metadata, model_config)
 
         logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                              deployment_results_payload))
@@ -549,12 +592,11 @@ class FedMLClientRunner:
                                model_inference_url, model_status,
                                inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
         deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(device_id)
-        deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
-                                     "device_id": device_id,
-                                     "model_id": model_id, "model_name": model_name,
-                                     "model_version": model_version,
-                                     "model_url": model_inference_url, "model_status": model_status,
-                                     "inference_port": inference_port}
+        deployment_status_payload = self.construct_deployment_status(
+            end_point_name, device_id,
+            model_id, model_name, model_version,
+            model_inference_url, model_status,
+            inference_port=inference_port)
 
         logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
@@ -803,12 +845,9 @@ class FedMLClientRunner:
                 pass
 
         FedMLClientDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
-        FedMLModelDatabase.get_instance().delete_deployment_status(
+        FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
-        FedMLModelDatabase.get_instance().delete_deployment_result(
-            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
+            self.edge_id)
 
     def exit_run_with_exception_entry(self):
         try:

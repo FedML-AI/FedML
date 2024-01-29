@@ -447,15 +447,18 @@ class S3Storage:
 
     def upload_file_with_progress(self, src_local_path, dest_s3_path,
                                   show_progress=True,
-                                  out_progress_to_err=True, progress_desc=None, metadata=dict()):
+                                  out_progress_to_err=True, progress_desc=None, metadata=None):
         """
         upload file
         :param out_progress_to_err:
         :param progress_desc:
         :param src_local_path:
         :param dest_s3_path:
+        :param metadata:
         :return:
         """
+        if metadata is None:
+            metadata = {}
         file_uploaded_url = ""
         progress_desc_text = "Uploading Package to Remote Storage"
         if progress_desc is not None:
