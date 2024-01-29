@@ -44,24 +44,28 @@ def create(name: str, model: str = None, model_config: str = None) -> bool:
 
 
 def create_from_hf(name: str, model: str = None) -> bool:
-    # Copy the template folder to the current folder
     hf_templ_fd_src = os.path.join(os.path.dirname(__file__), "..", "..", "serving", "templates", "hf_template")
-    # Copy recursively
-    dst_fd_prefix = "temp_"
-    dst_fd = os.path.join(os.getcwd(), dst_fd_prefix + name)
+    dst_parent_fd = os.path.join(os.path.expanduser("~"), ".fedml","fedml-model-client", "fedml", "hf_model_from_template")
+    if not os.path.exists(dst_parent_fd):
+        os.makedirs(dst_parent_fd)
+    
+    dst_fd = os.path.join(dst_parent_fd, name)
     if os.path.exists(dst_fd):
-        click.echo("Folder {} already exists.".format(dst_fd))
-        return False
+        shutil.rmtree(dst_fd) 
     shutil.copytree(hf_templ_fd_src, dst_fd)
-    # Change the hf_model_name in the config.yaml to model
+    
     config_file = os.path.join(dst_fd, "config.yaml")
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
-        config["environment_variables"]["hf_model_name"] = model
+        # Change the hf_model_name in the config.yaml to model
+        config["environment_variables"]["MODEL_NAME_OR_PATH"] = model
     with open(config_file, 'w') as file:
         yaml.dump(config, file)
-    # Do the model creation
-    return create(name, model_config=config_file)
+    
+    res = create(name, model_config=config_file)
+    if res:
+        print(f"Model source code (generated from template {hf_templ_fd_src}) is located at {dst_fd}")
+    return res
 
 
 def delete(name: str, local: bool = True) -> bool:

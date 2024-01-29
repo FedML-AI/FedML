@@ -186,6 +186,12 @@ def job_on_cluster(yaml_file, cluster: str, api_key: str, resource_id: str, devi
                             run_id=run_id, project_id=project_id, inner_id=inner_id,
                             result_object=create_run_result)
 
+    # If Resources Matched and user check is false, then no need to confirm and start
+    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED] and
+            not create_run_result.user_check):
+        return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
+                            project_id=project_id, inner_id=inner_id, result_object=create_run_result)
+
     # Confirm cluster and start job
     cluster_confirmed = confirm_and_start(run_id=run_id, cluster_id=cluster_id,
                                           gpu_matched=create_run_result.gpu_matched)

@@ -1,1 +1,1 @@
-This Template is used to create hugging face based model cards.
+# HF template
