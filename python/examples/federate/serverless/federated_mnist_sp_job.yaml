@@ -1,0 +1,17 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: federated_mnist_sp
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+    python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  bash config/bootstrap.sh
+  echo "Bootstrap finished."

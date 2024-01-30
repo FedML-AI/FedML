@@ -1,0 +1,20 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: federated_mnist_mpi
+
+# Running entry commands which will be executed as the job entry point.
+# If an error occurs, you should exit with a non-zero code, e.g. exit 1.
+# Otherwise, you should exit with a zero code, e.g. exit 0.
+# Support multiple lines, which can not be empty.
+job: |
+    bash run.sh 3
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  bash config/bootstrap.sh
+  echo "Bootstrap finished."
+
+computing:
+  resource_type: A100-80GB-SXM      # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://fedml.ai/compute

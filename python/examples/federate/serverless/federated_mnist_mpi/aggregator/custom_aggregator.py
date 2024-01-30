@@ -36,11 +36,10 @@ class CustomAggregator(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = self.model(x)
-                loss = criterion(pred, target)  # pylint: disable=E1102
-                # _, predicted = torch.max(pred, 1)
-                # correct = predicted.eq(target).sum()
-
-                # metrics["test_correct"] += correct.item()
+                loss = criterion(pred, target)
+                _, predicted = torch.max(pred, 1)
+                correct = predicted.eq(target).sum()
+                metrics["test_correct"] += correct.item()
 
         return metrics
 
