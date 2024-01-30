@@ -25,7 +25,7 @@ def fedml_device():
 @click.option(
     "--compute_node", "-c", default=None, is_flag=True,
     help="Bind as the general compute node in FEDML Nexus AI compute network. This is enabled by default. "
-    "After binding, you can view and manage the device in the FEDML® Nexus AI Platform: https://nexus.fedml.ai/compute. "
+    "After binding, you can view and manage the device in the FEDML® Nexus AI Platform: https://fedml.ai/compute. "
     "It can be grouped as a cluster and then you can use FEDML®Launch to schedule any job (training, deployment, federated learning) to it. "
     "You can not specify the option -c and -s simultaneously.",
 )
@@ -36,7 +36,7 @@ def fedml_device():
 )
 @click.option(
     "--provider", "-p", default=None, is_flag=True,
-    help="Bind as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://nexus.fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
+    help="Bind as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
     "You can specify the option -p and -c simultaneously (can be used as provider for others as well compute node for your own jobs), but you can not specify -p and -s simultaneously.",
 )
 def fedml_device_bind(api_key, version, compute_node, server, provider):
