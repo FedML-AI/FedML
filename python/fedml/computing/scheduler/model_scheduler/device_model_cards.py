@@ -157,6 +157,17 @@ class FedMLModelCards(Singleton):
             workspace_abs_path = model_config["workspace"]
         workspace_abs_path = os.path.normpath(workspace_abs_path)
 
+        dst_model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+        real_dst_model_dir = os.path.realpath(dst_model_dir)
+        real_model_root_dir = os.path.realpath(ClientConstants.get_model_dir())
+        if not real_dst_model_dir.startswith(real_model_root_dir):   # Avoid deleting parent folders
+            print(f"[Error] The destination folder {real_dst_model_dir} is the parent folder of the "
+                  f"local model card directory {real_model_root_dir}, "
+                  f"please do not include any \"../\" in your model name.")
+            return False
+        if os.path.exists(dst_model_dir):
+            shutil.rmtree(dst_model_dir, ignore_errors=True)
+
         if self.add_model_files(model_name, workspace_abs_path):
             model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
             if self.copy_config_yaml_to_src_folder(model_dir, config_file):
