@@ -5,6 +5,7 @@ import docker
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
 
 
@@ -181,3 +182,16 @@ class ContainerUtils(Singleton):
 
         return same_model_container_rank
 
+    def pull_image_with_policy(self, image_pull_policy, image_name, client=None):
+        docker_client = self.get_docker_client() if client is None else client
+        if docker_client is None:
+            return
+
+        if image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_ALWAYS:
+            docker_client.images.pull(image_name)
+        elif image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT:
+            try:
+                docker_client.images.get(inference_image_name)
+            except docker.errors.ImageNotFound:
+                logging.info("Image not found, start pulling the image...")
+                docker_client.images.pull(inference_image_name)

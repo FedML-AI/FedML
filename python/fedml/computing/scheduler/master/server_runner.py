@@ -698,7 +698,12 @@ class FedMLServerRunner:
             try:
                 metrics_item = run_metrics_queue.get(block=False, timeout=3)
                 MetricsManager.get_instance().save_metrics(metrics_item)
-                self.mlops_metrics.report_server_training_metric({}, payload=metrics_item)
+                metric_json = json.loads(metrics_item)
+                if metric_json.get("is_endpoint", False):
+                    metric_json().pop("is_endpoint")
+                    self.mlops_metrics.report_endpoint_metric({}, payload=json.dumps(metric_json))
+                else:
+                    self.mlops_metrics.report_server_training_metric({}, payload=metrics_item)
             except queue.Empty as e:  # If queue is empty, then break loop
                 break
 
