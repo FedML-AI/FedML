@@ -107,6 +107,10 @@ class SchedulerConstants:
     FEDML_DEFAULT_LOG_DIR = ".fedml/fedml-client/fedml/logs"
     FEDML_DEFAULT_DATA_DIR = ".fedml/fedml-client/fedml/data"
 
+    IMAGE_PULL_POLICY_ALWAYS = "Always"
+    IMAGE_PULL_POLICY_IF_NOT_PRESENT = "IfNotPresent"
+    IMAGE_PULL_POLICY_NEVER = "Never"
+
     @staticmethod
     def get_log_source(run_json):
         run_config = run_json.get("run_config", {})
