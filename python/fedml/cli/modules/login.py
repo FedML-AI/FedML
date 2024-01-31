@@ -37,8 +37,16 @@ from fedml.api.modules.utils import authenticate
     "--deploy_worker_num", "-dpn", default=1, type=int,
     help="Deploy worker number will be started when logged in successfully.",
 )
-def fedml_login(api_key, version, compute_node, server, provider, deploy_worker_num):
+@click.option(
+    "--local_on_premise_platform",
+    "-lp",
+    type=str,
+    default="127.0.0.1",
+    help="The IP address for local on-premise Nexus AI Platform.",
+)
+def fedml_login(api_key, version, compute_node, server, provider, deploy_worker_num, local_on_premise_platform):
     fedml.set_env_version(version)
+    fedml.set_local_on_premise_platform_host(local_on_premise_platform)
 
     api_key = api_key[0] if len(api_key) > 0 else None
     try:

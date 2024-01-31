@@ -42,8 +42,13 @@ job_type: train              # options: train, deploy, federate
 # deploy subtype: none
 job_subtype: generate_training
 
-# containerize
-containerize: false
+docker:
+  image: fedml/fedml-default-launch:cu12.1-u22.04
+  #registry: docker.io
+  #username: my_hub_user
+  #password: my_hub_password
+  #ports: [30001,3002,3003]
+
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.

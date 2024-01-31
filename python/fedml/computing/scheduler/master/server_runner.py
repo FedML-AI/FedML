@@ -2123,8 +2123,10 @@ class FedMLServerRunner:
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
                 if self.use_local_process_as_cloud_server:
-                    RunProcessUtils.kill_process(os.getpid())
-                    raise Exception("Killed")
+                    #RunProcessUtils.kill_process(os.getpid())
+                    cloud_server_process = self.run_process_map.get(run_id_str, None)
+                    if cloud_server_process is not None:
+                        RunProcessUtils.kill_process(cloud_server_process.pid)
                 else:
                     self.stop_cloud_server()
 
