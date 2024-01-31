@@ -1109,10 +1109,13 @@ class FedMLClientRunner:
                     RunProcessUtils.kill_process(run_process.pid)
 
                     # Terminate the run docker container if exists
-                    container_name = JobRunnerUtils.get_run_container_name(run_id)
-                    docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
-                    logging.info(f"Terminating the run docker container {container_name} if exists...")
-                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+                    try:
+                        container_name = JobRunnerUtils.get_run_container_name(run_id)
+                        docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                        logging.info(f"Terminating the run docker container {container_name} if exists...")
+                        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+                    except Exception as e:
+                        logging.info(f"Exception when terminating docker container {traceback.format_exc()}.")
 
                 self.run_process_map.pop(run_id_str)
 
@@ -1318,7 +1321,7 @@ class FedMLClientRunner:
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
+            "state": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
             "processor": cpu_info,
             "core_type": cpu_info,
             "network": "",
