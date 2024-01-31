@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.18.dev8"
+__version__ = "0.8.18.dev9"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -458,7 +458,13 @@ def _get_backend_service():
     # caller = getframeinfo(stack()[1][0])    
     # print(f"{caller.filename}:{caller.lineno} - _get_backend_service. version = {version}")
     if version == "local":
-        return f"http://{get_local_on_premise_platform_host()}:18080"
+        port = int(get_local_on_premise_platform_port())
+        if port == 80:
+            return f"http://{get_local_on_premise_platform_host()}"
+        elif port == 443:
+            return f"https://{get_local_on_premise_platform_host()}"
+        else:
+            return f"http://{get_local_on_premise_platform_host()}:{port}"
     elif version == "dev":
         return FEDML_BACKEND_SERVICE_URL_DEV
     elif version == "test":
@@ -488,6 +494,14 @@ def set_local_on_premise_platform_host(local_on_premise_platform_host):
 
 def get_local_on_premise_platform_host():
     return os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST']
+
+
+def set_local_on_premise_platform_port(local_on_premise_platform_port):
+    os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT'] = str(local_on_premise_platform_port)
+
+
+def get_local_on_premise_platform_port():
+    return os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT']
 
 
 def _get_local_s3_like_service_url():
