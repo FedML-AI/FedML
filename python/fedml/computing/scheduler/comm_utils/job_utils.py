@@ -14,9 +14,12 @@ from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from dataclasses import dataclass, field, fields
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from typing import List
 import threading
 import json
+
+run_docker_without_gpu = False
 
 
 @dataclass
@@ -407,7 +410,8 @@ class JobRunnerUtils(Singleton):
             JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
             # docker command expects device ids in such format: '"device=0,2,3"'
             device_str = f'"device={cuda_visible_gpu_ids_str}"'
-            docker_command.extend(["--gpus", f"'{device_str}'"])
+            if not run_docker_without_gpu:
+                docker_command.extend(["--gpus", f"'{device_str}'"])
 
         # Add Port Mapping
         for port in docker_args.ports:
