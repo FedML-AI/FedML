@@ -39,7 +39,7 @@ class Job(ABC):
     def status(self) -> JobStatus:
         """
         Abstract method to get the status of the job.
-        Represents the status of the job, which should be of type JobStatus: running, completed, or error.
+        Represents the status of the job, which should be of type JobStatus: Running, Success, or Failed.
         """
 
     @abstractmethod
