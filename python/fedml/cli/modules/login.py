@@ -44,9 +44,19 @@ from fedml.api.modules.utils import authenticate
     default="127.0.0.1",
     help="The IP address for local on-premise Nexus AI Platform.",
 )
-def fedml_login(api_key, version, compute_node, server, provider, deploy_worker_num, local_on_premise_platform):
+@click.option(
+    "--local_on_premise_platform_port",
+    "-lpp",
+    type=int,
+    default=80,
+    help="The port for local on-premise Nexus AI Platform.",
+)
+def fedml_login(
+        api_key, version, compute_node, server, provider, deploy_worker_num,
+        local_on_premise_platform, local_on_premise_platform_port):
     fedml.set_env_version(version)
     fedml.set_local_on_premise_platform_host(local_on_premise_platform)
+    fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
 
     api_key = api_key[0] if len(api_key) > 0 else None
     try:
