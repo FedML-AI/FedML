@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.18.dev7"
+__version__ = "0.8.18.dev8"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -458,7 +458,7 @@ def _get_backend_service():
     # caller = getframeinfo(stack()[1][0])    
     # print(f"{caller.filename}:{caller.lineno} - _get_backend_service. version = {version}")
     if version == "local":
-        return FEDML_BACKEND_SERVICE_URL_LOCAL
+        return f"http://{get_local_on_premise_platform_host()}:18080"
     elif version == "dev":
         return FEDML_BACKEND_SERVICE_URL_DEV
     elif version == "test":
@@ -480,6 +480,14 @@ def _get_mqtt_service():
         return FEDML_MQTT_DOMAIN_TEST
     else:
         return FEDML_MQTT_DOMAIN_RELEASE
+
+
+def set_local_on_premise_platform_host(local_on_premise_platform_host):
+    os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST'] = local_on_premise_platform_host
+
+
+def get_local_on_premise_platform_host():
+    return os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST']
 
 
 def _get_local_s3_like_service_url():

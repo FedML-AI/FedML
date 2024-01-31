@@ -16,7 +16,7 @@ if __name__ == "__main__":
     for iter_count in range(10):
         acc += 0.01
         loss -= 0.02
-        fedml.log_endpoint({"acc": acc, "loss": loss})
+        #fedml.log_endpoint({"acc": acc, "loss": loss})
         time.sleep(0.1)
 
     artifact = fedml.mlops.Artifact(name=f"general-file@{run_id}-{edge_id}", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)

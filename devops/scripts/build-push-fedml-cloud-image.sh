@@ -1,5 +1,6 @@
 
 version=$1
+image_version=$2
 
 if [ ${version} == "dev" ]; then
   docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Dev -t fedml/fedml-device-image:${version} .
@@ -24,5 +25,11 @@ elif [ ${version} == "release" ]; then
 
   docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Release -t fedml/fedml-server-agent:${version} .
   docker push fedml/fedml-server-agent:${version}
+elif [ ${version} == "local" ]; then
+  docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Local -t fedml/fedml-device-image:${version} .
+  docker push fedml/fedml-device-image:${version}
+
+  docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Local -t fedml/fedml-server-agent:${image_version} .
+  docker push fedml/fedml-server-agent:${image_version}
 fi
 
