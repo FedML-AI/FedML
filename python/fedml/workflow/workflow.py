@@ -113,6 +113,7 @@ class Workflow:
                 return True
 
             if any_errored:
+                self._kill_jobs(jobs)
                 raise ValueError(f"Following jobs errored out, hence workflow cannot be completed: {errored_jobs}."
                                  "Please check the logs for more information.")
 
