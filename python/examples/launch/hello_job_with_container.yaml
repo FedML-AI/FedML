@@ -54,6 +54,7 @@ docker:
 # Support multiple lines, which can be empty.
 bootstrap: |
   # pip install -r requirements.txt
+  # pip install fedml==0.8.18b10
   echo "Bootstrap finished."
 
 computing:

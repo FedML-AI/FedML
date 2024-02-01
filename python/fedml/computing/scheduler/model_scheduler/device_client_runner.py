@@ -1040,6 +1040,8 @@ class FedMLClientRunner:
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
+            "state": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
+            "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
             "type": os_name,
             "processor": cpu_info,
             "core_type": cpu_info,

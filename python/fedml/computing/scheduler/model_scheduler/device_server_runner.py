@@ -1661,6 +1661,8 @@ class FedMLServerRunner:
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
+            "state": ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
+            "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE,
             "processor": cpu_info,
             "core_type": cpu_info,
             "network": "",
