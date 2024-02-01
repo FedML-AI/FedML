@@ -1322,6 +1322,7 @@ class FedMLClientRunner:
             "deviceid": device_id,
             "type": os_name,
             "state": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
+            "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
             "processor": cpu_info,
             "core_type": cpu_info,
             "network": "",
