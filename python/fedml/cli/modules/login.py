@@ -19,7 +19,7 @@ from fedml.api.modules.utils import authenticate
 @click.option(
     "--compute_node", "-c", default=None, is_flag=True,
     help="Login as the general compute node in FEDML Nexus AI compute network. This is enabled by default. "
-         "After login, you can view and manage the device in the FEDML® Nexus AI Platform: https://nexus.fedml.ai/compute. "
+         "After login, you can view and manage the device in the FEDML® Nexus AI Platform: https://fedml.ai/compute. "
          "It can be grouped as a cluster and then you can use FEDML®Launch to schedule any job (training, deployment, federated learning) to it. "
          "You can not specify the option -c and -s simultaneously.",
 )
@@ -30,15 +30,33 @@ from fedml.api.modules.utils import authenticate
 )
 @click.option(
     "--provider", "-p", default=None, is_flag=True,
-    help="Login as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://nexus.fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
+    help="Login as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
          "You can specify the option -p and -c simultaneously (can be used as provider for others as well compute node for your own jobs), but you can not specify -p and -s simultaneously.",
 )
 @click.option(
     "--deploy_worker_num", "-dpn", default=1, type=int,
     help="Deploy worker number will be started when logged in successfully.",
 )
-def fedml_login(api_key, version, compute_node, server, provider, deploy_worker_num):
+@click.option(
+    "--local_on_premise_platform",
+    "-lp",
+    type=str,
+    default="127.0.0.1",
+    help="The IP address for local on-premise Nexus AI Platform.",
+)
+@click.option(
+    "--local_on_premise_platform_port",
+    "-lpp",
+    type=int,
+    default=80,
+    help="The port for local on-premise Nexus AI Platform.",
+)
+def fedml_login(
+        api_key, version, compute_node, server, provider, deploy_worker_num,
+        local_on_premise_platform, local_on_premise_platform_port):
     fedml.set_env_version(version)
+    fedml.set_local_on_premise_platform_host(local_on_premise_platform)
+    fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
 
     api_key = api_key[0] if len(api_key) > 0 else None
     try:

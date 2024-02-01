@@ -24,6 +24,10 @@ def log(metrics: dict, step: int = None, customized_step_key: str = None, commit
     mlops.log(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
 
 
+def log_endpoint(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+    mlops.log_endpoint(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
+
+
 def log_llm_record(metrics: dict, version="release") -> None:
     mlops.log_llm_record(metrics, version)
 

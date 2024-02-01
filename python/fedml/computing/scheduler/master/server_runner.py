@@ -698,7 +698,12 @@ class FedMLServerRunner:
             try:
                 metrics_item = run_metrics_queue.get(block=False, timeout=3)
                 MetricsManager.get_instance().save_metrics(metrics_item)
-                self.mlops_metrics.report_server_training_metric({}, payload=metrics_item)
+                metric_json = json.loads(metrics_item)
+                if metric_json.get("is_endpoint", False):
+                    metric_json().pop("is_endpoint")
+                    self.mlops_metrics.report_endpoint_metric({}, payload=json.dumps(metric_json))
+                else:
+                    self.mlops_metrics.report_server_training_metric({}, payload=metrics_item)
             except queue.Empty as e:  # If queue is empty, then break loop
                 break
 
@@ -2118,8 +2123,10 @@ class FedMLServerRunner:
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
                 if self.use_local_process_as_cloud_server:
-                    RunProcessUtils.kill_process(os.getpid())
-                    raise Exception("Killed")
+                    #RunProcessUtils.kill_process(os.getpid())
+                    cloud_server_process = self.run_process_map.get(run_id_str, None)
+                    if cloud_server_process is not None:
+                        RunProcessUtils.kill_process(cloud_server_process.pid)
                 else:
                     self.stop_cloud_server()
 

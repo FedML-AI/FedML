@@ -14,9 +14,12 @@ from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from dataclasses import dataclass, field, fields
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from typing import List
 import threading
 import json
+
+run_docker_without_gpu = False
 
 
 @dataclass
@@ -184,6 +187,18 @@ class JobRunnerUtils(Singleton):
             released_run_id = run_id if original_run_id is None else original_run_id
             logging.info(f"[run/device][{released_run_id}/{edge_device_id}] notify MLOps to release gpu resources.")
             mlops.release_resources(released_run_id, edge_device_id)
+
+    def get_device_run_gpu_ids(self, device_id, run_id):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            with ComputeCacheManager.get_instance().lock(
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(device_id, run_id)
+            ):
+                gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id, run_id)
+                return gpu_ids
+        except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
+            return []
 
     def get_available_gpu_id_list(self, device_id):
         try:
@@ -376,11 +391,14 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int,
                                        unzip_package_path: str, executable_interpreter: str, entry_file_full_path: str,
-                                       bootstrap_cmd_list, cuda_visible_gpu_ids_str=None) -> List[str]:
+                                       bootstrap_cmd_list, cuda_visible_gpu_ids_str=None,
+                                       image_pull_policy: str=None) -> List[str]:
 
         shell_command = list()
 
         docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
+
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, docker_args.image, client=docker_client)
 
         container_name = JobRunnerUtils.get_run_container_name(run_id)
         JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
@@ -392,7 +410,8 @@ class JobRunnerUtils(Singleton):
             JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
             # docker command expects device ids in such format: '"device=0,2,3"'
             device_str = f'"device={cuda_visible_gpu_ids_str}"'
-            docker_command.extend(["--gpus", f"'{device_str}'"])
+            if not run_docker_without_gpu:
+                docker_command.extend(["--gpus", f"'{device_str}'"])
 
         # Add Port Mapping
         for port in docker_args.ports:

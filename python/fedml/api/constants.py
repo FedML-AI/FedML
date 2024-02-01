@@ -15,7 +15,7 @@ class ApiConstants:
 
     RESOURCE_MATCHED_STATUS_BIND_CREDIT_CARD_FIRST = \
         """
-        Before we can start a job, please add a credit card to your FEDML account at https://nexus.fedml.ai/billing/home.
+        Before we can start a job, please add a credit card to your FEDML account at https://fedml.ai/billing/home.
         Once it's added, please try to run the launch command again
         """
 

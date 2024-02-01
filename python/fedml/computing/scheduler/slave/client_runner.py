@@ -44,6 +44,7 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from ..comm_utils.container_utils import ContainerUtils
 
 
 class RunnerError(Exception):
@@ -506,6 +507,22 @@ class FedMLClientRunner:
                                                                     conf_file_full_path=conf_file_full_path,
                                                                     dynamic_args_config=dynamic_args_config,
                                                                     fedml_config_object=self.fedml_config_object)
+
+        # Terminate the user process
+        # self.terminate_user_process(run_id)
+        #
+        # # Wait all gpu ids of current run is physcially released
+        # gpu_list = sys_utils.get_gpu_list()
+        # total_gpu_count = len(gpu_list)
+        # while True:
+        #     gpu_ids_of_current_run = JobRunnerUtils.get_instance().get_device_run_gpu_ids(self.edge_id, run_id)
+        #     if gpu_ids_of_current_run is not None and len(gpu_ids_of_current_run) > 0:
+        #         current_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=total_gpu_count)
+        #         unreleased_run_gpu_ids = [item for item in gpu_ids_of_current_run if item not in current_available_gpu_ids]
+        #         if unreleased_run_gpu_ids is None or len(unreleased_run_gpu_ids) <= 0:
+        #             break
+        #     time.sleep(0.5)
+
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
         logging.info("                        ")
@@ -574,6 +591,7 @@ class FedMLClientRunner:
         assigned_gpu_ids = run_params.get("gpu_ids", None)
         job_type = job_yaml.get("job_type", None)
         containerize = fedml_config_object.get("containerize", None)
+        image_pull_policy = fedml_config_object.get("image_pull_policy", Constants.IMAGE_PULL_POLICY_ALWAYS)
         # TODO: Can we remove task_type?
         job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         conf_file_object = load_yaml_config(conf_file_full_path)
@@ -667,7 +685,8 @@ class FedMLClientRunner:
                                                                                            executable_interpreter=executable_interpreter,
                                                                                            entry_file_full_path=entry_file_full_path,
                                                                                            bootstrap_cmd_list=bootstrap_cmd_list,
-                                                                                           cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
+                                                                                           cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str,
+                                                                                           image_pull_policy=image_pull_policy)
                 except Exception:
                     logging.error(f"Exception while generating containerized launch commands: {traceback.format_exc()}")
                     return None, None, None
@@ -1013,6 +1032,13 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
+    def terminate_user_process(self, run_id):
+        # Terminate the run docker container if exists
+        container_name = JobRunnerUtils.get_run_container_name(run_id)
+        docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+        logging.info(f"Terminating the run docker container {container_name} if exists...")
+        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
             # logging.info("received to finished status.")
@@ -1083,10 +1109,13 @@ class FedMLClientRunner:
                     RunProcessUtils.kill_process(run_process.pid)
 
                     # Terminate the run docker container if exists
-                    container_name = JobRunnerUtils.get_run_container_name(run_id)
-                    docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
-                    logging.info(f"Terminating the run docker container {container_name} if exists...")
-                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+                    try:
+                        container_name = JobRunnerUtils.get_run_container_name(run_id)
+                        docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                        logging.info(f"Terminating the run docker container {container_name} if exists...")
+                        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+                    except Exception as e:
+                        logging.info(f"Exception when terminating docker container {traceback.format_exc()}.")
 
                 self.run_process_map.pop(run_id_str)
 
@@ -1292,7 +1321,7 @@ class FedMLClientRunner:
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
+            "state": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
             "processor": cpu_info,
             "core_type": cpu_info,
             "network": "",
