@@ -10,6 +10,7 @@ class JobStatus(Enum):
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
+    UNDETERMINED = "UNDETERMINED"
 
 
 class Job(ABC):
