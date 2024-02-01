@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.18.dev9"
+__version__ = "0.8.18.dev10"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -493,7 +493,7 @@ def set_local_on_premise_platform_host(local_on_premise_platform_host):
 
 
 def get_local_on_premise_platform_host():
-    return os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST']
+    return os.environ.get('FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST', "127.0.0.1")
 
 
 def set_local_on_premise_platform_port(local_on_premise_platform_port):
@@ -501,7 +501,7 @@ def set_local_on_premise_platform_port(local_on_premise_platform_port):
 
 
 def get_local_on_premise_platform_port():
-    return os.environ['FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT']
+    return os.environ.get('FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT', 80)
 
 
 def _get_local_s3_like_service_url():

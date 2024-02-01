@@ -10,6 +10,9 @@ if __name__ == "__main__":
 
     run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    local_on_prem_host = fedml.get_local_on_premise_platform_host()
+    local_on_prem_port = fedml.get_local_on_premise_platform_port()
+    print(f"local_on_prem_host {local_on_prem_host}, local_on_prem_port {local_on_prem_port}")
 
     acc = 0.1
     loss = 2.0
