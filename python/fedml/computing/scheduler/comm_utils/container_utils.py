@@ -191,7 +191,7 @@ class ContainerUtils(Singleton):
             docker_client.images.pull(image_name)
         elif image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT:
             try:
-                docker_client.images.get(inference_image_name)
+                docker_client.images.get(image_name)
             except docker.errors.ImageNotFound:
                 logging.info("Image not found, start pulling the image...")
-                docker_client.images.pull(inference_image_name)
+                docker_client.images.pull(image_name)
