@@ -1,3 +1,6 @@
+from enum import Enum, unique
+
+
 class ApiConstants:
     RESOURCE_MATCHED_STATUS_MATCHED = "MATCHED"
     RESOURCE_MATCHED_STATUS_JOB_URL_ERROR = "ERROR_JOB_URL"
@@ -71,4 +74,36 @@ class ApiConstants:
                   LAUNCH_JOB_STATUS_JOB_NOT_EXISTS: 25, LAUNCH_JOB_STATUS_MACHINE_STARTUP_FAILED: 26,
                   LAUNCH_JOB_STATUS_CREATE_PROJECT_FAILED: 27, LAUNCH_JOB_STATUS_PROJECT_NOT_EXISTS: 28,
                   LAUNCH_JOB_STATUS_DB_INSERT_ERROR: 29, LAUNCH_JOB_STATUS_OCCUPIED_FAILED: 30,
-                  LAUNCH_JOB_STATUS_JOB_CONFIG_NOT_EXISTS: 31, LAUNCH_JOB_STATUS_GENERAL_ERROR: 32}
+                  LAUNCH_JOB_STATUS_JOB_CONFIG_NOT_EXISTS: 31}
+
+
+@unique
+class RunStatus(Enum):
+    NOT_STARTED = "NOT_STARTED"
+    QUEUED = "QUEUED"
+    STARTING = "STARTING"
+    RUNNING = "RUNNING"
+    STOPPING = "STOPPING"
+    KILLED = "KILLED"
+    FAILED = "FAILED"
+    FINISHED = "FINISHED"
+    ABANDONED = "ABANDONED"
+    LAUNCHED = "LAUNCHED"
+    ERROR = "ERROR"
+    BLOCKED = "BLOCKED"
+    PRE_QUEUE = "PRE_QUEUE"
+    INVALID = "INVALID"
+    CLUSTER_QUEUE = "CLUSTER_QUEUE"
+    PROVISIONING = "PROVISIONING"
+    UNDETERMINED = "UNDETERMINED"
+
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def get_run_enum_from_str(cls, run_status_str: str):
+        for run_status in cls:
+            if run_status.value == run_status_str:
+                return run_status
+        return cls.UNDETERMINED
+
