@@ -102,10 +102,11 @@ class Workflow:
             errored_jobs = []
 
             for job in jobs:
-                if job.status() != JobStatus.SUCCESS:
+                status = job.status()
+                if status != JobStatus.FINISHED:
                     all_completed = False
 
-                    if job.status() == JobStatus.FAILED or job.status() == JobStatus.UNDETERMINED:
+                    if status == JobStatus.FAILED or status == JobStatus.UNDETERMINED:
                         any_errored = True
                         errored_jobs.append(job.name)
 

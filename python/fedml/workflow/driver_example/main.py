@@ -13,8 +13,8 @@ class HelloWorldJob(Job):
 
     def run(self):
         fedml.set_env_version("test")
-        current_working_directory = os.getcwd()
-        absolute_path = os.path.join(current_working_directory, "hello_world_job.yaml")
+        working_directory = os.path.dirname(os.path.abspath(__file__))
+        absolute_path = os.path.join(working_directory, "hello_world_job.yaml")
         result = fedml.api.launch_job(yaml_file=absolute_path, api_key="30d1bbcae9ec48ffa314caa8e944d187")
         if result.run_id and int(result.run_id) > 0:
             self.run_id = result.run_id
@@ -22,7 +22,7 @@ class HelloWorldJob(Job):
     def status(self):
         if self.run_id:
             try:
-                run_status = fedml.api.run_status(run_id=self.run_id, api_key="30d1bbcae9ec48ffa314caa8e944d187")
+                _, run_status = fedml.api.run_status(run_id=self.run_id, api_key="30d1bbcae9ec48ffa314caa8e944d187")
                 return JobStatus.get_job_status_from_run_status(run_status)
             except Exception as e:
                 logging.error(f"Error while getting status of run {self.run_id}: {e}")
@@ -37,6 +37,13 @@ class HelloWorldJob(Job):
 
 
 if __name__ == "__main__":
+    job_1 = HelloWorldJob(name="hello_world")
+    job_2 = HelloWorldJob(name="hello_world_dependent_on_job_1")
+    workflow = Workflow(name="hello_world_workflow", loop=False)
+    workflow.add_job(job_1)
+    workflow.add_job(job_2, dependencies=[job_1])
+    workflow.run()
+
     job_1 = HelloWorldJob(name="hello_world")
     job_2 = HelloWorldJob(name="hello_world_dependent_on_job_1")
     workflow = Workflow(name="hello_world_workflow", loop=False)
