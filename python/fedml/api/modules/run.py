@@ -7,6 +7,7 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunManage
     FedMLRunStartedModel, FedMLRunModelList, FeatureEntryPoint
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLJobConfig
+from fedml.api.constants import RunStatus
 
 
 class RunLogResult(object):
@@ -74,7 +75,7 @@ def list_run(run_name: str, run_id: str, platform: str, api_key: str) -> FedMLRu
     return run_list_obj
 
 
-def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, str):
+def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, RunStatus):
     _authenticate_and_validate_platform(api_key, platform)
 
     run_status = None
@@ -84,7 +85,7 @@ def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRun
         if len(run_list_obj.run_list) > 1:
             raise Exception("Found more than one runs for the specified run name or run id.")
 
-        run_status = run_list_obj.run_list[0].status
+        run_status = RunStatus.get_run_enum_from_str(run_list_obj.run_list[0].status)
 
     return run_list_obj, run_status
 
