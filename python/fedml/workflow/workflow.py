@@ -105,7 +105,7 @@ class Workflow:
                 if job.status() != JobStatus.SUCCESS:
                     all_completed = False
 
-                    if job.status() == JobStatus.FAILED:
+                    if job.status() == JobStatus.FAILED or job.status() == JobStatus.UNDETERMINED:
                         any_errored = True
                         errored_jobs.append(job.name)
 
