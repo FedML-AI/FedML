@@ -279,12 +279,12 @@ class FedMLClientRunner:
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
             self.release_gpu_ids(run_id)
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             time.sleep(2)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)

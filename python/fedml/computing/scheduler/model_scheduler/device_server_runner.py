@@ -210,6 +210,8 @@ class FedMLServerRunner:
 
         self.run_process_event = process_event
         self.run_process_completed_event = completed_event
+        run_id = self.request_json.get("end_point_id")
+
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
@@ -230,14 +232,14 @@ class FedMLServerRunner:
             self.mlops_metrics.report_server_training_status(
                 self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
                 is_from_model=True, edge_id=self.edge_id)
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
             sys.exit(1)
         finally:
             logging.info("Release resources.")
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
