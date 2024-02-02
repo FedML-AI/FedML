@@ -16,7 +16,7 @@ if __name__ == "__main__":
     artifact.add_dir("./config")
     fedml.mlops.log_artifact(artifact)
 
-    fedml.mlops.log_model(f"model-file@{run_id}-{edge_id}", "./requirements.txt")
+    fedml.mlops.log_model(f"model-file@{run_id}-{edge_id}", "requirements.txt")
 
     artifact = fedml.mlops.Artifact(name=f"log-file@{run_id}-{edge_id}", type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
     artifact.add_file("./requirements.txt")
