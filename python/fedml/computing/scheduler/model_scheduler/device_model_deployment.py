@@ -15,6 +15,7 @@ import tritonclient.http as http_client
 
 import collections.abc
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
@@ -440,6 +441,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             }
             environment["MAIN_ENTRY"] = relative_entry
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+        environment["FEDML_CURRENT_RUN_ID"] = end_point_id
+        environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+        environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
+        environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
+        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
+        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
         logging.info(f"volume: {volumns}, binds: {binds}, environment: {environment}")
         logging.info(f"dst_model_serving_dir: {dst_model_serving_dir}")
         logging.info(f"relative_entry: {relative_entry}")
