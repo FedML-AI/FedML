@@ -38,7 +38,7 @@ class FedMLRunStartedModel(object):
                  application_name: str = None, job_type: str = None, inner_id: str = None, app_job_id: str = None,
                  app_job_name: str = None):
         if data is not None:
-            self.run_id = data.get("job_id", "0")
+            self.run_id = data.get("job_id", "-1")
             self.run_name = data.get("job_name", None)
             self.project_id = data.get("project_id", None)
             self.status = data.get("status", None)

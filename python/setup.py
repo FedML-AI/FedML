@@ -60,7 +60,8 @@ requirements = [
     "GPUtil",
     "tzlocal",
     "py-machineid",
-    "cachetools"
+    "cachetools",
+    "toposort"
 ]
 
 requirements_extra_mpi = [

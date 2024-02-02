@@ -15,6 +15,7 @@ Usages:
 """
 from typing import List, Tuple
 
+from fedml.api.constants import RunStatus
 from fedml.api.fedml_response import FedMLResponse
 from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, storage, \
     model as model_module  # Since "model" has conflict with one of the input parameters, we need to rename it
@@ -128,7 +129,7 @@ def run_list(run_name: str = None, run_id: str = None, platform: str = "falcon",
 
 
 def run_status(run_name: str = None, run_id: str = None, platform: str = "falcon", api_key: str = None) -> (
-        FedMLRunModelList, str):
+        FedMLRunModelList, RunStatus):
     return run.status(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
 
 

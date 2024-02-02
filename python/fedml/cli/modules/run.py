@@ -22,7 +22,7 @@ from prettytable import PrettyTable
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch,"
          "default is falcon).",
 )
 def fedml_run(api_key, version, platform):

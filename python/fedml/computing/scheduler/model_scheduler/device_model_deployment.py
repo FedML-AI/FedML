@@ -23,12 +23,14 @@ from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
 
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 import io
 
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 from ..scheduler_core.compute_utils import ComputeUtils
+from ..comm_utils.container_utils import ContainerUtils
 
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -236,6 +238,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
+                image_pull_policy = config.get('image_pull_policy', SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT)
+
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
 
@@ -381,14 +385,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info(f"device_requests: {device_requests}")
         logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
-        # Detect if the image is already at the local
-        try:
-            client.images.get(inference_image_name)
-        except docker.errors.ImageNotFound:
-            logging.info("Image not found, start pulling the image...")
-            client.images.pull(inference_image_name)
-        logging.info("Start creating the inference container...")
 
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
+
+        logging.info("Start creating the inference container...")
         volumns = []
         binds = {}
         environment = {}

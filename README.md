@@ -1,7 +1,7 @@
 
 # FEDML Open Source: A Unified and Scalable Machine Learning Library for Running Training and Deployment Anywhere at Any Scale
 
-Backed by FEDML Nexus AI: Next-Gen Cloud Services for LLMs & Generative AI (https://nexus.fedml.ai)
+Backed by FEDML Nexus AI: Next-Gen Cloud Services for LLMs & Generative AI (https://fedml.ai)
 
 <div align="center">
  <img src="docs/images/fedml_logo_light_mode.png" width="400px">
@@ -19,7 +19,7 @@ Slack: https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFq
 Discord: https://discord.gg/9xkW8ae6RV
 
 
-FEDML® stands for Foundational Ecosystem Design for Machine Learning. [FEDML Nexus AI](https://nexus.fedml.ai) is the next-gen cloud service for LLMs & Generative AI. It helps developers to *launch* complex model *training*, *deployment*, and *federated learning* anywhere on decentralized GPUs, multi-clouds, edge servers, and smartphones, *easily, economically, and securely*.
+FEDML® stands for Foundational Ecosystem Design for Machine Learning. [FEDML Nexus AI](https://fedml.ai) is the next-gen cloud service for LLMs & Generative AI. It helps developers to *launch* complex model *training*, *deployment*, and *federated learning* anywhere on decentralized GPUs, multi-clouds, edge servers, and smartphones, *easily, economically, and securely*.
 
 Highly integrated with [FEDML open source library](https://github.com/fedml-ai/fedml), FEDML Nexus AI provides holistic support of three interconnected AI infrastructure layers: user-friendly MLOps, a well-managed scheduler, and high-performance ML libraries for running any AI jobs across GPU Clouds.
 

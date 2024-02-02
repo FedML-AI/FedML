@@ -27,7 +27,7 @@ fedml build \
     --ignore __pycache__,*.git
 ```
 
-## 2. Login into the FedML® Nexus AI Platform (nexus.fedml.ai)
+## 2. Login into the FedML® Nexus AI Platform (fedml.ai)
 login as general computing device with local pip mode:
 ```
 fedml login $YourApiKey
@@ -38,7 +38,7 @@ login as federated-learning server with local pip mode:
 fedml login $YourApiKey -s
 ```
 
-### 2.1. Examples for Logining into the FedML® Nexus AI Platform (nexus.fedml.ai)
+### 2.1. Examples for Logining into the FedML® Nexus AI Platform (fedml.ai)
 
 ```
 fedml login 113343dad999933 
@@ -48,7 +48,7 @@ fedml login 113343dad999933
 fedml login 113343dad999933 -s
 ```
 
-## 3. Logout from the FedML FedML® Nexus AI Platform (nexus.fedml.ai)
+## 3. Logout from the FedML FedML® Nexus AI Platform (fedml.ai)
 logout from computing device with local pip mode:
 ```
 fedml logout 
