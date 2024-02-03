@@ -10,6 +10,7 @@ import time
 import requests
 import yaml
 
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
 
@@ -478,7 +479,8 @@ class MLOpsRuntimeLogDaemon:
 
     def is_log_processor_running(self, in_run_id, in_device_id):
         for (log_child_process, log_run_id, log_device_id) in self.log_child_process_list:
-            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id):
+            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id) and \
+                    log_child_process is not None and RunProcessUtils.is_process_running(log_child_process.pid):
                 return True
 
         return False
