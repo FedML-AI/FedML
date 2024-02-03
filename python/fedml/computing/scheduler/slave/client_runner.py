@@ -1648,6 +1648,8 @@ class FedMLClientRunner:
 
         JobCleanup.get_instance().sync_data_on_startup(self.edge_id)
 
+        os.environ["FEDML_DEPLOY_MASTER_ID"] = str(self.model_device_server.get_edge_id())
+        os.environ["FEDML_DEPLOY_WORKER_IDS"] = str([client.get_edge_id() for client in self.model_device_client_list])
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(self.args, service_config["mqtt_config"])
 
