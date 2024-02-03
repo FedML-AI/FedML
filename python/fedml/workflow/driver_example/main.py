@@ -5,9 +5,7 @@ import os
 from fedml.workflow.jobs import Job, JobStatus
 from fedml.workflow.workflow import Workflow
 
-# CURRENT_CONFIG_VERSION = "release"
-# MY_API_KEY = "10e87dd6d6574311a80200455e4d9b30"
-CURRENT_CONFIG_VERSION = "local"
+CURRENT_CONFIG_VERSION = "release"
 CURRENT_ON_PREM_LOCAL_HOST = "localhost"
 CURRENT_ON_PREM_LOCAL_PORT = 18080
 MY_API_KEY = "1316b93c82da40ce90113a2ed12f0b14"
