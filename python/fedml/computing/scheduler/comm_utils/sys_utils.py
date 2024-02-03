@@ -35,6 +35,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
 enable_simulation_gpu = False
+simulation_gpu_count = 1
 
 
 def get_sys_runner_info():
@@ -112,7 +113,7 @@ def get_sys_runner_info():
         pass
 
     if enable_simulation_gpu:
-        gpu_count = 8
+        gpu_count = simulation_gpu_count
         gpu_total_mem = "80G"
         gpu_available_mem = "80G"
         gpu_vendor = "NVIDIA"
@@ -156,7 +157,7 @@ def get_gpu_list():
              'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
              'serial': '1320723000504', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 33.0}]
 
-        return ret_gpu_list
+        return ret_gpu_list[0:simulation_gpu_count]
 
     gpu_list = GPUtil.getGPUs()
     ret_gpu_list = list()

@@ -168,6 +168,8 @@ class MLOpsDevicePerfStats(object):
         topic_name = "ml_client/mlops/gpu_device_info"
         device_info_json = {
             "edgeId": edge_id,
+            "deploy_master_id": os.environ.get("FEDML_DEPLOY_MASTER_ID", ""),
+            "deploy_worker_ids": os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]"),
             "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
             "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
             "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),

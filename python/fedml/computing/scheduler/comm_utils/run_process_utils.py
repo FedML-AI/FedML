@@ -186,3 +186,17 @@ class RunProcessUtils:
                 pass
 
         return ret_pids
+
+    @staticmethod
+    def is_process_running(process_id):
+        is_running = False
+        try:
+            process = psutil.Process(process_id)
+            if process.status() == psutil.STATUS_RUNNING or \
+                    process.status() == psutil.STATUS_SLEEPING or \
+                    process.status() == psutil.STATUS_IDLE:
+                is_running = True
+        except Exception as e:
+            pass
+
+        return is_running
