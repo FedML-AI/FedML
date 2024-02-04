@@ -172,9 +172,10 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
         MLOpsStore.mlops_event.log_event_ended(event_name, event_value, event_edge_id)
 
 
-def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True, is_endpoint_metric=False):
     if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
-        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
+        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit,
+                   is_endpoint_metric=is_endpoint_metric)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -186,12 +187,13 @@ def log(metrics: dict, step: int = None, customized_step_key: str = None, commit
         return
 
     log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit,
-               run_id=MLOpsStore.mlops_run_id, edge_id=MLOpsStore.mlops_edge_id)
+               run_id=MLOpsStore.mlops_run_id, edge_id=MLOpsStore.mlops_edge_id,
+               is_endpoint_metric=is_endpoint_metric)
 
 
 def log_endpoint(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
     if MLOpsStore.mlops_args is None or fedml._global_training_type == constants.FEDML_TRAINING_PLATFORM_CROSS_CLOUD:
-        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
+        log_metric(metrics, step=step, customized_step_key=customized_step_key, commit=commit, is_endpoint_metric=True)
         return
 
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -860,8 +862,11 @@ def log_metric(metrics: dict, step: int = None, customized_step_key: str = None,
             return
         MLOpsStore.mlops_log_metrics = log_metrics_obj.copy()
         setup_log_mqtt_mgr()
-        MLOpsStore.mlops_metrics.report_fedml_train_metric(
-            MLOpsStore.mlops_log_metrics, run_id=run_id, is_endpoint=is_endpoint_metric)
+        if is_endpoint_metric:
+            MLOpsStore.mlops_metrics.report_endpoint_metric(MLOpsStore.mlops_log_metrics)
+        else:
+            MLOpsStore.mlops_metrics.report_fedml_train_metric(
+                MLOpsStore.mlops_log_metrics, run_id=run_id, is_endpoint=is_endpoint_metric)
         MLOpsStore.mlops_log_metrics.clear()
         if step is None:
             MLOpsStore.mlops_log_metrics_steps = current_step + 1
