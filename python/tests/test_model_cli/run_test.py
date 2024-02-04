@@ -195,6 +195,7 @@ def test_log_endpoint():
     os.environ["FEDML_CURRENT_RUN_ID"] = "2921"
     os.environ["FEDML_CURRENT_EDGE_ID"] = "74767"
     fedml.log_endpoint({"test_metric": 0.1})
+    fedml.log({"test_metric": 0.2}, is_endpoint_metric=True)
     print("OK")
 
 
