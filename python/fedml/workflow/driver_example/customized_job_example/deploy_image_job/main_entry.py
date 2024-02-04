@@ -15,7 +15,7 @@ from transformers import (
 import uuid
 
 
-class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
+class Chatbot(FedMLPredictor):  # Inherit FedMLClientPredictor
     def __init__(self):
         super().__init__()
         PROMPT_FOR_GENERATION_FORMAT = f""""Below is an instruction that describes a task. Write a response that appropriately completes the request."
@@ -34,7 +34,7 @@ class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
         config = AutoConfig.from_pretrained("EleutherAI/pythia-70m")
         model = AutoModelForCausalLM.from_pretrained(
             "EleutherAI/pythia-70m",
-            torch_dtype=torch.float32,      # float 16 not supported on CPU
+            torch_dtype=torch.float32,  # float 16 not supported on CPU
             trust_remote_code=True,
             device_map="auto"
         )
@@ -64,14 +64,15 @@ class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
             response_text = self.chatbot.predict(instruction=question)
 
         try:
-            unique_id = str(uuid.uuid4())
+            unique_id = "IMAGE_MODEL_KEY"
             with open(f"{unique_id}.txt", "w") as f:
                 f.write(question)
                 f.write("\n\n")
                 f.write(response_text)
                 f.write("\n\n")
-            fedml.api.upload(data_path=f"{unique_id}.txt", name=unique_id,
-                             api_key=os.environ.get("NEXUS_API_KEY", None), metadata={"type": "chatbot"})
+            response = fedml.api.upload(data_path=f"{unique_id}.txt", name=unique_id,
+                                        api_key=os.environ.get("NEXUS_API_KEY", None), metadata={"type": "chatbot"})
+            print(f"upload response: code {response.code}, message {response.message}, data {response.data}")
         except Exception as e:
             pass
 

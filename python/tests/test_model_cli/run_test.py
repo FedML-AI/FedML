@@ -191,6 +191,13 @@ def test_check_endpoint_heath():
         time.sleep(1)
 
 
+def test_log_endpoint():
+    os.environ["FEDML_CURRENT_RUN_ID"] = "2921"
+    os.environ["FEDML_CURRENT_EDGE_ID"] = "74767"
+    fedml.log_endpoint({"test_metric": 0.1})
+    print("OK")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="dev")
@@ -198,6 +205,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("Hi everyone, I am testing the model cli.\n")
+
+    test_log_endpoint()
 
     logging.getLogger().setLevel(logging.INFO)
     fedml.set_env_version("dev")
