@@ -12,7 +12,7 @@ docker:
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
 job: |
-    echo "Hello, Here is the Falcon platform."
+    echo "Hello, Here is the FedML Nexus AI platform."
     echo "Current directory is as follows."
     pwd
     python3 main_entry.py
@@ -26,7 +26,7 @@ bootstrap: |
   echo "Bootstrap finished."
 
 computing:
-  resource_type: A100-80GB-SXM    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: RTX-3090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $10    # max cost per hour of all machines for your job
   # device_type: GPU # GPU or CPU

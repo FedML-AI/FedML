@@ -1,13 +1,14 @@
 import os
 
-from fedml.workflow.workflow import Workflow
+from fedml.workflow.workflow import JobStatus, Workflow
 from fedml.workflow.customized_jobs.deploy_job import DeployJob
 from fedml.workflow.customized_jobs.train_job import TrainJob
 
 CURRENT_CONFIG_VERSION = "release"
 CURRENT_ON_PREM_LOCAL_HOST = "localhost"
 CURRENT_ON_PREM_LOCAL_PORT = 18080
-MY_API_KEY = "1316b93c82da40ce90113a2ed12f0b14"
+MY_API_KEY = "" # Here you need to set your API key from nexus.fedml.ai
+
 
 class DeployImageJob(DeployJob):
     def __init__(self, name, job_yaml_absolute_path=None):
@@ -20,7 +21,17 @@ class DeployImageJob(DeployJob):
         super().run()
 
     def status(self):
-        super().status()
+        current_status = super().status()
+        if current_status == JobStatus.FINISHED:
+            pass
+        elif current_status == JobStatus.FAILED:
+            pass
+        elif current_status == JobStatus.RUNNING:
+            pass
+        elif current_status == JobStatus.PROVISIONING:
+            pass
+
+        return current_status
 
     def kill(self):
         super().kill()
@@ -38,7 +49,17 @@ class Deploy3DJob(DeployJob):
         super().run()
 
     def status(self):
-        super().status()
+        current_status = super().status()
+        if current_status == JobStatus.FINISHED:
+            pass
+        elif current_status == JobStatus.FAILED:
+            pass
+        elif current_status == JobStatus.RUNNING:
+            pass
+        elif current_status == JobStatus.PROVISIONING:
+            pass
+
+        return current_status
 
     def kill(self):
         super().kill()
@@ -56,7 +77,17 @@ class TrainJob(TrainJob):
         super().run()
 
     def status(self):
-        super().status()
+        current_status = super().status()
+        if current_status == JobStatus.FINISHED:
+            pass
+        elif current_status == JobStatus.FAILED:
+            pass
+        elif current_status == JobStatus.RUNNING:
+            pass
+        elif current_status == JobStatus.PROVISIONING:
+            pass
+
+        return current_status
 
     def kill(self):
         super().kill()
@@ -87,8 +118,8 @@ if __name__ == "__main__":
 
     # Add the job object to workflow and set the dependency (DAG based).
     workflow.add_job(deploy_image_job)
-    workflow.add_job(deploy_3d_job, dependencies=[deploy_image_job])
-    workflow.add_job(train_job, dependencies=[deploy_3d_job])
+    #workflow.add_job(deploy_3d_job, dependencies=[deploy_image_job])
+    workflow.add_job(train_job, dependencies=[deploy_image_job])
 
     # Run workflow
     workflow.run()

@@ -268,10 +268,12 @@ class FedMLClientRunner:
             logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
             self.release_gpu_ids(run_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
         except RunnerCompletedError:
             logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
             self.release_gpu_ids(run_id)
             logging.info("Runner completed.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
         except Exception as e:
             logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
             self.cleanup_run_when_starting_failed()
@@ -284,7 +286,6 @@ class FedMLClientRunner:
             sys.exit(1)
         finally:
             logging.info("Release resources.")
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
@@ -932,7 +933,8 @@ class FedMLClientRunner:
             status_process.join(15)
 
             # Stop log processor for current run
-            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
+            if status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
 
     def callback_report_current_status(self, topic, payload):
         self.send_agent_active_msg()

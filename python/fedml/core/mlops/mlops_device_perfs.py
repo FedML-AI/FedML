@@ -166,10 +166,15 @@ class MLOpsDevicePerfStats(object):
             gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(edge_id)
 
         topic_name = "ml_client/mlops/gpu_device_info"
+        deploy_worker_id_list = list()
+        try:
+            deploy_worker_id_list = json.loads(os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]")),
+        except Exception as e:
+            pass
         device_info_json = {
             "edgeId": edge_id,
             "deployMasterId": os.environ.get("FEDML_DEPLOY_MASTER_ID", ""),
-            "deployWorkerIds": os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]"),
+            "deployWorkerIds": deploy_worker_id_list,
             "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
             "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
             "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
