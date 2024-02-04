@@ -762,3 +762,76 @@ class JobMonitor(Singleton):
 
         except Exception as e:
             print(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")
+
+    def start_endpoint_log_processor(self):
+        try:
+            fedml_args = mlops.get_fedml_args()
+            ComputeCacheManager.get_instance().set_redis_params()
+            count = 0
+            try:
+                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
+            number_of_finished_jobs = 0
+            job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+            for job in job_list.job_list:
+                count += 1
+                if count >= 1000:
+                    break
+
+                if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
+                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(job.job_id, job.edge_id)
+                    continue
+
+                if job.status != device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+                    continue
+                number_of_finished_jobs += 1
+                if number_of_finished_jobs >= 100:
+                    break
+
+                endpoint_json = json.loads(job.running_json) if job.running_json is not None else {}
+                model_config = endpoint_json.get("model_config", {})
+                model_name = model_config.get("model_name", None)
+                model_id = model_config.get("model_id", None)
+                model_version = model_config.get("model_version", None)
+                endpoint_name = endpoint_json.get("end_point_name", None)
+
+                log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
+                    job.job_id, job.edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                    log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
+                )
+
+                # Get endpoint container name
+                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
+                )
+
+                num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                    endpoint_container_name_prefix)
+
+                is_job_container_running = False
+                for i in range(num_containers):
+                    endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+
+                    endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                    if endpoint_logs is None:
+                        continue
+                    is_job_container_running = True
+                    break
+
+                if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
+                        is_log_processor_running(job.job_id, job.edge_id):
+                    setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
+                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
+                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
+                        job.job_id, job.edge_id,
+                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
+                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
+                    )
+
+        except Exception as e:
+            print(f"Exception when starting endpoint log processor {traceback.format_exc()}.")
+
+
+
