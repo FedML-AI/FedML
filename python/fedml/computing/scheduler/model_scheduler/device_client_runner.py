@@ -49,6 +49,7 @@ from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUti
 from .device_mqtt_inference_protocol import FedMLMqttInference
 from .device_model_db import FedMLModelDatabase
 from ..comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.job_monitor import JobMonitor
 
 
 class RunnerError(Exception):
@@ -1290,6 +1291,8 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         self.recover_start_deployment_msg_after_upgrading()
+
+        JobMonitor.get_instance().start_endpoint_log_processor()
 
     def stop_agent(self):
         if self.run_process_event is not None:

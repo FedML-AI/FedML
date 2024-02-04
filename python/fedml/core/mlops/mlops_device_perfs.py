@@ -168,7 +168,7 @@ class MLOpsDevicePerfStats(object):
         topic_name = "ml_client/mlops/gpu_device_info"
         deploy_worker_id_list = list()
         try:
-            deploy_worker_id_list = json.loads(os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]")),
+            deploy_worker_id_list = json.loads(os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]"))
         except Exception as e:
             pass
         device_info_json = {
