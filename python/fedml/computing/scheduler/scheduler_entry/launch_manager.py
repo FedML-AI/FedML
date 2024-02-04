@@ -44,7 +44,6 @@ class FedMLLaunchManager(Singleton):
 
     def prepare_launch(self, yaml_file):
         user_api_key = get_api_key()
-        upgrade_if_not_latest()
         if not os.path.exists(yaml_file):
             print(f"{yaml_file} can not be found. Please specify the full path of your job yaml file.")
             exit(-1)
