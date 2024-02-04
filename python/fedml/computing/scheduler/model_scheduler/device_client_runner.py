@@ -287,6 +287,7 @@ class FedMLClientRunner:
             sys.exit(1)
         finally:
             logging.info("Release resources.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
@@ -934,8 +935,7 @@ class FedMLClientRunner:
             status_process.join(15)
 
             # Stop log processor for current run
-            if status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
-                MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
 
     def callback_report_current_status(self, topic, payload):
         self.send_agent_active_msg()
@@ -1291,8 +1291,6 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         self.recover_start_deployment_msg_after_upgrading()
-
-        JobMonitor.get_instance().start_endpoint_log_processor()
 
     def stop_agent(self):
         if self.run_process_event is not None:
