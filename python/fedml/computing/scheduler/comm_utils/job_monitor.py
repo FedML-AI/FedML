@@ -760,15 +760,5 @@ class JobMonitor(Singleton):
                         with open(log_file_path, "a") as f:
                             f.write(endpoint_logs)
 
-                if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
-                        is_log_processor_running(job.job_id, job.edge_id):
-                    setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
-                        job.job_id, job.edge_id,
-                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
-                        log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
-                    )
-
         except Exception as e:
             print(f"Exception when syncing endpoint log to MLOps {traceback.format_exc()}.")

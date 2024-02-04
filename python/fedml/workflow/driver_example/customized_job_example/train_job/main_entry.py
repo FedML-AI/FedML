@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 
 import fedml
 
@@ -10,6 +11,16 @@ if __name__ == "__main__":
 
     run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+
+    try:
+        unique_id = "IMAGE_MODEL_KEY"
+        my_api_key = ""  # Here you need to set your API key from nexus.fedml.ai
+        response = fedml.api.download(unique_id,
+                                      api_key=my_api_key, dest_path=f"{unique_id}")
+        print(f"download response: code {response.code}, message {response.message}, data {response.data}")
+    except Exception as e:
+        print(f"download exception {traceback.format_exc()}")
+        pass
 
     artifact = fedml.mlops.Artifact(name=f"general-file@{run_id}-{edge_id}", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)
     artifact.add_file("./requirements.txt")

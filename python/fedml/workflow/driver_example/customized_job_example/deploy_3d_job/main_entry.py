@@ -64,14 +64,15 @@ class Chatbot(FedMLPredictor):                # Inherit FedMLClientPredictor
             response_text = self.chatbot.predict(instruction=question)
 
         try:
-            unique_id = str(uuid.uuid4())
+            unique_id = "3D_MODEL_KEY"
             with open(f"{unique_id}.txt", "w") as f:
                 f.write(question)
                 f.write("\n\n")
                 f.write(response_text)
                 f.write("\n\n")
-            fedml.api.upload(data_path=f"{unique_id}.txt", name=unique_id,
+            response = fedml.api.upload(data_path=f"{unique_id}.txt", name=unique_id,
                              api_key=os.environ.get("NEXUS_API_KEY", None), metadata={"type": "chatbot"})
+            print(f"upload response {response}")
         except Exception as e:
             pass
 

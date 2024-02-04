@@ -1,7 +1,5 @@
 
-from fedml.workflow.jobs import JobStatus
 from fedml.workflow.customized_jobs.customized_base_job import CustomizedBaseJob
-import fedml
 
 
 class TrainJob(CustomizedBaseJob):
@@ -15,7 +13,7 @@ class TrainJob(CustomizedBaseJob):
         super().run()
 
     def status(self):
-        super().status()
+        return super().status()
 
     def kill(self):
         super().kill()
