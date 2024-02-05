@@ -5,6 +5,7 @@ import fedml.api
 from fedml.workflow.customized_jobs.customized_base_job import CustomizedBaseJob
 from fedml.computing.scheduler.comm_utils import sys_utils
 from typing import List, Dict
+from os.path import expanduser
 
 
 class TrainJob(CustomizedBaseJob):
@@ -54,6 +55,7 @@ class TrainJob(CustomizedBaseJob):
 
     def get_outputs(self):
         try:
+            output_file = self._get_output_file()
             output_dir = os.path.dirname(output_file)
             output_name = f"{TrainJob.TRAIN_JOB_OUTPUTS_KEY_PREFIX}_{self.run_id}"
             output_data = None

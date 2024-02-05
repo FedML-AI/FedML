@@ -6,7 +6,9 @@ from types import MappingProxyType
 from toposort import toposort
 
 from fedml.workflow.jobs import Job, JobStatus, NullJob
+from os.path import expanduser
 import time
+
 
 Metadata = namedtuple('Metadata', ['nodes', 'topological_order', 'graph'])
 Node = namedtuple('Node', ['name', 'job'])
