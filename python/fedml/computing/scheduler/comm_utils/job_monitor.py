@@ -486,11 +486,11 @@ class JobMonitor(Singleton):
             return response_ok
 
         if response_ok is None:
-            # Internal server can response, but reply is not ready
+            # Internal server can respond, but reply is not ready
             return False
 
         # Cannot reach the server, will try other protocols
-        print("Use http health check failed.")
+        print(f"Use http health check failed at {inference_url} for device {device_id} and endpoint {endpoint_id}.")
 
         response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(
             inference_url, timeout=timeout))

@@ -395,6 +395,10 @@ class FedMLModelCache(Singleton):
         return status_key
 
     def set_end_point_device_info(self, end_point_id, end_point_name, device_info):
+        '''
+        Currently all the device info is stored in one key, which is a string.
+        This string can be parsed into a list of device info.
+        '''
         try:
             self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
         except Exception as e:
@@ -418,6 +422,40 @@ class FedMLModelCache(Singleton):
                     pass
 
         return device_info
+    
+    def delete_end_point_device_info(self, end_point_id, end_point_name, edge_id_list_to_delete):
+        '''
+        Since the device info is stored in one key, we need to first delete the device info from the existing one.
+        '''
+        device_objs = FedMLModelCache.get_instance().get_end_point_device_info(end_point_id)
+
+        if device_objs is None:
+            raise Exception("The device list in local redis is None")
+        else:
+            total_device_objs_list = json.loads(device_objs)
+            for device_obj in total_device_objs_list:
+                if device_obj["id"] in edge_id_list_to_delete:
+                    total_device_objs_list.remove(device_obj)
+
+        # Dumps the new record (after deletion) to the redis
+        FedMLModelCache.get_instance().set_end_point_device_info(
+            end_point_id, end_point_name, json.dumps(total_device_objs_list))
+
+    def add_end_point_device_info(self, end_point_id, end_point_name, new_device_info):
+        '''
+        Since the device info is stored in one key, we need to append the new device info to the existing one.
+        '''
+        device_objs = FedMLModelCache.get_instance().get_end_point_device_info(end_point_id)
+
+        if device_objs is None:
+            raise Exception("The device list in local redis is None")
+        else:
+            total_device_objs_list = json.loads(device_objs)
+            new_device_info_json = json.loads(new_device_info)
+            total_device_objs_list.append(new_device_info_json)
+        
+        FedMLModelCache.get_instance().set_end_point_device_info(
+            end_point_id, end_point_name, json.dumps(total_device_objs_list))
 
     def set_end_point_token(self, end_point_id, end_point_name, model_name, token):
         try:
