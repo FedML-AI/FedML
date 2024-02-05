@@ -3,6 +3,7 @@ import time
 import traceback
 
 import fedml
+from fedml.workflow.customized_jobs.train_job import TrainJob
 
 if __name__ == "__main__":
     print("Hi everyone, I am an launch job.")
@@ -11,6 +12,13 @@ if __name__ == "__main__":
 
     run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+
+    job_inputs = TrainJob.get_inputs()
+    print(f"Inputs from previous job. {job_inputs}")
+
+    TrainJob.set_outputs([{"trained_model_file": "~/.cache/train_model.bin"}])
+
+    exit(0)
 
     try:
         unique_id = "IMAGE_MODEL_KEY"
@@ -52,5 +60,3 @@ if __name__ == "__main__":
         fedml.mlops.log_metric({"acc": acc, "loss": loss})
         time.sleep(2)
 
-
-    time.sleep(10)

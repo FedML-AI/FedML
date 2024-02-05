@@ -1,10 +1,11 @@
+import os
 from collections import defaultdict, namedtuple, deque
 from datetime import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from types import MappingProxyType
 from toposort import toposort
 
-from fedml.workflow.jobs import Job, JobStatus
+from fedml.workflow.jobs import Job, JobStatus, NullJob
 import time
 
 Metadata = namedtuple('Metadata', ['nodes', 'topological_order', 'graph'])
@@ -24,6 +25,7 @@ class Workflow:
         self._metadata = None
         self._loop = loop
         self.jobs = {}
+        self.input = dict()
 
     @property
     def metadata(self):
@@ -77,12 +79,23 @@ class Workflow:
         Run the workflow, executing jobs in the specified order.
         """
 
+        if len(self.jobs.keys()) == 1:
+            current_job = NullJob
+            for job_name, job_attr in self.jobs.items():
+                current_job = job_attr['job']
+            if current_job is not None:
+                self.add_job(NullJob(), dependencies=[current_job])
+
         self._compute_workflow_metadata()
         first_run = True
+        has_set_first_input = False
         while first_run or self.loop:
             first_run = False
             for nodes in self.metadata.topological_order:
                 jobs = [node.job for node in nodes]
+                if not has_set_first_input and len(jobs) > 0:
+                    jobs[0].set_inputs([self.input])
+                    has_set_first_input = True
                 self._execute_and_wait(jobs)
 
     def _execute_and_wait(self, jobs: List[Job]):
@@ -94,6 +107,11 @@ class Workflow:
         """
 
         for job in jobs:
+            dependencies = self.get_job_dependencies(job.name)
+            for dep in dependencies:
+                for output in dep.get_outputs():
+                    job.append_input(output)
+
             job.run()
 
         while True:
@@ -118,7 +136,7 @@ class Workflow:
                 raise ValueError(f"Following jobs errored out, hence workflow cannot be completed: {errored_jobs}."
                                  "Please check the logs for more information.")
 
-            time.sleep(60)
+            time.sleep(10)
 
     def _kill_jobs(self, jobs: List[Job]):
         """
@@ -149,3 +167,56 @@ class Workflow:
                                  topological_order=tuple(toposort(graph)))
 
         return self.metadata
+
+    def get_job_dependencies(self, job_name):
+        return  self.jobs.get(job_name).get('dependencies')
+
+    def get_job_status(self, job_name):
+        for nodes in self.metadata.topological_order:
+            jobs = [node.job for node in nodes]
+            for job in jobs:
+                if job_name == job.name:
+                    return job.status()
+
+        return JobStatus.UNDETERMINED
+
+    def get_workflow_status(self):
+        all_success = True
+        has_failed = False
+        all_completed = True
+        for nodes in self.metadata.topological_order:
+            jobs = [node.job for node in nodes]
+            for job in jobs:
+                status = job.status()
+                if status == JobStatus.FINISHED:
+                    pass
+                elif status == JobStatus.FAILED:
+                    has_failed = True
+                    all_success = False
+                else:
+                    all_completed = False
+                    all_success = False
+
+        if all_completed and all_success:
+            return JobStatus.FINISHED
+
+        if all_completed and has_failed:
+            return JobStatus.FAILED
+
+        return JobStatus.RUNNING
+
+    def set_input(self, input):
+        self.input = input
+
+    def get_outputs(self):
+        job_list = list()
+        for nodes in self.metadata.topological_order:
+            job_list.extend([node.job for node in nodes])
+
+        return job_list[-1].get_outputs()
+
+    @staticmethod
+    def get_workflow(workflow_name=None):
+        workflow_name = os.environ.get("FEDML_CURRENT_WORKFLOW") if workflow_name is None else workflow_name
+        return Workflow(workflow_name)
+

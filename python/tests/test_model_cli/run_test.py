@@ -36,7 +36,7 @@ def test_model_create_push(config_version="release"):
     fedml.set_env_version(config_version)
     model.create(model_name, model_config=model_config)
     model.push(
-        model_name, api_key="10e87dd6d6574311a80200455e4d9b30",
+        model_name, api_key="",
         tag_list=[{"tagId": 147, "parentId": 3, "tagName": "LLM"}])
 
 

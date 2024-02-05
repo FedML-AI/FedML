@@ -39,7 +39,5 @@ if __name__ == "__main__":
         acc += 0.01
         loss -= 0.02
         fedml.mlops.log_metric({"acc": acc, "loss": loss})
-        time.sleep(2)
+        time.sleep(0.5)
 
-
-    time.sleep(10)
