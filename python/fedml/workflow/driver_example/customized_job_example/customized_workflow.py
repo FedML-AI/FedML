@@ -182,15 +182,15 @@ def create_inference_train_workflow(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--deploy", "-d", type=bool, default=False, help="Create a deploy workflow")
-    parser.add_argument("--inference", "-i", type=bool, default=True, help='Create a inference workflow')
+    parser.add_argument("--deploy", "-d", type=bool, default=True, help="Create a deploy workflow")
+    parser.add_argument("--inference", "-i", type=bool, default=False, help='Create a inference workflow')
     parser.add_argument("--api_key", "-k", type=str, default=MY_API_KEY, help='API Key from the Nexus AI Platform')
     parser.add_argument("--infer_json", "-ij", type=str, default=None, help='Input json data for inference')
 
     args = parser.parse_args()
 
     workflow_status, outputs = None, None
-    deployed_endpoint_id = 2998
+    deployed_endpoint_id = None
     if args.deploy:
         workflow_status, outputs = create_deploy_workflow(job_api_key=args.api_key)
         deployed_endpoint_id = outputs[0].get("endpoint_id", None)
