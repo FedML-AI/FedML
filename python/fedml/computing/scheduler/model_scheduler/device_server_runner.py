@@ -267,7 +267,7 @@ class FedMLServerRunner:
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
         model_version = model_config["model_version"]        
-        model_config_parameters = model_config.get("parameters", {})
+        model_config_parameters = running_json.get("parameters", {})
 
         inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
                                                      ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
@@ -392,7 +392,8 @@ class FedMLServerRunner:
         if master_port is not None:
             inference_port = int(master_port)
         if not ServerConstants.is_running_on_k8s():
-            logging.info(f"start the model inference gateway, end point {run_id}, model name {model_name}...")
+            logging.info(f"start the model inference gateway, end point {run_id}, "
+                         f"model name {model_name} at port {inference_port}...")
             self.check_runner_stop_event()
 
             use_mqtt_inference = os.getenv("FEDML_USE_MQTT_INFERENCE", "False")
