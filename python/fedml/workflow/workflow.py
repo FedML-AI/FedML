@@ -21,11 +21,11 @@ class Workflow:
     """
 
     def __init__(self, name, loop: bool = False):
-        self.name = name
-        self._metadata = None
-        self._loop = loop
-        self.jobs = {}
-        self.input = dict()
+        self.name: str = name
+        self._metadata: Metadata | None = None
+        self._loop: bool = loop
+        self.jobs: Dict[str, Dict[str, Any]] = dict()
+        self.input: Dict[Any, Any] = dict()
 
     @property
     def metadata(self):
@@ -78,13 +78,6 @@ class Workflow:
         """
         Run the workflow, executing jobs in the specified order.
         """
-
-        if len(self.jobs.keys()) == 1:
-            current_job = NullJob
-            for job_name, job_attr in self.jobs.items():
-                current_job = job_attr['job']
-            if current_job is not None:
-                self.add_job(NullJob(), dependencies=[current_job])
 
         self._compute_workflow_metadata()
         first_run = True
@@ -153,23 +146,24 @@ class Workflow:
             raise ValueError("Workflow metadata already exists. This is not expected. Please report this issue.")
 
         node_dict = dict()
-        graph = defaultdict(set)
+        graph = dict()
 
         for job_name, job_instance in self.jobs.items():
-            node = node_dict.get(job_name, Node(name=job_name, job=job_instance['job']))
+            node = node_dict.setdefault(job_name, Node(name=job_name, job=job_instance['job']))
+            graph.setdefault(node, set())
 
             for dependency in job_instance['dependencies']:
-                dependency_node = node_dict.get(dependency.name, Node(name=dependency.name, job=dependency))
+                dependency_node = node_dict.setdefault(dependency.name, Node(name=dependency.name, job=dependency))
                 graph[node].add(dependency_node)
 
-        self.metadata = Metadata(nodes=tuple(node_dict.values()),
+        self.metadata = Metadata(nodes=set(node_dict.values()),
                                  graph=MappingProxyType(graph),
                                  topological_order=tuple(toposort(graph)))
 
         return self.metadata
 
     def get_job_dependencies(self, job_name):
-        return  self.jobs.get(job_name).get('dependencies')
+        return self.jobs.get(job_name).get('dependencies')
 
     def get_job_status(self, job_name):
         for nodes in self.metadata.topological_order:
@@ -205,10 +199,10 @@ class Workflow:
 
         return JobStatus.RUNNING
 
-    def set_input(self, input):
+    def set_workflow_input(self, input):
         self.input = input
 
-    def get_outputs(self):
+    def get_workflow_output(self):
         job_list = list()
         for nodes in self.metadata.topological_order:
             job_list.extend([node.job for node in nodes])
@@ -219,4 +213,3 @@ class Workflow:
     def get_workflow(workflow_name=None):
         workflow_name = os.environ.get("FEDML_CURRENT_WORKFLOW") if workflow_name is None else workflow_name
         return Workflow(workflow_name)
-
