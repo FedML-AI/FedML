@@ -7,33 +7,28 @@ import fedml
 
 
 class CustomizedBaseJob(Job):
-    def __init__(self, name, job_yaml_absolute_path=None, job_api_key=None, config_version=None,
-                 local_on_prem_host="localhost", local_on_prem_port=80):
+    CURRENT_CONFIG_VERSION = "release"
+    CURRENT_ON_PREM_LOCAL_HOST = "localhost"
+    CURRENT_ON_PREM_LOCAL_PORT = 18080
+
+    def __init__(self, name, job_yaml_absolute_path=None, job_api_key=None):
         super().__init__(name)
+        self.launch_result = None
         self.run_id = None
         self.job_yaml_absolute_path = job_yaml_absolute_path
         self.job_api_key = job_api_key
-        self.config_version = config_version
-        self.local_on_prem_host = local_on_prem_host
-        self.local_on_prem_port = local_on_prem_port
-
-    def append_input(self, job_name):
-        pass
-
-    def get_input(self, job_name):
-        pass
-
-    def generate_output(self):
-        pass
+        self.config_version = CustomizedBaseJob.CURRENT_CONFIG_VERSION
+        self.local_on_prem_host = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_HOST
+        self.local_on_prem_port = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_PORT
 
     def run(self):
         fedml.set_env_version(self.config_version)
         fedml.set_local_on_premise_platform_host(self.local_on_prem_host)
         fedml.set_local_on_premise_platform_port(self.local_on_prem_port)
 
-        result = fedml.api.launch_job(yaml_file=self.job_yaml_absolute_path, api_key=self.job_api_key)
-        if result.run_id and int(result.run_id) > 0:
-            self.run_id = result.run_id
+        self.launch_result = fedml.api.launch_job(yaml_file=self.job_yaml_absolute_path, api_key=self.job_api_key)
+        if self.launch_result.run_id and int(self.launch_result.run_id) > 0:
+            self.run_id = self.launch_result.run_id
 
     def status(self):
         if self.run_id:

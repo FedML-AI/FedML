@@ -1,4 +1,5 @@
 import logging
+import json
 
 
 class FedMLModelObject(object):
@@ -37,3 +38,26 @@ class FedMLModelList(object):
         for model_obj_json in model_list_data:
             model_obj = FedMLModelObject(model_obj_json)
             self.model_list.append(model_obj)
+
+
+class FedMLEndpointDetail(object):
+    def __init__(self, endpoint_detail_json):
+        self.endpoint_id = endpoint_detail_json.get("id")
+        self.endpoint_name = endpoint_detail_json.get("endpointName")
+        self.model_name = endpoint_detail_json.get("modelName")
+        self.model_id = endpoint_detail_json.get("modelId")
+        self.model_version = endpoint_detail_json.get("modelVersion")
+        self.resource_type = endpoint_detail_json.get("resourceType")
+        self.status = endpoint_detail_json.get("status")
+        self.edge_id = endpoint_detail_json.get("edgeId")
+        self.create_time = endpoint_detail_json.get("createTime")
+        self.update_time = endpoint_detail_json.get("updateTime")
+        self.replicas = endpoint_detail_json.get("replicas")
+        self.online_replicas = endpoint_detail_json.get("onlineReplicas")
+        self.min = endpoint_detail_json.get("min")
+        self.max = endpoint_detail_json.get("max")
+        self.inference_engine = endpoint_detail_json.get("inferenceEngine")
+        self.model_task_id = endpoint_detail_json.get("modelTaskId")
+        self.inference_url = endpoint_detail_json.get("requestUrl")
+        input_json_str = endpoint_detail_json.get("inputJson", None)
+        self.input_json = json.loads(input_json_str) if input_json_str is not None else None
