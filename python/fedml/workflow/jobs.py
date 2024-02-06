@@ -1,6 +1,8 @@
 from enum import Enum
 from abc import ABC, abstractmethod
 from fedml.api.constants import RunStatus
+from typing import List, Dict
+import argparse
 
 
 # Define an enum for job status
@@ -47,6 +49,8 @@ class Job(ABC):
         - name (str): Name for the job. This is used to identify the job in the workflow so it should be unique.
         """
         self.name = name
+        self.input_data_list: List[Dict] = list()
+        self.output_data_list: List[Dict] = list()
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -73,3 +77,35 @@ class Job(ABC):
         """
         Method to kill the job if running on remote server.
         """
+
+    def append_input(self, input:Dict):
+        """
+        Method to append fixed input to the job.
+        """
+        self.input_data_list.append(input)
+
+    def set_inputs(self, inputs: List[Dict]):
+        """
+        Method to append fixed input to the job.
+        """
+        self.input_data_list = inputs
+
+    def get_outputs(self):
+        """
+        Method to get output of the job.
+        """
+        return self.output_data_list
+
+
+class NullJob(Job):
+    def __init__(self, name="NullJob"):
+        super().__init__(name)
+
+    def run(self):
+        self.output_data_list.extend(self.input_data_list)
+
+    def status(self):
+        return JobStatus.FINISHED
+
+    def kill(self):
+        pass
