@@ -124,11 +124,11 @@ def create_deploy_workflow(job_api_key=None):
 
     # Get the status and result of workflow
     workflow_status = workflow.get_workflow_status()
-    outputs = workflow.get_outputs()
+    workflow_output = workflow.get_workflow_output()
     print(f"Final status of the workflow is as follows. {workflow_status}")
-    print(f"Output of the workflow is as follows. {outputs}")
+    print(f"Output of the workflow is as follows. {workflow_output}")
 
-    return workflow_status, outputs
+    return workflow_status, workflow_output
 
 
 def create_inference_train_workflow(
@@ -166,36 +166,46 @@ def create_inference_train_workflow(
 
     # Set the input to the workflow
     input_json = {"text": "What is a good cure for hiccups?"} if input_json is None else input_json
-    workflow.set_input(input_json)
+    workflow.set_workflow_input(input_json)
 
     # Run workflow
     workflow.run()
 
     # Get the status and result of workflow
     workflow_status = workflow.get_workflow_status()
-    outputs = workflow.get_outputs()
+    workflow_output = workflow.get_workflow_output()
     print(f"Final status of the workflow is as follows. {workflow_status}")
-    print(f"Output of the workflow is as follows. {outputs}")
+    print(f"Output of the workflow is as follows. {workflow_output}")
 
-    return workflow_status, outputs
+    return workflow_status, workflow_output
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--deploy", "-d", type=bool, default=True, help="Create a deploy workflow")
-    parser.add_argument("--inference", "-i", type=bool, default=False, help='Create a inference workflow')
+    parser.add_argument("--deploy", "-d", nargs="*", help="Create a deploy workflow")
+    parser.add_argument("--inference", "-i", nargs="*",  help='Create a inference workflow')
     parser.add_argument("--api_key", "-k", type=str, default=MY_API_KEY, help='API Key from the Nexus AI Platform')
     parser.add_argument("--infer_json", "-ij", type=str, default=None, help='Input json data for inference')
 
     args = parser.parse_args()
+    is_deploy = args.deploy
+    if args.deploy is None:
+        is_deploy = False
+    else:
+        is_deploy = True
+    is_inference = args.inference
+    if args.inference is None:
+        is_inference = False
+    else:
+        is_inference = True
 
     workflow_status, outputs = None, None
-    deployed_endpoint_id = None
-    if args.deploy:
+    deployed_endpoint_id = 3164
+    if is_deploy:
         workflow_status, outputs = create_deploy_workflow(job_api_key=args.api_key)
         deployed_endpoint_id = outputs[0].get("endpoint_id", None)
 
-    if args.inference and deployed_endpoint_id is not None:
+    if is_inference and deployed_endpoint_id is not None:
         create_inference_train_workflow(
             job_api_key=args.api_key, endpoint_id_list=[deployed_endpoint_id, deployed_endpoint_id], input_json=args.infer_json)
         exit(0)

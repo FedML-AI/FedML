@@ -41,7 +41,7 @@ class JobStatus(Enum):
 
 class Job(ABC):
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         """
         Initialize the Job instance.
 
@@ -78,7 +78,7 @@ class Job(ABC):
         Method to kill the job if running on remote server.
         """
 
-    def append_input(self, input:Dict):
+    def append_input(self, input: Dict):
         """
         Method to append fixed input to the job.
         """
@@ -90,7 +90,7 @@ class Job(ABC):
         """
         self.input_data_list = inputs
 
-    def get_outputs(self):
+    def get_outputs(self) -> List[Dict]:
         """
         Method to get output of the job.
         """
