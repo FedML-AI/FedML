@@ -631,7 +631,7 @@ class JobMonitor(Singleton):
                         continue
                     try:
                         # If the endpoint is offline, then report offline status to the MLOps.
-                        model_config_parameters = model_config.get("parameters", {})
+                        model_config_parameters = endpoint_json.get("parameters", {})
                         server_internal_port = model_config_parameters.get("server_internal_port",
                                                                            ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                         is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name,
