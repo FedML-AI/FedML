@@ -985,6 +985,7 @@ class FedMLClientRunner:
         #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         # )
 
+        train_edge_id = str(topic).split("/")[-2]
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
