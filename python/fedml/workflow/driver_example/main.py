@@ -34,7 +34,7 @@ class HelloWorldJob(Job):
                 return JobStatus.get_job_status_from_run_status(run_status)
             except Exception as e:
                 logging.error(f"Error while getting status of run {self.run_id}: {e}")
-            return JobStatus.UNDETERMINED
+        return JobStatus.UNDETERMINED
 
     def kill(self):
         if self.run_id:
@@ -52,13 +52,8 @@ if __name__ == "__main__":
     workflow.add_job(job_2, dependencies=[job_1])
     workflow.run()
 
-    job_1 = HelloWorldJob(name="hello_world")
-    job_2 = HelloWorldJob(name="hello_world_dependent_on_job_1")
-    workflow = Workflow(name="hello_world_workflow", loop=False)
-    workflow.add_job(job_1)
-    workflow.add_job(job_2, dependencies=[job_1])
-    workflow.run()
     print("graph", workflow.metadata.graph)
     print("nodes", workflow.metadata.nodes)
     print("topological_order", workflow.metadata.topological_order)
+    print("output", workflow.get_workflow_output())
     print("loop", workflow.loop)
