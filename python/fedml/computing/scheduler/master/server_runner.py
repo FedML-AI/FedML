@@ -53,6 +53,7 @@ from ..model_scheduler import device_client_constants
 from ..scheduler_core.log_manager import LogsManager
 from ..scheduler_core.metrics_manager import MetricsManager
 from ..scheduler_core.master_api_daemon import MasterApiDaemon
+from fedml.utils.debugging import debug
 
 
 class RunnerError(Exception):
@@ -226,7 +227,8 @@ class FedMLServerRunner:
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
         try:
@@ -424,6 +426,7 @@ class FedMLServerRunner:
     def callback_run_bootstrap(self, job_pid):
         ServerConstants.save_bootstrap_process(self.run_id, job_pid)
 
+    @debug
     def run(
             self, process_event, completed_event, edge_id_status_queue=None,
             edge_device_info_queue=None, run_metrics_queue=None,
@@ -508,6 +511,7 @@ class FedMLServerRunner:
                 in_model_id=model_id, in_model_version=model_version,
                 endpoint_name=endpoint_name, endpoint_id=endpoint_id, run_id=run_id)
 
+    @debug
     def run_impl(
             self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
             run_event_queue, run_artifacts_queue, run_logs_queue
@@ -532,7 +536,11 @@ class FedMLServerRunner:
 
         status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
             edge_device_info_queue, callback_when_edges_ready=self.send_training_request_to_edges)
+        logging.info(f"Status OK: {status_ok}, Active edge info dict: {active_edge_info_dict}, "
+                     f"inactivate edges: {inactivate_edges}")
         if not status_ok:
+            logging.error(f"Status of edge device is not OK. Active edge info dict: {active_edge_info_dict}, "
+                          f"Inactivate edges: {inactivate_edges}")
             return
 
         if not self.should_continue_run_job(run_id):
@@ -637,7 +645,7 @@ class FedMLServerRunner:
                 edges_id_status_timeout_map[str(edge_id_item)] = status_dict
 
             # If the completed device number is equal total device number, then break
-            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list)+1:
+            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list) + 1:
                 break
 
             # Calc the timeout value to wait to device killed.
@@ -680,7 +688,8 @@ class FedMLServerRunner:
             number_of_killed_edges, running_edges_list, enable_fault_tolerance=enable_fault_tolerance,
             fault_tolerance_rate=fault_tolerance_rate)
         if status_to_report is not None:
-            logging.info(f"Run completed when aggregating status, metrics and logs, will report status {status_to_report}")
+            logging.info(
+                f"Run completed when aggregating status, metrics and logs, will report status {status_to_report}")
             self.mlops_metrics.report_server_id_status(
                 self.run_id, status_to_report, edge_id=self.edge_id,
                 server_id=self.edge_id, server_agent_id=self.edge_id)
@@ -1069,7 +1078,7 @@ class FedMLServerRunner:
 
         if should_send_server_id_status:
             self.mlops_metrics.report_server_id_status(
-                self.run_id,  ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id,
+                self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, edge_id=self.edge_id,
                 server_id=self.edge_id, server_agent_id=self.edge_id)
 
         try:
@@ -1131,6 +1140,7 @@ class FedMLServerRunner:
 
         return False, self.async_check_timeout
 
+    @debug
     def detect_edges_status(
             self, edge_device_info_queue, callback_when_edges_ready=None, status_timeout=None,
             need_to_trigger_exception=True, status_check_context=None, given_edge_ids=None,
@@ -1194,9 +1204,16 @@ class FedMLServerRunner:
 
             # If all edges are ready then send the starting job message to them
             if active_edges_count == len(edge_id_list):
+                logging.info(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
                 if callback_when_edges_ready is not None:
+                    logging.info("All edges are ready. Start to process the callback function.")
                     callback_when_edges_ready(active_edge_info_dict=active_edge_info_dict)
+                else:
+                    logging.info("All edges are ready. No callback function to process.")
                 break
+            else:
+                logging.info(f"All edges are not ready. Active edge id list: {active_edge_info_dict}, "
+                             f"Inactive edge id list: {inactivate_edges}")
 
             # Check if runner needs to stop and sleep specific time
             self.check_runner_stop_event()
@@ -1235,6 +1252,7 @@ class FedMLServerRunner:
             payload["context"] = context
         self.client_mqtt_mgr.send_message(topic_get_model_device_id, json.dumps(payload))
 
+    @debug
     def send_training_request_to_edges(self, active_edge_info_dict=None):
         run_id = self.request_json["runId"]
         edge_id_list = self.request_json["edgeids"]
@@ -1472,6 +1490,7 @@ class FedMLServerRunner:
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
 
+        # [NOTES] Example Request JSON: https://fedml-inc.larksuite.com/wiki/ScnIwUif9iupbjkYS0LuBrd6sod#WjbEdhYrvogmlGxKTOGu98C6sSb
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1801,8 +1820,8 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ServerAgent_Metrics_@{}@_@{}@_@{}@_@{}@".format(self.user_name, self.args.current_device_id,
-                                                        str(os.getpid()),
-                                                        str(uuid.uuid4()))
+                                                                   str(os.getpid()),
+                                                                   str(uuid.uuid4()))
         )
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
@@ -2032,7 +2051,7 @@ class FedMLServerRunner:
                 running_edges_list.append(edge_id_item)
 
             # If the killed device number is equal total device number, then break
-            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list)+1:
+            if len(running_edges_list) <= 0 and len(current_edge_id_status_map.keys()) == len(edge_id_list) + 1:
                 break
 
             # Calc the timeout value to wait to device killed.
@@ -2123,7 +2142,7 @@ class FedMLServerRunner:
                 # Stop log processor for current run
                 MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
                 if self.use_local_process_as_cloud_server:
-                    #RunProcessUtils.kill_process(os.getpid())
+                    # RunProcessUtils.kill_process(os.getpid())
                     cloud_server_process = self.run_process_map.get(run_id_str, None)
                     if cloud_server_process is not None:
                         RunProcessUtils.kill_process(cloud_server_process.pid)
@@ -2573,7 +2592,7 @@ class FedMLServerRunner:
             "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
             + str(self.unique_device_id)
         )
-        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=False)
+        MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=True)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(

@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import docker
+from docker import errors
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
@@ -193,7 +194,9 @@ class ContainerUtils(Singleton):
         logging.info(f"Pulling policy is {image_pull_policy}")
 
         if image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_ALWAYS:
+            logging.info(f"Pulling the image {image_name}...")
             docker_client.images.pull(image_name)
+            logging.info(f"Image {image_name} successfully pulled")
         elif image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT:
             try:
                 docker_client.images.get(image_name)
