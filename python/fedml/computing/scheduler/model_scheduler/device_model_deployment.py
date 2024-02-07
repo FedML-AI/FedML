@@ -360,6 +360,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                         security_utils.get_content_hash(running_model_name)
         
         same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
+        if same_model_container_rank == -1:
+            logging.error(f"Fail to get existed docker with {end_point_name} {inference_model_name}")
+            raise Exception("Failed to get the container rank")
         default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
         try:

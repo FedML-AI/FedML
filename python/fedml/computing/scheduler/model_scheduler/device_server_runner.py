@@ -339,6 +339,7 @@ class FedMLServerRunner:
         self.stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
         self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
 
+        # Changed the status to "IDLE"
         self.mlops_metrics.broadcast_server_training_status(
             run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
             is_from_model=True, edge_id=self.edge_id)
@@ -1252,7 +1253,7 @@ class FedMLServerRunner:
 
         max_unavailable_rate = self.request_json["parameters"].get("max_unavailable_rate", 0.1)
 
-        window_size = max(1, int(total_num * (1 - max_unavailable_rate)))
+        window_size = max(1, int(total_num * max_unavailable_rate))
 
         first_chunk_devices_update = \
             self.slave_update_result_mapping[self.run_id]["devices_need_update"][:window_size].copy()
@@ -1359,7 +1360,7 @@ class FedMLServerRunner:
             if len(remain_devices) == 0:    # All devices are updated
                 return
             else:
-                window_size = max(1, int(len(remain_devices) * (1 - max_unavailable_rate)))
+                window_size = max(1, int(len(remain_devices) * max_unavailable_rate))
                 edges_in_window = remain_devices[:window_size]
                 logging.info(f"Devices in next round window: {edges_in_window}")
                 curr_update_window = edges_in_window.copy()     # Slide the window

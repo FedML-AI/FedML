@@ -267,6 +267,7 @@ class JobMonitor(Singleton):
                         model_id = model_config.get("model_id", None)
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
+                        logging.info(f"Check endpoint status for {job.job_id}:{job.edge_id}.")
 
                         if model_name is not None:
                             # Get model deployment result

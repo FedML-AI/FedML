@@ -538,7 +538,12 @@ class FedMLClientRunner:
         try:
             JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, self.edge_id)
 
-            FedMLClientDataInterface.get_instance().delete_job_from_db(end_point_id)
+            # Instead of deleting the records, need to change the job status to "UPGRADING"
+            FedMLClientDataInterface.get_instance().save_job_status(
+                end_point_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING
+            )
+
             FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
                 end_point_id, end_point_name, model_name, self.edge_id)
 

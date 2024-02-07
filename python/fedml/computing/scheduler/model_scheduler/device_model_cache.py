@@ -88,7 +88,19 @@ class FedMLModelCache(Singleton):
                               model_name, model_version, device_id, deployment_result):
         result_dict = {"cache_device_id": device_id, "result": deployment_result}
         try:
-            self.redis_connection.rpush(self.get_deployment_result_key(end_point_id, end_point_name, model_name), json.dumps(result_dict))
+            # Delete old result
+            # In this list, find the result's complete record, delete it.
+            result_list = self.redis_connection.lrange(
+                self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
+            for result_item in result_list:
+                result_device_id, result_payload = self.get_result_item_info(result_item)
+                if result_device_id == device_id:
+                    self.redis_connection.lrem(
+                        self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, result_item)
+
+            # Append the new result to the list
+            self.redis_connection.rpush(
+                self.get_deployment_result_key(end_point_id, end_point_name, model_name), json.dumps(result_dict))
         except Exception as e:
             pass
         self.model_deployment_db.set_deployment_result(end_point_id, end_point_name,
