@@ -2,5 +2,5 @@ workspace: "./src"
 entry_point: "serve_main.py"
 bootstrap: |
   echo "Bootstrap start..."
-  sh ./config/bootstrap.sh
+  sleep 15
   echo "Bootstrap finished"

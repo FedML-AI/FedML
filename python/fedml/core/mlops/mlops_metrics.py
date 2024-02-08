@@ -92,7 +92,7 @@ class MLOpsMetrics(object):
         topic_name = "fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status, "version": "v1.0"}
         message_json = json.dumps(msg)
-        # logging.info("report_client_device_status. message_json = %s" % message_json)
+        logging.info("report_client_device_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
@@ -102,11 +102,12 @@ class MLOpsMetrics(object):
         #     return
         """
         this is used for notifying the client status to MLOps (both FedML CLI and backend can consume it)
+        Currently, the INITIALIZING, and RUNNING are report using this method.
         """
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
-        # logging.info("report_client_training_status. message_json = %s" % message_json)
+        logging.info("report_client_training_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
@@ -130,11 +131,12 @@ class MLOpsMetrics(object):
         #     return
         """
         this is used for broadcasting the client status to MLOps (backend can consume it)
+        Currently, the FINISHED are report using this method.
         """
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
-        logging.info("report_client_training_status. message_json = %s" % message_json)
+        logging.info("broadcast_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def client_send_exit_train_msg(self, run_id, edge_id, status, msg=None):

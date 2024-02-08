@@ -135,13 +135,15 @@ class FedMLClientRunner:
         local_package_path = ClientConstants.get_model_package_dir()
         os.makedirs(local_package_path, exist_ok=True)
         filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
-        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
+        local_package_file = os.path.join(local_package_path,
+                                          f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         logging.info("Download from package_url {}".format(package_url))
 
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         try:
@@ -167,7 +169,8 @@ class FedMLClientRunner:
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
 
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         if not os.path.exists(unzip_package_path):
@@ -262,16 +265,19 @@ class FedMLClientRunner:
             self.setup_client_mqtt_mgr()
 
             if not self.run_impl():
-                logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
+                logging.info(
+                    f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
                 self.release_gpu_ids(run_id)
         except RunnerError:
             logging.info("Runner stopped.")
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
             self.release_gpu_ids(run_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
         except RunnerCompletedError:
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
             self.release_gpu_ids(run_id)
             logging.info("Runner completed.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
@@ -280,7 +286,8 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
             self.release_gpu_ids(run_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             time.sleep(2)
@@ -337,12 +344,9 @@ class FedMLClientRunner:
         scale_max = model_config.get("instance_scale_max", 0)
         model_config_parameters = self.request_json["parameters"]
 
-        inference_port = model_config_parameters.get("worker_internal_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
+        inference_port = model_config_parameters.get("worker_internal_port",
+                                                     ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("worker_external_port", inference_port)
-
-        if "diff_devices" in self.request_json and self.device_id in self.request_json["diff_devices"] and \
-            self.request_json["diff_devices"][self.device_id] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
-                self.handle_replaced_device()
 
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
@@ -428,6 +432,11 @@ class FedMLClientRunner:
                     logging.info(
                         f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
 
+        logging.info("Check if need update / removing existed container...")
+        if "diff_devices" in self.request_json and str(self.edge_id) in self.request_json["diff_devices"] and \
+                self.request_json["diff_devices"][str(self.edge_id)] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
+            self.handle_replaced_device()
+
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
@@ -468,7 +477,7 @@ class FedMLClientRunner:
 
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-        
+
             # After sending the deployment status, we should wait for the master to delete the deployment status
             status_payload = self.send_deployment_status(
                 end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
@@ -477,7 +486,7 @@ class FedMLClientRunner:
             return False
         else:
             logging.info("finished deployment, continue to send results to master...")
-            status_payload = self.send_deployment_status(   # Send Master the external port
+            status_payload = self.send_deployment_status(  # Send Master the external port
                 end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
                 ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port_external)
             result_payload = self.send_deployment_results(
@@ -485,7 +494,7 @@ class FedMLClientRunner:
                 model_id, model_name, inference_output_url, model_version, inference_port_external,
                 inference_engine, model_metadata, model_config)
 
-            if inference_port_external != inference_port:   # For Worker, use internal port
+            if inference_port_external != inference_port:  # For Worker, use internal port
                 logging.info("inference_port_external {} != inference_port {}".format(
                     inference_port_external, inference_port))
                 status_payload = self.construct_deployment_status(
@@ -510,47 +519,47 @@ class FedMLClientRunner:
             return True
 
     def handle_replaced_device(self):
+        """
+        Strategy-1:
+        (1) clean local records (2) find and clean current container using diff_version: {device_id: old_version}
+        """
         end_point_id = self.request_json["end_point_id"]
         end_point_name = self.request_json["end_point_name"]
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
-        model_version = model_config["model_version"]
-        
-        '''
-        Strategy-1:
-        Clean the current container
-        '''
-        client = docker.from_env()
+        new_model_version = model_config["model_version"]
+        old_model_version = self.request_json["diff_version"][str(self.edge_id)]
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_name=end_point_name,model_name=model_name,
-                                    model_version=model_version, end_point_id=end_point_id, model_id=model_id)
-        logging.info("running_model_name: {}".format(running_model_name))
+        logging.info(f"[endpoint/device][{end_point_id}/{self.edge_id}] "
+                     f"Start to handle replaced device {self.edge_id} to new version {new_model_version}."
+                     f"which originally has old version {old_model_version}.")
 
-        # TODO: Scroll update
-        container_prefix = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                        security_utils.get_content_hash(running_model_name)
-        num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
+        try:
+            JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, self.edge_id)
 
-        for i in range(num_containers):
-            container_name = "{}__{}".format(container_prefix, i)
-            logging.info("default_server_container_name: {}".format(container_name))
+            # Instead of deleting the records, need to change the job status to "UPGRADING"
+            FedMLClientDataInterface.get_instance().save_job_status(
+                end_point_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING
+            )
 
-            try:
-                exist_container_obj = client.containers.get(container_name)
-            except docker.errors.NotFound:
-                exist_container_obj = None
-            except docker.errors.APIError:
-                raise Exception("Failed to get the container object")
+            FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
+                end_point_id, end_point_name, model_name, self.edge_id)
 
-            if exist_container_obj is not None:
-                client.api.remove_container(exist_container_obj.id, v=True, force=True)
+            ClientConstants.remove_deployment(
+                end_point_name, model_name, old_model_version,
+                end_point_id, model_id, edge_id=self.edge_id)
+        except Exception as e:
+            # TODO: 1. Check this release action cause the resource seized by other run
+            #  2. If this atomic op failed, should rolling back
+            logging.info(f"Exception when removing deployment {traceback.format_exc()}")
+            pass
 
     def construct_deployment_results(self, end_point_name, device_id, model_status,
-                                model_id, model_name, model_inference_url,
-                                model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
+                                     model_id, model_name, model_inference_url,
+                                     model_version, inference_port, inference_engine,
+                                     model_metadata, model_config):
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -561,11 +570,11 @@ class FedMLClientRunner:
                                       "model_status": model_status,
                                       "inference_port": inference_port}
         return deployment_results_payload
-    
+
     def construct_deployment_status(self, end_point_name, device_id,
-                               model_id, model_name, model_version,
-                               model_inference_url, model_status,
-                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                                    model_id, model_name, model_version,
+                                    model_inference_url, model_status,
+                                    inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
                                      "model_id": model_id, "model_name": model_name,
@@ -586,7 +595,7 @@ class FedMLClientRunner:
             model_metadata, model_config)
 
         logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
-                                                                             deployment_results_payload))
+                                                                                      deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
 
@@ -602,7 +611,7 @@ class FedMLClientRunner:
             inference_port=inference_port)
 
         logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
-                                                                            deployment_status_payload))
+                                                                                     deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         return deployment_status_payload
 
@@ -676,8 +685,8 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ModelClientAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
-                                                             str(os.getpid()),
-                                                             str(uuid.uuid4()))
+                                                                  str(os.getpid()),
+                                                                  str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
@@ -745,7 +754,8 @@ class FedMLClientRunner:
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
-        payload: {"model_name": "image-model", "model_storage_url":"s3-url", "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
+        payload: {"model_name": "image-model", "model_storage_url":"s3-url",
+        "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
         """
         # get deployment params
         request_json = json.loads(payload)
@@ -773,7 +783,7 @@ class FedMLClientRunner:
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -1224,7 +1234,7 @@ class FedMLClientRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
