@@ -169,7 +169,9 @@ class ContainerUtils(Singleton):
             return -1
 
         try:
-            container_list = client.containers.list(all=True)
+            # ignore_removed need to be set to True, in this case, it will not check deleted containers
+            # Which, in high concurrency, will cause API error due to the movement of the containers
+            container_list = client.containers.list(all=True, ignore_removed=True)
         except docker.errors.APIError:
             logging.error("The API cannot be accessed")
             return -1
