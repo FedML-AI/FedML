@@ -10,6 +10,17 @@ if __name__ == "__main__":
 
     run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    local_on_prem_host = fedml.get_local_on_premise_platform_host()
+    local_on_prem_port = fedml.get_local_on_premise_platform_port()
+    print(f"local_on_prem_host {local_on_prem_host}, local_on_prem_port {local_on_prem_port}")
+
+    acc = 0.1
+    loss = 2.0
+    for iter_count in range(10):
+        acc += 0.01
+        loss -= 0.02
+        #fedml.log_endpoint({"acc": acc, "loss": loss})
+        time.sleep(0.1)
 
     artifact = fedml.mlops.Artifact(name=f"general-file@{run_id}-{edge_id}", type=fedml.mlops.ARTIFACT_TYPE_NAME_GENERAL)
     artifact.add_file("./requirements.txt")

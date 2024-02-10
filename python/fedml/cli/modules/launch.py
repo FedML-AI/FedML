@@ -39,17 +39,40 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStarte
     type=str,
     help="If a cluster name is specified, you labelled the searched resource by launch with the cluster name. So later you can reuse the same cluster resource without warmup after the first launch. The cluster can be stopped by CLI: fedml cluster stop, or it would be automatically stopped after 15-minute idle time."
 )
+@click.option(
+    "--local_on_premise_platform",
+    "-lp",
+    type=str,
+    default="127.0.0.1",
+    help="The IP address for local on-premise Nexus AI Platform.",
+)
+@click.option(
+    "--local_on_premise_platform_port",
+    "-lpp",
+    type=int,
+    default=80,
+    help="The port for local on-premise Nexus AI Platform.",
+)
 @click.argument("yaml_file", nargs=-1)
-def fedml_launch(yaml_file, cluster, version, api_key, group):
+def fedml_launch(yaml_file, cluster, version, api_key, group, local_on_premise_platform, local_on_premise_platform_port):
     """
     Manage resources on the FedML® Nexus AI Platform.
     """
     set_env_version(version)
+    fedml.set_local_on_premise_platform_host(local_on_premise_platform)
+    fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
 
-    if cluster is None:
-        _launch_job(yaml_file[0], api_key)
+    # Input YAML file is recognized as tuple ().
+    # If empty, print help msg and exit.
+    if not yaml_file:        
+        ctx = click.get_current_context()
+        click.echo(ctx.get_help())
+        ctx.exit()        
     else:
-        _launch_job_on_cluster(yaml_file[0], api_key, cluster)
+        if cluster is None:
+            _launch_job(yaml_file[0], api_key)
+        else:
+            _launch_job_on_cluster(yaml_file[0], api_key, cluster)
 
 
 def _launch_job(yaml_file, api_key):

@@ -66,8 +66,6 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
-    CLIENT_LOGIN_PROGRAM = "device_client_login.py"
-
     # Constants for models
     K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
     K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
@@ -284,6 +282,11 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_list_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/listFromCli"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_endpoint_detail_url(endpoint_id, config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/queryEndpointDetailFromCli?endpointId={endpoint_id}"
         return model_ops_url
 
     @staticmethod

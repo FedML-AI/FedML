@@ -10,7 +10,6 @@ workspace: .
 job: |
   echo "Current directory is: \"$(pwd)\"."
 
-  export WANDB_MODE="disabled"  # disable wandb
   export TOKENIZERS_PARALLELISM="true"
 
   echo "Starting training job."
@@ -26,7 +25,7 @@ job: |
     --num_train_epochs 0 \
     --max_steps 100
 
-  echo "job finished."
+  echo "training job finished."
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
@@ -45,4 +44,4 @@ computing:
 
   allow_cross_cloud_resources: false # true, false
   device_type: GPU              # options: GPU, CPU, hybrid
-  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://nexus.fedml.ai/accelerator_resource_type
+  resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://fedml.ai/accelerator_resource_type

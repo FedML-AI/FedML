@@ -130,7 +130,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if status_item_found is not None:
-            print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
+            #print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
             # Delete Status
             FedMLModelCache.get_instance().delete_deployment_status(
                 status_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
@@ -163,7 +163,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if result_item_found is not None:
-            print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
+            #print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
             FedMLModelCache.get_instance().delete_deployment_result(
                 result_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)
@@ -183,13 +183,19 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
     def set_local_deployment_status_result(
             self, endpoint_id, endpoint_name, model_name, model_version, device_id,
             inference_port, status_payload, result_payload):
+        '''
+        The result and status are saved in the local sqlite table.
+        They both belong to the table deployment_result_info;
+        deployment_result column is used to save the result;
+        deployment_status column is used to save the status.
+        '''
         if status_payload is not None:
             model_url_parsed = urlparse(status_payload.get("model_url", ""))
             status_payload["model_url"] = f"http://{model_url_parsed.hostname}:{inference_port}{model_url_parsed.path}"
             status_payload["inference_port"] = inference_port
             FedMLModelDatabase().get_instance().set_deployment_status(
                 endpoint_id, endpoint_name, model_name,
-                model_version, device_id, json.dumps(status_payload))
+                model_version=None, device_id=device_id, deployment_status=json.dumps(status_payload))
 
         if result_payload is not None:
             model_url_parsed = urlparse(result_payload.get("model_url", ""))
@@ -197,4 +203,4 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
             result_payload["inference_port"] = inference_port
             FedMLModelDatabase.get_instance().set_deployment_result(
                 endpoint_id, endpoint_name, model_name,
-                model_version, device_id, json.dumps(result_payload))
+                model_version=None, device_id=device_id, deployment_result=json.dumps(result_payload))

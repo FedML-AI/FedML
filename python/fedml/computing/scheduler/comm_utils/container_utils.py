@@ -2,9 +2,11 @@ import logging
 import traceback
 
 import docker
+from docker import errors
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
 
 
@@ -154,13 +156,11 @@ class ContainerUtils(Singleton):
         return inference_http_port
     
     @staticmethod
-    def get_container_rank_same_model(prefix:str):
-        '''
+    def get_container_rank_same_model(prefix: str):
+        """
         Rank (from 0) for the container that run the same model, i.e.
-        running_model_name = hash(
-            "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}"
-        )
-        '''
+        running_model_name = hash("model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}")
+        """
         try:
             client = docker.from_env()
         except Exception:
@@ -169,7 +169,9 @@ class ContainerUtils(Singleton):
             return -1
 
         try:
-            container_list = client.containers.list(all=True)
+            # ignore_removed need to be set to True, in this case, it will not check deleted containers
+            # Which, in high concurrency, will cause API error due to the movement of the containers
+            container_list = client.containers.list(all=True, ignore_removed=True)
         except docker.errors.APIError:
             logging.error("The API cannot be accessed")
             return -1
@@ -180,4 +182,29 @@ class ContainerUtils(Singleton):
                 same_model_container_rank += 1
 
         return same_model_container_rank
+
+    def pull_image_with_policy(self, image_pull_policy, image_name, client=None):
+        docker_client = self.get_docker_client() if client is None else client
+        if docker_client is None:
+            raise Exception("Failed to get docker client.")
+
+        if image_pull_policy is None:
+            logging.warning("You did not specify the image pull policy, will use the default policy:"
+                            "IMAGE_PULL_POLICY_IF_NOT_PRESENT")
+            image_pull_policy = SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT
+
+        logging.info(f"Pulling policy is {image_pull_policy}")
+
+        if image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_ALWAYS:
+            logging.info(f"Pulling the image {image_name}...")
+            docker_client.images.pull(image_name)
+            logging.info(f"Image {image_name} successfully pulled")
+        elif image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT:
+            try:
+                docker_client.images.get(image_name)
+            except docker.errors.ImageNotFound:
+                logging.info("Image not found, start pulling the image...")
+                docker_client.images.pull(image_name)
+        else:
+            raise Exception(f"Unsupported image pull policy: {image_pull_policy}")
 

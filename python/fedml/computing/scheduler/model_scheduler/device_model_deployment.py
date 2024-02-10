@@ -15,6 +15,7 @@ import tritonclient.http as http_client
 
 import collections.abc
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
@@ -22,12 +23,14 @@ from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
 
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 import io
 
 import docker
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 from ..scheduler_core.compute_utils import ComputeUtils
+from ..comm_utils.container_utils import ContainerUtils
 
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -235,38 +238,47 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
                                                   ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
+                image_pull_policy = config.get('image_pull_policy', SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT)
+
                 # Source code dir, bootstrap dir, data cache dir
                 src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
 
-                # Get the bootstrap commands inside the yaml file
+                # Get the bootstrap and job commands inside the yaml file
                 bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
-                if bootstrap_cmds_str_frm_yaml != "":
-                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-auto-gen.sh"
+                job_cmds_str_frm_yaml = config.get('job', "")
+
+                if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
+                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
                     src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
                     with open(src_bootstrap_file_path, 'w') as f:
+                        f.write("cd /home/fedml/models_serving/\n")
                         f.write(bootstrap_cmds_str_frm_yaml)
+                        f.write("\n")
+                        f.write("cd /home/fedml/models_serving/\n")
+                        f.write(job_cmds_str_frm_yaml)
                 else:
                     src_bootstrap_file_path = ""
 
                 data_cache_dir_input = config.get('data_cache_dir', "")
                 request_input_example = config.get('request_input_example', None)
                 extra_envs = config.get('environment_variables', None)
-                logging.info(
-                    f"src_code_dir: {src_code_dir}, bootstrap_src_path: {src_bootstrap_file_path}")
+
                 # Serving dir inside docker
                 dst_model_serving_dir = "/home/fedml/models_serving"
                 relative_entry = config.get('entry_point')
-                entry_cmd = config.get('entry_cmd', "")
                 if src_bootstrap_file_path != "":
                     dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
                 else:
                     dst_bootstrap_dir = ""
 
+                # If using customized image, then bootstrap + job will be the entry point
                 enable_custom_image = config.get("enable_custom_image", False)
+                customized_image_entry_cmd = \
+                    "/bin/bash /home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
+
                 docker_registry_user_name = config.get("docker_registry_user_name", "")
                 docker_registry_user_password = config.get("docker_registry_user_password", "")
                 docker_registry = config.get("docker_registry", "")
-                logging.info(f"entry_cmd is {entry_cmd}, enable_custom_image is {enable_custom_image} ")
 
                 port_inside_container = int(config.get("port_inside_container", 2345))
                 use_triton = config.get("use_triton", False)
@@ -348,6 +360,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                         security_utils.get_content_hash(running_model_name)
         
         same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
+        if same_model_container_rank == -1:
+            logging.error(f"Fail to get existed docker with {end_point_name} {inference_model_name}")
+            raise Exception("Failed to get the container rank")
         default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
         try:
@@ -373,14 +388,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
         logging.info(f"device_requests: {device_requests}")
         logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
-        # Detect if the image is already at the local
-        try:
-            client.images.get(inference_image_name)
-        except docker.errors.ImageNotFound:
-            logging.info("Image not found, start pulling the image...")
-            client.images.pull(inference_image_name)
-        logging.info("Start creating the inference container...")
 
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
+
+        logging.info("Start creating the inference container...")
         volumns = []
         binds = {}
         environment = {}
@@ -433,6 +444,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             }
             environment["MAIN_ENTRY"] = relative_entry
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+        environment["FEDML_CURRENT_RUN_ID"] = end_point_id
+        environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+        environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
+        environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
+        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
+        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
         logging.info(f"volume: {volumns}, binds: {binds}, environment: {environment}")
         logging.info(f"dst_model_serving_dir: {dst_model_serving_dir}")
         logging.info(f"relative_entry: {relative_entry}")
@@ -465,7 +482,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     mem_limit=memory,
                 ),
                 detach=True,
-                command=entry_cmd if enable_custom_image else None
+                command=customized_image_entry_cmd if enable_custom_image else None
             )
             client.api.start(container=new_container.get("Id"))
         except Exception as e:

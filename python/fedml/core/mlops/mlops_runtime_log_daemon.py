@@ -10,6 +10,7 @@ import time
 import requests
 import yaml
 
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
 
@@ -418,8 +419,7 @@ class MLOpsRuntimeLogDaemon:
 
         self.log_file_dir = self.args.log_file_dir
         self.log_child_process_list = list()
-        self.log_child_process = None
-        self.log_process_event = None
+        self.log_process_event_map = dict()
 
     @staticmethod
     def get_instance(args):
@@ -432,6 +432,9 @@ class MLOpsRuntimeLogDaemon:
     def set_log_source(self, source):
         self.log_source = source
 
+    def get_event_map_id(self, log_run_id, log_device_id):
+        return f"{log_run_id}_{log_device_id}"
+
     def start_log_processor(self, log_run_id, log_device_id, log_source=None, log_file_prefix=None):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
@@ -441,44 +444,48 @@ class MLOpsRuntimeLogDaemon:
             log_processor.set_log_source(log_source)
         else:
             log_processor.set_log_source(self.log_source)
-        if self.log_process_event is None:
-            self.log_process_event = multiprocessing.Event()
-        self.log_process_event.clear()
-        log_processor.log_process_event = self.log_process_event
-        self.log_child_process = multiprocessing.Process(target=log_processor.log_process,
-                                                         args=(self.log_process_event,))
+        event_map_id = self.get_event_map_id(log_run_id, log_device_id)
+        if self.log_process_event_map.get(event_map_id, None) is None:
+            self.log_process_event_map[event_map_id] = multiprocessing.Event()
+        self.log_process_event_map[event_map_id].clear()
+        log_processor.log_process_event = self.log_process_event_map[event_map_id]
+        log_child_process = multiprocessing.Process(target=log_processor.log_process,
+                                                         args=(self.log_process_event_map[event_map_id],))
         # process = threading.Thread(target=log_processor.log_process)
-        if self.log_child_process is not None:
-            self.log_child_process.start()
+        if log_child_process is not None:
+            log_child_process.start()
             try:
-                self.log_child_process_list.index((self.log_child_process, log_run_id, log_device_id))
+                self.log_child_process_list.index((log_child_process, log_run_id, log_device_id))
             except ValueError as ex:
-                self.log_child_process_list.append((self.log_child_process, log_run_id, log_device_id))
+                self.log_child_process_list.append((log_child_process, log_run_id, log_device_id))
 
     def stop_log_processor(self, log_run_id, log_device_id):
         if log_run_id is None or log_device_id is None:
             return
 
         # logging.info(f"FedMLDebug. stop log processor. log_run_id = {log_run_id}, log_device_id = {log_device_id}")
+        event_map_id = self.get_event_map_id(log_run_id, log_device_id)
         for (log_child_process, run_id, device_id) in self.log_child_process_list:
             if str(run_id) == str(log_run_id) and str(device_id) == str(log_device_id):
-                if self.log_process_event is not None:
-                    self.log_process_event.set()
+                if self.log_process_event_map.get(event_map_id, None) is not None:
+                    self.log_process_event_map[event_map_id].set()
                 else:
                     log_child_process.terminate()
                 self.log_child_process_list.remove((log_child_process, run_id, device_id))
                 break
 
     def stop_all_log_processor(self):
-        for (log_child_process, _, _) in self.log_child_process_list:
-            if self.log_process_event is not None:
-                self.log_process_event.set()
+        for (log_child_process, run_id, device_id) in self.log_child_process_list:
+            event_map_id = self.get_event_map_id(run_id, device_id)
+            if self.log_process_event_map.get(event_map_id, None) is not None:
+                self.log_process_event_map[event_map_id].set()
             else:
                 log_child_process.terminate()
 
     def is_log_processor_running(self, in_run_id, in_device_id):
         for (log_child_process, log_run_id, log_device_id) in self.log_child_process_list:
-            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id):
+            if str(in_run_id) == str(log_run_id) and str(in_device_id) == str(log_device_id) and \
+                    log_child_process is not None and RunProcessUtils.is_process_running(log_child_process.pid):
                 return True
 
         return False

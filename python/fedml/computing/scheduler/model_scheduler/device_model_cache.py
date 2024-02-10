@@ -88,7 +88,19 @@ class FedMLModelCache(Singleton):
                               model_name, model_version, device_id, deployment_result):
         result_dict = {"cache_device_id": device_id, "result": deployment_result}
         try:
-            self.redis_connection.rpush(self.get_deployment_result_key(end_point_id, end_point_name, model_name), json.dumps(result_dict))
+            # Delete old result
+            # In this list, find the result's complete record, delete it.
+            result_list = self.redis_connection.lrange(
+                self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
+            for result_item in result_list:
+                result_device_id, result_payload = self.get_result_item_info(result_item)
+                if result_device_id == device_id:
+                    self.redis_connection.lrem(
+                        self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, result_item)
+
+            # Append the new result to the list
+            self.redis_connection.rpush(
+                self.get_deployment_result_key(end_point_id, end_point_name, model_name), json.dumps(result_dict))
         except Exception as e:
             pass
         self.model_deployment_db.set_deployment_result(end_point_id, end_point_name,
@@ -178,8 +190,8 @@ class FedMLModelCache(Singleton):
 
     def get_result_item_info(self, result_item):
         result_item_json = json.loads(result_item)
-        if isinstance(result_item_json, dict):
-            result_item_json = json.loads(result_item)
+        if isinstance(result_item_json, str):
+            result_item_json = json.loads(result_item_json)
         device_id = result_item_json["cache_device_id"]
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
@@ -192,7 +204,7 @@ class FedMLModelCache(Singleton):
                         check_end_point_status=True):
         # Find all deployed devices
         try:
-            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)   # get from redis
+            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)  # DEPLOYMENT_STATUS
         except Exception as e:
             logging.error(f"get_deployment_status_list failed {e}")
             return None, None
@@ -202,8 +214,8 @@ class FedMLModelCache(Singleton):
 
         idle_device_list = list()
         if model_version == "latest":
-            _, status_payload = self.get_status_item_info(status_list[-1])
-            model_version = status_payload["model_version"]
+            model_version = self.get_latest_version(status_list)
+        logging.info(f"model_version {model_version}")
 
         # iterate all devices, find those with correct version and deployed
         for status_item in status_list:
@@ -214,7 +226,7 @@ class FedMLModelCache(Singleton):
                 model_version_cached = status_payload["model_version"]
                 end_point_id_cache = status_payload["end_point_id"]
                 logging.info(f"model_version {model_version}, model_version_cache {model_version_cached}")
-                if model_version == model_version_cached and \
+                if (model_version == model_version_cached or model_version == "*") and \
                         model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
             except Exception as e:
@@ -281,6 +293,27 @@ class FedMLModelCache(Singleton):
             logging.info(str(e))
 
         return None, None
+
+    def get_latest_version(self, status_list):
+        latest_version = None
+        latest_version_int = -1
+        for status_item in status_list:
+            try:
+                _, status_payload = self.get_status_item_info(status_item)
+                model_version = status_payload["model_version"]
+                prefix = model_version.split("-")[0]    # version-date
+                prefix_int = int(prefix[1:])    # v12 -> 12
+
+                if latest_version is None:
+                    latest_version = model_version
+                    latest_version_int = prefix_int
+                elif prefix_int > latest_version_int:
+                    latest_version = model_version
+                    latest_version_int = prefix_int
+            except Exception as e:
+                pass
+
+        return latest_version
 
     def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
         try:
@@ -374,6 +407,10 @@ class FedMLModelCache(Singleton):
         return status_key
 
     def set_end_point_device_info(self, end_point_id, end_point_name, device_info):
+        '''
+        Currently all the device info is stored in one key, which is a string.
+        This string can be parsed into a list of device info.
+        '''
         try:
             self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
         except Exception as e:
@@ -397,6 +434,40 @@ class FedMLModelCache(Singleton):
                     pass
 
         return device_info
+    
+    def delete_end_point_device_info(self, end_point_id, end_point_name, edge_id_list_to_delete):
+        '''
+        Since the device info is stored in one key, we need to first delete the device info from the existing one.
+        '''
+        device_objs = FedMLModelCache.get_instance().get_end_point_device_info(end_point_id)
+
+        if device_objs is None:
+            raise Exception("The device list in local redis is None")
+        else:
+            total_device_objs_list = json.loads(device_objs)
+            for device_obj in total_device_objs_list:
+                if device_obj["id"] in edge_id_list_to_delete:
+                    total_device_objs_list.remove(device_obj)
+
+        # Dumps the new record (after deletion) to the redis
+        FedMLModelCache.get_instance().set_end_point_device_info(
+            end_point_id, end_point_name, json.dumps(total_device_objs_list))
+
+    def add_end_point_device_info(self, end_point_id, end_point_name, new_device_info):
+        '''
+        Since the device info is stored in one key, we need to append the new device info to the existing one.
+        '''
+        device_objs = FedMLModelCache.get_instance().get_end_point_device_info(end_point_id)
+
+        if device_objs is None:
+            raise Exception("The device list in local redis is None")
+        else:
+            total_device_objs_list = json.loads(device_objs)
+            new_device_info_json = json.loads(new_device_info)
+            total_device_objs_list.append(new_device_info_json)
+        
+        FedMLModelCache.get_instance().set_end_point_device_info(
+            end_point_id, end_point_name, json.dumps(total_device_objs_list))
 
     def set_end_point_token(self, end_point_id, end_point_name, model_name, token):
         try:

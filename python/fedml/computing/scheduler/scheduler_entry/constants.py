@@ -152,6 +152,10 @@ class Constants(Singleton):
 
     RUN_LOG_PAGE_SIZE = 1000
 
+    IMAGE_PULL_POLICY_ALWAYS = SchedulerConstants.IMAGE_PULL_POLICY_ALWAYS
+    IMAGE_PULL_POLICY_IF_NOT_PRESENT = SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT
+    IMAGE_PULL_POLICY_NEVER = SchedulerConstants.IMAGE_PULL_POLICY_NEVER
+
     @staticmethod
     def get_fedml_home_dir(is_client=True):
         home_dir = expanduser("~")

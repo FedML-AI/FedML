@@ -1,0 +1,27 @@
+torch>=2.1.1
+torchvision
+numpy
+accelerate
+transformers[torch]>=4.36.0
+fedml>=0.8.13
+# model related
+sentencepiece
+einops
+Jinja2>=3.0.0
+# RAG
+langchain>=0.0.139
+pypdf
+pymupdf
+faiss-cpu
+sentence-transformers
+python-multipart
+typing-extensions
+# flash attention related
+ninja
+packaging
+# web service
+# see https://stackoverflow.com/a/28015308
+requests>=2.3.0
+fastapi>=0.68.0
+pydantic>=1.8.0
+uvicorn>=0.15.0

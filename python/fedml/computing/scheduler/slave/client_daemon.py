@@ -8,7 +8,6 @@ import psutil
 from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_client_api_processes, \
     cleanup_all_fedml_client_learning_processes, cleanup_all_fedml_client_login_processes, get_python_program, \
     daemon_ota_upgrade
-from fedml.computing.scheduler.model_scheduler import device_login_entry
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 
@@ -24,8 +23,16 @@ if __name__ == "__main__":
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
     parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
+    parser.add_argument("--local_on_premise_platform_host", "-lp", type=str, default="127.0.0.1")
+    parser.add_argument("--local_on_premise_platform_port", "-lpp", type=int, default=80)
+
     args = parser.parse_args()
     args.user = args.user
+
+    if args.local_on_premise_platform_host != "127.0.0.1":
+        fedml.set_local_on_premise_platform_host(args.local_on_premise_platform_host)
+    if args.local_on_premise_platform_port != 80:
+        fedml.set_local_on_premise_platform_port(args.local_on_premise_platform_port)
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "client_login.py")

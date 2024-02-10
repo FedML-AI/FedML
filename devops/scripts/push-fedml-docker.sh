@@ -5,6 +5,9 @@ push_arm_arch_images=$1
 DOCKER_REGISTRY="docker.io"
 
 export FEDML_VERSION=`cat python/setup.py |grep version= |awk -F'=' '{print $2}' |awk -F',' '{print $1}'|awk -F'"' '{print $2}'`
+
+docker push ${DOCKER_REGISTRY}/fedml/fedml:light
+
 if [[ $push_arm_arch_images == "" ]]; then
   docker push ${DOCKER_REGISTRY}/fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
   docker push ${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-torch1.13.1-cuda11.6-cudnn8-devel
@@ -23,5 +26,3 @@ if [[ $push_arm_arch_images != "" ]]; then
   docker push ${DOCKER_REGISTRY}/fedml/fedml:latest-raspberrypi4-64-py38
   docker push ${DOCKER_REGISTRY}/fedml/fedml:${FEDML_VERSION}-raspberrypi4-64-py38
 fi
-
-docker push ${DOCKER_REGISTRY}/fedml/fedml:light

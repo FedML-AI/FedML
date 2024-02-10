@@ -18,6 +18,11 @@ PYTORCH_GEOMETRIC_URL="https://data.pyg.org/whl/torch-1.13.1+cu116.html"
 
 DOCKER_REGISTRY="docker.io"
 
+docker build -f ./installation/build_fedml_docker/light/Dockerfile \
+    --network=host \
+    -t ${DOCKER_REGISTRY}/fedml/fedml:light .
+cd $pwd
+
 if [ "$build_arm_arch_images" = "" ]; then
   # Build X86_64 docker
   ARCH="x86_64"
@@ -101,7 +106,3 @@ if [ "$build_arm_arch_images" != "" ]; then
   cd $pwd
 fi
 
-docker build -f ./installation/build_fedml_docker/light/Dockerfile \
-    --network=host \
-    -t ${DOCKER_REGISTRY}/fedml/fedml:light .
-cd $pwd

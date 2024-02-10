@@ -1,0 +1,15 @@
+workspace: "."
+entry_point: "main_entry.py"
+
+auto_detect_public_ip: true
+server_external_port: 20202
+server_internal_port: 2203
+
+environment_variables:
+  NEXUS_API_KEY: "" # Here you need to set your API key from nexus.fedml.ai
+
+bootstrap: |
+  echo "Bootstrap start..."
+  pip install -U fedml
+  sh ./config/bootstrap.sh
+  echo "Bootstrap finished"

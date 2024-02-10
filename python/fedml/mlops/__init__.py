@@ -20,8 +20,13 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
     mlops.event(event_name, event_started, event_value, event_edge_id)
 
 
-def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
-    mlops.log(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
+def log(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True, is_endpoint_metric=False):
+    mlops.log(metrics, step=step, customized_step_key=customized_step_key, commit=commit,
+              is_endpoint_metric=is_endpoint_metric)
+
+
+def log_endpoint(metrics: dict, step: int = None, customized_step_key: str = None, commit: bool = True):
+    mlops.log_endpoint(metrics, step=step, customized_step_key=customized_step_key, commit=commit)
 
 
 def log_llm_record(metrics: dict, version="release") -> None:

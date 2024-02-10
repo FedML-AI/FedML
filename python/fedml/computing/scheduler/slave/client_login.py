@@ -107,10 +107,13 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
 
     # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
-    edge_id = 0
+    edge_id = -1
+    user_name = None
+    extra_url = None
+    general_edge_id = None
     while register_try_count < 5:
         try:
-            edge_id, user_name, extra_url = runner.bind_account_and_device_id(
+            edge_id, user_name, extra_url, general_edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name,
                 api_key=api_key, role=role
             )
@@ -147,10 +150,20 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     # logging.info("login: unique_device_id = %s" % str(unique_device_id))
     # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
+    runner.user_name = user_name
+    runner.general_edge_id = general_edge_id
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
-    runner.setup_agent_mqtt_connection(service_config)
+    try:
+        runner.setup_agent_mqtt_connection(service_config)
+    except Exception as e:
+        login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+        with open(login_exit_file, "w") as f:
+            f.writelines(f"{os.getpid()}.")
+        print("finally")
+        runner.stop_agent()
+        raise e
 
     # Start mqtt looper
     runner.start_agent_mqtt_loop()
@@ -210,10 +223,13 @@ def __login_as_simulator(args, userid, mqtt_connection=True):
 
     # Bind account id to FedML® Nexus AI Platform
     register_try_count = 0
-    edge_id = 0
+    edge_id = -1
+    user_name = None
+    extra_url = None
+    general_edge_id = None
     while register_try_count < 5:
         try:
-            edge_id, _, _ = runner.bind_account_and_device_id(
+            edge_id, _, _, _ = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id,
                 unique_device_id, args.os_name, role="simulator"
             )
@@ -327,11 +343,18 @@ if __name__ == "__main__":
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--api_key", "-k", type=str, default="")
     parser.add_argument("--no_gpu_check", "-ngc", type=int, default=1)
-    args = parser.parse_args()
+    parser.add_argument("--local_on_premise_platform_host", "-lp", type=str, default="127.0.0.1")
+    parser.add_argument("--local_on_premise_platform_port", "-lpp", type=int, default=80)
 
+    args = parser.parse_args()
     args.user = args.user
     if args.api_key == "":
         args.api_key = args.user
+
+    if args.local_on_premise_platform_host != "127.0.0.1":
+        fedml.set_local_on_premise_platform_host(args.local_on_premise_platform_host)
+    if args.local_on_premise_platform_port != 80:
+        fedml.set_local_on_premise_platform_port(args.local_on_premise_platform_port)
 
     fedml.set_env_version(args.version)
     if args.type == 'login':

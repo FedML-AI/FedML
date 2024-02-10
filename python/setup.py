@@ -60,7 +60,8 @@ requirements = [
     "GPUtil",
     "tzlocal",
     "py-machineid",
-    "cachetools"
+    "cachetools",
+    "toposort"
 ]
 
 requirements_extra_mpi = [
@@ -113,7 +114,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.15.dev1",
+    version="0.8.25.dev1",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

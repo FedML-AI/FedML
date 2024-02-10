@@ -102,6 +102,15 @@ class SchedulerConstants:
     RUN_PROCESS_TYPE_RUNNER_PROCESS = "runner-process"
     RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS = "bootstrap-process"
 
+    FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX = "fedml_default_launch_container"
+    FEDML_DEFAULT_LAUNCH_IMAGE = "fedml/fedml-default-launch:cu12.1-u22.04"
+    FEDML_DEFAULT_LOG_DIR = ".fedml/fedml-client/fedml/logs"
+    FEDML_DEFAULT_DATA_DIR = ".fedml/fedml-client/fedml/data"
+
+    IMAGE_PULL_POLICY_ALWAYS = "Always"
+    IMAGE_PULL_POLICY_IF_NOT_PRESENT = "IfNotPresent"
+    IMAGE_PULL_POLICY_NEVER = "Never"
+
     @staticmethod
     def get_log_source(run_json):
         run_config = run_json.get("run_config", {})

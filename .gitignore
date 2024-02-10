@@ -274,3 +274,6 @@ python/tests/test_model_cli/llm_deploy/src/constants/__init__.py
 python/tests/test_model_cli/llm_deploy/src/constants/prompt_template.py
 python/examples/launch/hello_world/bootstrap.bat
 python/examples/launch/hello_world/fedml_job_entry_pack.bat
+**mpi_host_file
+/python/fedml/workflow/driver_example/customized_job_example/train_job/bootstrap.bat
+/python/fedml/workflow/driver_example/customized_job_example/train_job/fedml_job_entry_pack.bat

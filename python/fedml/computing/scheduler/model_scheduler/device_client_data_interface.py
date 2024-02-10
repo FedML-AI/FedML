@@ -80,6 +80,13 @@ class FedMLClientDataInterface(Singleton):
         job_obj.msg = msg
         self.update_job_to_db(job_obj)
 
+    def save_job_running_json(self, job_id, edge_id, running_json):
+        job_obj = FedMLClientJobModel()
+        job_obj.job_id = job_id
+        job_obj.edge_id = edge_id
+        job_obj.running_json = running_json
+        self.update_job_to_db(job_obj)
+
     def save_job(self, run_id, edge_id, status, running_json=None):
         if run_id == 0:
             return
@@ -88,10 +95,16 @@ class FedMLClientDataInterface(Singleton):
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING:
-            self.save_started_job(run_id, edge_id,
-                                  time.time(),
-                                  status,
-                                  status, running_json)
+            if self.get_job_by_edge_id_and_job_id(run_id, edge_id) is not None:
+                # Update the job status and running json
+                self.save_job_status(run_id, edge_id, status, status)
+                self.save_job_running_json(run_id, edge_id, running_json)
+            else:
+                # Insert a new job
+                self.save_started_job(run_id, edge_id,
+                                      time.time(),
+                                      status,
+                                      status, running_json)
         elif status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
             self.save_failed_job(run_id, edge_id,
                                  time.time(),
@@ -110,6 +123,7 @@ class FedMLClientDataInterface(Singleton):
                                 status,
                                 status)
         else:
+            # Update the job status
             self.save_job_status(run_id, edge_id,
                                  status,
                                  status)
@@ -243,6 +257,39 @@ class FedMLClientDataInterface(Singleton):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         results = current_cursor.execute("SELECT *  from jobs where job_id={};".format(job_id))
+        for row in results:
+            job_obj = FedMLClientJobModel()
+            job_obj.job_id = row[0]
+            job_obj.edge_id = row[1]
+            job_obj.started_time = row[2]
+            job_obj.ended_time = row[3]
+            job_obj.status = row[6]
+            job_obj.failed_time = row[7]
+            job_obj.error_code = row[8]
+            job_obj.msg = row[9]
+            job_obj.updated_time = row[10]
+            job_obj.round_index = row[11]
+            job_obj.total_rounds = row[12]
+            job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
+            total_time = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time))
+                                                          / job_obj.progress)
+            job_obj.eta = total_time * (1.0 - job_obj.progress)
+            job_obj.running_json = row[13]
+            job_obj.deployment_result = row[14]
+            # job_obj.show()
+            break
+
+        self.db_connection.close()
+        return job_obj
+
+    def get_job_by_edge_id_and_job_id(self, job_id, edge_id):
+        if job_id is None:
+            return None
+        job_obj = None
+
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        results = current_cursor.execute("SELECT *  from jobs where job_id={} and edge_id={};".format(job_id, edge_id))
         for row in results:
             job_obj = FedMLClientJobModel()
             job_obj.job_id = row[0]

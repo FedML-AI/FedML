@@ -22,6 +22,8 @@ class StorageMetadata(object):
 
 # Todo (alaydshah): Add file size while creating objects. Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
+
+
 def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
     api_key = authenticate(api_key)
@@ -39,6 +41,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
     file_name = name + ".zip"
     dest_path = os.path.join(user_id, file_name)
+
     file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                         show_progress=show_progress,
                                                         out_progress_to_err=out_progress_to_err,

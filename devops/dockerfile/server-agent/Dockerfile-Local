@@ -1,0 +1,31 @@
+ARG VERSION=local
+ARG IS_BUILDING_GPU_IMAGE=0
+ARG BASE_IMAGE=docker.io/fedml/fedml-device-image:base
+FROM ${BASE_IMAGE}
+
+ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+
+ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
+
+RUN chmod a+x ./fedml/runner.sh
+RUN echo "Updating..."
+
+RUN pip3 install -r ./fedml/requirements.txt
+
+COPY ./python ./fedml/fedml-pip
+WORKDIR ./fedml/fedml-pip
+RUN pip3 install -e ./
+#RUN pip3 install -e '.[tensorflow]'
+#RUN pip3 install -e '.[jax]'
+#RUN pip3 install -e '.[mxnet]'
+
+WORKDIR /fedml
+
+ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
+    AWS_IAM_ACCESS_ID=0 \
+    AWS_IAM_ACCESS_KEY=0 \
+    AWS_REGION=0 \
+    FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST=host.docker.internal \
+    FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT=80
+
+CMD bash ./start-redis.sh; ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};python3 ./fedml-pip/fedml/computing/scheduler/master/server_daemon.py -t login -u ${ACCOUNT_ID} -k ${ACCOUNT_ID} -v ${FEDML_VERSION} -r cloud_agent -id ${SERVER_AGENT_ID};bash ./runner.sh

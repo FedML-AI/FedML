@@ -16,7 +16,7 @@ from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
 from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
-from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList
+from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList, FedMLEndpointDetail
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
@@ -156,6 +156,17 @@ class FedMLModelCards(Singleton):
         else:
             workspace_abs_path = model_config["workspace"]
         workspace_abs_path = os.path.normpath(workspace_abs_path)
+
+        dst_model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
+        real_dst_model_dir = os.path.realpath(dst_model_dir)
+        real_model_root_dir = os.path.realpath(ClientConstants.get_model_dir())
+        if not real_dst_model_dir.startswith(real_model_root_dir):   # Avoid deleting parent folders
+            print(f"[Error] The destination folder {real_dst_model_dir} is the parent folder of the "
+                  f"local model card directory {real_model_root_dir}, "
+                  f"please do not include any \"../\" in your model name.")
+            return False
+        if os.path.exists(dst_model_dir):
+            shutil.rmtree(dst_model_dir, ignore_errors=True)
 
         if self.add_model_files(model_name, workspace_abs_path):
             model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
@@ -939,6 +950,37 @@ class FedMLModelCards(Singleton):
                 return ""
 
         return endpoint_inference_result
+
+    def query_endpoint_detail_api(self, endpoint_id, user_api_key):
+        endpoint_detail_result = None
+        model_ops_url = ClientConstants.get_model_ops_endpoint_detail_url(endpoint_id, config_version=self.config_version)
+        endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                             "Authorization": f"Bearer {user_api_key}"}
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_request_params()
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.get(
+                    model_ops_url, verify=True, headers=endpoint_api_headers,
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.get(
+                    model_ops_url, verify=True, headers=endpoint_api_headers,
+                )
+        else:
+            response = requests.get(model_ops_url, headers=endpoint_api_headers)
+        if response.status_code != 200:
+            pass
+        else:
+            resp_data = response.json()
+            if resp_data["code"] != "SUCCESS":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            endpoint_detail_result = FedMLEndpointDetail(resp_data["data"])
+
+        return endpoint_detail_result
 
     def delete_endpoint(self, user_api_key: str, endpoint_id: str) -> bool:
         delete_mlops_url = ClientConstants.get_model_ops_delete_url()

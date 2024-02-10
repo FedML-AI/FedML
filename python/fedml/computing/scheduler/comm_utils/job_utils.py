@@ -1,17 +1,35 @@
-
 import logging
 import os
 import platform
 import traceback
 import GPUtil
+import docker
+import fedml
+from docker import errors, DockerClient
+import stat
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+from dataclasses import dataclass, field, fields
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
+from typing import List
 import threading
 import json
+
+run_docker_without_gpu = False
+
+
+@dataclass
+class DockerArgs:
+    image: str = SchedulerConstants.FEDML_DEFAULT_LAUNCH_IMAGE
+    username: str = ""
+    password: str = ""
+    registry: str = ""
+    ports: List[int] = field(default_factory=lambda: [2345])
 
 
 class JobRunnerUtils(Singleton):
@@ -38,11 +56,12 @@ class JobRunnerUtils(Singleton):
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
             with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
-                    device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
+                        device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
                 if inner_id is not None and str(original_run_id) != str(inner_id):
-                    ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id, original_run_id)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
+                                                                                               original_run_id)
 
                 available_gpu_ids = self.get_available_gpu_id_list(device_id)
 
@@ -63,8 +82,10 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
 
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id, run_id, matched_gpu_num)
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id, run_id, run_gpu_ids)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id, run_id,
+                                                                                           matched_gpu_num)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id, run_id,
+                                                                                          run_gpu_ids)
                 ComputeCacheManager.get_instance().get_gpu_cache().set_run_device_ids(run_id, [switchable_device_id])
                 ComputeCacheManager.get_instance().get_gpu_cache().set_run_total_num_gpus(run_id, matched_gpu_num)
 
@@ -140,7 +161,8 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
                         edge_device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
-                run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id, run_id)
+                run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
+                                                                                                        run_id)
                 if run_gpu_ids is None:
                     return
 
@@ -167,13 +189,26 @@ class JobRunnerUtils(Singleton):
             logging.info(f"[run/device][{released_run_id}/{edge_device_id}] notify MLOps to release gpu resources.")
             mlops.release_resources(released_run_id, edge_device_id)
 
+    def get_device_run_gpu_ids(self, device_id, run_id):
+        try:
+            ComputeCacheManager.get_instance().set_redis_params()
+            with ComputeCacheManager.get_instance().lock(
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(device_id, run_id)
+            ):
+                gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id, run_id)
+                return gpu_ids
+        except Exception as e:
+            logging.info(f"Exception {traceback.format_exc()}")
+            return []
+
     def get_available_gpu_id_list(self, device_id):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
             with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
-                available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(device_id)
+                available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                    device_id)
                 if available_gpu_ids is None:
                     gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, gpu_ids)
@@ -193,7 +228,8 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
                 current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, current_available_gpu_ids)
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id,
+                                                                                                current_available_gpu_ids)
                 gpu_list = sys_utils.get_gpu_list()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_total_num_gpus(device_id, len(gpu_list))
         except Exception as e:
@@ -215,15 +251,55 @@ class JobRunnerUtils(Singleton):
         return gpu_list, realtime_available_gpu_ids
 
     @staticmethod
+    def create_instance_from_dict(data_class, input_dict: {}):
+
+        # Get the fields of the data class
+        data_class_fields = fields(data_class)
+
+        # Create an instance of the data class
+        instance = data_class()
+
+        # Set attributes based on input_dict with type checking
+        for field in data_class_fields:
+            if field.name in input_dict:
+                input_value = input_dict[field.name]
+
+                # Perform type checking
+                if not isinstance(input_value, field.type):
+                    raise TypeError(
+                        f"Type mismatch for field '{field.name}'. Expected {field.type}, got {type(input_value)}.")
+
+                setattr(instance, field.name, input_value)
+
+        return instance
+
+    @staticmethod
+    def generate_bootstrap_commands(bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file):
+        if os.path.exists(bootstrap_script_path):
+            bootstrap_stat = os.stat(bootstrap_script_path)
+            if platform.system() == 'Windows':
+                os.chmod(bootstrap_script_path,
+                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                bootstrap_scripts = "{}".format(bootstrap_script_path)
+            else:
+                os.chmod(bootstrap_script_path,
+                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                bootstrap_scripts = "cd {}; ./{}".format(
+                    bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+
+            bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
+            shell_cmd_list = list()
+            shell_cmd_list.append(bootstrap_scripts)
+            return shell_cmd_list
+
+    @staticmethod
     def generate_job_execute_commands(run_id, edge_id, version,
                                       package_type, executable_interpreter, entry_file_full_path,
                                       conf_file_object, entry_args, assigned_gpu_ids,
-                                      job_api_key, client_rank, job_yaml=None, request_gpu_num=None,
-                                      scheduler_match_info=None, cuda_visible_gpu_ids_str=None):
+                                      job_api_key, client_rank, scheduler_match_info=None,
+                                      cuda_visible_gpu_ids_str=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
-        computing = job_yaml.get("computing", {})
-        request_gpu_num = computing.get("minimum_num_gpus", None) if request_gpu_num is None else request_gpu_num
 
         # Read entry commands if job is from launch
         if package_type == SchedulerConstants.JOB_PACKAGE_TYPE_LAUNCH or \
@@ -268,10 +344,14 @@ class JobRunnerUtils(Singleton):
         entry_commands.insert(0, f"{export_cmd} FEDML_ENV_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
+        entry_commands.insert(0,  f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST={fedml.get_local_on_premise_platform_host()}\n")
+        entry_commands.insert(0,  f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT={fedml.get_local_on_premise_platform_port()}\n")
         if job_api_key is not None and str(job_api_key).strip() != "":
             random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
             random_list = random_out.split("FEDML_NEXUS@")
             entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={random_list[1]}\n")
+
+        # TODO: Remove adding this command entirely once we fully retire running launch on bare metal
         if cuda_visible_gpu_ids_str is not None and str(cuda_visible_gpu_ids_str).strip() != "":
             entry_commands.insert(0, f"{export_cmd} CUDA_VISIBLE_DEVICES={cuda_visible_gpu_ids_str}\n")
         print(f"cuda_visible_gpu_ids_str {cuda_visible_gpu_ids_str}")
@@ -310,6 +390,119 @@ class JobRunnerUtils(Singleton):
         shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
 
         return shell_cmd_list
+
+    @staticmethod
+    def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int,
+                                       unzip_package_path: str, executable_interpreter: str, entry_file_full_path: str,
+                                       bootstrap_cmd_list, cuda_visible_gpu_ids_str=None,
+                                       image_pull_policy: str=None) -> List[str]:
+
+        shell_command = list()
+
+        docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
+
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, docker_args.image, client=docker_client)
+
+        container_name = JobRunnerUtils.get_run_container_name(run_id)
+        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+
+        docker_command = ["docker", "run", "-t", "--rm", "--name", f"{container_name}"]
+
+        # Remove "export CUDA_VISIBLE_DEVICES=" from entry file and add as docker command instead:
+        if cuda_visible_gpu_ids_str is not None:
+            JobRunnerUtils.remove_cuda_visible_devices_lines(entry_file_full_path)
+            # docker command expects device ids in such format: '"device=0,2,3"'
+            device_str = f'"device={cuda_visible_gpu_ids_str}"'
+            if not run_docker_without_gpu:
+                docker_command.extend(["--gpus", f"'{device_str}'"])
+
+        # Add Port Mapping
+        for port in docker_args.ports:
+            docker_command.extend(["-p", f"0:{port}"])
+
+        # Mount Volumes
+        home_dir = os.path.expanduser("~")
+        log_file = "{}/.fedml/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
+            home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
+        )
+
+        volumes = [log_file, unzip_package_path]
+        for volume in volumes:
+            docker_command.extend(["-v", f"{volume}:{volume}:rw"])
+
+        # Add working directory
+        working_directory = os.path.join(unzip_package_path, "fedml")
+        docker_command.extend(["-w", working_directory])
+
+        # Add image
+        docker_command.append(docker_args.image)
+
+        # Add executable interpreter
+        docker_command.append(executable_interpreter)
+
+        # Add entry command
+        docker_command.append("-c")
+        command_list = []
+        if bootstrap_cmd_list:
+            command_list.extend(bootstrap_cmd_list[0].split("; "))
+        command_list.extend([f"chmod +x {entry_file_full_path}", f"{entry_file_full_path}"])
+        cmd = " && ".join(command_list)
+        docker_command.append(f'"{cmd}"')
+
+        # Generate docker command to be executed in shell
+        shell_command.append(" ".join(docker_command))
+
+        return shell_command
+
+    @staticmethod
+    def get_run_container_name(run_id: int) -> str:
+        container_prefix = f"{SchedulerConstants.FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX}"
+        container_name = f"{container_prefix}__{run_id}"
+        return container_name
+
+    @staticmethod
+    def get_docker_client(docker_args: DockerArgs) -> DockerClient:
+        try:
+            client = docker.from_env()
+            client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
+        except Exception as e:
+            raise Exception(f"Failed to connect to the docker daemon, please ensure that you have "
+                            f"installed Docker Desktop or Docker Engine, and the docker is running. Exception {e}")
+        return client
+
+    @staticmethod
+    def remove_run_container_if_exists(container_name: str, client: DockerClient):
+
+        try:
+            exist_container_obj = client.containers.get(container_name)
+            logging.info(f"Container {container_name} found")
+        except docker.errors.NotFound:
+            logging.info(f"Container {container_name} not found")
+            exist_container_obj = None
+        except docker.errors.APIError:
+            raise Exception("Failed to get the container object")
+
+        if exist_container_obj is not None:
+            client.api.remove_container(exist_container_obj.id, v=True, force=True)
+            logging.info(f"Container {container_name} removed")
+
+    @staticmethod
+    def remove_cuda_visible_devices_lines(file_path):
+        try:
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+
+            # Remove lines containing 'export CUDA_VISIBLE_DEVICES='
+            modified_lines = [line for line in lines if 'export CUDA_VISIBLE_DEVICES=' not in line]
+
+            with open(file_path, 'w') as f:
+                f.writelines(modified_lines)
+
+            logging.info(f"Lines containing 'export CUDA_VISIBLE_DEVICES=' removed successfully from {file_path}")
+        except FileNotFoundError:
+            logging.info(f"Error: File '{file_path}' not found.")
+        except Exception as e:
+            logging.info(f"An error occurred while removing cuda visible devices from {file_path} : {e}")
 
     @staticmethod
     def replace_entry_command_with_env_variable(entry_commands, env_name_value_map):
@@ -410,4 +603,3 @@ class JobRunnerUtils(Singleton):
         job_yaml = parameters.get("job_yaml", {})
         job_type = job_yaml.get("job_type", None)
         return job_type
-
