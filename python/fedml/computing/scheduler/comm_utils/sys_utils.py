@@ -400,6 +400,7 @@ def cleanup_all_fedml_server_learning_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Exception e: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -457,6 +458,7 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                     else:
                         os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Exception: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
