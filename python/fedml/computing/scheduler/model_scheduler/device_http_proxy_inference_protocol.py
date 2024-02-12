@@ -3,6 +3,7 @@ import traceback
 from typing import Mapping
 from urllib.parse import urlparse
 from .device_client_constants import ClientConstants
+from .device_server_constants import ServerConstants
 import requests
 import httpx
 from fastapi.responses import Response
@@ -97,7 +98,7 @@ class FedMLHttpProxyInference:
         return response_ok, model_inference_result
 
     @staticmethod
-    def allocate_client_proxy_port(internal_port_in_yaml=None, external_port_in_yaml=None) -> (str, str):
+    def allocate_worker_proxy_port(internal_port_in_yaml=None, external_port_in_yaml=None) -> (str, str):
         """
         Return: (worker_proxy_internal_port, worker_proxy_external_port)
         Priority: yaml > env > default
@@ -105,10 +106,31 @@ class FedMLHttpProxyInference:
         ret_port_internal, ret_port_external = \
             ClientConstants.WORKER_PROXY_PORT_INTERNAL, ClientConstants.WORKER_PROXY_PORT_EXTERNAL
 
-        if os.getenv("FEDML_CLIENT_API_PORT_INTERNAL", None):
-            ret_port_external = os.getenv("FEDML_CLIENT_API_PORT_INTERNAL")
-        if os.getenv("FEDML_CLIENT_API_PORT_EXTERNAL", None):
-            ret_port_external = os.getenv("FEDML_CLIENT_API_PORT_EXTERNAL")
+        if os.getenv("FEDML_WORKER_PORT_INTERNAL", None):
+            ret_port_external = os.getenv("FEDML_WORKER_PORT_INTERNAL")
+        if os.getenv("FEDML_WORKER_PORT_EXTERNAL", None):
+            ret_port_external = os.getenv("FEDML_WORKER_PORT_EXTERNAL")
+
+        if internal_port_in_yaml:
+            ret_port_internal = internal_port_in_yaml
+        if external_port_in_yaml:
+            ret_port_external = external_port_in_yaml
+
+        return ret_port_internal, ret_port_external
+
+    @staticmethod
+    def allocate_master_proxy_port(internal_port_in_yaml=None, external_port_in_yaml=None) -> (str, str):
+        """
+        Return: (master_proxy_internal_port, master_proxy_external_port)
+        Priority: yaml > env > default
+        """
+        ret_port_internal, ret_port_external = \
+            ServerConstants.MASTER_PROXY_PORT_INTERNAL, ServerConstants.MASTER_PROXY_PORT_EXTERNAL
+
+        if os.getenv("FEDML_MASTER_PORT_INTERNAL", None):
+            ret_port_external = os.getenv("FEDML_MASTER_PORT_INTERNAL")
+        if os.getenv("FEDML_MASTER_PORT_EXTERNAL", None):
+            ret_port_external = os.getenv("FEDML_MASTER_PORT_EXTERNAL")
 
         if internal_port_in_yaml:
             ret_port_internal = internal_port_in_yaml

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--infer_url", "-iu", type=str, help="inference url")
     parser.add_argument("--config_version", "-cv", type=str, help="config version")
     parser.add_argument("--infer_port", "-ip", type=int,
-                        default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT, help="inference port")
+                        default=ServerConstants.MASTER_PROXY_PORT_INTERNAL, help="inference port")
     args = parser.parse_args()
 
     # create directories

@@ -575,7 +575,7 @@ class JobMonitor(Singleton):
         return False, None
 
     def _check_all_slave_endpoint_status(self, endpoint_id, endpoint_name, model_name,
-                                         server_internal_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                                         server_internal_port=ServerConstants.MASTER_PROXY_PORT_INTERNAL):
         # Get model deployment result
         is_endpoint_offline = True
         gateway_device_id = None
@@ -645,7 +645,7 @@ class JobMonitor(Singleton):
                         # If the endpoint is offline, then report offline status to the MLOps.
                         model_config_parameters = endpoint_json.get("parameters", {})
                         server_internal_port = model_config_parameters.get("server_internal_port",
-                                                                           ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                                                                           ServerConstants.MASTER_PROXY_PORT_INTERNAL)
                         is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name,
                                                                                    model_name, server_internal_port)
                         if not is_endpoint_online:
@@ -691,7 +691,7 @@ class JobMonitor(Singleton):
                     # If the endpoint is offline, then report offline status to the MLOps.
                     model_config_parameters = model_config.get("parameters", {})
                     server_internal_port = model_config_parameters.get("server_internal_port",
-                                                                       ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                                                                       ServerConstants.MASTER_PROXY_PORT_INTERNAL)
                     is_endpoint_online = self._check_all_slave_endpoint_status(
                         job.job_id, endpoint_name, model_name, server_internal_port)
                     if is_endpoint_online:

@@ -47,6 +47,7 @@ from ....core.mlops.mlops_utils import MLOpsUtils
 from ..comm_utils.constants import SchedulerConstants
 from .device_model_db import FedMLModelDatabase
 
+from .device_http_proxy_inference_protocol import FedMLHttpProxyInference
 
 class RunnerError(BaseException):
     """ Runner failed. """
@@ -270,13 +271,12 @@ class FedMLServerRunner:
         model_version = model_config["model_version"]        
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
-                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
-        inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+        master_internal_port = model_config_parameters.get("master_internal_port", None)
+        master_external_port = model_config_parameters.get("master_external_port", None)
 
         return run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version, inference_port
+            inference_end_point_id, use_gpu, memory_size, model_version, master_internal_port, master_external_port
 
     def inference_run(self):
         # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
@@ -294,7 +294,9 @@ class FedMLServerRunner:
     def run_impl(self):
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(self.request_json)
+            inference_end_point_id, use_gpu, memory_size, model_version, \
+            master_internal_port_frm_yaml, master_external_port_frm_yaml = \
+            self.parse_model_run_params(self.request_json)
 
         logging.info("model deployment request: {}".format(self.request_json))
 
@@ -331,9 +333,15 @@ class FedMLServerRunner:
                                     model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
+        master_internal_port, master_external_port = FedMLHttpProxyInference.allocate_master_proxy_port(
+            master_internal_port_frm_yaml,
+            master_external_port_frm_yaml
+        )
+
         # start unified inference server
         self.start_device_inference_gateway(
-            run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port)
+            run_id, end_point_name, model_id, model_name, model_version, inference_port=master_internal_port
+        )
 
         # start inference monitor server
         self.stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
@@ -364,14 +372,11 @@ class FedMLServerRunner:
             If just including delete op, we do not need to wait for the slave devices to finish the delete.
             '''
             ip = self.get_ip_address(self.request_json)
-            master_port = os.getenv("FEDML_MASTER_PORT", None)
-            if master_port is not None:
-                inference_port = int(master_port)
-            model_inference_port = inference_port
+
             if ip.startswith("http://") or ip.startswith("https://"):
                 model_inference_url = "{}/api/v1/predict".format(ip)
             else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, master_external_port)
 
             self.send_deployment_status(self.run_id, end_point_name,
                                         model_name,
@@ -393,14 +398,12 @@ class FedMLServerRunner:
 
     def start_device_inference_gateway(
             self, run_id, end_point_name, model_id,
-            model_name, model_version, inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
+            model_name, model_version, inference_port=None):
         # start unified inference server
         running_model_name = ServerConstants.get_running_model_name(end_point_name,
                                                                     model_name, model_version, run_id, model_id)
         python_program = get_python_program()
-        master_port = os.getenv("FEDML_MASTER_PORT", None)
-        if master_port is not None:
-            inference_port = int(master_port)
+
         if not ServerConstants.is_running_on_k8s():
             logging.info(f"start the model inference gateway, end point {run_id}, "
                          f"model name {model_name} at port {inference_port}...")
@@ -636,11 +639,11 @@ class FedMLServerRunner:
                 self.slave_deployment_results_mapping[run_id_str] = dict()
                 return
 
-            # 1. We should generate one unified inference api
-            # Note that here we use the gateway port instead of the inference port that is used by the slave device
-            model_config_parameters = request_json["parameters"]
-            inference_port = model_config_parameters.get("server_internal_port", ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
-            inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+            # Report the ip:external_port to MLOps
+            server_external_port_frm_yaml = request_json["parameters"].get("server_external_port", None)
+            _, inference_port_external = FedMLHttpProxyInference.allocate_master_proxy_port(
+                None, server_external_port_frm_yaml)
+
             ip = self.get_ip_address(request_json)
 
             if ip.startswith("http://") or ip.startswith("https://"):
@@ -722,7 +725,7 @@ class FedMLServerRunner:
         end_point_name = payload_json["end_point_name"]
         model_name = payload_json["model_name"]
         model_version = payload_json["model_version"]
-        inference_port = payload_json.get("inference_external_api_port", ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+        inference_port = payload_json.get("inference_external_api_port", ServerConstants.MASTER_PROXY_PORT_INTERNAL)
         run_id_str = str(end_point_id)
 
         model_status = payload_json["model_status"]
@@ -2036,7 +2039,7 @@ class FedMLServerRunner:
 
                 run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
                     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-                    inference_end_point_id, use_gpu, memory_size, model_version, inference_port = \
+                    inference_end_point_id, use_gpu, memory_size, model_version, inference_port, _ = \
                     self.parse_model_run_params(json.loads(job.running_json))
 
                 FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)

@@ -348,7 +348,7 @@ class FedMLClientRunner:
         container_external_port, container_internal_port = \
             None, model_config_parameters.get("worker_internal_port", ClientConstants.CONTAINER_INF_PORT_INTERNAL)
 
-        worker_proxy_internal_port, worker_proxy_external_port = FedMLHttpProxyInference.allocate_client_proxy_port(
+        worker_proxy_internal_port, worker_proxy_external_port = FedMLHttpProxyInference.allocate_worker_proxy_port(
             model_config_parameters.get("worker_internal_port", None),
             model_config_parameters.get("worker_external_port", None)
         )
@@ -1273,7 +1273,7 @@ class FedMLClientRunner:
         client_api_cmd = "fedml.computing.scheduler.model_scheduler.device_client_api:api"
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
 
-        client_port_internal, client_port_external = FedMLHttpProxyInference.allocate_client_proxy_port()
+        client_port_internal, client_port_external = FedMLHttpProxyInference.allocate_worker_proxy_port()
 
         if client_api_pids is None or len(client_api_pids) <= 0:
             # Start local API services
