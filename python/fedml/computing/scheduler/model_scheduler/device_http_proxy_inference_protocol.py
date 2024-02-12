@@ -107,7 +107,7 @@ class FedMLHttpProxyInference:
             ClientConstants.WORKER_PROXY_PORT_INTERNAL, ClientConstants.WORKER_PROXY_PORT_EXTERNAL
 
         if os.getenv("FEDML_WORKER_PORT_INTERNAL", None):
-            ret_port_external = os.getenv("FEDML_WORKER_PORT_INTERNAL")
+            ret_port_internal = os.getenv("FEDML_WORKER_PORT_INTERNAL")
         if os.getenv("FEDML_WORKER_PORT_EXTERNAL", None):
             ret_port_external = os.getenv("FEDML_WORKER_PORT_EXTERNAL")
 

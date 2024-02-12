@@ -1,8 +1,7 @@
 workspace: "./src"
 entry_point: "serve_main.py"
 auto_detect_public_ip: true
-server_external_port: 16014
-server_internal_port: 2203
+worker_port_in
 bootstrap: |
   echo "Bootstrap start..."
   sleep 15

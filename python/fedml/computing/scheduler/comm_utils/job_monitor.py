@@ -589,16 +589,15 @@ class JobMonitor(Singleton):
             # Check if the endpoint is activated
             endpoint_activated = FedMLModelCache.get_instance().get_end_point_activation(endpoint_id)
             if endpoint_activated:
-                # Check if the endpoint is running
                 model_url = result_payload.get("model_url", "")
                 url_parsed = urlparse(model_url)
-                if url_parsed.path.startswith("/inference"):
+                if url_parsed.path.startswith("/inference"):    # Is gateway
                     gateway_device_id = result_device_id
                     gateway_result_payload_for_ready = result_payload
                     url_parsed = urlparse(result_payload.get("model_url", ""))
                     gateway_result_payload_for_ready[
                         "model_url"] = f"http://localhost:{server_internal_port}{url_parsed.path}"
-                else:
+                else:                                           # Is worker
                     if self._check_and_reset_endpoint_status(
                             endpoint_id, result_device_id, result_payload, only_check_inference_ready_status=True,
                             should_release_gpu_ids=False):
