@@ -4,6 +4,9 @@ from typing import Mapping
 from urllib.parse import urlparse
 from .device_client_constants import ClientConstants
 from .device_server_constants import ServerConstants
+
+from ..comm_utils.url_utils import replace_url_with_local_host
+
 import requests
 import httpx
 from fastapi.responses import Response
@@ -61,6 +64,10 @@ class FedMLHttpProxyInference:
         else:
             model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                                  'Accept': inference_type}
+
+        # Change the url to localhost, since the url that proxy send to container should be localhost
+        inference_url = replace_url_with_local_host(inference_url)
+
         model_inference_json = {
             "endpoint_id": endpoint_id,
             "inference_url": inference_url,

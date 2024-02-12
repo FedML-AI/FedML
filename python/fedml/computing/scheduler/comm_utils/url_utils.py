@@ -31,3 +31,18 @@ def remove_url_path(inference_url):
         parsed_url.fragment
     ))
     return new_url
+
+
+def replace_url_with_local_host(inference_url):
+    parsed_url = urlparse(inference_url)
+    new_netloc = f"localhost:{parsed_url.port}"
+
+    new_url = urlunparse((
+        parsed_url.scheme,
+        new_netloc,
+        parsed_url.path,
+        parsed_url.params,
+        parsed_url.query,
+        parsed_url.fragment
+    ))
+    return new_url
