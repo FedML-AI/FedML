@@ -1,3 +1,4 @@
+import os
 import traceback
 from typing import Mapping
 from urllib.parse import urlparse
@@ -13,10 +14,11 @@ class FedMLHttpProxyInference:
         pass
 
     @staticmethod
-    async def is_inference_ready(inference_url, timeout=None) -> bool:
-        http_proxy_url = f"http://{urlparse(inference_url).hostname}:{ClientConstants.LOCAL_CLIENT_API_PORT}/ready"
+    async def is_inference_ready(proxy_url, inference_url, timeout=None) -> bool:
+        http_proxy_url = f"{proxy_url}/ready"
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                              'Accept': 'application/json'}
+        print(f"Check if the proxy {http_proxy_url} is ready for container address {inference_url}")
         model_ready_json = {
             "inference_url": inference_url,
         }
@@ -48,10 +50,10 @@ class FedMLHttpProxyInference:
     async def run_http_proxy_inference_with_request(
             endpoint_id, inference_url, inference_input_list,
             inference_output_list, inference_type="default",
-            timeout=None
+            timeout=None, inference_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL
     ):
         inference_response = {}
-        http_proxy_url = f"http://{urlparse(inference_url).hostname}:{ClientConstants.LOCAL_CLIENT_API_PORT}/api/v1/predict"
+        http_proxy_url = f"http://{urlparse(inference_url).hostname}:{inference_proxy_port}/api/v1/predict"
         if inference_type == "default":
             model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                                  'Accept': 'application/json'}
@@ -85,7 +87,7 @@ class FedMLHttpProxyInference:
 
             if error_code == 200:
                 response_ok = True
-                return response_ok, inference_response.content
+                return response_ok, inference_response.json()
             else:
                 model_inference_result = {"response": f"{inference_response.content}"}
         except Exception as e:
@@ -93,3 +95,24 @@ class FedMLHttpProxyInference:
             model_inference_result = {"response": f"{traceback.format_exc()}"}
 
         return response_ok, model_inference_result
+
+    @staticmethod
+    def allocate_client_proxy_port(internal_port_in_yaml=None, external_port_in_yaml=None) -> (str, str):
+        """
+        Return: (worker_proxy_internal_port, worker_proxy_external_port)
+        Priority: yaml > env > default
+        """
+        ret_port_internal, ret_port_external = \
+            ClientConstants.WORKER_PROXY_PORT_INTERNAL, ClientConstants.WORKER_PROXY_PORT_EXTERNAL
+
+        if os.getenv("FEDML_CLIENT_API_PORT_INTERNAL", None):
+            ret_port_external = os.getenv("FEDML_CLIENT_API_PORT_INTERNAL")
+        if os.getenv("FEDML_CLIENT_API_PORT_EXTERNAL", None):
+            ret_port_external = os.getenv("FEDML_CLIENT_API_PORT_EXTERNAL")
+
+        if internal_port_in_yaml:
+            ret_port_internal = internal_port_in_yaml
+        if external_port_in_yaml:
+            ret_port_external = external_port_in_yaml
+
+        return ret_port_internal, ret_port_external

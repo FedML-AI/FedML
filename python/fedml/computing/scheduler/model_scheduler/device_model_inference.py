@@ -8,8 +8,10 @@ from typing import Any, Mapping, MutableMapping, Union
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import StreamingResponse
 
+from fedml.computing.scheduler.comm_utils.url_utils import replace_inference_port, remove_url_path
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
@@ -19,34 +21,34 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from pydantic import BaseSettings
 
 
-class Settings(BaseSettings):
-    redis_addr: str
-    redis_port: str
-    redis_password: str
-    end_point_name: str
-    model_name: str
-    model_version: str
-    model_infer_url: str
-    version: str
-    use_mqtt_inference: bool
-    use_worker_gateway: bool
-    ext_info: str
+# class Settings(BaseSettings):
+#     redis_addr: str
+#     redis_port: str
+#     redis_password: str
+#     end_point_name: str
+#     model_name: str
+#     model_version: str
+#     model_infer_url: str
+#     version: str
+#     use_mqtt_inference: bool
+#     use_worker_gateway: bool
+#     ext_info: str
+#
+#
+# settings = Settings()
 
-
-settings = Settings()
-
-# class settings:
-#     redis_addr = "127.0.0.1"
-#     redis_port = 6379
-#     redis_password = "fedml_default"
-#     end_point_name = ""
-#     model_name = ""
-#     model_version = ""
-#     model_infer_url = "127.0.0.1"
-#     version = "dev"
-#     use_mqtt_inference = False
-#     use_worker_gateway = False
-#     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+class settings:
+    redis_addr = "127.0.0.1"
+    redis_port = 6379
+    redis_password = "fedml_default"
+    end_point_name = ""
+    model_name = ""
+    model_version = ""
+    model_infer_url = "127.0.0.1"
+    version = "dev"
+    use_mqtt_inference = False
+    use_worker_gateway = False
+    ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
 
 
 api = FastAPI()
@@ -166,10 +168,13 @@ async def _predict(
             return inference_response
 
         # Found idle inference device
-        idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
+        idle_device, end_point_id, model_id, model_name, model_version, \
+            inference_host, inference_output_url, worker_proxy_port = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
+
         if idle_device is None or idle_device == "":
-            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND, "message": "can not found the active endpoint."}
+            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
+                    "message": "can not found the active endpoint."}
 
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
@@ -187,7 +192,8 @@ async def _predict(
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
             inference_response = await send_inference_request(
-                idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
+                idle_device, end_point_id, inference_output_url, input_list, output_list,
+                inference_type=in_return_type, worker_proxy_port=worker_proxy_port)
 
         # Calculate model metrics
         try:
@@ -240,6 +246,8 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     inference_host = ""
     inference_output_url = ""
     model_version = ""
+    inference_proxy_port = ClientConstants.WORKER_PROXY_PORT_EXTERNAL
+
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
@@ -252,16 +260,19 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
         model_id = deployment_result["model_id"]
         end_point_id = deployment_result["end_point_id"]
         inference_output_url = deployment_result["model_url"]
+        inference_proxy_port = deployment_result.get("inference_proxy_port", ClientConstants.WORKER_PROXY_PORT_EXTERNAL)
         url_parsed = urlparse(inference_output_url)
         inference_host = url_parsed.hostname
     else:
         logging.info("not found idle deployment result")
 
-    return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
+    return idle_device, end_point_id, model_id, model_name, model_version, \
+        inference_host, inference_output_url, inference_proxy_port
 
 
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
-                                 inference_type="default", has_public_ip=True):
+                                 inference_type="default", has_public_ip=True,
+                                 worker_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
     try:
         response_ok = await FedMLHttpInference.is_inference_ready(inference_url)
         if response_ok:
@@ -270,10 +281,15 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             logging.info(f"Use http inference. return {response_ok}")
             return inference_response
 
-        response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url)
+        proxy_url_with_path = replace_inference_port(inference_url, worker_proxy_port)
+        proxy_url = remove_url_path(proxy_url_with_path)
+
+        response_ok = await FedMLHttpProxyInference.is_inference_ready(proxy_url, inference_url)
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type,
+                inference_proxy_port=worker_proxy_port
+            )
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
@@ -345,6 +361,6 @@ def logging_inference_request(request, response):
 
 if __name__ == "__main__":
     import uvicorn
-    port = 2204
+    port = 2203
     logging.basicConfig(level=logging.INFO)
     uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")

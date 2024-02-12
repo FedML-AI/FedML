@@ -547,6 +547,8 @@ class FedMLServerRunner:
         model_version = payload_json["model_version"]
         model_status = payload_json["model_status"]
         run_id_str = str(end_point_id)
+
+        # Set worker deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_result(end_point_id, end_point_name,
@@ -724,6 +726,8 @@ class FedMLServerRunner:
         run_id_str = str(end_point_id)
 
         model_status = payload_json["model_status"]
+
+        # Set worker deployment status
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_status(end_point_id, end_point_name,

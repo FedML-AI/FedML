@@ -214,9 +214,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     if num_gpus is None:
                         num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
                 usr_indicated_wait_time = config.get('deploy_timeout', 900)
-                usr_indicated_worker_port = config.get('worker_port', "")
-                if usr_indicated_worker_port == "":
-                    usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
+
                 shm_size = config.get('shm_size', None)
                 storage_opt = config.get('storage_opt', None)
                 tmpfs = config.get('tmpfs', None)
@@ -224,16 +222,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if cpus is not None:
                     cpus = int(cpus)
                 memory = config.get('memory', None)
-
-                if usr_indicated_worker_port == "":
-                    usr_indicated_worker_port = None
-                else:
-                    usr_indicated_worker_port = int(usr_indicated_worker_port)
-
-                worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
-                worker_port_from_config = config.get('worker_port', "")
-                print(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
-                      f"worker port from config {worker_port_from_config}")
 
                 usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
                 inference_image_name = config.get('inference_image_name',
@@ -280,7 +268,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 docker_registry_user_password = config.get("docker_registry_user_password", "")
                 docker_registry = config.get("docker_registry", "")
 
-                port_inside_container = int(config.get("port_inside_container", 2345))
+                port_inside_container = int(config.get("port_inside_container",
+                                                       ClientConstants.CONTAINER_INF_PORT_INTERNAL))
                 use_triton = config.get("use_triton", False)
                 if use_triton:
                     inference_type = "triton"
@@ -471,7 +460,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             host_config=client.api.create_host_config(
                 binds=binds,
                 port_bindings={
-                    port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
+                    port_inside_container: None     # We do not let usr indicate the external container port
                 },
                 device_requests=device_requests,
                 shm_size=shm_size,
@@ -490,18 +479,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         while True:
             cnt += 1
             try:
-                if usr_indicated_worker_port is not None:
-                    inference_http_port = usr_indicated_worker_port
-                    break
-                else:
-                    # Find the random port
-                    port_info = client.api.port(new_container.get("Id"), port_inside_container)
-                    inference_http_port = port_info[0]["HostPort"]
-                    logging.info("inference_http_port: {}".format(inference_http_port))
-                    break
-            except:
+                port_info = client.api.port(new_container.get("Id"), port_inside_container)
+                inference_http_port = port_info[0]["HostPort"]
+                logging.info("inference_http_port: {}".format(inference_http_port))
+                break
+            except Exception as e:
                 if cnt >= 5:
-                    raise Exception("Failed to get the port allocation")
+                    raise Exception(f"Failed to get the port allocation due to {e}")
                 time.sleep(3)
 
         # Logging the info from the container

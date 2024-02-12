@@ -18,6 +18,7 @@ from fedml.core.common.singleton import Singleton
 
 from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
+from .url_utils import replace_inference_port, remove_url_path
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
 from ..model_scheduler.device_model_db import FedMLModelDatabase
@@ -32,6 +33,7 @@ from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
 from ..model_scheduler.device_server_constants import ServerConstants
+from ..model_scheduler.device_client_constants import ClientConstants
 
 
 class JobMonitor(Singleton):
@@ -440,6 +442,7 @@ class JobMonitor(Singleton):
         inference_url = result_json.get("model_url", None)
         model_metadata = result_json.get("model_metadata", {})
         input_list = model_metadata.get("inputs", None)
+        worker_proxy_port = model_metadata.get("inference_proxy_port", ClientConstants.WORKER_PROXY_PORT_EXTERNAL)
         output_list = []
 
         # Run inference request to check if endpoint is running normally.
@@ -447,12 +450,13 @@ class JobMonitor(Singleton):
             if only_check_inference_ready_status:
                 response_ok = self.is_inference_ready(
                     inference_url, timeout=SchedulerConstants.ENDPOINT_INFERENCE_READY_TIMEOUT,
-                    device_id=device_id, endpoint_id=endpoint_id
+                    device_id=device_id, endpoint_id=endpoint_id, worker_proxy_port=worker_proxy_port
                 )
             else:
                 response_ok, inference_response = self.inference(
                     device_id, endpoint_id, inference_url, input_list, output_list,
-                    timeout=SchedulerConstants.ENDPOINT_STATUS_CHECK_TIMEOUT
+                    timeout=SchedulerConstants.ENDPOINT_STATUS_CHECK_TIMEOUT,
+                    worker_proxy_port=worker_proxy_port
                 )
 
             if self.endpoint_unavailable_counter.get(str(endpoint_id)) is None:
@@ -480,7 +484,8 @@ class JobMonitor(Singleton):
 
         return False
 
-    def is_inference_ready(self, inference_url, timeout=None, device_id=None, endpoint_id=None):
+    def is_inference_ready(self, inference_url, timeout=None, device_id=None, endpoint_id=None,
+                           worker_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=timeout))
         if response_ok:
             print("Use http health check.")
@@ -493,8 +498,11 @@ class JobMonitor(Singleton):
         # Cannot reach the server, will try other protocols
         print(f"Use http health check failed at {inference_url} for device {device_id} and endpoint {endpoint_id}.")
 
+        proxy_url_with_path = replace_inference_port(inference_url, worker_proxy_port)
+        proxy_url = remove_url_path(proxy_url_with_path)
+
         response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(
-            inference_url, timeout=timeout))
+            proxy_url, inference_url, timeout=timeout))
         if response_ok:
             print("Use http proxy health check.")
             return response_ok
@@ -516,7 +524,7 @@ class JobMonitor(Singleton):
 
     def inference(
             self, device_id, endpoint_id, inference_url, input_list, output_list,
-            inference_type="default", timeout=None):
+            inference_type="default", timeout=None, worker_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         try:
             response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url))
             if response_ok:
@@ -525,12 +533,15 @@ class JobMonitor(Singleton):
                 print(f"Use http inference. return {response_ok}.")
                 return response_ok, inference_response
 
-            response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(inference_url))
+            proxy_url_with_path = replace_inference_port(inference_url, worker_proxy_port)
+            proxy_url = remove_url_path(proxy_url_with_path)
+
+            response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(proxy_url, inference_url))
             if response_ok:
                 response_ok, inference_response = asyncio.run(
                     FedMLHttpProxyInference.run_http_proxy_inference_with_request(
                         endpoint_id, inference_url, input_list, output_list, inference_type=inference_type,
-                        timeout=timeout))
+                        timeout=timeout, inference_proxy_port=worker_proxy_port))
                 print(f"Use http proxy inference. return {response_ok}.")
                 return response_ok, inference_response
 

@@ -25,6 +25,7 @@ from fedml import mlops
 from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from .device_model_cache import FedMLModelCache
+from .device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..comm_utils import sys_utils, security_utils
 
 from ..comm_utils.container_utils import ContainerUtils
@@ -344,9 +345,13 @@ class FedMLClientRunner:
         scale_max = model_config.get("instance_scale_max", 0)
         model_config_parameters = self.request_json["parameters"]
 
-        inference_port = model_config_parameters.get("worker_internal_port",
-                                                     ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
-        inference_port_external = model_config_parameters.get("worker_external_port", inference_port)
+        container_external_port, container_internal_port = \
+            None, model_config_parameters.get("worker_internal_port", ClientConstants.CONTAINER_INF_PORT_INTERNAL)
+
+        worker_proxy_internal_port, worker_proxy_external_port = FedMLHttpProxyInference.allocate_client_proxy_port(
+            model_config_parameters.get("worker_internal_port", None),
+            model_config_parameters.get("worker_external_port", None)
+        )
 
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
@@ -462,13 +467,15 @@ class FedMLClientRunner:
             inference_output_url = ""
             logging.error(f"Exception at deployment: {traceback.format_exc()}")
 
-        if inference_output_url == "":
+        # Output url -> ip:container_ext_port
+        if inference_output_url == "":  # Failed
             logging.error("failed to deploy the model...")
 
             result_payload = self.send_deployment_results(
-                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
-                model_id, model_name, inference_output_url, inference_model_version, inference_port,
-                inference_engine, model_metadata, model_config)
+                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, model_id,
+                model_name, inference_output_url, inference_model_version, inference_engine, model_metadata,
+                model_config, inference_port=None, inference_proxy_port= None
+            )
 
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.broadcast_client_training_status(
@@ -481,29 +488,24 @@ class FedMLClientRunner:
             # After sending the deployment status, we should wait for the master to delete the deployment status
             status_payload = self.send_deployment_status(
                 end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
+                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=None, inference_proxy_port=None)
 
             return False
         else:
             logging.info("finished deployment, continue to send results to master...")
-            status_payload = self.send_deployment_status(  # Send Master the external port
-                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port_external)
-            result_payload = self.send_deployment_results(
-                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                model_id, model_name, inference_output_url, model_version, inference_port_external,
-                inference_engine, model_metadata, model_config)
 
-            if inference_port_external != inference_port:  # For Worker, use internal port
-                logging.info("inference_port_external {} != inference_port {}".format(
-                    inference_port_external, inference_port))
-                status_payload = self.construct_deployment_status(
-                    end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                    ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port)
-                result_payload = self.construct_deployment_results(
-                    end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                    model_id, model_name, inference_output_url, model_version, inference_port,
-                    inference_engine, model_metadata, model_config)
+            # Send back the container port, proxy port
+            status_payload = self.send_deployment_status(
+                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
+                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                inference_port=container_external_port, inference_proxy_port=worker_proxy_external_port
+            )
+
+            result_payload = self.send_deployment_results(
+                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, model_id,
+                model_name, inference_output_url, model_version, inference_engine, model_metadata, model_config,
+                inference_port=container_external_port, inference_proxy_port=worker_proxy_external_port
+            )
 
             FedMLModelDatabase.get_instance().set_deployment_result(
                 run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(result_payload))
@@ -556,10 +558,9 @@ class FedMLClientRunner:
             logging.info(f"Exception when removing deployment {traceback.format_exc()}")
             pass
 
-    def construct_deployment_results(self, end_point_name, device_id, model_status,
-                                     model_id, model_name, model_inference_url,
-                                     model_version, inference_port, inference_engine,
-                                     model_metadata, model_config):
+    def construct_deployment_results(self, end_point_name, device_id, model_status, model_id, model_name,
+                                     model_inference_url, model_version, inference_engine, model_metadata, model_config,
+                                     inference_port, inference_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -568,47 +569,47 @@ class FedMLClientRunner:
                                       "model_metadata": model_metadata,
                                       "model_config": model_config,
                                       "model_status": model_status,
-                                      "inference_port": inference_port}
+                                      "inference_port": inference_port,
+                                      "inference_proxy_port": inference_proxy_port
+                                      }
         return deployment_results_payload
 
-    def construct_deployment_status(self, end_point_name, device_id,
-                                    model_id, model_name, model_version,
+    def construct_deployment_status(self, end_point_name, device_id, model_id, model_name, model_version,
                                     model_inference_url, model_status,
-                                    inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                                    inference_port, inference_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
                                      "model_id": model_id, "model_name": model_name,
                                      "model_version": model_version,
                                      "model_url": model_inference_url, "model_status": model_status,
-                                     "inference_port": inference_port}
+                                     "inference_port": inference_port,
+                                     "inference_proxy_port": inference_proxy_port
+                                     }
         return deployment_status_payload
 
-    def send_deployment_results(self, end_point_name, device_id, model_status,
-                                model_id, model_name, model_inference_url,
-                                model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
+    def send_deployment_results(self, end_point_name, device_id, model_status, model_id, model_name,
+                                model_inference_url, model_version, inference_engine, model_metadata, model_config,
+                                inference_port, inference_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = self.construct_deployment_results(
-            end_point_name, device_id, model_status,
-            model_id, model_name, model_inference_url,
-            model_version, inference_port, inference_engine,
-            model_metadata, model_config)
+            end_point_name, device_id, model_status, model_id, model_name, model_inference_url,
+            model_version, inference_engine, model_metadata, model_config,
+            inference_port=inference_port, inference_proxy_port=inference_proxy_port
+        )
 
         logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                                       deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
 
-    def send_deployment_status(self, end_point_name, device_id,
-                               model_id, model_name, model_version,
+    def send_deployment_status(self, end_point_name, device_id, model_id, model_name, model_version,
                                model_inference_url, model_status,
-                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                               inference_port, inference_proxy_port=ClientConstants.WORKER_PROXY_PORT_EXTERNAL):
         deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = self.construct_deployment_status(
-            end_point_name, device_id,
-            model_id, model_name, model_version,
-            model_inference_url, model_status,
-            inference_port=inference_port)
+            end_point_name, device_id, model_id, model_name, model_version, model_inference_url, model_status,
+            inference_port=inference_port, inference_proxy_port=inference_proxy_port
+        )
 
         logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                                      deployment_status_payload))
@@ -1234,7 +1235,7 @@ class FedMLClientRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
@@ -1271,6 +1272,9 @@ class FedMLClientRunner:
 
         client_api_cmd = "fedml.computing.scheduler.model_scheduler.device_client_api:api"
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
+
+        client_port_internal, client_port_external = FedMLHttpProxyInference.allocate_client_proxy_port()
+
         if client_api_pids is None or len(client_api_pids) <= 0:
             # Start local API services
             cur_dir = os.path.dirname(__file__)
@@ -1280,7 +1284,7 @@ class FedMLClientRunner:
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                 "--log-level critical".format(
                     python_program, client_api_cmd,
-                    ClientConstants.LOCAL_CLIENT_API_PORT, fedml_base_dir
+                    client_port_internal, fedml_base_dir
                 ),
                 should_capture_stdout=False,
                 should_capture_stderr=False
