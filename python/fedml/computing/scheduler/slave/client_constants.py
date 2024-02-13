@@ -335,10 +335,7 @@ class ClientConstants(object):
 
         exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = script_process.communicate(
-                timeout=100, data_arrived_callback=ClientConstants.log_callback,
-                error_processor=error_processor, should_write_log=should_write_log_file
-            )
+            (exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list) = script_process.communicate(timeout=100, data_arrived_callback=ClientConstants.log_callback,error_processor=error_processor, should_write_log=should_write_log_file)
         except Exception as e:
             pass
 
@@ -364,9 +361,8 @@ class ClientConstants(object):
 
     @staticmethod
     def get_console_sys_out_pipe_err_results(script_process):
-        pipe_out, pipe_err = script_process.communicate()
-        exec_out, exec_err = sys.stdout, pipe_err
-        return script_process.returncode, exec_out, exec_err
+        _, pipe_err = script_process.communicate()
+        return script_process.returncode, sys.stdout, pipe_err
 
     @staticmethod
     def print_console_output(script_process):

@@ -1,6 +1,8 @@
 import os
 import platform
 import signal
+import logging
+import traceback
 
 import psutil
 import yaml
@@ -55,16 +57,20 @@ class RunProcessUtils:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
+                            os.killpg(os.getpgid(int(process_id)), signal.SIGKILL)
                 except Exception as e:
+                    logging.error(f"Error in killing process {process_id}: {e}, traceback: {traceback.format_exc()}")
                     pass
 
                 try:
                     os.remove(os.path.join(run_process_dir, process_file))
                 except Exception as e:
+                    logging.error(f"Error in removing process file {process_file}: {e}, "
+                                  f"traceback: {traceback.format_exc()}")
                     pass
 
         except Exception as e:
+            logging.error(f"Error in cleanup_run_process: {e}, traceback: {traceback.format_exc()}")
             pass
 
     @staticmethod
