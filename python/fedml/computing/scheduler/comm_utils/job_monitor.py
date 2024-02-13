@@ -642,9 +642,12 @@ class JobMonitor(Singleton):
                         continue
                     try:
                         # If the endpoint is offline, then report offline status to the MLOps.
-                        model_config_parameters = endpoint_json.get("parameters", {})
-                        server_internal_port = model_config_parameters.get("server_internal_port",
-                                                                           ServerConstants.MASTER_PROXY_PORT_INTERNAL)
+                        server_internal_port_frm_yml = endpoint_json.get("parameters", {}).get("server_internal_port", None)
+                        server_internal_port, _ = FedMLHttpProxyInference.allocate_master_proxy_port(
+                            server_internal_port_frm_yml,
+                            None
+                        )
+
                         is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name,
                                                                                    model_name, server_internal_port)
                         if not is_endpoint_online:

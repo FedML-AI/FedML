@@ -22,6 +22,7 @@ class FedMLHttpProxyInference:
         http_proxy_url = f"{proxy_url}/ready"
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                              'Accept': 'application/json'}
+        inference_url = replace_url_with_local_host(inference_url)
         print(f"Check if the proxy {http_proxy_url} is ready for container address {inference_url}")
         model_ready_json = {
             "inference_url": inference_url,
