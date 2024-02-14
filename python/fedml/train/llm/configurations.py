@@ -183,6 +183,15 @@ class ModelArguments:
         metadata={"help": "Authentication token for Hugging Face private models such as Llama 2."}
     )
     load_pretrained: bool = field(default=True, metadata={"help": "Whether to load pretrained model weights."})
+    trust_remote_code: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to allow for custom code defined on Hugging Face Hub in their own modeling, configuration,"
+                    " tokenization or even pipeline files. This option should only be set to `True` for repositories"
+                    " you trust and in which you have read the code, as it will execute code present on the Hub on your"
+                    " local machine.",
+        }
+    )
     use_flash_attention: bool = field(default=False, metadata={"help": "Whether to use flash attention."})
     use_fast_tokenizer: bool = field(
         default=True,
@@ -249,7 +258,7 @@ class ModelArguments:
             pretrained_model_name_or_path=self.model_name_or_path,
             revision=self.model_revision,
             torch_dtype=self.torch_dtype,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
         )
         model_kwargs.update(kwargs)
 
@@ -323,7 +332,7 @@ class ModelArguments:
             ),
             revision=self.tokenizer_revision if bool(self.tokenizer_revision) else self.model_revision,
             use_fast=self.use_fast_tokenizer,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
         )
         tokenizer_kwargs.update(kwargs)
 
