@@ -146,7 +146,7 @@ class MLOpsDevicePerfStats(object):
                     JobMonitor.get_instance().monitor_endpoint_logs()
 
             except Exception as e:
-                logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
+                logging.error(f"exception {e} when reporting device pref: {traceback.format_exc()}.")
                 pass
 
             time.sleep(sleep_time_interval)

@@ -44,7 +44,6 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
-from ..comm_utils.container_utils import ContainerUtils
 
 
 class RunnerError(Exception):
@@ -171,15 +170,14 @@ class FedMLClientRunner:
         ]
 
     def unzip_file(self, zip_file, unzip_file_path) -> str:
-        unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
             with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
-                unziped_file_name = zipf.namelist()[0]
+                unzipped_file_name = zipf.namelist()[0]
         else:
             raise Exception("Invalid zip file {}".format(zip_file))
 
-        return unziped_file_name
+        return unzipped_file_name
 
     def package_download_progress(self, count, blksize, filesize):
         self.check_runner_stop_event()
@@ -212,6 +210,8 @@ class FedMLClientRunner:
         try:
             shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
+            logging.error(
+                f"Failed to remove directory {unzip_package_path}, Exception: {e}, Traceback: {traceback.format_exc()}")
             pass
 
         package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
@@ -330,11 +330,6 @@ class FedMLClientRunner:
             fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
             fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
 
-        # try:
-        #     os.makedirs(package_dynamic_args["data_cache_dir"], exist_ok=True)
-        # except Exception as e:
-        #     pass
-
         fedml_conf_object["dynamic_args"] = package_dynamic_args
         self.fedml_config_object = fedml_conf_object.copy()
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
@@ -367,8 +362,8 @@ class FedMLClientRunner:
                 sys_utils.log_return_info(bootstrap_script_file, ret_code)
 
                 is_bootstrap_run_ok = False
-        except Exception:
-            logging.error("Bootstrap script error: {}".format(traceback.format_exc()))
+        except Exception as e:
+            logging.error(f"Bootstrap script error: Exception: {e}, Traceback: {traceback.format_exc()}")
             is_bootstrap_run_ok = False
         return is_bootstrap_run_ok
 
@@ -396,7 +391,7 @@ class FedMLClientRunner:
         except RunnerCompletedError:
             logging.info("Runner completed.")
         except Exception as e:
-            logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            logging.error(f"Runner exited with errors. Exception: {e}, Traceback {traceback.format_exc()}")
             self.mlops_metrics.report_client_id_status(
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 server_id=self.server_id, run_id=self.run_id)
@@ -687,8 +682,9 @@ class FedMLClientRunner:
                                                                                            bootstrap_cmd_list=bootstrap_cmd_list,
                                                                                            cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str,
                                                                                            image_pull_policy=image_pull_policy)
-                except Exception:
-                    logging.error(f"Exception while generating containerized launch commands: {traceback.format_exc()}")
+                except Exception as e:
+                    logging.error(f"Error occurred while generating containerized launch commands. "
+                                  f"Exception: {e}, Traceback: {traceback.format_exc()}")
                     return None, None, None
 
                 if not job_executing_commands:
@@ -716,7 +712,9 @@ class FedMLClientRunner:
         self.check_runner_stop_event()
 
         error_str = "\n".join(error_list)
-        raise Exception(f"Error occurs when running the job... {error_str}")
+        error_message = f"Error occurred when running the job... {error_str}"
+        logging.error(error_message)
+        raise Exception(error_message)
 
     def reset_devices_status(self, edge_id, status, should_send_client_id_status=True):
         self.mlops_metrics.run_id = self.run_id
@@ -737,6 +735,7 @@ class FedMLClientRunner:
             self.mlops_metrics.report_client_id_status(
                 self.edge_id, run_status, server_id=self.server_id, run_id=self.run_id)
         except Exception as e:
+            logging.error(f"Failed to sync run stop status with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def cleanup_run_when_starting_failed(
@@ -751,6 +750,7 @@ class FedMLClientRunner:
         try:
             self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
+            logging.error(f"Failed to stop sys perf with Exception {ex}. Traceback: {traceback.format_exc()}")
             pass
 
         time.sleep(1)
@@ -760,6 +760,8 @@ class FedMLClientRunner:
             ClientConstants.cleanup_bootstrap_process(self.run_id)
             ClientConstants.cleanup_run_process(self.run_id)
         except Exception as e:
+            logging.error(
+                f"Failed to cleanup run when starting failed with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def cleanup_run_when_finished(self):
@@ -774,6 +776,7 @@ class FedMLClientRunner:
         try:
             self.mlops_metrics.stop_sys_perf()
         except Exception as ex:
+            logging.error(f"Failed to stop sys perf with Exception {ex}. Traceback: {traceback.format_exc()}")
             pass
 
         time.sleep(1)
@@ -783,6 +786,8 @@ class FedMLClientRunner:
             ClientConstants.cleanup_bootstrap_process(self.run_id)
             ClientConstants.cleanup_run_process(self.run_id)
         except Exception as e:
+            logging.error(
+                f"Failed to cleanup run when finished with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
@@ -846,7 +851,9 @@ class FedMLClientRunner:
                 self.client_mqtt_is_connected = False
                 self.client_mqtt_mgr = None
             self.client_mqtt_lock.release()
-        except Exception:
+        except Exception as e:
+            logging.error(
+                f"Failed to release client mqtt manager with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def ota_upgrade(self, payload, request_json):
@@ -861,6 +868,8 @@ class FedMLClientRunner:
             force_ota = common_args.get("force_ota", False)
             ota_version = common_args.get("ota_version", None)
         except Exception as e:
+            logging.error(
+                f"Failed to get ota upgrade parameters with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
         if force_ota and ota_version is not None:
@@ -870,6 +879,7 @@ class FedMLClientRunner:
             try:
                 fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(self.version)
             except Exception as e:
+                logging.error(f"Failed to check fedml version with Exception {e}. Traceback: {traceback.format_exc()}")
                 return
 
             should_upgrade = False if fedml_is_latest_version else True
@@ -887,7 +897,6 @@ class FedMLClientRunner:
             logging.info(f"Upgrade to version {upgrade_version} ...")
 
             sys_utils.do_upgrade(self.version, upgrade_version)
-
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic, payload):
@@ -911,6 +920,7 @@ class FedMLClientRunner:
         try:
             MLOpsConfigs.fetch_all_configs()
         except Exception as e:
+            logging.error(f"Failed to fetch all configs with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
         if not FedMLClientDataInterface.get_instance().get_agent_status():
@@ -1022,6 +1032,8 @@ class FedMLClientRunner:
                 job_type = job_yaml.get("task_type",
                                         SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         except Exception as e:
+            logging.error(f"Failed to get job obj with Exception {e}. Traceback: {traceback.format_exc()}")
+            logging.info(f"Set job type to {SchedulerConstants.JOB_TASK_TYPE_TRAIN} when failed to get job obj.")
             job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
             pass
 
@@ -1031,6 +1043,7 @@ class FedMLClientRunner:
                 logging.info(f"[run/device][{run_id}/{device_id}] Release gpu resource actually.")
                 JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
         except Exception as e:
+            logging.error(f"Failed to release gpu ids with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def terminate_user_process(self, run_id):
@@ -1096,7 +1109,7 @@ class FedMLClientRunner:
                     current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
                     running_json = json.loads(current_job.running_json)
                 except Exception as e:
-                    current_job = None
+                    logging.error(f"Failed to get running json with Exception {e}. Traceback: {traceback.format_exc()}")
 
             if running_json is not None:
                 job_type = JobRunnerUtils.parse_job_type(running_json)
@@ -1116,7 +1129,8 @@ class FedMLClientRunner:
                         logging.info(f"Terminating the run docker container {container_name} if exists...")
                         JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
                     except Exception as e:
-                        logging.info(f"Exception when terminating docker container {traceback.format_exc()}.")
+                        logging.error(f"Error occurred when terminating docker container."
+                                      f"Exception: {e}, Traceback: {traceback.format_exc()}.")
 
                 self.run_process_map.pop(run_id_str)
 
@@ -1136,7 +1150,8 @@ class FedMLClientRunner:
     def process_ota_upgrade_msg():
         os.system("pip install -U fedml")
 
-    def callback_client_ota_msg(self, topic, payload):
+    @staticmethod
+    def callback_client_ota_msg(topic, payload):
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )
@@ -1276,6 +1291,7 @@ class FedMLClientRunner:
                         pos1 = guid.find("\\n") + 2
                         guid = guid[pos1:-15]
                     except Exception as ex:
+                        logging.error(f"Failed to get uuid with Exception {ex}. Traceback: {traceback.format_exc()}")
                         pass
                     return str(guid)
 
@@ -1310,9 +1326,11 @@ class FedMLClientRunner:
             import machineid
             return machineid.id().replace('\n', '').replace('\r\n', '').strip()
         except Exception as e:
+            logging.error(f"Failed to get machine id with Exception {e}. Traceback: {traceback.format_exc()}")
             return hex(uuid.getnode())
 
-    def bind_account_and_device_id(self, url, account_id, device_id, os_name, api_key="", role="client"):
+    @staticmethod
+    def bind_account_and_device_id(url, account_id, device_id, os_name, api_key="", role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
@@ -1374,6 +1392,8 @@ class FedMLClientRunner:
                     headers={"content-type": "application/json", "Connection": "close"}
                 )
             except requests.exceptions.SSLError as err:
+                logging.error(
+                    f"Failed to bind account and device id with error: {err}, traceback: {traceback.format_exc()}")
                 MLOpsConfigs.install_root_ca_file()
                 response = requests.post(
                     url, json=json_params, verify=True,
@@ -1421,6 +1441,7 @@ class FedMLClientRunner:
         try:
             current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
         except Exception as e:
+            logging.error(f"Failed to get current job with Exception {e}. Traceback: {traceback.format_exc()}")
             current_job = None
         if current_job is None:
             if status is not None and status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
@@ -1443,7 +1464,8 @@ class FedMLClientRunner:
                 topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
                 self.callback_start_train(topic_start_train, current_job.running_json)
         except Exception as e:
-            logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
+            logging.error(f"recover starting train message after upgrading failed with exception {e}, "
+                          f"Traceback {traceback.format_exc()}")
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
@@ -1659,6 +1681,7 @@ class FedMLClientRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
+            logging.error(f"Errors in the MQTT loop: Exception {e}, Traceback: {traceback.format_exc()}")
             if str(e) == "Restarting after upgraded...":
                 logging.info("Restarting after upgraded...")
             else:
@@ -1695,6 +1718,7 @@ class FedMLClientRunner:
                 for topic in self.subscribed_topics:
                     self.mqtt_mgr.unsubscribe_msg(topic)
             except Exception as e:
+                logging.error(f"Unsubscribe topics error: {e}, Traceback: {traceback.format_exc()}")
                 pass
 
             self.mqtt_mgr.loop_stop()
