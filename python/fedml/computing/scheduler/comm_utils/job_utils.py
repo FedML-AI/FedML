@@ -70,6 +70,11 @@ class JobRunnerUtils(Singleton):
                 cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(
                     request_gpu_num, available_gpu_ids)
                 if cuda_visible_gpu_ids_str is None:
+                    if request_gpu_num:
+                        error_message = (f"Failed to occupy gpu ids for run {run_id}. "
+                                         f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
+                        logging.error(error_message)
+                        raise Exception(error_message)
                     return None
 
                 run_gpu_ids = available_gpu_ids[0:matched_gpu_num].copy()
@@ -94,8 +99,9 @@ class JobRunnerUtils(Singleton):
                         run_id, device_id, model_master_device_id, model_slave_device_id)
 
                 return cuda_visible_gpu_ids_str
+
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.info(f"Error {e} Exception {traceback.format_exc()}")
             return None
 
     @staticmethod
