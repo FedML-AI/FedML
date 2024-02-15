@@ -2,6 +2,8 @@ import logging
 import os
 import platform
 import shutil
+import traceback
+
 from ..comm_utils import subprocess_with_live_logs
 import subprocess
 import sys
@@ -229,6 +231,8 @@ class ClientConstants(object):
         try:
             training_info = load_yaml_config(training_info_file)
         except Exception as e:
+            logging.error(f"Failed to load training info from {training_info_file} with Exception: {e}, "
+                          f"Traceback: {traceback.format_exc()}")
             pass
         return training_info
 
@@ -244,18 +248,8 @@ class ClientConstants(object):
             yaml.dump(run_config_object, file)
             file.close()
         except Exception as e:
-            pass
-
-    @staticmethod
-    def exit_process(process):
-        if process is None:
-            return
-
-        try:
-            process.terminate()
-            process.join()
-            process = None
-        except Exception as e:
+            logging.error(f"Failed to generate yaml doc {yaml_file} from {run_config_object} with "
+                          f"Exception: {e}, Traceback: {traceback.format_exc()}")
             pass
 
     @staticmethod
@@ -325,18 +319,25 @@ class ClientConstants(object):
     def execute_commands_with_live_logs(cmds, join='&&', should_write_log_file=True,
                                         callback=None, error_processor=None):
         error_list = list()
+        logging.info(f"Executing command: {cmds} with live logs.")
         script_process = subprocess_with_live_logs.Popen(
             join.join(cmds), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if script_process is None:
+            logging.error(f"Failed to execute script {script_process} with following commands: {cmds}")
             return None, error_list
 
+        logging.info("script process pid: {}".format(script_process.pid))
         if callback is not None:
             callback(script_process.pid)
 
         exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list = None, None, None, None, None
         try:
-            (exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list) = script_process.communicate(timeout=100, data_arrived_callback=ClientConstants.log_callback,error_processor=error_processor, should_write_log=should_write_log_file)
+            (exec_out_str, exec_err_str, exec_out_list, exec_err_list, latest_lines_err_list) = (
+                script_process.communicate(timeout=100, data_arrived_callback=ClientConstants.log_callback,
+                                           error_processor=error_processor, should_write_log=should_write_log_file))
         except Exception as e:
+            logging.error(f"Failed to communicate with script process {script_process} with Exception: {e}, "
+                          f"Traceback: {traceback.format_exc()}")
             pass
 
         if script_process.returncode is not None and script_process.returncode != 0:
@@ -422,6 +423,8 @@ class ClientConstants(object):
                 os.path.join(unzip_package_path, package_name), ignore_errors=True
             )
         except Exception as e:
+            logging.error(f"Failed to remove existing package {unzip_package_path} with Exception: {e}, "
+                          f"Traceback: {traceback.format_exc()}")
             pass
         ClientConstants.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
@@ -447,6 +450,8 @@ class ClientConstants(object):
             if os.path.exists(ppid_file):
                 os.remove(ppid_file)
         except Exception as e:
+            logging.error(f"Failed to remove fedml parent pid {ppid_file} file with Exception: {e}, "
+                          f"Traceback: {traceback.format_exc()}")
             pass
 
 
