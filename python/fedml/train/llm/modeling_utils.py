@@ -218,6 +218,9 @@ def get_model_class_from_config(
         cls: _BaseAutoModelClass = AutoModelForCausalLM,
         **kwargs: Any
 ) -> Type[ModelType]:
+    # remove redundant keys
+    kwargs.pop("pretrained_model_name_or_path", None)
+
     trust_remote_code = kwargs.pop("trust_remote_code", None)
     has_remote_code = hasattr(config, "auto_map") and cls.__name__ in config.auto_map
     has_local_code = type(config) in cls._model_mapping.keys()
