@@ -227,6 +227,7 @@ def _prepare_launch_app(yaml_file):
     return job_config, app_updated_result
 
 
+# TODO (alaydshah): Simplify this. Should not be this complex and require so many checks.
 def _parse_create_result(result: FedMLRunStartedModel, yaml_file) -> (int, str):
     if not result:
         return (ApiConstants.ERROR_CODE[ApiConstants.LAUNCH_JOB_STATUS_REQUEST_FAILED],

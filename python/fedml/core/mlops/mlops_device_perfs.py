@@ -146,7 +146,7 @@ class MLOpsDevicePerfStats(object):
                     JobMonitor.get_instance().monitor_endpoint_logs()
 
             except Exception as e:
-                logging.debug("exception when reporting device pref: {}.".format(traceback.format_exc()))
+                logging.error(f"exception {e} when reporting device pref: {traceback.format_exc()}.")
                 pass
 
             time.sleep(sleep_time_interval)
@@ -163,13 +163,19 @@ class MLOpsDevicePerfStats(object):
     @staticmethod
     def report_gpu_device_info(edge_id, mqtt_mgr=None):
         total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
-            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(edge_id)
+            gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
 
         topic_name = "ml_client/mlops/gpu_device_info"
+
+        gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(edge_id)
+        gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
+        gpu_cores_available = len(gpu_available_ids)
         deploy_worker_id_list = list()
         try:
             deploy_worker_id_list = json.loads(os.environ.get("FEDML_DEPLOY_WORKER_IDS", "[]"))
         except Exception as e:
+            logging.error(f"Exception {e} occurred when parsing FEDML_DEPLOY_WORKER_IDS. "
+                          f"Traceback: {traceback.format_exc()}.")
             pass
         device_info_json = {
             "edgeId": edge_id,

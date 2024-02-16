@@ -174,41 +174,11 @@ def get_gpu_list():
 
 def get_available_gpu_id_list(limit=1):
     if enable_simulation_gpu:
-        import random
-        trim_index = random.randint(0, limit-1)
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-        #available_gpu_ids.remove(trim_index)
         return available_gpu_ids
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
-
-
-def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
-    try:
-        from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().lock(
-            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
-        ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
-    except Exception as e:
-        logging.info(f"Exception {traceback.format_exc()}")
-        available_gpu_ids = None
-        pass
-    realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
-    if available_gpu_ids is None:
-        return realtime_available_gpus
-
-    realtime_available_gpus_map_list = list(map(lambda x: str(x), realtime_available_gpus[0:]))
-    unavailable_gpu_ids = list()
-    for index, gpu_id in enumerate(available_gpu_ids):
-        if str(gpu_id) not in realtime_available_gpus_map_list:
-            unavailable_gpu_ids.append(index)
-
-    available_gpu_ids = [gpu_id for index, gpu_id in enumerate(available_gpu_ids) if index not in unavailable_gpu_ids]
-
-    return available_gpu_ids.copy()
 
 
 def get_host_name():
@@ -217,6 +187,7 @@ def get_host_name():
         import platform
         host_name = platform.uname()[1]
     except Exception as e:
+        logging.error(f"Error when getting host name: {e}, traceback: {traceback.format_exc()}")
         pass
     return host_name
 
@@ -230,6 +201,7 @@ def generate_yaml_doc(yaml_object, yaml_file, append=False):
         yaml.dump(yaml_object, file)
         file.close()
     except Exception as e:
+        logging.error(f"Error when generating yaml doc: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -269,6 +241,7 @@ def get_python_program():
             if python3_version_str.find(current_python_version) != -1:
                 python_program = "python3"
     except Exception as e:
+        logging.error(f"Error when getting python program: {e}, traceback: {traceback.format_exc()}")
         pass
 
     return python_program
@@ -290,13 +263,12 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
                     os.system("taskkill /PID {} /T /F".format(edge_process.pid))
                 else:
                     os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
-                # edge_process.terminate()
-                # edge_process.join()
         yaml_object = {}
         yaml_object["process_id"] = -1
         generate_yaml_doc(yaml_object, edge_process_id_file)
 
     except Exception as e:
+        logging.error(f"Error when cleaning up login process: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -314,6 +286,7 @@ def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
         yaml_object["process_id"] = edge_process_id
         generate_yaml_doc(yaml_object, edge_process_id_file)
     except Exception as e:
+        logging.error(f"Error when saving login process: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -338,6 +311,7 @@ def cleanup_all_fedml_client_learning_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Error when killing client learning process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -358,6 +332,7 @@ def cleanup_all_fedml_client_diagnosis_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Error when killing client diagnosis process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -377,6 +352,7 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                             if clean_process_group:
                                 os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Error when killing client login process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -401,6 +377,7 @@ def cleanup_all_fedml_server_learning_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Exception e: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -428,6 +405,7 @@ def cleanup_all_fedml_client_api_processes(kill_all=False, is_model_device=False
                     else:
                         os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Error when killing client api process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -458,6 +436,7 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                     else:
                         os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
+            logging.error(f"Exception: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -933,7 +912,7 @@ def decode_our_err_result(out_err):
         return out_err
 
 
-def get_sys_realtime_stats(edge_id):
+def get_sys_realtime_stats():
     sys_mem = psutil.virtual_memory()
     total_mem = sys_mem.total
     free_mem = sys_mem.available

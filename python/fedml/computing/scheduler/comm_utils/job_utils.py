@@ -38,8 +38,6 @@ class JobRunnerUtils(Singleton):
     def __init__(self):
         if not hasattr(self, "run_id_to_gpu_ids_map"):
             self.run_id_to_gpu_ids_map = dict()
-        if not hasattr(self, "available_gpu_ids"):
-            self.available_gpu_ids = None
         if not hasattr(self, "lock_available_gpu_ids"):
             self.lock_available_gpu_ids = threading.Lock()
 
@@ -63,13 +61,17 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
                                                                                                original_run_id)
 
-                available_gpu_ids = self.get_available_gpu_id_list(device_id)
-
-                available_gpu_ids = JobRunnerUtils.search_and_refresh_available_gpu_ids(available_gpu_ids)
+                available_gpu_ids = JobRunnerUtils.get_available_gpu_id_list(device_id)
+                available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
 
                 cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(
                     request_gpu_num, available_gpu_ids)
                 if cuda_visible_gpu_ids_str is None:
+                    if request_gpu_num:
+                        error_message = (f"Failed to occupy gpu ids for run {run_id}. "
+                                         f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
+                        logging.error(error_message)
+                        raise Exception(error_message)
                     return None
 
                 run_gpu_ids = available_gpu_ids[0:matched_gpu_num].copy()
@@ -94,8 +96,9 @@ class JobRunnerUtils(Singleton):
                         run_id, device_id, model_master_device_id, model_slave_device_id)
 
                 return cuda_visible_gpu_ids_str
+
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.error(f"Error {e} Exception {traceback.format_exc()}")
             return None
 
     @staticmethod
@@ -180,7 +183,7 @@ class JobRunnerUtils(Singleton):
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(device_id, run_id, None)
 
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.error(f"Exception {e} occurred while releasing gpu ids. Traceback: {traceback.format_exc()}")
             pass
 
         if edge_device_id is not None:
@@ -198,26 +201,32 @@ class JobRunnerUtils(Singleton):
                 gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id, run_id)
                 return gpu_ids
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.error(f"Exception {e} occurred while getting device run gpu ids. "
+                          f"Traceback: {traceback.format_exc()}")
             return []
 
-    def get_available_gpu_id_list(self, device_id):
+    @staticmethod
+    def get_available_gpu_id_list(device_id):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
+
+                # Get the available GPU list from the cache
                 available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                     device_id)
+
+                # If the available GPU list is not in the cache, set it to the current system available GPU list
                 if available_gpu_ids is None:
+                    # Get realtime GPU availability list from the system
                     gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, gpu_ids)
                     available_gpu_ids = gpu_ids
+            return available_gpu_ids
 
-                self.available_gpu_ids = available_gpu_ids
-                return self.available_gpu_ids
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.error(f"Exception {e} occurred while getting available GPU list. Traceback: {traceback.format_exc()}")
             return []
 
     @staticmethod
@@ -227,13 +236,14 @@ class JobRunnerUtils(Singleton):
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
-                current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
+                current_available_gpu_ids = sys_utils.get_realtime_system_gpu_available_ids().copy()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id,
                                                                                                 current_available_gpu_ids)
                 gpu_list = sys_utils.get_gpu_list()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_total_num_gpus(device_id, len(gpu_list))
         except Exception as e:
-            logging.info(f"Exception {traceback.format_exc()}")
+            logging.error(f"Exception {e} occurred while resetting available GPU list. "
+                          f"Traceback: {traceback.format_exc()}")
             pass
 
     @staticmethod
@@ -377,6 +387,8 @@ class JobRunnerUtils(Singleton):
                 shell_program = get_python_program()
             elif str(entry_file_full_path).endswith(".bat"):
                 shell_program = SchedulerConstants.CLIENT_SHELL_PS
+            else:
+                raise Exception(f"Unsupported entry file type: {entry_file_full_path}")
             entry_commands_filled.append(f"{shell_program} {entry_file_full_path} {entry_args}\n")
             entry_file_full_path = os.path.join(
                 os.path.dirname(entry_file_full_path), os.path.basename(entry_file_full_path) + ".sh")
@@ -500,9 +512,9 @@ class JobRunnerUtils(Singleton):
 
             logging.info(f"Lines containing 'export CUDA_VISIBLE_DEVICES=' removed successfully from {file_path}")
         except FileNotFoundError:
-            logging.info(f"Error: File '{file_path}' not found.")
+            logging.error(f"Error: File '{file_path}' not found.")
         except Exception as e:
-            logging.info(f"An error occurred while removing cuda visible devices from {file_path} : {e}")
+            logging.error(f"An error occurred while removing cuda visible devices from {file_path} : {e}")
 
     @staticmethod
     def replace_entry_command_with_env_variable(entry_commands, env_name_value_map):
