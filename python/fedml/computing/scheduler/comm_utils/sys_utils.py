@@ -174,41 +174,11 @@ def get_gpu_list():
 
 def get_available_gpu_id_list(limit=1):
     if enable_simulation_gpu:
-        import random
-        trim_index = random.randint(0, limit-1)
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-        #available_gpu_ids.remove(trim_index)
         return available_gpu_ids
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
-
-
-def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
-    try:
-        from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().lock(
-            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
-        ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
-    except Exception as e:
-        logging.info(f"Exception {traceback.format_exc()}")
-        available_gpu_ids = None
-        pass
-    realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
-    if available_gpu_ids is None:
-        return realtime_available_gpus
-
-    realtime_available_gpus_map_list = list(map(lambda x: str(x), realtime_available_gpus[0:]))
-    unavailable_gpu_ids = list()
-    for index, gpu_id in enumerate(available_gpu_ids):
-        if str(gpu_id) not in realtime_available_gpus_map_list:
-            unavailable_gpu_ids.append(index)
-
-    available_gpu_ids = [gpu_id for index, gpu_id in enumerate(available_gpu_ids) if index not in unavailable_gpu_ids]
-
-    return available_gpu_ids.copy()
 
 
 def get_host_name():
@@ -942,7 +912,7 @@ def decode_our_err_result(out_err):
         return out_err
 
 
-def get_sys_realtime_stats(edge_id):
+def get_sys_realtime_stats():
     sys_mem = psutil.virtual_memory()
     total_mem = sys_mem.total
     free_mem = sys_mem.available
