@@ -1187,7 +1187,8 @@ class FedMLClientRunner:
                 gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
             host_ip = sys_utils.get_host_ip()
             host_port = sys_utils.get_available_port()
-            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
+            gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(self.edge_id)
+            gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
             gpu_cores_available = len(gpu_available_ids)
             gpu_list = sys_utils.get_gpu_list()
             device_info_json = {
