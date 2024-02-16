@@ -3,6 +3,7 @@ import argparse
 import os
 import time
 import platform
+import logging
 
 import fedml
 from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_server_api_processes,\
@@ -46,12 +47,14 @@ if __name__ == "__main__":
             cleanup_all_fedml_server_learning_processes()
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
         except Exception as e:
+            logging.error(f"Cleanup failed | Exception: {e}")
             pass
 
         try:
             if os.path.exists(login_exit_file):
                 os.remove(login_exit_file)
         except Exception as e:
+            logging.error(f"Remove failed | Exception: {e}")
             pass
 
         daemon_ota_upgrade(args)

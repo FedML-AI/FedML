@@ -257,6 +257,7 @@ class MLOpsMetrics(object):
         if server_id is not None:
             msg["server_id"] = server_id
         message_json = json.dumps(msg)
+        logging.info(f"report_server_id_status; topic_name: {topic_name}, msg: {msg}")
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
         # logging.info("report_server_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
