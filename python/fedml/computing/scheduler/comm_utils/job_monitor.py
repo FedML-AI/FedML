@@ -267,6 +267,7 @@ class JobMonitor(Singleton):
                         model_id = model_config.get("model_id", None)
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
+                        logging.info(f"Check endpoint status for {job.job_id}:{job.edge_id}.")
 
                         if model_name is not None:
                             # Get model deployment result
@@ -486,11 +487,11 @@ class JobMonitor(Singleton):
             return response_ok
 
         if response_ok is None:
-            # Internal server can response, but reply is not ready
+            # Internal server can respond, but reply is not ready
             return False
 
         # Cannot reach the server, will try other protocols
-        print("Use http health check failed.")
+        print(f"Use http health check failed at {inference_url} for device {device_id} and endpoint {endpoint_id}.")
 
         response_ok = asyncio.run(FedMLHttpProxyInference.is_inference_ready(
             inference_url, timeout=timeout))
@@ -631,7 +632,7 @@ class JobMonitor(Singleton):
                         continue
                     try:
                         # If the endpoint is offline, then report offline status to the MLOps.
-                        model_config_parameters = model_config.get("parameters", {})
+                        model_config_parameters = endpoint_json.get("parameters", {})
                         server_internal_port = model_config_parameters.get("server_internal_port",
                                                                            ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                         is_endpoint_online = self._check_all_slave_endpoint_status(job.job_id, endpoint_name,

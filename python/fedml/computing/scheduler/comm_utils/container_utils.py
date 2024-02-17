@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import docker
+from docker import errors
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
@@ -168,7 +169,9 @@ class ContainerUtils(Singleton):
             return -1
 
         try:
-            container_list = client.containers.list(all=True)
+            # ignore_removed need to be set to True, in this case, it will not check deleted containers
+            # Which, in high concurrency, will cause API error due to the movement of the containers
+            container_list = client.containers.list(all=True, ignore_removed=True)
         except docker.errors.APIError:
             logging.error("The API cannot be accessed")
             return -1
@@ -193,7 +196,9 @@ class ContainerUtils(Singleton):
         logging.info(f"Pulling policy is {image_pull_policy}")
 
         if image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_ALWAYS:
+            logging.info(f"Pulling the image {image_name}...")
             docker_client.images.pull(image_name)
+            logging.info(f"Image {image_name} successfully pulled")
         elif image_pull_policy == SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT:
             try:
                 docker_client.images.get(image_name)

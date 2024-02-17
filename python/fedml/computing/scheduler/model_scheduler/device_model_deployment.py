@@ -360,6 +360,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                         security_utils.get_content_hash(running_model_name)
         
         same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
+        if same_model_container_rank == -1:
+            logging.error(f"Fail to get existed docker with {end_point_name} {inference_model_name}")
+            raise Exception("Failed to get the container rank")
         default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
 
         try:
@@ -459,28 +462,31 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             for key in extra_envs:
                 environment[key] = extra_envs[key]
 
-        new_container = client.api.create_container(
-            image=inference_image_name,
-            name=default_server_container_name,
-            volumes=volumns,
-            ports=[port_inside_container],  # port open inside the container
-            environment=environment,
-            host_config=client.api.create_host_config(
-                binds=binds,
-                port_bindings={
-                    port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
-                },
-                device_requests=device_requests,
-                shm_size=shm_size,
-                storage_opt=storage_opt,
-                tmpfs=tmpfs,
-                cpu_count=cpus,
-                mem_limit=memory,
-            ),
-            detach=True,
-            command=customized_image_entry_cmd if enable_custom_image else None
-        )
-        client.api.start(container=new_container.get("Id"))
+        try:
+            new_container = client.api.create_container(
+                image=inference_image_name,
+                name=default_server_container_name,
+                volumes=volumns,
+                ports=[port_inside_container],  # port open inside the container
+                environment=environment,
+                host_config=client.api.create_host_config(
+                    binds=binds,
+                    port_bindings={
+                        port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
+                    },
+                    device_requests=device_requests,
+                    shm_size=shm_size,
+                    storage_opt=storage_opt,
+                    tmpfs=tmpfs,
+                    cpu_count=cpus,
+                    mem_limit=memory,
+                ),
+                detach=True,
+                command=customized_image_entry_cmd if enable_custom_image else None
+            )
+            client.api.start(container=new_container.get("Id"))
+        except Exception as e:
+            logging.error(f"Failed to create the container with exception {e}, traceback : {traceback.format_exc()}")
 
         # Get the port allocation
         cnt = 0

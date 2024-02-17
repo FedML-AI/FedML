@@ -233,17 +233,12 @@ def _bind(
 
 
 def unbind(computing, server):
-    docker = None
-    docker_rank = 1
     is_client = computing
     is_server = server
+
     if computing is None and server is None:
         is_client = True
         is_server = True
-
-    is_docker = docker
-    if docker is None:
-        is_docker = False
 
     if is_client is True:
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
@@ -253,7 +248,6 @@ def unbind(computing, server):
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
-        sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
     if is_server is True:
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
@@ -263,7 +257,6 @@ def unbind(computing, server):
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
-        sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
 
     print("\nlogout successfully!\n")
 
