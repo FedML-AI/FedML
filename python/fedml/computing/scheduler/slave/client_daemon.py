@@ -122,7 +122,8 @@ if __name__ == "__main__":
                     message = f"[Client] Cannot find login pid {login_pids}, check the log file {login_logs}"
                     print(message)
                     if retry_count >= 3:
-                        print("Retry count is over 3 times, exit the process.")
+                        print(f"Retry count is over 3 times, exit the process. Check the log file for more details. "
+                              f"Login logs: {login_logs}, Exit file: {login_exit_file}")
                         exit(1)
                     retry_flag = True
 
