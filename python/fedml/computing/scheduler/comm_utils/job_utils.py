@@ -236,7 +236,7 @@ class JobRunnerUtils(Singleton):
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
             ):
-                current_available_gpu_ids = sys_utils.get_realtime_system_gpu_available_ids().copy()
+                current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids.copy()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id,
                                                                                                 current_available_gpu_ids)
                 gpu_list = sys_utils.get_gpu_list()
