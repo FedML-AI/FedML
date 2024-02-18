@@ -1817,7 +1817,10 @@ class FedMLServerRunner:
         elif self.run_as_cloud_server:
             role = ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_INFERENCE_INSTANCE_INDEX]
 
-        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        try:
+            ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        except Exception as e:
+            ip = "127.0.0.1"
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
             gpu_count, gpu_vendor, cpu_count, gpu_device_name = get_sys_runner_info()

@@ -1331,7 +1331,10 @@ class FedMLClientRunner:
 
     @staticmethod
     def bind_account_and_device_id(url, account_id, device_id, os_name, api_key="", role="client"):
-        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        try:
+            ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        except Exception as e:
+            ip = "127.0.0.1"
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem, \
             gpu_count, gpu_vendor, cpu_count, gpu_device_name = get_sys_runner_info()
