@@ -115,7 +115,8 @@ if __name__ == "__main__":
                 if os.path.exists(login_exit_file):
                     print(f"[Server] Login process is exited, check the exit file {login_exit_file}")
                     if retry_count > 3:
-                        print("Retry count is over 3 times, exit the process.")
+                        print(f"Retry count is over 3 times, exit the process. Check the log file for more details. "
+                              f"Login logs: {login_logs}, Exit file: {login_exit_file}")
                         exit(1)
                     retry_flag = True
 
