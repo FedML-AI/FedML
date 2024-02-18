@@ -114,18 +114,20 @@ if __name__ == "__main__":
                     message = f"[Client] Login process is exited, check the exit file {login_exit_file}"
                     print(message)
                     if retry_count > 3:
-                        raise Exception(message)
+                        print("Retry count is over 3 times, exit the process.")
+                        exit(1)
                     retry_flag = True
 
                 if len(login_pids) == 0:
                     message = f"[Client] Cannot find login pid {login_pids}, check the log file {login_logs}"
                     print(message)
                     if retry_count >= 3:
-                        raise Exception(message)
+                        print("Retry count is over 3 times, exit the process.")
+                        exit(1)
                     retry_flag = True
 
                 if retry_flag:
                     retry_count += 1
 
             time.sleep(3)
-            print("[Client] Retry to start the login process. Retry count: {retry_count}")
+            print(f"[Client] Retry to start the login process. Retry count: {retry_count}")
