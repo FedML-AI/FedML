@@ -166,17 +166,14 @@ class JobRunnerUtils(Singleton):
             ):
                 run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
                                                                                                         run_id)
-                logging.info(f"ALAY-DEBUG: run_gpu_ids {run_gpu_ids}")
                 if run_gpu_ids is None:
                     logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
                     return
 
                 available_gpu_ids = self.get_available_gpu_id_list(edge_device_id)
-                logging.info(f"ALAY-DEBUG: available_gpu_ids before extend: {available_gpu_ids}")
 
                 available_gpu_ids.extend(run_gpu_ids.copy())
                 available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
-                logging.info(f"ALAY-DEBUG: available_gpu_ids after extend: {available_gpu_ids}")
 
                 with ComputeCacheManager.get_instance().lock(
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
