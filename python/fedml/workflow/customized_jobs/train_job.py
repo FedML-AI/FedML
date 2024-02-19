@@ -52,7 +52,8 @@ class TrainJob(CustomizedBaseJob):
             with open(output_file, "w") as f:
                 f.write(json.dumps(output_dict))
                 f.write("\n\n")
-            output_name = f"{TrainJob.TRAIN_JOB_OUTPUTS_KEY_PREFIX}_{self.run_id}"
+            run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
+            output_name = f"{TrainJob.TRAIN_JOB_OUTPUTS_KEY_PREFIX}_{run_id}"
             response = fedml.api.upload(data_path=output_file, name=output_name,
                                         api_key=TrainJob._get_job_api_key())
             print(f"upload response: code {response.code}, message {response.message}, data {response.data}")
@@ -67,7 +68,7 @@ class TrainJob(CustomizedBaseJob):
             output_data = None
             response = fedml.api.download(output_name, api_key=self.job_api_key, dest_path=output_dir)
             with open(os.path.join(output_dir, output_name), "r") as f:
-                output_data = outf.readlines()
+                output_data = f.readlines()
                 output_json = json.loads(output_data)
                 self.output_data_dict = output_json
             print(f"down response: code {response.code}, message {response.message}, data {response.data}")
@@ -81,6 +82,7 @@ class TrainJob(CustomizedBaseJob):
         home_dir = expanduser("~")
         cache_dir = os.path.join(home_dir, ".cache")
         output_file = os.path.join(cache_dir, "fedml_jobs", str(uuid.uuid4()))
+        return output_file
 
     @staticmethod
     def _get_job_api_key():
@@ -97,7 +99,7 @@ class TrainJob(CustomizedBaseJob):
         message_bytes = input.encode("ascii")
         base64_bytes = base64.b64decode(message_bytes)
         payload = base64_bytes.decode("ascii")
-        return payload
+        return json.loads(payload)
 
 
 

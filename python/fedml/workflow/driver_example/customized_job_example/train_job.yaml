@@ -22,7 +22,7 @@ job_type: train              # options: train, deploy, federate
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
-  pip install git+https://github.com/FedML-AI/FedML.git@alexleung/dev_branch
+  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.25.dev5
   echo "Bootstrap finished."
 
 computing:
