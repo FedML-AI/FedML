@@ -34,8 +34,8 @@ class ModelInferenceJob(CustomizedBaseJob):
         if self.endpoint_detail is None:
             self.run_status = JobStatus.FAILED
 
-            self.output_data_list.append(
-                {"error": True, "message": f"Can't get the detail info of endpoint {self.endpoint_id}."})
+            self.output_data_dict = {
+                "error": True, "message": f"Can't get the detail info of endpoint {self.endpoint_id}."}
 
             return
 
@@ -48,12 +48,13 @@ class ModelInferenceJob(CustomizedBaseJob):
 
             self.run_status = JobStatus.FAILED if self.out_response_json.get("error", False) else JobStatus.FINISHED
 
-            self.output_data_list.append(self.out_response_json)
+            self.output_data_dict = self.out_response_json
         else:
             self.run_status = JobStatus.FAILED
 
-            self.output_data_list.append(
-                {"error": True, "message": f"The endpoint {self.endpoint_id} is in the status {self.endpoint_detail.status}."})
+            self.output_data_list = {
+                "error": True,
+                "message": f"The endpoint {self.endpoint_id} is in the status {self.endpoint_detail.status}."}
 
     def status(self):
         return self.run_status
@@ -64,13 +65,8 @@ class ModelInferenceJob(CustomizedBaseJob):
     def _build_in_params(self):
         self.inference_url = self.endpoint_detail.inference_url
 
-        if self.input_data_list is not None and isinstance(self.input_data_list, list):
-            if len(self.input_data_list) == 1:
-                self.infer_request_body = self.input_data_list[0]
-            elif len(self.input_data_list) == 0:
-                self.infer_request_body = self.endpoint_detail.input_json
-            else:
-                self.infer_request_body = self.input_data_list
+        if self.input_data_dict is not None and isinstance(self.input_data_dict, dict):
+            self.infer_request_body = self.input_data_dict
         else:
             self.infer_request_body = self.endpoint_detail.input_json
 
