@@ -25,6 +25,7 @@ from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_entry.constants import Constants
+from ....core.mlops.mlops_device_perfs import MLOpsDevicePerfStats
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -402,7 +403,7 @@ class FedMLClientRunner:
                                                                   self.computing_started_time, computing_ended_time,
                                                                   self.args.user, self.args.api_key)
             logging.info("Release resources.")
-            FedMLClientRunner.cleanup_containers_and_release_gpus(self.run_id, self.edge_id)
+            self.cleanup_containers_and_release_gpus(self.run_id, self.edge_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -998,15 +999,14 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=train_edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        FedMLClientRunner.cleanup_containers_and_release_gpus(run_id, train_edge_id)
+        self.cleanup_containers_and_release_gpus(run_id, train_edge_id)
         client_runner.run_process_event = self.run_process_event_map.get(run_id_str, None)
         client_runner.run_process = self.run_process_map.get(run_id_str, None)
         client_runner.client_mqtt_mgr = self.client_mqtt_mgr
         client_runner.mlops_metrics = self.mlops_metrics
         client_runner.sync_run_stop_status(run_status=run_status)
 
-    @staticmethod
-    def cleanup_containers_and_release_gpus(run_id, edge_id):
+    def cleanup_containers_and_release_gpus(self, run_id, edge_id):
         # Terminate the run docker container if exists
         container_name = JobRunnerUtils.get_run_container_name(run_id)
         docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
@@ -1017,6 +1017,9 @@ class FedMLClientRunner:
             logging.error(f"Exception {e} occurred when terminating docker container. "
                           f"Traceback: {traceback.format_exc()}")
         JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
+
+        # Send mqtt message reporting the new gpu availability to the backend
+        MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1080,7 +1083,7 @@ class FedMLClientRunner:
                 job_type = JobRunnerUtils.parse_job_type(running_json)
                 if not SchedulerConstants.is_deploy_job(job_type):
                     logging.info(f"[run/device][{run_id}/{edge_id}] Release gpu resource when run ended.")
-                    FedMLClientRunner.cleanup_containers_and_release_gpus(run_id, edge_id)
+                    self.cleanup_containers_and_release_gpus(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:
