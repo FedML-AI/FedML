@@ -10,3 +10,8 @@ bootstrap: |
   pip install -U fedml
   sh ./config/bootstrap.sh
   echo "Bootstrap finished"
+
+inference_image_name: "ccr-23gxup9u-pub.cnc.bj.baidubce.com/public/text2image"
+enable_custom_image: true
+use_gpu: true
+deploy_timeout: 1800

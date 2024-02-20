@@ -57,10 +57,10 @@ class ModelDeployJob(CustomizedBaseJob):
             self.out_model_inference_url = ""
             self.out_request_body = ""
 
-        self.output_data_list.append({"endpoint_id": self.out_endpoint_id,
-                                      "inference_url": self.out_model_inference_url,
-                                      "request_body": self.out_request_body,
-                                      "key_token": self.out_api_key_token})
+        self.output_data_dict = {"endpoint_id": self.out_endpoint_id,
+                                 "inference_url": self.out_model_inference_url,
+                                 "request_body": self.out_request_body,
+                                 "key_token": self.out_api_key_token}
 
     def status(self):
         current_status = super().status()

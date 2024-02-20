@@ -1,7 +1,7 @@
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
-workspace: deploy_image_job
+workspace: text2image
 
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
@@ -14,12 +14,6 @@ job: |
     sleep 3
 
 job_type: deploy              # options: train, deploy, federate
-
-# Bootstrap shell commands which will be executed before running entry commands.
-# Support multiple lines, which can be empty.
-bootstrap: |
-  pip install -r requirements.txt
-  echo "Bootstrap finished."
 
 computing:
   resource_type: RTX-3090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type

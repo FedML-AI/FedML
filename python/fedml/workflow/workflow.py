@@ -6,7 +6,6 @@ from types import MappingProxyType
 from toposort import toposort
 
 from fedml.workflow.jobs import Job, JobStatus, NullJob
-from os.path import expanduser
 import time
 
 
@@ -89,7 +88,7 @@ class Workflow:
             for nodes in self.metadata.topological_order:
                 jobs = [node.job for node in nodes]
                 if not has_set_first_input and len(jobs) > 0:
-                    jobs[0].set_inputs([self.input])
+                    jobs[0].set_inputs(self.input)
                     has_set_first_input = True
                 self._execute_and_wait(jobs)
 
@@ -104,8 +103,7 @@ class Workflow:
         for job in jobs:
             dependencies = self.get_job_dependencies(job.name)
             for dep in dependencies:
-                for output in dep.get_outputs():
-                    job.append_input(output)
+                job.append_input(dep.name, dep.get_outputs())
 
             job.run()
 
