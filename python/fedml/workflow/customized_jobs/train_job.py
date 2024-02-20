@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import traceback
 import uuid
 
 import fedml.api
@@ -22,14 +24,20 @@ class TrainJob(CustomizedBaseJob):
                          job_api_key=job_api_key)
         self.in_trainning_params = None
         self.out_model_file = ""
+        self.job_yaml_absolute_path_for_launch = os.path.join(expanduser('~'), '.cache', 'fedml-workflow')
+        os.makedirs(self.job_yaml_absolute_path_for_launch, exist_ok=True)
+        self.job_yaml_absolute_path_for_launch = os.path.join(
+            self.job_yaml_absolute_path_for_launch, f"{str(uuid.uuid4())}.yaml")
 
     def run(self):
         job_yaml_obj = self.load_yaml_config(self.job_yaml_absolute_path)
         job_yaml_obj[TrainJob.TRAIN_JOB_INPUTS_CONFIG] = TrainJob._base64_encode(self.input_data_dict)
         job_yaml_obj[TrainJob.RUN_API_KEY_CONFIG] = sys_utils.random1(f"FEDML_NEXUS@{self.job_api_key}", "FEDML@88119999GREAT")
-        self.generate_yaml_doc(job_yaml_obj, self.job_yaml_absolute_path)
+        self.generate_yaml_doc(job_yaml_obj, self.job_yaml_absolute_path_for_launch)
 
         super().run()
+
+        os.remove(self.job_yaml_absolute_path_for_launch)
 
     def status(self):
         return super().status()
@@ -54,39 +62,49 @@ class TrainJob(CustomizedBaseJob):
                 f.write("\n\n")
             run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
             output_name = f"{TrainJob.TRAIN_JOB_OUTPUTS_KEY_PREFIX}_{run_id}"
-            response = fedml.api.upload(data_path=output_file, name=output_name,
-                                        api_key=TrainJob._get_job_api_key())
+            current_job_api_key = TrainJob._get_job_api_key()
+            random_out = sys_utils.random2(current_job_api_key, "FEDML@88119999GREAT")
+            random_list = random_out.split("FEDML_NEXUS@")
+            response = fedml.api.upload(data_path=output_file, service='S3', name=output_name,
+                                        api_key=random_list[1])
             print(f"upload response: code {response.code}, message {response.message}, data {response.data}")
+            shutil.rmtree(os.path.dirname(output_file), ignore_errors=True)
         except Exception as e:
-            pass
+            print(f"exception when setting outputs {traceback.format_exc()}.")
 
     def get_outputs(self):
         try:
             output_file = self._get_output_file()
             output_dir = os.path.dirname(output_file)
             output_name = f"{TrainJob.TRAIN_JOB_OUTPUTS_KEY_PREFIX}_{self.run_id}"
-            output_data = None
-            response = fedml.api.download(output_name, api_key=self.job_api_key, dest_path=output_dir)
-            with open(os.path.join(output_dir, output_name), "r") as f:
+            response = fedml.api.download(output_name, service='S3', api_key=self.job_api_key,
+                                          dest_path=output_dir, show_progress=False)
+            downloaded_file_list = os.listdir(output_dir)
+            if downloaded_file_list is None or len(downloaded_file_list) <= 0:
+                return {}
+            downloaded_file = os.path.join(output_dir, downloaded_file_list[0])
+            with open(downloaded_file, "r") as f:
                 output_data = f.readlines()
-                output_json = json.loads(output_data)
+                output_json = json.loads(output_data[0])
                 self.output_data_dict = output_json
-            print(f"down response: code {response.code}, message {response.message}, data {response.data}")
+            shutil.rmtree(output_dir, ignore_errors=True)
+            print(f"download response: code {response.code}, message {response.message}, data {response.data}")
         except Exception as e:
-            pass
+            print(f"exception when getting outputs {traceback.format_exc()}.")
 
         return self.output_data_dict
 
     @staticmethod
     def _get_output_file():
         home_dir = expanduser("~")
-        cache_dir = os.path.join(home_dir, ".cache")
-        output_file = os.path.join(cache_dir, "fedml_jobs", str(uuid.uuid4()))
+        cache_dir = os.path.join(home_dir, ".cache", "fedml_jobs", str(uuid.uuid4()))
+        os.makedirs(cache_dir, exist_ok=True)
+        output_file = os.path.join(cache_dir, str(uuid.uuid4()))
         return output_file
 
     @staticmethod
     def _get_job_api_key():
-        return os.environ.get(TrainJob.RUN_API_KEY_ENV)
+        return os.environ.get(TrainJob.RUN_API_KEY_ENV, "")
 
     @staticmethod
     def _base64_encode(input: dict) -> str:

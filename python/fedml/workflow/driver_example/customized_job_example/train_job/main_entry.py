@@ -1,6 +1,4 @@
 import os
-import time
-import traceback
 
 import fedml
 from fedml.workflow.customized_jobs.train_job import TrainJob
@@ -14,9 +12,11 @@ if __name__ == "__main__":
     edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
 
     job_inputs = TrainJob.get_inputs()
-    print(f"Inputs from previous job. {job_inputs}")
+    job_input_from_inference_job_1 = job_inputs.get("inference_job_1")
+    print(f"Inputs from all previous jobs. {job_inputs}")
+    print(f"Input from inference_job_1. {job_input_from_inference_job_1}")
 
-    TrainJob.set_outputs([{"trained_model_file": "~/.cache/train_model.bin"}])
+    TrainJob.set_outputs({"trained_model_output": "Here is the output of the trained model."})
 
     exit(0)
 
