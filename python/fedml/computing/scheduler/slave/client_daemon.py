@@ -3,6 +3,7 @@ import argparse
 import os
 import time
 import platform
+import logging
 
 import fedml
 from fedml.computing.scheduler.comm_utils.sys_utils import cleanup_all_fedml_client_api_processes, \
@@ -37,7 +38,16 @@ if __name__ == "__main__":
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "client_login.py")
     login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+
+    try:
+        if os.path.exists(login_exit_file):
+            os.remove(login_exit_file)
+    except Exception as e:
+        logging.error(f"Remove failed | Exception: {e}")
+        pass
+
     log_line_count = 0
+    retry_count = 0
 
     while True:
         try:
@@ -46,13 +56,9 @@ if __name__ == "__main__":
             cleanup_all_fedml_client_learning_processes()
             cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
         except Exception as e:
+            logging.error(f"Cleanup failed | Exception: {e}")
             pass
 
-        try:
-            if os.path.exists(login_exit_file):
-                os.remove(login_exit_file)
-        except Exception as e:
-            pass
 
         daemon_ota_upgrade(args)
 
@@ -101,12 +107,29 @@ if __name__ == "__main__":
                         log_line_count = len(log_list)
                 time.sleep(3)
                 login_pids = RunProcessUtils.get_pid_from_cmd_line(login_cmd)
+                login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
+                retry_flag = False
 
                 if os.path.exists(login_exit_file):
-                    print(f"[Client] Login process is exited, check the exit file {login_exit_file}")
-                    break
+                    message = f"[Client] Login process is exited, check the exit file {login_exit_file}"
+                    print(message)
+                    if retry_count > 3:
+                        print(f"Retry count is over 3 times, exit the process. Check the log file for more details. "
+                              f"Login logs: {login_logs}, Exit file: {login_exit_file}")
+                        exit(1)
+                    retry_flag = True
+
                 if len(login_pids) == 0:
-                    print(f"[Client] Cannot find login pid {login_pids}, check the log file {login_logs}")
-                    break
+                    message = f"[Client] Cannot find login pid {login_pids}, check the log file {login_logs}"
+                    print(message)
+                    if retry_count >= 3:
+                        print(f"Retry count is over 3 times, exit the process. Check the log file for more details. "
+                              f"Login logs: {login_logs}, Exit file: {login_exit_file}")
+                        exit(1)
+                    retry_flag = True
+
+                if retry_flag:
+                    retry_count += 1
+
             time.sleep(3)
-            print("[Client] Retry to start the login process.")
+            print(f"[Client] Retry to start the login process. Retry count: {retry_count}")
