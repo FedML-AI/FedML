@@ -87,7 +87,8 @@ class FedMLModelMetrics:
 
         index = 0
         while True:
-            time.sleep(2)
+            # Frequency of sending monitoring metrics
+            time.sleep(5)
             try:
                 index = self.send_monitoring_metrics(index)
             except Exception as e:

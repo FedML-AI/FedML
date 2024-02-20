@@ -167,6 +167,7 @@ class JobRunnerUtils(Singleton):
                 run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
                                                                                                         run_id)
                 if run_gpu_ids is None:
+                    logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
                     return
 
                 available_gpu_ids = self.get_available_gpu_id_list(edge_device_id)

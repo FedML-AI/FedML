@@ -1,3 +1,5 @@
+import traceback
+import logging
 from .compute_utils import ComputeUtils
 from .compute_gpu_db import ComputeGpuDatabase
 from ..slave import client_constants
@@ -93,13 +95,15 @@ class ComputeGpuCache(object):
             if self.redis_connection.exists(self.get_device_total_num_gpus_key(device_id)):
                 device_total_num_gpus = self.redis_connection.get(self.get_device_total_num_gpus_key(device_id))
         except Exception as e:
+            logging.error(f"Error getting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
 
         if device_total_num_gpus is None:
             device_total_num_gpus = ComputeGpuDatabase.get_instance().get_device_total_num_gpus(device_id)
             try:
-                self.redis_connection.set(self.get_device_total_num_gpus_key(device_id), device_total_num_gpus)
+                self.set_device_total_num_gpus(device_id, device_total_num_gpus)
             except Exception as e:
+                logging.error(f"Error setting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
                 pass
 
         return device_total_num_gpus
@@ -190,6 +194,7 @@ class ComputeGpuCache(object):
         try:
             self.redis_connection.set(self.get_device_run_num_gpus_key(device_id, run_id), num_gpus)
         except Exception as e:
+            logging.error(f"Error setting device_run_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
         ComputeGpuDatabase.get_instance().set_device_run_num_gpus(device_id, run_id, num_gpus)
 
@@ -220,6 +225,7 @@ class ComputeGpuCache(object):
         try:
             self.redis_connection.set(self.get_device_total_num_gpus_key(device_id), num_gpus)
         except Exception as e:
+            logging.error(f"Error setting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
 
         ComputeGpuDatabase.get_instance().set_device_total_num_gpus(device_id, num_gpus)

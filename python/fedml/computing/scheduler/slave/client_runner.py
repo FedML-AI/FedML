@@ -25,6 +25,7 @@ from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_entry.constants import Constants
+from ....core.mlops.mlops_device_perfs import MLOpsDevicePerfStats
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -402,6 +403,7 @@ class FedMLClientRunner:
                                                                   self.computing_started_time, computing_ended_time,
                                                                   self.args.user, self.args.api_key)
             logging.info("Release resources.")
+            self.cleanup_containers_and_release_gpus(self.run_id, self.edge_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -502,21 +504,6 @@ class FedMLClientRunner:
                                                                     conf_file_full_path=conf_file_full_path,
                                                                     dynamic_args_config=dynamic_args_config,
                                                                     fedml_config_object=self.fedml_config_object)
-
-        # Terminate the user process
-        # self.terminate_user_process(run_id)
-        #
-        # # Wait all gpu ids of current run is physcially released
-        # gpu_list = sys_utils.get_gpu_list()
-        # total_gpu_count = len(gpu_list)
-        # while True:
-        #     gpu_ids_of_current_run = JobRunnerUtils.get_instance().get_device_run_gpu_ids(self.edge_id, run_id)
-        #     if gpu_ids_of_current_run is not None and len(gpu_ids_of_current_run) > 0:
-        #         current_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=total_gpu_count)
-        #         unreleased_run_gpu_ids = [item for item in gpu_ids_of_current_run if item not in current_available_gpu_ids]
-        #         if unreleased_run_gpu_ids is None or len(unreleased_run_gpu_ids) <= 0:
-        #             break
-        #     time.sleep(0.5)
 
         logging.info("====Your Run Logs End===")
         logging.info("                        ")
@@ -1012,46 +999,27 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=train_edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
+        self.cleanup_containers_and_release_gpus(run_id, train_edge_id)
         client_runner.run_process_event = self.run_process_event_map.get(run_id_str, None)
         client_runner.run_process = self.run_process_map.get(run_id_str, None)
         client_runner.client_mqtt_mgr = self.client_mqtt_mgr
         client_runner.mlops_metrics = self.mlops_metrics
         client_runner.sync_run_stop_status(run_status=run_status)
 
-    @staticmethod
-    def release_gpu_ids(run_id, device_id):
-        job_type = None
-        try:
-            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-            if job_obj is not None:
-                job_json = json.loads(job_obj.running_json)
-                run_config = job_json.get("run_config", {})
-                run_params = run_config.get("parameters", {})
-                job_yaml = run_params.get("job_yaml", {})
-                job_type = job_yaml.get("job_type", None)
-                job_type = job_yaml.get("task_type",
-                                        SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
-        except Exception as e:
-            logging.error(f"Failed to get job obj with Exception {e}. Traceback: {traceback.format_exc()}")
-            logging.info(f"Set job type to {SchedulerConstants.JOB_TASK_TYPE_TRAIN} when failed to get job obj.")
-            job_type = SchedulerConstants.JOB_TASK_TYPE_TRAIN
-            pass
-
-        try:
-            if job_type is not None and job_type != SchedulerConstants.JOB_TASK_TYPE_SERVE and \
-                    job_type != SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
-                logging.info(f"[run/device][{run_id}/{device_id}] Release gpu resource actually.")
-                JobRunnerUtils.get_instance().release_gpu_ids(run_id, device_id)
-        except Exception as e:
-            logging.error(f"Failed to release gpu ids with Exception {e}. Traceback: {traceback.format_exc()}")
-            pass
-
-    def terminate_user_process(self, run_id):
+    def cleanup_containers_and_release_gpus(self, run_id, edge_id):
         # Terminate the run docker container if exists
         container_name = JobRunnerUtils.get_run_container_name(run_id)
         docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
         logging.info(f"Terminating the run docker container {container_name} if exists...")
-        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+        try:
+            JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+        except Exception as e:
+            logging.error(f"Exception {e} occurred when terminating docker container. "
+                          f"Traceback: {traceback.format_exc()}")
+        JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
+
+        # Send mqtt message reporting the new gpu availability to the backend
+        MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1115,7 +1083,7 @@ class FedMLClientRunner:
                 job_type = JobRunnerUtils.parse_job_type(running_json)
                 if not SchedulerConstants.is_deploy_job(job_type):
                     logging.info(f"[run/device][{run_id}/{edge_id}] Release gpu resource when run ended.")
-                    FedMLClientRunner.release_gpu_ids(run_id, edge_id)
+                    self.cleanup_containers_and_release_gpus(run_id, edge_id)
 
             run_process = self.run_process_map.get(run_id_str, None)
             if run_process is not None:
