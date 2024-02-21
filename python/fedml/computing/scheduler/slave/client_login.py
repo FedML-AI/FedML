@@ -27,7 +27,7 @@ def init_logs(args, edge_id):
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
+    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
 
 
 def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None, role="client"):
