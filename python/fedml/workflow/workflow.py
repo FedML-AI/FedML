@@ -209,6 +209,17 @@ class Workflow:
 
         return job_list[-1].get_outputs()
 
+    def get_all_jobs_outputs(self):
+        output_dicts = dict()
+        job_list = list()
+        for nodes in self.metadata.topological_order:
+            job_list.extend([node.job for node in nodes])
+
+        for job in job_list:
+            output_dicts[job.name] = job.get_outputs()
+
+        return output_dicts
+
     @staticmethod
     def get_workflow(workflow_name=None):
         workflow_name = os.environ.get("FEDML_CURRENT_WORKFLOW") if workflow_name is None else workflow_name

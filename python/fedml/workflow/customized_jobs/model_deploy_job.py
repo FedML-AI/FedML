@@ -4,6 +4,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLMo
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.workflow.jobs import JobStatus
 import time
+import fedml
 
 
 class ModelDeployJob(CustomizedBaseJob):
@@ -21,6 +22,12 @@ class ModelDeployJob(CustomizedBaseJob):
         super().run()
 
         self.out_endpoint_id = self.launch_result.inner_id
+
+        if self.launch_result_code != 0:
+            self.output_data_dict = {
+                "error": self.launch_result_code, "message": self.launch_result_message}
+            print(f"{self.output_data_dict}")
+            return
 
         endpoint_status = None
         endpoint_detail = None
@@ -64,7 +71,7 @@ class ModelDeployJob(CustomizedBaseJob):
 
     def status(self):
         current_status = super().status()
-        if current_status == JobStatus.PROVISIONING:
+        if current_status == JobStatus.PROVISIONING or current_status == JobStatus.FAILED:
             return current_status
 
         return self.run_status

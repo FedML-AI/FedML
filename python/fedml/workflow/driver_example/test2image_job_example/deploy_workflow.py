@@ -30,8 +30,10 @@ def create_deploy_workflow(job_api_key=None):
     # Get the status and result of workflow
     workflow_status = workflow.get_workflow_status()
     workflow_output = workflow.get_workflow_output()
+    all_jobs_outputs = workflow.get_all_jobs_outputs()
     print(f"Final status of the workflow is as follows. {workflow_status}")
     print(f"Output of the workflow is as follows. {workflow_output}")
+    print(f"Output of all jobs is as follows. {all_jobs_outputs}")
 
     return workflow_status, workflow_output
 
