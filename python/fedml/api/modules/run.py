@@ -12,7 +12,7 @@ from fedml.api.constants import RunStatus
 
 class RunLogResult(object):
     def __init__(self, run_status: RunStatus = None, total_log_lines: int = 0, total_log_pages: int = 0,
-                 log_line_list: List[str] = None, run_logs: FedMLRunLogModelList = None):
+                 log_line_list: Optional[List[str]] = None, run_logs: FedMLRunLogModelList = None):
         self.run_status = run_status
         self.total_log_lines = total_log_lines
         self.total_log_pages = total_log_pages
