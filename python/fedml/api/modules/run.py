@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fedml.api.modules.utils import authenticate
 from fedml.computing.scheduler.comm_utils.platform_utils import validate_platform
@@ -11,8 +11,8 @@ from fedml.api.constants import RunStatus
 
 
 class RunLogResult(object):
-    def __init__(self, run_status: str = None, total_log_lines: int = 0, total_log_pages: int = 0,
-                 log_line_list: List[str] = list(), run_logs: FedMLRunLogModelList = None):
+    def __init__(self, run_status: RunStatus = None, total_log_lines: int = 0, total_log_pages: int = 0,
+                 log_line_list: List[str] = None, run_logs: FedMLRunLogModelList = None):
         self.run_status = run_status
         self.total_log_lines = total_log_lines
         self.total_log_pages = total_log_pages
@@ -75,7 +75,7 @@ def list_run(run_name: str, run_id: str, platform: str, api_key: str) -> FedMLRu
     return run_list_obj
 
 
-def status(run_name: str, run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, RunStatus):
+def status(run_name: Optional[str], run_id: str, platform: str, api_key: str) -> (FedMLRunModelList, RunStatus):
     _authenticate_and_validate_platform(api_key, platform)
 
     run_status = None
