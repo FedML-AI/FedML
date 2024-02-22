@@ -24,7 +24,7 @@ requirements = [
     "h5py",
     "tqdm",
     "wget",
-    "paho-mqtt",
+    "paho-mqtt<2.0.0",
     "boto3",
     "scikit-learn",
     "networkx<3.0",
@@ -114,7 +114,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.25a2",
+    version="0.8.25.a3",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
