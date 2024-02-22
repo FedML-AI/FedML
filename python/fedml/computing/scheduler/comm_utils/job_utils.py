@@ -14,6 +14,8 @@ from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from dataclasses import dataclass, field, fields
+
+from fedml.computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from typing import List
@@ -227,7 +229,8 @@ class JobRunnerUtils(Singleton):
             return available_gpu_ids
 
         except Exception as e:
-            logging.error(f"Exception {e} occurred while getting available GPU list. Traceback: {traceback.format_exc()}")
+            logging.error(
+                f"Exception {e} occurred while getting available GPU list. Traceback: {traceback.format_exc()}")
             return []
 
     @staticmethod
@@ -355,8 +358,10 @@ class JobRunnerUtils(Singleton):
         entry_commands.insert(0, f"{export_cmd} FEDML_ENV_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
-        entry_commands.insert(0,  f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST={fedml.get_local_on_premise_platform_host()}\n")
-        entry_commands.insert(0,  f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT={fedml.get_local_on_premise_platform_port()}\n")
+        entry_commands.insert(0,
+                              f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST={fedml.get_local_on_premise_platform_host()}\n")
+        entry_commands.insert(0,
+                              f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT={fedml.get_local_on_premise_platform_port()}\n")
         if job_api_key is not None and str(job_api_key).strip() != "":
             random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
             random_list = random_out.split("FEDML_NEXUS@")
@@ -408,7 +413,7 @@ class JobRunnerUtils(Singleton):
     def generate_launch_docker_command(docker_args: DockerArgs, run_id: int, edge_id: int,
                                        unzip_package_path: str, executable_interpreter: str, entry_file_full_path: str,
                                        bootstrap_cmd_list, cuda_visible_gpu_ids_str=None,
-                                       image_pull_policy: str=None) -> List[str]:
+                                       image_pull_policy: str = None) -> List[str]:
 
         shell_command = list()
 
@@ -616,3 +621,22 @@ class JobRunnerUtils(Singleton):
         job_yaml = parameters.get("job_yaml", {})
         job_type = job_yaml.get("job_type", None)
         return job_type
+
+    @staticmethod
+    def get_job_type_from_run_id(run_id: str) -> str:
+        job_type = None
+        try:
+            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is not None:
+                job_json = json.loads(job_obj.running_json)
+                run_config = job_json.get("run_config", {})
+                run_params = run_config.get("parameters", {})
+                job_yaml = run_params.get("job_yaml", {})
+                job_type = job_yaml.get("job_type", None)
+                job_type = job_yaml.get("task_type",
+                                        SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        except Exception as e:
+            logging.debug(f"Failed to get job obj with Exception {e}. Traceback: {traceback.format_exc()}")
+            logging.info(f"Assume job type to be {SchedulerConstants.JOB_TASK_TYPE_TRAIN} when failed to get job obj.")
+            return SchedulerConstants.JOB_TASK_TYPE_TRAIN
+        return job_type if job_type is not None else SchedulerConstants.JOB_TASK_TYPE_TRAIN
