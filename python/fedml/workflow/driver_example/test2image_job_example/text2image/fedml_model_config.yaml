@@ -11,7 +11,7 @@ bootstrap: |
   sh ./config/bootstrap.sh
   echo "Bootstrap finished"
 
-inference_image_name: "ccr-23gxup9u-pub.cnc.bj.baidubce.com/public/text2image:v1"
+inference_image_name: "ccr-23gxup9u-pub.cnc.bj.baidubce.com/public/mv2model:v1"
 enable_custom_image: true
 use_gpu: true
 deploy_timeout: 1800
