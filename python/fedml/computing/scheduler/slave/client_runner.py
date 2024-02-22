@@ -434,7 +434,7 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs()
 
         self.mlops_metrics.report_client_id_status(
             self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
@@ -899,7 +899,7 @@ class FedMLClientRunner:
         train_edge_id = str(topic).split("/")[-2]
         self.args.run_id = run_id
         self.args.edge_id = train_edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs()
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
             run_id, train_edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")

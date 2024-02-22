@@ -187,7 +187,7 @@ def get_host_name():
         import platform
         host_name = platform.uname()[1]
     except Exception as e:
-        logging.error(f"Error when getting host name: {e}, traceback: {traceback.format_exc()}")
+        logging.debug(f"Error when getting host name: {e}, traceback: {traceback.format_exc()}")
         pass
     return host_name
 
@@ -201,7 +201,7 @@ def generate_yaml_doc(yaml_object, yaml_file, append=False):
         yaml.dump(yaml_object, file)
         file.close()
     except Exception as e:
-        logging.error(f"Error when generating yaml doc: {e}, traceback: {traceback.format_exc()}")
+        logging.debug(f"Error when generating yaml doc: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -241,7 +241,7 @@ def get_python_program():
             if python3_version_str.find(current_python_version) != -1:
                 python_program = "python3"
     except Exception as e:
-        logging.error(f"Error when getting python program: {e}, traceback: {traceback.format_exc()}")
+        logging.debug(f"Error when getting python program: {e}, traceback: {traceback.format_exc()}")
         pass
 
     return python_program
@@ -268,7 +268,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
         generate_yaml_doc(yaml_object, edge_process_id_file)
 
     except Exception as e:
-        logging.error(f"Error when cleaning up login process: {e}, traceback: {traceback.format_exc()}")
+        logging.debug(f"Error when cleaning up login process: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -286,7 +286,7 @@ def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
         yaml_object["process_id"] = edge_process_id
         generate_yaml_doc(yaml_object, edge_process_id_file)
     except Exception as e:
-        logging.error(f"Error when saving login process: {e}, traceback: {traceback.format_exc()}")
+        logging.debug(f"Error when saving login process: {e}, traceback: {traceback.format_exc()}")
         pass
 
 
@@ -311,7 +311,7 @@ def cleanup_all_fedml_client_learning_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Error when killing client learning process: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Error when killing client learning process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -332,7 +332,7 @@ def cleanup_all_fedml_client_diagnosis_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Error when killing client diagnosis process: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Error when killing client diagnosis process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -352,7 +352,7 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                             if clean_process_group:
                                 os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Error when killing client login process: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Error when killing client login process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -377,7 +377,7 @@ def cleanup_all_fedml_server_learning_processes():
                 else:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Exception e: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Exception e: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -405,7 +405,7 @@ def cleanup_all_fedml_client_api_processes(kill_all=False, is_model_device=False
                     else:
                         os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Error when killing client api process: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Error when killing client api process: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
@@ -436,7 +436,7 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                     else:
                         os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
-            logging.error(f"Exception: {e}, traceback: {traceback.format_exc()}")
+            logging.debug(f"Exception: {e}, traceback: {traceback.format_exc()}")
             pass
 
 
