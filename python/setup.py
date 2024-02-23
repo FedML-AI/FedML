@@ -62,7 +62,8 @@ requirements = [
     "py-machineid",
     "cachetools",
     "toposort",
-    "pydantic-settings>2.0"
+    "pydantic>=2.0",
+    "pydantic-settings",
 ]
 
 requirements_extra_mpi = [
@@ -115,7 +116,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.90b8",
+    version="0.8.90b9",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
