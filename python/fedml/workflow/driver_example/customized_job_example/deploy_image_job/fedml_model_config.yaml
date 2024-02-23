@@ -2,8 +2,8 @@ workspace: "."
 entry_point: "main_entry.py"
 
 auto_detect_public_ip: true
-server_external_port: 10007
-server_internal_port: 10008
+server_external_port: 20215
+server_internal_port: 2203
 
 bootstrap: |
   echo "Bootstrap start..."
