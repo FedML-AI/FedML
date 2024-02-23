@@ -7,8 +7,8 @@ server_internal_port: 10008
 
 bootstrap: |
   echo "Bootstrap start..."
-  pip install -U fedml
-  python3 /home/fedml/models_serving/main_entry.py
+  pip install pydantic>=2.0
+  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.24a1
   echo "Bootstrap finished"
 
 inference_image_name: "ccr-23gxup9u-pub.cnc.bj.baidubce.com/public/mv2model:v1"
