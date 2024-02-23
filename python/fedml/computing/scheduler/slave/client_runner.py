@@ -434,7 +434,7 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs()
 
         self.mlops_metrics.report_client_id_status(
             self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
@@ -899,7 +899,7 @@ class FedMLClientRunner:
         train_edge_id = str(topic).split("/")[-2]
         self.args.run_id = run_id
         self.args.edge_id = train_edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs()
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
             run_id, train_edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")
@@ -1007,16 +1007,22 @@ class FedMLClientRunner:
         client_runner.sync_run_stop_status(run_status=run_status)
 
     def cleanup_containers_and_release_gpus(self, run_id, edge_id):
-        # Terminate the run docker container if exists
-        container_name = JobRunnerUtils.get_run_container_name(run_id)
-        docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
-        logging.info(f"Terminating the run docker container {container_name} if exists...")
-        try:
-            JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
-        except Exception as e:
-            logging.error(f"Exception {e} occurred when terminating docker container. "
-                          f"Traceback: {traceback.format_exc()}")
-        JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
+        job_type = JobRunnerUtils.get_job_type_from_run_id(run_id)
+
+        # Clean up only if job_type is not "serve" or "deploy"
+        if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
+                job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
+
+            # Terminate the run docker container if exists
+            container_name = JobRunnerUtils.get_run_container_name(run_id)
+            docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+            logging.info(f"Terminating the run docker container {container_name} if exists...")
+            try:
+                JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+            except Exception as e:
+                logging.error(f"Exception {e} occurred when terminating docker container. "
+                              f"Traceback: {traceback.format_exc()}")
+            JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
 
         # Send mqtt message reporting the new gpu availability to the backend
         MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)

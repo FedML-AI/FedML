@@ -62,7 +62,7 @@ def test_show_hide_mlops_console_logs(args):
     client_ids.append(111)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
+    MLOpsRuntimeLog.get_instance(args).init_logs()
     print("log 1")
     MLOpsRuntimeLog.get_instance(args).enable_show_log_to_stdout()
     print("log 2")
