@@ -7,7 +7,7 @@ server_internal_port: 10008
 
 bootstrap: |
   echo "Bootstrap start..."
-  pip install pydantic>=2.0
+  pip install -U pydantic>=2.0
   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.90b2
   echo "Bootstrap finished"
 
