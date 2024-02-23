@@ -4,6 +4,7 @@ import platform
 import signal
 import uuid
 from os.path import expanduser
+from typing import List
 
 import chardet
 import psutil
@@ -171,7 +172,7 @@ def get_gpu_list():
     return ret_gpu_list
 
 
-def get_available_gpu_id_list(limit=1):
+def get_available_gpu_id_list(limit=1) -> List[int]:
     if enable_simulation_gpu:
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
         return available_gpu_ids
