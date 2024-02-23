@@ -268,7 +268,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                         f.write(job_cmds_str_frm_yaml)
                         if enable_custom_image:
                             f.write("sleep 10")
+                            f.write("\n")
                             f.write(f"python3 {relative_entry}")
+                            f.write("\n")
                 else:
                     src_bootstrap_file_path = ""
 
