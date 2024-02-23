@@ -61,7 +61,8 @@ requirements = [
     "tzlocal",
     "py-machineid",
     "cachetools",
-    "toposort"
+    "toposort",
+    "pydantic-settings"
 ]
 
 requirements_extra_mpi = [
