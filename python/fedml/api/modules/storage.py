@@ -70,7 +70,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
 
 
 # Todo(alaydshah): Query service from object metadata
-def download(data_name, api_key, service, dest_path) -> FedMLResponse:
+def download(data_name, api_key, service, dest_path, show_progress=True) -> FedMLResponse:
     api_key = authenticate(api_key)
     user_id, message = _get_user_id_from_api_key(api_key)
 
@@ -82,7 +82,7 @@ def download(data_name, api_key, service, dest_path) -> FedMLResponse:
     key = os.path.join(user_id, zip_file_name)
     path_local = os.path.abspath(zip_file_name)
     dest_path = os.path.abspath(dest_path) if dest_path else data_name
-    if store.download_file_with_progress(path_s3=key, path_local=path_local):
+    if store.download_file_with_progress(path_s3=key, path_local=path_local, show_progress=show_progress):
         try:
             shutil.unpack_archive(path_local, dest_path)
             os.remove(path_local)
@@ -223,6 +223,8 @@ def _get_storage_service(service):
     configs = MLOpsConfigs.fetch_remote_storage_configs()
     if service == "R2":
         return S3Storage(configs[Configs.R2_CONFIG])
+    elif service == "S3":
+        return S3Storage(configs[Configs.S3_CONFIG])
     else:
         raise NotImplementedError(f"Service {service} not implemented")
 
