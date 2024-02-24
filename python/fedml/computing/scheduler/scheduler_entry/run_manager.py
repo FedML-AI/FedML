@@ -224,8 +224,14 @@ class FedMLRunManager(Singleton):
                                                   feature_entry_point=feature_entry_point,
                                                   inner_id=create_run_result.inner_id)
 
+        # Get the trace id from the response headers of create run result
+        trace_id = None
+        if create_run_result.headers:
+            trace_id = create_run_result.headers.get("X-B3-TraceId", None)
+
         response = self._request(request_url=ServerConstants.get_run_start_url(),
-                                 request_json=run_start_json)
+                                 request_json=run_start_json,
+                                 trace_id=trace_id)
 
         response_data = self._get_data_from_response(response=response)
 
@@ -362,8 +368,11 @@ class FedMLRunManager(Singleton):
         return run_start_json
 
     @staticmethod
-    def _request(request_url: str, request_json: dict) -> requests.Response:
+    def _request(request_url: str, request_json: dict, trace_id=None) -> requests.Response:
         request_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        if trace_id:
+            request_headers['X-B3-TraceId'] = trace_id
+            request_headers['X-B3-SpanId'] = trace_id
         cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path:
             try:
