@@ -525,7 +525,7 @@ class FedMLServerRunner:
 
         self.run_id = run_id
         self.args.run_id = self.run_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs()
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         # report server running status
         self.mlops_metrics.report_server_id_status(
@@ -1510,7 +1510,7 @@ class FedMLServerRunner:
             # Start log processor for current run
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
-            MLOpsRuntimeLog.get_instance(self.args).init_logs()
+            MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
                 run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
             logging.info("start the log processor.")
