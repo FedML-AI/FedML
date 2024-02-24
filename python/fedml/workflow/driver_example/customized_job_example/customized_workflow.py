@@ -164,7 +164,7 @@ def create_inference_train_workflow(
             workflow.add_job(inference_job)
         else:
             workflow.add_job(inference_job, dependencies=[inference_jobs[index - 1]])
-    workflow.add_job(train_job, dependencies=[inference_jobs[-1]])
+    # workflow.add_job(train_job, dependencies=[inference_jobs[-1]])
 
     # Set the input to the workflow
     input_json = {"text": "What is a good cure for hiccups?"} if input_json is None else input_json

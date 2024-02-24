@@ -22,7 +22,7 @@ job_type: train              # options: train, deploy, federate
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
-  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.25b1
+  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.90b10
   echo "Bootstrap finished."
 
 computing:
