@@ -319,7 +319,7 @@ class FedMLServerRunner:
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE4["text"])
 
         self.args.run_id = self.run_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs()
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         # report server running status
         logging.info("report deployment status...")
@@ -2013,7 +2013,7 @@ class FedMLServerRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs()
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
