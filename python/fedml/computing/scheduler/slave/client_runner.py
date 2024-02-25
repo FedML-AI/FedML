@@ -1007,25 +1007,45 @@ class FedMLClientRunner:
         client_runner.sync_run_stop_status(run_status=run_status)
 
     def cleanup_containers_and_release_gpus(self, run_id, edge_id):
-        job_type = JobRunnerUtils.get_job_type_from_run_id(run_id)
+        # Clean up only if:
+        # 1. Job is finished, failed or killed
+        # 2. Job type is not "serve" or "deploy"
+        job_obj = JobRunnerUtils.get_job_obj_from_run_id(run_id)
+        if not job_obj:
+            logging.info(f"Job Object is None, nothing to cleanup for run_id {run_id}.")
+            return
 
-        # Clean up only if job_type is not "serve" or "deploy"
-        if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
-                job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
+        # Check if the job is finished, failed or killed
+        status = job_obj.status
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
 
-            # Terminate the run docker container if exists
-            container_name = JobRunnerUtils.get_run_container_name(run_id)
-            docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
-            logging.info(f"Terminating the run docker container {container_name} if exists...")
-            try:
-                JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
-            except Exception as e:
-                logging.error(f"Exception {e} occurred when terminating docker container. "
-                              f"Traceback: {traceback.format_exc()}")
-            JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
+            job_type = JobRunnerUtils.parse_job_type(job_obj.running_json)
+            if not job_type:
+                logging.info(f"Assume job type to be {SchedulerConstants.JOB_TASK_TYPE_TRAIN} if job_type.")
 
-        # Send mqtt message reporting the new gpu availability to the backend
-        MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
+            # Check if the job type is not "serve" or "deploy"
+            if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
+                    job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
+
+                # Terminate the run docker container if exists
+                container_name = JobRunnerUtils.get_run_container_name(run_id)
+                docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                logging.info(f"Terminating the run docker container {container_name} if exists...")
+                try:
+                    JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+                except Exception as e:
+                    logging.error(f"Exception {e} occurred when terminating docker container. "
+                                  f"Traceback: {traceback.format_exc()}")
+
+                # Release the GPU ids and update the GPU availability in the persistent store
+                JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
+
+                # Send mqtt message reporting the new gpu availability to the backend
+                MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
+        else:
+            logging.info(f"Not cleaning up containers and releasing gpus for run_id {run_id} as status is {status}.")
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
