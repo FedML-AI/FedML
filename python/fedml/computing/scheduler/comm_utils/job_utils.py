@@ -173,14 +173,12 @@ class JobRunnerUtils(Singleton):
                     logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
                     return
 
-                available_gpu_ids = self.get_available_gpu_id_list(edge_device_id)
-
-                available_gpu_ids.extend(run_gpu_ids.copy())
-                available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
-
                 with ComputeCacheManager.get_instance().lock(
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
                 ):
+                    available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                        device_id)
+                    available_gpu_ids.extend(run_gpu_ids.copy())
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         edge_device_id, available_gpu_ids)
 
