@@ -78,12 +78,13 @@ class JobRunnerUtils(Singleton):
                     else:
                         available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
 
-                    cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(request_gpu_num,
-                                                                                                  available_gpu_ids)
+                    cuda_visible_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
+                                                                                               available_gpu_ids)
                     if cuda_visible_gpu_ids_str is None:
                         if request_gpu_num:
                             error_message = (f"Failed to occupy gpu ids for run {run_id}. "
-                                             f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
+                                             f"Requested_gpu_num {request_gpu_num}; "
+                                             f"Available GPU ids: {available_gpu_ids}")
                             logging.error(error_message)
                             raise Exception(error_message)
                         return None
@@ -142,7 +143,7 @@ class JobRunnerUtils(Singleton):
 
         matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
         cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
-        return cuda_visible_gpu_ids_str, matched_gpu_num, matched_gpu_ids
+        return cuda_visible_gpu_ids_str, matched_gpu_num
 
     @staticmethod
     def trim_unavailable_gpu_ids(gpu_ids) -> List[int]:
