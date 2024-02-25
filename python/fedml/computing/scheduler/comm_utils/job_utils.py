@@ -179,6 +179,7 @@ class JobRunnerUtils(Singleton):
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
                     available_gpu_ids.extend(run_gpu_ids.copy())
+                    available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         edge_device_id, available_gpu_ids)
 
