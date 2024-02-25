@@ -63,26 +63,35 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
                                                                                                original_run_id)
 
-                available_gpu_ids = JobRunnerUtils.get_available_gpu_id_list(device_id)
-                available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
-
-                cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(
-                    request_gpu_num, available_gpu_ids)
-                if cuda_visible_gpu_ids_str is None:
-                    if request_gpu_num:
-                        error_message = (f"Failed to occupy gpu ids for run {run_id}. "
-                                         f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
-                        logging.error(error_message)
-                        raise Exception(error_message)
-                    return None
-
-                run_gpu_ids = available_gpu_ids[0:matched_gpu_num].copy()
-                available_gpu_ids = available_gpu_ids[matched_gpu_num:].copy()
-                available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
-
                 with ComputeCacheManager.get_instance().lock(
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
                 ):
+
+                    # Get the available GPU list from the cache
+                    available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                        device_id)
+
+                    # If the available GPU list is not in the cache, set it to the current system available GPU list
+                    if available_gpu_ids is None:
+                        # Get realtime GPU availability list from the system
+                        available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
+                    else:
+                        available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
+
+                    cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(request_gpu_num,
+                                                                                                  available_gpu_ids)
+                    if cuda_visible_gpu_ids_str is None:
+                        if request_gpu_num:
+                            error_message = (f"Failed to occupy gpu ids for run {run_id}. "
+                                             f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
+                            logging.error(error_message)
+                            raise Exception(error_message)
+                        return None
+
+                    run_gpu_ids = list(map(lambda x: int(x), cuda_visible_gpu_ids_str.split(",")))
+                    available_gpu_ids = [gpu_id for gpu_id in available_gpu_ids if gpu_id not in set(run_gpu_ids)]
+                    available_gpu_ids = list(set(available_gpu_ids))
+
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
 
