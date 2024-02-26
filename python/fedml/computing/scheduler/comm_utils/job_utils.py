@@ -15,10 +15,10 @@ from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from dataclasses import dataclass, field, fields
 
-from fedml.computing.scheduler.slave.client_data_interface import FedMLClientDataInterface, FedMLClientJobModel
+from fedml.computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
-from typing import List, Optional
+from typing import List
 import threading
 import json
 
