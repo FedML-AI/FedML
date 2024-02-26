@@ -1009,7 +1009,13 @@ class FedMLClientRunner:
     def cleanup_containers_and_release_gpus(self, run_id, edge_id):
         job_type = JobRunnerUtils.get_job_type_from_run_id(run_id)
 
-        # Clean up only if job_type is not "serve" or "deploy"
+        if not job_type:
+            logging.info(f"Failed to get job type from run id {run_id}. This is not an error as it would usually "
+                         f"happen when the job is not found in the database because job is already finished and "
+                         f"cleaned up. Exiting cleanup_containers_and_release_gpus.")
+            return
+
+        # Check if the job type is not "serve" or "deploy"
         if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
                 job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
 
@@ -1022,10 +1028,12 @@ class FedMLClientRunner:
             except Exception as e:
                 logging.error(f"Exception {e} occurred when terminating docker container. "
                               f"Traceback: {traceback.format_exc()}")
+
+            # Release the GPU ids and update the GPU availability in the persistent store
             JobRunnerUtils.get_instance().release_gpu_ids(run_id, edge_id)
 
-        # Send mqtt message reporting the new gpu availability to the backend
-        MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
+            # Send mqtt message reporting the new gpu availability to the backend
+            MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=self.mqtt_mgr)
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -1040,10 +1048,7 @@ class FedMLClientRunner:
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-        # logging.info(
-        #     f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        # )
-
+        # logging.info(f"FedMLDebug - Receive: topic ({topic}), payload ({payload})")
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
