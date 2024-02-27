@@ -6,6 +6,9 @@ import fedml.api
 import shutil
 import yaml
 
+import urllib.request
+import zipfile
+
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.api.modules.utils import fedml_login
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
@@ -44,27 +47,53 @@ def create(name: str, model: str = None, model_config: str = None) -> bool:
 
 
 def create_from_hf(name: str, model: str = None) -> bool:
+    """
+    Pull template from s3
+    [Deprecated Solution] Packaging the template to whl file, i.e.
+    # setup.py
+    package_data={
+        "fedml.serving": ["**/*.sh", "**/*.yaml", "**/*.json", "**/*.txt", "**/*.md", "**/*.jinja"],
+    },
+    # fedml/api/modules/model.py
     hf_templ_fd_src = os.path.join(os.path.dirname(__file__), "..", "..", "serving", "templates", "hf_template")
-    dst_parent_fd = os.path.join(os.path.expanduser("~"), ".fedml","fedml-model-client", "fedml", "hf_model_from_template")
+    """
+    templ_zip_url = "https://fedml-deploy-template.s3.us-west-2.amazonaws.com/hf_template.zip"
+    hf_templ_parent_fd = os.path.join(os.path.expanduser("~"), ".fedml", "fedml-model-client", "fedml")
+    hf_templ_fd = os.path.join(hf_templ_parent_fd, "hf_template")
+
+    if os.path.exists(hf_templ_fd):
+        shutil.rmtree(hf_templ_fd)
+    os.makedirs(hf_templ_fd)
+
+    print(f"Downloading the template from {templ_zip_url} ... to {hf_templ_parent_fd}")
+    urllib.request.urlretrieve(templ_zip_url, os.path.join(hf_templ_parent_fd, "hf_template.zip"))
+
+    with zipfile.ZipFile(os.path.join(hf_templ_parent_fd, "hf_template.zip"), 'r') as zip_ref:
+        zip_ref.extractall(hf_templ_parent_fd)
+
+    # Fulfill the template to a new model card that is deployable
+    dst_parent_fd = os.path.join(os.path.expanduser("~"), ".fedml",
+                                 "fedml-model-client", "fedml", "hf_model_from_template")
     if not os.path.exists(dst_parent_fd):
         os.makedirs(dst_parent_fd)
-    
+
     dst_fd = os.path.join(dst_parent_fd, name)
     if os.path.exists(dst_fd):
-        shutil.rmtree(dst_fd) 
-    shutil.copytree(hf_templ_fd_src, dst_fd)
+        shutil.rmtree(dst_fd)
+
+    print(f"Copying the template from {hf_templ_fd} ... to {dst_fd}")
+    shutil.copytree(hf_templ_fd, dst_fd)
     
     config_file = os.path.join(dst_fd, "config.yaml")
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
-        # Change the hf_model_name in the config.yaml to model
-        config["environment_variables"]["MODEL_NAME_OR_PATH"] = model
+        config["environment_variables"]["MODEL_NAME_OR_PATH"] = model   # Change the hf_model_name in the config.yaml
     with open(config_file, 'w') as file:
         yaml.dump(config, file)
     
     res = create(name, model_config=config_file)
     if res:
-        print(f"Model source code (generated from template {hf_templ_fd_src}) is located at {dst_fd}")
+        print(f"Model source code (generated from template {hf_templ_fd}) is located at {dst_fd}")
     return res
 
 

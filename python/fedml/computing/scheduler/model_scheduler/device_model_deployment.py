@@ -443,6 +443,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 "mode": "rw"
             }
             environment["MAIN_ENTRY"] = relative_entry
+
+        if not enable_custom_image:
+            # For some image, the default user is root. Unified to fedml.
+            environment["HOME"] = "/home/fedml"
         environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
         environment["FEDML_CURRENT_RUN_ID"] = end_point_id
         environment["FEDML_CURRENT_EDGE_ID"] = edge_id
