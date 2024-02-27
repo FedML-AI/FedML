@@ -152,7 +152,7 @@ class FedMLServerRunner:
         self.run_status = None
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
-        self.enable_simulation_cloud_agent = True
+        self.enable_simulation_cloud_agent = False
         self.use_local_process_as_cloud_server = False
 
         self.model_device_server = None
