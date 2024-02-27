@@ -6,6 +6,9 @@ import fedml.api
 import shutil
 import yaml
 
+import urllib.request
+import zipfile
+
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.api.modules.utils import fedml_login
 from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, save_api_key
@@ -54,9 +57,6 @@ def create_from_hf(name: str, model: str = None) -> bool:
     # fedml/api/modules/model.py
     hf_templ_fd_src = os.path.join(os.path.dirname(__file__), "..", "..", "serving", "templates", "hf_template")
     """
-    import urllib.request
-    import zipfile
-
     templ_zip_url = "https://fedml-deploy-template.s3.us-west-2.amazonaws.com/hf_template.zip"
     hf_templ_parent_fd = os.path.join(os.path.expanduser("~"), ".fedml", "fedml-model-client", "fedml")
     hf_templ_fd = os.path.join(hf_templ_parent_fd, "hf_template")
