@@ -1826,6 +1826,8 @@ class FedMLServerRunner:
             self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
+        self.mlops_metrics.edge_id = self.edge_id
+        self.mlops_metrics.server_agent_id = self.server_agent_id
 
     def rebuild_message_center(self, message_center_queue):
         self.message_center = FedMLMessageCenter(message_queue=message_center_queue)
@@ -1834,6 +1836,8 @@ class FedMLServerRunner:
             self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
+        self.mlops_metrics.edge_id = self.edge_id
+        self.mlops_metrics.server_agent_id = self.server_agent_id
 
     def release_message_center(self):
         try:
