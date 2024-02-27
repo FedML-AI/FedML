@@ -1164,11 +1164,11 @@ class FedMLServerRunner:
         edge_info_global_dict = dict()
         if edge_device_info_global_queue is not None:
             for edge_info_global in edge_device_info_global_queue:
-                edge_info_id = edge_info_global_dict.get("edge_id")
-                edge_info_global_dict[edge_info_id] = edge_info_global_dict
+                edge_info_id = edge_info_global.get("edge_id")
+                edge_info_global_dict[edge_info_id] = edge_info_global
 
         # Send status message to all edges
-        allowed_cache_edge_status_time = 30
+        allowed_cache_edge_status_time = 60
         for edge_id in edge_id_list:
             # Check if the edge status was filled allowed_cache_edge_status_time seconds ago,
             # if so no more checking message would be sent.
