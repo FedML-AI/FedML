@@ -45,6 +45,7 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from ..scheduler_core.message_center import FedMLMessageCenter
 
 
 class RunnerError(Exception):
@@ -76,9 +77,6 @@ class FedMLClientRunner:
         self.device_status = None
         self.current_training_status = None
         self.mqtt_mgr = None
-        self.client_mqtt_mgr = None
-        self.client_mqtt_is_connected = False
-        self.client_mqtt_lock = None
         self.edge_id = edge_id
         self.edge_user_name = None
         self.edge_extra_url = None
@@ -126,6 +124,7 @@ class FedMLClientRunner:
         self.subscribed_topics = list()
         self.user_name = None
         self.general_edge_id = None
+        self.message_center = None
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -371,7 +370,7 @@ class FedMLClientRunner:
     def callback_run_bootstrap(self, job_pid):
         ClientConstants.save_bootstrap_process(self.run_id, job_pid)
 
-    def run(self, process_event, completed_event):
+    def run(self, process_event, completed_event, message_center_queue):
         print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
@@ -384,7 +383,7 @@ class FedMLClientRunner:
         self.run_process_completed_event = completed_event
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
-            self.setup_client_mqtt_mgr()
+            self.rebuild_message_center(message_center_queue)
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
@@ -410,7 +409,6 @@ class FedMLClientRunner:
             time.sleep(3)
             ClientConstants.cleanup_learning_process(self.run_id)
             ClientConstants.cleanup_run_process(self.run_id)
-            self.release_client_mqtt_mgr()
 
     def check_runner_stop_event(self):
         if self.run_process_event.is_set():
@@ -777,67 +775,31 @@ class FedMLClientRunner:
                 f"Failed to cleanup run when finished with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
-    def on_client_mqtt_disconnected(self, mqtt_client_object):
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
-        self.client_mqtt_is_connected = False
-        self.client_mqtt_lock.release()
-
-    def on_client_mqtt_connected(self, mqtt_client_object):
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        self.mlops_metrics.run_id = self.run_id
-
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
-        self.client_mqtt_is_connected = True
-        self.client_mqtt_lock.release()
-
-    def setup_client_mqtt_mgr(self):
-        if self.client_mqtt_mgr is not None:
+    def setup_message_center(self):
+        if self.message_center is not None:
             return
 
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_mgr = MqttManager(
-            self.agent_config["mqtt_config"]["BROKER_HOST"],
-            self.agent_config["mqtt_config"]["BROKER_PORT"],
-            self.agent_config["mqtt_config"]["MQTT_USER"],
-            self.agent_config["mqtt_config"]["MQTT_PWD"],
-            self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Metrics_@{}@_@{}@_@{}@_@{}@".format(self.user_name, self.args.current_device_id,
-                                                                   str(os.getpid()),
-                                                                   str(uuid.uuid4()))
-        )
-
-        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
-        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
-        self.client_mqtt_mgr.connect()
-        self.client_mqtt_mgr.loop_start()
+        self.message_center = FedMLMessageCenter(agent_config=self.agent_config)
+        self.message_center.start()
 
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+        self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
 
-    def release_client_mqtt_mgr(self):
-        try:
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_mgr.loop_stop()
-                self.client_mqtt_mgr.disconnect()
+    def rebuild_message_center(self, message_center_queue):
+        self.message_center = FedMLMessageCenter(message_queue=message_center_queue)
 
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_is_connected = False
-                self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
+        if self.mlops_metrics is None:
+            self.mlops_metrics = MLOpsMetrics()
+        self.mlops_metrics.set_messenger(self.message_center)
+        self.mlops_metrics.run_id = self.run_id
+
+    def release_message_center(self):
+        try:
+            if self.message_center is not None:
+                self.message_center.stop()
+
         except Exception as e:
             logging.error(
                 f"Failed to release client mqtt manager with Exception {e}. Traceback: {traceback.format_exc()}")
@@ -972,7 +934,8 @@ class FedMLClientRunner:
         client_runner.server_id = request_json.get("server_id", "0")
         logging.info("start the runner process.")
         self.run_process_map[run_id_str] = Process(target=client_runner.run, args=(
-            self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str]))
+            self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str],
+            self.message_center.get_message_queue()))
         self.run_process_map[run_id_str].start()
         ClientConstants.save_run_process(run_id, self.run_process_map[run_id_str].pid)
 
@@ -1002,7 +965,7 @@ class FedMLClientRunner:
         self.cleanup_containers_and_release_gpus(run_id, train_edge_id)
         client_runner.run_process_event = self.run_process_event_map.get(run_id_str, None)
         client_runner.run_process = self.run_process_map.get(run_id_str, None)
-        client_runner.client_mqtt_mgr = self.client_mqtt_mgr
+        client_runner.message_center = self.message_center
         client_runner.mlops_metrics = self.mlops_metrics
         client_runner.sync_run_stop_status(run_status=run_status)
 
@@ -1078,7 +1041,7 @@ class FedMLClientRunner:
                 run_id=run_id,
             )
             client_runner.device_status = status
-            client_runner.client_mqtt_mgr = self.client_mqtt_mgr
+            client_runner.message_center = self.message_center
             client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
@@ -1200,7 +1163,7 @@ class FedMLClientRunner:
                                 "edge_info": device_info_json}
             if context is not None:
                 response_payload["context"] = context
-            self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
+            self.message_center.send_message(response_topic, json.dumps(response_payload), run_id=run_id)
 
     def callback_client_logout(self, topic, payload):
         payload_json = json.loads(payload)
@@ -1597,7 +1560,10 @@ class FedMLClientRunner:
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
 
-        self.setup_client_mqtt_mgr()
+        # Start the message center to process edge related messages.
+        self.setup_message_center()
+
+        # Report the IDLE status to MLOps
         self.mlops_metrics.report_client_training_status(
             self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
@@ -1703,4 +1669,4 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
 
-        self.release_client_mqtt_mgr()
+        self.release_message_center()

@@ -35,7 +35,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
 enable_simulation_gpu = False
-simulation_gpu_count = 1
+simulation_gpu_count = 8
 
 
 def get_sys_runner_info():
@@ -175,7 +175,7 @@ def get_gpu_list():
 def get_available_gpu_id_list(limit=1) -> List[int]:
     if enable_simulation_gpu:
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-        return available_gpu_ids
+        return available_gpu_ids[0:simulation_gpu_count]
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
