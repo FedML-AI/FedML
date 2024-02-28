@@ -12,17 +12,17 @@ docker:
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
 job: |
-    echo "Hello, Here is the FedML Nexus AI platform."
-    echo "Current directory is as follows."
-    pwd
-    python3 main_entry.py
+  echo "Hello, Here is the FedML Nexus AI platform."
+  echo "Current directory is as follows."
+  pwd
+  python3 main_entry.py
 
 job_type: train              # options: train, deploy, federate
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
-  pip install -U fedml
+  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.90b10
   echo "Bootstrap finished."
 
 computing:

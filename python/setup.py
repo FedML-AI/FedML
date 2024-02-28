@@ -41,7 +41,7 @@ requirements = [
     "wandb==0.13.2",
     "httpx",
     "attrs",
-    "fastapi==0.92.0",
+    "fastapi>=0.92.0",
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.9",
     "aiohttp>=3.8.1",
@@ -61,7 +61,9 @@ requirements = [
     "tzlocal",
     "py-machineid",
     "cachetools",
-    "toposort"
+    "toposort",
+    "pydantic>=2.0",
+    "pydantic-settings",
 ]
 
 requirements_extra_mpi = [
