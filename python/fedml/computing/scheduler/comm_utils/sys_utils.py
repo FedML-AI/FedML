@@ -157,6 +157,15 @@ def get_gpu_list():
              'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
              'serial': '1320723000504', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 33.0}]
 
+        if simulation_gpu_count > 8:
+            for count in range(8, simulation_gpu_count):
+                ret_gpu_list.append(
+                    {'ID': count, 'uuid': f"GPU-b5811fb0-e93a-79c7-1548-2d2b60049208{count}", 'load': 0.0,
+                     'memoryTotal': 81920.0, 'memoryUsed': 7.0, 'memoryFree': 81042.0,
+                     'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+                     'serial': f"1320723000504{count}", 'display_mode': 'Enabled',
+                     'display_active': 'Disabled', 'temperature': 33.0})
+
         return ret_gpu_list[0:simulation_gpu_count]
 
     gpu_list = GPUtil.getGPUs()
@@ -175,6 +184,9 @@ def get_gpu_list():
 def get_available_gpu_id_list(limit=1) -> List[int]:
     if enable_simulation_gpu:
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
+        if simulation_gpu_count > 8:
+            for count in range(8, simulation_gpu_count):
+                available_gpu_ids.append(count)
         return available_gpu_ids[0:simulation_gpu_count]
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
@@ -723,7 +735,7 @@ def check_fedml_is_latest_version(configuration_env="release"):
         for remote_ver_item in fedml_version_list:
             remote_fedml_ver_info = version.parse(remote_ver_item)
             if (remote_fedml_ver_info.is_prerelease and remote_fedml_ver_info.pre[0] != "rc") or \
-                (remote_fedml_ver_info.is_devrelease) :
+                    (remote_fedml_ver_info.is_devrelease):
                 continue
 
             if local_fedml_ver_info < remote_fedml_ver_info:
