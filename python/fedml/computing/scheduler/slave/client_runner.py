@@ -799,6 +799,7 @@ class FedMLClientRunner:
         try:
             if self.message_center is not None:
                 self.message_center.stop()
+                self.message_center = None
 
         except Exception as e:
             logging.error(
