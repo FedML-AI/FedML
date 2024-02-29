@@ -131,5 +131,5 @@ class FedMLDeviceInfoReportProtocol:
 
     def request_device_info(self, run_id, edge_id, server_id):
         topic_request_device_info = "server/client/request_device_info/" + str(edge_id)
-        payload = {"server_id": server_id, "run_id": run_id}
+        payload = {"server_id": server_id, "run_id": run_id, "need_running_process_list": True}
         self.client_mqtt_mgr.send_message(topic_request_device_info, json.dumps(payload))
