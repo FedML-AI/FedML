@@ -1,5 +1,6 @@
 import os
 
+import fedml
 from fedml.workflow.workflow import JobStatus, Workflow
 from fedml.workflow.customized_jobs.model_deploy_job import ModelDeployJob
 from fedml.workflow.customized_jobs.model_inference_job import ModelInferenceJob
@@ -7,7 +8,7 @@ from fedml.workflow.customized_jobs.train_job import TrainJob
 from typing import List
 import argparse
 
-MY_API_KEY = "" # Here you need to set your API key from nexus.fedml.ai
+MY_API_KEY = ""  # Here you need to set your API key from nexus.fedml.ai
 
 
 class DeployImageJob(ModelDeployJob):
@@ -108,7 +109,7 @@ def create_deploy_workflow(job_api_key=None):
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 
     # Generate the job object
-    endpoint_id = 100 # Here you need to set your own endpoint id
+    endpoint_id = 100  # Here you need to set your own endpoint id
     deploy_image_job = DeployImageJob(
         name="deploy_image_job", endpoint_id=endpoint_id,
         job_yaml_absolute_path=deploy_image_job_yaml, job_api_key=job_api_key)
@@ -125,14 +126,16 @@ def create_deploy_workflow(job_api_key=None):
     # Get the status and result of workflow
     workflow_status = workflow.get_workflow_status()
     workflow_output = workflow.get_workflow_output()
+    all_jobs_outputs = workflow.get_all_jobs_outputs()
     print(f"Final status of the workflow is as follows. {workflow_status}")
     print(f"Output of the workflow is as follows. {workflow_output}")
+    print(f"Output of all jobs is as follows. {all_jobs_outputs}")
 
     return workflow_status, workflow_output
 
 
 def create_inference_train_workflow(
-        job_api_key=None, endpoint_id_list:List[int]=None, input_json=None):
+        job_api_key=None, endpoint_id_list: List[int] = None, input_json=None):
     # Define the job yaml
     working_directory = os.path.dirname(os.path.abspath(__file__))
     deploy_image_job_yaml = os.path.join(working_directory, "deploy_image_job.yaml")
@@ -161,8 +164,8 @@ def create_inference_train_workflow(
         if index == 0:
             workflow.add_job(inference_job)
         else:
-            workflow.add_job(inference_job, dependencies=[inference_jobs[index-1]])
-    workflow.add_job(train_job, dependencies=[inference_jobs[-1]])
+            workflow.add_job(inference_job, dependencies=[inference_jobs[index - 1]])
+    # workflow.add_job(train_job, dependencies=[inference_jobs[-1]])
 
     # Set the input to the workflow
     input_json = {"text": "What is a good cure for hiccups?"} if input_json is None else input_json
@@ -174,8 +177,10 @@ def create_inference_train_workflow(
     # Get the status and result of workflow
     workflow_status = workflow.get_workflow_status()
     workflow_output = workflow.get_workflow_output()
+    all_jobs_outputs = workflow.get_all_jobs_outputs()
     print(f"Final status of the workflow is as follows. {workflow_status}")
     print(f"Output of the workflow is as follows. {workflow_output}")
+    print(f"Output of all jobs is as follows. {all_jobs_outputs}")
 
     return workflow_status, workflow_output
 
@@ -183,7 +188,8 @@ def create_inference_train_workflow(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--deploy", "-d", nargs="*", help="Create a deploy workflow")
-    parser.add_argument("--inference", "-i", nargs="*",  help='Create a inference workflow')
+    parser.add_argument("--inference", "-i", nargs="*", help='Create a inference workflow')
+    parser.add_argument("--endpoint_id", "-e", type=str, default=None, help='Endpoint id for inference')
     parser.add_argument("--api_key", "-k", type=str, default=MY_API_KEY, help='API Key from the Nexus AI Platform')
     parser.add_argument("--infer_json", "-ij", type=str, default=None, help='Input json data for inference')
 
@@ -200,13 +206,13 @@ if __name__ == "__main__":
         is_inference = True
 
     workflow_status, outputs = None, None
-    deployed_endpoint_id = 3164
+    deployed_endpoint_id = args.endpoint_id
     if is_deploy:
         workflow_status, outputs = create_deploy_workflow(job_api_key=args.api_key)
-        deployed_endpoint_id = outputs[0].get("endpoint_id", None)
+        deployed_endpoint_id = outputs.get("endpoint_id", None)
 
     if is_inference and deployed_endpoint_id is not None:
         create_inference_train_workflow(
-            job_api_key=args.api_key, endpoint_id_list=[deployed_endpoint_id, deployed_endpoint_id], input_json=args.infer_json)
+            job_api_key=args.api_key, endpoint_id_list=[deployed_endpoint_id, deployed_endpoint_id],
+            input_json=args.infer_json)
         exit(0)
-

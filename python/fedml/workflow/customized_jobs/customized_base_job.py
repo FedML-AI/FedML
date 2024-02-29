@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from fedml.workflow.jobs import Job, JobStatus
 from fedml.computing.scheduler.comm_utils import yaml_utils
@@ -20,17 +21,29 @@ class CustomizedBaseJob(Job):
         self.config_version = CustomizedBaseJob.CURRENT_CONFIG_VERSION
         self.local_on_prem_host = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_HOST
         self.local_on_prem_port = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_PORT
+        self.launch_result_code = 0
+        self.launch_result_message = None
 
     def run(self):
         fedml.set_env_version(self.config_version)
         fedml.set_local_on_premise_platform_host(self.local_on_prem_host)
         fedml.set_local_on_premise_platform_port(self.local_on_prem_port)
 
-        self.launch_result = fedml.api.launch_job(yaml_file=self.job_yaml_absolute_path, api_key=self.job_api_key)
-        if self.launch_result.run_id and int(self.launch_result.run_id) > 0:
-            self.run_id = self.launch_result.run_id
+        try:
+            self.launch_result = fedml.api.launch_job(yaml_file=self.job_yaml_absolute_path, api_key=self.job_api_key)
+            if self.launch_result.run_id and int(self.launch_result.run_id) > 0:
+                self.run_id = self.launch_result.run_id
+            self.launch_result_code = self.launch_result.result_code
+            self.launch_result_message = self.launch_result.result_message
+        except Exception as e:
+            self.launch_result_code = -1
+            self.launch_result_message = f"Exception {traceback.format_exc()}"
 
     def status(self):
+        if self.launch_result_code != 0:
+            self.run_status = JobStatus.FAILED
+            return JobStatus.FAILED
+
         if self.run_id:
             try:
                 _, run_status = fedml.api.run_status(run_id=self.run_id, api_key=self.job_api_key)
