@@ -463,7 +463,6 @@ class MLOpsRuntimeLogDaemon:
         if log_run_id is None or log_device_id is None:
             return
 
-        # logging.info(f"FedMLDebug. stop log processor. log_run_id = {log_run_id}, log_device_id = {log_device_id}")
         event_map_id = self.get_event_map_id(log_run_id, log_device_id)
         for (log_child_process, run_id, device_id) in self.log_child_process_list:
             if str(run_id) == str(log_run_id) and str(device_id) == str(log_device_id):

@@ -11,7 +11,7 @@ from logging import handlers
 from fedml import mlops
 from .mlops_utils import MLOpsUtils
 
-LOG_LEVEL = logging.CRITICAL
+LOG_LEVEL = logging.INFO
 
 class MLOpsFormatter(logging.Formatter):
     converter = datetime.datetime.utcfromtimestamp
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     setattr(args, "using_mlops", True)
     setattr(args, "config_version", "local")
-    MLOpsRuntimeLog.get_instance(args).init_logs()
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
 
     count = 0
     while True:

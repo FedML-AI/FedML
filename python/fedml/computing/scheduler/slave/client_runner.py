@@ -908,18 +908,22 @@ class FedMLClientRunner(FedMLMessageCenter):
 
     def callback_start_train(self, topic, payload):
         # Get training params
-
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
             return
         run_id = request_json["runId"]
 
+        logging.info(
+            f"[ALAY-DEBUG - client_runner:callback_start_train:852]  topic: {topic}, "
+            f"payload: {payload},"
+            f"run_id: {run_id}")
+
         # Start log processor for current run
         train_edge_id = str(topic).split("/")[-2]
         self.args.run_id = run_id
         self.args.edge_id = train_edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
             run_id, train_edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")

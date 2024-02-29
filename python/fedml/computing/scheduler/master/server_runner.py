@@ -154,7 +154,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.ntp_offset = MLOpsUtils.get_ntp_offset()
         self.runner_list = dict()
         self.enable_simulation_cloud_agent = False
-        self.use_local_process_as_cloud_server = False
+        self.use_local_process_as_cloud_server = True
 
         self.model_device_server = None
         self.run_model_device_ids = dict()
@@ -535,15 +535,16 @@ class FedMLServerRunner(FedMLMessageCenter):
 
         logging.info("Detect all status of Edge ids: " + str(edge_ids))
 
-        status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
-            edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
-            callback_when_edges_ready=self.send_training_request_to_edges)
-        logging.info(f"Status OK: {status_ok}, Active edge info dict: {active_edge_info_dict}, "
-                     f"inactivate edges: {inactivate_edges}")
-        if not status_ok:
-            logging.error(f"Status of edge device is not OK. Active edge info dict: {active_edge_info_dict}, "
-                          f"Inactivate edges: {inactivate_edges}")
-            return
+        # status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
+        #     edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
+        #     callback_when_edges_ready=self.send_training_request_to_edges)
+        self.send_training_request_to_edges()
+        # logging.info(f"Status OK: {status_ok}, Active edge info dict: {active_edge_info_dict}, "
+        #              f"inactivate edges: {inactivate_edges}")
+        # if not status_ok:
+        #     logging.error(f"Status of edge device is not OK. Active edge info dict: {active_edge_info_dict}, "
+        #                   f"Inactivate edges: {inactivate_edges}")
+        #     return
 
         if not self.should_continue_run_job(run_id):
             if FedMLServerRunner.debug_cloud_server:
@@ -1237,15 +1238,15 @@ class FedMLServerRunner(FedMLMessageCenter):
 
             # If all edges are ready then send the starting job message to them
             if active_edges_count == len(edge_id_list):
-                logging.info(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
+                logging.info(f"[Self edge id: {self.edge_id}] All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
                 if callback_when_edges_ready is not None:
-                    logging.info("All edges are ready. Start to process the callback function.")
+                    logging.info(f"[Self edge id: {self.edge_id}] All edges are ready. Start to process the callback function.")
                     callback_when_edges_ready(active_edge_info_dict=active_edge_info_dict)
                 else:
-                    logging.info("All edges are ready. No callback function to process.")
+                    logging.info(f"[Self edge id: {self.edge_id}] All edges are ready. No callback function to process.")
                 break
             else:
-                logging.info(f"All edges are not ready. Active edge id list: {active_edge_info_dict}, "
+                logging.info(f"[Self edge id: {self.edge_id}] All edges are not ready. Active edge id list: {active_edge_info_dict}, "
                              f"Inactive edge id list: {inactivate_edges}")
 
             # Check if runner needs to stop and sleep specific time
@@ -1256,7 +1257,7 @@ class FedMLServerRunner(FedMLMessageCenter):
             # Check if the status response message has timed out to receive
             if total_sleep_seconds >= allowed_status_check_sleep_seconds:
                 # If so, send failed message to MLOps and send exception message to all edges.
-                logging.error(f"There are inactive edge devices. "
+                logging.error(f"[Self edge id: {self.edge_id}] There are inactive edge devices. "
                               f"Inactivate edge id list is as follows. {inactivate_edges}")
                 if need_to_trigger_exception:
                     self.mlops_metrics.report_server_id_status(
@@ -1401,7 +1402,7 @@ class FedMLServerRunner(FedMLMessageCenter):
                         model_slave_device_id_list=model_slave_device_id_list
                     )
 
-            self.message_center.send_message(topic_start_train, json.dumps(request_json))
+            self.message_center.send_message(topic_start_train, json.dumps(request_json), run_id)
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
         self.client_agent_active_list[f"{run_id}"] = dict()
@@ -1458,9 +1459,15 @@ class FedMLServerRunner(FedMLMessageCenter):
         run_id = payload_json.get("run_id", None)
         edge_id = payload_json.get("edge_id", None)
         status = payload_json.get("status", None)
+        logging.info(f"[ALAY-DEBUG -- callback_edge_status -- Self edge id: {self.edge_id}], "
+                     f"run_id: {run_id}, "
+                     f"edge_id: {edge_id}, "
+                     f"status: {status}")
         if run_id is not None and edge_id is not None:
             active_item_dict = self.client_agent_active_list.get(f"{run_id}", None)
             if active_item_dict is None:
+                logging.error(f"[ALAY-DEBUG -- callback_edge_status -- Self edge id: {self.edge_id}],"
+                              f"run_id {run_id} is not in the active list.")
                 return
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
 
@@ -1515,7 +1522,8 @@ class FedMLServerRunner(FedMLMessageCenter):
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic=None, payload=None):
-        print("callback_start_train: ")
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
+        print(f"callback_start_train: {self.edge_id}")
         try:
             MLOpsConfigs.fetch_all_configs()
         except Exception as e:
@@ -1526,11 +1534,14 @@ class FedMLServerRunner(FedMLMessageCenter):
             message_bytes = payload.encode("ascii")
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
+            logging.info(f"[ALAY-DEBUG Self edge id: {self.edge_id}] callback_start_train: {payload}")
+
 
         # [NOTES] Example Request JSON: https://fedml-inc.larksuite.com/wiki/ScnIwUif9iupbjkYS0LuBrd6sod#WjbEdhYrvogmlGxKTOGu98C6sSb
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
+            logging.info(f"[ALAY-DEBUG Self edge id: {self.edge_id}] callback_start_train: is_retain is True, return.")
             return
 
         # Process the log
@@ -1540,10 +1551,10 @@ class FedMLServerRunner(FedMLMessageCenter):
             # Start log processor for current run
             self.args.run_id = run_id
             self.args.edge_id = self.edge_id
-            MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
                 run_id, self.edge_id, SchedulerConstants.get_log_source(request_json))
             logging.info("start the log processor.")
+            logging.info(f"callback_start_train: {self.edge_id} - {run_id} - {request_json}")
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
@@ -1883,7 +1894,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.callback_stop_train(topic_stop_train, json.dumps(payload_obj), use_payload=payload_obj)
 
     def callback_stop_train(self, topic, payload, use_payload=None):
-        # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
+        logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )

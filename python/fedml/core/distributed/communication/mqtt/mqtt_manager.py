@@ -95,20 +95,24 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, publish_single_message=False):
-        # logging.info(
-        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        # )
         self.check_connection()
 
         mqtt_send_start_time = time.time()
         if publish_single_message:
             connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
+            print(
+                f"[ALAY-DEBUG publish_single_message] - Send: topic ({topic}), message ({message})"
+            )
+
             mqtt_publish.single(topic, payload=message, qos=2,
                                 hostname=self._host, port=self._port,
                                 client_id=connection_id, retain=self.retain_msg,
                                 auth={'username': self.user, 'password': self.pwd})
         else:
+            print(
+                f"[ALAY-DEBUG] - Send: topic ({topic}), message ({message})"
+            )
             ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
             return ret_info.is_published()
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})

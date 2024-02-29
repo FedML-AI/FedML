@@ -163,6 +163,12 @@ class FedMLMessageCenter:
                     continue
 
                 message_entity = FedMLMessageEntity(message_body=message_body)
+                print(
+                    f"[ALAY-DEBUG - message_center - 152]  "
+                    f"run_id: {message_entity.run_id},"
+                    f"topic: {message_entity.topic}, "
+                    f"payload: {message_entity.payload},")
+
                 self.sender_mqtt_mgr.send_message_json(message_entity.topic, message_entity.payload)
             except Exception as e:
                 logging.info(
@@ -306,7 +312,9 @@ class FedMLMessageEntity(object):
         self.run_id = message_body.get("run_id", None)
 
     def get_message_body(self):
+        # print(f"[ALAY-DEBUG]  topic: {self.topic}, payload: {self.payload}, run_id: {self.run_id}")
         message_body = {"topic": self.topic, "payload": self.payload, "run_id": self.run_id}
+        # print(f"[ALAY-DEBUG]  message_body: {message_body}")
         return message_body
 
 
