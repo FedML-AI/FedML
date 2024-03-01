@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List
 
@@ -131,12 +132,13 @@ def job(
 
     inner_id = run_id if create_run_result.inner_id is None else create_run_result.inner_id
 
-    if (result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED] or
-            result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]):
-        if create_run_result.inner_id is not None:
-            FedMLLaunchManager.get_instance().cleanup_launch(run_id, create_run_result.inner_id)
+    if result_code == ApiConstants.ERROR_CODE[ApiConstants.LAUNCHED]:
         return LaunchResult(result_code=result_code, result_message=result_message, run_id=run_id,
                             project_id=project_id, inner_id=inner_id, result_object=create_run_result)
+    
+    if result_code != ApiConstants.ERROR_CODE[ApiConstants.RESOURCE_MATCHED_STATUS_MATCHED]:
+        if create_run_result.inner_id is not None:
+            logging.info("Job run id {} cannot match GPU resource".format(run_id))
 
     # Run Job
     run_result = run(create_run_result=create_run_result, api_key=api_key, device_server=device_server,
