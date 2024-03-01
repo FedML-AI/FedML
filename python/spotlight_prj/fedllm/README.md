@@ -2,7 +2,7 @@
  <img src="assets/fedml_logo_light_mode.png" width="400px">
 </div>
 
-# FedLLM: Build Your Own Large Language Models on Proprietary Data using the FedML Platform
+# FedLLM: Build Your Own Large Language Models on Proprietary Data using the FEDML® Nexus AI Platform
 
 [FedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
 is an MLOps-supported training pipeline to help users build their own large language model (LLM) on proprietary/private
@@ -22,8 +22,6 @@ The repo contains:
 - Cross-silo Federated training/fine-tuning implementation with [FedML](https://github.com/FedML-AI/FedML).
 
 ## News
-
-* __[2023/09/28]__ FedLLM becomes a standalone repo.
 
 * __[2023/07/19]__ FedLLM supports [Llama 2](https://ai.meta.com/llama/). See [How to use Llama 2](#how-to-use-llama-2)
   for detail.
@@ -55,7 +53,7 @@ Hugging Face repo access.
    ```
 
 > **Warning**
-> Since Llama 2 is on a private Hugging Face repo, you need to either login to Hugging Face or provide your access token.
+> Since Llama 2 is on a gated Hugging Face repo, you need to either login to Hugging Face or provide your access token.
 > - To login to huggingface (see https://huggingface.co/settings/tokens for detail), run `huggingface-cli login` in
     command line.
 > - To pass an access token, you need to do one of the following:
@@ -74,10 +72,10 @@ Clone the repo then go to FedLLM directory:
 
 ```shell
 # clone the repo and the submodules
-git clone --recurse-submodules https://github.com/FedML-AI/FedLLM.git
+git clone https://github.com/FedML-AI/FedML.git
 
 # go to the project directory
-cd FedLLM
+cd python/spotlight_prj/fedllm
 ```
 
 Install dependencies with the following command:
@@ -93,7 +91,7 @@ See [Dependencies](#dependencies) for more information on the dependency version
 Update the repo and the submodules:
 
 ```shell
-git pull --recurse-submodules
+git pull
 ```
 
 ### Prepare Dataset
@@ -106,7 +104,7 @@ bash scripts/setup.sh
 
 ### Conventional/Centralized Training
 
-See [FedML-AI/llm-finetune](https://github.com/FedML-AI/llm-finetune) for detail.
+See [LLM Train example](https://github.com/FedML-AI/FedML/tree/master/python/examples/train/llm_train) for detail.
 
 ### Cross-silo Federated Learning with FedML
 
@@ -209,7 +207,7 @@ tracking_args:
 
 ```
 
-#### 3. Run FedML
+#### 3. Run Experiments Manually
 
 To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should
 be used across all the client(s) and aggregator server.
@@ -237,21 +235,21 @@ bash scripts/run_fedml_client.sh 3 "$RUN_ID"
 ...
 ```
 
-_See FedML's [Getting Started](https://doc.fedml.ai/starter/getting_started.html) for detail._
+_See FEDML® Federate [Getting Started](https://doc.fedml.ai/federate/getting_started) for detail._
 
-### Use FedML Octopus (MLOps) for Model Training
+### Use FEDML® Nexus AI (MLOps) for Model Training
 
 FedML Octopus is a MLOps platform that simplifies model training and deployment.
 
-We strongly recommend going through our [step-by-step introduction to Octopus](https://blog.fedml.ai/fedml-octopus-getting-started-federated-machine-learning/).
+We strongly recommend going through our [FEDML® Federate Guide](https://doc.fedml.ai/federate).
 
 #### 1. Login or Signup for FedML Account
 
 _Skip this step if you already have a FedML account._
 
-1. Go to [FedML official website](https://open.fedml.ai/login).
-2. Go to **Sign Up** and sign up for an account (skip this step if you already have an account).
-3. Click **login** to login to your account.
+1. Go to [FEDML®](https://fedml.ai/home).
+2. Go to **Login** and click **Sign Up** to sign up for an account (skip this step if you already have an account).
+3. Click **Login** to login to your account.
 
 #### 2. Build package
 
@@ -364,15 +362,13 @@ for detail.
 We have tested our implement with the following setup:
 
 - Ubuntu `20.04.5 LTS` and `22.04.2 LTS`
-- CUDA `12.2`, `12.1`, `11.8`, `11.7` and `11.6`
+- CUDA `12.2`, `12.1`, and `11.8`
 - Python `3.10.13`, `3.10.12`, `3.9.16`, and `3.8.13`
-    - `fedml>=0.8.4a7`
-    - `torch>=2.0.0,<=2.0.1`
-    - `torchvision>=0.15.1,<=0.15.2`
-    - `transformers>=4.31.0,<=4.34.0`
+    - `fedml>=0.8.13`
+    - `torch>=2.0.0`
+    - `transformers>=4.31.0`
     - `peft>=0.4.0,<=0.5.0`
     - `datasets>=2.11.0,<=2.14.5`
     - `deepspeed>=0.9.1,<=0.10.2`
     - `numpy>=1.24.3,<=1.24.4`
     - `tensorboard>=2.12.2,<=2.13.0`
-    - `mpi4py==3.1.4`
