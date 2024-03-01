@@ -7,7 +7,7 @@ import queue
 import sys
 
 import multiprocessing
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Value, Array
 import os
 import shutil
 import stat
@@ -54,6 +54,7 @@ from ..scheduler_core.log_manager import LogsManager
 from ..scheduler_core.metrics_manager import MetricsManager
 from ..scheduler_core.master_api_daemon import MasterApiDaemon
 from fedml.utils.debugging import debug
+from ..scheduler_core.message_center import FedMLMessageCenter
 
 
 class RunnerError(Exception):
@@ -66,11 +67,12 @@ class RunnerCompletedError(Exception):
     pass
 
 
-class FedMLServerRunner:
+class FedMLServerRunner(FedMLMessageCenter):
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
     debug_cloud_server = False
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        super().__init__()
         self.master_api_daemon = None
         self.run_stop_process = None
         self.run_stop_process_map = dict()
@@ -92,6 +94,8 @@ class FedMLServerRunner:
         self.edge_device_info_queue = None
         self.run_edge_device_info_queue_map = dict()
         self.run_edge_device_info_queue_map_for_stop = dict()
+        self.run_edge_device_info_global_queue = None
+        self.run_edge_device_info_global_queue_for_stop = None
         self.run_process = None
         self.run_process_map = dict()
         self.start_request_json = None
@@ -106,9 +110,6 @@ class FedMLServerRunner:
         self.mqtt_mgr = None
         self.running_request_json = dict()
         self.run_id = run_id
-        self.client_mqtt_mgr = None
-        self.client_mqtt_is_connected = False
-        self.client_mqtt_lock = None
         self.unique_device_id = None
         self.edge_id = edge_id
         self.server_agent_id = 0
@@ -162,6 +163,7 @@ class FedMLServerRunner:
 
         self.subscribed_topics = list()
         self.user_name = None
+        self.message_center = None
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config.get("data_config", {})
@@ -430,7 +432,8 @@ class FedMLServerRunner:
     def run(
             self, process_event, completed_event, edge_id_status_queue=None,
             edge_device_info_queue=None, run_metrics_queue=None,
-            run_event_queue=None, run_artifacts_queue=None, run_logs_queue=None
+            run_event_queue=None, run_artifacts_queue=None, run_logs_queue=None,
+            message_center_queue=None, edge_device_info_global_queue=None
     ):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
 
@@ -445,10 +448,10 @@ class FedMLServerRunner:
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
-            self.setup_client_mqtt_mgr()
+            self.rebuild_message_center(message_center_queue)
 
             self.run_impl(edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-                          run_event_queue, run_artifacts_queue, run_logs_queue)
+                          run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue)
         except RunnerError:
             logging.info("Runner stopped.")
             self.mlops_metrics.report_server_id_status(
@@ -472,8 +475,6 @@ class FedMLServerRunner:
             ServerConstants.cleanup_run_process(self.run_id)
             ServerConstants.cleanup_learning_process(self.run_id)
             ServerConstants.cleanup_bootstrap_process(self.run_id)
-            if not self.run_as_cloud_server:
-                self.release_client_mqtt_mgr()
 
     def check_runner_stop_event(self):
         if self.run_process_event is not None and self.run_process_event.is_set():
@@ -514,7 +515,7 @@ class FedMLServerRunner:
     @debug
     def run_impl(
             self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-            run_event_queue, run_artifacts_queue, run_logs_queue
+            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue
     ):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
@@ -535,7 +536,8 @@ class FedMLServerRunner:
         logging.info("Detect all status of Edge ids: " + str(edge_ids))
 
         status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
-            edge_device_info_queue, callback_when_edges_ready=self.send_training_request_to_edges)
+            edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
+            callback_when_edges_ready=self.send_training_request_to_edges)
         logging.info(f"Status OK: {status_ok}, Active edge info dict: {active_edge_info_dict}, "
                      f"inactivate edges: {inactivate_edges}")
         if not status_ok:
@@ -550,6 +552,7 @@ class FedMLServerRunner:
             # Check if the run status is normal
             self.aggregate_run_status_metrics_logs(
                 run_id, edge_ids, edge_id_status_queue, edge_device_info_queue,
+                edge_device_info_global_queue,
                 run_metrics_queue, run_logs_queue)
             return
 
@@ -559,11 +562,12 @@ class FedMLServerRunner:
         # Check if the run status is normal
         self.aggregate_run_status_metrics_logs(
             run_id, edge_ids, edge_id_status_queue, edge_device_info_queue,
+            edge_device_info_global_queue,
             run_metrics_queue, run_logs_queue)
 
     def aggregate_run_status_metrics_logs(
             self, run_id, edge_id_list, edge_id_status_queue, edge_device_info_queue,
-            run_metrics_queue, run_logs_queue):
+            edge_device_info_global_queue, run_metrics_queue, run_logs_queue):
         total_sleep_seconds = 0
         sleep_seconds = 3
         allowed_status_check_sleep_seconds = 60 * 25
@@ -669,7 +673,8 @@ class FedMLServerRunner:
             self.check_runner_stop_event()
             given_edge_ids = list(set(edge_id_list) - set(inactivate_edge_list))
             status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
-                edge_device_info_queue, need_to_trigger_exception=False, status_timeout=60,
+                edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
+                need_to_trigger_exception=False, status_timeout=60,
                 given_edge_ids=given_edge_ids, callback_when_detecting=self.callback_when_detecting_on_aggregation,
                 args_for_callback_when_detecting=(run_metrics_queue, run_logs_queue)
             )
@@ -727,7 +732,8 @@ class FedMLServerRunner:
 
     def run_server_job_impl(self, process_event, completed_event, edge_id_status_queue=None,
                             edge_device_info_queue=None, run_metrics_queue=None,
-                            run_event_queue=None, run_artifacts_queue=None, run_logs_queue=None):
+                            run_event_queue=None, run_artifacts_queue=None, run_logs_queue=None,
+                            message_center_queue=None, edge_device_info_global_queue=None):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
 
         if platform.system() != "Windows":
@@ -741,7 +747,7 @@ class FedMLServerRunner:
 
         MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
-        self.setup_client_mqtt_mgr()
+        self.rebuild_message_center(message_center_queue)
 
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
@@ -1142,7 +1148,7 @@ class FedMLServerRunner:
 
     @debug
     def detect_edges_status(
-            self, edge_device_info_queue, callback_when_edges_ready=None, status_timeout=None,
+            self, edge_device_info_queue, edge_device_info_global_queue=None, callback_when_edges_ready=None, status_timeout=None,
             need_to_trigger_exception=True, status_check_context=None, given_edge_ids=None,
             callback_when_detecting=None, args_for_callback_when_detecting=None
     ):
@@ -1156,14 +1162,30 @@ class FedMLServerRunner:
         run_edges_realtime_status = dict()
         run_edges_realtime_status[run_id_str] = dict()
 
+        edge_info_global_dict = dict()
+        if edge_device_info_global_queue is not None:
+            for edge_info_global in edge_device_info_global_queue:
+                edge_info_id = edge_info_global.get("edge_id")
+                edge_info_global_dict[edge_info_id] = edge_info_global
+
         # Send status message to all edges
+        allowed_cache_edge_status_time = 60
         for edge_id in edge_id_list:
+            # Check if the edge status was filled allowed_cache_edge_status_time seconds ago,
+            # if so no more checking message would be sent.
+            edge_info = edge_info_global_dict.get(edge_id, None)
+            if edge_info is not None:
+                timestamp = edge_info.get("timestamp", None)
+                time_interval = time.time() - timestamp
+                if time_interval <= allowed_cache_edge_status_time:
+                    continue
+
             self.send_status_check_msg(run_id, edge_id, self.edge_id, context=status_check_context)
         time.sleep(3)
 
         total_sleep_seconds = 0
-        status_check_sleep_seconds = 5
-        allowed_status_check_sleep_seconds = 60 * 25 if status_timeout is None else status_timeout
+        status_check_sleep_seconds = 10
+        allowed_status_check_sleep_seconds = 60 * 2 if status_timeout is None else status_timeout
         allowed_status_check_sleep_seconds_for_async = 30
         inactivate_edges = list()
         active_edge_info_dict = dict()
@@ -1176,7 +1198,7 @@ class FedMLServerRunner:
                 self.check_runner_stop_event()
 
                 try:
-                    edge_info = edge_device_info_queue.get(block=False, timeout=3)
+                    edge_info = edge_device_info_queue.get(block=False, timeout=1)
                     if edge_info is not None:
                         edge_id = edge_info.get("edge_id", None)
                         if edge_id is not None:
@@ -1199,6 +1221,17 @@ class FedMLServerRunner:
                     active_edges_count += 1
                     active_edge_info_dict[str(edge_id)] = edge_info
                 else:
+                    # Check if the edge status was filled allowed_cache_edge_status_time seconds ago,
+                    # if so no more checking message would be sent.
+                    edge_info = edge_info_global_dict.get(edge_id, None)
+                    if edge_info is not None:
+                        timestamp = edge_info.get("timestamp", None)
+                        time_interval = time.time() - timestamp
+                        if time_interval <= allowed_cache_edge_status_time:
+                            active_edges_count += 1
+                            active_edge_info_dict[str(edge_id)] = edge_info
+                            continue
+
                     inactivate_edges.append(edge_id)
                     self.send_status_check_msg(run_id, edge_id, self.edge_id, context=status_check_context)
 
@@ -1250,7 +1283,7 @@ class FedMLServerRunner:
         payload = {"server_id": server_id, "run_id": run_id}
         if context is not None:
             payload["context"] = context
-        self.client_mqtt_mgr.send_message(topic_get_model_device_id, json.dumps(payload))
+        self.message_center.send_message(topic_get_model_device_id, json.dumps(payload))
 
     @debug
     def send_training_request_to_edges(self, active_edge_info_dict=None):
@@ -1343,7 +1376,7 @@ class FedMLServerRunner:
                 topic_name = f"compute/mlops/endpoint"
                 endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
                 print(f"endpoint_info_json {endpoint_info_json}")
-                self.client_mqtt_mgr.send_message(topic_name, json.dumps(endpoint_info_json))
+                self.message_center.send_message(topic_name, json.dumps(endpoint_info_json))
 
         client_rank = 1
         for edge_id in edge_id_list:
@@ -1368,7 +1401,7 @@ class FedMLServerRunner:
                         model_slave_device_id_list=model_slave_device_id_list
                     )
 
-            self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(request_json))
+            self.message_center.send_message(topic_start_train, json.dumps(request_json))
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
         self.client_agent_active_list[f"{run_id}"] = dict()
@@ -1376,8 +1409,8 @@ class FedMLServerRunner:
         for edge_id in edge_ids:
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
             edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-            self.mqtt_mgr.add_message_listener(edge_status_topic, self.callback_edge_status)
-            self.mqtt_mgr.subscribe_msg(edge_status_topic)
+            self.add_message_listener(edge_status_topic, self.callback_edge_status)
+            self.subscribe_msg(edge_status_topic)
 
     def remove_listeners_for_edge_status(self, edge_ids=None):
         if edge_ids is None:
@@ -1385,28 +1418,25 @@ class FedMLServerRunner:
 
         for edge_id in edge_ids:
             edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-            self.mqtt_mgr.remove_message_listener(edge_status_topic)
-            self.mqtt_mgr.unsubscribe_msg(edge_status_topic)
+            self.unsubscribe_msg(edge_status_topic)
 
     def setup_listener_for_run_metrics(self, run_id):
         metric_topic = f"fedml_slave/fedml_master/metrics/{run_id}"
-        self.mqtt_mgr.add_message_listener(metric_topic, self.callback_run_metrics)
-        self.mqtt_mgr.subscribe_msg(metric_topic)
+        self.add_message_listener(metric_topic, self.callback_run_metrics)
+        self.subscribe_msg(metric_topic)
 
     def remove_listener_for_run_metrics(self, run_id):
         metric_topic = f"fedml_slave/fedml_master/metrics/{run_id}"
-        self.mqtt_mgr.remove_message_listener(metric_topic)
-        self.mqtt_mgr.unsubscribe_msg(metric_topic)
+        self.unsubscribe_msg(metric_topic)
 
     def setup_listener_for_run_logs(self, run_id):
         logs_topic = f"fedml_slave/fedml_master/logs/{run_id}"
-        self.mqtt_mgr.add_message_listener(logs_topic, self.callback_run_logs)
-        self.mqtt_mgr.subscribe_msg(logs_topic)
+        self.add_message_listener(logs_topic, self.callback_run_logs)
+        self.subscribe_msg(logs_topic)
 
     def remove_listener_for_run_logs(self, run_id):
         logs_topic = f"fedml_slave/fedml_master/logs/{run_id}"
-        self.mqtt_mgr.remove_message_listener(logs_topic)
-        self.mqtt_mgr.unsubscribe_msg(logs_topic)
+        self.unsubscribe_msg(logs_topic)
 
     def callback_run_logs(self, topic, payload):
         run_id = str(topic).split('/')[-1]
@@ -1637,6 +1667,8 @@ class FedMLServerRunner:
             self.run_artifacts_queue_map[run_id_str] = Queue()
         if self.run_logs_queue_map.get(run_id_str, None) is None:
             self.run_logs_queue_map[run_id_str] = Queue()
+        # if self.run_edge_device_info_global_queue is None:
+        #     self.run_edge_device_info_global_queue = Array('i', list())
         server_runner.edge_id_status_queue = self.run_edge_id_status_queue_map[run_id_str]
         server_runner.edge_device_info_queue = self.run_edge_device_info_queue_map[run_id_str]
         self.run_process_map[run_id_str] = Process(
@@ -1645,6 +1677,8 @@ class FedMLServerRunner:
                 self.run_edge_id_status_queue_map[run_id_str], self.run_edge_device_info_queue_map[run_id_str],
                 self.run_metrics_queue_map[run_id_str], self.run_events_queue_map[run_id_str],
                 self.run_artifacts_queue_map[run_id_str], self.run_logs_queue_map[run_id_str],
+                self.message_center.get_message_queue(),
+                self.run_edge_device_info_global_queue
             )
         )
         self.run_process_map[run_id_str].start()
@@ -1779,81 +1813,39 @@ class FedMLServerRunner:
         logging.info("FedMLServerRunner.stop_run with k8s: " + delete_deployment_cmd)
         os.system(delete_deployment_cmd)
 
-    def on_client_mqtt_disconnected(self, mqtt_client_object):
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
-        self.client_mqtt_is_connected = False
-        self.client_mqtt_lock.release()
-
-        # logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
-
-    def on_client_mqtt_connected(self, mqtt_client_object):
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        self.mlops_metrics.run_id = self.run_id
-        self.mlops_metrics.edge_id = self.edge_id
-        self.mlops_metrics.server_agent_id = self.server_agent_id
-
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
-        self.client_mqtt_is_connected = True
-        self.client_mqtt_lock.release()
-
-        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
-
-    def setup_client_mqtt_mgr(self):
-        if self.client_mqtt_mgr is not None:
+    def setup_message_center(self):
+        if self.message_center is not None:
             return
 
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        # logging.info(
-        #     "server agent config: {},{}".format(
-        #         self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
-        #     )
-        # )
-
-        self.client_mqtt_mgr = MqttManager(
-            self.agent_config["mqtt_config"]["BROKER_HOST"],
-            self.agent_config["mqtt_config"]["BROKER_PORT"],
-            self.agent_config["mqtt_config"]["MQTT_USER"],
-            self.agent_config["mqtt_config"]["MQTT_PWD"],
-            self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Metrics_@{}@_@{}@_@{}@_@{}@".format(self.user_name, self.args.current_device_id,
-                                                                   str(os.getpid()),
-                                                                   str(uuid.uuid4()))
-        )
-        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
-        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
-        self.client_mqtt_mgr.connect()
-        self.client_mqtt_mgr.loop_start()
+        self.message_center = FedMLMessageCenter(agent_config=self.agent_config)
+        self.message_center.start_sender()
 
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+        self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = self.edge_id
         self.mlops_metrics.server_agent_id = self.server_agent_id
 
-    def release_client_mqtt_mgr(self):
-        try:
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_mgr.loop_stop()
-                self.client_mqtt_mgr.disconnect()
+    def rebuild_message_center(self, message_center_queue):
+        self.message_center = FedMLMessageCenter(message_queue=message_center_queue)
 
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_is_connected = False
-                self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
-        except Exception:
+        if self.mlops_metrics is None:
+            self.mlops_metrics = MLOpsMetrics()
+        self.mlops_metrics.set_messenger(self.message_center)
+        self.mlops_metrics.run_id = self.run_id
+        self.mlops_metrics.edge_id = self.edge_id
+        self.mlops_metrics.server_agent_id = self.server_agent_id
+
+    def release_message_center(self):
+        try:
+            if self.message_center is not None:
+                self.message_center.stop()
+                self.message_center = None
+
+        except Exception as e:
+            logging.error(
+                f"Failed to release client mqtt manager with Exception {e}. Traceback: {traceback.format_exc()}")
             pass
 
     def send_training_stop_request_to_edges(
@@ -1866,17 +1858,17 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
             logging.info("stop_train: send topic " + topic_stop_train)
-            self.client_mqtt_mgr.send_message(topic_stop_train, json.dumps(payload_obj))
+            self.message_center.send_message(topic_stop_train, json.dumps(payload_obj))
 
     def send_training_stop_request_to_specific_edge(self, edge_id, payload):
         topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
         logging.info("stop_train: send topic " + topic_stop_train)
-        self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+        self.message_center.send_message(topic_stop_train, payload)
 
     def send_training_stop_request_to_cloud_server(self, edge_id, payload):
         topic_stop_train = "mlops/flserver_agent_" + str(edge_id) + "/stop_train"
         logging.info("stop_train: send topic " + topic_stop_train)
-        self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+        self.message_center.send_message(topic_stop_train, payload)
 
     def send_training_stop_request_to_edges_when_exception(
             self, edge_id_list, payload=None, run_id=0, server_id=None, status=None):
@@ -1937,12 +1929,16 @@ class FedMLServerRunner:
                 self.run_edge_id_status_queue_map[run_id_str] = Queue()
             if self.run_edge_device_info_queue_map_for_stop.get(run_id_str, None) is None:
                 self.run_edge_device_info_queue_map_for_stop[run_id_str] = Queue()
+            # if self.run_edge_device_info_global_queue_for_stop is None:
+            #     self.run_edge_device_info_global_queue_for_stop = Array('i', list())
 
             self.run_stop_process_map[run_id_str] = Process(
                 target=server_runner.run_stop, args=(
                     self.run_process_event_map_for_stop[run_id_str],
                     self.run_edge_id_status_queue_map[run_id_str],
                     self.run_edge_device_info_queue_map_for_stop[run_id_str],
+                    self.run_edge_device_info_global_queue_for_stop,
+                    self.message_center.get_message_queue(),
                 )
             )
             self.run_stop_process_map[run_id_str].start()
@@ -1961,12 +1957,16 @@ class FedMLServerRunner:
                 self.run_edge_id_status_queue_map[run_id_str] = Queue()
             if self.run_edge_device_info_queue_map_for_stop.get(run_id_str, None) is None:
                 self.run_edge_device_info_queue_map_for_stop[run_id_str] = Queue()
+            # if self.run_edge_device_info_global_queue_for_stop is None:
+            #     self.run_edge_device_info_global_queue_for_stop = Array('i', list())
 
             self.run_stop_process_map[run_id_str] = Process(
                 target=server_runner.run_stop, args=(
                     self.run_process_event_map_for_stop[run_id_str],
                     self.run_edge_id_status_queue_map[run_id_str],
                     self.run_edge_device_info_queue_map_for_stop[run_id_str],
+                    self.run_edge_device_info_global_queue_for_stop,
+                    self.message_center.get_message_queue(),
                 )
             )
             self.run_stop_process_map[run_id_str].start()
@@ -1978,7 +1978,8 @@ class FedMLServerRunner:
         if self.run_process_map.get(run_id_str, None) is not None:
             self.run_process_map.pop(run_id_str)
 
-    def run_stop(self, process_event, edge_id_status_queue, edge_device_info_queue):
+    def run_stop(self, process_event, edge_id_status_queue, edge_device_info_queue,
+                 edge_device_info_global_queue, message_center_queue):
         if platform.system() != "Windows":
             os.setsid()
 
@@ -1989,22 +1990,22 @@ class FedMLServerRunner:
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
-            self.setup_client_mqtt_mgr()
+            self.rebuild_message_center(message_center_queue)
 
-            self.run_stop_impl(edge_id_status_queue, edge_device_info_queue)
+            self.run_stop_impl(edge_id_status_queue, edge_device_info_queue, edge_device_info_global_queue)
         except Exception as e:
             logging.error("Stop runner exits with exceptions. {}".format(traceback.format_exc()))
         finally:
             logging.info("Release resources.")
-            self.release_client_mqtt_mgr()
 
-    def run_stop_impl(self, edge_id_status_queue, edge_device_info_queue):
+    def run_stop_impl(self, edge_id_status_queue, edge_device_info_queue, edge_device_info_global_queue):
         run_id_str = str(self.run_id)
         edge_id_list = self.request_json["edgeids"]
 
         # Detect running status of all edges
         status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
-            edge_device_info_queue, status_timeout=120, need_to_trigger_exception=False,
+            edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
+            status_timeout=120, need_to_trigger_exception=False,
             status_check_context=SchedulerConstants.STATUS_CHECK_FRO_RUN_STOP_CONTEXT)
 
         # Send the training stopping request to running edges.
@@ -2094,7 +2095,7 @@ class FedMLServerRunner:
         server_runner.edge_id = self.edge_id
         server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
         server_runner.run_status = status
-        server_runner.client_mqtt_mgr = self.client_mqtt_mgr
+        server_runner.message_center = self.message_center
         server_runner.mlops_metrics = self.mlops_metrics
         server_runner.cleanup_client_with_status()
 
@@ -2249,12 +2250,24 @@ class FedMLServerRunner:
                 self.run_edge_device_info_queue_map[run_id_str] = Queue()
             self.run_edge_device_info_queue_map[run_id_str].put(device_info)
 
+            # if self.run_edge_device_info_global_queue is None:
+            #     self.run_edge_device_info_global_queue = Array('i', list())
+            #
+            # self.run_edge_device_info_global_queue[len(self.run_edge_device_info_global_queue)] =  \
+            #     {"timestamp": time.time(), "edge_id": edge_id, "device_info": device_info}
+
             self.check_model_device_ready_and_deploy(run_id, master_device_id, slave_device_id,
                                                      slave_device_id_list=slave_device_id_list)
         elif context == SchedulerConstants.STATUS_CHECK_FRO_RUN_STOP_CONTEXT:
             if self.run_edge_device_info_queue_map_for_stop.get(run_id_str, None) is None:
                 self.run_edge_device_info_queue_map_for_stop[run_id_str] = Queue()
             self.run_edge_device_info_queue_map_for_stop[run_id_str].put(device_info)
+
+            # if self.run_edge_device_info_global_queue_for_stop is None:
+            #     self.run_edge_device_info_global_queue_for_stop = Array('i', list())
+            #
+            # self.run_edge_device_info_global_queue_for_stop[len(self.run_edge_device_info_global_queue_for_stop)] = \
+            #     {"timestamp": time.time(), "edge_id": edge_id, "device_info": device_info}
 
     def check_model_device_ready_and_deploy(self, run_id, master_device_id, slave_device_id, slave_device_id_list=None):
         request_json = self.running_request_json.get(str(run_id), None)
@@ -2305,32 +2318,41 @@ class FedMLServerRunner:
         self.deploy_model(serving_devices, request_json, run_id=run_id)
 
     def callback_request_device_info_from_mlops(self, topic, payload):
-        self.response_device_info_to_mlops()
+        self.response_device_info_to_mlops(topic, payload)
 
-    def response_device_info_to_mlops(self):
+    def response_device_info_to_mlops(self, topic, payload):
         response_topic = f"master_agent/mlops/response_device_info"
+        payload_json = json.loads(payload)
+        need_gpu_info = payload_json.get("need_gpu_info", False)
         if self.mlops_metrics is not None:
-            total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, \
-                gpu_cores_total, gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = \
-                sys_utils.get_sys_realtime_stats()
-            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
-            gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
-            gpu_cores_available = len(gpu_available_ids)
-            response_payload = {
-                "run_id": self.run_id,
-                "master_agent_device_id": self.edge_id,
-                "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                "cpuUtilization": round(cup_utilization, 2),
-                "cpuCores": cpu_cores,
-                "gpuCoresTotal": gpu_cores_total,
-                "gpuCoresAvailable": gpu_cores_available,
-                "networkTraffic": sent_bytes + recv_bytes,
-                "timestamp": int(MLOpsUtils.get_ntp_time()),
-                "fedml_version": fedml.__version__
-            }
+            if not need_gpu_info:
+                response_payload = {
+                    "run_id": self.run_id,
+                    "master_agent_device_id": self.edge_id,
+                    "fedml_version": fedml.__version__
+                }
+            else:
+                total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, \
+                    gpu_cores_total, gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = \
+                    sys_utils.get_sys_realtime_stats()
+                gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
+                gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
+                gpu_cores_available = len(gpu_available_ids)
+                response_payload = {
+                    "run_id": self.run_id,
+                    "master_agent_device_id": self.edge_id,
+                    "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "cpuUtilization": round(cup_utilization, 2),
+                    "cpuCores": cpu_cores,
+                    "gpuCoresTotal": gpu_cores_total,
+                    "gpuCoresAvailable": gpu_cores_available,
+                    "networkTraffic": sent_bytes + recv_bytes,
+                    "timestamp": int(MLOpsUtils.get_ntp_time()),
+                    "fedml_version": fedml.__version__
+                }
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     @staticmethod
@@ -2521,7 +2543,10 @@ class FedMLServerRunner:
                 status = ServerConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
-        self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+        if self.mqtt_mgr is not None:
+            self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+        else:
+            self.send_message_json(active_topic, json.dumps(active_msg))
 
     def recover_start_train_msg_after_upgrading(self):
         try:
@@ -2541,32 +2566,39 @@ class FedMLServerRunner:
         # Setup MQTT message listener for starting training
         server_agent_id = self.edge_id
         topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
-        self.mqtt_mgr.add_message_listener(topic_start_train, self.callback_start_train)
+        self.add_message_listener(topic_start_train, self.callback_start_train)
+        self.mqtt_mgr.add_message_listener(topic_start_train, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener for stopping training
         topic_stop_train = "mlops/flserver_agent_" + str(server_agent_id) + "/stop_train"
-        self.mqtt_mgr.add_message_listener(topic_stop_train, self.callback_stop_train)
+        self.add_message_listener(topic_stop_train, self.callback_stop_train)
+        self.mqtt_mgr.add_message_listener(topic_stop_train, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener for server status switching
         topic_server_status = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
-        self.mqtt_mgr.add_message_listener(topic_server_status, self.callback_runner_id_status)
+        self.add_message_listener(topic_server_status, self.callback_runner_id_status)
+        self.mqtt_mgr.add_message_listener(topic_server_status, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to report current device status.
         topic_report_status = "mlops/report_device_status"
-        self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
+        self.add_message_listener(topic_report_status, self.callback_report_current_status)
+        self.mqtt_mgr.add_message_listener(topic_report_status, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to OTA messages from the MLOps.
         topic_ota_msg = "mlops/flserver_agent_" + str(server_agent_id) + "/ota"
-        self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
+        self.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
+        self.mqtt_mgr.add_message_listener(topic_ota_msg, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to request device info from the client.
         topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
-        self.mqtt_mgr.add_message_listener(topic_response_device_info, self.callback_response_device_info)
+        self.add_message_listener(topic_response_device_info, self.callback_response_device_info)
+        self.mqtt_mgr.add_message_listener(topic_response_device_info, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to request device info from MLOps.
         topic_request_device_info_from_mlops = f"mlops/master_agent/request_device_info/{self.edge_id}"
+        self.add_message_listener(topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
         self.mqtt_mgr.add_message_listener(
-            topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
+            topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
 
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
@@ -2602,6 +2634,10 @@ class FedMLServerRunner:
         )
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=True)
 
+        # Start the message center for listener
+        self.start_listener(sender_message_queue=self.message_center.get_message_queue(),
+                            agent_config=self.agent_config)
+
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE
@@ -2622,6 +2658,9 @@ class FedMLServerRunner:
 
         # Init local database
         FedMLServerDataInterface.get_instance().create_job_table()
+
+        # Start the message center to process edge related messages.
+        self.setup_message_center()
 
         server_api_cmd = "fedml.computing.scheduler.master.server_api:api"
         server_api_pids = RunProcessUtils.get_pid_from_cmd_line(server_api_cmd)
@@ -2647,7 +2686,7 @@ class FedMLServerRunner:
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
 
-        self.setup_client_mqtt_mgr()
+        # Report the IDLE status to MLOps
         self.mlops_metrics.report_server_training_status(
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE, edge_id=self.edge_id)
         MLOpsStatus.get_instance().set_server_agent_status(
@@ -2709,4 +2748,20 @@ class FedMLServerRunner:
 
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
-        self.release_client_mqtt_mgr()
+        self.release_message_center()
+
+    def get_runner(self):
+        runner = FedMLServerRunner(
+            self.args, run_id=self.run_id, request_json=self.request_json,
+            agent_config=self.agent_config
+        )
+        runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
+        runner.edge_id = self.edge_id
+        runner.server_agent_id = self.server_agent_id
+        runner.start_request_json = self.start_request_json
+        runner.unique_device_id = self.unique_device_id
+        runner.user_name = self.user_name
+        runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
+        runner.run_as_cloud_agent = self.run_as_cloud_agent
+        runner.run_as_cloud_server = self.run_as_cloud_server
+        return runner

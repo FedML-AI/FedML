@@ -198,8 +198,8 @@ def list_storage_obects(api_key=None) -> FedMLResponse:
     return storage.list_objects(api_key=api_key)
 
 
-def download(data_name, api_key=None, service="R2", dest_path=None) -> FedMLResponse:
-    return storage.download(data_name=data_name, api_key=api_key, service=service, dest_path=dest_path)
+def download(data_name, api_key=None, service="R2", dest_path=None, show_progress=True) -> FedMLResponse:
+    return storage.download(data_name=data_name, api_key=api_key, service=service, dest_path=dest_path, show_progress=show_progress)
 
 
 def delete(data_name, service, api_key=None):

@@ -16,7 +16,14 @@ from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol im
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from fedml.computing.scheduler.comm_utils import sys_utils
 
-from pydantic import BaseSettings
+try:
+    from pydantic import BaseSettings
+except Exception as e:
+    pass
+try:
+    from pydantic_settings import BaseSettings
+except Exception as e:
+    pass
 
 
 class Settings(BaseSettings):

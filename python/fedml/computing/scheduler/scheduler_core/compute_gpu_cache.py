@@ -61,9 +61,10 @@ class ComputeGpuCache(object):
             except Exception as e:
                 pass
 
-        if device_run_gpu_ids is not None:
-            device_run_gpu_ids = self.map_str_list_to_int_list(device_run_gpu_ids.split(','))
+        if not device_run_gpu_ids:
+            return None
 
+        device_run_gpu_ids = self.map_str_list_to_int_list(device_run_gpu_ids.split(','))
         return device_run_gpu_ids
 
     def get_device_available_gpu_ids(self, device_id):

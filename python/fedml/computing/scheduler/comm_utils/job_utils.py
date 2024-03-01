@@ -59,43 +59,61 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
                         device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
+                run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
+                                                                                                        run_id)
+                if run_gpu_ids:
+                    raise Exception(f"GPUs already occupied for run_id: {run_id}, device_id: {device_id}.")
+
                 if inner_id is not None and str(original_run_id) != str(inner_id):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
                                                                                                original_run_id)
 
-                available_gpu_ids = JobRunnerUtils.get_available_gpu_id_list(device_id)
-                available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
-
-                cuda_visible_gpu_ids_str, matched_gpu_num, _ = JobRunnerUtils.request_gpu_ids(
-                    request_gpu_num, available_gpu_ids)
-                if cuda_visible_gpu_ids_str is None:
-                    if request_gpu_num:
-                        error_message = (f"Failed to occupy gpu ids for run {run_id}. "
-                                         f"Requested_gpu_num {request_gpu_num}; Available GPU ids: {available_gpu_ids}")
-                        logging.error(error_message)
-                        raise Exception(error_message)
-                    return None
-
-                run_gpu_ids = available_gpu_ids[0:matched_gpu_num].copy()
-                available_gpu_ids = available_gpu_ids[matched_gpu_num:].copy()
-                available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
-
                 with ComputeCacheManager.get_instance().lock(
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
                 ):
+
+                    # Get the available GPU list from the cache
+                    available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                        device_id)
+
+                    # If the available GPU list is not in the cache, set it to the current system available GPU list
+                    if available_gpu_ids is None:
+                        # Get realtime GPU availability list from the system
+                        available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
+                    else:
+                        available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
+
+                    cuda_visible_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
+                                                                                               available_gpu_ids)
+                    if cuda_visible_gpu_ids_str is None:
+                        if request_gpu_num:
+                            error_message = (f"Failed to occupy gpu ids for run {run_id}. "
+                                             f"Requested_gpu_num {request_gpu_num}; "
+                                             f"Available GPU ids: {available_gpu_ids}")
+                            logging.error(error_message)
+                            raise Exception(error_message)
+                        return None
+
+                    run_gpu_ids = list(map(lambda x: int(x), cuda_visible_gpu_ids_str.split(",")))
+                    available_gpu_ids = [gpu_id for gpu_id in available_gpu_ids if gpu_id not in set(run_gpu_ids)]
+                    available_gpu_ids = list(set(available_gpu_ids))
+
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
 
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id, run_id,
-                                                                                           matched_gpu_num)
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id, run_id,
-                                                                                          run_gpu_ids)
-                ComputeCacheManager.get_instance().get_gpu_cache().set_run_device_ids(run_id, [switchable_device_id])
-                ComputeCacheManager.get_instance().get_gpu_cache().set_run_total_num_gpus(run_id, matched_gpu_num)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id,
+                                                                                               run_id,
+                                                                                               matched_gpu_num)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(switchable_device_id,
+                                                                                              run_id,
+                                                                                              run_gpu_ids)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_run_device_ids(run_id,
+                                                                                          [switchable_device_id])
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_run_total_num_gpus(run_id, matched_gpu_num)
 
-                if model_master_device_id is not None and model_slave_device_id is not None:
-                    ComputeCacheManager.get_instance().get_gpu_cache().set_edge_model_id_map(
-                        run_id, device_id, model_master_device_id, model_slave_device_id)
+                    if model_master_device_id is not None and model_slave_device_id is not None:
+                        ComputeCacheManager.get_instance().get_gpu_cache().set_edge_model_id_map(
+                            run_id, device_id, model_master_device_id, model_slave_device_id)
 
                 return cuda_visible_gpu_ids_str
 
@@ -133,7 +151,7 @@ class JobRunnerUtils(Singleton):
 
         matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
         cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
-        return cuda_visible_gpu_ids_str, matched_gpu_num, matched_gpu_ids
+        return cuda_visible_gpu_ids_str, matched_gpu_num
 
     @staticmethod
     def trim_unavailable_gpu_ids(gpu_ids) -> List[int]:
@@ -169,22 +187,21 @@ class JobRunnerUtils(Singleton):
             ):
                 run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
                                                                                                         run_id)
-                if run_gpu_ids is None:
+                if not run_gpu_ids:
                     logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
                     return
-
-                available_gpu_ids = self.get_available_gpu_id_list(edge_device_id)
-
-                available_gpu_ids.extend(run_gpu_ids.copy())
-                available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
 
                 with ComputeCacheManager.get_instance().lock(
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
                 ):
+                    available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                        device_id)
+                    available_gpu_ids.extend(run_gpu_ids.copy())
+                    available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         edge_device_id, available_gpu_ids)
 
-                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(device_id, run_id, None)
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(device_id, run_id, [])
 
         except Exception as e:
             logging.error(f"Exception {e} occurred while releasing gpu ids. Traceback: {traceback.format_exc()}")
@@ -621,6 +638,8 @@ class JobRunnerUtils(Singleton):
         parameters = run_config.get("parameters", {})
         job_yaml = parameters.get("job_yaml", {})
         job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type",
+                                SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         return job_type
 
     @staticmethod
@@ -638,6 +657,4 @@ class JobRunnerUtils(Singleton):
                                         SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
         except Exception as e:
             logging.debug(f"Failed to get job obj with Exception {e}. Traceback: {traceback.format_exc()}")
-            logging.info(f"Assume job type to be {SchedulerConstants.JOB_TASK_TYPE_TRAIN} when failed to get job obj.")
-            return SchedulerConstants.JOB_TASK_TYPE_TRAIN
-        return job_type if job_type is not None else SchedulerConstants.JOB_TASK_TYPE_TRAIN
+        return job_type
