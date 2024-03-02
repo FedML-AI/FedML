@@ -147,7 +147,7 @@ class JobRunnerUtils(Singleton):
         request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
         matched_gpu_num = min(available_gpu_count, request_gpu_num)
         if matched_gpu_num <= 0 or matched_gpu_num != request_gpu_num:
-            return None, None, None
+            return None, None
 
         matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
         cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
@@ -195,7 +195,7 @@ class JobRunnerUtils(Singleton):
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
                 ):
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
-                        device_id)
+                        edge_device_id)
                     available_gpu_ids.extend(run_gpu_ids.copy())
                     available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(

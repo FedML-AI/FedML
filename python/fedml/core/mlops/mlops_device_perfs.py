@@ -167,8 +167,11 @@ class MLOpsDevicePerfStats(object):
 
         topic_name = "ml_client/mlops/gpu_device_info"
 
-        gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(edge_id)
-        gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
+        # We should report realtime available gpu count to MLOps, not from local redis cache.
+        # Use gpu_available_ids from sys_utils.get_sys_realtime_stats()
+        # Do not use the following two lines as the realtime available gpu ids.
+        # gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(edge_id)
+        # gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
         gpu_cores_available = len(gpu_available_ids)
         deploy_worker_id_list = list()
         try:
