@@ -22,8 +22,9 @@ from .constants import (
     PROMPT_STYLES,
 )
 from .dataset_utils import DEFAULT_COLUMN_NAME_MAPPING, DEFAULT_KEYWORD_REPLACEMENTS
+from .integrations import is_transformers_greater_or_equal_4_34, is_transformers_greater_or_equal_4_36
 from .modeling_utils import get_model_class_from_config
-from .typing import ModelType, PeftConfigType, to_torch_dtype
+from .typing import ModelConfigType, ModelType, PeftConfigType, to_torch_dtype
 from .utils import dataclass_to_dict, is_directory, is_file, to_sanitized_dict
 
 
@@ -182,6 +183,15 @@ class ModelArguments:
         metadata={"help": "Authentication token for Hugging Face private models such as Llama 2."}
     )
     load_pretrained: bool = field(default=True, metadata={"help": "Whether to load pretrained model weights."})
+    trust_remote_code: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to allow for custom code defined on Hugging Face Hub in their own modeling, configuration,"
+                    " tokenization or even pipeline files. This option should only be set to `True` for repositories"
+                    " you trust and in which you have read the code, as it will execute code present on the Hub on your"
+                    " local machine.",
+        }
+    )
     use_flash_attention: bool = field(default=False, metadata={"help": "Whether to use flash attention."})
     use_fast_tokenizer: bool = field(
         default=True,
@@ -248,30 +258,70 @@ class ModelArguments:
             pretrained_model_name_or_path=self.model_name_or_path,
             revision=self.model_revision,
             torch_dtype=self.torch_dtype,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
         )
         model_kwargs.update(kwargs)
 
-        config = AutoConfig.from_pretrained(**model_kwargs)
+        config: Optional[ModelConfigType] = model_kwargs.pop("config", None)
+        if config is None:
+            config = AutoConfig.from_pretrained(**model_kwargs)
         model_cls = get_model_class_from_config(config, **model_kwargs)
 
-        if compare_versions("transformers", "<", "4.34.0"):
-            if "use_flash_attention_2" in model_kwargs:
-                warnings.warn(f"Installed `transformers` does not support `use_flash_attention_2` flag.")
-            model_kwargs.pop("use_flash_attention_2", False)
+        # remove flash attention keys and later add relevant keys back
+        attn_implementation = model_kwargs.pop("attn_implementation", None)
 
-        elif getattr(model_cls, "_supports_flash_attn_2", False):
-            # for `transformers >= 4.34.0`, some huggingface models natively support flash attention v2.
-            # only enable `use_flash_attention_2` flag for supported models
-            # see https://github.com/huggingface/transformers/issues/26350
-            model_kwargs.setdefault("use_flash_attention_2", self.use_flash_attention)
+        if (
+                model_kwargs.pop("use_flash_attention_2", None)
+                or attn_implementation == "flash_attention_2"
+                or self.use_flash_attention
+        ):
+            # if enable flash attention
+            if getattr(model_cls, "_supports_flash_attn_2", False):
+                # for `transformers >= 4.34.0`, some huggingface models natively support flash attention v2.
+                # only set `use_flash_attention_2` or `attn_implementation` for supported models
+                # see https://github.com/huggingface/transformers/issues/26350
 
-        elif model_kwargs.get("use_flash_attention_2", False):
-            warnings.warn(
-                f"Model \"{model_kwargs['pretrained_model_name_or_path']}\" does not natively support flash"
-                f" attention v2. Setting `use_flash_attention_2 = False`."
-            )
-            model_kwargs["use_flash_attention_2"] = False
+                if is_transformers_greater_or_equal_4_36():
+                    # `transformers >= 4.36.0` updated flash attention API
+                    model_kwargs["attn_implementation"] = attn_implementation = "flash_attention_2"
+                elif is_transformers_greater_or_equal_4_34():
+                    # if `4.34.0 <= transformers < 4.36.0`
+                    model_kwargs["use_flash_attention_2"] = True
+                    attn_implementation = None
+
+                if not self.load_pretrained:
+                    # see https://discuss.huggingface.co/t/how-to-load-model-without-pretrained-weight/34155/3
+                    # When not loading pretrain weights, need to create model with `AutoModelForCausalLM.from_config`
+
+                    # must rebuild config with the updated model kwargs
+                    config: ModelConfigType = AutoConfig.from_pretrained(**model_kwargs)
+
+                    if is_transformers_greater_or_equal_4_34() and not is_transformers_greater_or_equal_4_36():
+                        # For `4.34.0 <= transformers < 4.36.0`, `AutoModel.from_config` does not support
+                        # `use_flash_attention_2` flag. Need to enable manually
+                        config = model_cls._check_and_enable_flash_attn_2(
+                            config,
+                            torch_dtype=model_kwargs["torch_dtype"],
+                            device_map=model_kwargs.get("device_map", None)
+                        )
+
+                    model_kwargs["config"] = config
+
+            else:
+                if not is_transformers_greater_or_equal_4_34():
+                    warnings.warn(f"`transformers >= 4.34.0` is required for native flash attention support.")
+                else:
+                    warnings.warn(
+                        f"Model \"{model_kwargs['pretrained_model_name_or_path']}\" does not natively support flash"
+                        f" attention. Fallback to default options."
+                    )
+
+                # disable flash attention flags
+                attn_implementation = None
+
+        # add back `attn_implementation` if needed
+        if is_transformers_greater_or_equal_4_36() and attn_implementation != "flash_attention_2":
+            model_kwargs["attn_implementation"] = attn_implementation
 
         return model_kwargs
 
@@ -282,7 +332,7 @@ class ModelArguments:
             ),
             revision=self.tokenizer_revision if bool(self.tokenizer_revision) else self.model_revision,
             use_fast=self.use_fast_tokenizer,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
         )
         tokenizer_kwargs.update(kwargs)
 

@@ -94,7 +94,7 @@ requirements_extra_fhe = [
 ]
 
 requirements_extra_llm = [
-    "accelerate",
+    "accelerate>=0.24.0",
     "peft>=0.4.0",
     "transformers[torch]>=4.31.0",
     "datasets>=2.14.0",
@@ -116,7 +116,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.27.dev5",
+    version="0.8.27a5",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
