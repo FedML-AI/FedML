@@ -808,7 +808,7 @@ class FedMLModelCards(Singleton):
 
         return model_deployment_result
 
-    def apply_endpoint_api(self, user_api_key, endpoint_name,
+    def apply_endpoint_api(self, user_api_key, endpoint_name, endpoint_id=None,
                            model_id=None, model_name=None, model_version=None, run_id=None):
         endpoint_apply_result = None
         model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version)
@@ -818,6 +818,8 @@ class FedMLModelCards(Singleton):
             "endpointName": endpoint_name,
             "resourceType": "md.fedml_cloud_device"
         }
+        if endpoint_id is not None:
+            endpoint_apply_json["endpoint_id"] = endpoint_id
         if model_id is not None:
             endpoint_apply_json["modelId"] = model_id
         if model_name is not None:

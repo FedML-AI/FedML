@@ -13,6 +13,7 @@ class ModelDeployJob(CustomizedBaseJob):
     def __init__(self, name, endpoint_id=None, job_yaml_absolute_path=None, job_api_key=None):
         super().__init__(name, job_yaml_absolute_path=job_yaml_absolute_path, job_api_key=job_api_key)
         self.out_model_inference_url = None
+        self.in_endpoint_id = endpoint_id
         self.out_endpoint_id = None
         self.out_request_body = None
         self.out_api_key_token = self.job_api_key
@@ -34,7 +35,8 @@ class ModelDeployJob(CustomizedBaseJob):
         running_start_time = time.time()
         while True:
             try:
-                endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.out_endpoint_id, self.job_api_key)
+                endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                    self.out_endpoint_id, self.job_api_key)
             except Exception as e:
                 pass
 

@@ -108,7 +108,7 @@ def create_deploy_workflow(job_api_key=None):
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 
     # Generate the job object
-    endpoint_id = 100  # Here you need to set your own endpoint id
+    endpoint_id = 3561  # Here you need to set your own endpoint id
     deploy_image_job = DeployImageJob(
         name="deploy_image_job", endpoint_id=endpoint_id,
         job_yaml_absolute_path=deploy_image_job_yaml, job_api_key=job_api_key)
