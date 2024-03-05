@@ -90,6 +90,7 @@ class SimulatorMPI:
         from .mpi.fedavg_seq.FedAvgSeqAPI import FedML_FedAvgSeq_distributed
         from .mpi.async_fedavg.AsyncFedAvgSeqAPI import FedML_Async_distributed
         from .mpi.fednova.FedNovaAPI import FedML_FedNova_distributed
+        from .mpi.hierarchical_fl.HierFedAvgAPI import FedML_HierFedAvg_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             FedML_FedAvg_distributed(
@@ -158,6 +159,18 @@ class SimulatorMPI:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SPLIT_NN:
             SplitNN_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, dataset=dataset, args=args,
+            )
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
+            FedML_HierFedAvg_distributed(
+                args,
+                args.process_id,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                client_trainer=client_trainer,
+                server_aggregator=server_aggregator
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
             FedML_Decentralized_Demo_distributed(args, args.process_id, args.worker_num, args.comm)
