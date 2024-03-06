@@ -1,0 +1,10 @@
+Config:
+  Version: "FEDML_CONFIG_VERSION"
+  Default: "RELEASE"
+  DatetimeFormat: "%Y-%m-%dT%H:%M:%Sz"
+DB:
+  CacheValueSize: 100
+  SqliteName: "autoscaler_db.sqlite"
+Server:
+  Host: 0.0.0.0
+  Port: 51300

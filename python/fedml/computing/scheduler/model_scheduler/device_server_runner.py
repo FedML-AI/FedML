@@ -46,6 +46,8 @@ from .device_model_msg_object import FedMLModelMsgObject
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..comm_utils.constants import SchedulerConstants
 from .device_model_db import FedMLModelDatabase
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import FedMLAutoscaler
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class RunnerError(BaseException):
@@ -118,6 +120,12 @@ class FedMLServerRunner:
 
         self.subscribed_topics = list()
         self.user_name = None
+        
+        # Object creation. Service initialization happens later.
+        self.autoscaler = FedMLAutoscaler(
+            redis_addr=self.redis_addr,
+            redis_port=self.redis_port, 
+            redis_password=self.redis_password)
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -2140,6 +2148,10 @@ class FedMLServerRunner:
             self.mqtt_mgr.disconnect()
 
         self.release_client_mqtt_mgr()
+        
+    def start_agent(self, should_exit_sys=True):
+        self.start_autoscaler()
+        self.start_agent_mqtt_loop(should_exit_sys)
 
     def start_agent_mqtt_loop(self, should_exit_sys=True):
         # Start MQTT message loop
@@ -2158,3 +2170,33 @@ class FedMLServerRunner:
                sys_utils.cleanup_all_fedml_server_login_processes(
                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
                sys.exit(1)
+
+    def start_autoscaler(self):
+                
+        self.autoscaler.run()
+        sleep_time = 60
+        while True:            
+            # We use one thread per endpoint, hence the thread pool. 
+            # We want to parallelize the autoscaler callings.
+            endpoint_ids = FedMLModelCache.get_instance().get_endpoint
+            num_endpoints = len(endpoint_ids)
+            futures = []
+            with ThreadPoolExecutor(max_workers=num_endpoints) as executor:                
+                for eid in endpoint_ids:
+                    # trigger autoscaler
+                    futures.append(
+                        executor.submit(self.autoscaler.predict(eid)))
+            
+            predictions = []
+            for f in as_completed(futures):
+                predictions.append(f.result())
+            
+            for p in predictions:
+                if p["scale_op"] == "ScaleUp":                    
+                    # notify agent for scaling out/up.
+                    pass
+                if p["scale_op"] == "ScaleDown":
+                    # notify agent for scaling in/down
+                    pass
+            
+            time.sleep(sleep_time)

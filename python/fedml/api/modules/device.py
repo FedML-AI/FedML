@@ -16,7 +16,10 @@ from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLReso
 
 
 def bind(
-        api_key, computing, server, supplier
+        api_key: str,
+        computing: bool,
+        server: bool,
+        supplier: bool
 ):
     userid = api_key
     runner_cmd = "{}"
@@ -53,10 +56,20 @@ def bind(
 
 
 def _bind(
-        userid, computing, server,
-        api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank, infer_host,
-        redis_addr, redis_port, redis_password
+        userid: str,
+        computing: bool,
+        server: bool,
+        api_key: str,
+        role: str,
+        runner_cmd: str,
+        device_id: str,
+        os_name: str,
+        docker: str,
+        docker_rank: str,
+        infer_host: str,
+        redis_addr: str,
+        redis_port: str,
+        redis_password: str
 ):
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
         os.environ[ModuleConstants.ENV_FEDML_INFER_HOST] = infer_host
@@ -145,6 +158,7 @@ def _bind(
         pip_source_dir = os.path.dirname(__file__)
         pip_source_dir = os.path.dirname(pip_source_dir)
         pip_source_dir = os.path.dirname(pip_source_dir)
+        # TODO (fedml-dimitris): need to remove this path/path/path/script subprocess pattern.
         login_cmd = os.path.join(pip_source_dir, "computing", "scheduler", "slave", "client_daemon.py")
 
         client_logout()
@@ -232,7 +246,7 @@ def _bind(
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-def unbind(computing, server):
+def unbind(computing: bool, server: bool):
     is_client = computing
     is_server = server
 

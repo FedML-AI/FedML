@@ -45,8 +45,7 @@ class FedMLModelDeviceServerRunner:
         if self.agent_process_event is None:
             self.agent_process_event = multiprocessing.Event()
         self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event,))
-        self.edge_id = self.bind_device(init_params=False)
-        self.agent_process.start()
+        self.edge_id = self.bind_device(init_params=False)       
 
     def run_entry(self, process_event):
         # print(f"Model master process id {os.getpid()}")
@@ -62,8 +61,8 @@ class FedMLModelDeviceServerRunner:
                     pass
 
                 self.bind_device()
-
                 self.start_agent()
+                
             except Exception as e:
                 logging.info("Restart model device server: {}".format(traceback.format_exc()))
                 pass
@@ -86,11 +85,12 @@ class FedMLModelDeviceServerRunner:
             raise Exception("Runner stopped")
 
     def stop(self):
+        
         if self.real_server_runner is not None:
             self.real_server_runner.stop_agent()
 
         if self.agent_process_event is not None:
-            self.agent_process_event.set()
+            self.agent_process_event.set()            
 
     def get_binding_unique_device_id(self, current_device_id, os_name, is_from_docker=False):
         role_str = "OnPremise"
@@ -186,4 +186,4 @@ class FedMLModelDeviceServerRunner:
         self.real_server_runner.setup_agent_mqtt_connection(self.service_config)
 
         # Start mqtt looper
-        self.real_server_runner.start_agent_mqtt_loop(should_exit_sys=False)
+        self.real_server_runner.start_agent(should_exit_sys=False)

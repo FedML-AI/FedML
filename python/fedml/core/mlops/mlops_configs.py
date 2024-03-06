@@ -110,12 +110,14 @@ class MLOpsConfigs(object):
             outfile.write(open_root_ca_file)
 
     @staticmethod
-    def _fetch_configs(configs) -> dict:
+    def _fetch_configs(configs : set) -> dict:
         url, cert_path = MLOpsConfigs.get_request_params()
         request_configs = {Configs.ML_OPS_CONFIG}
         request_configs = request_configs.union(configs)
-        json_params = {"config_name": [config.value for config in request_configs],
-                       "device_send_time": int(time.time() * 1000)}
+        json_params = {
+            "config_name": [config.value for config in request_configs],
+            "device_send_time": int(time.time() * 1000)
+        }
         response = MLOpsConfigs._request(request_url=url, request_json=json_params, cert_path=cert_path)
         status_code = response.json().get("code")
         result = {}
@@ -146,8 +148,12 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def fetch_all_configs():
-        fetched_configs = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG, Configs.S3_CONFIG, Configs.ML_OPS_CONFIG,
-                                                       Configs.DOCKER_CONFIG})
+        fetched_configs = MLOpsConfigs._fetch_configs({
+            Configs.MQTT_CONFIG, 
+            Configs.S3_CONFIG, 
+            Configs.ML_OPS_CONFIG,
+            Configs.DOCKER_CONFIG
+        })
         return (fetched_configs[Configs.MQTT_CONFIG],
                 fetched_configs[Configs.S3_CONFIG],
                 fetched_configs[Configs.ML_OPS_CONFIG],

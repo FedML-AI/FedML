@@ -18,7 +18,7 @@ from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 
 
-def init_logs(args, edge_id):
+def init_logs(args, edge_id : int):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = 0
@@ -30,7 +30,7 @@ def init_logs(args, edge_id):
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
 
-def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None, role="client"):
+def __login_as_client(args, userid : str, api_key : str = "", use_extra_device_id_suffix=None, role : str ="client"):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -63,6 +63,8 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     edge_id = 0
     while config_try_count < 5:
         try:
+            # runner.fetch_configs() will trigger an http request back to MLOps.
+            # Essentially runner.fetch_configs() is equivalent to MLOpsConfig.fetch_configs()
             mqtt_config, s3_config, mlops_config, docker_config = runner.fetch_configs()
             service_config["mqtt_config"] = mqtt_config
             service_config["s3_config"] = s3_config
@@ -156,7 +158,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
 
     # Setup MQTT connection for communication with the FedML server.
     try:
-        runner.setup_agent_mqtt_connection(service_config)
+        runner.setup_agent_mqtt_connection(service_config)        
     except Exception as e:
         login_exit_file = os.path.join(ClientConstants.get_log_file_dir(), "exited.log")
         with open(login_exit_file, "w") as f:
@@ -169,7 +171,7 @@ def __login_as_client(args, userid, api_key="", use_extra_device_id_suffix=None,
     runner.start_agent_mqtt_loop()
 
 
-def __login_as_simulator(args, userid, mqtt_connection=True):
+def __login_as_simulator(args, userid : str, mqtt_connection : bool = True):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
