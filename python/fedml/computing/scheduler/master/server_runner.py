@@ -2327,7 +2327,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.response_device_info_to_mlops(topic, payload)
 
     def response_device_info_to_mlops(self, topic, payload):
-        response_topic = f"master_agent/mlops/response_device_info"
+        response_topic = f"deploy/master_agent/mlops/response_device_info"
         payload_json = json.loads(payload)
         need_gpu_info = payload_json.get("need_gpu_info", False)
         if self.mlops_metrics is not None:
@@ -2601,7 +2601,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.mqtt_mgr.add_message_listener(topic_response_device_info, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to request device info from MLOps.
-        topic_request_device_info_from_mlops = f"mlops/master_agent/request_device_info/{self.edge_id}"
+        topic_request_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.edge_id}"
         self.add_message_listener(topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
         self.mqtt_mgr.add_message_listener(
             topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
