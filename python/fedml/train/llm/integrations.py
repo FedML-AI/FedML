@@ -1,5 +1,6 @@
 import importlib.util
 
+from accelerate.utils import compare_versions
 from peft.import_utils import is_bnb_available, is_bnb_4bit_available
 
 try:
@@ -26,3 +27,11 @@ def is_flash_attn_available() -> bool:
 
 _fedml_available = _is_package_available("fedml")
 _flash_attn_available = _is_package_available("flash_attn")
+
+
+def is_transformers_greater_or_equal_4_34() -> bool:
+    return compare_versions("transformers", ">=", "4.34.0")
+
+
+def is_transformers_greater_or_equal_4_36() -> bool:
+    return compare_versions("transformers", ">=", "4.36.0")
