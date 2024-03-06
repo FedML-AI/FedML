@@ -1567,6 +1567,12 @@ class FedMLServerRunner(FedMLMessageCenter):
         if not self.run_as_cloud_agent and not self.run_as_cloud_server:
             self.ota_upgrade(payload, request_json)
 
+        # report server running status
+        if not self.run_as_cloud_server:
+            self.mlops_metrics.report_server_id_status(
+                run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
+                server_id=self.edge_id, server_agent_id=self.edge_id)
+
         self.start_request_json = payload
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
