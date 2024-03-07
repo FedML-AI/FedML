@@ -1,9 +1,9 @@
 import conf
 import json
+import logging
 import sqlite3
 
 from collections import defaultdict
-from utils.logger import logger
 from utils.date import convert_to_datetime
 from utils.singleton import Singleton
 
@@ -96,9 +96,9 @@ class AutoscalerDiskDB(metaclass=Singleton):
             with self.sqlite3_conn() as conn:
                 self.create_query_reply_tbl(conn)
                 self.create_query_data_tbl(conn)
-            logger.info("AutoscalerDB path: {}".format(self.dbpath))
+            logging.info("AutoscalerDB path: {}".format(self.dbpath))
         except sqlite3.Error as e:
-            logger.error("AutoscalerDB initialization error: {}".format(e))
+            logging.error("AutoscalerDB initialization error: {}".format(e))
     
     @staticmethod
     def get_instance(dbpath):

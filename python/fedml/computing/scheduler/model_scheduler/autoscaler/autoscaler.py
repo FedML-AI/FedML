@@ -1,12 +1,12 @@
 import conf
 import fedml
+import logging
 import os
 
 import multiprocessing
 import pandas as pd
 
-from autoscaler.autoscaler_db import AutoscalerDiskDB, AutoscalerKVCache
-from utils import logger
+from autoscaler_db import AutoscalerDiskDB, AutoscalerKVCache
 from utils.singleton import Singleton
 
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
@@ -18,12 +18,14 @@ from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLMo
 # AUTOSCALER_KV_CACHE_KEY_FORMAT = "{}"
 # AUTOSCALER_LOCK = Lock()
 
+
 class FedMLAutoscaler(multiprocessing.Process, metaclass=Singleton):
 
-    def __init__(self, redis_addr, redis_port, redis_password):        
-        self.redis_addr = multiprocessing.Value("redis_addr", redis_addr)
-        self.redis_port = multiprocessing.Value("redis_port", redis_port)
-        self.redis_password = multiprocessing.Value("redis_password", redis_password)
+    def __init__(self, redis_addr, redis_port, redis_password):
+        pass
+        # self.redis_addr = multiprocessing.Value("redis_addr", redis_addr)
+        # self.redis_port = multiprocessing.Value("redis_port", redis_port)
+        # self.redis_password = multiprocessing.Value("redis_password", redis_password)
             
         # """ Initialize autoscaler's database """
         # global AUTOSCALER_DISK_DB, AUTOSCALER_KV_CACHE
@@ -43,11 +45,11 @@ class FedMLAutoscaler(multiprocessing.Process, metaclass=Singleton):
             dbpath=conf.AUTOSCALER_DB_SQLITE_PATH)        
         AUTOSCALER_KV_CACHE = AutoscalerKVCache.get_instance(
             values_per_key=conf.AUTOSCALER_VALUE_CACHE_SIZE)
-        logger.info("Fetching data from the previous on-disk state.")
+        logging.info("Fetching data from the previous on-disk state.")
         persisted_data = AUTOSCALER_DISK_DB.select_query_data(
             records_per_query=conf.AUTOSCALER_VALUE_CACHE_SIZE)
-        logger.info("Fetched data from disk.")
-        logger.info("Formatting persisted data for in-memory KV cache.")
+        logging.info("Fetched data from disk.")
+        logging.info("Formatting persisted data for in-memory KV cache.")
         persisted_data_formatted = []
         for record in persisted_data:
             cache_key = AUTOSCALER_KV_CACHE_KEY_FORMAT.format(
@@ -56,11 +58,11 @@ class FedMLAutoscaler(multiprocessing.Process, metaclass=Singleton):
             # the record to be a list type.
             record = [record]
             persisted_data_formatted.append({cache_key: record})
-        logger.info("Formatted persisted data for in-memory KV cache.")
-        logger.info("Populating in-memory database state.")
+        logging.info("Formatted persisted data for in-memory KV cache.")
+        logging.info("Populating in-memory database state.")
         AUTOSCALER_KV_CACHE.bulk_insert(
                 persisted_data_formatted)
-        logger.info("Populated in-memory database state. Total records: {}"\
+        logging.info("Populated in-memory database state. Total records: {}"\
                     .format(len(persisted_data_formatted)))
 
     @staticmethod
@@ -151,7 +153,7 @@ class FedMLAutoscaler(multiprocessing.Process, metaclass=Singleton):
                     request_data)
 
         except Exception as e:
-            logger.exception(e)
+            logging.exception(e)
             error_code = fedml.api.constants.ApiConstants.ERROR_CODE[fedml.api.constants.ApiConstants.ERROR]
             error_message = f"{str(e)}"
 

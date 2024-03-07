@@ -4,6 +4,7 @@ sys.path.insert(0, '..') # Need to extend the path because the test script is a 
 import common as common
 import copy
 import json
+import logging
 import random
 import time
 
@@ -11,7 +12,6 @@ import numpy as np
 
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from utils import logger
 
 random.seed(0)
 
@@ -103,7 +103,7 @@ class StressTest(object):
                              qps_distribution="random",
                              latency_distribution="random",
                              thread_pool_workers=10):
-        logger.info(
+        logging.info(
             "Running reactive endpoint stress test with: {} endpoints, {} requests/endpoint, {} pool workers, \"{}\" qps distribution, \"{}\" latency distribution"
             .format(num_endpoints,
                     requests_per_endpoint, 
