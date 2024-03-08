@@ -110,7 +110,7 @@ class MLOpsConfigs(object):
             outfile.write(open_root_ca_file)
 
     @staticmethod
-    def _fetch_configs(configs : set) -> dict:
+    def _fetch_configs(configs: set) -> dict:
         url, cert_path = MLOpsConfigs.get_request_params()
         request_configs = {Configs.ML_OPS_CONFIG}
         request_configs = request_configs.union(configs)
@@ -133,24 +133,33 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def fetch_web3_configs():
-        fetched_configs = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG, Configs.WEB3_CONFIG})
+        fetched_configs = MLOpsConfigs._fetch_configs({
+            Configs.MQTT_CONFIG,
+            Configs.WEB3_CONFIG
+        })
         return fetched_configs[Configs.MQTT_CONFIG], fetched_configs[Configs.WEB3_CONFIG]
 
     @staticmethod
     def fetch_thetastore_configs():
-        fetched_configs = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG, Configs.THETASTORE_CONFIG})
+        fetched_configs = MLOpsConfigs._fetch_configs({
+            Configs.MQTT_CONFIG,
+            Configs.THETASTORE_CONFIG
+        })
         return fetched_configs[Configs.MQTT_CONFIG], fetched_configs[Configs.THETASTORE_CONFIG]
 
     @staticmethod
     def fetch_remote_storage_configs():
-        fetched_configs = MLOpsConfigs._fetch_configs({Configs.S3_CONFIG, Configs.R2_CONFIG})
+        fetched_configs = MLOpsConfigs._fetch_configs({
+            Configs.S3_CONFIG,
+            Configs.R2_CONFIG
+        })
         return fetched_configs
 
     @staticmethod
     def fetch_all_configs():
         fetched_configs = MLOpsConfigs._fetch_configs({
-            Configs.MQTT_CONFIG, 
-            Configs.S3_CONFIG, 
+            Configs.MQTT_CONFIG,
+            Configs.S3_CONFIG,
             Configs.ML_OPS_CONFIG,
             Configs.DOCKER_CONFIG
         })

@@ -18,7 +18,7 @@ from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 
 
-def init_logs(args, edge_id : int):
+def init_logs(args, edge_id: int):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = 0
@@ -30,7 +30,13 @@ def init_logs(args, edge_id : int):
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
 
-def __login_as_client(args, userid : str, api_key : str = "", use_extra_device_id_suffix=None, role : str ="client"):
+def __login_as_client(
+        args,
+        userid: str,
+        api_key: str = "",
+        use_extra_device_id_suffix: str = None,
+        role: str = "client"):
+
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -171,7 +177,7 @@ def __login_as_client(args, userid : str, api_key : str = "", use_extra_device_i
     runner.start_agent_mqtt_loop()
 
 
-def __login_as_simulator(args, userid : str, mqtt_connection : bool = True):
+def __login_as_simulator(args, userid: str, mqtt_connection: bool = True):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 

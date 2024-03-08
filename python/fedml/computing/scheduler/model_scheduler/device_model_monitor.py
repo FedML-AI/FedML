@@ -5,6 +5,7 @@ import time
 import traceback
 import uuid
 
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import FedMLAutoscaler
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -129,6 +130,36 @@ class FedMLModelMetrics:
 
     def on_mqtt_disconnected(self, mqtt_client_object):
         pass
+
+
+def start_autoscaler(self):
+    pass
+    # self.autoscaler.run()
+    # sleep_time = 60
+    # while True:
+    #     # We use one thread per endpoint, hence the thread pool.
+    #     # We want to parallelize the autoscaler callings.
+    #     endpoint_ids = FedMLModelCache.get_instance().get_endpoint
+    #     num_endpoints = len(endpoint_ids)
+    #     futures = []
+    #     with ThreadPoolExecutor(max_workers=num_endpoints) as executor:
+    #         for eid in endpoint_ids:
+    #             # trigger autoscaler
+    #             futures.append(
+    #                 executor.submit(self.autoscaler.predict(eid)))
+    #
+    #     predictions = []
+    #     for f in as_completed(futures):
+    #         predictions.append(f.result())
+    #
+    #     for p in predictions:
+    #         if p["scale_op"] == "ScaleUp":
+    #             # notify agent for scaling out/up.
+    #             pass
+    #         if p["scale_op"] == "ScaleDown":
+    #             # notify agent for scaling in/down
+    #             pass
+    #     time.sleep(sleep_time)
 
 
 if __name__ == "__main__":
