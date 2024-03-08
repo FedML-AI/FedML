@@ -1,27 +1,35 @@
 common_args:
-  training_type: "cross_silo"  # federated training type, we recommend `cross_silo` for LLMs
-  scenario: "horizontal"  # federated training scenario, we recommend `horizontal` for LLMs
-  use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-silo; this could improve the training stability
+  training_type: "cross_cloud"  # decentralized training type, we recommend `cross_cloud` for LLMs
+  scenario: "horizontal"  # decentralized training scenario, we recommend `horizontal` for LLMs
+  use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-cloud; this could improve the training stability
   random_seed: 0
 
 environment_args:
-  bootstrap: fedml_config/bootstrap.sh  # change to "config/bootstrap.sh" when using MLOps
+  bootstrap: config/bootstrap.sh  # change to "config/bootstrap.sh" when using MLOps
   launcher: "auto"  # program launcher, choose from `auto`, `torch`, `deepspeed`
 
 data_args:
   dataset: "databricks-dolly"  # dataset name; this setting is required for FedML built-in datasets
-  dataset_name: "FedML/databricks-dolly-15k-niid"
+  dataset_name: "fedml/databricks-dolly-15k-niid"
   dataset_path: [ ]
   client_dataset_path: [ ]
   test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
-  remove_long_seq: True  # if `True` remove all data whose sequence length > max_seq_length
+  remove_long_seq: False  # if `True` remove all data whose sequence length > max_seq_length
+  truncate_long_seq: True  # if `True` truncate long sequences whose length > max_seq_length
+  dataset_streaming: True
+  tokenize_on_the_fly: True
+  remove_unused_columns: False
+  eval_dataset_size: 20000
+  response_template: ""
 
 model_args:
   skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
   model_name_or_path: "EleutherAI/pythia-70m"  # choose any decoder-only hugging face model
-  peft_type: "lora"
   # need to install `flash_attn` package first, see https://github.com/Dao-AILab/flash-attention for detail
   use_flash_attention: False
+  load_pretrained: False  # Whether to load pretrained weights
+  # PEFT configs
+  peft_type: "loft"
 
 train_args:
   federated_optimizer: "FedAvg"
@@ -43,7 +51,7 @@ train_args:
   eval_accumulation_steps: 4
   learning_rate: 3.0e-4
   warmup_steps: 50
-  output_dir: ".logs/FedML/{run_id}"
+  output_dir: "~/fedml_logs/UnitedLLM/{run_id}"
   logging_steps: 20
   eval_steps: 200
   save_steps: 200
@@ -53,6 +61,8 @@ train_args:
   save_strategy: "no"
   save_on_each_node: True
   # extra options
+  # model weights type.
+  model_dtype: "fp32"  # choose from "bf16" | "fp16" | "fp32"
   # number of training epoch for each communication round, total epoch is local_num_train_epochs * comm_round
   local_num_train_epochs: 1
   # number of training steps for each communication round, total step is local_max_steps * comm_round;
@@ -61,9 +71,9 @@ train_args:
 
 validation_args:
   frequency_of_the_test: 1
-  test_on_clients: "no"  # choose from "before_aggregation" | "after_aggregation" | "no" | "both"
-  is_aggregator_test: True  # set to `True` to enable testing on aggregator after each aggregation
-  test_on_client_ranks: [ ]  # the rank of the clients to run test
+  test_on_clients: "after_aggregation"  # choose from "before_aggregation" | "after_aggregation" | "no" | "both"
+  is_aggregator_test: False  # set to `True` to enable testing on aggregator after each aggregation
+  test_on_client_ranks: [ 1 ]  # the rank of the clients to run test
   # Number of updates steps before two checkpoint saves. Set to 0 to disable saving. Set to a negative number or
   # null to save after every test (i.e. same as `frequency_of_the_test`).
   save_frequency: null
