@@ -614,13 +614,13 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                 endpoint_id)
-            model_deployment_monitor_endpoint_key = \
+            model_deployment_monitor_endpoint_keys = \
                 self.redis_client.keys(pattern=key_pattern)
             # Since the reply is a list, we need to make sure the list
             # is non-empty otherwise the index will raise an error.
-            if model_deployment_monitor_endpoint_key:
+            if model_deployment_monitor_endpoint_keys:
                 model_deployment_monitor_endpoint_key = \
-                    model_deployment_monitor_endpoint_key[0]
+                    model_deployment_monitor_endpoint_keys[0]
             else:
                 raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
                                 .format(key_pattern))
@@ -674,3 +674,12 @@ class FedMLModelCache(Singleton):
             logging.error(e)
 
         return replicas
+
+    def delete_model_endpoint_metrics(self, endpoint_id):
+        key_pattern = "{}*{}*".format(
+            self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+            endpoint_id)
+        model_deployment_monitor_endpoint_keys = \
+            self.redis_client.keys(pattern=key_pattern)
+        for k in model_deployment_monitor_endpoint_keys:
+            self.redis_client.delete(k)

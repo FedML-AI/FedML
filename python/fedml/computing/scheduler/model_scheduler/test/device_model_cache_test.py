@@ -1,6 +1,8 @@
 import logging
 
+from collections import namedtuple
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -37,13 +39,10 @@ def get_all_replicas_test():
 
 
 if __name__ == "__main__":
-    # _end_point_id_ = "4f63aa70-312e-4a9c-872d-cc6e8d95f95b"
-    # _end_point_name_ = "my-llm"
-    # _model_name_ = "my-model"
-    # _model_version_ = "v1"
-    # _status_list_ = FedMLModelCache.get_instance().get_deployment_status_list(_end_point_id_, _end_point_name_, _model_name_)
-    # _result_list_ = FedMLModelCache.get_instance().get_deployment_result_list(_end_point_id_, _end_point_name_, _model_name_)
-    # idle_result_payload = FedMLModelCache.get_instance().get_idle_device(_end_point_id_, _end_point_name_, _model_name_, _model_version_)
+    logging_args = namedtuple('LoggingArgs', [
+        'log_file_dir', 'client_id', 'client_id_list', 'role', 'rank', 'run_id', 'server_id'])
+    args = logging_args("/tmp", 0, [], "server", 0, 0, 0)
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.DEBUG)
     get_endpoints_ids_test()
     get_all_endpoints_metrics_test()
     get_all_replicas_test()

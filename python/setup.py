@@ -61,6 +61,7 @@ requirements = [
     "tzlocal",
     "py-machineid",
     "cachetools",
+    "statsmodels==0.14.1",
     "toposort",
     "pydantic>=2.0",
     "pydantic-settings",
