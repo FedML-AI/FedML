@@ -5,6 +5,7 @@ from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import generate_yaml_doc
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.scheduler_entry.constants import Constants as SchedulerEntryConstants
 import fedml.api.modules.build
 from fedml.computing.scheduler.scheduler_entry.launch_manager import FedMLLaunchManager
 
@@ -66,8 +67,8 @@ def build_with_job_yaml(job_yaml_file, dest_folder=None):
         shutil.copyfile(server_package, dest_package)
         print(f"Your server package file is located at: {dest_package}")
 
-    bootstrap_bat_file = os.path.join(job_dir_path, "bootstrap.bat")
-    bootstrap_sh_file = os.path.join(job_dir_path, "bootstrap.sh")
+    bootstrap_sh_file = os.path.join(job_dir_path, SchedulerEntryConstants.BOOTSTRAP_FILE_NAME)
+    bootstrap_bat_file = bootstrap_sh_file.rstrip(".sh") + ".bat"
     job_entry_bat_file = os.path.join(
         job_dir_path, SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME.rstrip('.sh') + '.bat')
     job_entry_sh_file = os.path.join(job_dir_path, SchedulerConstants.LAUNCH_JOB_DEFAULT_ENTRY_NAME)
