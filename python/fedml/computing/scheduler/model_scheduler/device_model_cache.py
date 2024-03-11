@@ -409,7 +409,7 @@ class FedMLModelCache(Singleton):
 
     def delete_end_point(self, end_point_id, end_point_name, model_name, model_version):
         try:
-            print("Will Delete the realated redis keys permanently")
+            logging.info("Will Delete the related redis keys permanently")
             self.redis_connection.expire(self.get_deployment_result_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_deployment_status_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
@@ -419,6 +419,7 @@ class FedMLModelCache(Singleton):
             self.redis_connection.expire(self.get_end_point_activation_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_status_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
         except Exception as e:
+            logging.error(f"error when deleting the redis keys: {e}")
             pass
 
     def get_end_point_activation(self, end_point_id):

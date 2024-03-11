@@ -977,11 +977,12 @@ class FedMLClientRunner:
             self.model_runner_mapping.pop(run_id_str)
 
     def callback_delete_deployment(self, topic, payload):
-        logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
+        logging.info("[Worker] callback_delete_deployment")
 
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
+        # Delete all replicas on this device
         try:
             ClientConstants.remove_deployment(
                 model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
@@ -1000,6 +1001,7 @@ class FedMLClientRunner:
             try:
                 self.running_request_json.pop(str(model_msg_object.run_id))
             except Exception as e:
+                logging.error(f"Error when removing running_request_json: {traceback.format_exc()}")
                 pass
 
         FedMLClientDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)

@@ -522,8 +522,14 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 break
 
             if container_obj is not None:
-                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False, since=last_log_time)
-                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False, since=last_log_time)
+                try:
+                    out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False,
+                                                  since=last_log_time)
+                    err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False,
+                                                  since=last_log_time)
+                except Exception as e:
+                    logging.error(f"Failed to get the logs from the container with exception {e}")
+                    pass
 
                 last_log_time = datetime.datetime.now()
 
