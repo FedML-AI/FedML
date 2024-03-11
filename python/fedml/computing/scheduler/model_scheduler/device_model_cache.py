@@ -18,6 +18,11 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
     FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
+    FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
+
+    # On the worker
+    FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
+
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
     def __init__(self):
@@ -85,16 +90,16 @@ class FedMLModelCache(Singleton):
         return FedMLModelCache()
 
     def set_deployment_result(self, end_point_id, end_point_name,
-                              model_name, model_version, device_id, deployment_result):
-        result_dict = {"cache_device_id": device_id, "result": deployment_result}
+                              model_name, model_version, device_id, deployment_result, replica_no):
+        result_dict = {"cache_device_id": device_id, "cache_replica_no": replica_no, "result": deployment_result}
         try:
-            # Delete old result
+            # Delete old result using (e_id, end_point_name, model_name, device_id, replica_no)
             # In this list, find the result's complete record, delete it.
             result_list = self.redis_connection.lrange(
                 self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
             for result_item in result_list:
-                result_device_id, result_payload = self.get_result_item_info(result_item)
-                if result_device_id == device_id:
+                res_device_id, res_replica_no, res_payload = self.get_result_item_info(result_item)
+                if res_device_id == device_id and res_replica_no == replica_no:
                     self.redis_connection.lrem(
                         self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, result_item)
 
@@ -105,18 +110,20 @@ class FedMLModelCache(Singleton):
             pass
         self.model_deployment_db.set_deployment_result(end_point_id, end_point_name,
                                                        model_name, model_version,
-                                                       device_id, deployment_result)
+                                                       device_id, deployment_result, replica_no)
 
     def set_deployment_status(self, end_point_id, end_point_name,
-                              model_name, model_version, device_id, deployment_status):
+                              model_name, model_version, device_id, deployment_status, replica_no):
         status_dict = {"cache_device_id": device_id, "status": deployment_status}
         try:
-            self.redis_connection.rpush(self.get_deployment_status_key(end_point_id, end_point_name, model_name), json.dumps(status_dict))
+            # rpush could tolerate the same e_id, d_id with different r_no
+            self.redis_connection.rpush(self.get_deployment_status_key(end_point_id, end_point_name, model_name),
+                                        json.dumps(status_dict))
         except Exception as e:
             pass
         self.model_deployment_db.set_deployment_status(end_point_id, end_point_name,
                                                        model_name, model_version,
-                                                       device_id, deployment_status)
+                                                       device_id, deployment_status, replica_no)
 
     def delete_deployment_status(self, element: str, end_point_id, end_point_name, model_name):
         self.redis_connection.lrem(self.get_deployment_status_key(end_point_id, end_point_name, model_name),
@@ -131,10 +138,32 @@ class FedMLModelCache(Singleton):
         except Exception as e:
             pass
 
+    def delete_deployment_result_with_device_id_and_replica_no(self, end_point_id, end_point_name, model_name,
+                                                               device_id, replica_no_to_delete):
+        result_item_found = None
+
+        result_list = self.get_deployment_result_list(
+            end_point_id, end_point_name, model_name)
+
+        for result_item in result_list:
+            cache_device_id, cache_replica_no, result_payload = (
+                self.get_result_item_info(result_item))
+
+            if str(cache_device_id) == str(device_id) and cache_replica_no == replica_no_to_delete:
+                result_item_found = result_item
+                break
+
+        # Delete the replica element
+        if result_item_found is not None:
+            self.delete_deployment_result(
+                result_item_found, end_point_id, end_point_name, model_name)
+
     def get_deployment_result_list(self, end_point_id, end_point_name, model_name):
         try:
-            result_list = self.redis_connection.lrange(self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
+            result_list = self.redis_connection.lrange(
+                self.get_deployment_result_key(end_point_id, end_point_name, model_name), 0, -1)
         except Exception as e:
+            logging.info(e)
             result_list = None
 
         if result_list is None or len(result_list) <= 0:
@@ -144,13 +173,14 @@ class FedMLModelCache(Singleton):
                     self.redis_connection.rpush(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
                                                 json.dumps(result))
             except Exception as e:
+                logging.info(e)
                 pass
         return result_list
 
     def delete_deployment_result(self, element: str, end_point_id, end_point_name, model_name):
         self.redis_connection.lrem(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
                                    0, element)
-        device_id, _ = self.get_result_item_info(element)
+        device_id, _, _ = self.get_result_item_info(element)
         self.model_deployment_db.delete_deployment_result(device_id, end_point_id, end_point_name, model_name)
 
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
@@ -192,50 +222,42 @@ class FedMLModelCache(Singleton):
         result_item_json = json.loads(result_item)
         if isinstance(result_item_json, str):
             result_item_json = json.loads(result_item_json)
+
         device_id = result_item_json["cache_device_id"]
+        replica_no = result_item_json["cache_replica_no"]
+
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
         else:
             result_payload = result_item_json["result"]
-        return device_id, result_payload
+        return device_id, replica_no, result_payload
 
     def get_idle_device(self, end_point_id, end_point_name,
                         model_name, model_version,
                         check_end_point_status=True):
-        # Find all deployed devices
-        try:
-            status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)  # DEPLOYMENT_STATUS
-        except Exception as e:
-            logging.error(f"get_deployment_status_list failed {e}")
-            return None, None
-
-        if len(status_list) == 0:
-            return None, None
-
+        # Deprecated the model status logic, query directly from the deployment result list
         idle_device_list = list()
-        if model_version == "latest":
-            model_version = self.get_latest_version(status_list)
-        logging.info(f"model_version {model_version}")
 
-        # iterate all devices, find those with correct version and deployed
-        for status_item in status_list:
-            try:
-                device_id, status_payload = self.get_status_item_info(status_item)
-                logging.info(f"status_payload {status_payload}")
-                model_status = status_payload["model_status"]
-                model_version_cached = status_payload["model_version"]
-                end_point_id_cache = status_payload["end_point_id"]
-                logging.info(f"model_version {model_version}, model_version_cache {model_version_cached}")
-                if (model_version == model_version_cached or model_version == "*") and \
-                        model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                    idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
-            except Exception as e:
-                logging.info(f"Get idle device list Failed: {e}, status_item {status_item}")
-                pass
-        if len(idle_device_list) <= 0:
-            return None, None
+        result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
+
+        for result_item in result_list:
+            device_id, _, result_payload = self.get_result_item_info(result_item)
+            found_end_point_id = result_payload["end_point_id"]
+            found_end_point_name = result_payload["end_point_name"]
+            found_model_name = result_payload["model_name"]
+            found_model_version = result_payload["model_version"]
+
+            logging.info(result_payload["model_status"])
+
+            if (str(found_end_point_id) == str(end_point_id) and found_end_point_name == end_point_name and
+                    found_model_name == model_name and
+                    (found_model_version == model_version or model_version == "*")):
+                if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
+                    idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
+
         logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
-        # Randomly shuffle
+
+        # # Randomly shuffle
         # shuffle the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
         #     return None, None
@@ -271,18 +293,17 @@ class FedMLModelCache(Singleton):
 
         # Find deployment result from the target idle device.
         try:
-            result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
             for result_item in result_list:
-                device_id, result_payload = self.get_result_item_info(result_item)
+                logging.info("enter the for loop")
+                device_id, _, result_payload = self.get_result_item_info(result_item)
                 found_end_point_id = result_payload["end_point_id"]
                 found_end_point_name = result_payload["end_point_name"]
-                # Check whether the end point is activated.
-                if check_end_point_status:
-                    end_point_activated = self.get_end_point_activation(found_end_point_id)
-                    if not end_point_activated:
-                        continue
+                found_model_status = result_payload["model_status"]
 
-                if found_end_point_id == idle_device_dict["end_point_id"] \
+                if found_model_status != "DEPLOYED":
+                    continue
+
+                if str(found_end_point_id) == str(idle_device_dict["end_point_id"]) \
                         and device_id == idle_device_dict["device_id"]:
                     if same_model_device_rank > 0:
                         same_model_device_rank -= 1
@@ -316,10 +337,13 @@ class FedMLModelCache(Singleton):
         return latest_version
 
     def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        """"
+        TODO: Return multiple replicas' result for the same device_id
+        """
         try:
             result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
             for result_item in result_list:
-                result_device_id, result_payload = self.get_result_item_info(result_item)
+                result_device_id, _, result_payload = self.get_result_item_info(result_item)
                 found_end_point_id = result_payload["end_point_id"]
 
                 end_point_activated = self.get_end_point_activation(found_end_point_id)
@@ -363,6 +387,26 @@ class FedMLModelCache(Singleton):
             pass
         self.model_deployment_db.set_end_point_activation(end_point_id, end_point_name, status)
 
+    def set_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id, replica_no, gpu_ids):
+        # Convert the list to string
+        try:
+            self.redis_connection.set(self.get_replica_gpu_ids_key(end_point_id, end_point_name,
+                                                                   model_name, device_id, replica_no), str(gpu_ids))
+        except Exception as e:
+            print(e)
+            logging.error(e)
+
+        # TODO: Use Sqlite for the replica backup
+
+    def get_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id, replica_no):
+        try:
+            if self.redis_connection.exists(self.get_replica_gpu_ids_key(end_point_id, end_point_name,
+                                                                         model_name, device_id, replica_no)):
+                return self.redis_connection.get(self.get_replica_gpu_ids_key(end_point_id, end_point_name,
+                                                                              model_name, device_id, replica_no))
+        except Exception as e:
+            pass
+
     def delete_end_point(self, end_point_id, end_point_name, model_name, model_version):
         try:
             print("Will Delete the realated redis keys permanently")
@@ -378,26 +422,12 @@ class FedMLModelCache(Singleton):
             pass
 
     def get_end_point_activation(self, end_point_id):
-        status_int = -1
-        try:
-            if self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
-                status_int = self.redis_connection.get(self.get_end_point_activation_key(end_point_id))
-        except Exception as e:
-            pass
-
-        if status_int == -1:
-            status_int = self.model_deployment_db.get_end_point_activation(end_point_id)
-            try:
-                self.redis_connection.set(self.get_end_point_activation_key(end_point_id), status_int)
-            except Exception as e:
-                pass
-
-        status = True if int(status_int) == 1 else False
-        return status
+        # [Deprecated] activation logic is removed
+        return True
 
     def get_end_point_full_key_by_id(self, end_point_id):
-        # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
-        target_prefix = f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-*"
+        # e.g. FEDML_MODEL_DEPLOYMENT_RESULT--1234-dummy_endpoint_name-dummy_model_name
+        target_prefix = f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG}-{end_point_id}-*"
         status_list = list()
         for key in self.redis_connection.scan_iter(target_prefix):
             status_list.append(key)
@@ -497,6 +527,19 @@ class FedMLModelCache(Singleton):
 
         return token
 
+    def get_endpoint_devices_replica_num(self, end_point_id):
+        """
+        Return a endpoint_devices_replica_num dict {id1: 1, id2: 1}, if not exist, return None
+        """
+        try:
+            replica_num = self.redis_connection.get(
+                self.get_endpoint_replica_num_key(end_point_id))
+        except Exception as e:
+            replica_num = None
+        # TODO: Use Sqlite for the replica backup
+
+        return replica_num
+
     def get_deployment_result_key(self, end_point_id, end_point_name, model_name):
         return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id, end_point_name, model_name)
 
@@ -517,6 +560,14 @@ class FedMLModelCache(Singleton):
 
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
+
+    def get_endpoint_replica_num_key(self, end_point_id):
+        return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG, end_point_id, "replica_num", "key")
+
+    @staticmethod
+    def get_replica_gpu_ids_key(end_point_id, end_point_name, model_name, device_id, replica_no):
+        return "{}-{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_REPLICA_GPU_IDS_TAG, end_point_id,
+                                          end_point_name, model_name, device_id, replica_no)
 
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,
