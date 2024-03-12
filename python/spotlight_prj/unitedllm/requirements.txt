@@ -1,20 +1,21 @@
-git+https://github.com/FedML-AI/LoFT.git@develop#egg=peft
 torch>=2.0.0
 torchvision
 numpy
 deepspeed>=0.10.2
 accelerate
-transformers[torch]==4.34.0
-optimum>=1.13.1
-datasets>=2.8.0
+transformers[torch]>=4.34.0,<=4.35.2
+safetensors
+datasets>=2.14.0
+fedml>=0.8.18
 evaluate
+einops
 sentencepiece
 tensorboard
 tqdm
 wandb
 zstandard
-git+https://github.com/EleutherAI/lm-evaluation-harness.git#egg=lm_eval
-hurry.filesize
 ninja
 packaging
 pyyaml
+# see https://pip.pypa.io/en/stable/reference/requirement-specifiers/#requirement-specifiers
+lm_eval @ git+https://github.com/EleutherAI/lm-evaluation-harness
