@@ -592,43 +592,6 @@ class FedMLServerRunner:
                 ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
             return
 
-        # all_device_id_list = request_json["device_ids"]
-
-        # device_id_list = []
-
-        # for device in all_device_id_list:
-        #     if str(device) == str(self.edge_id):
-        #         continue
-        #
-        #     if device in request_json["diff_devices"] and \
-        #             (request_json["diff_devices"][device] == ServerConstants.DEVICE_DIFF_ADD_OPERATION or
-        #              request_json["diff_devices"][device] == ServerConstants.DEVICE_DIFF_REPLACE_OPERATION):
-        #         device_id_list.append(device)
-        #
-        # # Scroll update
-        # if request_json["diff_devices"].get(int(device_id), None) == ServerConstants.DEVICE_DIFF_REPLACE_OPERATION:
-        #     if model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
-        #         # TODO: Support rollback
-        #         return
-        #     else:
-        #         # Get record from the first message that Java mlops sent
-        #         total_device_objs_list = self.request_json["device_objs"]
-        #         device_obj_to_insert = None
-        #
-        #         for device_obj in total_device_objs_list:
-        #             if device_obj["id"] == int(device_id):
-        #                 device_obj["status"] = ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
-        #                 device_obj_to_insert = device_obj
-        #                 break
-        #         if not device_obj_to_insert:
-        #             raise Exception(f"Cannot find device {device_id} in the device list {total_device_objs_list}")
-        #
-        #         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-        #             add_end_point_device_info(request_json["end_point_id"], end_point_name,
-        #                                       json.dumps(device_obj_to_insert))
-        #
-        #         self.send_next_scroll_update_msg(int(device_id))
-
         # Wait for all replica's result, not device-level
         if (self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_num_reconciled() and
                 self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_version_reconciled()):
@@ -684,7 +647,7 @@ class FedMLServerRunner:
                 FedMLServerDataInterface.get_instance().save_job_result(end_point_id, self.edge_id,
                                                                         json.dumps(payload_json_saved))
             else:
-                # Only remove ops
+                # Arrive here because only contains remove ops, so we do not need to update the model metadata
                 pass
 
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -822,7 +785,8 @@ class FedMLServerRunner:
         # Get model master node id from redis
         ComputeCacheManager.get_instance().set_redis_params()
         edge_device_id, model_master_device_id, model_slave_device_id = \
-            ComputeCacheManager.get_instance().get_gpu_cache().get_edge_model_id_map(self.request_json["end_point_id"])
+            ComputeCacheManager.get_instance().get_gpu_cache().get_edge_model_id_map(
+                model_msg_object.inference_end_point_id)
 
         # Remove the model_master_device_id
         edge_id_list_to_delete.remove(model_master_device_id)
@@ -995,13 +959,11 @@ class FedMLServerRunner:
         self.subscribe_slave_devices_message(request_json)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
-        time.sleep(2)
         self.send_deployment_stages(self.run_id, model_name, model_id,
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
                                     "Received request for end point {}".format(run_id))
-        time.sleep(1)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -1011,7 +973,6 @@ class FedMLServerRunner:
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"])
 
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
-        time.sleep(1)
 
         if self.run_as_edge_server_and_agent:
             # Replica Controller is per deployment!
@@ -1318,7 +1279,7 @@ class FedMLServerRunner:
                                       "input_json": input_json,
                                       "output_json": output_json,
                                       "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
-        logging.info(f"[Server] deployment_results_payload to mlops: {deployment_results_payload}")
+        logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
@@ -1331,7 +1292,7 @@ class FedMLServerRunner:
                                      "model_url": model_inference_url,
                                      "model_status": model_status,
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
-        logging.info(f"[Server] deployment_status_payload to mlops: {deployment_status_payload}")
+        logging.info(f"[Master] deployment_status_payload is sent to mlops: {deployment_status_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
@@ -1348,10 +1309,13 @@ class FedMLServerRunner:
                                      "model_stage_title": model_stages_title,
                                      "model_stage_detail": model_stage_detail,
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
-        logging.info("-------- Stages{}:{} --------".format(model_stages_index, deployment_stages_payload))
 
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic_prefix, json.dumps(deployment_stages_payload))
+
+        logging.info(f"-------- Stages has been sent to mlops with stage {model_stages_index} and "
+                     f"payload {deployment_stages_payload}")
+        time.sleep(2)
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
         if self.client_mqtt_lock is None:

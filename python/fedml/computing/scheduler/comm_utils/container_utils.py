@@ -56,6 +56,18 @@ class ContainerUtils(Singleton):
         logs_content = sys_utils.decode_our_err_result(logs_content)
         return logs_content
 
+    def get_container_logs_since(self, container_name, since_time: int):
+        container_obj = self.get_docker_object(container_name)
+        if container_obj is None:
+            return None
+
+        logs_content = container_obj.logs(stdout=True, stderr=True, stream=False, follow=False, since=since_time)
+        if logs_content is None:
+            return None
+
+        logs_content = sys_utils.decode_our_err_result(logs_content)
+        return logs_content
+
     def remove_container(self, container_name):
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:

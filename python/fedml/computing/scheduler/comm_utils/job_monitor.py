@@ -55,6 +55,12 @@ class JobMonitor(Singleton):
             self.is_first_inference_on_gateway = True
         if not hasattr(self, "last_time_on_inference_gateway"):
             self.last_time_on_inference_gateway = None
+        if not hasattr(self, "replica_log_channels"):
+            """
+                {$job_id: {$edge_id: {$replica_no: $channel_info}}}
+                channel_info: {"docker_last_time_stamp": int}
+            """
+            self.replica_log_channels = dict()
 
     @staticmethod
     def get_instance():
@@ -738,24 +744,41 @@ class JobMonitor(Singleton):
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
 
-                    endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                    if endpoint_logs is None:
+                    if job.job_id in self.replica_log_channels and \
+                            job.edge_id in self.replica_log_channels[job.job_id] and \
+                            i in self.replica_log_channels[job.job_id][job.edge_id]:
+                        # Get log since last time stamp
+                        channel_info = self.replica_log_channels[job.job_id][job.edge_id][i]
+                        if channel_info.get("docker_last_time_stamp") is not None:
+                            endpoint_logs = ContainerUtils.get_instance().get_container_logs_since(
+                                endpoint_container_name, since_time=channel_info.get("docker_last_time_stamp"))
+                            if endpoint_logs is not None:
+                                channel_info["docker_last_time_stamp"] = int(time.time())
+                        else:
+                            endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                            if endpoint_logs is not None:
+                                channel_info["docker_last_time_stamp"] = int(time.time())
+                    else:
+                        # First time to get the logs
+                        self.replica_log_channels[job.job_id] = self.replica_log_channels.get(job.job_id, dict())
+                        self.replica_log_channels[job.job_id][job.edge_id] = self.replica_log_channels[job.job_id].get(
+                            job.edge_id, dict())
+                        self.replica_log_channels[job.job_id][job.edge_id][i] = dict()
+                        self.replica_log_channels[job.job_id][job.edge_id][i]["docker_last_time_stamp"] = (
+                            int(time.time()))
+                        endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+
+                    if (endpoint_logs is None or endpoint_logs == "\n" or endpoint_logs == "\r\n" or
+                            endpoint_logs == "\r" or endpoint_logs == "" or endpoint_logs == " "):
                         continue
+
                     is_job_container_running = True
 
-                    # Rewrite container logs to the log file
-                    if i == 0:
-                        with open(log_file_path, "w") as f:
-                            pass
-                            # f.write(f"[FedML Log Service] [Device {job.edge_id}] [Rank {i}] Start.\n")
-                            # f.write(endpoint_logs)
-                            # f.write(f"[FedML Log Service] [Device {job.edge_id}] [Rank {i}] End.\n")
-                    else:
-                        with open(log_file_path, "a") as f:
-                            pass
-                            # f.write(f"[FedML Log Service] [Device {job.edge_id}] [Rank {i}] Start.\n")
-                            # f.write(endpoint_logs)
-                            # f.write(f"[FedML Log Service] [Device {job.edge_id}] [Rank {i}] End.\n")
+                    # Append containers log to the same log file (as they are in the same job & device)
+                    with open(log_file_path, "a") as f:
+                        f.write(f"[FedML Log Service] >>>>>>>> [Rank {i}] Start. >>>>>>>> \n")
+                        f.write(endpoint_logs)
+                        f.write(f"[FedML Log Service] <<<<<<<< [Rank {i}] End.   <<<<<<<< \n")
 
                 if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
                         is_log_processor_running(job.job_id, int(job.edge_id)):
