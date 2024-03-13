@@ -597,6 +597,38 @@ def remove_simulator_process(data_dir, runner_info_dir, process_id):
         pass
 
 
+def remove_files(file_paths: List[str]):
+    """
+    Remove files if they exist.
+
+    Args:
+        file_paths: List of file paths
+
+    Usage:
+        file_list = ["file4.txt", "file5.txt", "file6.txt"]
+        remove_files(file_list)
+    """
+    if not isinstance(file_paths, list):
+        raise ValueError("file_paths must be a list of file paths.")
+
+    for path in file_paths:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def convert_and_remove_bat_files(shell_script_paths: List[str]):
+    if not isinstance(shell_script_paths, list):
+        raise ValueError("sh_file_paths must be a list of file paths.")
+
+    # Convert to bat file paths
+    bat_file_paths = list(map(lambda path: path[:-2] + 'bat', shell_script_paths))
+
+    # Filter out non-bat paths
+    bat_file_paths = list(filter(lambda path: path.endswith('.bat'), bat_file_paths))
+
+    remove_files(bat_file_paths)
+
+
 def simulator_process_is_running(process_id):
     for process in psutil.process_iter():
         if str(process.pid) == str(process_id):

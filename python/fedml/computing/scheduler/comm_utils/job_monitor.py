@@ -650,32 +650,6 @@ class JobMonitor(Singleton):
                     except Exception as e:
                         print(f"[Master][{job.job_id}] Exception when check endpoint status: "
                               f"{traceback.format_exc()}")
-                elif endpoint_status == \
-                        device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING:
-                    started_time = int(float(job.started_time))
-                    timeout = time.time() - started_time
-                    if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_PROVISIONING_TIMEOUT:
-                        print(f"[Master][{job.job_id}] Due to timeout, set endpoint status to "
-                              f"offline at the status {endpoint_status}.")
-                        mlops.log_endpoint_status(
-                            job.job_id,
-                            device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                        FedMLModelCache.get_instance().set_end_point_status(
-                            job.job_id, endpoint_name,
-                            device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                elif endpoint_status == \
-                        device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING:
-                    started_time = int(float(job.started_time))
-                    timeout = time.time() - started_time
-                    if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
-                        print(f"[Master][{job.job_id}] Due to timeout, set endpoint status to "
-                              f"offline at the status {endpoint_status}.")
-                        mlops.log_endpoint_status(
-                            job.job_id,
-                            device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                        FedMLModelCache.get_instance().set_end_point_status(
-                            job.job_id, endpoint_name,
-                            device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 elif endpoint_status == device_server_constants.ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
                     # If the endpoint is offline, then report offline status to the MLOps.
                     model_config_parameters = model_config.get("parameters", {})
