@@ -255,6 +255,9 @@ class FedMLModelCache(Singleton):
 
         logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
 
+        if len(idle_device_list) <= 0:
+            return None, None
+
         # # Randomly shuffle
         # shuffle the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:

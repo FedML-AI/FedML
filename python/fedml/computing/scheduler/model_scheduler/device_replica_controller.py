@@ -117,7 +117,10 @@ class FedMLDeviceReplicaController:
             return diff_target_curr_replica_num
 
         for id, target_num in target_replica_state.items():
-            if target_num > curr_replica_state[id]:
+            if id not in curr_replica_state:
+                # In one scale-out operation, the device may not be deployed yet.
+                diff_target_curr_replica_num[id] = {"op": "add", "curr_num": 0, "target_num": target_num}
+            elif target_num > curr_replica_state[id]:
                 diff_target_curr_replica_num[id] = {"op": "add", "curr_num": curr_replica_state[id],
                                                     "target_num": target_num}
             elif target_num < curr_replica_state[id]:

@@ -176,7 +176,8 @@ async def _predict(
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
-            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND, "message": "can not found the active endpoint."}
+            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
+                    "message": "can not found active inference worker for this endpoint."}
 
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
