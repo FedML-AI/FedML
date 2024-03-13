@@ -243,12 +243,16 @@ class LLMTrainer(ClientTrainer):
             model_args: ModelArguments,
             dataset_args: DatasetArguments
     ):
-        super().__init__(model, args)
-
         self.tokenizer = tokenizer
         self.training_args = training_args
         self.model_args = model_args
         self.dataset_args = dataset_args
+
+        # track latest checkpoint
+        self.latest_checkpoint_dir = self.checkpoint_dir / "init"
+
+        super().__init__(model, args)
+
         self.trainer = UnitedLLMTrainer(
             model=self.model,
             tokenizer=self.tokenizer,
@@ -286,15 +290,12 @@ class LLMTrainer(ClientTrainer):
             # save model config before training
             save_config(model, self.checkpoint_dir / "final")
 
-        # track latest checkpoint
-        self.latest_checkpoint_dir = self.checkpoint_dir / "init"
-
         barrier()
         self.log("initialized")
 
     @property
     def checkpoint_dir(self) -> Path:
-        return Path(self.trainer.args.output_dir)
+        return Path(self.training_args.output_dir)
 
     def is_main_process(self) -> bool:
         return self.trainer.is_world_process_zero()
@@ -302,8 +303,8 @@ class LLMTrainer(ClientTrainer):
     def log(self, message: Any, stack_level: int = 1) -> None:
         log_helper(
             message,
-            prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
-                   f"local_rank={self.args.local_rank}, hf_local_rank={self.trainer.args.local_process_index}}}}}",
+            prefix=f"{{{{rank={self.args.rank}, world_rank={self.training_args.process_index}, "
+                   f"local_rank={self.args.local_rank}, hf_local_rank={self.training_args.local_process_index}}}}}",
             suffix=f"@ round={self.round_idx}",
             stack_prefix=f"{type(self).__name__}.",
             stack_level=stack_level + 1
@@ -462,12 +463,16 @@ class LLMAggregator(ServerAggregator):
             model_args: ModelArguments,
             dataset_args: DatasetArguments
     ):
-        super().__init__(model, args)
-
         self.tokenizer = tokenizer
         self.model_args = model_args
         self.dataset_args = dataset_args
         self.training_args = training_args
+
+        # track latest checkpoint
+        self.latest_checkpoint_dir = self.checkpoint_dir / "init"
+
+        super().__init__(model, args)
+
         self.trainer = UnitedLLMTrainer(
             model=self.model,
             tokenizer=self.tokenizer,
@@ -486,14 +491,12 @@ class LLMAggregator(ServerAggregator):
             # save model config before training
             save_config(model, self.checkpoint_dir / "final")
 
-        self.latest_checkpoint_dir = self.checkpoint_dir / "init"
-
         barrier()
         self.log("initialized")
 
     @property
     def checkpoint_dir(self) -> Path:
-        return Path(self.trainer.args.output_dir)
+        return Path(self.training_args.output_dir)
 
     def is_main_process(self) -> bool:
         return self.trainer.is_world_process_zero()
@@ -501,8 +504,8 @@ class LLMAggregator(ServerAggregator):
     def log(self, message: Any, stack_level: int = 1) -> None:
         log_helper(
             message,
-            prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
-                   f"local_rank={self.args.local_rank}, hf_local_rank={self.trainer.args.local_process_index}}}}}",
+            prefix=f"{{{{rank={self.args.rank}, world_rank={self.training_args.process_index}, "
+                   f"local_rank={self.args.local_rank}, hf_local_rank={self.training_args.local_process_index}}}}}",
             suffix=f"@ round={self.round_idx}",
             stack_prefix=f"{type(self).__name__}.",
             stack_level=stack_level + 1
