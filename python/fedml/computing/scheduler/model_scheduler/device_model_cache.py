@@ -234,7 +234,7 @@ class FedMLModelCache(Singleton):
 
     def get_idle_device(self, end_point_id, end_point_name,
                         model_name, model_version,
-                        check_end_point_status=True):
+                        check_end_point_status=True, limit_specific_model_version=False):
         # Deprecated the model status logic, query directly from the deployment result list
         idle_device_list = list()
 
@@ -247,11 +247,9 @@ class FedMLModelCache(Singleton):
             found_model_name = result_payload["model_name"]
             found_model_version = result_payload["model_version"]
 
-            logging.info(result_payload["model_status"])
-
             if (str(found_end_point_id) == str(end_point_id) and found_end_point_name == end_point_name and
                     found_model_name == model_name and
-                    (found_model_version == model_version or model_version == "*")):
+                    (not limit_specific_model_version or found_model_version == model_version)):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
 
