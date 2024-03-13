@@ -1570,7 +1570,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.add_message_listener(topic_request_device_info, self.callback_report_device_info)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.listener_message_dispatch_center)
 
-        topic_request_device_info_from_mlops = f"deploy/mlops/client_agent/request_device_info/{self.edge_id}"
+        topic_request_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
         self.add_message_listener(topic_request_device_info_from_mlops, self.response_device_info_to_mlops)
         self.mqtt_mgr.add_message_listener(topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
         
