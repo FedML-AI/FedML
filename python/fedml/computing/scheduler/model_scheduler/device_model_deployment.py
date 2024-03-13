@@ -71,14 +71,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip, edge_id, master_device_id=None, replica_rank=0):
+                     model_from_open, token, master_ip, edge_id, master_device_id=None, replica_rank=0,
+                     gpu_per_replica=1):
     logging.info("Model deployment is starting...")
 
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
-    num_gpus = 0
+    num_gpus = gpu_per_replica    # Real gpu per replica (container)
     gpu_ids, gpu_attach_cmd = None, ""
 
     running_model_name = ClientConstants.get_running_model_name(
@@ -93,14 +94,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     with open(model_config_path, 'r') as file:
         config = yaml.safe_load(file)
         # Resource related
-        use_gpu = config.get('use_gpu', False)
+        use_gpu = config.get('use_gpu', True)
         in_gpu_ids = config.get('gpu_ids', gpu_ids)
-        num_gpus = config.get('num_gpus', None)
+        num_gpus_frm_yml = config.get('num_gpus', None)
         if not use_gpu:
             num_gpus = 0
         else:
-            if num_gpus is None:
-                num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
+            if num_gpus_frm_yml is not None:
+                num_gpus = int(num_gpus_frm_yml)
         usr_indicated_wait_time = config.get('deploy_timeout', 900)
         usr_indicated_worker_port = config.get('worker_port', "")
         if usr_indicated_worker_port == "":
@@ -190,6 +191,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         FedMLModelCache.get_instance().set_redis_params()
         FedMLModelCache.get_instance().set_replica_gpu_ids(
             end_point_id, end_point_name, inference_model_name, edge_id, replica_rank+1, gpu_ids)
+    logging.info("GPU ids allocated: {}".format(gpu_ids))
 
     logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
@@ -550,9 +552,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                     logging.info(f"Logs from docker: {format(out_logs)}")
 
                 if container_obj.status == "exited":
-                    logging.info("Container {} has exited, automatically"
-                                 " remove it ...".format(cmd_container_name))
-                    client.api.remove_container(container_obj.id, v=True, force=True)
+                    logging.info("Container {} has exited".format(cmd_container_name))
                     break
 
         # should_exit_logs will ping the inference container
