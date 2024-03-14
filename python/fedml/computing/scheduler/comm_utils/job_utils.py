@@ -214,6 +214,10 @@ class JobRunnerUtils(Singleton):
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(
                     device_id, run_id, remain_gpu_ids)
 
+                # set run gpu num
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(
+                    device_id, run_id, len(remain_gpu_ids))
+
     def release_gpu_ids(self, run_id, device_id):
         edge_device_id = None
         original_run_id = None

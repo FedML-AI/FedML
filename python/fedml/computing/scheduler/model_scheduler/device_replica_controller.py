@@ -131,7 +131,7 @@ class FedMLDeviceReplicaController:
 
         for id, curr_num in curr_replica_state.items():
             if id not in target_replica_state:
-                diff_target_curr_replica_num[id] = {"op": "remove", "num": curr_num}
+                diff_target_curr_replica_num[id] = {"op": "remove", "curr_num": curr_num, "target_num": 0}
 
         return diff_target_curr_replica_num
 
@@ -198,6 +198,8 @@ class FedMLDeviceReplicaController:
                 # Unpack the result_item
                 result_device_id, _, result_payload = FedMLModelCache.get_instance().get_result_item_info(result_item)
                 curr_state[str(result_device_id)] = curr_state.get(str(result_device_id), 0) + 1
+
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] curr_replica_state from db: {curr_state}")
         return curr_state
 
     def get_curr_replica_version_frm_db(self):
@@ -272,7 +274,10 @@ class FedMLDeviceReplicaController:
             return
 
         if str(changed_device_id) not in self.intermediate_replica_num:
-            raise ValueError(f"changed_device_id {changed_device_id} is not in intermediate_replica_num")
+            assert op_type == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+
+            # Intermediate state is not initialized yet. Since it may derive from the database.
+            self.intermediate_replica_num[str(changed_device_id)] = 0
 
         if op_type == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
             self.intermediate_replica_num[str(changed_device_id)] += 1
@@ -284,8 +289,23 @@ class FedMLDeviceReplicaController:
         Check if all the replicas are ready. Including the number and version.
         """
         for id, replica_no in self.intermediate_replica_num.items():
+            if id not in self.target_replica_num:   # Delete all replica in this device
+                if replica_no != 0:
+                    return False
+                else:
+                    continue
             if replica_no != self.target_replica_num[id]:
                 return False
+
+        for id, target_replica_num in self.target_replica_num.items():
+            if id not in self.intermediate_replica_num or self.intermediate_replica_num[id] != target_replica_num:
+                return False
+
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] Replicas are reconciled as expected.")
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"intermediate_replica_num: {self.intermediate_replica_num}")
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"target_replica_num: {self.target_replica_num}")
         return True
 
     def get_first_chunk_devices_replica_update(self):
