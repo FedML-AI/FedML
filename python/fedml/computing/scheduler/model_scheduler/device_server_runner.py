@@ -567,7 +567,11 @@ class FedMLServerRunner:
             # Note: To display the result in the UI, we need to save successful deployment result to the database
             self.model_runner_mapping[run_id_str].deployed_replica_payload = copy.deepcopy(payload_json)
         else:
-            assert model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED
+            if model_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
+                logging.error(f"Unsupported model status {model_status}.")
+            self.send_deployment_status(
+                end_point_id, end_point_name, payload_json["model_name"], "",
+                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
 
         # Notify the replica number controller
         (self.model_runner_mapping[run_id_str].
@@ -782,14 +786,8 @@ class FedMLServerRunner:
             with open(os.path.expanduser(debug_log_path), "w") as f:
                 f.write(str(payload))
 
-        # Get model master node id from redis
-        ComputeCacheManager.get_instance().set_redis_params()
-        edge_device_id, model_master_device_id, model_slave_device_id = \
-            ComputeCacheManager.get_instance().get_gpu_cache().get_edge_model_id_map(
-                model_msg_object.inference_end_point_id)
-
-        # Remove the model_master_device_id
-        edge_id_list_to_delete.remove(model_master_device_id)
+        # Remove the model master node id from the list using index 0
+        edge_id_list_to_delete = edge_id_list_to_delete[1:]
 
         logging.info("Device ids to be deleted: " + str(edge_id_list_to_delete))
         
