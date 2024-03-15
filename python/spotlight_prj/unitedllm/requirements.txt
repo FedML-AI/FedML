@@ -1,9 +1,10 @@
 torch>=2.0.0
 torchvision
 numpy
-deepspeed>=0.10.2
+deepspeed>=0.10.2,<=0.13.1
 accelerate
 transformers[torch]>=4.34.0,<=4.35.2
+peft>=0.4.0,<=0.5.0
 safetensors
 datasets>=2.14.0
 fedml>=0.8.18
@@ -17,5 +18,3 @@ zstandard
 ninja
 packaging
 pyyaml
-# see https://pip.pypa.io/en/stable/reference/requirement-specifiers/#requirement-specifiers
-lm_eval @ git+https://github.com/EleutherAI/lm-evaluation-harness
