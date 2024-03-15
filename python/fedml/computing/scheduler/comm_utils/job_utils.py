@@ -585,14 +585,14 @@ class JobRunnerUtils(Singleton):
             return {}
 
         for config_key, config_value in config_dict.items():
+            config_key = f"{config_key_path}_{config_key}".upper() if config_key_path else str(config_key).upper()
             if isinstance(config_value, dict):
                 JobRunnerUtils.get_env_from_dict(
                     export_cmd, config_value, export_env_command_list=export_env_command_list,
                     env_name_value_map=env_name_value_map, config_key_path=config_key
                 )
             else:
-                env_name = f"FEDML_ENV_{'' if config_key_path == '' else str(config_key_path).upper() + '_'}" \
-                           f"{str(config_key).upper()}"
+                env_name = f"FEDML_ENV_{config_key}"
                 config_value = str(config_value).replace("\n", ";")
                 config_value = str(config_value).replace("\"", "\\\"")
                 export_env_command_list.append(f"{export_cmd} {env_name}=\"{config_value}\"\n")
