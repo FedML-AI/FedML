@@ -127,7 +127,7 @@ model_args:
   use_flash_attention: False
   load_pretrained: False  # Whether to load pretrained weights
   # PEFT configs
-  peft_type: "loft"
+  peft_type: "lora"
 
 train_args:
   federated_optimizer: "FedAvg"
