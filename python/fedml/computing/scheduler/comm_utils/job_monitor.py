@@ -55,6 +55,12 @@ class JobMonitor(Singleton):
             self.is_first_inference_on_gateway = True
         if not hasattr(self, "last_time_on_inference_gateway"):
             self.last_time_on_inference_gateway = None
+        if not hasattr(self, "replica_log_channels"):
+            """
+                {$job_id: {$edge_id: {$replica_no: $channel_info}}}
+                channel_info: {"docker_last_time_stamp": int}
+            """
+            self.replica_log_channels = dict()
 
     @staticmethod
     def get_instance():
@@ -256,7 +262,8 @@ class JobMonitor(Singleton):
 
                             # Release the gpu ids
                             print(
-                                f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when woker endpoint failed on monitoring periodically.")
+                                f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when worker "
+                                f"endpoint failed on monitoring periodically.")
                             JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -269,75 +276,86 @@ class JobMonitor(Singleton):
                         device_ids = endpoint_json.get("device_ids", [])
                         logging.info(f"Check endpoint status for {job.job_id}:{job.edge_id}.")
 
-                        if model_name is not None:
-                            # Get model deployment result
-                            deployment_result = FedMLModelDatabase.get_instance().get_deployment_result_with_device_id(
-                                job.job_id, endpoint_name, model_name, job.edge_id)
-                            if deployment_result is None:
-                                continue
+                        if model_name is None:
+                            continue
 
-                            status_result = FedMLModelDatabase.get_instance().get_deployment_status_with_device_id(
-                                job.job_id, endpoint_name, model_name, job.edge_id)
+                        # Get replicas deployment result inside this device
+                        deployment_result_list = FedMLModelDatabase.get_instance().get_deployment_result_with_device_id(
+                            job.job_id, endpoint_name, model_name, job.edge_id)
 
-                            # Check the endpoint status
-                            # TODO: Parallel this check
+                        if deployment_result_list is None:
+                            continue
+
+                        # Check the container (replica) ready probe
+                        # TODO: Parallel this check
+                        rank = -1
+                        for deployment_result in deployment_result_list:
+                            rank += 1
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
 
-                            # Get endpoint container name prefix
-                            endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
-                                endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id)
+                            # Get endpoint container name prefix, prepare for restart
+                            endpoint_container_name_prefix = \
+                                (device_client_constants.ClientConstants.get_endpoint_container_name(
+                                    endpoint_name, model_name, model_version, job.job_id, model_id,
+                                    edge_id=job.edge_id))
 
-                            # Could be multiple containers for the same endpoint
-                            num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
-                                endpoint_container_name_prefix)
-
-                            for i in range(num_containers):
-                                endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
-                                if not is_endpoint_ready:
-                                    # send unavailable status to the master agent
-                                    endpoint_sync_protocol.send_sync_inference_info(
-                                        device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                        model_id, model_version, inference_port=None,
-                                        disable=True)
-
-                                    # [Critical] 
-                                    # 1. After restart,
-                                    # the "running" status of container does NOT mean the endpoint is ready.
-                                    # 2. if local db has status updating, do not restart again
-                                    result_json = deployment_result
-                                    status = result_json.get("model_status", None)
-
-                                    if status != device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING:
-                                        started, inference_port = ContainerUtils.get_instance().restart_container(
-                                            endpoint_container_name)
-                                        deployment_result[
-                                            "model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
-
-                                        # Change the local port for next ready check
-                                        endpoint_sync_protocol.set_local_deployment_status_result(
-                                            job.job_id, endpoint_name, model_name, model_version, job.edge_id,
-                                            inference_port, status_result, deployment_result)
-                                else:
-                                    started, inference_port = ContainerUtils.get_instance().start_container(
-                                        endpoint_container_name)
+                            endpoint_container_name = endpoint_container_name_prefix + f"__{rank}"
+                            inference_port = -1
 
                             if is_endpoint_ready:
+                                # Though it is ready, we still need to get the port
+                                started, inference_port = ContainerUtils.get_instance().start_container(
+                                    endpoint_container_name)
+                            else:
+                                # Restart the container if the endpoint is not ready
+                                # send unavailable status to the master agent
+                                # TODO: Check the callback from the master agent
+                                endpoint_sync_protocol.send_sync_inference_info(
+                                    device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
+                                    model_id, model_version, inference_port=None,
+                                    disable=True, replica_no=rank+1)
+
+                                # [Critical]
+                                # 1. After restart, the "running" status of container does NOT mean the endpoint is
+                                # ready. Could be the container is still starting, or the endpoint is not ready.
+                                # 2. if local db has status updating, do not restart again
+                                result_json = deployment_result
+                                status = result_json.get("model_status", None)
+
+                                if (status != device_server_constants.ServerConstants.
+                                        MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING):
+                                    # First time restart
+                                    started, inference_port = ContainerUtils.get_instance().restart_container(
+                                        endpoint_container_name)
+
+                                    # Change the local port for next ready check, avoid restart again
+                                    deployment_result["model_status"] = (device_server_constants.ServerConstants.
+                                                                         MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING)
+                                    endpoint_sync_protocol.set_local_deployment_status_result(
+                                        job.job_id, endpoint_name, model_name, model_version, job.edge_id,
+                                        inference_port, None, deployment_result, replica_no=rank+1)
+
+                            # Report the status to the master agent
+                            if is_endpoint_ready:
+                                assert inference_port != -1
                                 deployment_result[
-                                    "model_status"] = device_server_constants.ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+                                    "model_status"] = (device_server_constants.ServerConstants.
+                                                       MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
                                 # Send the inference info to the master agent
                                 # TODO: Consistency control
                                 endpoint_sync_protocol.send_sync_inference_info(
                                     device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
-                                    model_id, model_version, inference_port)
+                                    model_id, model_version, inference_port, replica_no=rank+1)
 
                                 # Change the local port for next ready check
                                 endpoint_sync_protocol.set_local_deployment_status_result(
                                     job.job_id, endpoint_name, model_name, model_version, job.edge_id,
-                                    inference_port, status_result, deployment_result)
+                                    inference_port, None, deployment_result, replica_no=rank+1)
 
                     elif job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+                        # TODO: Bring the offline status online
                         endpoint_json = json.loads(job.running_json)
                         model_config = endpoint_json.get("model_config", {})
                         model_name = model_config.get("model_name", None)
@@ -345,6 +363,7 @@ class JobMonitor(Singleton):
                         model_id = model_config.get("model_id", None)
                         endpoint_name = endpoint_json.get("end_point_name", None)
 
+                        # Get replicas deployment result inside this device
                         deployment_result = FedMLModelDatabase.get_instance().get_deployment_result_with_device_id(
                             job.job_id, endpoint_name, model_name, job.edge_id)
                         if deployment_result is None:
@@ -434,7 +453,7 @@ class JobMonitor(Singleton):
 
     def _check_and_reset_endpoint_status(
             self, endpoint_id, device_id, deployment_result, only_check_inference_ready_status=False,
-            should_release_gpu_ids=True
+            should_release_gpu_ids=False
     ):
         result_json = deployment_result
         inference_url = result_json.get("model_url", None)
@@ -464,23 +483,22 @@ class JobMonitor(Singleton):
                 return True
 
             # If the endpoint unavailable counter is greater than the threshold value,
-            # then release gpu ids and report failed status to the master agent.
+            # then try restarting the endpoint and release the gpu ids.
+            # If should_release_gpu_ids is True, then release the gpu ids.
             if self.endpoint_unavailable_counter.get(str(endpoint_id), 0) > \
                     SchedulerConstants.ENDPOINT_FAIL_THRESHOLD_VALUE:
                 if not self.released_endpoints.get(str(endpoint_id), False) and should_release_gpu_ids:
                     self.released_endpoints[str(endpoint_id)] = True
-
                     # Release the gpu ids
                     print(
-                        f"[endpoint/device][{endpoint_id}/{device_id}] Release gpu resource when the worker endpoint is not ready on monitoring periodically.")
+                        f"[endpoint/device][{endpoint_id}/{device_id}] Release gpu resource "
+                        f"when the worker endpoint is not ready on monitoring periodically.")
                     JobRunnerUtils.get_instance().release_gpu_ids(endpoint_id, device_id)
 
                 return False
             time.sleep(2)
 
-        return False
-
-    def is_inference_ready(self, inference_url, timeout=None, device_id=None, endpoint_id=None):
+    def is_inference_ready(self, inference_url, timeout=None, device_id=None, endpoint_id=None, use_mqtt=False):
         response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=timeout))
         if response_ok:
             print("Use http health check.")
@@ -499,6 +517,9 @@ class JobMonitor(Singleton):
             print("Use http proxy health check.")
             return response_ok
         print("Use http proxy health check failed.")
+
+        if not use_mqtt:
+            return False
 
         agent_config = dict()
         agent_config["mqtt_config"] = dict()
@@ -572,7 +593,7 @@ class JobMonitor(Singleton):
         result_list = FedMLModelCache.get_instance().get_deployment_result_list(
             endpoint_id, endpoint_name, model_name)
         for result_item in result_list:
-            result_device_id, result_payload = FedMLModelCache.get_instance().get_result_item_info(
+            result_device_id, _, result_payload = FedMLModelCache.get_instance().get_result_item_info(
                 result_item)
 
             # Check if the endpoint is activated
@@ -687,10 +708,10 @@ class JobMonitor(Singleton):
                 if count >= 1000:
                     break
 
-                log_virtual_edge_id = int(job.edge_id) * 2
+                # [Deprecated] log_virtual_edge_id = int(job.edge_id) * 2
                 if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
                         job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
-                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(job.job_id, log_virtual_edge_id)
+                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(job.job_id, int(job.edge_id))
                     continue
 
                 if job.status != device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
@@ -707,7 +728,7 @@ class JobMonitor(Singleton):
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
                 log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
-                    job.job_id, log_virtual_edge_id, device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                    job.job_id, int(job.edge_id), device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
                     log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
                 )
 
@@ -723,25 +744,48 @@ class JobMonitor(Singleton):
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
 
-                    endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
-                    if endpoint_logs is None:
+                    if job.job_id in self.replica_log_channels and \
+                            job.edge_id in self.replica_log_channels[job.job_id] and \
+                            i in self.replica_log_channels[job.job_id][job.edge_id]:
+                        # Get log since last time stamp
+                        channel_info = self.replica_log_channels[job.job_id][job.edge_id][i]
+                        if channel_info.get("docker_last_time_stamp") is not None:
+                            endpoint_logs = ContainerUtils.get_instance().get_container_logs_since(
+                                endpoint_container_name, since_time=channel_info.get("docker_last_time_stamp"))
+                            if endpoint_logs is not None:
+                                channel_info["docker_last_time_stamp"] = int(time.time())
+                        else:
+                            endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                            if endpoint_logs is not None:
+                                channel_info["docker_last_time_stamp"] = int(time.time())
+                    else:
+                        # First time to get the logs
+                        self.replica_log_channels[job.job_id] = self.replica_log_channels.get(job.job_id, dict())
+                        self.replica_log_channels[job.job_id][job.edge_id] = self.replica_log_channels[job.job_id].get(
+                            job.edge_id, dict())
+                        self.replica_log_channels[job.job_id][job.edge_id][i] = dict()
+                        self.replica_log_channels[job.job_id][job.edge_id][i]["docker_last_time_stamp"] = (
+                            int(time.time()))
+                        endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+
+                    if (endpoint_logs is None or endpoint_logs == "\n" or endpoint_logs == "\r\n" or
+                            endpoint_logs == "\r" or endpoint_logs == "" or endpoint_logs == " "):
                         continue
+
                     is_job_container_running = True
 
-                    # Write container logs to the log file
-                    if i == 0:
-                        with open(log_file_path, "w") as f:
-                            f.write(endpoint_logs)
-                    else:
-                        with open(log_file_path, "a") as f:
-                            f.write(endpoint_logs)
+                    # Append containers log to the same log file (as they are in the same job & device)
+                    with open(log_file_path, "a") as f:
+                        f.write(f"[FedML Log Service] >>>>>>>> [Rank {i}] Start. >>>>>>>> \n")
+                        f.write(endpoint_logs)
+                        f.write(f"[FedML Log Service] <<<<<<<< [Rank {i}] End.   <<<<<<<< \n")
 
                 if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
-                        is_log_processor_running(job.job_id, log_virtual_edge_id):
+                        is_log_processor_running(job.job_id, int(job.edge_id)):
                     setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
-                        job.job_id, log_virtual_edge_id,
+                        job.job_id, int(job.edge_id),
                         log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,
                         log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX
                     )
