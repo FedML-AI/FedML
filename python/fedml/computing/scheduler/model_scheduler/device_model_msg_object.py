@@ -102,12 +102,12 @@ class FedMLModelMsgObject(object):
 
         return self.request_json["gpu_topology"]
 
-    def get_gpu_per_replica(self):
+    def get_gpu_per_replica(self) -> int:
         """
         Read gpu_per_replica from user's config yaml file. Default 1.
         """
-        if "parameters" in self.request_json and "gpu_per_replica" in self.request_json["parameters"]:
-            return self.request_json["parameters"]["gpu_per_replica"]
+        if "gpu_per_replica" in self.request_json:
+            return int(self.request_json["gpu_per_replica"])
         return 1
 
     def show(self, prefix=""):

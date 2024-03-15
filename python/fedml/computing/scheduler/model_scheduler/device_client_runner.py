@@ -421,12 +421,6 @@ class FedMLClientRunner:
         model_from_open = None
         self.model_is_from_open = None
 
-        # logging.info("Check if need update / removing existed container...")
-        # if "diff_devices" in self.request_json and str(self.edge_id) in self.request_json["diff_devices"] and \
-        #         self.request_json["diff_devices"][str(self.edge_id)] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
-        #     # self.handle_replaced_device()
-        #     pass
-
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
@@ -640,44 +634,6 @@ class FedMLClientRunner:
             # The delete op will be handled by callback_delete_deployment
             logging.error(f"Unsupported op {op} with op num {op_num}")
             return False
-
-    def handle_replaced_device(self):
-        """
-        Strategy-1:
-        (1) clean local records (2) find and clean current container using diff_version: {device_id: old_version}
-        """
-        end_point_id = self.request_json["end_point_id"]
-        end_point_name = self.request_json["end_point_name"]
-        model_config = self.request_json["model_config"]
-        model_name = model_config["model_name"]
-        model_id = model_config["model_id"]
-        new_model_version = model_config["model_version"]
-        old_model_version = self.request_json["diff_version"][str(self.edge_id)]
-
-        logging.info(f"[endpoint/device][{end_point_id}/{self.edge_id}] "
-                     f"Start to handle replaced device {self.edge_id} to new version {new_model_version}."
-                     f"which originally has old version {old_model_version}.")
-
-        try:
-            JobRunnerUtils.get_instance().release_gpu_ids(end_point_id, self.edge_id)
-
-            # Instead of deleting the records, need to change the job status to "UPGRADING"
-            FedMLClientDataInterface.get_instance().save_job_status(
-                end_point_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING
-            )
-
-            FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
-                end_point_id, end_point_name, model_name, self.edge_id)
-
-            ClientConstants.remove_deployment(
-                end_point_name, model_name, old_model_version,
-                end_point_id, model_id, edge_id=self.edge_id)
-        except Exception as e:
-            # TODO: 1. Check this release action cause the resource seized by other run
-            #  2. If this atomic op failed, should rolling back
-            logging.info(f"Exception when removing deployment {traceback.format_exc()}")
-            pass
 
     def construct_deployment_results(self, end_point_name, device_id, model_status,
                                      model_id, model_name, model_inference_url,

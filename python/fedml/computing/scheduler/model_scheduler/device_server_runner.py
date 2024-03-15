@@ -23,7 +23,6 @@ import torch
 
 import fedml
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
-from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
@@ -43,7 +42,6 @@ from ....core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
-#from ....serving.fedml_server import FedMLModelServingServer
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..comm_utils.constants import SchedulerConstants
 from .device_model_db import FedMLModelDatabase
@@ -159,7 +157,10 @@ class FedMLServerRunner:
         local_package_file = "{}.zip".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress) # do not rename
+
+        # Download without renaming
+        urllib.request.urlretrieve(package_url, filename=None, reporthook=self.package_download_progress)
+
         unzip_package_path = ServerConstants.get_model_dir()
         self.fedml_packages_base_dir = unzip_package_path
         try:
@@ -299,7 +300,8 @@ class FedMLServerRunner:
     def run_impl(self):
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-            inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(self.request_json)
+            inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(
+            self.request_json)
 
         logging.info("model deployment request: {}".format(self.request_json))
 
@@ -696,7 +698,7 @@ class FedMLServerRunner:
         topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
         logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
         self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
-    
+
     def get_ip_address(self, request_json):
         # OPTION 1: Use local ip
         ip = ServerConstants.get_local_ip()
@@ -715,76 +717,7 @@ class FedMLServerRunner:
         return ip
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
-        if model_msg_object is None:    # Called after the diff operation
-            if "diff_devices" not in self.request_json or self.request_json["diff_devices"] is None:
-                return
-            else:
-                edge_id_list_to_delete = []
-                for device_id in self.request_json["diff_devices"]:
-                    if self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_DELETE_OPERATION:
-                        edge_id_list_to_delete.append(device_id)
-                if len(edge_id_list_to_delete) == 0:
-                    return
-
-                try:
-                    FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port,
-                                                                    self.redis_password)
-
-                    # 1. Get & Delete the endpoint device info in Redis / SQLite
-                    device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_end_point_device_info(self.request_json["run_id"])
-
-                    if device_objs is None:
-                        raise Exception("The device list in local redis is None")
-                    else:
-                        total_device_objs_list = json.loads(device_objs)
-                        for device_obj in total_device_objs_list:
-                            if device_obj["id"] in edge_id_list_to_delete:
-                                total_device_objs_list.remove(device_obj)
-
-                    FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
-                        self.request_json["end_point_id"], self.request_json["end_point_name"],
-                        json.dumps(total_device_objs_list))
-                    
-                    # 2 Delete the result in deployment result list in Redis / SQLite
-                    device_result_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_deployment_result_list(self.request_json["end_point_id"],
-                                                    self.request_json["end_point_name"],
-                                                    self.request_json["model_config"]["model_name"])
-                    delete_device_result_list = []
-                    for device_result in device_result_list:
-                        device_result_dict = json.loads(device_result)
-                        if int(device_result_dict["cache_device_id"]) in edge_id_list_to_delete:
-                            delete_device_result_list.append(device_result)
-                    
-                    for delete_item in delete_device_result_list:
-                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
-                            delete_item, self.request_json["end_point_id"],
-                            self.request_json["end_point_name"],
-                            self.request_json["model_config"]["model_name"]
-                        )
-
-                except Exception as e:
-                    run_id = self.request_json["run_id"]
-                    error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_delete_{run_id}.txt"
-                    if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
-                        os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
-                    with open(os.path.expanduser(error_log_path), "w") as f:
-                        f.write(str(self.request_json))
-                        f.write(str(e))
-                        f.write('\n')
-                    raise e
-
-        else:   # Delete the whole endpoint
-            edge_id_list_to_delete = model_msg_object.device_ids
-
-        # For Debug
-        if payload is not None:
-            debug_log_path = f"~/.fedml/fedml-model-server/fedml/logs/tmp_debug_delete_payload.txt"
-            if not os.path.exists(os.path.dirname(os.path.expanduser(debug_log_path))):
-                os.makedirs(os.path.dirname(os.path.expanduser(debug_log_path)))
-            with open(os.path.expanduser(debug_log_path), "w") as f:
-                f.write(str(payload))
+        edge_id_list_to_delete = model_msg_object.device_ids
 
         # Remove the model master node id from the list using index 0
         edge_id_list_to_delete = edge_id_list_to_delete[1:]
@@ -934,12 +867,7 @@ class FedMLServerRunner:
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
 
-        diff_devices, diff_version = self.get_diff_devices(run_id)
-        self.request_json["diff_devices"] = diff_devices
-        self.request_json["diff_version"] = diff_version
         self.request_json["master_node_ip"] = self.get_ip_address(self.request_json)
-
-        self.init_device_update_map()
 
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
 
@@ -953,6 +881,8 @@ class FedMLServerRunner:
             token = usr_indicated_token
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, end_point_name, model_name, token)
+
+        ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         self.subscribe_slave_devices_message(request_json)
 
@@ -973,7 +903,7 @@ class FedMLServerRunner:
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         if self.run_as_edge_server_and_agent:
-            # Replica Controller is per deployment!
+            # Replica Controller is per deployment
             replica_controller = FedMLDeviceReplicaController(self.edge_id, self.request_json)
             logging.info(f"Start Diff Replica controller for run {run_id} on edge {self.edge_id}")
 
@@ -1019,85 +949,6 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"])
-
-    def get_diff_devices(self, run_id) -> (dict, dict):
-        '''
-        {device_id(int): "op: add" | "op: delete" | "op: replace"}
-        "op: add" -> need to add 
-        "op: delete" -> need to delete device
-        "op: replace" -> need to restart the container of the device on same port with new (same) model pkg
-
-        {device_id(int): "old_version"}   
-        '''
-        try:
-            logging.info(f"Get diff devices for run {run_id}")
-            request_json = self.running_request_json.get(str(run_id))
-            
-            diff_devices = {}
-            diff_version = {}
-            FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-            device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                get_end_point_device_info(run_id)
-            if device_objs is None:
-                for new_device_id in request_json["device_ids"]:
-                    diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
-            else:
-                device_objs_dict = json.loads(device_objs)
-                device_ids_frm_db = [d["id"] for d in device_objs_dict]
-
-                for exist_device_id in device_ids_frm_db:
-                    if exist_device_id not in request_json["device_ids"]:
-                        diff_devices[exist_device_id] = ServerConstants.DEVICE_DIFF_DELETE_OPERATION
-
-                for new_device_id in request_json["device_ids"]:
-                    if new_device_id not in device_ids_frm_db:
-                        diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_ADD_OPERATION
-                    else:
-                        if new_device_id == self.edge_id:
-                            continue
-
-                        old_version = self.should_update_device(request_json, new_device_id)
-                        if old_version:
-                            diff_devices[new_device_id] = ServerConstants.DEVICE_DIFF_REPLACE_OPERATION
-                            diff_version[new_device_id] = old_version
-                        else:
-                            pass
-            logging.info(f"Diff devices: {diff_devices}")
-        except Exception as e:
-            error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/{run_id}_error.txt"
-            if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
-                os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
-            with open(os.path.expanduser(error_log_path), "w") as f:
-                f.write(str(e))
-            raise e
-        return diff_devices, diff_version
-    
-    def should_update_device(self, payload, new_device_id):
-        '''
-        Query the device info in local redis, if the device info is different from the payload, 
-        return the old model version
-        '''
-        device_result_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_deployment_result_list(self.request_json["end_point_id"],
-                                                    self.request_json["end_point_name"],
-                                                    self.request_json["model_config"]["model_name"])
-        
-        for device_result in device_result_list:
-            if device_result is None:
-                continue
-            device_result_dict = json.loads(device_result)
-            
-            if int(device_result_dict["cache_device_id"]) == new_device_id:
-                result_body = json.loads(device_result_dict["result"])
-                if result_body["model_version"] != payload["model_config"]["model_version"]:
-                    return result_body["model_version"]
-                else:
-                    return None
-        return None
-
-    def init_device_update_map(self):
-        # [Deprecated] Use the replica controller to manage the device update
-        pass
 
     def send_first_scroll_update_msg(self):
         """
@@ -1873,7 +1724,7 @@ class FedMLServerRunner:
             "FedML_ModelServerAgent_Daemon_@" + self.user_name + "@_" + self.args.current_device_id + str(uuid.uuid4()),
             "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
-            )
+        )
         self.agent_config = service_config
 
         # Init local database
@@ -1948,10 +1799,14 @@ class FedMLServerRunner:
             else:
                 print("Server tracing: {}".format(traceback.format_exc()))
         finally:
-           self.stop_agent()
+            self.stop_agent()
+            if should_exit_sys:
+                pass
+                """
+                    # Deprecated, will kill the process by the parent process.
+                    time.sleep(5)
+                    sys_utils.cleanup_all_fedml_server_login_processes(
+                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+                    sys.exit(1)
+                """
 
-           if should_exit_sys:
-               time.sleep(5)
-               sys_utils.cleanup_all_fedml_server_login_processes(
-                   ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-               sys.exit(1)
