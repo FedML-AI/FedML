@@ -383,8 +383,11 @@ class ModelArguments:
                 **peft_kwargs
             )
 
-        else:
+        elif self.peft_type == "none":
             return None
+
+        else:
+            raise ValueError(f"Received unsupported peft type: {self.peft_type}")
 
 
 @dataclass
