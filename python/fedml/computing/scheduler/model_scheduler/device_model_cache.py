@@ -224,7 +224,7 @@ class FedMLModelCache(Singleton):
             result_item_json = json.loads(result_item_json)
 
         device_id = result_item_json["cache_device_id"]
-        replica_no = result_item_json["cache_replica_no"]
+        replica_no = result_item_json.get("cache_replica_no", 1)    # Compatible with the old version
 
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
