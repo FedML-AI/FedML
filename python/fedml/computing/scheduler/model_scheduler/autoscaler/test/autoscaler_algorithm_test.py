@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from collections import namedtuple
-from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import FedMLAutoscaler
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.computing.scheduler.model_scheduler.autoscaler.test.traffic_simulation import TrafficSimulation
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache

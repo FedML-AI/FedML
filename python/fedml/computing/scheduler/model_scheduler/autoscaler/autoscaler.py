@@ -1,17 +1,42 @@
-import conf
 import fedml
 import logging
 
 import os
 
 import datetime as dt
+import fedml.computing.scheduler.model_scheduler.autoscaler.conf as conf
 import pandas as pd
 
+from dataclasses import dataclass
+from enum import Enum
 from utils.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 
 
-class FedMLAutoscaler(metaclass=Singleton):
+class ScaleOp(Enum):
+    NO_OP = 0
+    UP_OUT_OP = 1
+    DOWN_IN_OP = 2
+
+
+@dataclass
+class AutoscalingPolicy(object):
+    """
+    Below are some default values for every endpoint. The
+    `scale_loopback_interval_secs` parameter is used to specify
+    the length of the interval between during which the autoscaler
+    should check the next scaling operation.
+    """
+    min_replicas: int = 1
+    max_replicas: int = 1
+    running_replicas: int = 0
+    scale_loopback_interval_secs: float = 60
+    scaleup_delay_secs: float = 300
+    scaledown_delay_secs: float = 60
+    endpoint_idleness_grace_period_secs: float = 300
+
+
+class Autoscaler(metaclass=Singleton):
 
     def __init__(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         super().__init__()
@@ -20,7 +45,7 @@ class FedMLAutoscaler(metaclass=Singleton):
 
     @staticmethod
     def get_instance():
-        return FedMLAutoscaler()
+        return Autoscaler()
 
     def scale_operation(self, metrics):
         timestamp_to_seconds = lambda x: x / 1e6
@@ -29,11 +54,12 @@ class FedMLAutoscaler(metaclass=Singleton):
         metrics = [(m["current_qps"], convert_timestamp(timestamp_to_seconds(m["timestamp"]))) for m in metrics]
         print(metrics)
         # (-1, 0, 1)
-        return 0
+        return ScaleOp.NO_OP
 
     def scale_operation_single_endpoint(self,
-                                        endpoint_id,
-                                        timeseries_length=None) -> int:
+                                        autoscaling_policy: AutoscalingPolicy,
+                                        endpoint_id: str,
+                                        timeseries_length=None) -> ScaleOp:
         """
         Decision rules:
             (1) if min == 0 then decide if we need to increase replicas (scale up/out).
@@ -55,9 +81,14 @@ class FedMLAutoscaler(metaclass=Singleton):
         min_replicas = 0
         max_replicas = 10
 
-        if min_replicas == 0:
+        # if no requests the last 5 minutes scale down.
+
+
+        if autoscaling_policy.min_replicas == 0:
+            # if number_of requests > 1, then scale up/out
             pass
-        elif min_replicas == max_replicas:
+        elif autoscaling_policy.min_replicas == max_replicas:
+            # if latency is relatively
             pass
         else:
             if not timeseries_length:

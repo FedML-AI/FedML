@@ -46,7 +46,7 @@ from .device_model_msg_object import FedMLModelMsgObject
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..comm_utils.constants import SchedulerConstants
 from .device_model_db import FedMLModelDatabase
-from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import FedMLAutoscaler
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -122,7 +122,7 @@ class FedMLServerRunner:
         self.user_name = None
         
         # Object creation. Service initialization happens later.
-        self.autoscaler = FedMLAutoscaler(
+        self.autoscaler = Autoscaler(
             redis_addr=self.redis_addr,
             redis_port=self.redis_port, 
             redis_password=self.redis_password)

@@ -5,7 +5,7 @@ import time
 import traceback
 import uuid
 
-from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import FedMLAutoscaler
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
