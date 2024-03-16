@@ -50,7 +50,7 @@ def plot_qps_vs_latency_vs_scale(traffic, scale_operations):
     plt.legend()
     plot_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "plot/autoscaler_algorithm_scaling_ops.png")
+        "plot/scaling_algorithm_test.png")
 
     plt.savefig(plot_file, bbox_inches='tight')
 

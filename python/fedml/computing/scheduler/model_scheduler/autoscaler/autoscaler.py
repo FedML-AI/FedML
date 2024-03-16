@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from utils.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+from pydantic import BaseModel
 
 
 class ScaleOp(Enum):
@@ -19,8 +20,7 @@ class ScaleOp(Enum):
     DOWN_IN_OP = 2
 
 
-@dataclass
-class AutoscalingPolicy(object):
+class AutoscalingPolicy(BaseModel):
     """
     Below are some default values for every endpoint. The
     `scale_loopback_interval_secs` parameter is used to specify
@@ -82,8 +82,6 @@ class Autoscaler(metaclass=Singleton):
         max_replicas = 10
 
         # if no requests the last 5 minutes scale down.
-
-
         if autoscaling_policy.min_replicas == 0:
             # if number_of requests > 1, then scale up/out
             pass
@@ -101,11 +99,12 @@ class Autoscaler(metaclass=Singleton):
             endpoint_id, scale_op))
         return scale_op
 
-    def scale_operation_all_endpoints(self, timeseries_length=None):
+    def scale_operation_all_endpoints(self, autoscaling_policy, timeseries_length=None):
         scale_operation = dict()
         endpoint_ids = self.fedml_model_cache.get_endpoints_ids()
         for eid in endpoint_ids:
             scale_op = self.scale_operation_single_endpoint(
+                autoscaling_policy=autoscaling_policy,
                 endpoint_id=eid,
                 timeseries_length=timeseries_length)
             scale_operation[eid] = scale_op
