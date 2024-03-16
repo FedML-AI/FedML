@@ -18,7 +18,8 @@ import zipfile
 from urllib.parse import urlparse, urljoin
 
 import requests
-import docker
+
+import yaml
 
 import fedml
 from fedml import mlops
@@ -223,18 +224,14 @@ class FedMLClientRunner:
         # Load the config to memory
         package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
-        if os.path.exists(fedml_local_config_file):
-            package_conf_object = load_yaml_config(fedml_local_config_file)
-        else:
-            if model_config_parameters is not None:
-                logging.warning(f"The fedml_local_config_file {fedml_local_config_file} does not exist, will \
-                                    create a new one with the model_config_parameters from json.")
-                package_conf_object = model_config_parameters
-                with open(fedml_local_config_file, 'w') as f:
-                    json.dump(package_conf_object, f)
-            else:
-                logging.info(f"The fedml_local_config_file {fedml_local_config_file} does not exist,\
-                             and the model_config_parameters is None.")
+
+        # Inject the config from UI to pkg yaml
+        package_conf_object = model_config_parameters
+
+        # Save the config to local
+        with open(fedml_local_config_file, "w") as f:
+            yaml.dump(package_conf_object, f)
+
         logging.info("The package_conf_object is {}".format(package_conf_object))
 
         return unzip_package_path, model_bin_file, package_conf_object
@@ -376,14 +373,6 @@ class FedMLClientRunner:
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
-        # Initiate an FedMLInferenceClient object
-        # client_runner = FedMLClientRunner(
-        #     self.args, edge_id=self.edge_id, run_id=self.run_id, request_json=self.request_json,
-        #     agent_config=self.agent_config
-        # )
-        # inference_process = Process(target=client_runner.inference_run)
-        # inference_process.start()
-
         self.mlops_metrics.report_client_training_status(
             self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
             is_from_model=True, running_json=json.dumps(self.request_json), run_id=run_id)
@@ -393,8 +382,6 @@ class FedMLClientRunner:
             is_from_model=True, run_id=run_id)
 
         self.check_runner_stop_event()
-
-        # TODO: Reconcile update op here.
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("download and unzip model to local...")
