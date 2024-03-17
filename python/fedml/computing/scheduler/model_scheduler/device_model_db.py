@@ -31,20 +31,25 @@ class FedMLModelDatabase(Singleton):
         self.db_base_dir = database_base_dir
 
     def set_deployment_result(self, end_point_id, end_point_name, model_name, model_version,
-                              device_id, deployment_result):
+                              device_id, deployment_result, replica_no):
         self.set_deployment_results_info(end_point_id, end_point_name, model_name, model_version,
-                                         device_id, deployment_result=deployment_result)
+                                         device_id, deployment_result=deployment_result, replica_no=replica_no)
 
     def set_deployment_status(self, end_point_id, end_point_name, model_name, model_version,
-                              device_id, deployment_status):
+                              device_id, deployment_status, replica_no):
         self.set_deployment_results_info(end_point_id, end_point_name, model_name, model_version,
-                                         device_id, deployment_status=deployment_status)
+                                         device_id, deployment_status=deployment_status, replica_no=replica_no)
 
     def get_deployment_result_list(self, end_point_id, end_point_name, model_name, model_version=None):
+        """
+        query from sqlite db using e_id
+        """
         result_list = self.get_deployment_results_info(end_point_id, end_point_name, model_name, model_version)
         ret_result_list = list()
         for result in result_list:
-            result_dict = {"cache_device_id": result.device_id, "result": result.deployment_result}
+            result_dict = {"cache_device_id": result.device_id,
+                           "cache_replica_no": result.replica_no,
+                           "result": result.deployment_result}
             ret_result_list.append(json.dumps(result_dict))
         return ret_result_list
 
@@ -58,18 +63,24 @@ class FedMLModelDatabase(Singleton):
         return ret_status_list
 
     def get_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
+        """
+        Return a list of replica's result given end_point_id, end_point_name, model_name, device_id
+        """
+        replica_result_list = list()
         try:
             result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
             for result_item in result_list:
-                result_device_id, result_payload = self.get_result_item_info(result_item)
+                result_device_id, _, result_payload = self.get_result_item_info(result_item)
                 found_end_point_id = result_payload["end_point_id"]
 
                 if str(found_end_point_id) == str(end_point_id) and str(result_device_id) == str(device_id):
-                    return result_payload
+                    replica_result_list.append(result_payload)
         except Exception as e:
-            logging.info(e)
+            # Do not intervene other endpoints on this device
+            logging.error(f"Error in get_deployment_result_with_device_id: {e}")
+            return None
 
-        return None
+        return replica_result_list
 
     def get_deployment_status_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
         try:
@@ -124,6 +135,18 @@ class FedMLModelDatabase(Singleton):
                  FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).delete()
         self.db_connection.commit()
 
+    def delete_deployment_result_with_device_id_and_rank(self, end_point_id, end_point_name, model_name,
+                                                         device_id, replica_rank):
+        replica_no = replica_rank + 1
+        self.open_job_db()
+        self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
+            and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
+                 FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                 FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                 FedMLDeploymentResultInfoModel.device_id == f'{device_id}',
+                 FedMLDeploymentResultInfoModel.replica_no == f'{replica_no}')).delete()
+        self.db_connection.commit()
+
     def delete_deployment_run_info(self, end_point_id):
         # db / table -> model-deployment.db / "deployment_run_info"
         self.open_job_db()
@@ -136,11 +159,13 @@ class FedMLModelDatabase(Singleton):
         if isinstance(result_item_json, dict):
             result_item_json = json.loads(result_item)
         device_id = result_item_json["cache_device_id"]
+        replica_no = result_item_json["cache_replica_no"]
+
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
         else:
             result_payload = result_item_json["result"]
-        return device_id, result_payload
+        return device_id, replica_no, result_payload
 
     def get_status_item_info(self, status_item):
         status_item_json = json.loads(status_item)
@@ -274,17 +299,19 @@ class FedMLModelDatabase(Singleton):
 
     def set_deployment_results_info(self, end_point_id, end_point_name,
                                     model_name, model_version, device_id,
-                                    deployment_result=None, deployment_status=None):
-        '''
-        end_point_id + device_id is unique identifier, 
+                                    deployment_result=None, deployment_status=None, replica_no=None):
+        """
+        end_point_id + device_id + replica_no is unique identifier,
         we do not allow duplicate records
-        '''
+        """
         self.open_job_db()
         result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
             filter(and_(FedMLDeploymentResultInfoModel.end_point_id == f'{end_point_id}',
                         FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
                         FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
-                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).first()
+                        FedMLDeploymentResultInfoModel.device_id == f'{device_id}',
+                        FedMLDeploymentResultInfoModel.replica_no == f'{replica_no}'
+                        )).first()
         # Insert
         if result_info is None:
             result_info = FedMLDeploymentResultInfoModel(end_point_id=end_point_id,
@@ -293,7 +320,9 @@ class FedMLModelDatabase(Singleton):
                                                          model_version=model_version,
                                                          device_id=device_id,
                                                          deployment_result=deployment_result,
-                                                         deployment_status=deployment_status)
+                                                         deployment_status=deployment_status,
+                                                         replica_no=replica_no
+                                                         )
             self.db_connection.add(result_info)
             self.db_connection.commit()
             return
@@ -439,6 +468,7 @@ class FedMLDeploymentResultInfoModel(Base):
     device_id = Column(TEXT)
     deployment_result = Column(TEXT)
     deployment_status = Column(TEXT)
+    replica_no = Column(TEXT)
 
 
 class FedMLDeploymentRunInfoModel(Base):
