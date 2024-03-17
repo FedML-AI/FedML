@@ -1521,12 +1521,6 @@ class FedMLServerRunner(FedMLMessageCenter):
         except Exception as e:
             pass
 
-        # get training params
-        if self.run_as_cloud_server:
-            message_bytes = payload.encode("ascii")
-            base64_bytes = base64.b64decode(message_bytes)
-            payload = base64_bytes.decode("ascii")
-
         # [NOTES] Example Request JSON: https://fedml-inc.larksuite.com/wiki/ScnIwUif9iupbjkYS0LuBrd6sod#WjbEdhYrvogmlGxKTOGu98C6sSb
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
@@ -2627,9 +2621,16 @@ class FedMLServerRunner(FedMLMessageCenter):
         # Broadcast the first active message.
         self.send_agent_active_msg()
 
+        # Start the message center for listener
+        self.start_listener(sender_message_queue=self.message_center.get_message_queue(),
+                            agent_config=self.agent_config)
+
         if self.run_as_cloud_server:
             # Start the FedML server
-            self.callback_start_train(payload=self.args.runner_cmd)
+            message_bytes = self.args.runner_cmd.encode("ascii")
+            base64_bytes = base64.b64decode(message_bytes)
+            payload = base64_bytes.decode("ascii")
+            self.receive_message_json(topic_start_train, payload)
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
@@ -2639,10 +2640,6 @@ class FedMLServerRunner(FedMLMessageCenter):
             + str(self.unique_device_id)
         )
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=True)
-
-        # Start the message center for listener
-        self.start_listener(sender_message_queue=self.message_center.get_message_queue(),
-                            agent_config=self.agent_config)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
