@@ -863,7 +863,7 @@ class FedMLClientRunner:
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
-        self.ota_upgrade(payload, request_json)
+        # self.ota_upgrade(payload, request_json)
 
         # Start client with multiprocessing mode
         request_json["run_id"] = run_id

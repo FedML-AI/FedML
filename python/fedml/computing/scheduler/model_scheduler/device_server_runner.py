@@ -857,7 +857,7 @@ class FedMLServerRunner:
 
         logging.info("callback_start_deployment {}".format(payload))
 
-        self.ota_upgrade(payload, request_json)
+        # self.ota_upgrade(payload, request_json)
 
         run_id = inference_end_point_id
         self.args.run_id = run_id
