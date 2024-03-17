@@ -8,6 +8,7 @@ from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from fedml.core.common.singleton import Singleton
+from sqlalchemy.sql import text
 
 Base = declarative_base()
 
@@ -263,6 +264,12 @@ class FedMLModelDatabase(Singleton):
 
         db_session_class = sessionmaker(bind=self.db_engine)
         self.db_connection = db_session_class()
+
+        # Compatibility for old version
+        try:
+            self.db_connection.execute(text("ALTER TABLE deployment_result_info ADD replica_no TEXT default '1';"))
+        except Exception as e:
+            pass
 
     def close_job_db(self):
         if self.db_connection is not None:
