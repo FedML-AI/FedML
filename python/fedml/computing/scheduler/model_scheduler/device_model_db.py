@@ -275,6 +275,11 @@ class FedMLModelDatabase(Singleton):
         except Exception as e:
             pass
 
+        try:
+            self.db_connection.execute("ALTER TABLE deployment_result_info ADD replica_no TEXT default '1';")
+        except Exception as e:
+            pass
+
     def drop_table(self):
         self.open_job_db()
         try:
