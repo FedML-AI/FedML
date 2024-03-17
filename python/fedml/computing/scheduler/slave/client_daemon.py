@@ -60,7 +60,7 @@ if __name__ == "__main__":
             pass
 
 
-        daemon_ota_upgrade(args)
+        # daemon_ota_upgrade(args)
 
         if platform.system() == "Windows":
             login_pid = ClientConstants.exec_console_with_shell_script_list(

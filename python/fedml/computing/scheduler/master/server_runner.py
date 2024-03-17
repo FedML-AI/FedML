@@ -1564,8 +1564,8 @@ class FedMLServerRunner(FedMLMessageCenter):
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )
 
-        if not self.run_as_cloud_agent and not self.run_as_cloud_server:
-            self.ota_upgrade(payload, request_json)
+        # if not self.run_as_cloud_agent and not self.run_as_cloud_server:
+        #    self.ota_upgrade(payload, request_json)
 
         # report server running status
         if not self.run_as_cloud_server:

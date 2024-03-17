@@ -58,7 +58,7 @@ if __name__ == "__main__":
             logging.error(f"Cleanup failed | Exception: {e}")
             pass
 
-        daemon_ota_upgrade(args)
+        # daemon_ota_upgrade(args)
 
         if platform.system() == "Windows" or \
                 args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
