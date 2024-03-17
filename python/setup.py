@@ -41,7 +41,7 @@ requirements = [
     "wandb==0.13.2",
     "httpx",
     "attrs",
-    "fastapi>=0.92.0",
+    "fastapi",
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.9",
     "aiohttp>=3.8.1",
@@ -62,7 +62,7 @@ requirements = [
     "py-machineid",
     "cachetools",
     "toposort",
-    "pydantic>=2.0",
+    "pydantic",
     "pydantic-settings",
 ]
 
@@ -116,7 +116,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.28a4",
+    version="0.8.28a9",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
