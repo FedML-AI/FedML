@@ -24,7 +24,7 @@ requirements = [
     "h5py",
     "tqdm",
     "wget",
-    "paho-mqtt",
+    "paho-mqtt<2.0.0",
     "boto3",
     "scikit-learn",
     "networkx<3.0",
@@ -41,7 +41,7 @@ requirements = [
     "wandb==0.13.2",
     "httpx",
     "attrs",
-    "fastapi==0.92.0",
+    "fastapi",
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.9",
     "aiohttp>=3.8.1",
@@ -61,7 +61,9 @@ requirements = [
     "tzlocal",
     "py-machineid",
     "cachetools",
-    "toposort"
+    "toposort",
+    "pydantic",
+    "pydantic-settings",
 ]
 
 requirements_extra_mpi = [
@@ -92,7 +94,7 @@ requirements_extra_fhe = [
 ]
 
 requirements_extra_llm = [
-    "accelerate",
+    "accelerate>=0.24.0",
     "peft>=0.4.0",
     "transformers[torch]>=4.31.0",
     "datasets>=2.14.0",
@@ -114,7 +116,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.26",
+    version="0.8.28",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

@@ -33,7 +33,7 @@ class Constants(Singleton):
 
     FEDML_LAUNCH_JOB_TEMP_DIR = "tmp"
 
-    BOOTSTRAP_FILE_NAME = "bootstrap.sh"
+    BOOTSTRAP_FILE_NAME = "fedml_bootstrap_generated.sh"
     STD_CONFIG_ENV_SECTION = "environment_args"
     STD_CONFIG_ENV_SECTION_BOOTSTRAP_KEY = "bootstrap"
 

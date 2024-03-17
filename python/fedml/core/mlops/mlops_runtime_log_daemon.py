@@ -265,6 +265,7 @@ class MLOpsRuntimeLogProcessor:
         print("Log Process exits normally.")
 
     def log_relocation(self):
+        # move the log file pointer to the last uploaded line
         log_line_count = self.log_line_index
         self.log_uploaded_line_index = self.log_line_index
         while log_line_count > 0:
@@ -298,6 +299,7 @@ class MLOpsRuntimeLogProcessor:
         line_count = 0
         log_lines = []
         while True:
+            # readlines will ignore those lines has been read using readline
             log_line = self.log_file.readlines()
             if len(log_line) <= 0:
                 break

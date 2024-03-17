@@ -1435,7 +1435,7 @@ def enable_logging_to_file(edge_id):
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
+    MLOpsRuntimeLog.get_instance(args).init_logs()
     return args
 
 

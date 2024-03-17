@@ -18,11 +18,13 @@ import zipfile
 from urllib.parse import urlparse, urljoin
 
 import requests
-import docker
+
+import yaml
 
 import fedml
 from fedml import mlops
 from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
+from fedml.computing.scheduler.scheduler_core.compute_utils import ComputeUtils
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from .device_model_cache import FedMLModelCache
 from ..comm_utils import sys_utils, security_utils
@@ -51,6 +53,9 @@ from .device_model_db import FedMLModelDatabase
 from ..comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.job_monitor import JobMonitor
 
+from .device_replica_handler import FedMLDeviceReplicaHandler
+
+from fedml.computing.scheduler.scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
 class RunnerError(Exception):
     """ Runner failed. """
@@ -120,6 +125,8 @@ class FedMLClientRunner:
         self.subscribed_topics = list()
         self.user_name = None
 
+        self.replica_handler = None
+
     def unzip_file(self, zip_file, unzip_file_path) -> str:
         unziped_file_name = ""
         if zipfile.is_zipfile(zip_file):
@@ -135,13 +142,15 @@ class FedMLClientRunner:
         local_package_path = ClientConstants.get_model_package_dir()
         os.makedirs(local_package_path, exist_ok=True)
         filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
-        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
+        local_package_file = os.path.join(local_package_path,
+                                          f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         logging.info("Download from package_url {}".format(package_url))
 
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         try:
@@ -167,7 +176,8 @@ class FedMLClientRunner:
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file, reporthook=self.package_download_progress)
+        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+                                   reporthook=self.package_download_progress)
 
         unzip_package_path = os.path.join(unzip_package_path, package_name)
         if not os.path.exists(unzip_package_path):
@@ -214,18 +224,14 @@ class FedMLClientRunner:
         # Load the config to memory
         package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
-        if os.path.exists(fedml_local_config_file):
-            package_conf_object = load_yaml_config(fedml_local_config_file)
-        else:
-            if model_config_parameters is not None:
-                logging.warning(f"The fedml_local_config_file {fedml_local_config_file} does not exist, will \
-                                    create a new one with the model_config_parameters from json.")
-                package_conf_object = model_config_parameters
-                with open(fedml_local_config_file, 'w') as f:
-                    json.dump(package_conf_object, f)
-            else:
-                logging.info(f"The fedml_local_config_file {fedml_local_config_file} does not exist,\
-                             and the model_config_parameters is None.")
+
+        # Inject the config from UI to pkg yaml
+        package_conf_object = model_config_parameters
+
+        # Save the config to local
+        with open(fedml_local_config_file, "w") as f:
+            yaml.dump(package_conf_object, f)
+
         logging.info("The package_conf_object is {}".format(package_conf_object))
 
         return unzip_package_path, model_bin_file, package_conf_object
@@ -262,16 +268,19 @@ class FedMLClientRunner:
             self.setup_client_mqtt_mgr()
 
             if not self.run_impl():
-                logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
+                logging.info(
+                    f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment returned false.")
                 self.release_gpu_ids(run_id)
         except RunnerError:
             logging.info("Runner stopped.")
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment stopped.")
             self.release_gpu_ids(run_id)
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
         except RunnerCompletedError:
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment completed.")
             self.release_gpu_ids(run_id)
             logging.info("Runner completed.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
@@ -280,7 +289,8 @@ class FedMLClientRunner:
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(
                 run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            logging.info(f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
+            logging.info(
+                f"[endpoint/device][{run_id}/{self.edge_id}] Release gpu resource when the worker deployment occurred exceptions.")
             self.release_gpu_ids(run_id)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             time.sleep(2)
@@ -337,12 +347,9 @@ class FedMLClientRunner:
         scale_max = model_config.get("instance_scale_max", 0)
         model_config_parameters = self.request_json["parameters"]
 
-        inference_port = model_config_parameters.get("worker_internal_port", ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
+        inference_port = model_config_parameters.get("worker_internal_port",
+                                                     ClientConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("worker_external_port", inference_port)
-
-        if "diff_devices" in self.request_json and self.device_id in self.request_json["diff_devices"] and \
-            self.request_json["diff_devices"][self.device_id] == ClientConstants.DEVICE_DIFF_REPLACE_OPERATION:
-                self.handle_replaced_device()
 
         if "using_triton" in model_config_parameters and model_config_parameters["using_triton"]:
             inference_engine = ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON
@@ -364,15 +371,7 @@ class FedMLClientRunner:
 
         logging.info("model deployment request: {}".format(self.request_json))
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-
-        # Initiate an FedMLInferenceClient object
-        # client_runner = FedMLClientRunner(
-        #     self.args, edge_id=self.edge_id, run_id=self.run_id, request_json=self.request_json,
-        #     agent_config=self.agent_config
-        # )
-        # inference_process = Process(target=client_runner.inference_run)
-        # inference_process.start()
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         self.mlops_metrics.report_client_training_status(
             self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
@@ -408,99 +407,88 @@ class FedMLClientRunner:
         # download model net and load into the torch model
         model_from_open = None
         self.model_is_from_open = None
-        if self.model_is_from_open:
-            logging.info("process the model net from open...")
-            self.check_runner_stop_event()
-            s3_config = self.agent_config.get("s3_config", None)
-            if s3_config is not None and model_net_url is not None and model_net_url != "":
-                s3_client = S3Storage(s3_config)
-                url_parsed = urlparse(model_net_url)
-                path_list = url_parsed.path.split("/")
-                if len(path_list) > 0:
-                    model_key = path_list[-1]
-                    model_from_open = s3_client.read_model_net(model_key,
-                                                               ClientConstants.get_model_cache_dir())
-
-                model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url, s3_config)
-                if model_input_size is not None and model_input_type is not None:
-                    model_config_parameters["input_size"] = model_input_size
-                    model_config_parameters["input_types"] = model_input_type
-                    logging.info(
-                        f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             "", "", model_version, {}, {}
-        try:
-            client_ip = self.get_ip_address(self.request_json)
-            running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
-                start_deployment(
-                    inference_end_point_id, end_point_name, model_id, model_version,
-                    unzip_package_path, model_bin_file, model_name, inference_engine,
-                    ClientConstants.INFERENCE_HTTP_PORT,
-                    ClientConstants.INFERENCE_GRPC_PORT,
-                    ClientConstants.INFERENCE_METRIC_PORT,
-                    use_gpu, memory_size,
-                    ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-                    ClientConstants.INFERENCE_SERVER_IMAGE,
-                    client_ip,
-                    self.model_is_from_open, model_config_parameters,
-                    model_from_open,
-                    token,
-                    master_ip, self.edge_id, master_device_id=device_ids[0])
-        except Exception as e:
-            inference_output_url = ""
-            logging.error(f"Exception at deployment: {traceback.format_exc()}")
 
-        if inference_output_url == "":
-            logging.error("failed to deploy the model...")
+        # Reconcile the replica number (op: add, remove)
+        prev_rank, op, op_num = self.replica_handler.reconcile_num_replica()
 
-            result_payload = self.send_deployment_results(
-                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
-                model_id, model_name, inference_output_url, inference_model_version, inference_port,
-                inference_engine, model_metadata, model_config)
+        # Reconcile the replica version (op: update)
+        replica_rank_to_update = []
+        if not op:
+            replica_rank_to_update, op = self.replica_handler.reconcile_replica_version()
 
-            self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(
-                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                is_from_model=True, run_id=self.run_id)
+        if not op:
+            logging.info("No need to reconcile.")
+            return True
 
-            self.mlops_metrics.client_send_exit_train_msg(
-                run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-        
-            # After sending the deployment status, we should wait for the master to delete the deployment status
-            status_payload = self.send_deployment_status(
-                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED, inference_port=inference_port)
+        if op == "add":
+            worker_ip = self.get_ip_address(self.request_json)
+            for rank in range(prev_rank+1, prev_rank+1+op_num):
+                # TODO: Support Rollback if this for loop failed
+                try:
+                    running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+                        start_deployment(
+                            inference_end_point_id, end_point_name, model_id, model_version,
+                            unzip_package_path, model_bin_file, model_name, inference_engine,
+                            ClientConstants.INFERENCE_HTTP_PORT,
+                            ClientConstants.INFERENCE_GRPC_PORT,
+                            ClientConstants.INFERENCE_METRIC_PORT,
+                            use_gpu, memory_size,
+                            ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                            ClientConstants.INFERENCE_SERVER_IMAGE,
+                            worker_ip,
+                            self.model_is_from_open, model_config_parameters,
+                            model_from_open,
+                            token,
+                            master_ip, self.edge_id, master_device_id=device_ids[0], replica_rank=rank,
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica)
+                        )
+                except Exception as e:
+                    inference_output_url = ""
+                    logging.error(f"Exception at deployment: {traceback.format_exc()}")
 
-            return False
-        else:
-            logging.info("finished deployment, continue to send results to master...")
-            status_payload = self.send_deployment_status(   # Send Master the external port
-                end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port_external)
-            result_payload = self.send_deployment_results(
-                end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                model_id, model_name, inference_output_url, model_version, inference_port_external,
-                inference_engine, model_metadata, model_config)
+                if inference_output_url == "":
+                    logging.error("failed to deploy the model...")
 
-            if inference_port_external != inference_port:   # For Worker, use internal port
-                logging.info("inference_port_external {} != inference_port {}".format(
-                    inference_port_external, inference_port))
-                status_payload = self.construct_deployment_status(
-                    end_point_name, self.edge_id, model_id, model_name, model_version, inference_output_url,
-                    ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED, inference_port=inference_port)
-                result_payload = self.construct_deployment_results(
-                    end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                    model_id, model_name, inference_output_url, model_version, inference_port,
-                    inference_engine, model_metadata, model_config)
+                    result_payload = self.send_deployment_results(
+                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                        model_id, model_name, inference_output_url, inference_model_version, inference_port,
+                        inference_engine, model_metadata, model_config)
 
-            FedMLModelDatabase.get_instance().set_deployment_result(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(result_payload))
+                    self.mlops_metrics.run_id = self.run_id
+                    self.mlops_metrics.broadcast_client_training_status(
+                        self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                        is_from_model=True, run_id=self.run_id)
 
-            FedMLModelDatabase.get_instance().set_deployment_status(
-                run_id, end_point_name, model_name, model_version, self.edge_id, json.dumps(status_payload))
+                    self.mlops_metrics.client_send_exit_train_msg(
+                        run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+
+                    return False
+                else:
+                    logging.info("finished deployment, continue to send results to master...")
+                    result_payload = self.send_deployment_results(
+                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                        model_id, model_name, inference_output_url, model_version, inference_port_external,
+                        inference_engine, model_metadata, model_config, replica_no=rank + 1)
+
+                    if inference_port_external != inference_port:  # Save internal port to local db
+                        logging.info("inference_port_external {} != inference_port {}".format(
+                            inference_port_external, inference_port))
+                        result_payload = self.construct_deployment_results(
+                            end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                            model_id, model_name, inference_output_url, model_version, inference_port,
+                            inference_engine, model_metadata, model_config, replica_no=rank + 1)
+
+                    FedMLModelDatabase.get_instance().set_deployment_result(
+                        run_id, end_point_name, model_name, model_version, self.edge_id,
+                        json.dumps(result_payload), replica_no=rank + 1)
+
+                    logging.info(f"Deploy replica {rank+1} / {prev_rank+1+op_num} successfully.")
+                    time.sleep(5)
 
             time.sleep(1)
             self.mlops_metrics.run_id = self.run_id
@@ -508,49 +496,136 @@ class FedMLClientRunner:
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 is_from_model=True, run_id=self.run_id)
             return True
+        elif op == "remove":
+            for rank_to_delete in range(prev_rank, prev_rank-op_num, -1):
+                self.replica_handler.remove_replica(rank_to_delete)
 
-    def handle_replaced_device(self):
-        end_point_id = self.request_json["end_point_id"]
-        end_point_name = self.request_json["end_point_name"]
-        model_config = self.request_json["model_config"]
-        model_name = model_config["model_name"]
-        model_id = model_config["model_id"]
-        model_version = model_config["model_version"]
-        
-        '''
-        Strategy-1:
-        Clean the current container
-        '''
-        client = docker.from_env()
+                FedMLModelCache.get_instance().set_redis_params()
+                replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
+                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete+1)
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_name=end_point_name,model_name=model_name,
-                                    model_version=model_version, end_point_id=end_point_id, model_id=model_id)
-        logging.info("running_model_name: {}".format(running_model_name))
+                replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
-        # TODO: Scroll update
-        container_prefix = "{}".format(
-            ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                        security_utils.get_content_hash(running_model_name)
-        num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
+                JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
 
-        for i in range(num_containers):
-            container_name = "{}__{}".format(container_prefix, i)
-            logging.info("default_server_container_name: {}".format(container_name))
+                FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id_and_rank(
+                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete)
 
-            try:
-                exist_container_obj = client.containers.get(container_name)
-            except docker.errors.NotFound:
-                exist_container_obj = None
-            except docker.errors.APIError:
-                raise Exception("Failed to get the container object")
+                # Report the deletion msg to master
+                result_payload = self.send_deployment_results(
+                    end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED,
+                    model_id, model_name, inference_output_url, model_version, inference_port_external,
+                    inference_engine, model_metadata, model_config, replica_no=rank_to_delete + 1)
 
-            if exist_container_obj is not None:
-                client.api.remove_container(exist_container_obj.id, v=True, force=True)
+                time.sleep(1)
+                self.mlops_metrics.run_id = self.run_id
+                self.mlops_metrics.broadcast_client_training_status(
+                    self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                    is_from_model=True, run_id=self.run_id)
+
+                # TODO: If delete all replica, then delete the job and related resources
+                if rank_to_delete == 0:
+                    pass
+            return True
+        elif op == "update":
+            # Update is combine of delete and add
+            worker_ip = self.get_ip_address(self.request_json)
+            for rank in replica_rank_to_update:
+                # Delete the container
+                self.replica_handler.remove_replica(rank)
+
+                FedMLModelCache.get_instance().set_redis_params()
+                replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
+                    run_id, end_point_name, model_name, self.edge_id, rank + 1)
+
+                replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
+
+                JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+
+                # Delete the deployment result from local db
+                FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id_and_rank(
+                    run_id, end_point_name, model_name, self.edge_id, rank)
+
+                time.sleep(1)
+
+                # Add the container
+                # TODO: Reduce the duplicated code
+                try:
+                    running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+                        start_deployment(
+                            inference_end_point_id, end_point_name, model_id, model_version,
+                            unzip_package_path, model_bin_file, model_name, inference_engine,
+                            ClientConstants.INFERENCE_HTTP_PORT,
+                            ClientConstants.INFERENCE_GRPC_PORT,
+                            ClientConstants.INFERENCE_METRIC_PORT,
+                            use_gpu, memory_size,
+                            ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                            ClientConstants.INFERENCE_SERVER_IMAGE,
+                            worker_ip,
+                            self.model_is_from_open, model_config_parameters,
+                            model_from_open,
+                            token,
+                            master_ip, self.edge_id, master_device_id=device_ids[0], replica_rank=rank,
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica)
+                        )
+                except Exception as e:
+                    inference_output_url = ""
+                    logging.error(f"Exception at deployment: {traceback.format_exc()}")
+
+                if inference_output_url == "":
+                    logging.error("failed to deploy the model...")
+
+                    result_payload = self.send_deployment_results(
+                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                        model_id, model_name, inference_output_url, inference_model_version, inference_port,
+                        inference_engine, model_metadata, model_config)
+
+                    self.mlops_metrics.run_id = self.run_id
+                    self.mlops_metrics.broadcast_client_training_status(
+                        self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                        is_from_model=True, run_id=self.run_id)
+
+                    self.mlops_metrics.client_send_exit_train_msg(
+                        run_id, self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+
+                    return False
+                else:
+                    logging.info("finished deployment, continue to send results to master...")
+                    result_payload = self.send_deployment_results(
+                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                        model_id, model_name, inference_output_url, model_version, inference_port_external,
+                        inference_engine, model_metadata, model_config, replica_no=rank + 1)
+
+                    if inference_port_external != inference_port:  # Save internal port to local db
+                        logging.info("inference_port_external {} != inference_port {}".format(
+                            inference_port_external, inference_port))
+                        result_payload = self.construct_deployment_results(
+                            end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                            model_id, model_name, inference_output_url, model_version, inference_port,
+                            inference_engine, model_metadata, model_config, replica_no=rank + 1)
+
+                    FedMLModelDatabase.get_instance().set_deployment_result(
+                        run_id, end_point_name, model_name, model_version, self.edge_id,
+                        json.dumps(result_payload), replica_no=rank + 1)
+
+                    logging.info(f"Update replica with no {rank + 1}  successfully. Op num {op_num}")
+                    time.sleep(5)
+            time.sleep(1)
+            self.mlops_metrics.run_id = self.run_id
+            self.mlops_metrics.broadcast_client_training_status(
+                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                is_from_model=True, run_id=self.run_id)
+            return True
+
+        else:
+            # The delete op will be handled by callback_delete_deployment
+            logging.error(f"Unsupported op {op} with op num {op_num}")
+            return False
 
     def construct_deployment_results(self, end_point_name, device_id, model_status,
-                                model_id, model_name, model_inference_url,
-                                model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
+                                     model_id, model_name, model_inference_url,
+                                     model_version, inference_port, inference_engine,
+                                     model_metadata, model_config, replica_no=1):
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -559,50 +634,59 @@ class FedMLClientRunner:
                                       "model_metadata": model_metadata,
                                       "model_config": model_config,
                                       "model_status": model_status,
-                                      "inference_port": inference_port}
+                                      "inference_port": inference_port,
+                                      "replica_no": replica_no,
+                                      }
         return deployment_results_payload
-    
+
     def construct_deployment_status(self, end_point_name, device_id,
-                               model_id, model_name, model_version,
-                               model_inference_url, model_status,
-                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                                    model_id, model_name, model_version,
+                                    model_inference_url, model_status,
+                                    inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
+                                    replica_no=1,     # start from 1
+                                    ):
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
                                      "model_id": model_id, "model_name": model_name,
                                      "model_version": model_version,
                                      "model_url": model_inference_url, "model_status": model_status,
-                                     "inference_port": inference_port}
+                                     "inference_port": inference_port,
+                                     "replica_no": replica_no,
+                                     }
         return deployment_status_payload
 
     def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
+                                model_metadata, model_config, replica_no=1):
         deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = self.construct_deployment_results(
             end_point_name, device_id, model_status,
             model_id, model_name, model_inference_url,
             model_version, inference_port, inference_engine,
-            model_metadata, model_config)
+            model_metadata, model_config, replica_no=replica_no)
 
         logging.info("[client] send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
-                                                                             deployment_results_payload))
+                                                                                      deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
 
     def send_deployment_status(self, end_point_name, device_id,
                                model_id, model_name, model_version,
                                model_inference_url, model_status,
-                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT):
+                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
+                               replica_no=1,     # start from 1
+                               ):
         deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = self.construct_deployment_status(
             end_point_name, device_id,
             model_id, model_name, model_version,
             model_inference_url, model_status,
-            inference_port=inference_port)
+            inference_port=inference_port,
+            replica_no=replica_no)
 
         logging.info("[client] send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
-                                                                            deployment_status_payload))
+                                                                                     deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         return deployment_status_payload
 
@@ -676,8 +760,8 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ModelClientAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
-                                                             str(os.getpid()),
-                                                             str(uuid.uuid4()))
+                                                                  str(os.getpid()),
+                                                                  str(uuid.uuid4()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
@@ -745,7 +829,8 @@ class FedMLClientRunner:
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
-        payload: {"model_name": "image-model", "model_storage_url":"s3-url", "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
+        payload: {"model_name": "image-model", "model_storage_url":"s3-url",
+        "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
         """
         # get deployment params
         request_json = json.loads(payload)
@@ -773,7 +858,7 @@ class FedMLClientRunner:
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -796,6 +881,11 @@ class FedMLClientRunner:
         self.run_process_completed_event_map[run_id_str].clear()
         client_runner.run_process_completed_event = self.run_process_completed_event_map[run_id_str]
         self.model_runner_mapping[run_id_str] = client_runner
+
+        # Replica Handler is per deployment!
+        replica_handler = FedMLDeviceReplicaHandler(self.edge_id, self.request_json)
+        client_runner.replica_handler = replica_handler
+
         self.run_id = run_id
         self.run_process_map[run_id_str] = Process(target=client_runner.run, args=(
             self.run_process_event_map[run_id_str], self.run_process_completed_event_map[run_id_str]
@@ -822,11 +912,12 @@ class FedMLClientRunner:
             self.model_runner_mapping.pop(run_id_str)
 
     def callback_delete_deployment(self, topic, payload):
-        logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
+        logging.info("[Worker] callback_delete_deployment")
 
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
+        # Delete all replicas on this device
         try:
             ClientConstants.remove_deployment(
                 model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
@@ -845,6 +936,7 @@ class FedMLClientRunner:
             try:
                 self.running_request_json.pop(str(model_msg_object.run_id))
             except Exception as e:
+                logging.error(f"Error when removing running_request_json: {traceback.format_exc()}")
                 pass
 
         FedMLClientDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
@@ -1224,7 +1316,7 @@ class FedMLClientRunner:
         #     + "\n"
         # )
 
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=False)
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(

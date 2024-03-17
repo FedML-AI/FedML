@@ -11,6 +11,7 @@ from logging import handlers
 from fedml import mlops
 from .mlops_utils import MLOpsUtils
 
+LOG_LEVEL = logging.INFO
 
 class MLOpsFormatter(logging.Formatter):
     converter = datetime.datetime.utcfromtimestamp
@@ -122,7 +123,7 @@ class MLOpsRuntimeLog:
 
         return MLOpsRuntimeLog._log_sdk_instance
 
-    def init_logs(self, show_stdout_log=True):
+    def init_logs(self, log_level=None):
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
@@ -131,12 +132,9 @@ class MLOpsRuntimeLog:
 
         self.stdout_handle = logging.StreamHandler()
         self.stdout_handle.setFormatter(self.format_str)
-        if show_stdout_log:
-            self.stdout_handle.setLevel(logging.INFO)
-            self.logger.setLevel(logging.INFO)
-        else:
-            self.stdout_handle.setLevel(logging.CRITICAL)
-            self.logger.setLevel(logging.CRITICAL)
+        log_level = log_level if log_level is not None else LOG_LEVEL
+        self.stdout_handle.setLevel(log_level)
+        self.logger.setLevel(log_level)
         self.logger.handlers.clear()
         self.logger.addHandler(self.stdout_handle)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:

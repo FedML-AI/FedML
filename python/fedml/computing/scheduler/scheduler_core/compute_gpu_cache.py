@@ -1,3 +1,5 @@
+import traceback
+import logging
 from .compute_utils import ComputeUtils
 from .compute_gpu_db import ComputeGpuDatabase
 from ..slave import client_constants
@@ -59,9 +61,10 @@ class ComputeGpuCache(object):
             except Exception as e:
                 pass
 
-        if device_run_gpu_ids is not None:
-            device_run_gpu_ids = self.map_str_list_to_int_list(device_run_gpu_ids.split(','))
+        if not device_run_gpu_ids:
+            return None
 
+        device_run_gpu_ids = self.map_str_list_to_int_list(device_run_gpu_ids.split(','))
         return device_run_gpu_ids
 
     def get_device_available_gpu_ids(self, device_id):
@@ -84,6 +87,8 @@ class ComputeGpuCache(object):
         if device_available_gpu_ids is not None and str(device_available_gpu_ids).strip() != "":
             device_available_gpu_ids = device_available_gpu_ids.split(',')
             device_available_gpu_ids = self.map_str_list_to_int_list(device_available_gpu_ids)
+        else:
+            return []
 
         return device_available_gpu_ids
 
@@ -93,13 +98,15 @@ class ComputeGpuCache(object):
             if self.redis_connection.exists(self.get_device_total_num_gpus_key(device_id)):
                 device_total_num_gpus = self.redis_connection.get(self.get_device_total_num_gpus_key(device_id))
         except Exception as e:
+            logging.error(f"Error getting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
 
         if device_total_num_gpus is None:
             device_total_num_gpus = ComputeGpuDatabase.get_instance().get_device_total_num_gpus(device_id)
             try:
-                self.redis_connection.set(self.get_device_total_num_gpus_key(device_id), device_total_num_gpus)
+                self.set_device_total_num_gpus(device_id, device_total_num_gpus)
             except Exception as e:
+                logging.error(f"Error setting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
                 pass
 
         return device_total_num_gpus
@@ -190,6 +197,7 @@ class ComputeGpuCache(object):
         try:
             self.redis_connection.set(self.get_device_run_num_gpus_key(device_id, run_id), num_gpus)
         except Exception as e:
+            logging.error(f"Error setting device_run_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
         ComputeGpuDatabase.get_instance().set_device_run_num_gpus(device_id, run_id, num_gpus)
 
@@ -220,6 +228,7 @@ class ComputeGpuCache(object):
         try:
             self.redis_connection.set(self.get_device_total_num_gpus_key(device_id), num_gpus)
         except Exception as e:
+            logging.error(f"Error setting device_total_num_gpus: {e}, Traceback: {traceback.format_exc()}")
             pass
 
         ComputeGpuDatabase.get_instance().set_device_total_num_gpus(device_id, num_gpus)

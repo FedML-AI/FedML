@@ -2,9 +2,9 @@ import logging
 import os
 import platform
 import signal
-import traceback
 import uuid
 from os.path import expanduser
+from typing import List
 
 import chardet
 import psutil
@@ -35,7 +35,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
 enable_simulation_gpu = False
-simulation_gpu_count = 1
+simulation_gpu_count = 8
 
 
 def get_sys_runner_info():
@@ -157,6 +157,15 @@ def get_gpu_list():
              'memoryUsed': 7.0, 'memoryFree': 81042.0, 'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
              'serial': '1320723000504', 'display_mode': 'Enabled', 'display_active': 'Disabled', 'temperature': 33.0}]
 
+        if simulation_gpu_count > 8:
+            for count in range(8, simulation_gpu_count):
+                ret_gpu_list.append(
+                    {'ID': count, 'uuid': f"GPU-b5811fb0-e93a-79c7-1548-2d2b60049208{count}", 'load': 0.0,
+                     'memoryTotal': 81920.0, 'memoryUsed': 7.0, 'memoryFree': 81042.0,
+                     'driver': '535.54.03', 'gpu_name': 'NVIDIA A100-SXM4-80GB',
+                     'serial': f"1320723000504{count}", 'display_mode': 'Enabled',
+                     'display_active': 'Disabled', 'temperature': 33.0})
+
         return ret_gpu_list[0:simulation_gpu_count]
 
     gpu_list = GPUtil.getGPUs()
@@ -172,43 +181,16 @@ def get_gpu_list():
     return ret_gpu_list
 
 
-def get_available_gpu_id_list(limit=1):
+def get_available_gpu_id_list(limit=1) -> List[int]:
     if enable_simulation_gpu:
-        import random
-        trim_index = random.randint(0, limit-1)
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-        #available_gpu_ids.remove(trim_index)
-        return available_gpu_ids
+        if simulation_gpu_count > 8:
+            for count in range(8, simulation_gpu_count):
+                available_gpu_ids.append(count)
+        return available_gpu_ids[0:simulation_gpu_count]
 
     gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
     return gpu_available_list
-
-
-def get_scheduler_available_gpu_id_list(edge_id, total_gpus):
-    try:
-        from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().lock(
-            ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_id)
-        ):
-            available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(edge_id)
-    except Exception as e:
-        logging.info(f"Exception {traceback.format_exc()}")
-        available_gpu_ids = None
-        pass
-    realtime_available_gpus = get_available_gpu_id_list(limit=total_gpus)
-    if available_gpu_ids is None:
-        return realtime_available_gpus
-
-    realtime_available_gpus_map_list = list(map(lambda x: str(x), realtime_available_gpus[0:]))
-    unavailable_gpu_ids = list()
-    for index, gpu_id in enumerate(available_gpu_ids):
-        if str(gpu_id) not in realtime_available_gpus_map_list:
-            unavailable_gpu_ids.append(index)
-
-    available_gpu_ids = [gpu_id for index, gpu_id in enumerate(available_gpu_ids) if index not in unavailable_gpu_ids]
-
-    return available_gpu_ids.copy()
 
 
 def get_host_name():
@@ -290,8 +272,6 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
                     os.system("taskkill /PID {} /T /F".format(edge_process.pid))
                 else:
                     os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
-                # edge_process.terminate()
-                # edge_process.join()
         yaml_object = {}
         yaml_object["process_id"] = -1
         generate_yaml_doc(yaml_object, edge_process_id_file)
@@ -617,6 +597,38 @@ def remove_simulator_process(data_dir, runner_info_dir, process_id):
         pass
 
 
+def remove_files(file_paths: List[str]):
+    """
+    Remove files if they exist.
+
+    Args:
+        file_paths: List of file paths
+
+    Usage:
+        file_list = ["file4.txt", "file5.txt", "file6.txt"]
+        remove_files(file_list)
+    """
+    if not isinstance(file_paths, list):
+        raise ValueError("file_paths must be a list of file paths.")
+
+    for path in file_paths:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def convert_and_remove_bat_files(shell_script_paths: List[str]):
+    if not isinstance(shell_script_paths, list):
+        raise ValueError("sh_file_paths must be a list of file paths.")
+
+    # Convert to bat file paths
+    bat_file_paths = list(map(lambda path: path[:-2] + 'bat', shell_script_paths))
+
+    # Filter out non-bat paths
+    bat_file_paths = list(filter(lambda path: path.endswith('.bat'), bat_file_paths))
+
+    remove_files(bat_file_paths)
+
+
 def simulator_process_is_running(process_id):
     for process in psutil.process_iter():
         if str(process.pid) == str(process_id):
@@ -755,7 +767,7 @@ def check_fedml_is_latest_version(configuration_env="release"):
         for remote_ver_item in fedml_version_list:
             remote_fedml_ver_info = version.parse(remote_ver_item)
             if (remote_fedml_ver_info.is_prerelease and remote_fedml_ver_info.pre[0] != "rc") or \
-                (remote_fedml_ver_info.is_devrelease) :
+                    (remote_fedml_ver_info.is_devrelease):
                 continue
 
             if local_fedml_ver_info < remote_fedml_ver_info:
@@ -933,7 +945,7 @@ def decode_our_err_result(out_err):
         return out_err
 
 
-def get_sys_realtime_stats(edge_id):
+def get_sys_realtime_stats():
     sys_mem = psutil.virtual_memory()
     total_mem = sys_mem.total
     free_mem = sys_mem.available

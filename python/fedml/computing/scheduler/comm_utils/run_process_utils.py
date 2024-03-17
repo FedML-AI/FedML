@@ -1,7 +1,6 @@
 import os
 import platform
 import signal
-
 import psutil
 import yaml
 
@@ -55,7 +54,7 @@ class RunProcessUtils:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.killpg(os.getpgid(process_id), signal.SIGKILL)
+                            os.killpg(os.getpgid(int(process_id)), signal.SIGKILL)
                 except Exception as e:
                     pass
 

@@ -17,7 +17,7 @@ class MasterApiDaemon(object):
         async def get_log(request: Request):
             input_json = await request.json()
 
-            log_res_model = LogsManager.get_instance().get_logs(input_json)
+            log_res_model = LogsManager.get_logs(input_json)
             response_dict = {
                 "message": "Succeeded to process request", "code": "SUCCESS",
                 "data": {
@@ -44,7 +44,7 @@ class MasterApiDaemon(object):
             input_json = await request.json()
             response_text = ""
 
-            LogsManager.get_instance().save_logs()
+            LogsManager.save_logs(input_json)
 
             return {"response": str(response_text)}
 

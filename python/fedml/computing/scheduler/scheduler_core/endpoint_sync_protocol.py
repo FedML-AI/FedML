@@ -67,12 +67,12 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
 
     def send_sync_inference_info(
             self, master_id, worker_device_id, end_point_id, end_point_name, model_name,
-            model_id, model_version, inference_port, disable=False):
+            model_id, model_version, inference_port, replica_no, disable=False):
         deployment_info_topic = f"{EndpointSyncMsgConstants.SLAVE_MASTER_DEPLOYMENT_INFO_MSG}/{master_id}"
         deployment_info_payload = {
             "device_id": worker_device_id, "end_point_id": end_point_id, "end_point_name": end_point_name,
             "model_id": model_id, "model_name": model_name, "model_version": model_version,
-            "inference_port": inference_port, "disable": disable}
+            "inference_port": inference_port, "disable": disable, "replica_no": replica_no}
         logging.info("send_sync_inference_port: topic {}, payload {}.".format(
             deployment_info_topic, deployment_info_payload))
         self.client_mqtt_mgr.send_message_json(deployment_info_topic, json.dumps(deployment_info_payload))
@@ -115,92 +115,62 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
         master_device_id = topic_splits[-1]
         deployment_info = EndpointDeviceDeploymentInfoModel(payload)
 
-        # Status
-        status_item_found = None
-        status_payload_found = None
-        FedMLModelCache.get_instance().set_redis_params()
-        status_list = FedMLModelCache.get_instance().get_deployment_status_list(
-            deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name)
-        for status_item in status_list:
-            cache_device_id, status_payload = FedMLModelCache.get_instance().get_status_item_info(status_item)
-            if str(cache_device_id) == str(deployment_info.device_id):
-                status_item_found = status_item
-                status_payload_found = status_payload
-                model_status = status_payload.get("model_status")
-                break
+        # Status [Deprecated]
 
-        if status_item_found is not None:
-            #print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
-            # Delete Status
-            FedMLModelCache.get_instance().delete_deployment_status(
-                status_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
-                deployment_info.model_name)
-
-            if deployment_info.disable: 
-                status_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
-            else:
-                status_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
-
-            # Update Status
-            model_url_parsed = urlparse(status_payload_found.get("model_url", ""))
-            status_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
-            status_payload_found["inference_port"] = deployment_info.inference_port
-            FedMLModelCache.get_instance().set_deployment_status(
-                deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name,
-                deployment_info.model_version, deployment_info.device_id, json.dumps(status_payload_found))
-
-        # Result
+        # Find the existed result in the local db
         result_item_found = None
         result_payload_found = None
         FedMLModelCache.get_instance().set_redis_params()
         result_list = FedMLModelCache.get_instance().get_deployment_result_list(
             deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name)
         for result_item in result_list:
-            cache_device_id, result_payload = FedMLModelCache.get_instance().get_result_item_info(result_item)
-            if str(cache_device_id) == str(deployment_info.device_id):
+            cache_device_id, replica_no, result_payload = (
+                FedMLModelCache.get_instance().get_result_item_info(result_item))
+            if str(cache_device_id) == str(deployment_info.device_id) and replica_no == deployment_info.replica_no:
                 result_item_found = result_item
                 result_payload_found = result_payload
                 break
 
+        # Update the replica element
         if result_item_found is not None:
-            #print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
+            # print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
+
+            # Delete the replica info from the local redis
+            # TODO: Delete also in the sqlite
             FedMLModelCache.get_instance().delete_deployment_result(
                 result_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)
             
             if deployment_info.disable:
+                # This replica is down
                 result_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING
             else:
                 result_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
             
             model_url_parsed = urlparse(result_payload_found.get("model_url", ""))
-            result_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
+            result_payload_found["model_url"] = (f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}"
+                                                 f"{model_url_parsed.path}")
             result_payload_found["inference_port"] = deployment_info.inference_port
             FedMLModelCache.get_instance().set_deployment_result(
                 deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name,
-                deployment_info.model_version, deployment_info.device_id, json.dumps(result_payload_found))
+                deployment_info.model_version, deployment_info.device_id, json.dumps(result_payload_found),
+                deployment_info.replica_no)
 
     def set_local_deployment_status_result(
             self, endpoint_id, endpoint_name, model_name, model_version, device_id,
-            inference_port, status_payload, result_payload):
-        '''
+            inference_port, status_payload, result_payload, replica_no):
+        """
         The result and status are saved in the local sqlite table.
         They both belong to the table deployment_result_info;
         deployment_result column is used to save the result;
         deployment_status column is used to save the status.
-        '''
-        if status_payload is not None:
-            model_url_parsed = urlparse(status_payload.get("model_url", ""))
-            status_payload["model_url"] = f"http://{model_url_parsed.hostname}:{inference_port}{model_url_parsed.path}"
-            status_payload["inference_port"] = inference_port
-            FedMLModelDatabase().get_instance().set_deployment_status(
-                endpoint_id, endpoint_name, model_name,
-                model_version=None, device_id=device_id, deployment_status=json.dumps(status_payload))
-
+        """
+        # status_payload is deprecated
+        # result_payload
         if result_payload is not None:
             model_url_parsed = urlparse(result_payload.get("model_url", ""))
             result_payload["model_url"] = f"http://{model_url_parsed.hostname}:{inference_port}{model_url_parsed.path}"
             result_payload["inference_port"] = inference_port
             FedMLModelDatabase.get_instance().set_deployment_result(
-                endpoint_id, endpoint_name, model_name,
-                model_version=None, device_id=device_id, deployment_result=json.dumps(result_payload))
+                endpoint_id, endpoint_name, model_name, model_version=None, device_id=device_id,
+                deployment_result=json.dumps(result_payload), replica_no=replica_no)

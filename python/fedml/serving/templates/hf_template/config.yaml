@@ -50,7 +50,7 @@ endpoint_api_type: "text2text_llm_openai_chat_completions"
 
 # set environment variables below
 environment_variables:
-  HF_HOME: "/home/fedml/fedml_serving/model_and_config"
+  HF_HOME: "~/fedml_serving/model_and_config"
   # HUGGING_FACE_HUB_TOKEN: "<your hugging face token>"  # this is required for private hugging face models
   MODEL_NAME_OR_PATH: "mistralai/Mistral-7B-Instruct-v0.1"  # model name (hugging face ID) or path
   MODEL_DTYPE: "auto"

@@ -56,25 +56,20 @@ class Chatbot(FedMLPredictor):  # Inherit FedMLClientPredictor
 
     def predict(self, request: dict):
         input_dict = request
-        question: str = input_dict.get("text", "").strip()
+
+        # If the ouptput of previous job is present, then use this output value to predict.
+        # Here inference_job_0 is the name of prevous job.
+        # You may use this method to get outputs of all previous jobs
+        output_of_previous_job = input_dict.get("inference_job_0")
+        if output_of_previous_job is not None:
+            question: str = output_of_previous_job
+        else:
+            question: str = input_dict.get("text", "").strip()
 
         if len(question) == 0:
             response_text = "<received empty input; no response generated.>"
         else:
             response_text = self.chatbot.predict(instruction=question)
-
-        try:
-            unique_id = "IMAGE_MODEL_KEY"
-            with open(f"{unique_id}.txt", "w") as f:
-                f.write(question)
-                f.write("\n\n")
-                f.write(response_text)
-                f.write("\n\n")
-            response = fedml.api.upload(data_path=f"{unique_id}.txt", name=unique_id,
-                                        api_key=os.environ.get("NEXUS_API_KEY", None), metadata={"type": "chatbot"})
-            print(f"upload response: code {response.code}, message {response.message}, data {response.data}")
-        except Exception as e:
-            pass
 
         return {"response": str(response_text)}
 
