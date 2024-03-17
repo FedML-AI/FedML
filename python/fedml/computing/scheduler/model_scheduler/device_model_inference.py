@@ -290,35 +290,34 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
-        connect_str = "@FEDML@"
-        random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
-        config_list = random_out.split(connect_str)
-        agent_config = dict()
-        agent_config["mqtt_config"] = dict()
-        agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
-        agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
-        agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
-        agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
-        agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
-        mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
-        response_ok = mqtt_inference.run_mqtt_health_check_with_request(
-            idle_device, endpoint_id, inference_url)
-        if response_ok:
-            response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-                idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
-
-        if not response_ok:
+        if not has_public_ip:
+            connect_str = "@FEDML@"
+            random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
+            config_list = random_out.split(connect_str)
+            agent_config = dict()
+            agent_config["mqtt_config"] = dict()
+            agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
+            agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
+            agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
+            agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
+            agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
+            mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
+            response_ok = mqtt_inference.run_mqtt_health_check_with_request(
+                idle_device, endpoint_id, inference_url)
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
+            if response_ok:
+                response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
+                    idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
 
-        logging.info(f"Use mqtt inference. return {response_ok}.")
-        return inference_response
+            logging.info(f"Use mqtt inference. return {response_ok}.")
+            return inference_response
+        return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
     except Exception as e:
         inference_response = {"error": True,
-                              "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
+                              "message": f"Exception when using http, http-proxy and mqtt "
+                                         f"for inference: {traceback.format_exc()}."}
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
         return inference_response
-
-    return {}
 
 
 def auth_request_token(end_point_id, end_point_name, model_name, token):
