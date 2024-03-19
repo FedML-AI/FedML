@@ -245,7 +245,7 @@ class FedMLServerRunner:
             time.sleep(3)
             sys.exit(1)
         finally:
-            logging.info("Release resources.")
+            logging.info("[Master] Deployment finished, release resources.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
@@ -303,17 +303,6 @@ class FedMLServerRunner:
             inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(
             self.request_json)
 
-        logging.info("model deployment request: {}".format(self.request_json))
-
-        # Initiate an FedMLInferenceServer object which the request will be forwarded to
-        # server_runner = FedMLServerRunner(
-        #     self.args, run_id=self.run_id, request_json=self.request_json, agent_config=self.agent_config
-        # )
-        # inference_process = Process(target=server_runner.inference_run)
-        # inference_process.start()
-
-        logging.info("send deployment stages...")
-
         self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
 
         self.check_runner_stop_event()
@@ -328,8 +317,7 @@ class FedMLServerRunner:
         self.args.run_id = self.run_id
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
-        # report server running status
-        logging.info("report deployment status...")
+        # Report server running status
         self.check_runner_stop_event()
         self.mlops_metrics.report_server_training_status(
             run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
@@ -338,31 +326,31 @@ class FedMLServerRunner:
                                     model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
-        # start unified inference server
+        # Start unified inference gateway if it has not started
         self.start_device_inference_gateway(
             run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port)
 
-        # start inference monitor server
+        # (re)Start inference monitor server
         self.stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
         self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
 
-        # Changed the status to "IDLE"
+        # Changed the master's status to "IDLE"
         self.mlops_metrics.broadcast_server_training_status(
             run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
             is_from_model=True, edge_id=self.edge_id)
 
-        # forward deployment request to slave devices
-        logging.info("send the model inference request to slave devices...")
+        # Forward deployment request to slave devices
         self.check_runner_stop_event()
 
-        # handle "op:add" && "op:remove"
+        # Handle "op:add" && "op:remove"
         devices_sent_add_or_remove_msg = self.send_deployment_start_request_to_edges()
 
-        # handle "op:update"
+        # Handle "op:update"
         devices_sent_update_remove_msg = self.send_first_scroll_update_msg()
 
         if len(devices_sent_add_or_remove_msg) == 0 and len(devices_sent_update_remove_msg) == 0:
-            # No device is added or removed, and no device is updated or removed
+            # No device is added, updated or removed
+            logging.info("No device is added, updated or removed. No action needed for reconciliation.")
             ip = self.get_ip_address(self.request_json)
             master_port = os.getenv("FEDML_MASTER_PORT", None)
             if master_port is not None:
@@ -381,7 +369,10 @@ class FedMLServerRunner:
                                         ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
             return
 
+        logging.info("Start waiting for result callback from workers ...")
+
         while True:
+            # Wait for all devices to finish the add / delete / update operation
             self.check_runner_stop_event()
             time.sleep(3)
 
@@ -696,7 +687,7 @@ class FedMLServerRunner:
 
     def send_deployment_start_request_to_edge(self, edge_id):
         topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
-        logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
+        logging.info("start_deployment: send topic " + topic_start_deployment + f" to client {edge_id}...")
         self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
 
     def get_ip_address(self, request_json):
@@ -708,7 +699,6 @@ class FedMLServerRunner:
                 ServerConstants.AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
                 request_json["parameters"][ServerConstants.AUTO_DETECT_PUBLIC_IP]:
             ip = ServerConstants.get_public_ip()
-            logging.info("Auto detect public ip for master: " + ip)
 
         # OPTION 3: Use user indicated ip
         if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
@@ -773,62 +763,12 @@ class FedMLServerRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_deployment(self, topic, payload):
-        """
-        topic: model_ops/model_device/start_deployment/model-agent-device-id
-        payload:
-        {
-          "timestamp": 1671440005119,
-          "end_point_id": 4325,
-          "token": "FCpWU",
-          "state": "STARTING",
-          "user_id": "105",
-          "user_name": "alex.liang2",
-          "device_ids": [
-            693
-          ],
-          "device_objs": [
-            {
-              "device_id": "0xT3630FW2YM@MacOS.Edge.Device",
-              "os_type": "MacOS",
-              "id": 693,
-              "ip": "1.1.1.1",
-              "memory": 1024,
-              "cpu": "1.7",
-              "gpu": "Nvidia",
-              "extra_infos": {}
-            }
-          ],
-          "model_config": {
-            "model_name": "image-model",
-            "model_id": 111,
-            "model_version": "v1",
-            "is_from_open": 0,
-            "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip",
-            "instance_scale_min": 1,
-            "instance_scale_max": 3,
-            "inference_engine": "onnx"
-          },
-          "parameters": {
-            "hidden_size": 128,
-            "hidden_act": "gelu",
-            "initializer_range": 0.02,
-            "vocab_size": 30522,
-            "hidden_dropout_prob": 0.1,
-            "num_attention_heads": 2,
-            "type_vocab_size": 2,
-            "max_position_embeddings": 512,
-            "num_hidden_layers": 2,
-            "intermediate_size": 512,
-            "attention_probs_dropout_prob": 0.1
-          }
-        }
-        """
         try:
             MLOpsConfigs.fetch_all_configs()
         except Exception as e:
             pass
 
-        # get deployment params
+        # Get deployment params
         request_json = json.loads(payload)
         run_id = request_json["end_point_id"]
         end_point_name = request_json["end_point_name"]
@@ -847,6 +787,8 @@ class FedMLServerRunner:
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
+        logging.info("[Master] received start deployment request for end point {}.".format(run_id))
+
         # Start log processor for current run
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
@@ -855,10 +797,9 @@ class FedMLServerRunner:
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
-        logging.info("callback_start_deployment {}".format(payload))
-
         # self.ota_upgrade(payload, request_json)
 
+        # Add additional parameters to the request_json
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.run_id = run_id
@@ -866,15 +807,14 @@ class FedMLServerRunner:
         self.request_json = request_json
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
-
         self.request_json["master_node_ip"] = self.get_ip_address(self.request_json)
 
-        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-
         # Target status of the devices
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
 
+        # Setup Token
         usr_indicated_token = self.get_usr_indicated_token(request_json)
         if usr_indicated_token != "":
             logging.info(f"Change Token from{token} to {usr_indicated_token}")
@@ -882,18 +822,16 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, end_point_name, model_name, token)
 
-        ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
-
         self.subscribe_slave_devices_message(request_json)
 
-        # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
+        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE1 = "Received"
         self.send_deployment_stages(self.run_id, model_name, model_id,
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
                                     "Received request for end point {}".format(run_id))
 
-        # Send stage: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
+        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE2["index"],
@@ -905,7 +843,6 @@ class FedMLServerRunner:
         if self.run_as_edge_server_and_agent:
             # Replica Controller is per deployment
             replica_controller = FedMLDeviceReplicaController(self.edge_id, self.request_json)
-            logging.info(f"Start Diff Replica controller for run {run_id} on edge {self.edge_id}")
 
             # Prepare num diff
             new_request_with_num_diff = replica_controller.generate_diff_to_request_json()
@@ -917,6 +854,7 @@ class FedMLServerRunner:
             self.running_request_json[run_id_str] = new_request_with_version_diff
             request_json = new_request_with_version_diff
 
+            # Init the model runner
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
@@ -928,6 +866,9 @@ class FedMLServerRunner:
             server_runner.redis_password = self.redis_password
             server_runner.replica_controller = replica_controller
 
+            logging.info(f"[Master] new request for id {run_id_str}")
+            logging.info(f"[Master] model runner mapping before: {self.model_runner_mapping.items()}")
+
             self.run_process_event_map[run_id_str] = multiprocessing.Event()
             self.run_process_event_map[run_id_str].clear()
             server_runner.run_process_event = self.run_process_event_map[run_id_str]
@@ -935,6 +876,8 @@ class FedMLServerRunner:
             self.run_process_completed_event_map[run_id_str].clear()
             server_runner.run_process_completed_event = self.run_process_completed_event_map[run_id_str]
             self.model_runner_mapping[run_id_str] = server_runner
+
+            logging.info(f"[Master] model runner mapping after: {self.model_runner_mapping.items()}")
 
             # This subprocess will copy the server_runner and run it, but they are not the same object
             server_process = Process(target=server_runner.run, args=(
@@ -1580,22 +1523,16 @@ class FedMLServerRunner:
             return
         run_id = request_json["run_id"]
         edge_id_list = request_json["device_ids"]
-        logging.info("Edge ids: " + str(edge_id_list))
         for edge_id in edge_id_list:
             if str(edge_id) == str(self.edge_id):
                 continue
+
             # subscribe deployment result message for each model device
-            deployment_results_topic = "model_device/model_device/return_deployment_result/{}".format(edge_id)
+            deployment_results_topic = "model_device/model_device/return_deployment_result/{}/{}".format(
+                run_id, edge_id)
+
             self.mqtt_mgr.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
             self.mqtt_mgr.subscribe_msg(deployment_results_topic)
-
-            # subscribe deployment status message for each model device
-            deployment_status_topic = "model_device/model_device/return_deployment_status/{}".format(edge_id)
-            self.mqtt_mgr.add_message_listener(deployment_status_topic, self.callback_deployment_status_message)
-            self.mqtt_mgr.subscribe_msg(deployment_status_topic)
-
-            logging.info("subscribe device messages {}, {}".format(
-                deployment_results_topic, deployment_status_topic))
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>

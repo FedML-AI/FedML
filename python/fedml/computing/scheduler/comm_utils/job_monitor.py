@@ -274,7 +274,6 @@ class JobMonitor(Singleton):
                         model_id = model_config.get("model_id", None)
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
-                        logging.info(f"Check endpoint status for {job.job_id}:{job.edge_id}.")
 
                         if model_name is None:
                             continue
@@ -289,6 +288,7 @@ class JobMonitor(Singleton):
                         # Check the container (replica) ready probe
                         # TODO: Parallel this check
                         rank = -1
+
                         for deployment_result in deployment_result_list:
                             rank += 1
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
@@ -308,6 +308,11 @@ class JobMonitor(Singleton):
                                 started, inference_port = ContainerUtils.get_instance().start_container(
                                     endpoint_container_name)
                             else:
+                                logging.info(
+                                    f"======================================"
+                                    f"Check endpoint status failed for endpoint {job.job_id} "
+                                    f"on device:{job.edge_id} with replica_no:{rank+1}."
+                                    f"======================================")
                                 # Restart the container if the endpoint is not ready
                                 # send unavailable status to the master agent
                                 # TODO: Check the callback from the master agent
@@ -501,7 +506,6 @@ class JobMonitor(Singleton):
     def is_inference_ready(self, inference_url, timeout=None, device_id=None, endpoint_id=None, use_mqtt=False):
         response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=timeout))
         if response_ok:
-            print("Use http health check.")
             return response_ok
 
         if response_ok is None:

@@ -76,11 +76,9 @@ class FedMLDeviceReplicaController:
         return id_replica_num
 
     def diff_target_curr_replica_num(self):
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ]target_replica_state: {self.target_replica_num}")
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ]curr_replica_state: {self.curr_replica_num}")
         diff = self.diff_target_curr_replica_num_impl(self.target_replica_num, self.curr_replica_num)
         logging.info(
-            f"[Replica Controller] [endpoint {self.e_id} ]diff_target_curr_replica_num: {diff}")
+            f"[Replica Controller] [endpoint {self.e_id} ] <<<<< diff_target_curr_replica_num: {diff} >>>>>")
         return diff
 
     def diff_target_curr_replica_version(self):
@@ -93,7 +91,7 @@ class FedMLDeviceReplicaController:
             self.target_replica_version, self.curr_replica_version)
 
         logging.info(
-            f"[Replica Controller] [endpoint {self.e_id} ]diff_target_curr_replica_version: {diff}")
+            f"[Replica Controller] [endpoint {self.e_id} ] <<<<< diff_target_curr_replica_version: {diff} >>>>>")
         return num_diff, diff
 
     @staticmethod
