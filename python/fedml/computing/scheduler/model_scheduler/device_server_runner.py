@@ -287,7 +287,8 @@ class FedMLServerRunner:
     def inference_run(self):
         # run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
         #     model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
-        #     inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(self.request_json)
+        #     inference_end_point_id, use_gpu, memory_size, model_version, inference_port =
+        #     self.parse_model_run_params(self.request_json)
         #
         # inference_server = FedMLModelServingServer(self.args,
         #                                            end_point_name,
@@ -530,6 +531,9 @@ class FedMLServerRunner:
         self.callback_delete_deployment(topic, payload=json.dumps(self.request_json))
 
     def callback_deployment_result_message(self, topic=None, payload=None):
+        """
+        This method is called when a deployment result is received from a worker device.
+        """
         # Save deployment result to local cache
         topic_splits = str(topic).split('/')
         device_id = topic_splits[-1]
@@ -540,8 +544,11 @@ class FedMLServerRunner:
         model_name = payload_json["model_name"]
         model_version = payload_json["model_version"]
         model_status = payload_json["model_status"]
-        replica_no = payload_json.get("replica_no", None)  # Idx start from 1
+        replica_no = payload_json.get("replica_no", None)  # "no" Idx start from 1
         run_id_str = str(end_point_id)
+
+        assert run_id_str in self.model_runner_mapping, (f"Run id {run_id_str} is not in the model runner mapping."
+                                                         f"Current mapping {self.model_runner_mapping}.")
 
         # Set redis + sqlite deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -574,16 +581,18 @@ class FedMLServerRunner:
         self.send_next_scroll_update_msg(device_id, replica_no)
 
         # Update the global deployment result mapping
-        if self.slave_deployment_results_mapping.get(run_id_str, None) is None:
+        if run_id_str not in self.slave_deployment_results_mapping:
             self.slave_deployment_results_mapping[run_id_str] = dict()
-        self.slave_deployment_results_mapping[run_id_str][str(device_id)] = model_status
+        if str(device_id) not in self.slave_deployment_results_mapping[run_id_str]:
+            self.slave_deployment_results_mapping[run_id_str][str(device_id)] = dict()
+        self.slave_deployment_results_mapping[run_id_str][str(device_id)][str(replica_no)] = model_status
 
-        logging.info("callback_deployment_result_message: topic {}, payload {}, mapping {}.".format(
+        logging.info("callback_deployment_result_message: topic {}, payload {}, result mapping {}.".format(
             topic, payload, self.slave_deployment_results_mapping[run_id_str]))
 
         request_json = self.running_request_json.get(run_id_str, None)
         if request_json is None:
-            logging.error(f"The endpoint {end_point_id} is not running.")
+            logging.error(f"The endpoint {end_point_id} is no longer running.")
             self.send_deployment_status(
                 end_point_id, end_point_name, payload_json["model_name"], "",
                 ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
@@ -595,7 +604,7 @@ class FedMLServerRunner:
             '''
             When all the devices have finished the add / delete / update operation
             '''
-            # 1. We should generate one unified inference api
+            # Generate one unified inference api
             # Note that here we use the gateway port instead of the inference port that is used by the slave device
             model_config_parameters = request_json["parameters"]
             inference_port = model_config_parameters.get("server_internal_port",
@@ -940,6 +949,10 @@ class FedMLServerRunner:
         logging.info(f"Deleted the record of the replaced device {delete_device_result_list}")
 
     def send_next_scroll_update_msg(self, device_id, replica_no):
+        """
+        Send the next scroll update msg to the devices if needed.
+        If there is no need for the next scroll update, directly return.
+        """
         if replica_no is None:
             return
 
