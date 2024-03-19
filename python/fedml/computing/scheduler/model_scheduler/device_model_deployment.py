@@ -66,36 +66,25 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
 
 
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
-                     model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
-                     inference_http_port, inference_grpc_port, inference_metric_port,
-                     inference_use_gpu, inference_memory_size,
-                     inference_convertor_image, inference_server_image,
-                     infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip, edge_id, master_device_id=None, replica_rank=0,
+                     model_storage_local_path, inference_model_name, inference_engine,
+                     infer_host, master_ip, edge_id, master_device_id=None, replica_rank=0,
                      gpu_per_replica=1):
-    logging.info("Model deployment is starting...")
+    logging.info("[Worker] Model deployment is starting...")
 
-    sudo_prefix = "sudo "
-    sys_name = platform.system()
-    if sys_name == "Darwin":
-        sudo_prefix = ""
-    num_gpus = gpu_per_replica    # Real gpu per replica (container)
+    # Real gpu per replica (container-level)
+    num_gpus = gpu_per_replica
     gpu_ids, gpu_attach_cmd = None, ""
 
     running_model_name = ClientConstants.get_running_model_name(
         end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
 
-    if model_is_from_open:
-        logging.error("The model is directly export from open, currently do not convert the model to servable format.")
-        return "", "", None, None, None
-
     # Parse the model config file and get the necessary information for the deployment
     model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
     with open(model_config_path, 'r') as file:
         config = yaml.safe_load(file)
+
         # Resource related
         use_gpu = config.get('use_gpu', True)
-        in_gpu_ids = config.get('gpu_ids', gpu_ids)
         num_gpus_frm_yml = config.get('num_gpus', None)
         if not use_gpu:
             num_gpus = 0
@@ -193,7 +182,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             end_point_id, end_point_name, inference_model_name, edge_id, replica_rank+1, gpu_ids)
     logging.info("GPU ids allocated: {}".format(gpu_ids))
 
-    logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir, exist_ok=True)
@@ -262,10 +250,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     logging.info(f"device_requests: {device_requests}")
 
     # Pull the inference image
-    logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
+    logging.info(f"Start pulling the inference image {inference_image_name}... with policy {image_pull_policy}")
     ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
 
-    logging.info("Start creating the inference container...")
     volumns = []
     binds = {}
     environment = {}
@@ -273,7 +260,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     # data_cache_dir mounting
     assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
     if type(data_cache_dir_input) == str:
-        # In this case, we mount to the same folder, if has ~, we replace it with /home/fedml
+        # In this case, we mount to the same folder, if it has ~, we replace it with /home/fedml
         src_data_cache_dir, dst_data_cache_dir = "", ""
         if data_cache_dir_input != "":
             if data_cache_dir_input[0] == "~":
@@ -382,7 +369,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 raise Exception("Failed to get the port allocation")
             time.sleep(3)
 
-    # Logging the info from the container
+    # Logging the info from the container when starting
     log_deployment_result(end_point_id, model_id, default_server_container_name,
                           ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                           inference_model_name, inference_engine, inference_http_port, inference_type,
@@ -390,7 +377,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                           request_input_example=request_input_example, infer_host=infer_host,
                           enable_custom_image=enable_custom_image)
 
-    # Check if the inference server is ready
+    # Return the running model name and the inference output url
     inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
         get_model_info(inference_model_name, inference_engine, inference_http_port,
                        infer_host, False, inference_type, request_input_example=request_input_example,
@@ -399,8 +386,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     if inference_output_url == "":
         return running_model_name, "", None, None, None
 
+    # Successfully get the result from the container
     model_metadata = ret_model_metadata
-    logging.info(model_metadata)
+    logging.info(f"[Worker][Replica{replica_rank}] Model deployment is successful with inference_output_url: "
+                 f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
 
     return running_model_name, inference_output_url, model_version, model_metadata, ret_model_config
 
@@ -438,41 +427,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
                      inference_type="default", request_input_example=None, infer_host="127.0.0.1",
                      enable_custom_image=False):
-    sudo_prefix = "sudo "
-    sys_name = platform.system()
-    if sys_name == "Darwin":
-        sudo_prefix = ""
-
-    if cmd_type == ClientConstants.CMD_TYPE_CONVERT_MODEL:
-        convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
-                                                         str(end_point_id),
-                                                         str(model_id))
-        docker_ps_cmd = "{}docker ps -a;exit".format(sudo_prefix, convert_model_container_name)
-        docker_ps_process = ClientConstants.exec_console_with_script(docker_ps_cmd,
-                                                                     should_capture_stdout=True,
-                                                                     should_capture_stderr=True)
-        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(docker_ps_process)
-        if out is not None:
-            out_str = sys_utils.decode_our_err_result(out)
-            if str(out_str).find(convert_model_container_name) == -1:
-                return True
-            else:
-                return False
-        else:
-            return True
-    elif cmd_type == ClientConstants.CMD_TYPE_RUN_TRITON_SERVER:
-        try:
-            inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(model_name, inference_engine, inference_port, inference_type=inference_type)
-            logging.info("Log test for deploying model successfully, inference url: {}, "
-                         "model metadata: {}, model config: {}".
-                         format(inference_output_url, model_metadata, model_config))
-            if inference_output_url != "":
-                return True
-        except Exception as e:
-            pass
-        return False
-    elif cmd_type == ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER:
+    if cmd_type == ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER:
         # TODO: Exited Quickly if the container is Exited or Removed
         # If the container has exited, return True, means we should exit the logs
         # container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
@@ -482,13 +437,17 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
                 get_model_info(model_name, inference_engine, inference_port, infer_host,
                                inference_type=inference_type, request_input_example=request_input_example,
                                enable_custom_image=enable_custom_image)
-            logging.info("Log test for deploying model successfully, inference url: {}, "
-                         "model metadata: {}, model config: {}".
-                         format(inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
+                logging.info("Log test for deploying model successfully, inference url: {}, "
+                             "model metadata: {}, model config: {}".
+                             format(inference_output_url, model_metadata, model_config))
                 return True
         except Exception as e:
             pass
+
+        return False
+    else:
+        logging.error("Unknown cmd type: {}".format(cmd_type))
         return False
 
 
@@ -500,8 +459,6 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           enable_custom_image=False):
     deploy_attempt = 0
     last_log_time = datetime.datetime.now()
-    last_out_logs = ""
-    last_err_logs = ""
 
     while True:
         if not ClientConstants.is_running_on_k8s():
@@ -524,6 +481,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 break
 
             if container_obj is not None:
+                out_logs, err_logs = None, None
                 try:
                     out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False,
                                                   since=last_log_time)
@@ -537,22 +495,15 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
-                    err_logs = f"logs from docker: {format(err_logs)}"
-                    if err_logs.startswith("ERROR:") or err_logs.startswith("CRITICAL:"):
-                        logging.error(err_logs)
-                    elif err_logs.startswith("WARNING:"):
-                        logging.warning(err_logs)
-                    elif err_logs.startswith("DEBUG:"):
-                        logging.debug(err_logs)
-                    else:
-                        logging.info(err_logs)
+                    logging.error(f"Error logs from docker: {format(err_logs)}")
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
                     logging.info(f"Logs from docker: {format(out_logs)}")
 
                 if container_obj.status == "exited":
-                    logging.info("Container {} has exited".format(cmd_container_name))
+                    logging.info("Container {} has exited, automatically remove it".format(cmd_container_name))
+                    client.api.remove_container(container_obj.id, v=True, force=True)
                     break
 
         # should_exit_logs will ping the inference container
@@ -632,8 +583,6 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         return "", "", {}, {}
 
     local_infer_url = "{}:{}".format(infer_host, inference_http_port)
-    logging.info(f"The infer_url_host is {infer_host}")
-    logging.info(f"Local infer url: {local_infer_url}.")
 
     if is_hg_model:
         inference_model_name = "{}_{}_inference".format(model_name, str(inference_engine))
@@ -644,7 +593,6 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         infer_host, inference_http_port, inference_model_name, local_infer_url,
         inference_type, model_version="", request_input_example=request_input_example)
 
-    logging.info(f"The res is {response_from_client_container}")
     return response_from_client_container
 
 

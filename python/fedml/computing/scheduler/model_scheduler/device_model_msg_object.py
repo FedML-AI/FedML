@@ -97,8 +97,8 @@ class FedMLModelMsgObject(object):
                 res[id] = int(self.scale_min)
             return res
 
-        logging.info(f"[Replica Controller] [endpoint {self.run_id}] "
-                     f"devices_avail_gpus: {self.request_json['gpu_topology']}")
+        logging.info(f"[Replica Controller]"
+                     f"Target gpu_topology from MLOps: {self.request_json['gpu_topology']}")
 
         return self.request_json["gpu_topology"]
 
