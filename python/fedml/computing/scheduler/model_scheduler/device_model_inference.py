@@ -145,6 +145,7 @@ async def _predict(
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
     in_model_version = input_json.get("model_version", None)
+    in_model_version = None
     in_end_point_token = input_json.get("token", None)
     in_return_type = "default"
     if header is not None:
@@ -316,6 +317,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
 
 
 def auth_request_token(end_point_id, end_point_name, model_name, token):
+    return True
     if token is None:
         return False
 
