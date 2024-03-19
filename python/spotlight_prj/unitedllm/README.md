@@ -2,48 +2,10 @@
  <img src="assets/fedml_logo_light_mode.png" width="400px">
 </div>
 
-# UnitedLLM: Communication Efficient Decentralized Training of Large Models
+# UnitedLLM: Training and Serving LLM Collaboratively on Decentralized GPU Clouds
 
-[UnitedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
-is an MLOps-supported training pipeline for communication efficient geo-distributed pretraining of large models.
-
-## How to Use Llama 2
-
-Our UnitedLLM example uses Pythia by default, but we recently added support for Llama2.
-If you'd like to use Llama2, please see the following instructions before getting started.
-
-To use [Llama 2](https://ai.meta.com/llama/), you need to apply access from Meta and request Meta's private
-Hugging Face repo access.
-
-1. Make sure your `transformers` version is `4.31.0` or newer. You could update your transformers via
-   `pip install --upgrade transformers`.
-2. Please visit the [Meta website](https://ai.meta.com/resources/models-and-libraries/llama-downloads/) and apply for
-   access.
-2. Apply for [Meta's private repo](https://huggingface.co/meta-llama/Llama-2-7b-hf)
-   on [Hugging Face](https://huggingface.co/meta-llama/Llama-2-7b-hf). See below image for detail.
-   ![Meta's private repo on Hugging Face](assets/Llama/huggingface_llama_repo.png)
-3. Once both access are granted, you can start using Llama with UnitedLLM
-   1. For centralized/conventional training, pass `--model_name_or_path "meta-llama/Llama-2-7b-hf"` to the training script.
-   2. For federated training, update the fedml_config as follow
-   ```yaml
-   model_args:
-      model_name_or_path: "meta-llama/Llama-2-7b-hf"
-      ...
-   ```
-
-> **Warning**
-> Since Llama 2 is on a private Hugging Face repo, you need to either login to Hugging Face or provide your access token.
-> - To login to huggingface (see https://huggingface.co/settings/tokens for detail), run `huggingface-cli login` in
-    command line.
-> - To pass an access token, you need to do one of the following:
->   - Set environment variable `HUGGING_FACE_HUB_TOKEN="<your access token>"`
->   - For centralized/conventional training, pass `--auth_token "<your access token>"` in the command line.
->   - For federated training, update the [fedml_config.yaml](fedml_config/fedml_config.yaml) as follow:
->   - ```yaml
->     model_args:
->        auth_token: "<your access token>"
->        ...
->     ```
+[FEDML® UnitedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
+is an MLOps-supported training pipeline for decentralized pretraining and finetuning of large language models.
 
 ## Getting Started
 
