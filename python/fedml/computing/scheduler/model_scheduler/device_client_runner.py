@@ -147,8 +147,7 @@ class FedMLClientRunner:
             os.remove(local_package_file)
         logging.info("Download from package_url {}".format(package_url))
 
-        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+        urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
@@ -174,8 +173,7 @@ class FedMLClientRunner:
         local_package_file = "{}".format(os.path.join(local_package_path, package_name))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+        urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
 
         unzip_package_path = os.path.join(unzip_package_path, package_name)
