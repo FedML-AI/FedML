@@ -20,7 +20,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 
 import fedml
-from build.lib.fedml.core.mlops import ssl
+import ssl
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
