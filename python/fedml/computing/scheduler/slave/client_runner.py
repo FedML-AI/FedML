@@ -1166,36 +1166,45 @@ class FedMLClientRunner:
         listen_edge_id = str(topic).split("/")[-1]
         context = payload_json.get("context", None)
         response_topic = f"client/server/response_device_info/{server_id}"
+        need_gpu_info = payload_json.get("need_gpu_info", False)
+        need_running_process_list = payload_json.get("need_running_process_list", False)
         if self.mlops_metrics is not None and self.model_device_client_list is not None and \
                 self.model_device_server is not None:
-            total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
-                gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(
-                self.edge_id)
-            host_ip = sys_utils.get_host_ip()
-            host_port = sys_utils.get_available_port()
-            gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
-            gpu_cores_available = len(gpu_available_ids)
-            gpu_list = sys_utils.get_gpu_list()
-            device_info_json = {
-                "edge_id": listen_edge_id,
-                "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                "cpuUtilization": round(cup_utilization, 2),
-                "cpuCores": cpu_cores,
-                "gpuCoresTotal": gpu_cores_total,
-                "gpuCoresAvailable": gpu_cores_available,
-                "gpu_available_ids": gpu_available_ids,
-                "gpu_list": gpu_list,
-                "node_ip": host_ip,
-                "node_port": host_port,
-                "networkTraffic": sent_bytes + recv_bytes,
-                "updateTime": int(MLOpsUtils.get_ntp_time()),
-                "fedml_version": fedml.__version__,
-                "user_id": self.args.user,
-                "run_process_list_map": self.get_all_run_process_list_map()
-            }
+            if not need_gpu_info:
+                device_info_json = {
+                    "edge_id": listen_edge_id,
+                    "fedml_version": fedml.__version__,
+                    "user_id": self.args.user
+                }
+            else:
+                total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
+                    gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats(
+                    self.edge_id)
+                host_ip = sys_utils.get_host_ip()
+                host_port = sys_utils.get_available_port()
+                gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
+                gpu_cores_available = len(gpu_available_ids)
+                gpu_list = sys_utils.get_gpu_list()
+                device_info_json = {
+                    "edge_id": listen_edge_id,
+                    "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "cpuUtilization": round(cup_utilization, 2),
+                    "cpuCores": cpu_cores,
+                    "gpuCoresTotal": gpu_cores_total,
+                    "gpuCoresAvailable": gpu_cores_available,
+                    "gpu_available_ids": gpu_available_ids,
+                    "gpu_list": gpu_list,
+                    "node_ip": host_ip,
+                    "node_port": host_port,
+                    "networkTraffic": sent_bytes + recv_bytes,
+                    "updateTime": int(MLOpsUtils.get_ntp_time()),
+                    "fedml_version": fedml.__version__,
+                    "user_id": self.args.user,
+                    "run_process_list_map": self.get_all_run_process_list_map()
+                }
             salve_device_ids = list()
             for model_client in self.model_device_client_list:
                 salve_device_ids.append(model_client.get_edge_id())
