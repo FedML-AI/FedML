@@ -13,9 +13,11 @@ from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLMo
 
 
 def plot_qps_vs_latency_vs_scale(
+        metric,
         traffic,
         scale_operations,
-        trend_lines=None):
+        trend_lines=None,
+        triggering_points=None):
 
     # plot
     fig, ax = plt.subplots(figsize=(30, 10))
@@ -29,17 +31,20 @@ def plot_qps_vs_latency_vs_scale(
     for scale_op in scale_operations[1:]:
         running_instances.append(running_instances[-1] + scale_op.value)
 
-    # ax.plot_date(ts, qps, color='red', fmt="8--", linewidth=0.5, label="QPS")
-    ax.plot_date(ts, latency, color='purple', fmt="p--", linewidth=0.5, label="Latency")
+    if metric == "qps":
+        ax.plot_date(ts, qps, color='purple', fmt="8--", linewidth=0.5, label="QPS")
+    else:
+        ax.plot_date(ts, latency, color='purple', fmt="p--", linewidth=0.5, label="Latency")
     ax.plot_date(ts, running_instances, color='green', fmt="*", linewidth=0.5, label="Instances")
 
     if trend_lines:
         for i, t in enumerate(trend_lines):
             ax.plot_date(ts, t, linestyle="solid", label="Trend Line {}".format(i))
 
+    if triggering_points:
+        ax.plot_date(ts, triggering_points, fmt="", marker="^", markersize=12, label="Triggering Points", color="red")
+
     ax.set_xlabel("Timestamp")
-    # ax.set_ylabel()
-    # ax.set_yscale("log")
     plt.xticks(rotation=0)
     for label in ax.xaxis.get_ticklabels():
         label.set_rotation(45)
@@ -68,44 +73,63 @@ if __name__ == "__main__":
     fedml_model_cache.delete_model_endpoint_metrics(
         endpoint_id=endpoint_id)
 
-    traffic = TrafficSimulation.generate_traffic(
+    # INFO To test different distributions, simply change the distribution value
+    # to the following possible values:
+    #   "random", "linear", "exponential"
+    # Moreover, you can also play around with the order of values in an
+    # ascending (reverse=False) or descending (reverse=True) order.
+    traffic_dist = TrafficSimulation.generate_traffic(
         qps_distribution="random",
-        latency_distribution="linear",
+        latency_distribution="exponential",
         num_values=300,
         submit_request_every_x_secs=30,
         reverse=False,
         with_warmup=False)
 
-    # traffic = TrafficSimulation.generate_traffic_with_seasonality(
-    #     num_values=1000,
-    #     submit_request_every_x_secs=10,
-    #     with_warmup=False)
+    traffic_seasonality = TrafficSimulation.generate_traffic_with_seasonality(
+        num_values=1000,
+        submit_request_every_x_secs=10,
+        with_warmup=False)
 
-    # Populate Redis and Trigger Autoscaler at every insertion
+    # INFO Please remember to change these two variables below when attempting
+    # to test the simulation of the autoscaling policy simulation.
+    testing_metric = "qps"
+    testing_traffic = traffic_seasonality
+    latency_reactive_policy_default = \
+        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+    qps_reactive_policy_default = \
+        {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
+    policy_config = latency_reactive_policy_default \
+        if testing_metric == "latency" else qps_reactive_policy_default
+    print(policy_config)
+
     autoscaler = Autoscaler(redis_addr, redis_port, redis_password)
-    # autoscaling_policy = ReactivePolicy(metric="qps", lb_threshold=0, ub_threshold=3)
-    autoscaling_policy = ReactivePolicy(metric="latency")
+    autoscaling_policy = ReactivePolicy(**policy_config)
     scale_operations = []
-    for i, t in enumerate(traffic):
+    ewm_values = []
+    triggering_values = []
+    for i, t in enumerate(testing_traffic):
         ts, qps, latency = t[0], t[1], t[2]
         fedml_model_cache.set_monitor_metrics(
             endpoint_id, "", "", "", latency, 0, 0, qps, 0, ts, 0)
         scale_op = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             str(endpoint_id))
-        print(scale_op)
+        ewm_values.append(autoscaling_policy.ewm_latest)
+        triggering_values.append(autoscaling_policy.triggering_value)
         scale_operations.append(scale_op)
 
-    trend_lines = [
-        # autoscaler.macd_vals,
-        # autoscaler.macd_signal_line_vals,
-        # autoscaler.ppo_vals,
-        # autoscaler.ppo_cross_vals,
-        # autoscaler.ppo_signal_line_vals
-        # autoscaler.short_period_vals[-300:],
-        # autoscaler.long_period_vals[-300:]
-    ]
+    triggering_values_to_plot = []
+    for idx, v in enumerate(triggering_values):
+        if (idx - 1) < 0 or triggering_values[idx] == triggering_values[idx - 1]:
+            triggering_values_to_plot.append(None)
+        else:
+            triggering_values_to_plot.append(v)
+
+    trend_lines = [ewm_values]
     plot_qps_vs_latency_vs_scale(
-        traffic,
-        scale_operations,
-        trend_lines)
+        metric=testing_metric,
+        traffic=testing_traffic,
+        scale_operations=scale_operations,
+        trend_lines=trend_lines,
+        triggering_points=triggering_values_to_plot)

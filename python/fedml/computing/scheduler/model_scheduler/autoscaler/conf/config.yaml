@@ -1,16 +1,2 @@
 Config:
-  DatetimeFormat: "%Y-%m-%dT%H:%M:%Sz"
-  TimeSeriesLength: 10
-
-
-#
-#"""
-#AutoscalerConfigs = {
-#    should_autoscale,
-#    min_replicas,
-#    max_replicas,
-#    running_replicas
-#    target_num_ongoing_requests_per_replica
-#    target_ongoing_requests
-#}
-#"""
+  DatetimeFormat: "%Y-%m-%dT%H:%M:%S.%f"

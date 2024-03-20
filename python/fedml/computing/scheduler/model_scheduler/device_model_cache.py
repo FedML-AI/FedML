@@ -607,7 +607,7 @@ class FedMLModelCache(Singleton):
             endpoints_ids.append(endpoint_id)
         return endpoints_ids
 
-    def get_endpoint_metrics(self, endpoint_id, k_recent=None) -> List[Any]:
+    def get_endpoint_metrics(self, endpoint_id, k_recent=None, only_secs=True) -> List[Any]:
 
         model_deployment_monitor_metrics = list()
         try:
@@ -639,6 +639,7 @@ class FedMLModelCache(Singleton):
                     end=end)
             model_deployment_monitor_metrics = [
                 json.loads(m) for m in model_deployment_monitor_metrics]
+
         except Exception as e:
             logging.error(e)
 

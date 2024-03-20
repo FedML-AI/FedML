@@ -62,6 +62,7 @@ class ReactivePolicy(AutoscalingPolicy):
     metric: str = "latency"
     ewm_mins: int = 15
     ewm_alpha: float = 0.5
+    ewm_latest: float = None
     ub_threshold: float = 0.5
     lb_threshold: float = 0.5
     triggering_value: float = None
@@ -73,19 +74,26 @@ class ReactivePolicy(AutoscalingPolicy):
         return v
 
 
+class PredictivePolicy(AutoscalingPolicy):
+    # TODO Not implemented yet!!!
+    pass
+
+
 class Autoscaler(metaclass=Singleton):
 
     def __init__(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
         super().__init__()
         self.fedml_model_cache = FedMLModelCache.get_instance()
         self.fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
-        self.triggered_value = None
 
     @staticmethod
     def get_instance():
         return Autoscaler()
 
-    def scale_operation_predictive(self, metrics):
+    @classmethod
+    def scale_operation_predictive(cls,
+                                   predictive_policy: PredictivePolicy,
+                                   metrics: Dict):
 
         # TODO (fedml-dimitris): This is not ready!!!
 
@@ -113,14 +121,14 @@ class Autoscaler(metaclass=Singleton):
 
         macd_cross = macd.values[-1]
         latest_value = short_period_ewm.values[-1]
-        if self.triggered_value is None:
-            self.triggered_value = latest_value
+        if predictive_policy.triggered_value is None:
+            predictive_policy.triggered_value = latest_value
 
-        rate = 100 * (latest_value - self.triggered_value) / self.triggered_value
+        rate = 100 * (latest_value - predictive_policy.triggered_value) / predictive_policy.triggered_value
         scale_op = ScaleOp.NO_OP
         # if rate of increase is greater than 50% then trigger a scaling operation.
         if abs(rate) > 50:
-            self.triggered_value = latest_value
+            predictive_policy.triggered_value = latest_value
             if macd_cross > 0:
                 # If the cross is positive, then MACD crosses from the bottom. This is an indicator
                 # of uptrend. For any metric, this means that the metric value is increasing:
@@ -162,6 +170,8 @@ class Autoscaler(metaclass=Singleton):
                 .ewm(alpha=reactive_policy.ewm_alpha).mean()
 
         latest_value = ewm_period.values[-1]
+        # Just keep track / update the latest EWM value.
+        reactive_policy.ewm_latest = latest_value
         # Assign the triggering value the first time we call the reactive
         # policy, if of course it has not been assigned already.
         if reactive_policy.triggering_value is None:
@@ -171,7 +181,7 @@ class Autoscaler(metaclass=Singleton):
         lower_bound = reactive_policy.lb_threshold * reactive_policy.triggering_value
 
         scale_op = ScaleOp.NO_OP
-        if latest_value < lower_bound or latest_value > upper_bound:
+        if latest_value <= lower_bound or latest_value >= upper_bound:
             # Replace the triggering value if the policy requests so.
             if not reactive_policy.freeze_triggering_value:
                 reactive_policy.triggering_value = latest_value
@@ -181,18 +191,18 @@ class Autoscaler(metaclass=Singleton):
                 # 'lower bound' then 'release' resources,
                 # else if the 'latency' is 'greater' than
                 # the 'upper bound' 'acquire' resources.
-                if latest_value < lower_bound:
+                if latest_value <= lower_bound:
                     scale_op = ScaleOp.DOWN_IN_OP
-                elif latest_value > upper_bound:
+                elif latest_value >= upper_bound:
                     scale_op = ScaleOp.UP_OUT_OP
             elif reactive_policy.metric == "qps":
                 # If the 'qps' is smaller than the
                 # 'lower bound' then 'acquire' resources,
                 # else if the 'qps' is 'greater' than
                 # the 'upper bound' 'release' resources.
-                if latest_value < lower_bound:
+                if latest_value <= lower_bound:
                     scale_op = ScaleOp.UP_OUT_OP
-                elif latest_value > upper_bound:
+                elif latest_value >= upper_bound:
                     scale_op = ScaleOp.DOWN_IN_OP
 
         return scale_op
@@ -217,7 +227,7 @@ class Autoscaler(metaclass=Singleton):
         # TODO: get the min, max, and current running replicas from Redis.
         min_replicas = 1
         max_replicas = 10
-        current_replicas = 1
+        current_replicas = 3
 
         # Fetch all the previous timeseries values.
         endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
@@ -238,9 +248,10 @@ class Autoscaler(metaclass=Singleton):
 
         # We cannot exceed the maximum number of requested replicas.
         new_running_replicas = current_replicas + scale_op.value
-        if new_running_replicas > max_replicas:
+        if new_running_replicas <= min_replicas:
             scale_op = ScaleOp.NO_OP
-
+        if new_running_replicas >= max_replicas:
+            scale_op = ScaleOp.NO_OP
         return scale_op
 
     def scale_operation_endpoints(self, autoscaling_policy) -> Dict[Any, ScaleOp]:
