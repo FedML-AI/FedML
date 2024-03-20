@@ -1486,6 +1486,19 @@ class FedMLClientRunner:
         topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
         self.mqtt_mgr.add_message_listener(topic_client_logout, self.callback_client_logout)
 
+        topic_request_edge_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+        self.mqtt_mgr.add_message_listener(topic_request_edge_device_info_from_mlops, self.callback_report_device_info)
+
+        topic_request_deploy_master_device_info_from_mlops = None
+        if self.model_device_server is not None:
+            topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.model_device_server.get_edge_id()}"
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_master_device_info_from_mlops, self.callback_report_device_info)
+
+        topic_request_deploy_slave_device_info_from_mlops = None
+        if self.model_device_client_list is not None and len(self.model_device_client_list) > 0:
+            topic_request_deploy_slave_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.model_device_client_list[0].get_edge_id()}"
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_slave_device_info_from_mlops, self.callback_report_device_info)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train, qos=2)
         mqtt_client_object.subscribe(topic_stop_train, qos=2)
@@ -1494,6 +1507,9 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
         mqtt_client_object.subscribe(topic_client_logout, qos=2)
+        mqtt_client_object.subscribe(topic_request_edge_device_info_from_mlops, qos=2)
+        mqtt_client_object.subscribe(topic_request_deploy_master_device_info_from_mlops, qos=2)
+        mqtt_client_object.subscribe(topic_request_deploy_slave_device_info_from_mlops, qos=2)
 
         self.subscribed_topics.clear()
         self.subscribed_topics.append(topic_start_train)
@@ -1503,6 +1519,9 @@ class FedMLClientRunner:
         self.subscribed_topics.append(topic_ota_msg)
         self.subscribed_topics.append(topic_request_device_info)
         self.subscribed_topics.append(topic_client_logout)
+        self.subscribed_topics.append(topic_request_edge_device_info_from_mlops)
+        self.subscribed_topics.append(topic_request_deploy_master_device_info_from_mlops)
+        self.subscribed_topics.append(topic_request_deploy_slave_device_info_from_mlops)
 
         # Subscribe the messages for federated learning.
         self.subscribe_fl_msgs()
