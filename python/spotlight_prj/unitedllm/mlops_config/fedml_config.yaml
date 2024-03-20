@@ -1,5 +1,6 @@
 common_args:
-  training_type: "cross_cloud"  # decentralized training type, we recommend `cross_cloud` for LLMs
+  #  training_type: "cross_cloud"  # decentralized training type, we recommend `cross_cloud` for LLMs
+  training_type: "cross_silo"
   scenario: "horizontal"  # decentralized training scenario, we recommend `horizontal` for LLMs
   use_customized_hierarchical: True  # if `True`, will use customized hierarchical cross-cloud; this could improve the training stability
   random_seed: 0
