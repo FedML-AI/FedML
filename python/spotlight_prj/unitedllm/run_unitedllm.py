@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import warnings
 
-from accelerate.utils import broadcast_object_list
+from accelerate.utils import broadcast_object_list, load_state_dict
 from datasets import IterableDataset
 import fedml
 from fedml import FedMLRunner, mlops
@@ -27,11 +27,11 @@ from fedml.train.llm.train_utils import (
 from fedml.train.llm.typing import DatasetType, ModelType, PathType, TokenizerType
 from fedml.train.llm.utils import get_real_path, is_file, save_config
 from peft import PeftModel
-from peft.utils import WEIGHTS_NAME as PEFT_WEIGHTS_NAME
+from peft.utils import SAFETENSORS_WEIGHTS_NAME as PEFT_SAFETENSORS_WEIGHTS_NAME, WEIGHTS_NAME as PEFT_WEIGHTS_NAME
 import torch.cuda
 from torch.nn import Module
 from transformers import PreTrainedModel
-from transformers.utils import WEIGHTS_NAME as HF_WEIGHTS_NAME
+from transformers.utils import SAFE_WEIGHTS_NAME as HF_SAFE_WEIGHTS_NAME, WEIGHTS_NAME as HF_WEIGHTS_NAME
 
 from src.configurations import UnitedLLMExperimentArguments
 from src.peft_utils import set_peft_model_state_dict
@@ -216,19 +216,15 @@ def save_checkpoint(
 
 def load_checkpoint(checkpoint_dir: PathType) -> OrderedDict:
     checkpoint_dir = Path(checkpoint_dir)
-    checkpoint_path = checkpoint_dir / HF_WEIGHTS_NAME
-    peft_checkpoint_path = checkpoint_dir / PEFT_WEIGHTS_NAME
 
     # TODO: support HF sharded checkpoints, see `transformers.utils.WEIGHTS_INDEX_NAME`
-    if is_file(peft_checkpoint_path):
-        state_dict = torch.load(str(peft_checkpoint_path), map_location="cpu")
-    elif is_file(checkpoint_path):
-        state_dict = torch.load(str(checkpoint_path), map_location="cpu")
+    for filename in (PEFT_SAFETENSORS_WEIGHTS_NAME, PEFT_WEIGHTS_NAME, HF_SAFE_WEIGHTS_NAME, HF_WEIGHTS_NAME):
+        checkpoint_path = checkpoint_dir / filename
+        if is_file(checkpoint_path):
+            state_dict = load_state_dict(str(checkpoint_path), device_map={"": "cpu"})
+            break
     else:
-        raise FileNotFoundError(
-            f"Could not find either PEFT checkpoint in \"{peft_checkpoint_path}\" nor full checkpoint"
-            f" in {checkpoint_path}."
-        )
+        raise FileNotFoundError(f"Could not find either PEFT checkpoint or full checkpoint in {checkpoint_dir}.")
 
     return state_dict
 
