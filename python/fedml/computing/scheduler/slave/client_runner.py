@@ -20,6 +20,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 
 import fedml
+from build.lib.fedml.core.mlops import ssl
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
@@ -204,6 +205,7 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
+        ssl._create_default_https_context = ssl._create_unverified_context
         urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
