@@ -938,7 +938,7 @@ class FedMLClientRunner:
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, train_edge_id, run_id=run_id)
 
         # OTA upgrade
-        self.ota_upgrade(payload, request_json)
+        #self.ota_upgrade(payload, request_json)
 
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
