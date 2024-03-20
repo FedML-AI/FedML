@@ -266,8 +266,7 @@ class FedMLDeviceReplicaController:
         intermediate_state = {id1: 2, id2: 1}
         op_type: "add" or "remove"
         """
-        if (str(changed_device_id) in self.curr_replica_updating_window) and \
-                (str(replica_no) in self.curr_replica_updating_window[str(changed_device_id)]):
+        if self.total_replica_version_diff_num != 0:
             # Should be viewed as updated, replica number will not be changed.
             return
 
