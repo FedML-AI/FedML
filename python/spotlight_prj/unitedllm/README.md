@@ -13,39 +13,24 @@ Clone the repo then go to UnitedLLM directory:
 
 ```shell
 # clone the repo and the submodules
-git clone https://github.com/FedML-AI/FedML.git
+git clone https://github.com/FedML-AI/FedML.git -b unitedllm
 
 # go to the project directory
 cd python/spotlight_prj/unitedllm
-```
 
-Install dependencies with the following command:
-
-```shell
+# Install dependencies
 pip install -r requirements.txt
-```
 
-See [Dependencies](#dependencies) for more information on the dependency versions.
+# Update the repo
+git pull
 
-### Update the Repo
-
-Update the repo and the submodules:
-
-```shell
-git pull --recurse-submodules
-```
-
-### Prepare Dataset
-
-Run the following command to download the example datasets.
-
-```shell
+# Download the example datasets.
 bash scripts/setup.sh
 ```
 
 ### Conventional/Centralized Training
 
-See [LLM Train examples](https://github.com/FedML-AI/FedML/tree/master/python/examples/train/llm_train) for detail.
+See [LLM Train examples](https://github.com/FedML-AI/FedML/tree/master/python/examples/train/llm_train) for details.
 
 ### Decentralized Cross-cloud Training with FedML
 
@@ -59,7 +44,7 @@ pip install fedml
 
 #### 2. Prepare a Configuration File
 
-To train/fine-tune in federated setting, you need to provide a FedML config file.
+To train/fine-tune in decentralized setting, you need to provide a FedML config file.
 A concrete example can be found in [fedml_config/fedml_config.yaml](fedml_config/fedml_config.yaml).
 
 ```yaml
@@ -179,7 +164,7 @@ bash scripts/run_fedml_client.sh 3 "$RUN_ID"
 ...
 ```
 
-_See FedML's [Getting Started](https://doc.fedml.ai/starter/getting_started.html) for detail._
+_See FedML's [Getting Started](https://doc.fedml.ai/federate/getting_started) for details._
 
 ### Use FedML Octopus (MLOps) for Model Training
 
@@ -299,21 +284,4 @@ You can easily monitor system performance,and visualize training/evaluation metr
 **Congratulations! You've completed the UnitedLLM tutorial on FedML!!!**
 
 Check out [FedML Octopus](https://open.fedml.ai/octopus/index) and our [Video Tutorial](https://youtu.be/Xgm0XEaMlVQ)
-for detail.
-
-### Dependencies
-
-We have tested our implement with the following setup:
-
-- Ubuntu `20.04.5 LTS` and `22.04.2 LTS`
-- CUDA `11.8`, `11.7` and `11.6`
-- Python `3.8.13` and `3.9.16`
-    - `fedml>=0.8.4a7`
-    - `torch>=2.0.0,<=2.0.1`
-    - `torchvision>=0.15.1,<=0.15.2`
-    - `transformers>=4.31.0,<=4.34.0`
-    - `peft>=0.4.0,<=0.5.0`
-    - `datasets>=2.11.0,<=2.14.5`
-    - `deepspeed>=0.9.1,<=0.10.2`
-    - `numpy>=1.24.3,<=1.24.4`
-    - `tensorboard>=2.12.2,<=2.13.0`
+for details.
