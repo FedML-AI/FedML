@@ -3,15 +3,19 @@ import sys
 
 import datetime
 import numpy as np
-
 import fedml.computing.scheduler.model_scheduler.autoscaler.conf as conf
 
-sys.path.insert(0, '..')    # Need to extend the path because the test script is a standalone script.
+from datetime import timedelta
+from mockseries.noise import RedNoise
+from mockseries.utils import datetime_range
+from mockseries.seasonality import SinusoidalSeasonality
+from mockseries.trend import LinearTrend
+
+sys.path.insert(0, '..')  # Need to extend the path because the test script is a standalone script.
 random.seed(0)
 
 
 class TrafficSimulation(object):
-
     CONFIG_DATETIME_FORMAT = conf.CONFIG_DATETIME_FORMAT
     START_DATE = datetime.datetime(2001, 1, 1, 1, 1, 1)  # 2001-01-01T01:01:01z"
     WARMUP_ENDPOINT_QPS = [
@@ -24,6 +28,10 @@ class TrafficSimulation(object):
         0.080, 0.079, 0.077, 0.078, 0.079, 0.077, 0.078, 0.078, 0.085, 0.060, 0.057,
         0.086, 0.083, 0.081, 0.079, 0.095, 0.065
     ]
+    QPS_MIN_VAL = 1
+    QPS_MAX_VAL = 100
+    LATENCY_MIN_VAL = 1
+    LATENCY_MAX_VAL = 5
 
     @staticmethod
     def date_increment_sec(start_date, secs):
@@ -53,35 +61,56 @@ class TrafficSimulation(object):
         return qps_values, latency_values
 
     @classmethod
+    def low_high(cls, latency=False, qps=False, num_values=1, reverse=False):
+        low, high, step = None, None, None
+        if latency:
+            low, high = \
+                (cls.LATENCY_MAX_VAL, cls.LATENCY_MIN_VAL) if reverse \
+                    else (cls.LATENCY_MIN_VAL, cls.LATENCY_MAX_VAL)
+            step = (cls.LATENCY_MAX_VAL - cls.LATENCY_MIN_VAL) / num_values
+            step = -step if reverse else step
+        if qps:
+            low, high = \
+                (cls.QPS_MAX_VAL, cls.QPS_MIN_VAL) if reverse \
+                    else (cls.QPS_MIN_VAL, cls.QPS_MAX_VAL)
+            step = (cls.QPS_MAX_VAL - cls.QPS_MIN_VAL) / num_values
+            step = -step if reverse else step
+        return low, high, step
+
+    @classmethod
     def generate_traffic(cls,
                          qps_distribution,
                          latency_distribution,
                          num_values,
                          submit_request_every_x_secs=30,
-                         with_warmup=True):
+                         reverse=False,
+                         with_warmup=False):
 
         qps_values, latency_values = [], []
+        q_low, q_high, q_step = cls.low_high(qps=True, num_values=num_values, reverse=reverse)
+        l_low, l_high, l_step = cls.low_high(latency=True, num_values=num_values, reverse=reverse)
         if with_warmup:
             qps_values, latency_values = cls.generate_warmup_traffic()
         if qps_distribution == "random":
-            qps_values_tmp = np.round(np.random.uniform(1, 100, num_values), 3).tolist()
+            qps_values_tmp = np.round(np.random.uniform(q_low, q_high, num_values), 3).tolist()
             qps_values.extend(qps_values_tmp)
         if latency_distribution == "random":
-            latency_values_tmp = np.round(np.random.uniform(1, 5, num_values), 3).tolist()
+            latency_values_tmp = np.round(np.random.uniform(l_low, l_high, num_values), 3).tolist()
             latency_values.extend(latency_values_tmp)
         if qps_distribution == "linear":
-            step = (100 - 1) / num_values
-            qps_values_tmp = np.round(np.arange(1, 100, step), 3).tolist()
+            qps_values_tmp = np.round(np.arange(q_low, q_high, q_step), 3).tolist()
             qps_values.extend(qps_values_tmp)
         if latency_distribution == "linear":
-            step = (5 - 1) / num_values
-            latency_values_tmp = np.round(np.arange(1, 5, step), 3).tolist()
+            latency_values_tmp = np.round(np.arange(l_low, l_high, l_step), 3).tolist()
             latency_values.extend(latency_values_tmp)
         if qps_distribution == "exponential":
-            qps_values_tmp = np.round(np.logspace(np.log(1), np.log(100), num_values, base=np.exp(1)), 3).tolist()
+            qps_values_tmp = np.round(np.logspace(np.log(q_low), np.log(q_high), num_values, base=np.exp(1)),
+                                      3).tolist()
             qps_values.extend(qps_values_tmp)
         if latency_distribution == "exponential":
-            latency_values_tmp = np.round(np.logspace(np.log(1), np.log(5), num_values, base=np.exp(1)), 3).tolist()
+            low, high, _ = cls.low_high(latency=True, num_values=num_values, reverse=reverse)
+            latency_values_tmp = np.round(np.logspace(np.log(l_low), np.log(l_high), num_values, base=np.exp(1)),
+                                          3).tolist()
             latency_values.extend(latency_values_tmp)
 
         traffic = []
@@ -91,5 +120,49 @@ class TrafficSimulation(object):
             current_timestamp = cls.date_increment_sec(
                 current_timestamp, secs=submit_request_every_x_secs)
             traffic.append((timestamp, q, l))
+
+        return traffic
+
+    @classmethod
+    def generate_traffic_with_seasonality(cls,
+                                          num_values,
+                                          submit_request_every_x_secs=30,
+                                          with_warmup=False):
+        traffic = []
+        start_date = cls.START_DATE
+        if with_warmup:
+            qps_values, latency_values = cls.generate_warmup_traffic()
+            current_timestamp = start_date
+            for q, l in zip(qps_values, latency_values):
+                timestamp = current_timestamp.strftime(conf.CONFIG_DATETIME_FORMAT)
+                current_timestamp = cls.date_increment_sec(
+                    current_timestamp, secs=submit_request_every_x_secs)
+                traffic.append((timestamp, q, l))
+            start_date = current_timestamp
+
+        trend = LinearTrend(coefficient=2, time_unit=timedelta(hours=1), flat_base=100)
+        seasonality = SinusoidalSeasonality(amplitude=20, period=timedelta(hours=1)) \
+                      + SinusoidalSeasonality(amplitude=4, period=timedelta(hours=1))
+        noise = RedNoise(mean=0, std=3, correlation=0.5)
+
+        timeseries = trend + seasonality + noise
+        ts_index = datetime_range(
+            granularity=timedelta(seconds=submit_request_every_x_secs),
+            start_time=start_date,
+            num_points=num_values
+        )
+        ts_values = timeseries.generate(ts_index)
+
+        r_min, r_max = ts_values.min(), ts_values.max()
+        scale_to_qps = \
+            lambda x: ((x - r_min) / (r_max - r_min)) * (cls.QPS_MAX_VAL - cls.QPS_MIN_VAL) + cls.QPS_MIN_VAL
+        scale_to_latency = \
+            lambda x: ((x - r_min) / (r_max - r_min)) * (cls.LATENCY_MAX_VAL - cls.LATENCY_MIN_VAL) + cls.LATENCY_MIN_VAL
+
+        for d, v in zip(ts_index, ts_values):
+            qps = scale_to_qps(v)
+            lat = scale_to_latency(v)
+            ts = d.strftime(conf.CONFIG_DATETIME_FORMAT)
+            traffic.append((ts, qps, lat))
 
         return traffic

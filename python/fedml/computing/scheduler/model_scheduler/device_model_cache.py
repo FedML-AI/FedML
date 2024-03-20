@@ -627,7 +627,7 @@ class FedMLModelCache(Singleton):
             # Set start and end index depending on the size of the
             # list and the requested number of most recent records.
             num_records = self.redis_client.llen(name=model_deployment_monitor_endpoint_key)
-            # Fetch all by default.
+            # if k_most_recent is None, then fetch all by default.
             start, end = 0, -1
             # if k_most_recent is positive then fetch [-k_most_recent:]
             if k_recent and k_recent > 0:
