@@ -18,7 +18,9 @@ class AutoscalerTest(unittest.TestCase):
 
     def test_scale_operation_single_endpoint_reactive(self):
         autoscaler = Autoscaler.get_instance()
-        autoscaling_policy = ReactivePolicy(metric="latency")
+        latency_reactive_policy_default = \
+            {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        autoscaling_policy = ReactivePolicy(**latency_reactive_policy_default)
         scale_op_1 = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             endpoint_id=ENV_ENDPOINT_ID_1)
@@ -30,7 +32,9 @@ class AutoscalerTest(unittest.TestCase):
 
     def test_scale_operation_all_endpoints_reactive(self):
         autoscaler = Autoscaler.get_instance()
-        autoscaling_policy = ReactivePolicy(metric="latency")
+        latency_reactive_policy_default = \
+            {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        autoscaling_policy = ReactivePolicy(**latency_reactive_policy_default)
         scale_ops = autoscaler.scale_operation_endpoints(autoscaling_policy)
         self.assertIsNotNone(scale_ops)
 
