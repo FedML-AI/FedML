@@ -422,14 +422,14 @@ class FedMLServerRunner:
                     "END_POINT_NAME=\"{}\" "
                     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
                     "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --workers {} "
                     "--log-level critical".format(
                         self.redis_addr, self.redis_port, self.redis_password,
                         end_point_name,
                         model_name, model_version, "", self.args.version,
                         use_mqtt_inference, use_worker_gateway, ext_info,
-                        python_program, inference_gw_cmd, str(inference_port), fedml_base_dir
-                    ),
+                        python_program, inference_gw_cmd, str(inference_port),
+                        os.getenv("FEDML_MASTER_GATEWAY_WORKER_NUM", "5")),
                     should_capture_stdout=False,
                     should_capture_stderr=False
                 )

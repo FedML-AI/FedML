@@ -414,7 +414,7 @@ class FedMLClientRunner:
                         )
                 except Exception as e:
                     inference_output_url = ""
-                    logging.error(f"[Worker] Exception at deployment: {traceback.format_exc()}")
+                    logging.error(f"[Worker] Exception at deployment, error: {e}")
 
                 if inference_output_url == "":
                     logging.error("[Worker] Failed to deploy the model.")
