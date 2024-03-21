@@ -336,7 +336,15 @@ class FedMLClientRunner:
         self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
-        logging.info("[Worker] Received model deployment request from master.")
+        logging.info(f"[Worker] Received model deployment request from master for endpoint {run_id}.")
+        if self.replica_handler is not None:
+            logging.info(f"=================Worker replica Handler ======================"
+                         f"Reconcile with num diff {self.replica_handler.replica_num_diff} "
+                         f"and version diff {self.replica_handler.replica_version_diff}."
+                         f"=============================================================")
+        else:
+            logging.error(f"[Worker] Replica handler is None.")
+            return False
 
         self.check_runner_stop_event()
 
@@ -370,7 +378,6 @@ class FedMLClientRunner:
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             return False
 
-        logging.info("[Worker] Start the model deployment...")
         self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             "", "", model_version, {}, {}
@@ -387,8 +394,10 @@ class FedMLClientRunner:
             logging.info("[Worker] No need to reconcile.")
             return True
 
-        logging.info(f"[Worker] Reconcile replica with op {op} and op num {op_num}."
-                     f"======================================")
+        logging.info(
+            f"================Worker Reconcile Operations ======================"
+            f" op: {op}; op num: {op_num}."
+            f"==================================================================")
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
             for rank in range(prev_rank+1, prev_rank+1+op_num):

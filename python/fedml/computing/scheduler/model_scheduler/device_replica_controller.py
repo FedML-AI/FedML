@@ -266,8 +266,7 @@ class FedMLDeviceReplicaController:
         intermediate_state = {id1: 2, id2: 1}
         op_type: "add" or "remove"
         """
-        if (str(changed_device_id) in self.curr_replica_updating_window) and \
-                (str(replica_no) in self.curr_replica_updating_window[str(changed_device_id)]):
+        if self.total_replica_version_diff_num != 0:
             # Should be viewed as updated, replica number will not be changed.
             return
 
@@ -286,6 +285,11 @@ class FedMLDeviceReplicaController:
         """
         Check if all the replicas are ready. Including the number and version.
         """
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"intermediate_replica_num: {self.intermediate_replica_num}")
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"target_replica_num: {self.target_replica_num}")
+
         for id, replica_no in self.intermediate_replica_num.items():
             if id not in self.target_replica_num:   # Delete all replica in this device
                 if replica_no != 0:
@@ -300,10 +304,6 @@ class FedMLDeviceReplicaController:
                 return False
 
         logging.info(f"[Replica Controller] [endpoint {self.e_id} ] Replicas are reconciled as expected.")
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
-                     f"intermediate_replica_num: {self.intermediate_replica_num}")
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
-                     f"target_replica_num: {self.target_replica_num}")
         return True
 
     def get_first_chunk_devices_replica_update(self):
@@ -414,10 +414,18 @@ class FedMLDeviceReplicaController:
         if self.total_replica_version_diff_num == 0:
             return True
 
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"intermediate_replica_version: {self.intermediate_replica_version}")
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+                     f"target_replica_version: {self.target_replica_version}")
+
         for id, device_replicas_version in self.intermediate_replica_version.items():
             for replica_no, version in device_replicas_version.items():
                 if version != self.target_replica_version:
                     return False
+
+        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] Replicas are reconciled as expected.")
+
         return True
 
     def init_first_update_device_replica_mapping(self):
