@@ -607,7 +607,9 @@ class FedMLModelCache(Singleton):
             endpoints_ids.append(endpoint_id)
         return endpoints_ids
 
-    def get_endpoint_metrics(self, endpoint_id, k_recent=None, only_secs=True) -> List[Any]:
+    def get_endpoint_metrics(self,
+                             endpoint_id,
+                             k_recent=None) -> List[Any]:
 
         model_deployment_monitor_metrics = list()
         try:
@@ -676,11 +678,15 @@ class FedMLModelCache(Singleton):
 
         return replicas
 
-    def delete_model_endpoint_metrics(self, endpoint_id):
-        key_pattern = "{}*{}*".format(
-            self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
-            endpoint_id)
-        model_deployment_monitor_endpoint_keys = \
-            self.redis_client.keys(pattern=key_pattern)
-        for k in model_deployment_monitor_endpoint_keys:
-            self.redis_client.delete(k)
+    def delete_model_endpoint_metrics(self, endpoint_ids: list):
+        for endpoint_id in endpoint_ids:
+            try:
+                key_pattern = "{}*{}*".format(
+                    self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                    endpoint_id)
+                model_deployment_monitor_endpoint_keys = \
+                    self.redis_client.keys(pattern=key_pattern)
+                for k in model_deployment_monitor_endpoint_keys:
+                    self.redis_client.delete(k)
+            except Exception as e:
+                logging.error(e)

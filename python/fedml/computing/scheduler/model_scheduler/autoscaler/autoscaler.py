@@ -1,6 +1,5 @@
 import warnings
 
-import fedml.computing.scheduler.model_scheduler.autoscaler.conf as conf
 import pandas as pd
 
 from enum import Enum
@@ -99,7 +98,8 @@ class Autoscaler(metaclass=Singleton):
 
         df = pd.DataFrame.from_records(metrics)
         df = df.set_index('timestamp')
-        df.index = pd.to_datetime(df.index, format=conf.CONFIG_DATETIME_FORMAT)
+        # timestamp is supposed to be in micro-seconds, hence unit='us'.
+        df.index = pd.to_datetime(df.index, unit='us')
 
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
@@ -152,9 +152,11 @@ class Autoscaler(metaclass=Singleton):
     def scale_operation_reactive(cls,
                                  reactive_policy: ReactivePolicy,
                                  metrics: Dict):
+
         df = pd.DataFrame.from_records(metrics)
         df = df.set_index('timestamp')
-        df.index = pd.to_datetime(df.index, format=conf.CONFIG_DATETIME_FORMAT)
+        # timestamp is expected to be in micro-seconds, hence unit='us'.
+        df.index = pd.to_datetime(df.index, unit="us")
 
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
@@ -207,6 +209,19 @@ class Autoscaler(metaclass=Singleton):
 
         return scale_op
 
+    def run_autoscaling_policy(self,
+                               autoscaling_policy: AutoscalingPolicy,
+                               metrics: Dict) -> ScaleOp:
+
+        if isinstance(autoscaling_policy, ReactivePolicy):
+            scale_op = self.scale_operation_reactive(
+                autoscaling_policy,
+                metrics)
+        else:
+            raise RuntimeError("Not a valid autoscaling policy instance.")
+
+        return scale_op
+
     def scale_operation_endpoint(self,
                                  autoscaling_policy: AutoscalingPolicy,
                                  endpoint_id: str) -> ScaleOp:
@@ -234,24 +249,20 @@ class Autoscaler(metaclass=Singleton):
             endpoint_id=endpoint_id)
 
         scale_op = ScaleOp.NO_OP
-        # if no requests the last 5 minutes scale down.
         if current_replicas == 0:
             # if number_of requests > 1, then scale up/out
             pass
         else:
-            if isinstance(autoscaling_policy, ReactivePolicy):
-                scale_op = self.scale_operation_reactive(
-                    autoscaling_policy,
-                    endpoint_metrics)
-            else:
-                raise RuntimeError("Not a valid autoscaling policy instance.")
+            scale_op = self.run_autoscaling_policy(autoscaling_policy, endpoint_metrics)
 
-        # We cannot exceed the maximum number of requested replicas.
+        # We cannot be lower than the minimum number of replicas,
+        # nor exceed the maximum number of requested replicas.
         new_running_replicas = current_replicas + scale_op.value
         if new_running_replicas <= min_replicas:
             scale_op = ScaleOp.NO_OP
         if new_running_replicas >= max_replicas:
             scale_op = ScaleOp.NO_OP
+
         return scale_op
 
     def scale_operation_endpoints(self, autoscaling_policy) -> Dict[Any, ScaleOp]:

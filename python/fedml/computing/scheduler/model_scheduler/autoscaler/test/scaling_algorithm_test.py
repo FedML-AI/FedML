@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import sys
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     fedml_model_cache = FedMLModelCache.get_instance()
     fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
     fedml_model_cache.delete_model_endpoint_metrics(
-        endpoint_id=endpoint_id)
+        endpoint_ids=[endpoint_id])
 
     # INFO To test different distributions, simply change the distribution value
     # to the following possible values:
@@ -93,7 +94,7 @@ if __name__ == "__main__":
 
     # INFO Please remember to change these two variables below when attempting
     # to test the simulation of the autoscaling policy simulation.
-    testing_metric = "qps"
+    testing_metric = "latency"
     testing_traffic = traffic_seasonality
     latency_reactive_policy_default = \
         {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
@@ -110,8 +111,12 @@ if __name__ == "__main__":
     triggering_values = []
     for i, t in enumerate(testing_traffic):
         ts, qps, latency = t[0], t[1], t[2]
+        # We convert the timestamp to epoch time with microseconds, since this
+        # is the expected input in the REDIS database for the timestamp column.
+        ts_epoch = int(datetime.datetime.strptime(
+            ts, TrafficSimulation.CONFIG_DATETIME_FORMAT).timestamp() * 1e6)
         fedml_model_cache.set_monitor_metrics(
-            endpoint_id, "", "", "", latency, 0, 0, qps, 0, ts, 0)
+            endpoint_id, "", "", "", latency, 0, 0, qps, 0, ts_epoch, 0)
         scale_op = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             str(endpoint_id))

@@ -1,9 +1,8 @@
+import datetime
 import random
 import sys
 
-import datetime
 import numpy as np
-import fedml.computing.scheduler.model_scheduler.autoscaler.conf as conf
 
 from datetime import timedelta
 from mockseries.noise import RedNoise
@@ -16,7 +15,8 @@ random.seed(0)
 
 
 class TrafficSimulation(object):
-    CONFIG_DATETIME_FORMAT = conf.CONFIG_DATETIME_FORMAT
+
+    CONFIG_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
     START_DATE = datetime.datetime(2001, 1, 1, 1, 1, 1)  # 2001-01-01T01:01:01z"
     WARMUP_ENDPOINT_QPS = [
         4.538, 3.615, 3.276, 5.176, 5.73, 2.998, 2.791, 4.089, 3.913, 5.199, 4.557,
@@ -116,7 +116,7 @@ class TrafficSimulation(object):
         traffic = []
         current_timestamp = cls.START_DATE
         for q, l in zip(qps_values, latency_values):
-            timestamp = current_timestamp.strftime(conf.CONFIG_DATETIME_FORMAT)
+            timestamp = current_timestamp.strftime(cls.CONFIG_DATETIME_FORMAT)
             current_timestamp = cls.date_increment_sec(
                 current_timestamp, secs=submit_request_every_x_secs)
             traffic.append((timestamp, q, l))
@@ -162,7 +162,7 @@ class TrafficSimulation(object):
         for d, v in zip(ts_index, ts_values):
             qps = scale_to_qps(v)
             lat = scale_to_latency(v)
-            ts = d.strftime(conf.CONFIG_DATETIME_FORMAT)
+            ts = d.strftime(cls.CONFIG_DATETIME_FORMAT)
             traffic.append((ts, qps, lat))
 
         return traffic

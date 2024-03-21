@@ -1,14 +1,38 @@
 import logging
+import unittest
+import time
 
 from collections import namedtuple
 from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
+from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
+ENV_REDIS_ADDR = "local"
+ENV_REDIS_PORT = 6379
+ENV_REDIS_PASSWD = "fedml_default"
+ENV_ENDPOINT_ID_1 = 12345
+ENV_ENDPOINT_ID_2 = 77777
 
-def scale_operation_endpoints_reactive_test():
-    autoscaler = Autoscaler.get_instance()
-    autoscaling_policy = ReactivePolicy(metric="latency")
-    autoscaler.scale_operation_endpoints(autoscaling_policy)
+
+class AutoscalerTest(unittest.TestCase):
+
+    def test_scale_operation_single_endpoint_reactive(self):
+        autoscaler = Autoscaler.get_instance()
+        autoscaling_policy = ReactivePolicy(metric="latency")
+        scale_op_1 = autoscaler.scale_operation_endpoint(
+            autoscaling_policy,
+            endpoint_id=ENV_ENDPOINT_ID_1)
+        scale_op_2 = autoscaler.scale_operation_endpoint(
+            autoscaling_policy,
+            endpoint_id=ENV_ENDPOINT_ID_2)
+        self.assertIsNotNone(scale_op_1)
+        self.assertIsNotNone(scale_op_2)
+
+    def test_scale_operation_all_endpoints_reactive(self):
+        autoscaler = Autoscaler.get_instance()
+        autoscaling_policy = ReactivePolicy(metric="latency")
+        scale_ops = autoscaler.scale_operation_endpoints(autoscaling_policy)
+        self.assertIsNotNone(scale_ops)
 
 
 if __name__ == "__main__":
@@ -16,4 +40,15 @@ if __name__ == "__main__":
         'log_file_dir', 'client_id', 'client_id_list', 'role', 'rank', 'run_id', 'server_id'])
     args = logging_args("/tmp", 0, [], "server", 0, 0, 0)
     MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.DEBUG)
-    scale_operation_endpoints_reactive_test()
+
+    # Just populate REDIS with some dummy values before running the tests.
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(ENV_REDIS_ADDR, ENV_REDIS_PORT, ENV_REDIS_PASSWD)
+    fedml_model_cache.delete_model_endpoint_metrics(
+        endpoint_ids=[ENV_ENDPOINT_ID_1, ENV_ENDPOINT_ID_2])
+    fedml_model_cache.set_monitor_metrics(
+        ENV_ENDPOINT_ID_1, "", "", "", "5", 0, 0, "100", 0, int(time.time_ns() / 1000), 0)
+    fedml_model_cache.set_monitor_metrics(
+        ENV_ENDPOINT_ID_2, "", "", "", "5", 0, 0, "100", 0, int(time.time_ns() / 1000), 0)
+
+    unittest.main()
