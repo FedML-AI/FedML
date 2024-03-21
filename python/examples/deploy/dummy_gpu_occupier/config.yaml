@@ -4,3 +4,6 @@ bootstrap: |
   echo "Bootstrap start..."
   sleep 5
   echo "Bootstrap finished"
+
+auto_detect_public_ip: true
+use_gpu: true

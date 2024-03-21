@@ -1,5 +1,5 @@
-
 import json
+import logging
 
 
 class FedMLModelMsgObject(object):
@@ -37,7 +37,10 @@ class FedMLModelMsgObject(object):
         }"""
 
         # get deployment params
-        request_json = json.loads(payload)
+        if isinstance(payload, dict):
+            request_json = payload
+        else:
+            request_json = json.loads(payload)
         self.msg_topic = topic
         self.request_json = request_json
         self.run_id = request_json["end_point_id"]
@@ -58,13 +61,54 @@ class FedMLModelMsgObject(object):
         self.inference_engine = self.model_config.get("inference_engine", 0)
         self.inference_end_point_id = self.run_id
 
-        self. request_json["run_id"] = self.run_id
+        self.request_json["run_id"] = self.run_id
+
+        self.gpu_topology = self.get_devices_avail_gpus()
+        self.gpu_per_replica = self.get_gpu_per_replica()
+
+        self.max_unavailable_rate = self.model_config.get("max_unavailable_rate", 0.1)
+
+    def get_devices_avail_gpus(self):
+        """
+        {
+            "gpu_topology": {"id1": 1, "id2": 1}    # Here the 1 means gpu card, not replica
+        }
+        """
+        # [Test1] using self.request_json["parameters"]["gpu_topology"]
+        # logging.info(f"[Replica Controller] [endpoint {self.run_id} ] devices_avail_gpus:"
+        #              f" {self.request_json['parameters']['gpu_topology']}")
+        # res = self.request_json["parameters"]["gpu_topology"]
+
+        # [Test2] Using self.scale_min
+        # res = {}
+        # for id in self.request_json["device_ids"]:
+        #     if str(id) == str(self.device_ids[0]):
+        #         continue
+        #     res[id] = int(self.scale_min)
+        # return res
+
+        # [Prod] Using self.request_json["gpu_topology"]
+        if "gpu_topology" not in self.request_json:
+            logging.warning("gpu_topology not found in request_json, using scale_min instead")
+            res = {}
+            for id in self.request_json["device_ids"]:
+                if str(id) == str(self.device_ids[0]):
+                    continue
+                res[id] = int(self.scale_min)
+            return res
+
+        logging.info(f"[Replica Controller]"
+                     f"Target gpu_topology from MLOps: {self.request_json['gpu_topology']}")
+
+        return self.request_json["gpu_topology"]
+
+    def get_gpu_per_replica(self) -> int:
+        """
+        Read gpu_per_replica from user's config yaml file. Default 1.
+        """
+        if "gpu_per_replica" in self.request_json:
+            return int(self.request_json["gpu_per_replica"])
+        return 1
 
     def show(self, prefix=""):
-        print("{}end point id: {}, model name: {}, model id: {},"
-              " model version: {}, model url: {}".format(prefix,
-                                                         self.inference_end_point_id,
-                                                         self.model_name,
-                                                         self.id,
-                                                         self.model_version,
-                                                         self.model_url))
+        logging.info(f"{prefix} [FedMLModelMsgObject] [run_id {self.run_id}] [end_point_name {self.end_point_name}]")

@@ -259,8 +259,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+        urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
@@ -955,7 +954,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, train_edge_id, run_id=run_id)
 
         # OTA upgrade
-        self.ota_upgrade(payload, request_json)
+        # self.ota_upgrade(payload, request_json)
 
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
@@ -1570,9 +1569,21 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.add_message_listener(topic_request_device_info, self.callback_report_device_info)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.listener_message_dispatch_center)
 
-        topic_request_device_info_from_mlops = f"deploy/mlops/client_agent/request_device_info/{self.edge_id}"
-        self.add_message_listener(topic_request_device_info_from_mlops, self.response_device_info_to_mlops)
-        self.mqtt_mgr.add_message_listener(topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
+        topic_request_edge_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+        self.add_message_listener(topic_request_edge_device_info_from_mlops, self.response_device_info_to_mlops)
+        self.mqtt_mgr.add_message_listener(topic_request_edge_device_info_from_mlops, self.listener_message_dispatch_center)
+
+        topic_request_deploy_master_device_info_from_mlops = None
+        if self.model_device_server_id is not None:
+            topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.model_device_server_id}"
+            self.add_message_listener(topic_request_deploy_master_device_info_from_mlops, self.response_device_info_to_mlops)
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_master_device_info_from_mlops, self.listener_message_dispatch_center)
+
+        topic_request_deploy_slave_device_info_from_mlops = None
+        if self.model_device_client_edge_id_list is not None and len(self.model_device_client_edge_id_list) > 0:
+            topic_request_deploy_slave_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.model_device_client_edge_id_list[0]}"
+            self.add_message_listener(topic_request_deploy_slave_device_info_from_mlops, self.response_device_info_to_mlops)
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_slave_device_info_from_mlops, self.listener_message_dispatch_center)
         
         # Setup MQTT message listener to logout from MLOps.
         topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
@@ -1586,6 +1597,11 @@ class FedMLClientRunner(FedMLMessageCenter):
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
+        mqtt_client_object.subscribe(topic_request_edge_device_info_from_mlops, qos=2)
+        if topic_request_deploy_master_device_info_from_mlops is not None:
+            mqtt_client_object.subscribe(topic_request_deploy_master_device_info_from_mlops, qos=2)
+        if topic_request_deploy_slave_device_info_from_mlops is not None:
+            mqtt_client_object.subscribe(topic_request_deploy_slave_device_info_from_mlops, qos=2)
         mqtt_client_object.subscribe(topic_client_logout, qos=2)
 
         self.subscribed_topics.clear()
@@ -1595,6 +1611,11 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.subscribed_topics.append(topic_report_status)
         self.subscribed_topics.append(topic_ota_msg)
         self.subscribed_topics.append(topic_request_device_info)
+        self.subscribed_topics.append(topic_request_edge_device_info_from_mlops)
+        if topic_request_deploy_master_device_info_from_mlops is not None:
+            self.subscribed_topics.append(topic_request_deploy_master_device_info_from_mlops)
+        if topic_request_deploy_slave_device_info_from_mlops is not None:
+            self.subscribed_topics.append(topic_request_deploy_slave_device_info_from_mlops)
         self.subscribed_topics.append(topic_client_logout)
 
         # Subscribe the messages for federated learning.
@@ -1651,16 +1672,22 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.add_message_listener(topic_request_device_info, self.callback_report_device_info)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.listener_message_dispatch_center)
 
+        topic_request_device_info_from_mlops = f"deploy/mlops/client_agent/request_device_info/{self.general_edge_id}"
+        self.add_message_listener(topic_request_device_info_from_mlops, self.response_device_info_to_mlops)
+        self.mqtt_mgr.add_message_listener(topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         self.mqtt_mgr.subscribe_msg(topic_start_train)
         self.mqtt_mgr.subscribe_msg(topic_stop_train)
         self.mqtt_mgr.subscribe_msg(topic_client_status)
         self.mqtt_mgr.subscribe_msg(topic_request_device_info)
+        self.mqtt_mgr.subscribe_msg(topic_request_device_info_from_mlops)
 
         self.subscribed_topics.append(topic_start_train)
         self.subscribed_topics.append(topic_stop_train)
         self.subscribed_topics.append(topic_client_status)
         self.subscribed_topics.append(topic_request_device_info)
+        self.subscribed_topics.append(topic_request_device_info_from_mlops)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(

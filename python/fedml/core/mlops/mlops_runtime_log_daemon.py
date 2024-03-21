@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 
 import multiprocess as multiprocessing
 import os
@@ -228,7 +229,7 @@ class MLOpsRuntimeLogProcessor:
         return False
 
     def log_process(self, process_event):
-        print(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
+        logging.info(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
 
         self.log_process_event = process_event
 
@@ -265,6 +266,7 @@ class MLOpsRuntimeLogProcessor:
         print("Log Process exits normally.")
 
     def log_relocation(self):
+        # move the log file pointer to the last uploaded line
         log_line_count = self.log_line_index
         self.log_uploaded_line_index = self.log_line_index
         while log_line_count > 0:
@@ -298,6 +300,7 @@ class MLOpsRuntimeLogProcessor:
         line_count = 0
         log_lines = []
         while True:
+            # readlines will ignore those lines has been read using readline
             log_line = self.log_file.readlines()
             if len(log_line) <= 0:
                 break

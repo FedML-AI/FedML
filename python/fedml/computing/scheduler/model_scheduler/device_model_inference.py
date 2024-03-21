@@ -26,34 +26,34 @@ except Exception as e:
     pass
 
 
-class Settings(BaseSettings):
-    redis_addr: str
-    redis_port: str
-    redis_password: str
-    end_point_name: str
-    model_name: str
-    model_version: str
-    model_infer_url: str
-    version: str
-    use_mqtt_inference: bool
-    use_worker_gateway: bool
-    ext_info: str
+# class Settings(BaseSettings):
+#     redis_addr: str
+#     redis_port: str
+#     redis_password: str
+#     end_point_name: str
+#     model_name: str
+#     model_version: str
+#     model_infer_url: str
+#     version: str
+#     use_mqtt_inference: bool
+#     use_worker_gateway: bool
+#     ext_info: str
+#
+#
+# settings = Settings()
 
-
-settings = Settings()
-
-# class settings:
-#     redis_addr = "127.0.0.1"
-#     redis_port = 6379
-#     redis_password = "fedml_default"
-#     end_point_name = ""
-#     model_name = ""
-#     model_version = ""
-#     model_infer_url = "127.0.0.1"
-#     version = "dev"
-#     use_mqtt_inference = False
-#     use_worker_gateway = False
-#     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+class settings:
+    redis_addr = "127.0.0.1"
+    redis_port = 6379
+    redis_password = "fedml_default"
+    end_point_name = ""
+    model_name = ""
+    model_version = ""
+    model_infer_url = "127.0.0.1"
+    version = "dev"
+    use_mqtt_inference = False
+    use_worker_gateway = False
+    ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
 
 
 api = FastAPI()
@@ -176,7 +176,8 @@ async def _predict(
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
-            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND, "message": "can not found the active endpoint."}
+            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
+                    "message": "can not found active inference worker for this endpoint."}
 
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
@@ -224,12 +225,17 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
     redis_key = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
         get_end_point_full_key_by_id(end_point_id)
     if redis_key is not None:
+        end_point_name = ""
+        model_name = ""
         if in_end_point_name is not None:
             end_point_name = in_end_point_name
             model_name = redis_key[len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
         else:
             # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
-            end_point_id, end_point_name, model_name = redis_key.split("--")[1].split("-")
+            try:
+                end_point_id, end_point_name, model_name = redis_key.split("--")[1].split("-")
+            except Exception as e:
+                logging.warning(f"Failed to parse redis_key: {redis_key}. Could not retrieve only use end_point_id.")
 
         if enable_check:
             if end_point_name != in_end_point_name or model_name != in_model_name:
@@ -284,35 +290,34 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
-        connect_str = "@FEDML@"
-        random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
-        config_list = random_out.split(connect_str)
-        agent_config = dict()
-        agent_config["mqtt_config"] = dict()
-        agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
-        agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
-        agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
-        agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
-        agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
-        mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
-        response_ok = mqtt_inference.run_mqtt_health_check_with_request(
-            idle_device, endpoint_id, inference_url)
-        if response_ok:
-            response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-                idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
-
-        if not response_ok:
+        if not has_public_ip:
+            connect_str = "@FEDML@"
+            random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
+            config_list = random_out.split(connect_str)
+            agent_config = dict()
+            agent_config["mqtt_config"] = dict()
+            agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
+            agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
+            agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
+            agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
+            agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
+            mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
+            response_ok = mqtt_inference.run_mqtt_health_check_with_request(
+                idle_device, endpoint_id, inference_url)
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
+            if response_ok:
+                response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
+                    idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
 
-        logging.info(f"Use mqtt inference. return {response_ok}.")
-        return inference_response
+            logging.info(f"Use mqtt inference. return {response_ok}.")
+            return inference_response
+        return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
     except Exception as e:
         inference_response = {"error": True,
-                              "message": f"Exception when using http, http-proxy and mqtt for inference: {traceback.format_exc()}."}
+                              "message": f"Exception when using http, http-proxy and mqtt "
+                                         f"for inference: {traceback.format_exc()}."}
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
         return inference_response
-
-    return {}
 
 
 def auth_request_token(end_point_id, end_point_name, model_name, token):
@@ -352,6 +357,6 @@ def logging_inference_request(request, response):
 
 if __name__ == "__main__":
     import uvicorn
-    port = 2204
+    port = 2203
     logging.basicConfig(level=logging.INFO)
     uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")
