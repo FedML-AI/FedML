@@ -522,10 +522,10 @@ class JobRunnerUtils(Singleton):
         docker_command.extend(["-w", working_directory])
 
         # Add image
-        docker_command.append(docker_args.image)
+        docker_command.extend(["--entrypoint", executable_interpreter])
 
-        # Add executable interpreter
-        docker_command.append(executable_interpreter)
+        # Add image
+        docker_command.append(docker_args.image)
 
         # Add entry command
         docker_command.append("-c")
