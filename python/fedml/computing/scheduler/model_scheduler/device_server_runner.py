@@ -817,8 +817,16 @@ class FedMLServerRunner:
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
+
+        enable_auto_scale = request_json.get("enable_auto_scale", False)
         scale_min = model_config.get("instance_scale_min", 0)
         scale_max = model_config.get("instance_scale_max", 0)
+
+        # FIXME: Directly use the model_config
+        replica_num = 0
+        for _, gpu_num in request_json["gpu_topology"].items():
+            replica_num += gpu_num // request_json["gpu_per_replica"]
+
         inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
@@ -844,8 +852,13 @@ class FedMLServerRunner:
         self.running_request_json[run_id_str] = request_json
         self.request_json["master_node_ip"] = self.get_ip_address(self.request_json)
 
-        # Target status of the devices
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+
+        # Set Min, Max (for autoscaling); Desired replica (for manual scaling)
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            set_user_setting_replica_num(run_id, replica_num, enable_auto_scale, scale_min, scale_max)
+
+        # Target status of the devices
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
 

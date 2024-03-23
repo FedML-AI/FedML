@@ -21,6 +21,9 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
 
+    # For scale-out & scale-in
+    FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
+
     # On the worker
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
 
@@ -92,6 +95,21 @@ class FedMLModelCache(Singleton):
     #   setup the client redis instance parameters.
     def get_instance(redis_addr="local", redis_port=6379):
         return FedMLModelCache()
+
+    def set_user_setting_replica_num(self, end_point_id, replica_num: int, enable_auto_scale: bool = False,
+                                     scale_min: int = 0, scale_max: int = 0) -> bool:
+        """
+        replica_num is used for manual scale.
+        scale_min and scale_max are used for auto scale.
+        """
+        replica_num_dict = {"replica_num": replica_num, "enable_auto_scale": enable_auto_scale,
+                            "scale_min": scale_min, "scale_max": scale_max}
+        try:
+            self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
+        except Exception as e:
+            logging.error(e)
+            return False
+        return True
 
     def set_deployment_result(self, end_point_id, end_point_name,
                               model_name, model_version, device_id, deployment_result, replica_no):
@@ -559,6 +577,9 @@ class FedMLModelCache(Singleton):
 
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
+
+    def get_user_setting_replica_num_key(self, end_point_id):
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG, end_point_id)
 
     def get_endpoint_replica_num_key(self, end_point_id):
         # FIXME(fedml-raphael): please remove extra/redundant bracket.
