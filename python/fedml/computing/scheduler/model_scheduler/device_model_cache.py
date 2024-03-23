@@ -641,13 +641,3 @@ class FedMLModelCache(Singleton):
     def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                                       end_point_id, end_point_name, model_name, model_version)
-
-
-if __name__ == "__main__":
-    _end_point_id_ = "4f63aa70-312e-4a9c-872d-cc6e8d95f95b"
-    _end_point_name_ = "my-llm"
-    _model_name_ = "my-model"
-    _model_version_ = "v1"
-    _status_list_ = FedMLModelCache.get_instance().get_deployment_status_list(_end_point_id_, _end_point_name_, _model_name_)
-    _result_list_ = FedMLModelCache.get_instance().get_deployment_result_list(_end_point_id_, _end_point_name_, _model_name_)
-    idle_result_payload = FedMLModelCache.get_instance().get_idle_device(_end_point_id_, _end_point_name_, _model_name_, _model_version_)
