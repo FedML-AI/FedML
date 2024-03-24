@@ -1,0 +1,152 @@
+import argparse
+import datetime
+import logging
+import os
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+from collections import namedtuple
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from fedml.computing.scheduler.model_scheduler.autoscaler.test.traffic_simulation import TrafficSimulation
+from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+
+
+def plot_qps_vs_latency_vs_scale(
+        metric,
+        traffic,
+        scale_operations,
+        trend_lines=None,
+        triggering_points=None):
+
+    # plot
+    fig, ax = plt.subplots(figsize=(30, 10))
+    ts = [t[0] for t in traffic]
+    ts = [datetime.datetime.strptime(t, TrafficSimulation.CONFIG_DATETIME_FORMAT) for t in ts]
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+    qps = [t[1] for t in traffic]
+    latency = [t[2] for t in traffic]
+
+    running_instances = [1]
+    for scale_op in scale_operations[1:]:
+        running_instances.append(running_instances[-1] + scale_op.value)
+
+    if metric == "qps":
+        ax.plot_date(ts, qps, color='purple', fmt="8--", linewidth=0.5, label="QPS")
+    else:
+        ax.plot_date(ts, latency, color='purple', fmt="p--", linewidth=0.5, label="Latency")
+    ax.plot_date(ts, running_instances, color='green', fmt="*", linewidth=0.5, label="Instances")
+
+    if trend_lines:
+        for i, t in enumerate(trend_lines):
+            ax.plot_date(ts, t, linestyle="solid", label="Trend Line {}".format(i))
+
+    if triggering_points:
+        ax.plot_date(ts, triggering_points, fmt="", marker="^", markersize=12, label="Triggering Points", color="red")
+
+    ax.set_xlabel("Timestamp")
+    plt.xticks(rotation=0)
+    for label in ax.xaxis.get_ticklabels():
+        label.set_rotation(45)
+    ax.grid(True)
+    plt.legend()
+    plot_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "plot/scaling_algorithm_test.png")
+
+    plt.savefig(plot_file, bbox_inches='tight')
+
+
+if __name__ == "__main__":
+
+    logging_args = namedtuple('LoggingArgs', [
+        'log_file_dir', 'client_id', 'client_id_list', 'role', 'rank', 'run_id', 'server_id'])
+    args = logging_args("/tmp", 0, [], "tester", 0, 0, 0)
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.DEBUG)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--redis_addr', default="local")
+    parser.add_argument('--redis_port', default=6379)
+    parser.add_argument('--redis_password', default="fedml_default")
+    parser.add_argument('--endpoint_id', default=12345)
+    parser.add_argument('--metric',
+                        default="latency",
+                        help="Either latency or qps")
+    parser.add_argument('--distribution',
+                        default="random",
+                        help="Either random, linear, exponential or seasonal.")
+    args = parser.parse_args()
+
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(args.redis_addr, args.redis_port, args.redis_password)
+    fedml_model_cache.delete_model_endpoint_metrics(
+        endpoint_ids=[args.endpoint_id])
+
+    # INFO To test different distributions, simply change the distribution value
+    # to the following possible values:
+    #   "random", "linear", "exponential"
+    # Moreover, you can also play around with the order of values in an
+    # ascending (reverse=False) or descending (reverse=True) order.
+    if args.distribution in ["random", "linear", "exponential"]:
+        traffic_dist = TrafficSimulation.generate_traffic(
+            qps_distribution=args.distribution,
+            latency_distribution=args.distribution,
+            num_values=300,
+            submit_request_every_x_secs=30,
+            reverse=False,
+            with_warmup=False)
+    elif args.distribution == "seasonal":
+        traffic_dist = TrafficSimulation.generate_traffic_with_seasonality(
+            num_values=1000,
+            submit_request_every_x_secs=10,
+            with_warmup=False)
+    else:
+        raise RuntimeError("Not a supported distribution")
+
+    # INFO Please remember to change these two variables below when attempting
+    # to test the simulation of the autoscaling policy simulation.
+    testing_metric = args.metric
+    testing_traffic = traffic_dist
+    latency_reactive_policy_default = \
+        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+    qps_reactive_policy_default = \
+        {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
+    policy_config = latency_reactive_policy_default \
+        if testing_metric == "latency" else qps_reactive_policy_default
+    print(policy_config)
+
+    autoscaler = Autoscaler(args.redis_addr, args.redis_port, args.redis_password)
+    autoscaling_policy = ReactivePolicy(**policy_config)
+    scale_operations = []
+    ewm_values = []
+    triggering_values = []
+    for i, t in enumerate(testing_traffic):
+        ts, qps, latency = t[0], t[1], t[2]
+        # We convert the timestamp to epoch time with microseconds, since this
+        # is the expected input in the REDIS database for the timestamp column.
+        ts_epoch = int(datetime.datetime.strptime(
+            ts, TrafficSimulation.CONFIG_DATETIME_FORMAT).timestamp() * 1e6)
+        fedml_model_cache.set_monitor_metrics(
+            args.endpoint_id, "", "", "", latency, 0, 0, qps, 0, ts_epoch, 0)
+        scale_op = autoscaler.scale_operation_endpoint(
+            autoscaling_policy,
+            str(args.endpoint_id))
+        ewm_values.append(autoscaling_policy.ewm_latest)
+        triggering_values.append(autoscaling_policy.triggering_value)
+        scale_operations.append(scale_op)
+
+    triggering_values_to_plot = []
+    for idx, v in enumerate(triggering_values):
+        if (idx - 1) < 0 or triggering_values[idx] == triggering_values[idx - 1]:
+            triggering_values_to_plot.append(None)
+        else:
+            triggering_values_to_plot.append(v)
+
+    trend_lines = [ewm_values]
+    plot_qps_vs_latency_vs_scale(
+        metric=testing_metric,
+        traffic=testing_traffic,
+        scale_operations=scale_operations,
+        trend_lines=trend_lines,
+        triggering_points=triggering_values_to_plot)
