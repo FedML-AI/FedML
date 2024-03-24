@@ -7,6 +7,7 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
 from fedml.core.common.singleton import Singleton
+from typing import List, Any
 
 
 class FedMLModelCache(Singleton):
@@ -643,11 +644,101 @@ class FedMLModelCache(Singleton):
                                       end_point_id, end_point_name, model_name, model_version)
 
 
-if __name__ == "__main__":
-    _end_point_id_ = "4f63aa70-312e-4a9c-872d-cc6e8d95f95b"
-    _end_point_name_ = "my-llm"
-    _model_name_ = "my-model"
-    _model_version_ = "v1"
-    _status_list_ = FedMLModelCache.get_instance().get_deployment_status_list(_end_point_id_, _end_point_name_, _model_name_)
-    _result_list_ = FedMLModelCache.get_instance().get_deployment_result_list(_end_point_id_, _end_point_name_, _model_name_)
-    idle_result_payload = FedMLModelCache.get_instance().get_idle_device(_end_point_id_, _end_point_name_, _model_name_, _model_version_)
+    def get_endpoints_ids(self) -> List[str]:
+        key_pattern = "{}*".format(self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG)
+        model_deployment_endpoints_keys = self.redis_connection.keys(
+            pattern=key_pattern)
+        endpoints_ids = []
+        for k in model_deployment_endpoints_keys:
+            last_deployment_val = self.redis_connection.lindex(name=k, index=-1)
+            last_deployment_val_as_json = json.loads(last_deployment_val)
+            # Need to load the "result" again because it is not formatted properly
+            result = json.loads(last_deployment_val_as_json["result"])
+            endpoint_id = result["end_point_id"]
+            endpoints_ids.append(endpoint_id)
+        return endpoints_ids
+
+
+    def get_endpoint_metrics(self,
+                             endpoint_id,
+                             k_recent=None) -> List[Any]:
+        model_deployment_monitor_metrics = list()
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                endpoint_id)
+            model_deployment_monitor_endpoint_keys = \
+                self.redis_connection.keys(pattern=key_pattern)
+            # Since the reply is a list, we need to make sure the list
+            # is non-empty otherwise the index will raise an error.
+            if model_deployment_monitor_endpoint_keys:
+                model_deployment_monitor_endpoint_key = \
+                    model_deployment_monitor_endpoint_keys[0]
+            else:
+                raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
+                                .format(key_pattern))
+            # Set start and end index depending on the size of the
+            # list and the requested number of most recent records.
+            num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
+            # if k_most_recent is None, then fetch all by default.
+            start, end = 0, -1
+            # if k_most_recent is positive then fetch [-k_most_recent:]
+            if k_recent and k_recent > 0:
+                start = num_records - k_recent
+            model_deployment_monitor_metrics = \
+                self.redis_connection.lrange(
+                    name=model_deployment_monitor_endpoint_key,
+                    start=start,
+                    end=end)
+            model_deployment_monitor_metrics = [
+                json.loads(m) for m in model_deployment_monitor_metrics]
+
+        except Exception as e:
+            logging.error(e)
+
+        return model_deployment_monitor_metrics
+
+
+    def get_all_replicas(self, endpoint_id) -> List[Any]:
+        replicas = []
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG,
+                endpoint_id)
+            model_deployment_result_key = \
+                self.redis_connection.keys(pattern=key_pattern)
+            if model_deployment_result_key:
+                model_deployment_result_key = \
+                    model_deployment_result_key[0]
+            else:
+                raise Exception("Function `get_all_replicas` Key {} does not exist."
+                                .format(key_pattern))
+            replicas = \
+                self.redis_connection.lrange(
+                    name=model_deployment_result_key,
+                    start=0,
+                    end=-1)
+
+            # Format the result value to a properly formatted json.
+            for replica_idx, replica in enumerate(replicas):
+                replicas[replica_idx] = json.loads(replica)
+                replicas[replica_idx]["result"] = json.loads(replicas[replica_idx]["result"])
+
+        except Exception as e:
+            logging.error(e)
+
+        return replicas
+
+
+    def delete_model_endpoint_metrics(self, endpoint_ids: list):
+        for endpoint_id in endpoint_ids:
+            try:
+                key_pattern = "{}*{}*".format(
+                    self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                    endpoint_id)
+                model_deployment_monitor_endpoint_keys = \
+                    self.redis_connection.keys(pattern=key_pattern)
+                for k in model_deployment_monitor_endpoint_keys:
+                    self.redis_connection.delete(k)
+            except Exception as e:
+                logging.error(e)
