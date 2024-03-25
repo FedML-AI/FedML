@@ -1,8 +1,9 @@
 from enum import Enum
 from abc import ABC, abstractmethod
 from fedml.api.constants import RunStatus
-from typing import List, Dict, Any
-import argparse
+from typing import Dict, Any
+from fedml.computing.scheduler.comm_utils import yaml_utils
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
 # Define an enum for job status
@@ -96,16 +97,10 @@ class Job(ABC):
         """
         return self.output_data_dict
 
+    @staticmethod
+    def load_yaml_config(yaml_path):
+        return yaml_utils.load_yaml_config(yaml_path)
 
-class NullJob(Job):
-    def __init__(self, name="NullJob"):
-        super().__init__(name)
-
-    def run(self):
-        self.output_data_dict = self.input_data_dict.copy()
-
-    def status(self):
-        return JobStatus.FINISHED
-
-    def kill(self):
-        pass
+    @staticmethod
+    def generate_yaml_doc(run_config_object, yaml_file):
+        Constants.generate_yaml_doc(run_config_object, yaml_file)

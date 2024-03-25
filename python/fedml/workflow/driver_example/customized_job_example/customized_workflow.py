@@ -20,17 +20,7 @@ class DeployImageJob(ModelDeployJob):
         super().run()
 
     def status(self):
-        current_status = super().status()
-        if current_status == JobStatus.FINISHED:
-            pass
-        elif current_status == JobStatus.FAILED:
-            pass
-        elif current_status == JobStatus.RUNNING:
-            pass
-        elif current_status == JobStatus.PROVISIONING:
-            pass
-
-        return current_status
+        return super().status()
 
     def kill(self):
         super().kill()
@@ -45,17 +35,7 @@ class InferenceImageJob(ModelInferenceJob):
         super().run()
 
     def status(self):
-        current_status = super().status()
-        if current_status == JobStatus.FINISHED:
-            pass
-        elif current_status == JobStatus.FAILED:
-            pass
-        elif current_status == JobStatus.RUNNING:
-            pass
-        elif current_status == JobStatus.PROVISIONING:
-            pass
-
-        return current_status
+        return super().status()
 
     def kill(self):
         super().kill()
@@ -71,17 +51,7 @@ class TrainJob(TrainJob):
         super().run()
 
     def status(self):
-        current_status = super().status()
-        if current_status == JobStatus.FINISHED:
-            pass
-        elif current_status == JobStatus.FAILED:
-            pass
-        elif current_status == JobStatus.RUNNING:
-            pass
-        elif current_status == JobStatus.PROVISIONING:
-            pass
-
-        return current_status
+        return super().status()
 
     def kill(self):
         super().kill()
@@ -102,8 +72,6 @@ def create_deploy_workflow(job_api_key=None):
     train_job_yaml = os.path.join(working_directory, "train_job.yaml")
 
     # Load the job yaml and change some config items.
-    deploy_image_job_yaml_obj = DeployImageJob.load_yaml_config(deploy_image_job_yaml)
-    train_job_yaml_obj = DeployImageJob.load_yaml_config(train_job_yaml)
     # deploy_image_job_yaml_obj["computing"]["resource_type"] = "A100-80GB-SXM"
     # deploy_image_job_yaml_obj["computing"]["device_type"] = "GPU"
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
@@ -142,8 +110,6 @@ def create_inference_train_workflow(
     train_job_yaml = os.path.join(working_directory, "train_job.yaml")
 
     # Load the job yaml and change some config items.
-    deploy_image_job_yaml_obj = DeployImageJob.load_yaml_config(deploy_image_job_yaml)
-    train_job_yaml_obj = DeployImageJob.load_yaml_config(train_job_yaml)
     # deploy_image_job_yaml_obj["computing"]["resource_type"] = "A100-80GB-SXM"
     # deploy_image_job_yaml_obj["computing"]["device_type"] = "GPU"
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
@@ -186,6 +152,7 @@ def create_inference_train_workflow(
 
 
 if __name__ == "__main__":
+    # fedml.set_env_version("test")
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--deploy", "-d", nargs="*", help="Create a deploy workflow")
     parser.add_argument("--inference", "-i", nargs="*", help='Create a inference workflow')
