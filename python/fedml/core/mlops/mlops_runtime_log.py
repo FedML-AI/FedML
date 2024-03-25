@@ -27,6 +27,7 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
         self.run_id = run_id
         self.edge_id = edge_id
         self.file_name = filename
+        self.rotate_count = 0
         self.rotator: callable = self.update_config_and_rotate
         self.log_config_file = log_config_file
         self.__initialize_config()
@@ -34,13 +35,13 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
     def update_config_and_rotate(self, source, dest):
         if os.path.exists(source):
             os.rename(source, dest)
-        file_id = MLOpsLoggingUtils.get_id_from_filename(run_id=self.run_id, device_id=self.edge_id, filename=source,
-                                                         log_config_file=self.log_config_file)
+        # file_id = MLOpsLoggingUtils.get_id_from_filename(run_id=self.run_id, device_id=self.edge_id, filename=source,
+        #                                                  log_config_file=self.log_config_file)
         config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id)
         config_data.file_name = dest
-        next_rotate_count = config_data[file_id].rotate_count + 1
-        rotated_log_file = LogFile(file_name=source, rotate_count=next_rotate_count)
-        config_data[secrets.token_hex(10)] = rotated_log_file
+        self.rotate_count += 1
+        rotated_log_file = LogFile(file_name=source)
+        config_data[str(self.rotate_count)] = rotated_log_file
         MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
                                           log_config_file=self.log_config_file,
                                           config_data=config_data)
@@ -50,7 +51,7 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
                                                         log_config_file=self.log_config_file)
         if not config_data:
             log_file = LogFile(file_name=self.file_name)
-            config_data = {secrets.token_hex(10): log_file}
+            config_data = {str(self.rotate_count): log_file}
             MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
                                               log_config_file=self.log_config_file, config_data=config_data)
 

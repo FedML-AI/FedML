@@ -48,7 +48,7 @@ class MLOpsRuntimeLogProcessor:
         self.log_uploaded_line_index = 0
         self.log_config_file = os.path.join(log_file_dir, "log-config.yaml")
         self.log_config = dict()
-        self.log_files_to_upload = set()
+        # self.log_files_to_upload = set()
         self.load_log_config()
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
                                                  + ("" if log_file_prefix is None else f"{log_file_prefix}-")
@@ -56,7 +56,7 @@ class MLOpsRuntimeLogProcessor:
                                                  + "-edge-"
                                                  + str(self.device_id)
                                                  + ".log")
-        self.log_files_to_upload.add(self.origin_log_file_path)
+        # self.log_files_to_upload.add(self.origin_log_file_path)
         self.log_file_path = os.path.join(self.args.log_file_dir, "fedml-run-"
                                           + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                           + str(self.run_id)
@@ -72,42 +72,42 @@ class MLOpsRuntimeLogProcessor:
         if source is not None:
             self.log_source = str(self.log_source).replace(' ', '')
 
-    @staticmethod
-    def build_log_file_path(in_args):
-        if in_args.rank == 0:
-            if hasattr(in_args, "server_id"):
-                log_device_id = in_args.server_id
-            else:
-                if hasattr(in_args, "edge_id"):
-                    log_device_id = in_args.edge_id
-                else:
-                    log_device_id = 0
-            program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, log_device_id)
-        else:
-            if hasattr(in_args, "client_id"):
-                log_device_id = in_args.client_id
-            elif hasattr(in_args, "client_id_list"):
-                edge_ids = json.loads(in_args.client_id_list)[0]
-                if len(edge_ids) > 0:
-                    log_device_id = edge_ids[0]
-                else:
-                    log_device_id = 0
-            else:
-                if hasattr(in_args, "edge_id"):
-                    log_device_id = in_args.edge_id
-                else:
-                    log_device_id = 0
-            program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
-
-        if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
-                                     + str(in_args.run_id)
-                                     + "-edge-"
-                                     + str(log_device_id)
-                                     + ".log")
-
-        return log_file_path, program_prefix
+    # @staticmethod
+    # def build_log_file_path(in_args):
+    #     if in_args.rank == 0:
+    #         if hasattr(in_args, "server_id"):
+    #             log_device_id = in_args.server_id
+    #         else:
+    #             if hasattr(in_args, "edge_id"):
+    #                 log_device_id = in_args.edge_id
+    #             else:
+    #                 log_device_id = 0
+    #         program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, log_device_id)
+    #     else:
+    #         if hasattr(in_args, "client_id"):
+    #             log_device_id = in_args.client_id
+    #         elif hasattr(in_args, "client_id_list"):
+    #             edge_ids = json.loads(in_args.client_id_list)[0]
+    #             if len(edge_ids) > 0:
+    #                 log_device_id = edge_ids[0]
+    #             else:
+    #                 log_device_id = 0
+    #         else:
+    #             if hasattr(in_args, "edge_id"):
+    #                 log_device_id = in_args.edge_id
+    #             else:
+    #                 log_device_id = 0
+    #         program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
+    #
+    #     if not os.path.exists(in_args.log_file_dir):
+    #         os.makedirs(in_args.log_file_dir, exist_ok=True)
+    #     log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
+    #                                  + str(in_args.run_id)
+    #                                  + "-edge-"
+    #                                  + str(log_device_id)
+    #                                  + ".log")
+    #
+    #     return log_file_path, program_prefix
 
     def log_upload(self, run_id, device_id):
         # Fetch Log Lines
@@ -248,7 +248,6 @@ class MLOpsRuntimeLogProcessor:
 
     def log_process(self, process_event):
         logging.info(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
-        self.save_log_config(self.log_file_path, log_line_index=0, file_rotate_count=0)
         self.log_process_event = process_event
 
         only_push_artifact = False

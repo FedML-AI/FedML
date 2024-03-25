@@ -64,7 +64,6 @@ class MLOpsUtils:
 @dataclass
 class LogFile:
     file_name: str
-    rotate_count: int = 0
     uploaded_file_index: int = 0
     upload_complete: bool = False
 
@@ -171,13 +170,13 @@ class MLOpsLoggingUtils:
             except yaml.YAMLError as exc:
                 raise ValueError("Yaml error - check yaml file")
 
-    @staticmethod
-    def get_id_from_filename(run_id, device_id, filename, log_config_file) -> Optional[str]:
-        config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id)
-        for id, data in config_data.items():
-            if data.file_name == filename:
-                return id
-        return None
+    # @staticmethod
+    # def get_id_from_filename(run_id, device_id, filename, log_config_file) -> Optional[str]:
+    #     config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id, log_config_file)
+    #     for id, data in config_data.items():
+    #         if data.file_name == filename:
+    #             return id
+    #     return None
 
     @staticmethod
     def generate_yaml_doc(log_config_object, yaml_file):
