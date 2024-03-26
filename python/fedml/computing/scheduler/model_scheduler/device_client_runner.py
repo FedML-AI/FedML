@@ -419,6 +419,7 @@ class FedMLClientRunner:
                 if inference_output_url == "":
                     logging.error("[Worker] Failed to deploy the model.")
 
+                    # Send failed result back to master
                     result_payload = self.send_deployment_results(
                         end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                         model_id, model_name, inference_output_url, inference_model_version, inference_port,
@@ -434,6 +435,7 @@ class FedMLClientRunner:
 
                     return False
                 else:
+                    # Send failed successful result back to master
                     logging.info("Finished deployment, continue to send results to master...")
                     result_payload = self.send_deployment_results(
                         end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,

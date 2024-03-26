@@ -642,7 +642,7 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE5["text"],
                                         "inference url: {}".format(model_inference_url))
 
-            # Prepare the result to MLOps
+            # Send the result to MLOps
             if self.model_runner_mapping[run_id_str].deployed_replica_payload is not None:
                 payload_json = self.model_runner_mapping[run_id_str].deployed_replica_payload
                 model_slave_url = payload_json["model_url"]
@@ -664,7 +664,9 @@ class FedMLServerRunner:
                 else:
                     raise Exception(f"Unsupported model metadata type {model_metadata['type']}")
 
-                self.send_deployment_results_with_payload(end_point_id, end_point_name, payload_json)
+                self.send_deployment_results_with_payload(
+                    end_point_id, end_point_name, payload_json,
+                    self.model_runner_mapping[run_id_str].replica_controller.target_replica_ids)
 
                 payload_json_saved = payload_json
                 payload_json_saved["model_slave_url"] = model_slave_url
@@ -1100,7 +1102,7 @@ class FedMLServerRunner:
         FedMLModelDatabase.get_instance().delete_deployment_run_info(
             end_point_id=model_msg_object.inference_end_point_id)
 
-    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
+    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload, replica_id_list=None):
         self.send_deployment_results(end_point_id, end_point_name,
                                      payload["model_name"], payload["model_url"],
                                      payload["model_version"], payload["port"],
@@ -1108,12 +1110,13 @@ class FedMLServerRunner:
                                      payload["model_metadata"],
                                      payload["model_config"],
                                      payload["input_json"],
-                                     payload["output_json"])
+                                     payload["output_json"],
+                                     replica_id_list=replica_id_list)
 
     def send_deployment_results(self, end_point_id, end_point_name,
                                 model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config, input_json, output_json):
+                                model_metadata, model_config, input_json, output_json, replica_id_list=None):
         deployment_results_topic_prefix = "model_ops/model_device/return_deployment_result"
         deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
         deployment_results_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
@@ -1124,7 +1127,8 @@ class FedMLServerRunner:
                                       "model_config": model_config,
                                       "input_json": input_json,
                                       "output_json": output_json,
-                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f')),
+                                      "replica_ids": replica_id_list}
         logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
