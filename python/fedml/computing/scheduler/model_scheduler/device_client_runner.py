@@ -395,9 +395,9 @@ class FedMLClientRunner:
             return True
 
         logging.info(
-            f"================Worker Reconcile Operations ======================"
-            f" op: {op}; op num: {op_num}."
-            f"==================================================================")
+            f"================Worker Reconcile Operations ======================\n"
+            f" op: {op}; op num: {op_num}.\n"
+            f"==================================================================\n")
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
             for rank in range(prev_rank+1, prev_rank+1+op_num):

@@ -106,8 +106,9 @@ class MLOpsRuntimeLogProcessor:
 
         return log_file_path, program_prefix
 
-    def log_upload(self, run_id, device_id):
+    def log_upload(self, run_id, device_id, replica_no: int = 0):
         # read log data from local log file
+        # Note that those log lines are newly added after last uploading due to 'readlines()' method
         log_lines = self.log_read()
         if log_lines is None or len(log_lines) <= 0:
             return
@@ -116,6 +117,7 @@ class MLOpsRuntimeLogProcessor:
         total_line = len(log_lines)
         send_num_per_req = MLOpsRuntimeLogProcessor.FED_LOG_LINE_NUMS_PER_UPLOADING
         line_start_req = line_count
+
         while line_count <= total_line:
             line_end_req = line_start_req + send_num_per_req
             if line_end_req >= total_line:
@@ -154,6 +156,7 @@ class MLOpsRuntimeLogProcessor:
                 if line != '' and line != '\n':
                     upload_lines.append(line)
 
+            # prepare "errors" field in the log upload request
             err_list = list()
             for log_index in range(len(upload_lines)):
                 log_line = str(upload_lines[log_index])
@@ -164,7 +167,6 @@ class MLOpsRuntimeLogProcessor:
             log_upload_request = {
                 "run_id": run_id,
                 "edge_id": device_id,
-                "logs": upload_lines,
                 "create_time": time.time(),
                 "update_time": time.time(),
                 "created_by": str(device_id),
@@ -177,35 +179,62 @@ class MLOpsRuntimeLogProcessor:
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 
-            if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
-                fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
-            else:
-                log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+            # Add replica_id to log_upload_request (i.e. upload log data of each replica separately)
+            # Parse the first square brackets. e.g. [FedML-Client(0) @device-id-0 @replica-rank-0]
+            replica_rank = 0
+            replica_id_to_lines = dict()
+            for line in upload_lines:
+                # Try to find replica-rank in the line, default is 0
+                if line.find("[") != -1 and line.find("]") != -1:
+                    content_inside_brackets = line[line.find("[") + 1:line.find("]")]
+                    if content_inside_brackets.find("replica-rank") != -1:
+                        replica_rank = int(content_inside_brackets.split("-")[-1])
+
+                # id starts from 1
+                replica_id = replica_rank + 1
+
+                # Split to different keys
+                if replica_id not in replica_id_to_lines:
+                    replica_id_to_lines[replica_id] = []
+                replica_id_to_lines[replica_id].append(line)
+
+            for replica_id, lines in replica_id_to_lines.items():
+                log_upload_request["replica_id"] = f"{device_id}_{replica_id}"
+                log_upload_request["logs"] = lines
 
                 # send log data to the log server
-                _, cert_path = MLOpsConfigs.get_request_params()
-                if cert_path is not None:
-                    try:
-                        requests.session().verify = cert_path
-                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                        response = requests.post(
-                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                        )
-                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-
-                    except requests.exceptions.SSLError as err:
-                        MLOpsConfigs.install_root_ca_file()
-                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                        response = requests.post(
-                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                        )
-                        # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
+                if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
+                    fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
                 else:
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                    response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-                    # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
-                if response.status_code != 200:
-                    return
+                    log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+
+                    # send log data to the log server
+                    _, cert_path = MLOpsConfigs.get_request_params()
+                    if cert_path is not None:
+                        try:
+                            requests.session().verify = cert_path
+                            # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                            response = requests.post(
+                                self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                            )
+                            # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. "
+                            #              f"response.status_code: {response.status_code}")
+
+                        except requests.exceptions.SSLError as err:
+                            MLOpsConfigs.install_root_ca_file()
+                            # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                            response = requests.post(
+                                self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                            )
+                            # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. "
+                            #              f"response.status_code: {response.status_code}")
+                    else:
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
+                        response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+                        # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. "
+                        #              f"response.status_code: {response.status_code}")
+                    if response.status_code != 200:
+                        return
 
             self.log_line_index += (line_end_req - line_start_req)
             self.log_uploaded_line_index += len(upload_lines)
@@ -240,6 +269,8 @@ class MLOpsRuntimeLogProcessor:
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
+
+                # https log upload
                 self.log_upload(self.run_id, self.device_id)
 
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
@@ -248,8 +279,10 @@ class MLOpsRuntimeLogProcessor:
                     log_file_current_size = os.path.getsize(self.log_file_path) \
                         if os.path.exists(self.log_file_path) else 0
                     if log_file_prev_size != log_file_current_size:
+                        # s3 log upload
                         upload_result, artifact_storage_url = (
                             self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact))
+
                         if upload_result:
                             only_push_artifact = True
                             if artifact_url_logged is False:

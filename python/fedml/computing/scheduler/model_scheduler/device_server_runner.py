@@ -547,23 +547,18 @@ class FedMLServerRunner:
         replica_no = payload_json.get("replica_no", None)  # "no" Idx start from 1
         run_id_str = str(end_point_id)
 
-        logging.info("==========callback_deployment_result_message==========")
+        logging.info("========== callback_deployment_result_message ==========\n")
 
         logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
                      f"model status {model_status}.")
 
         # OPTIONAL DEBUG PARAMS
-        this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
-
-        logging.info(f"The current replica controller state is "
-                     f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
-
-        # [Deprecated] Since it will overwrite by the new (concurrent) request_json
-        logging.info(f"self.request_json now {self.request_json}")
-
-        this_run_request_json = self.running_request_json.get(run_id_str, None)
-        logging.info(f"self.running_request_json now {this_run_request_json}")
-        logging.info("=========================================================")
+        # this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
+        # logging.info(f"The current replica controller state is "
+        #              f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
+        # logging.info(f"self.request_json now {self.request_json}")    # request_json will be deprecated
+        # this_run_request_json = self.running_request_json.get(run_id_str, None)
+        # logging.info(f"self.running_request_json now {this_run_request_json}")
 
         assert run_id_str in self.model_runner_mapping, (f"Run id {run_id_str} is not in the model runner mapping."
                                                          f"Current mapping {self.model_runner_mapping}.")
