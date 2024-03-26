@@ -245,18 +245,24 @@ class MLOpsRuntimeLogProcessor:
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
                     log_artifact_time_counter = 0
-                    log_file_current_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
+                    log_file_current_size = os.path.getsize(self.log_file_path) \
+                        if os.path.exists(self.log_file_path) else 0
                     if log_file_prev_size != log_file_current_size:
-                        upload_result, artifact_storage_url =self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact)
+                        upload_result, artifact_storage_url = (
+                            self.upload_log_file_as_artifact(only_push_artifact=only_push_artifact))
                         if upload_result:
                             only_push_artifact = True
                             if artifact_url_logged is False:
                                 artifact_url_logged = True
+
+                                # The first time to log the artifact url
                                 fedml.mlops.log_run_log_lines(
-                                    self.run_id, self.device_id, [f"The original log url is {artifact_storage_url}"],
+                                    self.run_id, self.device_id,
+                                    [f"The original log url is {artifact_storage_url}"],
                                     log_source=self.log_source
                                 )
-                        log_file_prev_size = os.path.getsize(self.log_file_path) if os.path.exists(self.log_file_path) else 0
+                        log_file_prev_size = os.path.getsize(self.log_file_path) \
+                            if os.path.exists(self.log_file_path) else 0
             except Exception as e:
                 log_artifact_time_counter = 0
                 pass
@@ -352,10 +358,11 @@ class MLOpsRuntimeLogProcessor:
         return False
 
     def upload_log_file_as_artifact(self, only_push_artifact=False):
+        # https://fedml.s3.amazonaws.com/fedml-run-endpoint-eid-edge-device_id-upload_log.zip
         try:
             if not os.path.exists(self.log_file_path):
                 return False, ""
-            
+
             log_file_name = "{}".format(os.path.basename(self.log_file_path))
             log_file_name_no_ext = os.path.splitext(os.path.basename(self.log_file_path))[0]
             artifact = fedml.mlops.Artifact(name=log_file_name_no_ext, type=fedml.mlops.ARTIFACT_TYPE_NAME_LOG)
@@ -453,7 +460,7 @@ class MLOpsRuntimeLogDaemon:
         self.log_process_event_map[event_map_id].clear()
         log_processor.log_process_event = self.log_process_event_map[event_map_id]
         log_child_process = multiprocessing.Process(target=log_processor.log_process,
-                                                         args=(self.log_process_event_map[event_map_id],))
+                                                    args=(self.log_process_event_map[event_map_id],))
         # process = threading.Thread(target=log_processor.log_process)
         if log_child_process is not None:
             log_child_process.start()

@@ -143,7 +143,7 @@ class FedMLServerRunner:
         progress_int = int(progress)
         downloaded_kb = format(downloaded / 1024, '.2f')
 
-        # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
+        # since this hook function is stateless, we need a state to avoid printing progress repeatedly
         if count == 0:
             self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
@@ -276,7 +276,7 @@ class FedMLServerRunner:
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
+        inference_port = model_config_parameters.get("server_internal_port",  # Internal port is for the gateway
                                                      ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("server_external_port", inference_port)
 
@@ -574,7 +574,7 @@ class FedMLServerRunner:
         if model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 delete_deployment_result_with_device_id_and_replica_no(
-                    end_point_id, end_point_name, model_name, device_id, replica_no)
+                end_point_id, end_point_name, model_name, device_id, replica_no)
         elif model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
             # add or update
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -953,7 +953,7 @@ class FedMLServerRunner:
             # send start deployment request to each device
             self.send_deployment_start_request_to_edge(edge_id, self.request_json)
         return list(first_chunk_dict.keys())
-    
+
     def delete_device_replica_info_on_master(self, endpoint_id, endpoint_name, model_name, edge_id_replica_no_dict):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         # Remove the record of the replaced device
@@ -1211,8 +1211,8 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ModelServerAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
-                                                             str(os.getpid()),
-                                                             str(uuid.uuid4()))
+                                                                  str(os.getpid()),
+                                                                  str(uuid.uuid4()))
         )
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)

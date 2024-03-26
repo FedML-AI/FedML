@@ -3,6 +3,10 @@ import logging
 import os
 import time
 import traceback
+
+import re
+from datetime import datetime
+
 from urllib.parse import urlparse
 
 import asyncio
@@ -696,6 +700,10 @@ class JobMonitor(Singleton):
             print(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
             pass
 
+    @staticmethod
+    def clean_str(ts):
+        return re.sub("(\d{6})(\d+)", r"\1", ts).replace("Z", "+00:00")
+
     def monitor_endpoint_logs(self):
         try:
             fedml_args = mlops.get_fedml_args()
@@ -755,11 +763,14 @@ class JobMonitor(Singleton):
                         channel_info = self.replica_log_channels[job.job_id][job.edge_id][i]
                         if channel_info.get("docker_last_time_stamp") is not None:
                             endpoint_logs = ContainerUtils.get_instance().get_container_logs_since(
-                                endpoint_container_name, since_time=channel_info.get("docker_last_time_stamp"))
+                                endpoint_container_name, since_time=channel_info.get("docker_last_time_stamp"),
+                                timestamps=True
+                            )
                             if endpoint_logs is not None:
                                 channel_info["docker_last_time_stamp"] = int(time.time())
                         else:
-                            endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                            endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name,
+                                                                                             timestamps=True)
                             if endpoint_logs is not None:
                                 channel_info["docker_last_time_stamp"] = int(time.time())
                     else:
@@ -770,7 +781,8 @@ class JobMonitor(Singleton):
                         self.replica_log_channels[job.job_id][job.edge_id][i] = dict()
                         self.replica_log_channels[job.job_id][job.edge_id][i]["docker_last_time_stamp"] = (
                             int(time.time()))
-                        endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name)
+                        endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name,
+                                                                                         timestamps=True)
 
                     if (endpoint_logs is None or endpoint_logs == "\n" or endpoint_logs == "\r\n" or
                             endpoint_logs == "\r" or endpoint_logs == "" or endpoint_logs == " "):
@@ -780,12 +792,31 @@ class JobMonitor(Singleton):
 
                     # Append containers log to the same log file (as they are in the same job & device)
                     with open(log_file_path, "a") as f:
-                        f.write(f"[FedML Log Service] >>>>>>>> [Rank {i}] Start. >>>>>>>> \n")
-                        f.write(endpoint_logs)
-                        f.write(f"[FedML Log Service] <<<<<<<< [Rank {i}] End.   <<<<<<<< \n")
+                        line_of_logs = endpoint_logs.split("\n")
+
+                        for line in line_of_logs:
+                            if line == "":
+                                continue
+
+                            container_time = line.split(" ")[0]
+                            cleaned_time = JobMonitor.clean_str(container_time)
+                            t = datetime.fromisoformat(cleaned_time)
+
+                            time_prefix = f"[{t.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]"
+                            device_replica_prefix = f"[FedML-Replica @device-id-{job.edge_id} @replica-rank-{i}]"
+                            log_level_prefix = "[]"    # This is outer log level, not the container log level
+                            program_location_prefix = "[]"
+
+                            prefix = (f"{device_replica_prefix} {time_prefix} "
+                                      f"{log_level_prefix} {program_location_prefix} ")
+
+                            # replace prefix
+                            line = line.replace(f"{container_time} ", prefix)
+                            f.write(line + "\n")
 
                 if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
                         is_log_processor_running(job.job_id, int(job.edge_id)):
+                    # Init log processor if not running
                     setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
