@@ -122,6 +122,8 @@ class FedMLServerRunner:
         self.replica_controller = None
         self.deployed_replica_payload = None
 
+        self.autoscaler_launcher = None
+
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
