@@ -4,7 +4,8 @@ from .base_protocol import FedMLBaseProtocol
 from ..model_scheduler.device_model_cache import FedMLModelCache
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_server_data_interface import FedMLServerDataInterface
-from .endpoint_monitor_protocol import EndpointDeviceDeploymentResultModel, EndpointDeviceDeploymentStatusModel, EndpointDeviceDeploymentInfoModel
+from .endpoint_monitor_protocol import EndpointDeviceDeploymentResultModel, \
+    EndpointDeviceDeploymentStatusModel, EndpointDeviceDeploymentInfoModel
 from ..model_scheduler.device_server_constants import ServerConstants
 from urllib.parse import urlparse
 import logging
@@ -82,8 +83,8 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
         topic_splits = str(topic).split('/')
         device_id = topic_splits[-1]
         deployment_result = EndpointDeviceDeploymentResultModel(payload)
-        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_result(
+        FedMLModelCache.get_instance().set_redis_params()
+        FedMLModelCache.get_instance().set_deployment_result(
             deployment_result.endpoint_id, deployment_result.endpoint_name, deployment_result.model_name,
             deployment_result.model_version, device_id, payload)
 
@@ -97,8 +98,8 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
         topic_splits = str(topic).split('/')
         device_id = topic_splits[-1]
         deployment_status = EndpointDeviceDeploymentStatusModel(payload)
-        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_status(
+        FedMLModelCache.get_instance().set_redis_params()
+        FedMLModelCache.get_instance().set_deployment_status(
             deployment_status.endpoint_id, deployment_status.endpoint_name, deployment_status.model_name,
             deployment_status.model_version, device_id, deployment_status.model_status)
 
@@ -130,7 +131,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if status_item_found is not None:
-            #print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
+            # print(f"status_item_found {status_item_found}, status_payload_found {status_payload_found}")
             # Delete Status
             FedMLModelCache.get_instance().delete_deployment_status(
                 status_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
@@ -143,7 +144,8 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
 
             # Update Status
             model_url_parsed = urlparse(status_payload_found.get("model_url", ""))
-            status_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
+            status_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}" \
+                                                f"{model_url_parsed.path}"
             status_payload_found["inference_port"] = deployment_info.inference_port
             FedMLModelCache.get_instance().set_deployment_status(
                 deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name,
@@ -163,7 +165,7 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 break
 
         if result_item_found is not None:
-            #print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
+            # print(f"result_item_found {result_item_found}, result_payload_found {result_payload_found}")
             FedMLModelCache.get_instance().delete_deployment_result(
                 result_item_found, deployment_info.endpoint_id, deployment_info.endpoint_name,
                 deployment_info.model_name)
@@ -174,7 +176,8 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
                 result_payload_found["model_status"] = ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
             
             model_url_parsed = urlparse(result_payload_found.get("model_url", ""))
-            result_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}{model_url_parsed.path}"
+            result_payload_found["model_url"] = f"http://{model_url_parsed.hostname}:{deployment_info.inference_port}" \
+                                                f"{model_url_parsed.path}"
             result_payload_found["inference_port"] = deployment_info.inference_port
             FedMLModelCache.get_instance().set_deployment_result(
                 deployment_info.endpoint_id, deployment_info.endpoint_name, deployment_info.model_name,
@@ -183,12 +186,12 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
     def set_local_deployment_status_result(
             self, endpoint_id, endpoint_name, model_name, model_version, device_id,
             inference_port, status_payload, result_payload):
-        '''
+        """
         The result and status are saved in the local sqlite table.
         They both belong to the table deployment_result_info;
         deployment_result column is used to save the result;
         deployment_status column is used to save the status.
-        '''
+        """
         if status_payload is not None:
             model_url_parsed = urlparse(status_payload.get("model_url", ""))
             status_payload["model_url"] = f"http://{model_url_parsed.hostname}:{inference_port}{model_url_parsed.path}"

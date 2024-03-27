@@ -17,8 +17,6 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 from ...computing.scheduler.slave.client_constants import ClientConstants
-from ...computing.scheduler.slave.client_runner import FedMLClientRunner
-from ...computing.scheduler.master.server_runner import FedMLServerRunner
 from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
 from ...computing.scheduler.master.server_constants import ServerConstants
 
@@ -35,6 +33,8 @@ from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from .mlops_utils import MLOpsUtils
 from .mlops_constants import MLOpsConstants
+from ...computing.scheduler.master.master_protocol_manager import FedMLLaunchMasterProtocolManager
+from ...computing.scheduler.scheduler_core.account_manager import FedMLAccountManager
 
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
@@ -50,6 +50,8 @@ __all__ = [
     "log_aggregation_failed_status",
     "log_training_failed_status",
     "log_endpoint_status",
+    "MLOpsConfigs",
+    "sync_deploy_id"
 ]
 
 
@@ -1244,12 +1246,13 @@ def bind_simulation_device(args, userid):
     setattr(args, "version", version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLServerRunner.get_device_id())
-        runner = FedMLServerRunner(args)
+        setattr(args, "device_id",
+                FedMLAccountManager.get_device_id(ServerConstants.get_data_dir()))
+        runner = FedMLLaunchMasterProtocolManager(args)
     else:
         setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLClientRunner.get_device_id())
-        runner = FedMLClientRunner(args)
+        setattr(args, "device_id", FedMLAccountManager.get_device_id())
+        runner = FedMLSlaveProtocolManager(args)
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
@@ -1326,10 +1329,10 @@ def fetch_config(args, version="release"):
     setattr(args, "version", version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLServerRunner.get_device_id())
+        setattr(args, "device_id", FedMLAccountManager.get_device_id(ServerConstants.get_data_dir()))
     else:
         setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLClientRunner.get_device_id())
+        setattr(args, "device_id", FedMLAccountManager.get_device_id(ClientConstants.get_data_dir()))
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 

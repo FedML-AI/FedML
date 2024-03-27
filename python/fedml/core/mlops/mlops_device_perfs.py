@@ -6,7 +6,7 @@ import traceback
 import uuid
 from os.path import expanduser
 
-import multiprocess as multiprocessing
+import multiprocessing
 import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
@@ -19,22 +19,14 @@ from .mlops_utils import MLOpsUtils
 from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 
 ROLE_DEVICE_INFO_REPORTER = 1
-ROLE_ENDPOINT_MASTER = 2
-ROLE_ENDPOINT_SLAVE = 3
-ROLE_RUN_MASTER = 4
-ROLE_RUN_SLAVE = 5
-ROLE_ENDPOINT_LOGS = 6
+ROLE_DEVICE_JOB_MONITOR = 2
 
 
 class MLOpsDevicePerfStats(object):
     def __init__(self):
         self.device_realtime_stats_process = None
         self.device_realtime_stats_event = None
-        self.monitor_run_slave_process = None
-        self.monitor_run_master_process = None
-        self.monitor_endpoint_master_process = None
-        self.monitor_endpoint_slave_process = None
-        self.monitor_endpoint_logs_process = None
+        self.device_monitor_process = None
         self.args = None
         self.device_id = None
         self.run_id = None
@@ -70,36 +62,15 @@ class MLOpsDevicePerfStats(object):
 
         self.device_realtime_stats_process = multiprocessing.Process(
             target=perf_stats.report_device_realtime_stats_entry,
-            args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER))
+            args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client))
         self.device_realtime_stats_process.start()
 
-        if self.is_client:
-            self.monitor_endpoint_slave_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_SLAVE))
-            self.monitor_endpoint_slave_process.start()
+        self.device_monitor_process = multiprocessing.Process(
+            target=perf_stats.report_device_realtime_stats_entry,
+            args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_MONITOR, self.is_client))
+        self.device_monitor_process.start()
 
-            self.monitor_endpoint_master_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER))
-            self.monitor_endpoint_master_process.start()
-
-            self.monitor_run_slave_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
-            self.monitor_run_slave_process.start()
-
-            self.monitor_endpoint_logs_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
-            self.monitor_endpoint_logs_process.start()
-        else:
-            self.monitor_run_master_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_RUN_MASTER))
-            self.monitor_run_master_process.start()
-
-    def report_device_realtime_stats_entry(self, sys_event, role):
+    def report_device_realtime_stats_entry(self, sys_event, role, is_client):
         # print(f"Report device realtime stats, process id {os.getpid()}")
 
         self.device_realtime_stats_event = sys_event
@@ -117,39 +88,37 @@ class MLOpsDevicePerfStats(object):
         parent_pid = psutil.Process(os.getpid()).ppid()
         sys_stats_obj = SysStats(process_id=parent_pid)
 
-        if role == ROLE_RUN_MASTER:
-            device_info_reporter = FedMLDeviceInfoReportProtocol(run_id=self.run_id, mqtt_mgr=mqtt_mgr)
+        device_info_reporter = FedMLDeviceInfoReportProtocol(run_id=self.run_id, mqtt_mgr=mqtt_mgr)
 
         JobMonitor.get_instance().mqtt_config = self.args.mqtt_config_path
 
         # Notify MLOps with system information.
-        sleep_time_interval = 10
-        time_interval_map = {
-            ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
-            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30}
+        sleep_time_interval_for_device_info = 60
+        sleep_time_interval_for_client_monitor = 30
+        sleep_time_interval_for_server_monitor = 60
         while not self.should_stop_device_realtime_stats():
-            try:
-                time.sleep(time_interval_map[role])
+            if role == ROLE_DEVICE_INFO_REPORTER:
+                time.sleep(sleep_time_interval_for_device_info)
+            elif role == ROLE_DEVICE_JOB_MONITOR:
+                time.sleep(sleep_time_interval_for_client_monitor if is_client
+                           else sleep_time_interval_for_server_monitor)
 
+            try:
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
-                elif role == ROLE_RUN_SLAVE:
-                    JobMonitor.get_instance().monitor_slave_run_process_status()
-                elif role == ROLE_RUN_MASTER:
-                    JobMonitor.get_instance().monitor_master_run_process_status(
-                        self.edge_id, device_info_reporter=device_info_reporter)
-                elif role == ROLE_ENDPOINT_SLAVE:
-                    JobMonitor.get_instance().monitor_slave_endpoint_status()
-                elif role == ROLE_ENDPOINT_MASTER:
-                    JobMonitor.get_instance().monitor_master_endpoint_status()
-                elif role == ROLE_ENDPOINT_LOGS:
-                    JobMonitor.get_instance().monitor_endpoint_logs()
+                elif role == ROLE_DEVICE_JOB_MONITOR:
+                    if is_client:
+                        JobMonitor.get_instance().monitor_slave_run_process_status()
+                        JobMonitor.get_instance().monitor_slave_endpoint_status()
+                        JobMonitor.get_instance().monitor_master_endpoint_status()
+                        JobMonitor.get_instance().monitor_endpoint_logs()
+                    else:
+                        JobMonitor.get_instance().monitor_master_run_process_status(
+                            self.edge_id, device_info_reporter=device_info_reporter)
 
             except Exception as e:
                 logging.error(f"exception {e} when reporting device pref: {traceback.format_exc()}.")
                 pass
-
-            time.sleep(sleep_time_interval)
 
             if role == ROLE_DEVICE_INFO_REPORTER:
                 self.check_fedml_client_parent_process()
@@ -201,6 +170,7 @@ class MLOpsDevicePerfStats(object):
         if not self.is_client:
             return
 
+        # inspection PyBroadException
         try:
             home_dir = expanduser("~")
             fedml_ppids_dir = os.path.join(home_dir, ".fedml", "fedml-client", "fedml", "data", "ppids")
@@ -222,13 +192,14 @@ class MLOpsDevicePerfStats(object):
                 print(f"Parent client process {file_list} has been killed, so fedml will exit.")
                 logging.info(f"Parent client process {file_list} has been killed, so fedml will exit.")
                 os.system("fedml logout")
-        except Exception as e:
+        except Exception:
             pass
 
     def check_fedml_server_parent_process(self):
         if self.is_client:
             return
 
+        # inspection PyBroadException
         try:
             home_dir = expanduser("~")
             fedml_ppids_dir = os.path.join(home_dir, ".fedml", "fedml-server", "fedml", "data", "ppids")
@@ -250,5 +221,5 @@ class MLOpsDevicePerfStats(object):
                 print(f"Parent server process {file_list} has been killed, so fedml will exit.")
                 logging.info(f"Parent server process {file_list} has been killed, so fedml will exit.")
                 os.system("fedml logout -s")
-        except Exception as e:
+        except Exception:
             pass

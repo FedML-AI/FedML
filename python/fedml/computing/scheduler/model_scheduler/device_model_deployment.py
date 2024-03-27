@@ -34,35 +34,14 @@ from ..comm_utils.container_utils import ContainerUtils
 
 from .device_http_inference_protocol import FedMLHttpInference
 
+from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 
 no_real_gpu_allocation = None
-
-
-class CPUUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module == 'torch.storage' and name == '_load_from_bytes':
-            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
-        else:
-            return super().find_class(module, name)
 
 
 def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_device_id=None):
     gpu_ids = None
     client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
-
-    try:
-        ComputeCacheManager.get_instance().set_redis_params()
-        with ComputeCacheManager.get_instance().lock(
-                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(edge_id, end_point_id)
-        ):
-            if num_gpus is None:
-                num_gpus = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(edge_id, end_point_id)
-                num_gpus = int(num_gpus) if num_gpus is not None and str(num_gpus) != "" else 1
-            gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(edge_id, end_point_id)
-    except Exception as e:
-        logging.info(f"Execption when request gpu ids. {traceback.format_exc()}")
-        gpu_ids = None
-        raise e
 
     if gpu_ids is None:
         cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
@@ -92,234 +71,127 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open, token, master_ip, edge_id, master_device_id=None):
+                     model_from_open, token, master_ip, edge_id, master_device_id=None, replica_rank=0,
+                     gpu_per_replica=1):
     logging.info("Model deployment is starting...")
-
-    use_simulation_test_without_triton = False
-    model_metadata = {'name': inference_model_name,
-                      'versions': ['1'], 'platform': 'onnxruntime_onnx',
-                      'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]},
-                                 {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
-                      'outputs': [{'name': 'output', 'datatype': 'FP32', 'shape': [1]}]}
-    model_config = {
-        "platform": "onnxruntime",
-        "max_batch_size": 1,
-        "input_size": [[1, 24], [1, 2]],
-        "input_types": ["int", "float"],
-        "input": [
-            {
-                "name": "input",
-                "data_type": "TYPE_FP32",
-                "dims": []
-            }
-        ],
-        "output": [
-            {
-                "name": "output",
-                "data_type": "TYPE_FP32",
-                "dims": []
-            }
-        ]
-    }
 
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
-    num_gpus = 0
+    num_gpus = gpu_per_replica    # Real gpu per replica (container)
     gpu_ids, gpu_attach_cmd = None, ""
 
     running_model_name = ClientConstants.get_running_model_name(
         end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
 
-    # Check whether triton server is running.
-    triton_server_is_running = False
-    if not use_simulation_test_without_triton:
-        triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
-        if not ClientConstants.is_running_on_k8s():
-            check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
-            running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
-                                                                       should_capture_stdout=True,
-                                                                       should_capture_stderr=True)
-            ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
-            if out is not None:
-                out_str = sys_utils.decode_our_err_result(out)
-                if str(out_str) != "":
-                    triton_server_is_running = True
-
-    # Convert models from pytorch to onnx format
     if model_is_from_open:
-        if model_from_open is None:
-            return running_model_name, "", model_version, {}, {}
+        logging.error("The model is directly export from open, currently do not convert the model to servable format.")
+        return "", "", None, None, None
 
-        logging.info("model binary file: {}".format(model_bin_file))
-        with open(model_bin_file, 'rb') as model_pkl_file:
-            if not torch.cuda.is_available():
-                try:
-                    open_model_params = CPUUnpickler(model_pkl_file).load()
-                except Exception as ex:
-                    logging.info("load model exceptions when using CPU_Unpickler: {}".format(traceback.format_exc()))
-                    return "", "", model_version, model_metadata, model_config
-            else:
-                open_model_params = pickle.load(model_pkl_file)
-            model_from_open.load_state_dict(open_model_params)
-            model_from_open.eval()
-
-        if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-            logging.info("convert the onnx model when the mode is from FedML® Nexus AI Platform..")
-            logging.info("Input size {}, input types {}".format(model_params["input_size"],
-                                                                model_params["input_types"]))
-            input_size = model_params["input_size"]
-            input_types = model_params["input_types"]
-
-            dummy_input_list = []
-            for index, input_i in enumerate(input_size):
-                if input_types[index] == "int":
-                    this_input = torch.randint(0, 1, input_i).clone().detach()
-                else:
-                    this_input = torch.zeros(input_i).clone().detach()
-                dummy_input_list.append(this_input)
-
-            onnx_model_path = os.path.join(model_storage_local_path,
-                                           ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                           running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-            if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path, exist_ok=True)
-            onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
-
-            convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
-        elif ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:  # we do not convert the model to onnx in llm
-            logging.info("LLM model loaded from the open")
+    # Parse the model config file and get the necessary information for the deployment
+    model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
+    with open(model_config_path, 'r') as file:
+        config = yaml.safe_load(file)
+        # Resource related
+        use_gpu = config.get('use_gpu', True)
+        in_gpu_ids = config.get('gpu_ids', gpu_ids)
+        num_gpus_frm_yml = config.get('num_gpus', None)
+        if not use_gpu:
+            num_gpus = 0
         else:
-            raise Exception("Unsupported inference engine type: {}".format(inference_engine))
-    elif model_is_from_open == False or model_is_from_open is None:
-        model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
-        try:
-            model = torch.jit.load(model_location)
-            model.eval()
-        except Exception as e:
-            logging.info(
-                "Cannot locate the .bin file, will read it from"
-                " the fedml_model_config.yaml with the key [local_model_dir] ")
-            model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
-            with open(model_config_path, 'r') as file:
-                config = yaml.safe_load(file)
-                # Resource related
-                use_gpu = config.get('use_gpu', False)
-                in_gpu_ids = config.get('gpu_ids', gpu_ids)
-                num_gpus = config.get('num_gpus', None)
-                if not use_gpu:
-                    num_gpus = 0
-                else:
-                    if num_gpus is None:
-                        num_gpus = len(in_gpu_ids) if in_gpu_ids is not None else 1
-                usr_indicated_wait_time = config.get('deploy_timeout', 900)
-                usr_indicated_worker_port = config.get('worker_port', "")
-                if usr_indicated_worker_port == "":
-                    usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
-                shm_size = config.get('shm_size', None)
-                storage_opt = config.get('storage_opt', None)
-                tmpfs = config.get('tmpfs', None)
-                cpus = config.get('cpus', None)
-                if cpus is not None:
-                    cpus = int(cpus)
-                memory = config.get('memory', None)
+            if num_gpus_frm_yml is not None:
+                num_gpus = int(num_gpus_frm_yml)
+        usr_indicated_wait_time = config.get('deploy_timeout', 900)
+        usr_indicated_worker_port = config.get('worker_port', "")
+        if usr_indicated_worker_port == "":
+            usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
+        shm_size = config.get('shm_size', None)
+        storage_opt = config.get('storage_opt', None)
+        tmpfs = config.get('tmpfs', None)
+        cpus = config.get('cpus', None)
+        if cpus is not None:
+            cpus = int(cpus)
+        memory = config.get('memory', None)
 
-                if usr_indicated_worker_port == "":
-                    usr_indicated_worker_port = None
-                else:
-                    usr_indicated_worker_port = int(usr_indicated_worker_port)
+        if usr_indicated_worker_port == "":
+            usr_indicated_worker_port = None
+        else:
+            usr_indicated_worker_port = int(usr_indicated_worker_port)
 
-                worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
-                worker_port_from_config = config.get('worker_port', "")
-                print(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
-                      f"worker port from config {worker_port_from_config}")
+        worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
+        worker_port_from_config = config.get('worker_port', "")
+        print(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
+              f"worker port from config {worker_port_from_config}")
 
-                usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
-                inference_image_name = config.get('inference_image_name',
-                                                  ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
-                image_pull_policy = config.get('image_pull_policy', SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT)
+        usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
+        inference_image_name = config.get('inference_image_name',
+                                          ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
+        image_pull_policy = config.get('image_pull_policy', SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT)
 
-                # Source code dir, bootstrap dir, data cache dir
-                src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
+        # Source code dir, bootstrap dir, data cache dir
+        src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
 
-                # Get the bootstrap and job commands inside the yaml file
-                bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
-                job_cmds_str_frm_yaml = config.get('job', "")
+        # Get the bootstrap and job commands inside the yaml file
+        bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
+        job_cmds_str_frm_yaml = config.get('job', "")
 
-                if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
-                    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
-                    src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
-                    with open(src_bootstrap_file_path, 'w') as f:
-                        f.write("cd /home/fedml/models_serving/\n")
-                        f.write(bootstrap_cmds_str_frm_yaml)
-                        f.write("\n")
-                        f.write("cd /home/fedml/models_serving/\n")
-                        f.write(job_cmds_str_frm_yaml)
-                else:
-                    src_bootstrap_file_path = ""
+        if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
+            auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
+            src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
+            with open(src_bootstrap_file_path, 'w') as f:
+                f.write("cd /home/fedml/models_serving/\n")
+                f.write(bootstrap_cmds_str_frm_yaml)
+                f.write("\n")
+                f.write("cd /home/fedml/models_serving/\n")
+                f.write(job_cmds_str_frm_yaml)
+        else:
+            src_bootstrap_file_path = ""
 
-                data_cache_dir_input = config.get('data_cache_dir', "")
-                request_input_example = config.get('request_input_example', None)
-                extra_envs = config.get('environment_variables', None)
+        data_cache_dir_input = config.get('data_cache_dir', "")
+        request_input_example = config.get('request_input_example', None)
+        extra_envs = config.get('environment_variables', None)
 
-                # Serving dir inside docker
-                dst_model_serving_dir = "/home/fedml/models_serving"
-                relative_entry = config.get('entry_point')
-                if src_bootstrap_file_path != "":
-                    dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
-                else:
-                    dst_bootstrap_dir = ""
+        # Serving dir inside docker
+        dst_model_serving_dir = "/home/fedml/models_serving"
+        relative_entry = config.get('entry_point')
+        if src_bootstrap_file_path != "":
+            dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
+        else:
+            dst_bootstrap_dir = ""
 
-                # If using customized image, then bootstrap + job will be the entry point
-                enable_custom_image = config.get("enable_custom_image", False)
-                customized_image_entry_cmd = \
-                    "/bin/bash /home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
+        # If using customized image, then bootstrap + job will be the entry point
+        enable_custom_image = config.get("enable_custom_image", False)
+        customized_image_entry_cmd = \
+            "/bin/bash /home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
 
-                docker_registry_user_name = config.get("docker_registry_user_name", "")
-                docker_registry_user_password = config.get("docker_registry_user_password", "")
-                docker_registry = config.get("docker_registry", "")
+        docker_registry_user_name = config.get("docker_registry_user_name", "")
+        docker_registry_user_password = config.get("docker_registry_user_password", "")
+        docker_registry = config.get("docker_registry", "")
 
-                port_inside_container = int(config.get("port_inside_container", 2345))
-                use_triton = config.get("use_triton", False)
-                if use_triton:
-                    inference_type = "triton"
-                else:
-                    inference_type = "default"
+        port_inside_container = int(config.get("port_inside_container", 2345))
+        use_triton = config.get("use_triton", False)
+        if use_triton:
+            inference_type = "triton"
+        else:
+            inference_type = "default"
 
-            if src_code_dir == "":
-                raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
-            if relative_entry == "":
-                logging.warning("You missed main_entry in the fedml_model_config.yaml")
+    # Config check
+    if src_code_dir == "":
+        raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
+    if relative_entry == "":
+        logging.warning("You missed main_entry in the fedml_model_config.yaml")
 
-        if num_gpus > 0:
-            gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(
-                edge_id, end_point_id, num_gpus=num_gpus, master_device_id=master_device_id)
+    # Request the GPU ids for the deployment
+    if num_gpus > 0:
+        gpu_ids, gpu_attach_cmd = request_gpu_ids_on_deployment(
+            edge_id, end_point_id, num_gpus=num_gpus, master_device_id=master_device_id)
 
-        if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-            # configuration passed by user in the Cli
-            input_size = model_params["input_size"]
-            input_types = model_params["input_types"]
-            logging.info("convert the onnx model when the mode is from the general PyTorch...")
-            logging.info("Input size {}, input types {}".format(model_params["input_size"],
-                                                                model_params["input_types"]))
-            dummy_input_list = []
-            for index, input_i in enumerate(input_size):
-                if input_types[index] == "int":
-                    this_input = torch.randint(0, 1, input_i).clone().detach()
-                else:
-                    this_input = torch.zeros(input_i).clone().detach()
-                dummy_input_list.append(this_input)
-
-            onnx_model_path = os.path.join(model_storage_local_path,
-                                           ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                           running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-            logging.info("converted onnx model path: {}".format(onnx_model_path))
-            if not os.path.exists(onnx_model_path):
-                os.makedirs(onnx_model_path, exist_ok=True)
-            onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
-
-            convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
+        # set replica and their gpu ids
+        FedMLModelCache.get_instance().set_redis_params()
+        FedMLModelCache.get_instance().set_replica_gpu_ids(
+            end_point_id, end_point_name, inference_model_name, edge_id, replica_rank+1, gpu_ids)
+    logging.info("GPU ids allocated: {}".format(gpu_ids))
 
     logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
@@ -339,265 +211,199 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not os.path.exists(dst_model_file):
                     shutil.copyfile(src_model_file, dst_model_file)
 
-    if inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
-        logging.info(f"master ip: {master_ip}, worker ip: {infer_host}")
-        if infer_host == master_ip:
-            logging.info("infer_host is the same as master ip, will use 127.0.0.1 to avoid firewall issue")
-            infer_host = "127.0.0.1"
+    if inference_engine != ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
+        raise Exception(f"inference engine {inference_engine} is not supported")
 
-        try:
-            client = docker.from_env()
-            if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != "" \
-                    and docker_registry != "":
-                client.login(username=docker_registry_user_name, password=docker_registry_user_password,
-                             registry=docker_registry)
-        except Exception:
-            logging.error("Failed to connect to the docker daemon, please ensure that you have "
-                          "installed Docker Desktop or Docker Engine, and the docker is running")
-            return "", "", None, None, None
+    # Get the master device id
+    logging.info(f"master ip: {master_ip}, worker ip: {infer_host}")
+    if infer_host == master_ip:
+        logging.info("infer_host is the same as master ip, will use 127.0.0.1 to avoid firewall issue")
+        infer_host = "127.0.0.1"
 
-        container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                                        security_utils.get_content_hash(running_model_name)
-        
-        same_model_container_rank = ContainerUtils.get_container_rank_same_model(container_prefix)
-        if same_model_container_rank == -1:
-            logging.error(f"Fail to get existed docker with {end_point_name} {inference_model_name}")
-            raise Exception("Failed to get the container rank")
-        default_server_container_name = container_prefix + "__" + str(same_model_container_rank)
+    try:
+        client = docker.from_env()
+        if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != "" \
+                and docker_registry != "":
+            client.login(username=docker_registry_user_name, password=docker_registry_user_password,
+                         registry=docker_registry)
+    except Exception:
+        logging.error("Failed to connect to the docker daemon, please ensure that you have "
+                      "installed Docker Desktop or Docker Engine, and the docker is running")
+        return "", "", None, None, None
 
-        try:
-            exist_container_obj = client.containers.get(default_server_container_name)
-        except docker.errors.NotFound:
-            exist_container_obj = None
-        except docker.errors.APIError:
-            raise Exception("Failed to get the container object")
+    container_prefix = ("{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" +
+                        security_utils.get_content_hash(running_model_name))
 
-        if exist_container_obj is not None:
-            client.api.remove_container(exist_container_obj.id, v=True, force=True)
-        device_requests = []
-        if no_real_gpu_allocation is not None:
-            use_gpu = not no_real_gpu_allocation
-        if use_gpu:
-            logging.info("Number of GPUs: {}".format(num_gpus))
-            if gpu_ids is not None:
-                gpu_id_list = map(lambda x: str(x), gpu_ids)
-                device_requests.append(
-                    docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
-            else:
-                device_requests.append(
-                    docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
-        logging.info(f"device_requests: {device_requests}")
-        logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
+    default_server_container_name = container_prefix + "__" + str(replica_rank)
 
-        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
+    try:
+        exist_container_obj = client.containers.get(default_server_container_name)
+    except docker.errors.NotFound:
+        exist_container_obj = None
+    except docker.errors.APIError:
+        raise Exception("Failed to get the container object")
 
-        logging.info("Start creating the inference container...")
-        volumns = []
-        binds = {}
-        environment = {}
-
-        assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
-        if type(data_cache_dir_input) == str:
-            # In this case, we mount to the same folder, if has ~, we replace it with /home/fedml
-            src_data_cache_dir, dst_data_cache_dir = "", ""
-            if data_cache_dir_input != "":
-                if data_cache_dir_input[0] == "~":
-                    src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
-                    dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
-                else:
-                    # check if the data_cache_dir is a relative path
-                    if data_cache_dir_input[0] != "/":
-                        raise "data_cache_dir_input has to be an absolute path or start with ~"
-                    else:
-                        src_data_cache_dir = data_cache_dir_input
-                        dst_data_cache_dir = data_cache_dir_input
-                logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
-                
-                if type(src_data_cache_dir) == str and src_data_cache_dir != "":
-                    logging.info("Start copying the data cache to the container...")
-                    if os.path.exists(src_data_cache_dir):
-                        volumns.append(src_data_cache_dir)
-                        binds[src_data_cache_dir] = {
-                            "bind": dst_data_cache_dir,
-                            "mode": "rw"
-                        }
-                        environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+    # Allocate the GPU
+    # TODO: Make sure no competition for each replica in a single deployment
+    if exist_container_obj is not None:
+        client.api.remove_container(exist_container_obj.id, v=True, force=True)
+    device_requests = []
+    if no_real_gpu_allocation is not None:
+        use_gpu = not no_real_gpu_allocation
+    use_gpu = False
+    if use_gpu:
+        logging.info("Number of GPUs: {}".format(num_gpus))
+        if gpu_ids is not None:
+            gpu_id_list = map(lambda x: str(x), gpu_ids)
+            device_requests.append(
+                docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
         else:
-            for k, v in data_cache_dir_input.items():
-                if os.path.exists(k):
-                    volumns.append(v)
-                    binds[k] = {
-                        "bind": v,
+            device_requests.append(
+                docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
+    logging.info(f"device_requests: {device_requests}")
+
+    # Pull the inference image
+    logging.info(f"Start pulling the inference image {inference_image_name}..., may take a few minutes...")
+    ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
+
+    logging.info("Start creating the inference container...")
+    volumns = []
+    binds = {}
+    environment = {}
+
+    # data_cache_dir mounting
+    assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
+    if type(data_cache_dir_input) == str:
+        # In this case, we mount to the same folder, if has ~, we replace it with /home/fedml
+        src_data_cache_dir, dst_data_cache_dir = "", ""
+        if data_cache_dir_input != "":
+            if data_cache_dir_input[0] == "~":
+                src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+            else:
+                # check if the data_cache_dir is a relative path
+                if data_cache_dir_input[0] != "/":
+                    raise "data_cache_dir_input has to be an absolute path or start with ~"
+                else:
+                    src_data_cache_dir = data_cache_dir_input
+                    dst_data_cache_dir = data_cache_dir_input
+            logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+
+            if type(src_data_cache_dir) == str and src_data_cache_dir != "":
+                logging.info("Start copying the data cache to the container...")
+                if os.path.exists(src_data_cache_dir):
+                    volumns.append(src_data_cache_dir)
+                    binds[src_data_cache_dir] = {
+                        "bind": dst_data_cache_dir,
                         "mode": "rw"
                     }
-                else:
-                    logging.warning(f"{k} does not exist, skip mounting it to the container")
-            logging.info(f"Data cache mount: {volumns}, {binds}")
-
-        # Default
-        if not enable_custom_image or (enable_custom_image and relative_entry != ""):
-            logging.info("Start copying the source code to the container...")
-            volumns.append(src_code_dir)
-            binds[src_code_dir] = {
-                "bind": dst_model_serving_dir,
-                "mode": "rw"
-            }
-            environment["MAIN_ENTRY"] = relative_entry
-
-        if not enable_custom_image:
-            # For some image, the default user is root. Unified to fedml.
-            environment["HOME"] = "/home/fedml"
-        environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
-        environment["FEDML_CURRENT_RUN_ID"] = end_point_id
-        environment["FEDML_CURRENT_EDGE_ID"] = edge_id
-        environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
-        environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
-        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
-        environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
-        logging.info(f"volume: {volumns}, binds: {binds}, environment: {environment}")
-        logging.info(f"dst_model_serving_dir: {dst_model_serving_dir}")
-        logging.info(f"relative_entry: {relative_entry}")
-        logging.info(f"src_bootstrap_file_path: {src_bootstrap_file_path}")
-        logging.info(f"dst_bootstrap_dir: {dst_bootstrap_dir}")
-        logging.info(f"src_code_dir: {src_code_dir}")
-        logging.info(f"model_serving_dir: {model_serving_dir}")
-
-        if extra_envs is not None:
-            for key in extra_envs:
-                environment[key] = extra_envs[key]
-
-        try:
-            new_container = client.api.create_container(
-                image=inference_image_name,
-                name=default_server_container_name,
-                volumes=volumns,
-                ports=[port_inside_container],  # port open inside the container
-                environment=environment,
-                host_config=client.api.create_host_config(
-                    binds=binds,
-                    port_bindings={
-                        port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
-                    },
-                    device_requests=device_requests,
-                    shm_size=shm_size,
-                    storage_opt=storage_opt,
-                    tmpfs=tmpfs,
-                    cpu_count=cpus,
-                    mem_limit=memory,
-                ),
-                detach=True,
-                command=customized_image_entry_cmd if enable_custom_image else None
-            )
-            client.api.start(container=new_container.get("Id"))
-        except Exception as e:
-            logging.error(f"Failed to create the container with exception {e}, traceback : {traceback.format_exc()}")
-
-        # Get the port allocation
-        cnt = 0
-        while True:
-            cnt += 1
-            try:
-                if usr_indicated_worker_port is not None:
-                    inference_http_port = usr_indicated_worker_port
-                    break
-                else:
-                    # Find the random port
-                    port_info = client.api.port(new_container.get("Id"), port_inside_container)
-                    inference_http_port = port_info[0]["HostPort"]
-                    logging.info("inference_http_port: {}".format(inference_http_port))
-                    break
-            except:
-                if cnt >= 5:
-                    raise Exception("Failed to get the port allocation")
-                time.sleep(3)
-
-        # Logging the info from the container
-        log_deployment_result(end_point_id, model_id, default_server_container_name,
-                              ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
-                              inference_model_name, inference_engine, inference_http_port, inference_type,
-                              retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
-                              request_input_example=request_input_example, infer_host=infer_host,
-                              enable_custom_image=enable_custom_image)
-
-        # Check if the inference server is ready
-        inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(inference_model_name, inference_engine, inference_http_port,
-                           infer_host, False, inference_type, request_input_example=request_input_example,
-                           enable_custom_image=enable_custom_image)
-
-        if inference_output_url == "":
-            return running_model_name, "", None, None, None
-
-        # testing the inference container
-        test_input = ret_model_metadata["inputs"]
-
-        # try:
-        #     inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [],
-        #                                                               inference_type="default")
-        #     logging.info(f"Tested the inference backend with {test_input}, the response is {inference_response}")
-        # except Exception as e:
-        #     logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-        #     inference_output_url = ""
-
-        model_metadata = ret_model_metadata
-        logging.info(model_metadata)
-    elif inference_engine == ClientConstants.INFERENCE_ENGINE_TYPE_INT_TRITON:
-        logging.info("prepare to run triton server...")
-        if not use_simulation_test_without_triton:
-            if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
-                triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                                    "-p{}:8001 -p{}:8002 " \
-                                    "--shm-size {} " \
-                                    "-v {}:/models {} " \
-                                    "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
-                                    "--model-control-mode=poll --repository-poll-secs={} " \
-                                    "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
-                                                                           sudo_prefix, triton_server_container_name,
-                                                                           sudo_prefix, triton_server_container_name,
-                                                                           gpu_attach_cmd,
-                                                                           inference_http_port,
-                                                                           inference_grpc_port,
-                                                                           inference_metric_port,
-                                                                           inference_memory_size,
-                                                                           model_serving_dir,
-                                                                           inference_server_image,
-                                                                           ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
-                logging.info("Run triton inference server: {}".format(triton_server_cmd))
-                triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                                 should_capture_stdout=False,
-                                                                                 should_capture_stderr=False,
-                                                                                 no_sys_out_err=True)
-                log_deployment_result(end_point_id, model_id, triton_server_container_name,
-                                      ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                                      running_model_name, inference_engine, inference_http_port)
-
-            inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-                get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
-            if inference_output_url != "":
-                # Send the test request to the inference backend and check if the response is normal
-                input_json, output_json = build_inference_req(end_point_name, inference_model_name,
-                                                              token, ret_model_metadata)
-                try:
-                    inference_response = run_http_inference_with_curl_request(inference_output_url,
-                                                                              input_json["inputs"],
-                                                                              input_json["outputs"])
-                    logging.info("Tested the inference backend, the response is {}".format(inference_response))
-                except Exception as e:
-                    logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
-                    inference_output_url = ""
-
-                if inference_output_url != "":
-                    logging.info(
-                        "Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-                            inference_output_url, model_metadata, model_config))
-                    model_metadata = ret_model_metadata
-                    model_config = ret_model_config
-        else:
-            inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
+                    environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
     else:
-        raise Exception("inference engine {} is not supported".format(inference_engine))
+        for k, v in data_cache_dir_input.items():
+            if os.path.exists(k):
+                volumns.append(v)
+                binds[k] = {
+                    "bind": v,
+                    "mode": "rw"
+                }
+            else:
+                logging.warning(f"{k} does not exist, skip mounting it to the container")
+        logging.info(f"Data cache mount: {volumns}, {binds}")
 
-    return running_model_name, inference_output_url, model_version, model_metadata, model_config
+    # Default mounting
+    if not enable_custom_image or (enable_custom_image and relative_entry != ""):
+        logging.info("Start copying the source code to the container...")
+        volumns.append(src_code_dir)
+        binds[src_code_dir] = {
+            "bind": dst_model_serving_dir,
+            "mode": "rw"
+        }
+        environment["MAIN_ENTRY"] = relative_entry
+
+    # Environment variables
+    if not enable_custom_image:
+        # For some image, the default user is root. Unified to fedml.
+        environment["HOME"] = "/home/fedml"
+
+    environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+    environment["FEDML_CURRENT_RUN_ID"] = end_point_id
+    environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+    environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
+    environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
+    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
+    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
+
+    if extra_envs is not None:
+        for key in extra_envs:
+            environment[key] = extra_envs[key]
+
+    try:
+        new_container = client.api.create_container(
+            image=inference_image_name,
+            name=default_server_container_name,
+            volumes=volumns,
+            ports=[port_inside_container],  # port open inside the container
+            environment=environment,
+            host_config=client.api.create_host_config(
+                binds=binds,
+                port_bindings={
+                    port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
+                },
+                device_requests=device_requests,
+                shm_size=shm_size,
+                storage_opt=storage_opt,
+                tmpfs=tmpfs,
+                cpu_count=cpus,
+                mem_limit=memory,
+            ),
+            detach=True,
+            command=customized_image_entry_cmd if enable_custom_image else None
+        )
+        client.api.start(container=new_container.get("Id"))
+    except Exception as e:
+        logging.error(f"Failed to create the container with exception {e}, traceback : {traceback.format_exc()}")
+        return "", "", None, None, None
+
+    # Get the port allocation
+    cnt = 0
+    while True:
+        cnt += 1
+        try:
+            if usr_indicated_worker_port is not None:
+                inference_http_port = usr_indicated_worker_port
+                break
+            else:
+                # Find the random port
+                port_info = client.api.port(new_container.get("Id"), port_inside_container)
+                inference_http_port = port_info[0]["HostPort"]
+                logging.info("inference_http_port: {}".format(inference_http_port))
+                break
+        except:
+            if cnt >= 5:
+                raise Exception("Failed to get the port allocation")
+            time.sleep(3)
+
+    # Logging the info from the container
+    log_deployment_result(end_point_id, model_id, default_server_container_name,
+                          ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
+                          inference_model_name, inference_engine, inference_http_port, inference_type,
+                          retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
+                          request_input_example=request_input_example, infer_host=infer_host,
+                          enable_custom_image=enable_custom_image)
+
+    # Check if the inference server is ready
+    inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
+        get_model_info(inference_model_name, inference_engine, inference_http_port,
+                       infer_host, False, inference_type, request_input_example=request_input_example,
+                       enable_custom_image=enable_custom_image)
+
+    if inference_output_url == "":
+        return running_model_name, "", None, None, None
+
+    model_metadata = ret_model_metadata
+    logging.info(model_metadata)
+
+    return running_model_name, inference_output_url, model_version, model_metadata, ret_model_config
 
 
 def build_inference_req(end_point_name, model_name, token, in_model_metadata):
@@ -719,8 +525,14 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 break
 
             if container_obj is not None:
-                out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False, since=last_log_time)
-                err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False, since=last_log_time)
+                try:
+                    out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False,
+                                                  since=last_log_time)
+                    err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False,
+                                                  since=last_log_time)
+                except Exception as e:
+                    logging.error(f"Failed to get the logs from the container with exception {e}")
+                    pass
 
                 last_log_time = datetime.datetime.now()
 
@@ -741,9 +553,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                     logging.info(f"Logs from docker: {format(out_logs)}")
 
                 if container_obj.status == "exited":
-                    logging.info("Container {} has exited, automatically"
-                                 " remove it ...".format(cmd_container_name))
-                    client.api.remove_container(container_obj.id, v=True, force=True)
+                    logging.info("Container {} has exited".format(cmd_container_name))
                     break
 
         # should_exit_logs will ping the inference container
