@@ -556,15 +556,19 @@ class FedMLServerRunner:
             logging.error(f"Run id {run_id_str} is not in the running request json.")
             return
 
+        # The rolling update and scale out / in operation should not happen at the same time
         assert not ("replica_num_diff" in self.running_request_json[run_id_str] and
+                    len(self.running_request_json[run_id_str]["replica_version_diff"]) > 0 and
                     "replica_version_diff" in self.running_request_json[run_id_str])
 
         if "replica_version_diff" in self.running_request_json[run_id_str]:
             run_operation = "UPDATE"
-        elif "replica_num_diff" in self.running_request_json[run_id_str]:
+        elif "replica_num_diff" in self.running_request_json[run_id_str] and \
+                len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0:
             run_operation = "ADD_OR_REMOVE"
         else:
-            logging.error(f"Unsupported operation for run id {run_id_str}.")
+            logging.error(f"Unsupported operation for run id {run_id_str}. and request json "
+                          f"{self.running_request_json[run_id_str]}")
             return
 
         logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
