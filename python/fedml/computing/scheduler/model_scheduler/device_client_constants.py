@@ -104,6 +104,7 @@ class ClientConstants(object):
     MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING = "UPDATING"
     MSG_MODELOPS_DEPLOYMENT_STATUS_ROLLBACK = "ROLLBACK"
     MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED = "DEPLOYED"
+    MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED = "DELETED"
 
     MODEL_REQUIRED_MODEL_CONFIG_FILE = "fedml_model_config.yaml"
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
@@ -305,6 +306,11 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_update_url(config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/model/updateFromCli"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_delete_url():
         model_ops_url = f"{ClientConstants.get_model_ops_url()}/api/v1/endpoint/deleteFromCli"
         return model_ops_url
@@ -332,7 +338,7 @@ class ClientConstants(object):
 
         running_model_name = "model_endpoint_id_{}_name_{}_model_id_{}_name_{}_{}".format(
             end_point_id, end_point_name, model_id, model_name, edge_id)
-        
+
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         running_model_name = running_model_name.replace('@', '-')
@@ -344,10 +350,10 @@ class ClientConstants(object):
                                                                     end_point_id, model_id, edge_id=edge_id)
         # Stop and delete the container
         container_prefix = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-                         security_utils.get_content_hash(running_model_name)
+                           security_utils.get_content_hash(running_model_name)
 
         num_containers = ContainerUtils.get_container_rank_same_model(container_prefix)
-        
+
         for i in range(num_containers):
             container_name = container_prefix + "__" + str(i)
 
@@ -355,7 +361,7 @@ class ClientConstants(object):
                 client = docker.from_env()
             except Exception:
                 logging.error("Failed to connect to the docker daemon, please ensure that you have "
-                            "installed Docker Desktop or Docker Engine, and the docker is running")
+                              "installed Docker Desktop or Docker Engine, and the docker is running")
                 return False
 
             try:
@@ -374,7 +380,7 @@ class ClientConstants(object):
 
             # Delete the deployment
             model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
-                                    ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
+                                     ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
             if os.path.exists(model_dir):
                 model_dir_list = os.listdir(model_dir)
                 for dir_item in model_dir_list:
@@ -420,7 +426,7 @@ class ClientConstants(object):
             return True
         except:
             return False
-    
+
     @staticmethod
     def get_public_ip():
         import requests

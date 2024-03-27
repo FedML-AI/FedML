@@ -110,9 +110,9 @@ class MqttManager(object):
                                 auth={'username': self.user, 'password': self.pwd})
         else:
             ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
-            return ret_info.is_published()
+            return ret_info.mid
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
-        return True
+        return 0
 
     def send_message_json(self, topic, message, publish_single_message=False):
         # logging.info(
@@ -129,8 +129,8 @@ class MqttManager(object):
                                 auth={'username': self.user, 'password': self.pwd})
         else:
             ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
-            return ret_info.is_published()
-        return True
+            return ret_info.mid
+        return 0
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -199,7 +199,7 @@ class MqttManager(object):
         MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
-        self.callback_published_listener(client)
+        self.callback_published_listener(client, obj, mid)
 
     def on_disconnect(self, client, userdata, rc):
         client.connected_flag = False
@@ -282,10 +282,10 @@ class MqttManager(object):
         except Exception as e:
             pass
 
-    def callback_published_listener(self, client):
+    def callback_published_listener(self, client, obj, mid):
         for listener in self._published_listeners:
             if listener is not None and callable(listener):
-                listener(client)
+                listener(client, obj, mid)
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
