@@ -137,7 +137,11 @@ class FedMLClientRunner:
 
         return unziped_file_name
 
-    def retrieve_and_unzip_package(self, package_name, package_url):
+    def retrieve_and_unzip_package(self, package_name, package_url, should_backup=False):
+        """
+        If should_backup is True, and the directory already exists, it means this op is an update operation,
+        the original package will be backup to a folder with suffix _bak.
+        """
         local_package_path = ClientConstants.get_model_package_dir()
         os.makedirs(local_package_path, exist_ok=True)
         filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
@@ -151,12 +155,19 @@ class FedMLClientRunner:
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
-        try:
-            shutil.rmtree(unzip_package_path, ignore_errors=True)
-        except Exception as e:
-            pass
 
-        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
+        if not should_backup:
+            try:
+                shutil.rmtree(unzip_package_path, ignore_errors=True)
+            except Exception as e:
+                pass
+        else:
+            if os.path.exists(unzip_package_path):
+                shutil.move(unzip_package_path, f"{unzip_package_path}_bak")
+                logging.info(f"The pacakge folder {unzip_package_path} already exists, this run should have type "
+                             f"update. Backup the old package to _bak folder {unzip_package_path}_bak")
+
+        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unzipped folder name
         unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
         model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
 
@@ -204,19 +215,15 @@ class FedMLClientRunner:
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
-    def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
+    def update_local_fedml_config(self, run_id, model_config, model_config_parameters, should_backup=False):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config.get("instance_scale_min", 0)
-        scale_max = model_config.get("instance_scale_max", 0)
-        inference_engine = model_config.get("inference_engine", 0)
-        inference_end_point_id = run_id
 
         # Retrieve model package or model binary file.
-        unzip_package_path, model_bin_file = self.retrieve_and_unzip_package(model_name, model_storage_url)
+        unzip_package_path, model_bin_file = self.retrieve_and_unzip_package(model_name, model_storage_url,
+                                                                             should_backup=should_backup)
 
         # Load the config to memory
-        package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
 
         # Inject the config from UI to pkg yaml
@@ -358,30 +365,6 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        # update local config with real time parameters from server and dynamically replace variables value
-        logging.info("Download and unzip model to local...")
-        unzip_package_path, model_bin_file, fedml_config_object = \
-            self.update_local_fedml_config(run_id, model_config, model_config_parameters)
-        if unzip_package_path is None or fedml_config_object is None:
-            logging.info("Failed to update local fedml config.")
-            self.check_runner_stop_event()
-            self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            return False
-
-        if not os.path.exists(unzip_package_path):
-            logging.info("Failed to unzip file.")
-            self.check_runner_stop_event()
-            self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            return False
-
-        self.check_runner_stop_event()
-        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
-            "", "", model_version, {}, {}
-
         # Reconcile the replica number (op: add, remove)
         prev_rank, op, op_num = self.replica_handler.reconcile_num_replica()
 
@@ -398,6 +381,50 @@ class FedMLClientRunner:
             f"================Worker Reconcile Operations ======================\n"
             f" op: {op}; op num: {op_num}.\n"
             f"==================================================================\n")
+
+        # Download package from MLOps
+        # update local config with real time parameters from server and dynamically replace variables value
+        # Archive the old model card in case of rollback
+
+        if op != "rollback":
+            logging.info("Download and unzip model to local...")
+            unzip_package_path, _, _ = \
+                self.update_local_fedml_config(run_id, model_config, model_config_parameters, should_backup=True)
+            if unzip_package_path is None:
+                logging.info("Failed to update local fedml config.")
+                self.check_runner_stop_event()
+                self.cleanup_run_when_starting_failed()
+                self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                return False
+
+            if not os.path.exists(unzip_package_path):
+                logging.info("Failed to unzip file.")
+                self.check_runner_stop_event()
+                self.cleanup_run_when_starting_failed()
+                self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                return False
+        else:
+            logging.info("Use backup package to rollback.")
+
+            # Find folder that starts with unzip_fedml_run_{self.run_id}_{self.edge_id}, and ends with _bak
+            backup_folder = None
+            for folder in os.listdir(ClientConstants.get_package_unzip_dir()):
+                if folder.startswith(f"unzip_fedml_run_{self.run_id}_{self.edge_id}") and folder.endswith("_bak"):
+                    backup_folder = folder
+                    break
+            if backup_folder is None:
+                logging.error(f"No backup folder found for run_id: {self.run_id} edge_id: {self.edge_id}, "
+                              f"rollback failed.")
+                return False
+            unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(), backup_folder)
+
+        self.check_runner_stop_event()
+
+        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+            "", "", model_version, {}, {}
+
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
             for rank in range(prev_rank+1, prev_rank+1+op_num):
@@ -495,11 +522,11 @@ class FedMLClientRunner:
                 if rank_to_delete == 0:
                     pass
             return True
-        elif op == "update":
+        elif op == "update" or op == "rollback":
             # Update is combine of delete and add
             worker_ip = self.get_ip_address(self.request_json)
             for rank in replica_rank_to_update:
-                # Delete a replica (container)
+                # Delete a replica (container) if exists
                 self.replica_handler.remove_replica(rank)
 
                 FedMLModelCache.get_instance().set_redis_params()
@@ -508,6 +535,7 @@ class FedMLClientRunner:
 
                 replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
+                # TODO (Raphael) check if this will allow another job to seize the gpu during high concurrency:
                 JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
 
                 # Delete the deployment result from local db
