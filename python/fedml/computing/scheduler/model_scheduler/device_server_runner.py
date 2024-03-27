@@ -558,7 +558,7 @@ class FedMLServerRunner:
 
         # The rolling update and scale out / in operation should not happen at the same time
         assert not ("replica_num_diff" in self.running_request_json[run_id_str] and
-                    len(self.running_request_json[run_id_str]["replica_version_diff"]) > 0 and
+                    len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0 and
                     "replica_version_diff" in self.running_request_json[run_id_str])
 
         if "replica_version_diff" in self.running_request_json[run_id_str]:
