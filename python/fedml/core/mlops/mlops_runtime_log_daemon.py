@@ -64,7 +64,6 @@ class MLOpsRuntimeLogProcessor:
         if source is not None:
             self.log_source = str(self.log_source).replace(' ', '')
 
-
     def log_upload(self, run_id, device_id):
         # Fetch Log Lines
         _, file_index, log_lines = self.fetch_logs()
@@ -84,7 +83,7 @@ class MLOpsRuntimeLogProcessor:
 
             self.__format_log_lines(log_lines, line_start_req, line_end_req)
             upload_lines, err_list = self.__preprocess_logs(log_lines, line_start_req, line_end_req)
-            log_upload_request = self.__prepare_request(upload_lines, err_list, device_id)
+            log_upload_request = self.__prepare_request(upload_lines, err_list, run_id, device_id)
 
             if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
                 fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
@@ -149,7 +148,7 @@ class MLOpsRuntimeLogProcessor:
                     err_lines.append(err_line_dict)
         return upload_lines, err_lines
 
-    def __prepare_request(self, upload_lines, err_list, device_id) -> dict:
+    def __prepare_request(self, upload_lines, err_list, run_id, device_id) -> dict:
         log_upload_request = {
             "run_id": run_id,
             "edge_id": device_id,
@@ -270,7 +269,7 @@ class MLOpsRuntimeLogProcessor:
                         MLOpsLoggingUtils.acquire_lock()
                         config_data[self.file_rotate_count].upload_complete = True
                         MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.device_id,
-                                                        log_config_file=self.log_config_file, config_data=config_data)
+                                                          log_config_file=self.log_config_file, config_data=config_data)
                         MLOpsLoggingUtils.release_lock()
                         self.file_rotate_count += 1
                         # Re-fetch file path and index if file is rotated
@@ -302,7 +301,7 @@ class MLOpsRuntimeLogProcessor:
             with open(file_path, "r") as f:
                 lines = f.readlines()
                 log_lines.extend(lines[file_index:])
-        return log_lines, file_path, file_index
+        return file_path, file_index, log_lines
 
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):
