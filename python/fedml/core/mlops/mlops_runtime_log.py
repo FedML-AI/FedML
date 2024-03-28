@@ -1,11 +1,10 @@
 import argparse
-import json
+import datetime
 import logging
 import os
 import sys
 import threading
 import time
-import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 from fedml import mlops

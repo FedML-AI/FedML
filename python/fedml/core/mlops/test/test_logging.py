@@ -1,12 +1,13 @@
 import argparse
+import logging
 import os
 import shutil
+
 import pytest
-import logging
 
 LOGS_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 
-from fedml.core.mlops import MLOpsRuntimeLog, MLOpsLoggingUtils
+from fedml.core.mlops import MLOpsRuntimeLog
 
 
 @pytest.fixture

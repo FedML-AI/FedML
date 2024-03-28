@@ -1,13 +1,11 @@
 import argparse
-import json
 import logging
-
-import multiprocess as multiprocessing
 import os
 import shutil
 import threading
 import time
 
+import multiprocess as multiprocessing
 import requests
 import yaml
 

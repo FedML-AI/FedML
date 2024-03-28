@@ -8,14 +8,12 @@ from typing import Dict, List, Optional, Union
 import psutil
 import wandb
 from wandb import util
-from wandb.vendor.pynvml import pynvml
-
+from wandb.sdk.interface.interface_queue import InterfaceQueue
 from wandb.sdk.internal import ipu
 from wandb.sdk.internal import tpu
 from wandb.sdk.internal.settings_static import SettingsStatic
-from wandb.sdk.interface.interface_queue import InterfaceQueue
 from wandb.sdk.lib import telemetry
-
+from wandb.vendor.pynvml import pynvml
 
 GPUHandle = object
 SamplerDict = Dict[str, List[float]]
