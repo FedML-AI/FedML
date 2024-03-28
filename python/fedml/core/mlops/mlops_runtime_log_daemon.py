@@ -40,17 +40,11 @@ class MLOpsRuntimeLogProcessor:
         self.logger = None
         self.should_upload_log_file = using_mlops
         self.log_file_dir = log_file_dir
-        self.log_file = None
         self.run_id = log_run_id
         self.device_id = log_device_id
         self.log_server_url = log_server_url
         self.file_rotate_count = 0
-        self.log_line_index = 0
-        self.log_uploaded_line_index = 0
         self.log_config_file = os.path.join(log_file_dir, "log-config.yaml")
-        self.log_config = dict()
-        # self.log_files_to_upload = set()
-        self.load_log_config()
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
                                                  + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                                  + str(self.run_id)
@@ -64,7 +58,6 @@ class MLOpsRuntimeLogProcessor:
                                           + "-edge-"
                                           + str(self.device_id)
                                           + "-upload.log")
-        # self.run_list = list()
         self.log_source = None
         self.log_process_event = None
 
@@ -73,42 +66,6 @@ class MLOpsRuntimeLogProcessor:
         if source is not None:
             self.log_source = str(self.log_source).replace(' ', '')
 
-    # @staticmethod
-    # def build_log_file_path(in_args):
-    #     if in_args.rank == 0:
-    #         if hasattr(in_args, "server_id"):
-    #             log_device_id = in_args.server_id
-    #         else:
-    #             if hasattr(in_args, "edge_id"):
-    #                 log_device_id = in_args.edge_id
-    #             else:
-    #                 log_device_id = 0
-    #         program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, log_device_id)
-    #     else:
-    #         if hasattr(in_args, "client_id"):
-    #             log_device_id = in_args.client_id
-    #         elif hasattr(in_args, "client_id_list"):
-    #             edge_ids = json.loads(in_args.client_id_list)[0]
-    #             if len(edge_ids) > 0:
-    #                 log_device_id = edge_ids[0]
-    #             else:
-    #                 log_device_id = 0
-    #         else:
-    #             if hasattr(in_args, "edge_id"):
-    #                 log_device_id = in_args.edge_id
-    #             else:
-    #                 log_device_id = 0
-    #         program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
-    #
-    #     if not os.path.exists(in_args.log_file_dir):
-    #         os.makedirs(in_args.log_file_dir, exist_ok=True)
-    #     log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
-    #                                  + str(in_args.run_id)
-    #                                  + "-edge-"
-    #                                  + str(log_device_id)
-    #                                  + ".log")
-    #
-    #     return log_file_path, program_prefix
 
     def log_upload(self, run_id, device_id):
         # Fetch Log Lines
@@ -297,24 +254,6 @@ class MLOpsRuntimeLogProcessor:
         self.upload_log_file_as_artifact(only_push_artifact=True)
         print("Log Process exits normally.")
 
-    def log_relocation(self):
-        # move the log file pointer to the last uploaded line
-        self.load_log_config()
-        log_line_count = self.log_line_index
-        self.log_uploaded_line_index = self.log_line_index
-        while log_line_count > 0:
-            line = self.log_file.readline()
-            if line is None:
-                break
-            if MLOpsRuntimeLogProcessor.should_ignore_log_line(line):
-                self.log_uploaded_line_index -= 1
-            log_line_count -= 1
-
-        if log_line_count != 0:
-            self.log_line_index -= log_line_count
-            if self.log_line_index < 0:
-                self.log_line_index = 0
-
     def fetch_file_path_and_index(self) -> (str, int):
         try:
             file_path, upload_file_index = None, None
@@ -367,66 +306,12 @@ class MLOpsRuntimeLogProcessor:
                 log_lines.extend(lines[file_index:])
         return log_lines, file_path, file_index
 
-
-
-        # if self.log_file is None:
-        #     return None
-        #
-        # line_count = 0
-        # log_lines = []
-        # while True:
-        #     # readlines will ignore those lines has been read using readline
-        #     log_line = self.log_file.readlines()
-        #     if len(log_line) <= 0:
-        #         break
-        #     line_count += len(log_line)
-        #     log_lines.extend(log_line)
-        # self.log_file.close()
-        # self.log_file = None
-        # return log_lines
-
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):
         try:
             file = open(yaml_file, "w", encoding="utf-8")
             yaml.dump(log_config_object, file)
             file.close()
-        except Exception as e:
-            pass
-
-    @staticmethod
-    def __load_yaml_config(yaml_path):
-        """Helper function to load a yaml config file"""
-        with open(yaml_path, "r") as stream:
-            try:
-                return yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                raise ValueError("Yaml error - check yaml file")
-
-    def save_log_config(self, file_name, log_line_index, file_rotate_count):
-        try:
-            self.load_log_config()
-            log_config_key = "log_config_{}_{}".format(self.run_id, self.device_id)
-            self.log_config[log_config_key] = dict()
-            self.log_config[log_config_key][file_name] = dict()
-            self.log_config[log_config_key][file_name]["log_line_index"] = log_line_index
-            self.log_config[log_config_key][file_name]["file_rotate_count"] = file_rotate_count
-            # self.log_config[log_config_key]["log_line_index"] = self.log_line_index
-            # self.log_config[log_config_key]["file_rotate_count"] = self.file_rotate_count
-            MLOpsRuntimeLogProcessor.__generate_yaml_doc(self.log_config, self.log_config_file)
-        except Exception as e:
-            pass
-
-    def load_log_config(self):
-        try:
-            log_config_key = "log_config_{}_{}".format(self.run_id, self.device_id)
-            self.log_config = self.__load_yaml_config(self.log_config_file)
-            current_rotate_count = self.log_config[log_config_key].get("file_rotate_count", 0)
-            self.file_rotate_count = max(self.file_rotate_count, current_rotate_count)
-            if self.file_rotate_count > current_rotate_count:
-                self.log_line_index = 0
-            else:
-                self.log_line_index = self.log_config[log_config_key]["log_line_index"]
         except Exception as e:
             pass
 
@@ -469,30 +354,7 @@ class MLOpsRuntimeLogDaemon:
 
     def __init__(self, in_args):
         self.args = in_args
-
-        if in_args.role == "server":
-            if hasattr(in_args, "server_id"):
-                self.edge_id = in_args.server_id
-            else:
-                if hasattr(in_args, "edge_id"):
-                    self.edge_id = in_args.edge_id
-                else:
-                    self.edge_id = 0
-        else:
-            if hasattr(in_args, "client_id"):
-                self.edge_id = in_args.client_id
-            elif hasattr(in_args, "client_id_list"):
-                edge_ids = json.loads(in_args.client_id_list)
-                if len(edge_ids) > 0:
-                    self.edge_id = edge_ids[0]
-                else:
-                    self.edge_id = 0
-            else:
-                if hasattr(in_args, "edge_id"):
-                    self.edge_id = in_args.edge_id
-                else:
-                    self.edge_id = 0
-
+        self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(args)
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
                 url = fedml._get_backend_service()
@@ -568,9 +430,9 @@ class MLOpsRuntimeLogDaemon:
         return False
 
     @staticmethod
-    def get_instance(args):
+    def get_instance(in_args):
         if MLOpsRuntimeLogDaemon._log_sdk_instance is None:
-            MLOpsRuntimeLogDaemon._log_sdk_instance = MLOpsRuntimeLogDaemon(args)
+            MLOpsRuntimeLogDaemon._log_sdk_instance = MLOpsRuntimeLogDaemon(in_args)
             MLOpsRuntimeLogDaemon._log_sdk_instance.log_source = None
 
         return MLOpsRuntimeLogDaemon._log_sdk_instance

@@ -6,7 +6,7 @@ import logging
 
 LOGS_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 
-from fedml.core.mlops import MLOpsRuntimeLog
+from fedml.core.mlops import MLOpsRuntimeLog, MLOpsLoggingUtils
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def setup():
         shutil.rmtree(LOGS_DIR)
     os.makedirs(LOGS_DIR, exist_ok=True)
     yield
-    os.rmdir(LOGS_DIR)
+    shutil.rmtree(LOGS_DIR)
     print("\nTeardown Logs Directory")
 
 
@@ -37,5 +37,4 @@ def test_logs_rollover(setup, args):
     print(hasattr(args, "using_mlops"))
     MLOpsRuntimeLog.get_instance(args).init_logs()
     logging.info("Test Log Message")
-    print("Log File Path: ", MLOpsRuntimeLog.get_instance(args).log_file_path)
-
+    print("Log File Path: ", MLOpsRuntimeLog.get_instance(args).origin_log_file_path)

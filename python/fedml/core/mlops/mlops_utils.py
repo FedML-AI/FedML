@@ -99,44 +99,56 @@ class MLOpsLoggingUtils:
         return log_file_path, program_prefix
 
     @staticmethod
-    def build_log_file_path(in_args):
-        if in_args.role == "server":
-            if hasattr(in_args, "server_id"):
-                edge_id = in_args.server_id
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-            program_prefix = "FedML-Server @device-id-{}".format(edge_id)
-        else:
-            if hasattr(in_args, "client_id"):
-                edge_id = in_args.client_id
-            elif hasattr(in_args, "client_id_list"):
-                if in_args.client_id_list is None:
-                    edge_id = 0
-                else:
-                    edge_ids = json.loads(in_args.client_id_list)
-                    if len(edge_ids) > 0:
-                        edge_id = edge_ids[0]
-                    else:
-                        edge_id = 0
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
+    def build_log_file_path(args):
+        edge_id = MLOpsLoggingUtils.get_edge_id_from_args(args)
+        program_prefix = MLOpsLoggingUtils.get_program_prefix(args, edge_id)
 
-        if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
-                                     + str(in_args.run_id)
+        if not os.path.exists(args.log_file_dir):
+            os.makedirs(args.log_file_dir, exist_ok=True)
+        log_file_path = os.path.join(args.log_file_dir, "fedml-run-"
+                                     + str(args.run_id)
                                      + "-edge-"
                                      + str(edge_id)
                                      + ".log")
 
         return log_file_path, program_prefix
+
+    @staticmethod
+    def get_program_prefix(args, edge_id):
+        if args.role == "server":
+            program_prefix = "FedML-Server @device-id-{edge}".format(edge=edge_id)
+        else:
+            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
+        return program_prefix
+
+    @staticmethod
+    def get_edge_id_from_args(args):
+        if args.role == "server":
+            if hasattr(args, "server_id"):
+                edge_id = args.server_id
+            else:
+                if hasattr(args, "edge_id"):
+                    edge_id = args.edge_id
+                else:
+                    edge_id = 0
+        else:
+            if hasattr(args, "client_id"):
+                edge_id = args.client_id
+            elif hasattr(args, "client_id_list"):
+                if args.client_id_list is None:
+                    edge_id = 0
+                else:
+                    edge_ids = json.loads(args.client_id_list)
+                    if len(edge_ids) > 0:
+                        edge_id = edge_ids[0]
+                    else:
+                        edge_id = 0
+            else:
+                if hasattr(args, "edge_id"):
+                    edge_id = args.edge_id
+                else:
+                    edge_id = 0
+        return edge_id
 
     @staticmethod
     def load_log_config(run_id, device_id, log_config_file) -> Dict[int, LogFile]:
@@ -148,15 +160,6 @@ class MLOpsLoggingUtils:
             for index, data in run_log_config.items():
                 config_data[index] = LogFile(**data)
             return config_data
-            #
-            #
-            # return log_config[log_config_key]
-            # # current_rotate_count = log_config[log_config_key].get("file_rotate_count", 0)
-            # # self.file_rotate_count = max(self.file_rotate_count, current_rotate_count)
-            # # if self.file_rotate_count > current_rotate_count:
-            # #     self.log_line_index = 0
-            # # else:
-            # #     self.log_line_index = self.log_config[log_config_key]["log_line_index"]
         except Exception as e:
             raise ValueError("Error loading log config: {}".format(e))
 
@@ -185,14 +188,6 @@ class MLOpsLoggingUtils:
                 return yaml.safe_load(stream)
             except yaml.YAMLError as e:
                 raise ValueError(f"Yaml error - check yaml file, error: {e}")
-
-    # @staticmethod
-    # def get_id_from_filename(run_id, device_id, filename, log_config_file) -> Optional[str]:
-    #     config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id, log_config_file)
-    #     for id, data in config_data.items():
-    #         if data.file_name == filename:
-    #             return id
-    #     return None
 
     @staticmethod
     def generate_yaml_doc(log_config_object, yaml_file):

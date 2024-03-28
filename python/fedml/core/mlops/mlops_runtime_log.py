@@ -136,7 +136,7 @@ class MLOpsRuntimeLog:
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
-        self.edge_id = self.get_edge_id_from_args(args)
+        self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(args)
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
                                                  + str(self.run_id)
                                                  + "-edge-"
@@ -152,7 +152,7 @@ class MLOpsRuntimeLog:
         return MLOpsRuntimeLog._log_sdk_instance
 
     def init_logs(self, log_level=None):
-        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
         self.generate_format_str()
@@ -166,7 +166,7 @@ class MLOpsRuntimeLog:
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
             when = 'D'
             backup_count = 100
-            run_id, edge_id = self.args.run_id, MLOpsRuntimeLog.get_edge_id_from_args(self.args)
+            run_id, edge_id = self.args.run_id, MLOpsLoggingUtils.get_edge_id_from_args(self.args)
             log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
             file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
                                            edge_id=edge_id, when=when, backupCount=backup_count, encoding='utf-8')
@@ -193,74 +193,12 @@ class MLOpsRuntimeLog:
             self.stdout_handle.setFormatter(self.format_str)
 
     def generate_format_str(self):
-        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
         self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
                                                                     "message)s",
                                          datefmt="%a, %d %b %Y %H:%M:%S")
         self.format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
-
-    @staticmethod
-    def build_log_file_path(in_args):
-        edge_id = MLOpsRuntimeLog.get_edge_id_from_args(in_args)
-        if in_args.role == "server":
-            program_prefix = "FedML-Server @device-id-{edge}".format(edge=edge_id)
-        else:
-            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
-
-        if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
-                                     + str(in_args.run_id)
-                                     + "-edge-"
-                                     + str(edge_id)
-                                     + ".log")
-
-        return log_file_path, program_prefix
-
-    @staticmethod
-    def build_log_file_path_with_run_params(
-            run_id, edge_id, log_file_dir, is_server=False, log_file_prefix=None
-    ):
-        program_prefix = "FedML-{} @device-id-{}".format(
-            "Server" if is_server else "Client", edge_id)
-        if not os.path.exists(log_file_dir):
-            os.makedirs(log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(
-            log_file_dir, "fedml-run{}-{}-edge-{}.log".format(
-                "" if log_file_prefix is None else f"-{log_file_prefix}", run_id, edge_id
-            ))
-
-        return log_file_path, program_prefix
-
-    @staticmethod
-    def get_edge_id_from_args(in_args):
-        if in_args.role == "server":
-            if hasattr(in_args, "server_id"):
-                edge_id = in_args.server_id
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-        else:
-            if hasattr(in_args, "client_id"):
-                edge_id = in_args.client_id
-            elif hasattr(in_args, "client_id_list"):
-                if in_args.client_id_list is None:
-                    edge_id = 0
-                else:
-                    edge_ids = json.loads(in_args.client_id_list)
-                    if len(edge_ids) > 0:
-                        edge_id = edge_ids[0]
-                    else:
-                        edge_id = 0
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-        return edge_id
 
 
 if __name__ == "__main__":
