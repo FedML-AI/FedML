@@ -18,7 +18,7 @@ from dataclasses import dataclass, field, fields
 from fedml.computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
-from typing import List
+from typing import List, Optional
 import threading
 import json
 
@@ -150,7 +150,7 @@ class JobRunnerUtils(Singleton):
         return available_gpu_ids.copy()
 
     @staticmethod
-    def request_gpu_ids(request_gpu_num, available_gpu_ids):
+    def request_gpu_ids(request_gpu_num, available_gpu_ids) -> (Optional[str], Optional[int]):
         available_gpu_count = len(available_gpu_ids)
         request_gpu_num = 0 if request_gpu_num is None else request_gpu_num
         matched_gpu_num = min(available_gpu_count, request_gpu_num)

@@ -907,7 +907,7 @@ class FedMLClientRunner(FedMLMessageCenter):
 
     def callback_start_train(self, topic, payload):
         # Get training params
-
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -918,7 +918,6 @@ class FedMLClientRunner(FedMLMessageCenter):
         train_edge_id = str(topic).split("/")[-2]
         self.args.run_id = run_id
         self.args.edge_id = train_edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
             run_id, train_edge_id, log_source=SchedulerConstants.get_log_source(request_json))
         logging.info("start the log processor")

@@ -241,7 +241,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     setattr(args, "using_mlops", True)
     setattr(args, "config_version", "local")
-    MLOpsRuntimeLog.get_instance(args).init_logs()
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
 
     count = 0
     while True:
