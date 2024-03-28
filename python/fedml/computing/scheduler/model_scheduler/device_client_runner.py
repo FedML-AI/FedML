@@ -57,6 +57,7 @@ from .device_replica_handler import FedMLDeviceReplicaHandler
 
 from fedml.computing.scheduler.scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
+
 class RunnerError(Exception):
     """ Runner failed. """
     pass
@@ -138,28 +139,45 @@ class FedMLClientRunner:
         return unziped_file_name
 
     def retrieve_and_unzip_package(self, package_name, package_url):
+        """
+        Download the package from the url and unzip it to the local package directory
+        ~/.fedml/fedml-model-client/fedml/model_packages/${end_point_id}_${end_point_name}_${model_name}_${model_version}
+        Under this folder, there should be the zipped file and the unzipped folder.
+        the zipped file starts with fedml_run_${end_point_id}_${end_point_name}_${model_name}_${model_version}
+        """
+        # Models root directory
         local_package_path = ClientConstants.get_model_package_dir()
         os.makedirs(local_package_path, exist_ok=True)
+
+        # Specify this model directory using ${end_point_id}_${end_point_name}_${model_name}_${model_version}
+        run_id = self.request_json["end_point_id"]
+        end_point_name = self.request_json["end_point_name"]
+        model_config = self.request_json["model_config"]
+        model_name = model_config["model_name"]
+        model_version = model_config["model_version"]
+        this_run_model_dir = f"{run_id}_{end_point_name}_{model_name}_{model_version}"
+        os.makedirs(os.path.join(local_package_path, this_run_model_dir), exist_ok=True)
+
+        # Download the zipped package, overwrite it even if it exists
         filename, filename_without_extension, file_extension = ClientConstants.get_filename_and_extension(package_url)
-        local_package_file = os.path.join(local_package_path,
+        local_package_file = os.path.join(this_run_model_dir,
                                           f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         logging.info("Download from package_url {}".format(package_url))
-
         urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
+
+        # Unzip the package, overwrite the unzipped folder even if it exists
         try:
             shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
             pass
-
-        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unziped folder name
+        package_dir_name = self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
-        model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
-
+        model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")        # Will deprecated
         logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
             local_package_file, unzip_package_path, unzip_package_full_path))
 
@@ -207,16 +225,11 @@ class FedMLClientRunner:
     def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
-        scale_min = model_config.get("instance_scale_min", 0)
-        scale_max = model_config.get("instance_scale_max", 0)
-        inference_engine = model_config.get("inference_engine", 0)
-        inference_end_point_id = run_id
 
         # Retrieve model package or model binary file.
         unzip_package_path, model_bin_file = self.retrieve_and_unzip_package(model_name, model_storage_url)
 
         # Load the config to memory
-        package_conf_object = {}
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
 
         # Inject the config from UI to pkg yaml
@@ -358,30 +371,6 @@ class FedMLClientRunner:
 
         self.check_runner_stop_event()
 
-        # update local config with real time parameters from server and dynamically replace variables value
-        logging.info("Download and unzip model to local...")
-        unzip_package_path, model_bin_file, fedml_config_object = \
-            self.update_local_fedml_config(run_id, model_config, model_config_parameters)
-        if unzip_package_path is None or fedml_config_object is None:
-            logging.info("Failed to update local fedml config.")
-            self.check_runner_stop_event()
-            self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            return False
-
-        if not os.path.exists(unzip_package_path):
-            logging.info("Failed to unzip file.")
-            self.check_runner_stop_event()
-            self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
-                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            return False
-
-        self.check_runner_stop_event()
-        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
-            "", "", model_version, {}, {}
-
         # Reconcile the replica number (op: add, remove)
         prev_rank, op, op_num = self.replica_handler.reconcile_num_replica()
 
@@ -398,9 +387,52 @@ class FedMLClientRunner:
             f"================Worker Reconcile Operations ======================\n"
             f" op: {op}; op num: {op_num}.\n"
             f"==================================================================\n")
+
+        # If not rollback, download package from MLOps; otherwise, use the backup package
+        if op != "rollback":
+            logging.info("Download and unzip model to local...")
+            unzip_package_path, _, _ = \
+                self.update_local_fedml_config(run_id, model_config, model_config_parameters)
+            if unzip_package_path is None:
+                logging.info("Failed to update local fedml config.")
+                self.check_runner_stop_event()
+                self.cleanup_run_when_starting_failed()
+                self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                return False
+
+            if not os.path.exists(unzip_package_path):
+                logging.info("Failed to unzip file.")
+                self.check_runner_stop_event()
+                self.cleanup_run_when_starting_failed()
+                self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                return False
+        else:
+            logging.info("Try to use backup package to rollback...")
+            # Find folder under ~/.fedml/fedml-model-client/fedml/model_packages
+            # /${end_point_id}_${end_point_name}_${model_name}_${model_version}
+            backup_folder_full_path = None
+            models_root_dir = ClientConstants.get_model_package_dir()
+            last_run_folder_sub_fd = f"{run_id}_{end_point_name}_{model_name}_{model_version}"
+            for folder in os.listdir(models_root_dir):
+                if last_run_folder_sub_fd in folder:
+                    backup_folder_full_path = os.path.join(models_root_dir, folder)
+                    break
+            if backup_folder_full_path is None:
+                logging.error(f"No backup folder found for run_id: {self.run_id} edge_id: {self.edge_id} "
+                              f"under {models_root_dir} with sub folder {last_run_folder_sub_fd}, rollback failed.")
+                return False
+            unzip_package_path = backup_folder_full_path
+
+        self.check_runner_stop_event()
+
+        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+            "", "", model_version, {}, {}
+
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
-            for rank in range(prev_rank+1, prev_rank+1+op_num):
+            for rank in range(prev_rank + 1, prev_rank + 1 + op_num):
                 # TODO: Support Rollback if this for loop failed
                 try:
                     running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
@@ -455,7 +487,7 @@ class FedMLClientRunner:
                         run_id, end_point_name, model_name, model_version, self.edge_id,
                         json.dumps(result_payload), replica_no=rank + 1)
 
-                    logging.info(f"Deploy replica {rank+1} / {prev_rank+1+op_num} successfully.")
+                    logging.info(f"Deploy replica {rank + 1} / {prev_rank + 1 + op_num} successfully.")
                     time.sleep(5)
 
             time.sleep(1)
@@ -465,12 +497,12 @@ class FedMLClientRunner:
                 is_from_model=True, run_id=self.run_id)
             return True
         elif op == "remove":
-            for rank_to_delete in range(prev_rank, prev_rank-op_num, -1):
+            for rank_to_delete in range(prev_rank, prev_rank - op_num, -1):
                 self.replica_handler.remove_replica(rank_to_delete)
 
                 FedMLModelCache.get_instance().set_redis_params()
                 replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
-                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete+1)
+                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete + 1)
 
                 replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
@@ -495,11 +527,11 @@ class FedMLClientRunner:
                 if rank_to_delete == 0:
                     pass
             return True
-        elif op == "update":
+        elif op == "update" or op == "rollback":
             # Update is combine of delete and add
             worker_ip = self.get_ip_address(self.request_json)
             for rank in replica_rank_to_update:
-                # Delete a replica (container)
+                # Delete a replica (container) if exists
                 self.replica_handler.remove_replica(rank)
 
                 FedMLModelCache.get_instance().set_redis_params()
@@ -508,6 +540,7 @@ class FedMLClientRunner:
 
                 replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
+                # TODO (Raphael) check if this will allow another job to seize the gpu during high concurrency:
                 JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
 
                 # Delete the deployment result from local db
@@ -605,7 +638,7 @@ class FedMLClientRunner:
                                     model_id, model_name, model_version,
                                     model_inference_url, model_status,
                                     inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                                    replica_no=1,     # start from 1
+                                    replica_no=1,  # start from 1
                                     ):
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
@@ -639,7 +672,7 @@ class FedMLClientRunner:
                                model_id, model_name, model_version,
                                model_inference_url, model_status,
                                inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                               replica_no=1,     # start from 1
+                               replica_no=1,  # start from 1
                                ):
         # Deprecated
         pass
