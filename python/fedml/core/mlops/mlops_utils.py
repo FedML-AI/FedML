@@ -70,7 +70,7 @@ class LogFile:
 
 
 class MLOpsLoggingUtils:
-    LOG_CONFIG_FILE = "log_config.yaml"
+    LOG_CONFIG_FILE = "log-config.yaml"
     _lock = multiprocessing.Lock()
 
     @staticmethod

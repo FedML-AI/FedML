@@ -42,7 +42,7 @@ class MLOpsRuntimeLogProcessor:
         self.device_id = log_device_id
         self.log_server_url = log_server_url
         self.file_rotate_count = 0
-        self.log_config_file = os.path.join(log_file_dir, "log-config.yaml")
+        self.log_config_file = os.path.join(log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
                                                  + ("" if log_file_prefix is None else f"{log_file_prefix}-")
                                                  + str(self.run_id)
