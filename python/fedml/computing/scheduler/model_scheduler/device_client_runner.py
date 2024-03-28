@@ -57,6 +57,7 @@ from .device_replica_handler import FedMLDeviceReplicaHandler
 
 from fedml.computing.scheduler.scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
+
 class RunnerError(Exception):
     """ Runner failed. """
     pass
@@ -162,10 +163,24 @@ class FedMLClientRunner:
             except Exception as e:
                 pass
         else:
-            if os.path.exists(unzip_package_path):
-                shutil.move(unzip_package_path, f"{unzip_package_path}_bak")
-                logging.info(f"The pacakge folder {unzip_package_path} already exists, this run should have type "
-                             f"update. Backup the old package to _bak folder {unzip_package_path}_bak")
+            # Filter all the folders that starts with unzip_fedml_run_{self.run_id}_{self.edge_id} and ends with _bak
+            old_backup_folder = None
+            for folder in os.listdir(ClientConstants.get_package_unzip_dir()):
+                if folder.startswith(f"unzip_fedml_run_{self.run_id}_{self.edge_id}") and folder.endswith("_bak"):
+                    old_backup_folder = folder
+                    break
+
+            package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unzipped folder name
+            unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
+
+            if old_backup_folder is not None:
+                # Use this new pkg folder for backup
+                new_backup_folder = f"{unzip_package_path}_bak"
+                # Copy the new package to the backup folder
+                shutil.copytree(unzip_package_full_path, new_backup_folder)
+
+            # TODO(Raphael) continue here
+            return unzip_package_full_path, None
 
         package_dir_name = self.unzip_file(local_package_file, unzip_package_path)  # Using unzipped folder name
         unzip_package_full_path = os.path.join(unzip_package_path, package_dir_name)
@@ -427,7 +442,7 @@ class FedMLClientRunner:
 
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
-            for rank in range(prev_rank+1, prev_rank+1+op_num):
+            for rank in range(prev_rank + 1, prev_rank + 1 + op_num):
                 # TODO: Support Rollback if this for loop failed
                 try:
                     running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
@@ -482,7 +497,7 @@ class FedMLClientRunner:
                         run_id, end_point_name, model_name, model_version, self.edge_id,
                         json.dumps(result_payload), replica_no=rank + 1)
 
-                    logging.info(f"Deploy replica {rank+1} / {prev_rank+1+op_num} successfully.")
+                    logging.info(f"Deploy replica {rank + 1} / {prev_rank + 1 + op_num} successfully.")
                     time.sleep(5)
 
             time.sleep(1)
@@ -492,12 +507,12 @@ class FedMLClientRunner:
                 is_from_model=True, run_id=self.run_id)
             return True
         elif op == "remove":
-            for rank_to_delete in range(prev_rank, prev_rank-op_num, -1):
+            for rank_to_delete in range(prev_rank, prev_rank - op_num, -1):
                 self.replica_handler.remove_replica(rank_to_delete)
 
                 FedMLModelCache.get_instance().set_redis_params()
                 replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
-                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete+1)
+                    run_id, end_point_name, model_name, self.edge_id, rank_to_delete + 1)
 
                 replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
@@ -633,7 +648,7 @@ class FedMLClientRunner:
                                     model_id, model_name, model_version,
                                     model_inference_url, model_status,
                                     inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                                    replica_no=1,     # start from 1
+                                    replica_no=1,  # start from 1
                                     ):
         deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
@@ -667,7 +682,7 @@ class FedMLClientRunner:
                                model_id, model_name, model_version,
                                model_inference_url, model_status,
                                inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                               replica_no=1,     # start from 1
+                               replica_no=1,  # start from 1
                                ):
         # Deprecated
         pass

@@ -614,11 +614,13 @@ class FedMLServerRunner:
             else:
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = \
-                    self.model_runner_mapping[run_id_str].replica_controller.rollback_get_replica_version_diff()
+                    self.model_runner_mapping[run_id_str].replica_controller.rollback_get_replica_version_diff(
+                        device_id_trigger=device_id, replica_no_trigger=replica_no)
 
                 # Change the target version to the start version
+                self.model_runner_mapping[run_id_str].replica_controller.rollback_setback_target_replica_version()
 
-                self.running_request_json[run_id_str]["replica_version_diff"] = rollback_version_diff
+                self.running_request_json[run_id_str]["replica_version_diff"] = copy.deepcopy(rollback_version_diff)
 
                 # Send the rollback message to the worker devices
                 self.send_rollback_msg(run_id_str)

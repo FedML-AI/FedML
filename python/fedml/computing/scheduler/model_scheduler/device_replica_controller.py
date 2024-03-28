@@ -465,7 +465,7 @@ class FedMLDeviceReplicaController:
         self.request_json[replica_version_diff_key] = first_chunk_dict
         return self.request_json
 
-    def rollback_get_replica_version_diff(self):
+    def rollback_get_replica_version_diff(self, device_id_trigger, replica_no_trigger):
         """
         for rollback existing replica that has been updated, get the replica version diff.
         rollback should be done at once, not rolling update.
@@ -488,6 +488,16 @@ class FedMLDeviceReplicaController:
                 if version != self.start_version:
                     if id not in devices_version_rollback:
                         devices_version_rollback[id] = {}
+                    devices_version_rollback[id][replica_no] = {
+                        "op": "rollback",
+                        "new_version": self.start_version,
+                        "old_version": version
+                    }
+                # do not forget that the replica who triggered this failed callback, should also be rolled back.
+                if id == device_id_trigger and replica_no == str(replica_no_trigger):
+                    if id not in devices_version_rollback:
+                        devices_version_rollback[id] = {}
+
                     devices_version_rollback[id][replica_no] = {
                         "op": "rollback",
                         "new_version": self.start_version,
