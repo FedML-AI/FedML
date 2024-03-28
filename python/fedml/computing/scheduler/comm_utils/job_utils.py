@@ -101,6 +101,14 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
 
+                    # For a single run, could be scale up. So if existed such a key, should extend, not replace
+                    existed_gpu_nums = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(
+                        switchable_device_id, run_id)
+                    if existed_gpu_nums is not None and int(existed_gpu_nums) > 0:
+                        matched_gpu_num += int(existed_gpu_nums)
+                        run_gpu_ids.extend(ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(
+                            switchable_device_id, run_id))
+
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id,
                                                                                                run_id,
                                                                                                matched_gpu_num)
@@ -167,6 +175,49 @@ class JobRunnerUtils(Singleton):
         trimmed_gpu_ids = list(set(available_gpu_ids) - set(unavailable_gpu_ids))
         return trimmed_gpu_ids.copy()
 
+    def release_partial_job_gpu(self, run_id, device_id, release_gpu_ids):
+        """
+        In the deployment phase, if scale in, we need to release the gpu ids for the partial job.
+        """
+        ComputeCacheManager.get_instance().set_redis_params()
+        # Reversely find the master (launch) device id and release the gpu ids
+        with ComputeCacheManager.get_instance().lock(
+                ComputeCacheManager.get_instance().get_gpu_cache().get_run_lock_key(run_id)
+        ):
+            original_run_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(run_id)
+            edge_device_id, model_master_device_id, model_slave_device_id = \
+                ComputeCacheManager.get_instance().get_gpu_cache().get_edge_model_id_map(run_id)
+            if edge_device_id is None:
+                edge_device_id = device_id
+
+        with ComputeCacheManager.get_instance().lock(
+                ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
+                    edge_device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
+        ):
+            run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
+                                                                                                    run_id)
+            remain_gpu_ids = [gpu_id for gpu_id in run_gpu_ids if gpu_id not in release_gpu_ids]
+
+            # update the available gpu ids
+            with ComputeCacheManager.get_instance().lock(
+                    ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
+            ):
+                # set global available gpu ids
+                available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
+                    edge_device_id)
+                available_gpu_ids.extend(release_gpu_ids.copy())
+                available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
+                    edge_device_id, available_gpu_ids)
+
+                # set run gpu ids
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(
+                    device_id, run_id, remain_gpu_ids)
+
+                # set run gpu num
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(
+                    device_id, run_id, len(remain_gpu_ids))
+
     def release_gpu_ids(self, run_id, device_id):
         edge_device_id = None
         original_run_id = None
@@ -195,7 +246,7 @@ class JobRunnerUtils(Singleton):
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
                 ):
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
-                        device_id)
+                        edge_device_id)
                     available_gpu_ids.extend(run_gpu_ids.copy())
                     available_gpu_ids = list(dict.fromkeys(available_gpu_ids))
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
@@ -471,10 +522,10 @@ class JobRunnerUtils(Singleton):
         docker_command.extend(["-w", working_directory])
 
         # Add image
-        docker_command.append(docker_args.image)
+        docker_command.extend(["--entrypoint", executable_interpreter])
 
-        # Add executable interpreter
-        docker_command.append(executable_interpreter)
+        # Add image
+        docker_command.append(docker_args.image)
 
         # Add entry command
         docker_command.append("-c")
@@ -585,14 +636,14 @@ class JobRunnerUtils(Singleton):
             return {}
 
         for config_key, config_value in config_dict.items():
+            config_key = f"{config_key_path}_{config_key}".upper() if config_key_path else str(config_key).upper()
             if isinstance(config_value, dict):
                 JobRunnerUtils.get_env_from_dict(
                     export_cmd, config_value, export_env_command_list=export_env_command_list,
                     env_name_value_map=env_name_value_map, config_key_path=config_key
                 )
             else:
-                env_name = f"FEDML_ENV_{'' if config_key_path == '' else str(config_key_path).upper() + '_'}" \
-                           f"{str(config_key).upper()}"
+                env_name = f"FEDML_ENV_{config_key}"
                 config_value = str(config_value).replace("\n", ";")
                 config_value = str(config_value).replace("\"", "\\\"")
                 export_env_command_list.append(f"{export_cmd} {env_name}=\"{config_value}\"\n")

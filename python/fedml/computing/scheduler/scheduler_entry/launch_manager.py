@@ -550,28 +550,28 @@ class FedMLJobConfig(object):
                                    Constants.LAUNCH_JOB_LAUNCH_CONF_FOLDER_NAME)
         shutil.rmtree(conf_folder, ignore_errors=True)
 
+        files_to_remove = []
         source_full_path = os.path.join(self.executable_file_folder, self.executable_file)
         if os.path.exists(source_full_path):
-            os.remove(source_full_path)
             boostrap_path = os.path.join(self.executable_file_folder, Constants.BOOTSTRAP_FILE_NAME)
-            if os.path.exists(boostrap_path):
-                os.remove(boostrap_path)
+            files_to_remove.extend([source_full_path, boostrap_path])
 
         server_source_full_path = os.path.join(self.executable_file_folder, self.server_executable_file)
-        if os.path.exists(server_source_full_path):
-            os.remove(server_source_full_path)
+        files_to_remove.append(server_source_full_path)
 
         source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder, self.executable_file)
         if os.path.exists(source_full_path_to_base):
-            os.remove(source_full_path_to_base)
             boostrap_path = os.path.join(self.base_dir, self.executable_file_folder, Constants.BOOTSTRAP_FILE_NAME)
-            if os.path.exists(boostrap_path):
-                os.remove(boostrap_path)
+            files_to_remove.extend([source_full_path_to_base, boostrap_path])
 
         server_source_full_path_to_base = os.path.join(self.base_dir, self.executable_file_folder,
                                                        self.server_executable_file)
         if os.path.exists(server_source_full_path_to_base):
-            os.remove(server_source_full_path_to_base)
+            files_to_remove.append(server_source_full_path_to_base)
+
+        sys_utils.remove_files(files_to_remove)
+        sys_utils.convert_and_remove_bat_files(files_to_remove)
+
 
     def read_gitignore_file(self):
         try:

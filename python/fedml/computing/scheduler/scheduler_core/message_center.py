@@ -130,7 +130,7 @@ class FedMLMessageCenter:
     def check_message_stop_event(self):
         if self.message_event is not None and self.message_event.is_set():
             logging.info("Received message center stopping event.")
-            raise Exception("Message center stopped (for sender)")
+            raise MessageCenterStoppedException("Message center stopped (for sender)")
 
     def send_message(self, topic, payload, run_id=None):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload, run_id=run_id)
@@ -231,7 +231,7 @@ class FedMLMessageCenter:
     def check_listener_message_stop_event(self):
         if self.listener_message_event is not None and self.listener_message_event.is_set():
             logging.info("Received listener message center stopping event.")
-            raise Exception("Message center stopped (for listener)")
+            raise MessageCenterStoppedException("Message center stopped (for listener)")
 
     def listener_message_dispatch_center(self, topic, payload):
         self.receive_message_json(topic, payload)

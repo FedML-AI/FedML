@@ -259,8 +259,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+        urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
@@ -955,7 +954,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, train_edge_id, run_id=run_id)
 
         # OTA upgrade
-        self.ota_upgrade(payload, request_json)
+        # self.ota_upgrade(payload, request_json)
 
         # Occupy GPUs
         scheduler_match_info = request_json.get("scheduler_match_info", {})
@@ -1174,6 +1173,65 @@ class FedMLClientRunner(FedMLMessageCenter):
 
         return run_process_dict
 
+    def response_device_info_to_mlops(self, topic, payload):
+        payload_json = json.loads(payload)
+        server_id = payload_json.get("server_id", 0)
+        run_id = payload_json.get("run_id", 0)
+        listen_edge_id = str(topic).split("/")[-1]
+        context = payload_json.get("context", None)
+        need_gpu_info = payload_json.get("need_gpu_info", False)
+        need_running_process_list = payload_json.get("need_running_process_list", False)
+        response_topic = f"deploy/slave_agent/mlops/response_device_info"
+        if self.mlops_metrics is not None and self.model_device_client_edge_id_list is not None and \
+                self.model_device_server_id is not None:
+            if not need_gpu_info:
+                device_info_json = {
+                    "edge_id": listen_edge_id,
+                    "fedml_version": fedml.__version__,
+                    "user_id": self.args.user
+                }
+            else:
+                total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
+                    gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
+                host_ip = sys_utils.get_host_ip()
+                host_port = sys_utils.get_available_port()
+                gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(self.edge_id)
+                gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
+                gpu_cores_available = len(gpu_available_ids)
+                gpu_list = sys_utils.get_gpu_list()
+                device_info_json = {
+                    "edge_id": listen_edge_id,
+                    "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
+                    "cpuUtilization": round(cup_utilization, 2),
+                    "cpuCores": cpu_cores,
+                    "gpuCoresTotal": gpu_cores_total,
+                    "gpuCoresAvailable": gpu_cores_available,
+                    "gpu_available_ids": gpu_available_ids,
+                    "gpu_list": gpu_list,
+                    "node_ip": host_ip,
+                    "node_port": host_port,
+                    "networkTraffic": sent_bytes + recv_bytes,
+                    "updateTime": int(MLOpsUtils.get_ntp_time()),
+                    "fedml_version": fedml.__version__,
+                    "user_id": self.args.user
+                }
+            if need_running_process_list:
+                device_info_json["run_process_list_map"] = self.get_all_run_process_list_map()
+            salve_device_ids = list()
+            for model_client_edge_id in self.model_device_client_edge_id_list:
+                salve_device_ids.append(model_client_edge_id)
+            response_payload = {"slave_device_id": self.model_device_client_edge_id_list[0],
+                                "slave_device_id_list": salve_device_ids,
+                                "master_device_id": self.model_device_server_id,
+                                "run_id": run_id, "edge_id": listen_edge_id,
+                                "edge_info": device_info_json}
+            if context is not None:
+                response_payload["context"] = context
+            self.message_center.send_message(response_topic, json.dumps(response_payload), run_id=run_id)
+    
     def callback_report_device_info(self, topic, payload):
         payload_json = json.loads(payload)
         server_id = payload_json.get("server_id", 0)
@@ -1511,6 +1569,22 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.add_message_listener(topic_request_device_info, self.callback_report_device_info)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.listener_message_dispatch_center)
 
+        topic_request_edge_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+        self.add_message_listener(topic_request_edge_device_info_from_mlops, self.response_device_info_to_mlops)
+        self.mqtt_mgr.add_message_listener(topic_request_edge_device_info_from_mlops, self.listener_message_dispatch_center)
+
+        topic_request_deploy_master_device_info_from_mlops = None
+        if self.model_device_server_id is not None:
+            topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.model_device_server_id}"
+            self.add_message_listener(topic_request_deploy_master_device_info_from_mlops, self.response_device_info_to_mlops)
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_master_device_info_from_mlops, self.listener_message_dispatch_center)
+
+        topic_request_deploy_slave_device_info_from_mlops = None
+        if self.model_device_client_edge_id_list is not None and len(self.model_device_client_edge_id_list) > 0:
+            topic_request_deploy_slave_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.model_device_client_edge_id_list[0]}"
+            self.add_message_listener(topic_request_deploy_slave_device_info_from_mlops, self.response_device_info_to_mlops)
+            self.mqtt_mgr.add_message_listener(topic_request_deploy_slave_device_info_from_mlops, self.listener_message_dispatch_center)
+        
         # Setup MQTT message listener to logout from MLOps.
         topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
         self.add_message_listener(topic_client_logout, self.callback_client_logout)
@@ -1523,6 +1597,11 @@ class FedMLClientRunner(FedMLMessageCenter):
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
         mqtt_client_object.subscribe(topic_request_device_info, qos=2)
+        mqtt_client_object.subscribe(topic_request_edge_device_info_from_mlops, qos=2)
+        if topic_request_deploy_master_device_info_from_mlops is not None:
+            mqtt_client_object.subscribe(topic_request_deploy_master_device_info_from_mlops, qos=2)
+        if topic_request_deploy_slave_device_info_from_mlops is not None:
+            mqtt_client_object.subscribe(topic_request_deploy_slave_device_info_from_mlops, qos=2)
         mqtt_client_object.subscribe(topic_client_logout, qos=2)
 
         self.subscribed_topics.clear()
@@ -1532,6 +1611,11 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.subscribed_topics.append(topic_report_status)
         self.subscribed_topics.append(topic_ota_msg)
         self.subscribed_topics.append(topic_request_device_info)
+        self.subscribed_topics.append(topic_request_edge_device_info_from_mlops)
+        if topic_request_deploy_master_device_info_from_mlops is not None:
+            self.subscribed_topics.append(topic_request_deploy_master_device_info_from_mlops)
+        if topic_request_deploy_slave_device_info_from_mlops is not None:
+            self.subscribed_topics.append(topic_request_deploy_slave_device_info_from_mlops)
         self.subscribed_topics.append(topic_client_logout)
 
         # Subscribe the messages for federated learning.
@@ -1588,16 +1672,22 @@ class FedMLClientRunner(FedMLMessageCenter):
         self.add_message_listener(topic_request_device_info, self.callback_report_device_info)
         self.mqtt_mgr.add_message_listener(topic_request_device_info, self.listener_message_dispatch_center)
 
+        topic_request_device_info_from_mlops = f"deploy/mlops/client_agent/request_device_info/{self.general_edge_id}"
+        self.add_message_listener(topic_request_device_info_from_mlops, self.response_device_info_to_mlops)
+        self.mqtt_mgr.add_message_listener(topic_request_device_info_from_mlops, self.listener_message_dispatch_center)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         self.mqtt_mgr.subscribe_msg(topic_start_train)
         self.mqtt_mgr.subscribe_msg(topic_stop_train)
         self.mqtt_mgr.subscribe_msg(topic_client_status)
         self.mqtt_mgr.subscribe_msg(topic_request_device_info)
+        self.mqtt_mgr.subscribe_msg(topic_request_device_info_from_mlops)
 
         self.subscribed_topics.append(topic_start_train)
         self.subscribed_topics.append(topic_stop_train)
         self.subscribed_topics.append(topic_client_status)
         self.subscribed_topics.append(topic_request_device_info)
+        self.subscribed_topics.append(topic_request_device_info_from_mlops)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(

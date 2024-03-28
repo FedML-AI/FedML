@@ -1,3 +1,6 @@
+#fedml_env:
+#  project_name: my-project
+
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
@@ -6,8 +9,8 @@ workspace: hello_world
 # Docker image name.
 # It should be the full name of the image with tag.
 # If you want to use the default image, it can be empty.
-docker:
-  image: fedml/fedml-default-launch:cu12.1-u22.04
+#docker:
+#  image: fedml/fedml-default-launch:cu12.1-u22.04
 
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
@@ -24,6 +27,6 @@ bootstrap: |
   echo "Bootstrap finished."
 
 computing:
-  resource_type: A100-80GB-SXM    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: RTX-3090         # please check the resource type available on FEDML Nexus AI Platform
   minimum_num_gpus: 1             # minimum # of GPUs to provision
-  maximum_cost_per_hour: $10    # max cost per hour of all machines for your job
+  maximum_cost_per_hour: $10      # max cost per hour of all machines for your job

@@ -27,7 +27,8 @@ class ModelInferenceJob(CustomizedBaseJob):
     def run(self):
         if self.endpoint_detail is None:
             try:
-                self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.endpoint_id, self.job_api_key)
+                self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.endpoint_id,
+                                                                                                self.job_api_key)
             except Exception as e:
                 self.endpoint_detail = None
 

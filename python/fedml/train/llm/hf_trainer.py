@@ -22,7 +22,7 @@ from .typing import (
     PathType,
     TokenizerType,
 )
-from .utils import move_directory_content, is_directory
+from .utils import is_directory
 
 
 class HFTrainer(Trainer):
@@ -110,9 +110,5 @@ class HFTrainer(Trainer):
         with self.args.main_process_first(local=self.args.save_on_each_node):
             if self.args.should_save:
                 output_dir.mkdir(parents=True, exist_ok=True)
-                if should_save_temp_ckpt:
-                    # if saved a temporary checkpoint, should move all its content into target directory
-                    move_directory_content(checkpoint_dir, output_dir)
-                else:
-                    # TODO: dirs_exist_ok is for python 3.8+, support older python
-                    shutil.copytree(str(checkpoint_dir), str(output_dir), dirs_exist_ok=True)
+                # TODO: `dirs_exist_ok` is for python 3.8+, support older python
+                shutil.copytree(str(checkpoint_dir), str(output_dir), dirs_exist_ok=True)

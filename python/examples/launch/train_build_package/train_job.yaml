@@ -1,7 +1,7 @@
 # Local directory where your source code resides.
 # It should be the relative path to this job yaml file or the absolute path.
 # If your job doesn't contain any source code, it can be empty.
-workspace: .
+workspace: "./src"
 
 # Running entry commands which will be executed as the job entry point.
 # If an error occurs, you should exit with a non-zero code, e.g. exit 1.
@@ -14,14 +14,11 @@ job_type: train              # options: train, deploy, federate
 
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
-bootstrap: |
-  echo "Bootstrap finished."
+bootstrap: bash bootstrap.sh
 
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
-  #allow_cross_cloud_resources: true # true, false
-  #device_type: CPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
 
 data_args:

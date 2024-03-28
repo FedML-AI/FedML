@@ -11,7 +11,7 @@ from logging import handlers
 from fedml import mlops
 from .mlops_utils import MLOpsUtils
 
-LOG_LEVEL = logging.CRITICAL
+LOG_LEVEL = logging.INFO
 
 class MLOpsFormatter(logging.Formatter):
     converter = datetime.datetime.utcfromtimestamp
