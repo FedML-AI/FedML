@@ -352,7 +352,7 @@ class MLOpsRuntimeLogDaemon:
 
     def __init__(self, in_args):
         self.args = in_args
-        self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(args)
+        self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(self.args)
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
                 url = fedml._get_backend_service()
