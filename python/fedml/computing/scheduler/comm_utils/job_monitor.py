@@ -28,6 +28,7 @@ from ..model_scheduler import device_client_constants
 from ..model_scheduler import device_server_constants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from fedml.core.mlops.mlops_utils import MLOpsLoggingUtils
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
@@ -733,7 +734,7 @@ class JobMonitor(Singleton):
                 model_version = model_config.get("model_version", None)
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
-                log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path_with_run_params(
+                log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path_with_run_params(
                     job.job_id, int(job.edge_id), device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
                     log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
                 )

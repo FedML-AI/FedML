@@ -10,13 +10,11 @@ import multiprocess as multiprocessing
 import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
+from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
+from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
 from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
-from ...computing.scheduler.comm_utils.job_utils import JobRunnerUtils
-
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
-from .mlops_utils import MLOpsUtils
-from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 
 ROLE_DEVICE_INFO_REPORTER = 1
 ROLE_ENDPOINT_MASTER = 2
