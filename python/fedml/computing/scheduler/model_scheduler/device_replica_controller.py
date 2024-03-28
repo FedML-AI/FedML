@@ -1,5 +1,8 @@
 import logging
 import copy
+
+from typing import List
+
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 from .device_client_constants import ClientConstants
@@ -43,6 +46,7 @@ class FedMLDeviceReplicaController:
         self.model_name = self.request_msg_obj.model_name
 
         self.target_replica_num = self.init_id_replica_num()
+        self.target_replica_ids = self.generate_replica_ids()
 
         self.curr_replica_num = self.get_curr_replica_num_state_frm_db()
         self.intermediate_replica_num = copy.deepcopy(self.curr_replica_num)
@@ -74,6 +78,17 @@ class FedMLDeviceReplicaController:
                 raise ValueError("The number of gpus for each device should be divisible by gpu_per_replica")
             id_replica_num[str(id)] = avail_num // self.gpu_per_replica
         return id_replica_num
+
+    def generate_replica_ids(self) -> List[str]:
+        """
+        [id1_replicaNo1, id2_replicaNo2, ...]
+        replicaNo starts from 1
+        """
+        res = []
+        for device_id, replica_num in self.target_replica_num.items():
+            for i in range(replica_num):
+                res.append(f"{device_id}_{i+1}")
+        return res
 
     def diff_target_curr_replica_num(self):
         diff = self.diff_target_curr_replica_num_impl(self.target_replica_num, self.curr_replica_num)
