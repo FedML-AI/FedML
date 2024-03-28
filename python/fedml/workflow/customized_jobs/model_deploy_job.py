@@ -1,3 +1,5 @@
+import os
+import uuid
 
 from fedml.workflow.customized_jobs.customized_base_job import CustomizedBaseJob
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
@@ -13,15 +15,26 @@ class ModelDeployJob(CustomizedBaseJob):
     def __init__(self, name, endpoint_id=None, job_yaml_absolute_path=None, job_api_key=None):
         super().__init__(name, job_yaml_absolute_path=job_yaml_absolute_path, job_api_key=job_api_key)
         self.out_model_inference_url = None
+        self.in_endpoint_id = endpoint_id
         self.out_endpoint_id = None
         self.out_request_body = None
         self.out_api_key_token = self.job_api_key
         self.run_status = None
+        self.job_yaml_absolute_path_origin = self.job_yaml_absolute_path
+        self.job_yaml_dir = os.path.dirname(self.job_yaml_absolute_path)
+        self.job_yaml_absolute_path_for_launch = os.path.join(
+            self.job_yaml_dir, f"{str(uuid.uuid4())}.yaml")
 
     def run(self):
+        job_yaml_obj = self.load_yaml_config(self.job_yaml_absolute_path_origin)
+        job_yaml_obj["serving_args"] = dict()
+        job_yaml_obj["serving_args"]["endpoint_id"] = self.in_endpoint_id
+        self.generate_yaml_doc(job_yaml_obj, self.job_yaml_absolute_path_for_launch)
+        self.job_yaml_absolute_path = self.job_yaml_absolute_path_for_launch
+
         super().run()
 
-        self.out_endpoint_id = self.launch_result.inner_id
+        os.remove(self.job_yaml_absolute_path_for_launch)
 
         if self.launch_result_code != 0:
             self.output_data_dict = {
@@ -29,12 +42,15 @@ class ModelDeployJob(CustomizedBaseJob):
             print(f"{self.output_data_dict}")
             return
 
+        self.out_endpoint_id = self.launch_result.inner_id
+
         endpoint_status = None
         endpoint_detail = None
         running_start_time = time.time()
         while True:
             try:
-                endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.out_endpoint_id, self.job_api_key)
+                endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                    self.out_endpoint_id, self.job_api_key)
             except Exception as e:
                 pass
 
@@ -78,5 +94,3 @@ class ModelDeployJob(CustomizedBaseJob):
 
     def kill(self):
         super().kill()
-        FedMLModelCards.get_instance().delete_endpoint_api(self.job_api_key, self.out_endpoint_id)
-

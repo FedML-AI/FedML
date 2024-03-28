@@ -194,6 +194,8 @@ class JobMonitor(Singleton):
                 if not SchedulerConstants.is_run_completed(job.status) and \
                         timeout > running_timeout:
                     run_completed_on_all_edges = True
+                    if job.running_json is None:
+                        continue
                     job_run_json = json.loads(job.running_json)
                     edge_ids = job_run_json.get("edgeids", [])
                     for edge_id in edge_ids:
