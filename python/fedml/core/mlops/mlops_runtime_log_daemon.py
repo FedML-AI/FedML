@@ -11,9 +11,10 @@ import time
 import requests
 import yaml
 
-from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
-from ...core.mlops.mlops_configs import MLOpsConfigs
 import fedml
+from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+from fedml.core.mlops.mlops_utils import MLOpsLoggingUtils
+from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class MLOpsRuntimeLogProcessor:
@@ -111,7 +112,8 @@ class MLOpsRuntimeLogProcessor:
 
     def log_upload(self, run_id, device_id):
         # Fetch Log Lines
-        log_lines = self.log_read()
+        _, file_index, log_lines = self.fetch_logs()
+        uploaded_file_index = file_index
         if log_lines is None or len(log_lines) <= 0:
             return
 
@@ -136,11 +138,21 @@ class MLOpsRuntimeLogProcessor:
                 if not upload_successful:
                     return
 
-            self.log_line_index += (line_end_req - line_start_req)
-            self.log_uploaded_line_index += len(upload_lines)
-            line_count += (line_end_req - line_start_req)
+            num_lines_uploaded = line_end_req - line_start_req
+            uploaded_file_index += num_lines_uploaded
+            line_count += num_lines_uploaded
             line_start_req = line_end_req
-            self.save_log_config()
+
+            # Update the uploaded file index
+            MLOpsLoggingUtils.acquire_lock()
+            config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id,
+                                                            self.log_config_file)
+
+            config_data[self.file_rotate_count].uploaded_file_index = uploaded_file_index
+            MLOpsLoggingUtils.save_log_config(run_id=run_id, device_id=device_id,
+                                              log_config_file=self.log_config_file,
+                                              config_data=config_data)
+            MLOpsLoggingUtils.release_lock()
 
     @staticmethod
     def __format_log_lines(log_lines: list, line_start_req: int, line_end_req: int):
@@ -303,33 +315,75 @@ class MLOpsRuntimeLogProcessor:
             if self.log_line_index < 0:
                 self.log_line_index = 0
 
-    def log_open(self):
+    def fetch_file_path_and_index(self) -> (str, int):
         try:
-            shutil.copyfile(self.origin_log_file_path, self.log_file_path)
-            if self.log_file is None:
-                self.log_file = open(self.log_file_path, "r")
-                self.log_relocation()
+            file_path, upload_file_index = None, None
+            MLOpsLoggingUtils.acquire_lock()
+            config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
+                                                            log_config_file=self.log_config_file)
+            MLOpsLoggingUtils.release_lock()
+            if config_data is not None:
+                config_len = len(config_data)
+                upload_file_config = config_data.get(self.file_rotate_count, None)
+                if upload_file_config is not None:
+                    file_path, uploaded_file_index = upload_file_config.file_path, upload_file_config.uploaded_file_index
+                    shutil.copyfile(file_path, self.log_file_path)
+                    if MLOpsRuntimeLogProcessor.is_file_rotated(file_path, uploaded_file_index, config_len,
+                                                                self.file_rotate_count):
+                        MLOpsLoggingUtils.acquire_lock()
+                        config_data[self.file_rotate_count].upload_complete = True
+                        MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.device_id,
+                                                        log_config_file=self.log_config_file, config_data=config_data)
+                        MLOpsLoggingUtils.release_lock()
+                        self.file_rotate_count += 1
+                        # Re-fetch file path and index if file is rotated
+                        return self.fetch_file_path_and_index()
+                    return file_path, uploaded_file_index
+
+            return file_path, upload_file_index
         except Exception as e:
-            pass
+            raise ValueError(f"Failed to open log file. Exception: {e}")
+        finally:
+            MLOpsLoggingUtils.release_lock()
 
-    def log_read(self):
-        self.log_open()
+    @staticmethod
+    def is_file_rotated(file_path, uploaded_file_index, config_len, rotate_count):
+        # move the log file pointer to the last uploaded line
+        if config_len == rotate_count + 1:
+            return False
 
-        if self.log_file is None:
-            return None
+        with open(file_path, "r") as f:
+            lines = f.readlines()
+            if len(lines) > uploaded_file_index:
+                return False
+            return True
 
-        line_count = 0
+    def fetch_logs(self) -> (str, int, list):
         log_lines = []
-        while True:
-            # readlines will ignore those lines has been read using readline
-            log_line = self.log_file.readlines()
-            if len(log_line) <= 0:
-                break
-            line_count += len(log_line)
-            log_lines.extend(log_line)
-        self.log_file.close()
-        self.log_file = None
-        return log_lines
+        file_path, file_index = self.fetch_file_path_and_index()
+        if file_path and file_index is not None:
+            with open(file_path, "r") as f:
+                lines = f.readlines()
+                log_lines.extend(lines[file_index:])
+        return log_lines, file_path, file_index
+
+
+
+        # if self.log_file is None:
+        #     return None
+        #
+        # line_count = 0
+        # log_lines = []
+        # while True:
+        #     # readlines will ignore those lines has been read using readline
+        #     log_line = self.log_file.readlines()
+        #     if len(log_line) <= 0:
+        #         break
+        #     line_count += len(log_line)
+        #     log_lines.extend(log_line)
+        # self.log_file.close()
+        # self.log_file = None
+        # return log_lines
 
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):

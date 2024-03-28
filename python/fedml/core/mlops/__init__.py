@@ -899,7 +899,8 @@ def log_run_logs(logs_json: dict, run_id=0):
 def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
     fedml_args = get_fedml_args()
 
-    setup_log_mqtt_mgr()
+    if use_mqtt:
+        setup_log_mqtt_mgr()
 
     if MLOpsStore.mlops_metrics is not None:
         MLOpsStore.mlops_metrics.report_run_log(

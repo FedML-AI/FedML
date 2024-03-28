@@ -2,15 +2,11 @@ import argparse
 import json
 import logging
 import os
-import secrets
 import sys
 import threading
 import time
 import datetime
-from dataclasses import asdict
-from logging import handlers
 from logging.handlers import TimedRotatingFileHandler
-from typing import Dict
 
 from fedml import mlops
 from fedml.core.mlops.mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
@@ -20,40 +16,54 @@ LOG_LEVEL = logging.INFO
 
 class MLOpsFileHandler(TimedRotatingFileHandler):
 
-    def __init__(self, filename, run_id, edge_id, log_config_file, when='h', interval=1, backupCount=0, encoding=None, delay=False,
+    def __init__(self, filepath, run_id, edge_id, log_config_file, when='h', interval=1, backupCount=0, encoding=None,
+                 delay=False,
                  utc=False, atTime=None, errors=None):
-        super(MLOpsFileHandler, self).__init__(filename, when, interval, backupCount, encoding, delay, utc, atTime,
+        super(MLOpsFileHandler, self).__init__(filepath, when, interval, backupCount, encoding, delay, utc, atTime,
                                                errors)
         self.run_id = run_id
         self.edge_id = edge_id
-        self.file_name = filename
+        self.file_path = filepath
         self.rotate_count = 0
+        self.backupCount = backupCount
         self.rotator: callable = self.update_config_and_rotate
         self.log_config_file = log_config_file
         self.__initialize_config()
 
     def update_config_and_rotate(self, source, dest):
+        # source = current log file name
+        # dest = log file name (dated)
         if os.path.exists(source):
             os.rename(source, dest)
-        # file_id = MLOpsLoggingUtils.get_id_from_filename(run_id=self.run_id, device_id=self.edge_id, filename=source,
-        #                                                  log_config_file=self.log_config_file)
-        config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id)
-        config_data.file_name = dest
+        MLOpsLoggingUtils.acquire_lock()
+        config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id, self.log_config_file)
+
+        # Update file name of current log file
+        config_data[self.rotate_count].file_path = dest
         self.rotate_count += 1
-        rotated_log_file = LogFile(file_name=source)
-        config_data[str(self.rotate_count)] = rotated_log_file
+
+        # Store the rotate count, and corresponding log file name in the config file
+        rotated_log_file = LogFile(file_path=source, uploaded_file_index=self.backupCount)
+        config_data[self.rotate_count] = rotated_log_file
         MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
                                           log_config_file=self.log_config_file,
                                           config_data=config_data)
+        MLOpsLoggingUtils.release_lock()
 
     def __initialize_config(self):
-        config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.edge_id,
-                                                        log_config_file=self.log_config_file)
-        if not config_data:
-            log_file = LogFile(file_name=self.file_name)
-            config_data = {str(self.rotate_count): log_file}
-            MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
-                                              log_config_file=self.log_config_file, config_data=config_data)
+        try:
+            MLOpsLoggingUtils.acquire_lock()
+            config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.edge_id,
+                                                            log_config_file=self.log_config_file)
+            if not config_data:
+                log_file = LogFile(file_path=self.file_path)
+                config_data = {self.rotate_count: log_file}
+                MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
+                                                  log_config_file=self.log_config_file, config_data=config_data)
+        except Exception as e:
+            raise ValueError("Error initializing log config: {}".format(e))
+        finally:
+            MLOpsLoggingUtils.release_lock()
 
 
 class MLOpsFormatter(logging.Formatter):
@@ -158,7 +168,7 @@ class MLOpsRuntimeLog:
             backup_count = 100
             run_id, edge_id = self.args.run_id, MLOpsRuntimeLog.get_edge_id_from_args(self.args)
             log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
-            file_handle = MLOpsFileHandler(filename=log_file_path, log_config_file=log_config_file, run_id=run_id,
+            file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
                                            edge_id=edge_id, when=when, backupCount=backup_count, encoding='utf-8')
             file_handle.setFormatter(self.format_str)
             file_handle.setLevel(logging.INFO)

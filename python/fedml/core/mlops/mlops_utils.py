@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 from os.path import expanduser
 import time
@@ -63,13 +64,24 @@ class MLOpsUtils:
 
 @dataclass
 class LogFile:
-    file_name: str
+    file_path: str
     uploaded_file_index: int = 0
     upload_complete: bool = False
 
 
 class MLOpsLoggingUtils:
     LOG_CONFIG_FILE = "log_config.yaml"
+    _lock = multiprocessing.Lock()
+
+    @staticmethod
+    def acquire_lock(block=True):
+        return MLOpsLoggingUtils._lock.acquire(block)
+
+    @staticmethod
+    def release_lock():
+        # Purposefully acquire lock with non-blocking call to make it idempotent
+        MLOpsLoggingUtils._lock.acquire(block=False)
+        MLOpsLoggingUtils._lock.release()
 
     @staticmethod
     def build_log_file_path_with_run_params(
@@ -127,7 +139,7 @@ class MLOpsLoggingUtils:
         return log_file_path, program_prefix
 
     @staticmethod
-    def load_log_config(run_id, device_id, log_config_file) -> Dict[str, LogFile]:
+    def load_log_config(run_id, device_id, log_config_file) -> Dict[int, LogFile]:
         try:
             log_config_key = "log_config_{}_{}".format(run_id, device_id)
             log_config = MLOpsLoggingUtils.load_yaml_config(log_config_file)
@@ -157,18 +169,22 @@ class MLOpsLoggingUtils:
             with open(log_config_file, "w") as stream:
                 yaml.dump(log_config, stream)
         except Exception as e:
+            MLOpsLoggingUtils.release_lock()
             raise ValueError("Error saving log config: {}".format(e))
 
     @staticmethod
     def load_yaml_config(log_config_file):
         """Helper function to load a yaml config file"""
+        if MLOpsLoggingUtils._lock.acquire(block=False):
+            MLOpsLoggingUtils._lock.release()
+            raise ValueError("Able to acquire lock. This means lock was not acquired by the caller")
         if not os.path.exists(log_config_file):
             MLOpsLoggingUtils.generate_yaml_doc({}, log_config_file)
         with open(log_config_file, "r") as stream:
             try:
                 return yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                raise ValueError("Yaml error - check yaml file")
+            except yaml.YAMLError as e:
+                raise ValueError(f"Yaml error - check yaml file, error: {e}")
 
     # @staticmethod
     # def get_id_from_filename(run_id, device_id, filename, log_config_file) -> Optional[str]:
@@ -185,7 +201,7 @@ class MLOpsLoggingUtils:
             yaml.dump(log_config_object, file)
             file.close()
         except Exception as e:
-            pass
+            raise ValueError(f"Error generating yaml doc: {e}")
 
     @staticmethod
     def __convert_to_dict(obj: Any) -> Any:
