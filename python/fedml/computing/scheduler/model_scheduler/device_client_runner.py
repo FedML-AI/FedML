@@ -56,6 +56,7 @@ from fedml.computing.scheduler.comm_utils.job_monitor import JobMonitor
 from .device_replica_handler import FedMLDeviceReplicaHandler
 
 from fedml.computing.scheduler.scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
+import ssl
 
 class RunnerError(Exception):
     """ Runner failed. """
@@ -146,7 +147,7 @@ class FedMLClientRunner:
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         logging.info("Download from package_url {}".format(package_url))
-
+        ssl._create_default_https_context = ssl._create_unverified_context
         urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),

@@ -2,7 +2,7 @@ import os
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from types import MappingProxyType
 from toposort import toposort
 
@@ -21,7 +21,7 @@ class Node:
 
 @dataclass(frozen=True, eq=True, order=True)
 class Metadata:
-    nodes: set[Node]
+    nodes: Set[Node]
     topological_order: Any
     graph: Any
 
