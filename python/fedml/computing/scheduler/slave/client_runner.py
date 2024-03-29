@@ -46,6 +46,7 @@ from ..model_scheduler.model_device_server import FedMLModelDeviceServerRunner
 from ..comm_utils import security_utils
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 from ..scheduler_core.message_center import FedMLMessageCenter
+import ssl
 
 
 class RunnerError(Exception):
@@ -259,6 +260,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
+        ssl._create_default_https_context = ssl._create_unverified_context
         urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
@@ -966,10 +968,15 @@ class FedMLClientRunner(FedMLMessageCenter):
         run_params = run_config.get("parameters", {})
         serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
-        cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
-            run_id, matched_gpu_num, train_edge_id, inner_id=endpoint_id,
-            model_master_device_id=model_master_device_id,
-            model_slave_device_id=model_slave_device_id)
+        job_yaml = run_params.get("job_yaml", {})
+        job_type = job_yaml.get("job_type", SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+        cuda_visible_gpu_ids_str = None
+        if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
+                job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
+            cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
+                run_id, matched_gpu_num, train_edge_id, inner_id=endpoint_id,
+                model_master_device_id=model_master_device_id,
+                model_slave_device_id=model_slave_device_id)
         logging.info(
             f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(train_edge_id)}")
 

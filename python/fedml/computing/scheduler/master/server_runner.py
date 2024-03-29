@@ -55,6 +55,7 @@ from ..scheduler_core.metrics_manager import MetricsManager
 from ..scheduler_core.master_api_daemon import MasterApiDaemon
 from fedml.utils.debugging import debug
 from ..scheduler_core.message_center import FedMLMessageCenter
+import ssl
 
 
 class RunnerError(Exception):
@@ -228,6 +229,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
+        ssl._create_default_https_context = ssl._create_unverified_context
         urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),

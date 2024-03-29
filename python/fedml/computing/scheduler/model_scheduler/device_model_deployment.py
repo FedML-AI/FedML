@@ -343,7 +343,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 mem_limit=memory,
             ),
             detach=True,
-            command=customized_image_entry_cmd if enable_custom_image else None
+            command=customized_image_entry_cmd if enable_custom_image else None,
+            entrypoint=customized_image_entry_cmd if enable_custom_image else None
         )
         client.api.start(container=new_container.get("Id"))
     except Exception as e:
