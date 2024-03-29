@@ -1,17 +1,69 @@
 import argparse
-import json
+import datetime
 import logging
 import os
 import sys
 import threading
 import time
-import datetime
-from logging import handlers
+from logging.handlers import TimedRotatingFileHandler
 
 from fedml import mlops
-from .mlops_utils import MLOpsUtils
+from fedml.core.mlops.mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
 
 LOG_LEVEL = logging.INFO
+
+
+class MLOpsFileHandler(TimedRotatingFileHandler):
+
+    def __init__(self, filepath, run_id, edge_id, log_config_file, when='h', interval=1, backupCount=0, encoding=None,
+                 delay=False,
+                 utc=False, atTime=None, errors=None):
+        super(MLOpsFileHandler, self).__init__(filepath, when, interval, backupCount, encoding, delay, utc, atTime,
+                                               errors)
+        self.run_id = run_id
+        self.edge_id = edge_id
+        self.file_path = filepath
+        self.rotate_count = 0
+        self.backupCount = backupCount
+        self.rotator: callable = self.update_config_and_rotate
+        self.log_config_file = log_config_file
+        self.__initialize_config()
+
+    def update_config_and_rotate(self, source, dest):
+        # source = current log file name
+        # dest = log file name (dated)
+        if os.path.exists(source):
+            os.rename(source, dest)
+        MLOpsLoggingUtils.acquire_lock()
+        config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id, self.log_config_file)
+
+        # Update file name of current log file
+        config_data[self.rotate_count].file_path = dest
+        self.rotate_count += 1
+
+        # Store the rotate count, and corresponding log file name in the config file
+        rotated_log_file = LogFile(file_path=source, uploaded_file_index=self.backupCount)
+        config_data[self.rotate_count] = rotated_log_file
+        MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
+                                          log_config_file=self.log_config_file,
+                                          config_data=config_data)
+        MLOpsLoggingUtils.release_lock()
+
+    def __initialize_config(self):
+        try:
+            MLOpsLoggingUtils.acquire_lock()
+            config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.edge_id,
+                                                            log_config_file=self.log_config_file)
+            if not config_data:
+                log_file = LogFile(file_path=self.file_path)
+                config_data = {self.rotate_count: log_file}
+                MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
+                                                  log_config_file=self.log_config_file, config_data=config_data)
+        except Exception as e:
+            raise ValueError("Error initializing log config: {}".format(e))
+        finally:
+            MLOpsLoggingUtils.release_lock()
+
 
 class MLOpsFormatter(logging.Formatter):
     converter = datetime.datetime.utcfromtimestamp
@@ -83,32 +135,7 @@ class MLOpsRuntimeLog:
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
-        if args.role == "server":
-            if hasattr(args, "server_id"):
-                self.edge_id = args.server_id
-            else:
-                if hasattr(args, "edge_id"):
-                    self.edge_id = args.edge_id
-                else:
-                    self.edge_id = 0
-        else:
-            if hasattr(args, "client_id"):
-                self.edge_id = args.client_id
-            elif hasattr(args, "client_id_list"):
-                if args.client_id_list is None:
-                    self.edge_id = 0
-                else:
-                    edge_ids = json.loads(args.client_id_list)
-                    if len(edge_ids) > 0:
-                        self.edge_id = edge_ids[0]
-                    else:
-                        self.edge_id = 0
-            else:
-                if hasattr(args, "edge_id"):
-                    self.edge_id = args.edge_id
-                else:
-                    self.edge_id = 0
-
+        self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(args)
         self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
                                                  + str(self.run_id)
                                                  + "-edge-"
@@ -124,12 +151,10 @@ class MLOpsRuntimeLog:
         return MLOpsRuntimeLog._log_sdk_instance
 
     def init_logs(self, log_level=None):
-        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
         logging.raiseExceptions = True
         self.logger = logging.getLogger(log_file_path)
-
         self.generate_format_str()
-
         self.stdout_handle = logging.StreamHandler()
         self.stdout_handle.setFormatter(self.format_str)
         log_level = log_level if log_level is not None else LOG_LEVEL
@@ -140,8 +165,10 @@ class MLOpsRuntimeLog:
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
             when = 'D'
             backup_count = 100
-            file_handle = handlers.TimedRotatingFileHandler(filename=log_file_path, when=when,
-                                                            backupCount=backup_count, encoding='utf-8')
+            run_id, edge_id = self.args.run_id, MLOpsLoggingUtils.get_edge_id_from_args(self.args)
+            log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
+            file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
+                                           edge_id=edge_id, when=when, backupCount=backup_count, encoding='utf-8')
             file_handle.setFormatter(self.format_str)
             file_handle.setLevel(logging.INFO)
             self.logger.addHandler(file_handle)
@@ -165,67 +192,12 @@ class MLOpsRuntimeLog:
             self.stdout_handle.setFormatter(self.format_str)
 
     def generate_format_str(self):
-        log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
         self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
                                                                     "message)s",
                                          datefmt="%a, %d %b %Y %H:%M:%S")
         self.format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
-
-    @staticmethod
-    def build_log_file_path(in_args):
-        if in_args.role == "server":
-            if hasattr(in_args, "server_id"):
-                edge_id = in_args.server_id
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-            program_prefix = "FedML-Server @device-id-{}".format(edge_id)
-        else:
-            if hasattr(in_args, "client_id"):
-                edge_id = in_args.client_id
-            elif hasattr(in_args, "client_id_list"):
-                if in_args.client_id_list is None:
-                    edge_id = 0
-                else:
-                    edge_ids = json.loads(in_args.client_id_list)
-                    if len(edge_ids) > 0:
-                        edge_id = edge_ids[0]
-                    else:
-                        edge_id = 0
-            else:
-                if hasattr(in_args, "edge_id"):
-                    edge_id = in_args.edge_id
-                else:
-                    edge_id = 0
-            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
-
-        if not os.path.exists(in_args.log_file_dir):
-            os.makedirs(in_args.log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
-                                     + str(in_args.run_id)
-                                     + "-edge-"
-                                     + str(edge_id)
-                                     + ".log")
-
-        return log_file_path, program_prefix
-
-    @staticmethod
-    def build_log_file_path_with_run_params(
-            run_id, edge_id, log_file_dir, is_server=False, log_file_prefix=None
-    ):
-        program_prefix = "FedML-{} @device-id-{}".format(
-            "Server" if is_server else "Client", edge_id)
-        if not os.path.exists(log_file_dir):
-            os.makedirs(log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(
-            log_file_dir, "fedml-run{}-{}-edge-{}.log".format(
-                "" if log_file_prefix is None else f"-{log_file_prefix}", run_id, edge_id
-            ))
-
-        return log_file_path, program_prefix
 
 
 if __name__ == "__main__":
@@ -237,10 +209,12 @@ if __name__ == "__main__":
     parser.add_argument("--server_id", "-s", type=str, default="1")
     parser.add_argument("--client_id", "-c", type=str, default="1")
     parser.add_argument("--client_id_list", "-cil", type=str, default="[]")
+    parser.add_argument("--role", "-role", type=str, default="client")
 
     args = parser.parse_args()
     setattr(args, "using_mlops", True)
     setattr(args, "config_version", "local")
+
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
     count = 0

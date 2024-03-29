@@ -8,9 +8,9 @@ import uuid
 import multiprocess as multiprocessing
 import psutil
 
-from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
-from .system_stats import SysStats
 from .mlops_utils import MLOpsUtils
+from .system_stats import SysStats
+from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class MLOpsJobPerfStats(object):
