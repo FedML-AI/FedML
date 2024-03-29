@@ -78,7 +78,7 @@ class ModelInferenceJob(CustomizedBaseJob):
             'Authorization': f'Bearer {self.key_token}',
         }
 
-        response = requests.post(self.inference_url, headers=headers, json=self.infer_request_body)
+        response = requests.post(self.inference_url, headers=headers, json=self.infer_request_body, timeout=60*10)
         if response.status_code != 200:
             print(f"Inference response with status_code = {response.status_code}, "
                   f"response.content: {str(response.content)}")
