@@ -15,11 +15,8 @@ LOG_LEVEL = logging.INFO
 
 class MLOpsFileHandler(TimedRotatingFileHandler):
 
-    def __init__(self, filepath, run_id, edge_id, log_config_file, when='h', interval=1, backupCount=0, encoding=None,
-                 delay=False,
-                 utc=False, atTime=None, errors=None):
-        super(MLOpsFileHandler, self).__init__(filepath, when, interval, backupCount, encoding, delay, utc, atTime,
-                                               errors)
+    def __init__(self, run_id, edge_id, log_config_file, filepath, when='h', backupCount=0, encoding=None):
+        super(MLOpsFileHandler, self).__init__(filename=filepath, when=when, backupCount=backupCount, encoding=encoding)
         self.run_id = run_id
         self.edge_id = edge_id
         self.file_path = filepath
