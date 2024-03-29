@@ -128,6 +128,11 @@ class FedMLDeviceReplicaHandler:
                 $replica_no: {"op": "update", "new_version": "v2", "old_version": "v1"},
                 $replica_no: {"op": "update", "new_version": "v2", "old_version": "v1"}
              }
+        or
+        {
+            $replica_no: {"op": "rollback", "new_version": "v2", "old_version": "v1"},
+            $replica_no: {"op": "rollback", "new_version": "v2", "old_version": "v1"}
+         }
         for all replicas, update the version. i.e. stop and remove the container, records in db, then start the new
         container, and report when the new container is ready.
         """

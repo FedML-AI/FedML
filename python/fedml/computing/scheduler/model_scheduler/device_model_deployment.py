@@ -110,7 +110,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
         worker_port_from_config = config.get('worker_port', "")
-        print(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
+        logging.info(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
               f"worker port from config {worker_port_from_config}")
 
         usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)

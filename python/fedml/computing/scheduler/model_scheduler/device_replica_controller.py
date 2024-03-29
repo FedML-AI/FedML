@@ -483,6 +483,7 @@ class FedMLDeviceReplicaController:
             return None
 
         devices_version_rollback = {}
+        # TODO(Raphael): Consider the case that, multiple replicas in the chunk failed.
         for id, device_replicas_version in self.intermediate_replica_version.items():
             for replica_no, version in device_replicas_version.items():
                 if version != self.start_version:
