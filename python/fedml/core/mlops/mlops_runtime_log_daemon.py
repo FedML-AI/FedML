@@ -267,6 +267,8 @@ class MLOpsRuntimeLogProcessor:
                     if MLOpsRuntimeLogProcessor.is_file_rotated(file_path, uploaded_file_index, config_len,
                                                                 self.file_rotate_count):
                         MLOpsLoggingUtils.acquire_lock()
+                        config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
+                                                                        log_config_file=self.log_config_file)
                         config_data[self.file_rotate_count].upload_complete = True
                         MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.device_id,
                                                           log_config_file=self.log_config_file, config_data=config_data)
