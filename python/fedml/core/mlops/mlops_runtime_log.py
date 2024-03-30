@@ -11,17 +11,20 @@ from fedml import mlops
 from fedml.core.mlops.mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
 
 LOG_LEVEL = logging.INFO
+ROTATION_FREQUENCY = 'D'
+BACKUP_COUNT = 100
 
 
 class MLOpsFileHandler(TimedRotatingFileHandler):
 
-    def __init__(self, run_id, edge_id, log_config_file, filepath, when='h', backupCount=0, encoding=None):
-        super(MLOpsFileHandler, self).__init__(filename=filepath, when=when, backupCount=backupCount, encoding=encoding)
+    def __init__(self, run_id, edge_id, log_config_file, filepath):
+        super(MLOpsFileHandler, self).__init__(filename=filepath, when=ROTATION_FREQUENCY, backupCount=BACKUP_COUNT,
+                                               encoding='utf-8')
         self.run_id = run_id
         self.edge_id = edge_id
         self.file_path = filepath
         self.rotate_count = 0
-        self.backupCount = backupCount
+        self.backupCount = BACKUP_COUNT
         self.rotator: callable = self.update_config_and_rotate
         self.log_config_file = log_config_file
         self.__initialize_config()
@@ -160,12 +163,10 @@ class MLOpsRuntimeLog:
         self.logger.handlers.clear()
         self.logger.addHandler(self.stdout_handle)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
-            when = 'D'
-            backup_count = 100
             run_id, edge_id = self.args.run_id, MLOpsLoggingUtils.get_edge_id_from_args(self.args)
             log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
             file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
-                                           edge_id=edge_id, when=when, backupCount=backup_count, encoding='utf-8')
+                                           edge_id=edge_id)
             file_handle.setFormatter(self.format_str)
             file_handle.setLevel(logging.INFO)
             self.logger.addHandler(file_handle)

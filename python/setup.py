@@ -64,6 +64,8 @@ requirements = [
     "toposort",
     "pydantic",
     "pydantic-settings",
+    "pytest",
+    "pytest-mock",
 ]
 
 requirements_extra_mpi = [
