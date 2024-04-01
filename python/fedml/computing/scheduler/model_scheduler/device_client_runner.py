@@ -507,7 +507,10 @@ class FedMLClientRunner:
 
                 replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
 
-                JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+                try:
+                    JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+                except Exception as e:
+                    logging.error(f"Exception at release partial job gpu: {traceback.format_exc()}")
 
                 # Delete the deployment result from local db
                 FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id_and_rank(
