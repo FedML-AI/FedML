@@ -7,7 +7,6 @@ import httpx
 from fastapi.responses import Response
 from fastapi.responses import StreamingResponse
 from .device_http_inference_protocol import stream_generator
-from ..comm_utils import sys_utils
 
 
 class FedMLHttpProxyInference:
@@ -54,8 +53,6 @@ class FedMLHttpProxyInference:
     ):
         inference_response = {}
         http_proxy_url = f"http://{urlparse(inference_url).hostname}:{ClientConstants.LOCAL_CLIENT_API_PORT}/api/v1/predict"
-        if not sys_utils.check_port(f"{urlparse(inference_url).hostname}", ClientConstants.LOCAL_CLIENT_API_PORT):
-            return False
         if inference_type == "default":
             model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                                  'Accept': 'application/json'}

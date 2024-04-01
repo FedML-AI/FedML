@@ -54,6 +54,7 @@ class settings:
     use_mqtt_inference = False
     use_worker_gateway = False
     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+    inference_port_available_map = dict()
 
 
 api = FastAPI()
@@ -276,8 +277,15 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
     try:
-        response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
+        url_parsed = urlparse(inference_url)
+        inference_port_connected = settings.inference_port_available_map.get(f"{url_parsed.hostname}:{url_parsed.port}", False)
+        if inference_port_connected:
+            response_ok = inference_port_connected
+        else:
+            response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
+            settings.inference_port_available_map[f"{url_parsed.hostname}:{url_parsed.port}"] = response_ok
         if response_ok:
+            settings.inference_port_available_map[f"{url_parsed.hostname}:{url_parsed.port}"] = True
             response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
                 inference_url, input_list, output_list, inference_type=inference_type)
             logging.info(f"Use http inference. return {response_ok}")

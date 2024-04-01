@@ -8,7 +8,6 @@ from .device_client_constants import ClientConstants
 import requests
 from fastapi.responses import Response
 from fastapi.responses import StreamingResponse
-from ..comm_utils import sys_utils
 
 
 class FedMLHttpInference:
@@ -23,8 +22,6 @@ class FedMLHttpInference:
         None: can be reached, but not ready
         '''
         url_parsed = urlparse(inference_url)
-        if not sys_utils.check_port(f"{url_parsed.hostname}", url_parsed.port):
-            return False
         ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
         response_ok = False
         try:
