@@ -943,9 +943,12 @@ class FedMLServerRunner:
         first_chunk_dict = self.request_json["replica_version_diff"]
 
         # Delete the record of the replaced device
-        self.delete_device_replica_info_on_master(
-            self.request_json["end_point_id"], self.request_json["end_point_name"],
-            self.request_json["model_config"]["model_name"], first_chunk_dict)
+        try:
+            self.delete_device_replica_info_on_master(
+                self.request_json["end_point_id"], self.request_json["end_point_name"],
+                self.request_json["model_config"]["model_name"], first_chunk_dict)
+        except Exception as e:
+            logging.info(f"Exceptipn at delete_device_replica_info_on_master {traceback.format_exc()}")
 
         logging.info(f"Send the first scroll update msg to the device {first_chunk_dict} ")
 
