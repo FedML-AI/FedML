@@ -59,6 +59,11 @@ class MLOpsRuntimeLogProcessor:
         self.log_source = None
         self.log_process_event = None
 
+        self.should_split_by_replica = False
+
+        if log_file_prefix is not None and log_file_prefix == "endpoint":
+            self.should_split_by_replica = True
+
     def set_log_source(self, source):
         self.log_source = source
         if source is not None:
@@ -83,14 +88,31 @@ class MLOpsRuntimeLogProcessor:
 
             self.__format_log_lines(log_lines, line_start_req, line_end_req)
             upload_lines, err_list = self.__preprocess_logs(log_lines, line_start_req, line_end_req)
-            log_upload_request = self.__prepare_request(upload_lines, err_list, run_id, device_id)
 
-            if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
-                fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
+            if not self.should_split_by_replica:
+                log_upload_request = self.__prepare_request(upload_lines, err_list, run_id, device_id)
+                if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
+                    fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
+                else:
+                    upload_successful = self.__upload(log_upload_request)
+                    if not upload_successful:
+                        return
             else:
-                upload_successful = self.__upload(log_upload_request)
-                if not upload_successful:
-                    return
+                # Report log data of each replica separately
+                replica_id_to_lines = self.__split_diff_replica_lines(upload_lines)
+                err_replica_id_to_lines = self.__split_diff_replica_lines(err_list)
+
+                for replica_id, lines in replica_id_to_lines.items():
+                    err_list = []
+                    if replica_id in err_replica_id_to_lines:
+                        err_list = err_replica_id_to_lines[replica_id]
+                    log_upload_request = self.__prepare_request(lines, err_list, run_id, device_id, replica_id)
+                    if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
+                        fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
+                    else:
+                        upload_successful = self.__upload(log_upload_request)
+                        if not upload_successful:
+                            return
 
             num_lines_uploaded = line_end_req - line_start_req
             uploaded_file_index += num_lines_uploaded
@@ -148,7 +170,30 @@ class MLOpsRuntimeLogProcessor:
                     err_lines.append(err_line_dict)
         return upload_lines, err_lines
 
-    def __prepare_request(self, upload_lines, err_list, run_id, device_id) -> dict:
+    @staticmethod
+    def __split_diff_replica_lines(upload_lines):
+        # Return replica_id_to_lines = {replica_id: split_lines}
+        # Add replica_id to log_upload_request (i.e. upload log data of each replica separately)
+        # Parse the first square brackets. e.g. [FedML-Client(0) @device-id-0 @replica-rank-0]
+        replica_rank = 0
+        replica_id_to_lines = dict()
+        for line in upload_lines:
+            # Try to find replica-rank in the line, default is 0
+            if line.find("[") != -1 and line.find("]") != -1:
+                content_inside_brackets = line[line.find("[") + 1:line.find("]")]
+                if content_inside_brackets.find("replica-rank") != -1:
+                    replica_rank = int(content_inside_brackets.split("-")[-1])
+
+            # id starts from 1
+            replica_id = replica_rank + 1
+
+            # Split to different keys
+            if replica_id not in replica_id_to_lines:
+                replica_id_to_lines[replica_id] = []
+            replica_id_to_lines[replica_id].append(line)
+        return replica_id_to_lines
+
+    def __prepare_request(self, upload_lines, err_list, run_id, device_id, replica_id=None) -> dict:
         log_upload_request = {
             "run_id": run_id,
             "edge_id": device_id,
@@ -164,6 +209,10 @@ class MLOpsRuntimeLogProcessor:
 
         if self.log_source is not None and self.log_source != "":
             log_upload_request["source"] = self.log_source
+
+        if replica_id is not None:
+            log_upload_request["replica_id"] = f"{device_id}_{replica_id}"
+
         return log_upload_request
 
     def __upload(self, log_upload_request) -> bool:
@@ -223,6 +272,7 @@ class MLOpsRuntimeLogProcessor:
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
+
                 self.log_upload(self.run_id, self.device_id)
 
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
