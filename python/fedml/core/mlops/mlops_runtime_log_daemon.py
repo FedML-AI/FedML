@@ -69,7 +69,7 @@ class MLOpsRuntimeLogProcessor:
         if source is not None:
             self.log_source = str(self.log_source).replace(' ', '')
 
-    def log_upload(self, run_id, device_id, enable_split_by_replica=False):
+    def log_upload(self, run_id, device_id):
         # Fetch Log Lines
         file_index, log_lines = self.fetch_logs()
         uploaded_file_index = file_index
@@ -89,7 +89,7 @@ class MLOpsRuntimeLogProcessor:
             self.__format_log_lines(log_lines, line_start_req, line_end_req)
             upload_lines, err_list = self.__preprocess_logs(log_lines, line_start_req, line_end_req)
 
-            if not enable_split_by_replica:
+            if not self.should_split_by_replica:
                 log_upload_request = self.__prepare_request(upload_lines, err_list, run_id, device_id)
                 if MLOpsRuntimeLogProcessor.ENABLE_UPLOAD_LOG_USING_MQTT:
                     fedml.core.mlops.log_run_logs(log_upload_request, run_id=run_id)
@@ -273,11 +273,7 @@ class MLOpsRuntimeLogProcessor:
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
 
-                if hasattr(self, "should_split_by_replica"):
-                    self.log_upload(self.run_id, self.device_id,
-                                    enable_split_by_replica=self.should_split_by_replica)
-                else:
-                    self.log_upload(self.run_id, self.device_id)
+                self.log_upload(self.run_id, self.device_id)
 
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:
