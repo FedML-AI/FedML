@@ -1010,11 +1010,14 @@ class FedMLServerRunner:
             self.running_request_json[run_id_str]["replica_version_diff"] = next_chunk_dict
 
             # Avoid using the old request_json
-            self.delete_device_replica_info_on_master(
-                self.running_request_json[run_id_str]["end_point_id"],
-                self.running_request_json[run_id_str]["end_point_name"],
-                self.running_request_json[run_id_str]["model_config"]["model_name"],
-                next_chunk_dict)
+            try:
+                self.delete_device_replica_info_on_master(
+                    self.running_request_json[run_id_str]["end_point_id"],
+                    self.running_request_json[run_id_str]["end_point_name"],
+                    self.running_request_json[run_id_str]["model_config"]["model_name"],
+                    next_chunk_dict)
+            except Exception as e:
+                logging.info(f"Exceptipn at delete_device_replica_info_on_master {traceback.format_exc()}")
 
             # Send the deployment msg to the devices, (we reuse the start_deployment msg)
             for edge_id in next_chunk_dict.keys():
