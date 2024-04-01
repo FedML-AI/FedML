@@ -66,7 +66,7 @@ class MLOpsRuntimeLogProcessor:
 
     def log_upload(self, run_id, device_id):
         # Fetch Log Lines
-        _, file_index, log_lines = self.fetch_logs()
+        file_index, log_lines = self.fetch_logs()
         uploaded_file_index = file_index
         if log_lines is None or len(log_lines) <= 0:
             return
@@ -253,7 +253,7 @@ class MLOpsRuntimeLogProcessor:
 
     def fetch_file_path_and_index(self) -> (str, int):
         try:
-            file_path, upload_file_index = None, None
+            upload_file_index = None
             MLOpsLoggingUtils.acquire_lock()
             config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
                                                             log_config_file=self.log_config_file)
@@ -264,7 +264,7 @@ class MLOpsRuntimeLogProcessor:
                 if upload_file_config is not None:
                     file_path, uploaded_file_index = upload_file_config.file_path, upload_file_config.uploaded_file_index
                     shutil.copyfile(file_path, self.log_file_path)
-                    if MLOpsRuntimeLogProcessor.is_file_rotated(file_path, uploaded_file_index, config_len,
+                    if MLOpsRuntimeLogProcessor.is_file_rotated(self.log_file_path, uploaded_file_index, config_len,
                                                                 self.file_rotate_count):
                         MLOpsLoggingUtils.acquire_lock()
                         config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
@@ -276,9 +276,9 @@ class MLOpsRuntimeLogProcessor:
                         self.file_rotate_count += 1
                         # Re-fetch file path and index if file is rotated
                         return self.fetch_file_path_and_index()
-                    return file_path, uploaded_file_index
+                    return uploaded_file_index
 
-            return file_path, upload_file_index
+            return upload_file_index
         except Exception as e:
             raise ValueError(f"Failed to open log file. Exception: {e}")
         finally:
@@ -298,12 +298,12 @@ class MLOpsRuntimeLogProcessor:
 
     def fetch_logs(self) -> (str, int, list):
         log_lines = []
-        file_path, file_index = self.fetch_file_path_and_index()
-        if file_path and file_index is not None:
-            with open(file_path, "r") as f:
+        file_index = self.fetch_file_path_and_index()
+        if file_index is not None:
+            with open(self.log_file_path, "r") as f:
                 lines = f.readlines()
                 log_lines.extend(lines[file_index:])
-        return file_path, file_index, log_lines
+        return file_index, log_lines
 
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):
@@ -390,6 +390,7 @@ class MLOpsRuntimeLogDaemon:
         log_child_process = multiprocessing.Process(target=log_processor.log_process,
                                                     args=(self.log_process_event_map[event_map_id],))
         # process = threading.Thread(target=log_processor.log_process)
+        # process.start()
         if log_child_process is not None:
             log_child_process.start()
             try:
@@ -451,6 +452,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     setattr(args, "using_mlops", True)
     setattr(args, "config_version", "local")
+    setattr(args, "log_file_dir", "/Volumes/Projects/FedML/python/fedml/core/mlops/test/logs")
+    setattr(args, "run_id", "10")
+    setattr(args, "edge_id", "11")
+    setattr(args, "role", "client")
+    setattr(args, "config_version", "local")
+    setattr(args, "using_mlops", True)
+    setattr(args, "log_server_url", "http://localhost:8080")
+
 
     run_id = 9998
     device_id = 1
