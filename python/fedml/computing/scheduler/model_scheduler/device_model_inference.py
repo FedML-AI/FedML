@@ -276,14 +276,14 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
     try:
-        response_ok = await FedMLHttpInference.is_inference_ready(inference_url)
+        response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
         if response_ok:
             response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
                 inference_url, input_list, output_list, inference_type=inference_type)
             logging.info(f"Use http inference. return {response_ok}")
             return inference_response
 
-        response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url)
+        response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url, timeout=10)
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
                 endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
