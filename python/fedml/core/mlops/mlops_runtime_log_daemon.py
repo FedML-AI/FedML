@@ -59,6 +59,11 @@ class MLOpsRuntimeLogProcessor:
         self.log_source = None
         self.log_process_event = None
 
+        self.should_split_by_replica = False
+
+        if log_file_prefix is not None and log_file_prefix == "endpoint":
+            self.should_split_by_replica = True
+
     def set_log_source(self, source):
         self.log_source = source
         if source is not None:
@@ -267,7 +272,12 @@ class MLOpsRuntimeLogProcessor:
         while not self.should_stop():
             try:
                 time.sleep(MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY)
-                self.log_upload(self.run_id, self.device_id)
+
+                if hasattr(self, "should_split_by_replica"):
+                    self.log_upload(self.run_id, self.device_id,
+                                    enable_split_by_replica=self.should_split_by_replica)
+                else:
+                    self.log_upload(self.run_id, self.device_id)
 
                 log_artifact_time_counter += MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_FREQUENCY
                 if log_artifact_time_counter >= MLOpsRuntimeLogProcessor.FED_LOG_UPLOAD_S3_FREQUENCY:

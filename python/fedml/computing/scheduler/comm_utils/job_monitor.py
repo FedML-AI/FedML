@@ -819,9 +819,17 @@ class JobMonitor(Singleton):
 
                 if is_job_container_running and not MLOpsRuntimeLogDaemon.get_instance(fedml_args). \
                         is_log_processor_running(job.job_id, int(job.edge_id)):
-                    # Init log processor if not running
                     setattr(fedml_args, "log_file_dir", os.path.dirname(log_file_path))
+                    setattr(fedml_args, "log_file_path", log_file_path)
+                    setattr(fedml_args, "run_id", job.job_id)
+                    setattr(fedml_args, "edge_id", int(job.edge_id))
+
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).log_file_dir = os.path.dirname(log_file_path)
+
+                    # Init (Write to) the config file
+                    MLOpsRuntimeLog(fedml_args).init_logs()
+
+                    # Init log processor if not running
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).start_log_processor(
                         job.job_id, int(job.edge_id),
                         log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT,

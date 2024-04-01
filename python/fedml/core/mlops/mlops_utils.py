@@ -105,11 +105,15 @@ class MLOpsLoggingUtils:
 
         if not os.path.exists(args.log_file_dir):
             os.makedirs(args.log_file_dir, exist_ok=True)
-        log_file_path = os.path.join(args.log_file_dir, "fedml-run-"
-                                     + str(args.run_id)
-                                     + "-edge-"
-                                     + str(edge_id)
-                                     + ".log")
+
+        if hasattr(args, "log_file_path") and args.log_file_path is not None and len(args.log_file_path) > 0:
+            log_file_path = args.log_file_path
+        else:
+            log_file_path = os.path.join(args.log_file_dir, "fedml-run-"
+                                         + str(args.run_id)
+                                         + "-edge-"
+                                         + str(edge_id)
+                                         + ".log")
 
         return log_file_path, program_prefix
 
