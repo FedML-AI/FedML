@@ -67,9 +67,31 @@ class JobMonitor(Singleton):
             """
             self.replica_log_channels = dict()
 
+        if not hasattr(self, "endpoints_autoscale_predict_future"):
+            self.endpoints_autoscale_predict_future = dict()
+
     @staticmethod
     def get_instance():
         return JobMonitor()
+
+    def autoscaler_react_after_interval(self):
+        """
+        For each endpoint,
+           if a prediction is pending, or during reconciling (scale out or in) -> wait for next round
+           else:
+            -> send the scale op (if not None) to MLOps platform
+            -> query autoscaler module
+        """
+        job_list = client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+        for job in job_list.job_list:   # For each endpoint
+            job_type = JobRunnerUtils.parse_job_type(job.running_json)
+            if job_type is not None and job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY:
+                # TODO(Raphael): Check the future list, if there is one that is done,
+                #   send msg to asce, set the curr state to reconciling
+                #   If there is a endpoint that is not in reconciling and there is no task pending, then send
+                #   a async to Dimitris's func
+                continue
+        return
 
     def monitor_slave_run_process_status(self):
         try:
