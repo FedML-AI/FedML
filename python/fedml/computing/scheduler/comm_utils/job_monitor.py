@@ -85,8 +85,10 @@ class JobMonitor(Singleton):
         """
 
         # Set the redis params
-        FedMLModelCache.get_instance().set_redis_params()
-        redis_addr, redis_port, redis_password = FedMLModelCache.get_instance().get_redis_params()
+        fedml_model_cache = FedMLModelCache.get_instance()
+        fedml_model_cache.set_redis_params()
+        redis_addr, redis_port, redis_password = \
+            fedml_model_cache.get_redis_params()
 
         # Get all endpoints info
         endpoint_list = FedMLModelCache.get_instance().get_all_endpoints_user_setting()
