@@ -122,6 +122,8 @@ class FedMLServerRunner:
         self.replica_controller = None
         self.deployed_replica_payload = None
 
+        self.autoscaler_launcher = None
+
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
@@ -667,6 +669,11 @@ class FedMLServerRunner:
                 payload_json_saved["model_slave_url"] = model_slave_url
                 FedMLServerDataInterface.get_instance().save_job_result(end_point_id, self.edge_id,
                                                                         json.dumps(payload_json_saved))
+
+                # For auto-scaling
+                # TODO(Raphael): Check if other place should also update state
+                FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                    update_user_setting_replica_num(end_point_id=end_point_id, state="DEPLOYED")
             else:
                 # Arrive here because only contains remove ops, so we do not need to update the model metadata
                 pass
@@ -809,9 +816,24 @@ class FedMLServerRunner:
         scale_min = model_config.get("instance_scale_min", 0)
         scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
+        enable_auto_scaling = request_json.get("enable_auto_scaling", False)
+        desired_replica_num = request_json.get("desired_replica_num", 1)
+
+        # TODO :remove this debug info
+        enable_auto_scaling = True if enable_auto_scaling == 1 else False
+        logging.info(f"Debug enable_auto_scaling {enable_auto_scaling}")
+
         inference_end_point_id = run_id
 
         logging.info("[Master] received start deployment request for end point {}.".format(run_id))
+
+        # Set redis config
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+
+        # Save the user setting (about replica number) of this run to Redis, if existed, update it
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(
+            end_point_id=run_id, replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
+            scale_min=scale_min, scale_max=scale_max, state="DEPLOYING")
 
         # Start log processor for current run
         self.args.run_id = run_id
@@ -821,6 +843,7 @@ class FedMLServerRunner:
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
+        # # Deprecated
         # self.ota_upgrade(payload, request_json)
 
         # Add additional parameters to the request_json
@@ -833,8 +856,7 @@ class FedMLServerRunner:
         self.running_request_json[run_id_str] = request_json
         self.request_json["master_node_ip"] = self.get_ip_address(self.request_json)
 
-        # Target status of the devices
-        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+        # Set the target status of the devices to redis
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
 

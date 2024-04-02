@@ -244,6 +244,8 @@ class Autoscaler(metaclass=Singleton):
         max_replicas = 10
         current_replicas = 3
 
+        endpoint_list = self.fedml_model_cache.get_all_endpoints_user_setting()
+
         # Fetch all the previous timeseries values.
         endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
             endpoint_id=endpoint_id)

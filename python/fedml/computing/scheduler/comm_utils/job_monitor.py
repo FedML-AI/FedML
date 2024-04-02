@@ -24,6 +24,7 @@ from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
+from ..model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from ..slave import client_constants
@@ -67,9 +68,55 @@ class JobMonitor(Singleton):
             """
             self.replica_log_channels = dict()
 
+        if not hasattr(self, "endpoints_autoscale_predict_future"):
+            self.endpoints_autoscale_predict_future = dict()
+
     @staticmethod
     def get_instance():
         return JobMonitor()
+
+    def autoscaler_reconcile_after_interval(self):
+        """
+        For each endpoint,
+           if a prediction is pending, or during reconciling (scale out or in) -> wait for next round
+           else:
+            -> send the scale op (if not None) to MLOps platform
+            -> query autoscaler module
+        """
+
+        # Set the redis params
+        FedMLModelCache.get_instance().set_redis_params()
+        redis_addr, redis_port, redis_password = FedMLModelCache.get_instance().get_redis_params()
+
+        # Get all endpoints info
+        endpoint_list = FedMLModelCache.get_instance().get_all_endpoints_user_setting()
+
+        # Init the autoscaler
+        autoscaler = Autoscaler(redis_addr, redis_port, redis_password)
+
+        # Set the policy
+        latency_policy_config = \
+            {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        autoscaling_policy = ReactivePolicy(**latency_policy_config)
+
+        for endpoint in endpoint_list:
+            endpoint_state = endpoint["state"]
+            if endpoint_state == "DEPLOYED":
+                # TODO(Raphael): Check the future list, if there is one that is done,
+                #   send msg to asce, set the curr state to reconciling
+                #   If there is a endpoint that is not in reconciling and there is no task pending, then send
+                #   a async to Dimitris's func
+                logging.info(f"After interval, check the autoscaler for async future list."
+                             f"{self.endpoints_autoscale_predict_future}")
+
+                e_id = endpoint["end_point_id"]
+                logging.info(f"Start pondering the autoscaler for endpoint {e_id} with dict {endpoint}.")
+                scale_op = autoscaler.scale_operation_endpoint(
+                    autoscaling_policy,
+                    str(e_id))
+
+                logging.info(f"Scale operation for endpoint {e_id} is {scale_op}.")
+        return
 
     def monitor_slave_run_process_status(self):
         try:
