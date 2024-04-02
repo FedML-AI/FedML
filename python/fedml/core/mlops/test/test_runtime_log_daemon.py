@@ -9,6 +9,7 @@ import pytest
 LOGS_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 from fedml.core.mlops import MLOpsRuntimeLogDaemon
 
+
 @pytest.fixture
 def mock_requests_post(mocker):
     mock_response = mocker.Mock()
@@ -16,6 +17,7 @@ def mock_requests_post(mocker):
 
     # Mock requests.post() method
     mocker.patch('requests.post', return_value=mock_response)
+
 
 @pytest.fixture
 def args():

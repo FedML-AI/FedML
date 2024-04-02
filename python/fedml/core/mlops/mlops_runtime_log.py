@@ -69,7 +69,7 @@ class MLOpsFormatter(logging.Formatter):
     converter = datetime.datetime.utcfromtimestamp
 
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
-        super().__init__(fmt, datefmt, style, validate)
+        super().__init__(fmt=fmt, datefmt=datefmt, style=style, validate=validate)
         self.ntp_offset = 0.0
 
     # Here the `record` is a LogRecord object
@@ -191,7 +191,7 @@ class MLOpsRuntimeLog:
 
     def generate_format_str(self):
         log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
-        self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+        self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s.%(msecs)03d] [%(levelname)s] "
                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
                                                                     "message)s",
                                          datefmt="%a, %d %b %Y %H:%M:%S")
