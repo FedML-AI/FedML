@@ -805,7 +805,7 @@ class JobMonitor(Singleton):
                             cleaned_time = JobMonitor.clean_str(container_time)
                             t = datetime.fromisoformat(cleaned_time)
 
-                            time_prefix = f"[{t.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]"
+                            time_prefix = f"[{t.strftime('%a, %d %b %Y %H:%M:%S.%f')[:-3]}]"
                             device_replica_prefix = f"[FedML-Replica @device-id-{job.edge_id} @replica-rank-{i}]"
                             log_level_prefix = "[INFO]"    # Use default level to represent the docker log level
                             program_location_prefix = "[Container Logs]"  # Use default location
