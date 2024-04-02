@@ -547,6 +547,32 @@ class FedMLServerRunner:
         replica_no = payload_json.get("replica_no", None)  # "no" Idx start from 1
         run_id_str = str(end_point_id)
 
+        # HotFix(Raphael): logging service cross talk
+        # Change the handler since each handler need to write to different log files
+        try:
+            # Remove the existing file handler
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                if isinstance(handler, logging.FileHandler):
+                    root_logger.removeHandler(handler)
+
+            # Correct log path: ~/.fedml/fedml-model-server/fedml/logs/fedml-run-$rid-edge-$eid.log
+            log_file = os.path.join(ServerConstants.get_log_file_dir(),
+                                    f"fedml-run-{run_id_str}-edge-{self.edge_id}.log")
+
+            filehandler = logging.FileHandler(log_file, "a")
+
+            program_prefix = "FedML-Server @device-id-{}".format(self.edge_id)
+            formatter = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                     "message)s",
+                                          datefmt="%a, %d %b %Y %H:%M:%S")
+
+            filehandler.setFormatter(formatter)
+            root_logger.addHandler(filehandler)
+        except Exception as e:
+            logging.warning(f"Failed to change the logging handler due to {e}.")
+
         logging.info("========== callback_deployment_result_message ==========\n")
 
         logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
