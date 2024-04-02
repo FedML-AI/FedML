@@ -21,6 +21,9 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
 
+    # For scale-out & scale-in
+    FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
+
     # On the worker
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
 
@@ -34,6 +37,7 @@ class FedMLModelCache(Singleton):
         if not hasattr(self, "model_deployment_db"):
             self.model_deployment_db = FedMLModelDatabase().get_instance()
             self.model_deployment_db.create_table()
+        self.redis_addr, self.redis_port, self.redis_password = None, None, None
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
         _, env_redis_addr, env_redis_port, env_redis_pwd, disable_redis = \
@@ -80,15 +84,89 @@ class FedMLModelCache(Singleton):
         return is_connected
 
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
+        self.redis_addr, self.redis_port, self.redis_password = redis_addr, redis_port, redis_password
         if self.redis_pool is None:
             if redis_addr is None or redis_addr == "local":
                 self.setup_redis_connection("localhost", redis_port, redis_password)
             else:
                 self.setup_redis_connection(redis_addr, redis_port, redis_password)
 
+    def get_redis_params(self):
+        if any([self.redis_addr is None, self.redis_port is None, self.redis_password is None]):
+            raise RuntimeError("Redis parameters are not set.")
+        else:
+            return self.redis_addr, self.redis_port, self.redis_password
+
     @staticmethod
     def get_instance(redis_addr="local", redis_port=6379):
         return FedMLModelCache()
+
+    def set_user_setting_replica_num(self, end_point_id, replica_num: int, enable_auto_scaling: bool = False,
+                                     scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN") -> bool:
+        """
+        Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
+        Value: {
+            "replica_num": replica_num,
+            "enable_auto_scaling": enable_auto_scaling,
+            "scale_min": scale_min,
+            "scale_max": scale_max,
+            "state": state
+        }
+        replica_num is used for manual scale.
+        scale_min and scale_max are used for auto-scaling.
+
+        state should in "UNKNOWN", "DEPLOYED", "DEPLOYING".
+        """
+        assert state in ["UNKNOWN", "DEPLOYED", "DEPLOYING"]
+        replica_num_dict = {
+            "end_point_id": end_point_id, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
+            "scale_min": scale_min, "scale_max": scale_max, "state": state}
+        try:
+            self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
+        except Exception as e:
+            logging.error(e)
+            return False
+        return True
+
+    def update_user_setting_replica_num(self, end_point_id: str, state: str = "UNKNOWN") -> bool:
+        assert state in ["UNKNOWN", "DEPLOYED", "DEPLOYING"]
+        # Get existed value
+        try:
+            replica_num_dict = self.redis_connection.get(self.get_user_setting_replica_num_key(end_point_id))
+            replica_num_dict = json.loads(replica_num_dict)
+        except Exception as e:
+            logging.error(e)
+            return False
+
+        # Update the state
+        replica_num_dict["state"] = state
+
+        # Set the new value
+        try:
+            self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
+        except Exception as e:
+            logging.error(e)
+            return False
+        return True
+
+    def get_all_endpoints_user_setting(self) -> List[dict]:
+        """
+        Return a list of dict, each dict is the user setting of an endpoint.
+        """
+        user_setting_list = list()
+        try:
+            key_pattern = "{}*".format(self.get_user_setting_replica_num_key(""))
+            user_setting_keys = self.redis_connection.keys(pattern=key_pattern)
+            for key in user_setting_keys:
+                user_setting = self.redis_connection.get(key)
+                user_setting_list.append(json.loads(user_setting))
+        except Exception as e:
+            logging.error(e)
+        return user_setting_list
+
+    @staticmethod
+    def get_user_setting_replica_num_key(end_point_id):
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG, end_point_id)
 
     def set_deployment_result(self, end_point_id, end_point_name,
                               model_name, model_version, device_id, deployment_result, replica_no):
@@ -420,6 +498,7 @@ class FedMLModelCache(Singleton):
             self.redis_connection.expire(self.get_deployment_device_info_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_activation_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_status_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_user_setting_replica_num_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
         except Exception as e:
             logging.error(f"error when deleting the redis keys: {e}")
             pass
