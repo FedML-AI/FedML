@@ -1,10 +1,11 @@
-import threading
 
+import threading
 import redis
 from .compute_gpu_cache import ComputeGpuCache
 from .compute_logs_cache import ComputeLogsCache
 from .business_models import LogsUploadModel, MetricsModel
 from ..comm_utils.constants import SchedulerConstants
+from .compute_status_cache import ComputeStatusCache
 
 
 class ComputeCacheManager(object):
@@ -23,6 +24,7 @@ class ComputeCacheManager(object):
         self.redis_connection = None
         self.gpu_cache = ComputeGpuCache(self.redis_connection)
         self.logs_cache = ComputeLogsCache(self.redis_connection)
+        self.status_cache = ComputeStatusCache(self.redis_connection)
         self.local_lock = threading.Lock()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
@@ -48,6 +50,7 @@ class ComputeCacheManager(object):
             self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
+            self.status_cache.redis_connection = self.redis_connection
             is_connected = True
         except Exception as e:
             is_connected = False
@@ -69,6 +72,7 @@ class ComputeCacheManager(object):
             self.redis_connection.set("FEDML_TEST_KEYS", "TEST")
             self.gpu_cache.redis_connection = self.redis_connection
             self.logs_cache.redis_connection = self.redis_connection
+            self.status_cache.redis_connection = self.redis_connection
             is_connected = True
         except Exception as e:
             pass
@@ -133,6 +137,9 @@ class ComputeCacheManager(object):
 
     def get_artifacts(self):
         pass
+
+    def get_status_cache(self):
+        return self.status_cache
 
 
 
