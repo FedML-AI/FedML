@@ -196,6 +196,12 @@ class JobRunnerUtils(Singleton):
         ):
             run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
                                                                                                     run_id)
+
+            if not run_gpu_ids:
+                # Arrive here means this run is a rollback run
+                logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
+                return
+
             remain_gpu_ids = [gpu_id for gpu_id in run_gpu_ids if gpu_id not in release_gpu_ids]
 
             # update the available gpu ids
