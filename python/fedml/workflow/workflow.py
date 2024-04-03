@@ -1,16 +1,41 @@
 import os
-from collections import defaultdict, namedtuple, deque
+from collections import namedtuple
+from dataclasses import dataclass
 from datetime import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set
 from types import MappingProxyType
 from toposort import toposort
 
-from fedml.workflow.jobs import Job, JobStatus, NullJob
+from fedml.workflow.jobs import Job, JobStatus
 import time
 
 
-Metadata = namedtuple('Metadata', ['nodes', 'topological_order', 'graph'])
-Node = namedtuple('Node', ['name', 'job'])
+@dataclass(frozen=True, eq=True, order=True)
+class Node:
+    name: str
+    job: Job
+
+    def __repr__(self):
+        return f"Node(name={self.name}, job={self.job})"
+
+
+@dataclass(frozen=True, eq=True, order=True)
+class Metadata:
+    nodes: Set[Node]
+    topological_order: Any
+    graph: Any
+
+    def __repr__(self):
+        return f"Metadata(nodes={self.nodes}, topological_order={self.topological_order}, graph={self.graph})"
+
+
+@dataclass(frozen=True, eq=True, order=True)
+class AdjacencyList:
+    job: Job
+    dependencies: List[Job]
+
+    def __repr__(self):
+        return f"AdjacencyList(job={self.job}, dependencies={self.dependencies})"
 
 
 class Workflow:
@@ -25,7 +50,7 @@ class Workflow:
         self.name: str = name
         self._metadata: Metadata | None = None
         self._loop: bool = loop
-        self.jobs: Dict[str, Dict[str, Any]] = dict()
+        self.jobs: Dict[str, AdjacencyList] = dict()
         self.input: Dict[Any, Any] = dict()
 
     @property
@@ -73,7 +98,7 @@ class Workflow:
         if job.name in self.jobs:
             raise ValueError(f"Job {job.name} already exists in workflow.")
 
-        self.jobs[job.name] = {'job': job, 'dependencies': dependencies}
+        self.jobs[job.name] = AdjacencyList(job=job, dependencies=dependencies)
 
     def run(self):
         """
@@ -101,7 +126,7 @@ class Workflow:
         """
 
         for job in jobs:
-            dependencies = self.get_job_dependencies(job.name)
+            dependencies = self.jobs.get(job.name).dependencies
             for dep in dependencies:
                 job.append_input(dep.name, dep.get_outputs())
 
@@ -148,11 +173,11 @@ class Workflow:
         node_dict = dict()
         graph = dict()
 
-        for job_name, job_instance in self.jobs.items():
-            node = node_dict.setdefault(job_name, Node(name=job_name, job=job_instance['job']))
+        for job_name, adjacency_list in self.jobs.items():
+            node = node_dict.setdefault(job_name, Node(name=job_name, job=adjacency_list.job))
             graph.setdefault(node, set())
 
-            for dependency in job_instance['dependencies']:
+            for dependency in adjacency_list.dependencies:
                 dependency_node = node_dict.setdefault(dependency.name, Node(name=dependency.name, job=dependency))
                 graph[node].add(dependency_node)
 
@@ -161,9 +186,6 @@ class Workflow:
                                  topological_order=tuple(toposort(graph)))
 
         return self.metadata
-
-    def get_job_dependencies(self, job_name):
-        return self.jobs.get(job_name).get('dependencies')
 
     def get_job_status(self, job_name):
         for nodes in self.metadata.topological_order:
@@ -199,7 +221,7 @@ class Workflow:
 
         return JobStatus.RUNNING
 
-    def set_workflow_input(self, input):
+    def set_workflow_input(self, input: Dict[Any, Any]):
         self.input = input
 
     def get_workflow_output(self):

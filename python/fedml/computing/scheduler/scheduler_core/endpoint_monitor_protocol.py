@@ -69,6 +69,7 @@ class EndpointDeviceDeploymentInfoModel:
         self.inference_port = payload_json.get("inference_port", None)
         self.device_id = payload_json.get("device_id", None)
         self.disable = payload_json.get("disable", None)
+        self.replica_no = payload_json.get("replica_no", None)
 
 
 class FedMLEndpointMonitorProtocol(FedMLBaseProtocol):

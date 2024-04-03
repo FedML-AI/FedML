@@ -16,6 +16,14 @@ MODEL_NAMES = [
     "EleutherAI/pythia-2.8b",
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
+    "EleutherAI/pythia-70m-deduped",
+    "EleutherAI/pythia-160m-deduped",
+    "EleutherAI/pythia-410m-deduped",
+    "EleutherAI/pythia-1b-deduped",
+    "EleutherAI/pythia-1.4b-deduped",
+    "EleutherAI/pythia-2.8b-deduped",
+    "EleutherAI/pythia-6.9b-deduped",
+    "EleutherAI/pythia-12b-deduped",
     "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
     "databricks/dolly-v2-12b",
@@ -28,8 +36,8 @@ MODEL_NAMES = [
 ]
 
 DATASET_NAMES = [
-    "FedML/PubMedQA_instruction",
-    "FedML/databricks-dolly-15k-niid",
+    "fedml/PubMedQA_instruction",
+    "fedml/databricks-dolly-15k-niid",
     "databricks/databricks-dolly-15k",
     "medalpaca/medical_meadow_mediqa",
     "bitext/Bitext-customer-support-llm-chatbot-training-dataset",

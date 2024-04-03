@@ -8,11 +8,11 @@ import requests
 
 import fedml
 from . import MLOpsConfigs
-from ...computing.scheduler.slave.client_constants import ClientConstants
-from ...computing.scheduler.master.server_constants import ServerConstants
-from ...core.mlops.mlops_status import MLOpsStatus
-from .mlops_job_perfs import MLOpsJobPerfStats
 from .mlops_device_perfs import MLOpsDevicePerfStats
+from .mlops_job_perfs import MLOpsJobPerfStats
+from ...computing.scheduler.master.server_constants import ServerConstants
+from ...computing.scheduler.slave.client_constants import ClientConstants
+from ...core.mlops.mlops_status import MLOpsStatus
 
 
 class MLOpsMetrics(object):

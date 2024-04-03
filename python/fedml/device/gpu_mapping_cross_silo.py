@@ -3,7 +3,7 @@ import socket
 
 import yaml
 
-from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+from fedml.constants import FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL, FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from ..ml.engine import ml_engine_adapter
 
 
@@ -23,7 +23,7 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
             args.using_gpu = True
             device = ml_engine_adapter.get_device(args, device_id=gpu_id, device_type=device_type)
         else:
-            unique_gpu = True if scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL else False
+            unique_gpu = scenario in (FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL, FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL)
 
             with open(gpu_util_file, "r") as f:
                 gpu_util_yaml = yaml.load(f, Loader=yaml.FullLoader)

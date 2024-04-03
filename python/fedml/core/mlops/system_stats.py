@@ -1,6 +1,7 @@
 import os
 
 from wandb.sdk.internal.settings_static import SettingsStatic
+
 from .stats_impl import WandbSystemStats
 
 

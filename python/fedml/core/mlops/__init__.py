@@ -10,26 +10,28 @@ import uuid
 from multiprocessing import Process
 
 import click
-import fedml
 import requests
+
+import fedml
 from fedml import constants
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from .mlops_constants import MLOpsConstants
 
-from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
-from ...computing.scheduler.master.server_constants import ServerConstants
-
-from ..distributed.communication.mqtt.mqtt_manager import MqttManager
-from ..distributed.communication.s3.remote_storage import S3Storage
 
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
-from .system_stats import SysStats
-from .mlops_status import MLOpsStatus
 from .mlops_runtime_log import MLOpsRuntimeLog
-from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
+from .mlops_status import MLOpsStatus
+from .mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
+from .system_stats import SysStats
+from ..distributed.communication.mqtt.mqtt_manager import MqttManager
+from ..distributed.communication.s3.remote_storage import S3Storage
+from ...computing.scheduler.master.server_constants import ServerConstants
+from ...computing.scheduler.slave.client_constants import ClientConstants
 from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from .mlops_utils import MLOpsUtils
 from .mlops_constants import MLOpsConstants
@@ -901,7 +903,8 @@ def log_run_logs(logs_json: dict, run_id=0):
 def log_run_log_lines(run_id, device_id, log_list, log_source=None, use_mqtt=False):
     fedml_args = get_fedml_args()
 
-    setup_log_mqtt_mgr()
+    if use_mqtt:
+        setup_log_mqtt_mgr()
 
     if MLOpsStore.mlops_metrics is not None:
         MLOpsStore.mlops_metrics.report_run_log(

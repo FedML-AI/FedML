@@ -190,25 +190,16 @@ def get_base_model(
         **kwargs: Any
 ) -> ModelType:
     kwargs = model_args.get_model_kwargs(**kwargs)
-    use_transformers_flash_attn = kwargs.get("use_flash_attention_2", False)
+    config: Optional[ModelConfigType] = kwargs.pop("config", None)
 
     if model_args.load_pretrained:
         kwargs.setdefault("low_cpu_mem_usage", not is_deepspeed_zero3_enabled())
 
         model: ModelType = AutoModelForCausalLM.from_pretrained(**kwargs)
     else:
-        config: ModelConfigType = AutoConfig.from_pretrained(**kwargs)
+        if config is None:
+            config: ModelConfigType = AutoConfig.from_pretrained(**kwargs)
         torch_dtype: Optional[torch.dtype] = kwargs.get("torch_dtype", model_args.torch_dtype)
-
-        if use_transformers_flash_attn:
-            # As of transformers v4.34.0, `AutoModel.from_config` does not support `use_flash_attention_2` flag
-            # enable `use_flash_attention_2` manually
-            model_cls = get_model_class_from_config(config, **kwargs)
-            config = model_cls._check_and_enable_flash_attn_2(
-                config,
-                torch_dtype=torch_dtype,
-                device_map=kwargs.get("device_map", None)
-            )
 
         # see https://discuss.huggingface.co/t/how-to-load-model-without-pretrained-weight/34155/3
         model: ModelType = AutoModelForCausalLM.from_config(config, torch_dtype=torch_dtype)
@@ -221,7 +212,7 @@ def get_base_model(
         # model.config should also be updated
         assert model.config.vocab_size == tokenizer_length
 
-    if model_args.use_flash_attention and not use_transformers_flash_attn:
+    if model_args.use_flash_attention and not getattr(model, "_supports_flash_attn_2", False):
         # patch models that do not support `use_flash_attention_2`
         add_flash_attention(model)
 
