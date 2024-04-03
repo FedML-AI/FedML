@@ -573,10 +573,32 @@ class FedMLServerRunner:
         except Exception as e:
             logging.warning(f"Failed to change the logging handler due to {e}.")
 
+        assert run_id_str in self.model_runner_mapping, (f"Run id {run_id_str} is not in the model runner mapping."
+                                                         f"Current mapping {self.model_runner_mapping}.")
+
         logging.info("========== callback_deployment_result_message ==========\n")
+        #  Identify the operation for this run (add, remove, update)
+        if run_id_str not in self.running_request_json:
+            logging.error(f"Run id {run_id_str} is not in the running request json.")
+            return
+
+        # The rolling update and scale out / in operation should not happen at the same time
+        assert not ("replica_num_diff" in self.running_request_json[run_id_str] and
+                    len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0 and
+                    "replica_version_diff" in self.running_request_json[run_id_str])
+
+        if "replica_version_diff" in self.running_request_json[run_id_str]:
+            run_operation = "UPDATE"
+        elif "replica_num_diff" in self.running_request_json[run_id_str] and \
+                len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0:
+            run_operation = "ADD_OR_REMOVE"
+        else:
+            logging.error(f"Unsupported operation for run id {run_id_str}. and request json "
+                          f"{self.running_request_json[run_id_str]}")
+            return
 
         logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
-                     f"model status {model_status}.")
+                     f"run_operation {run_operation} model status {model_status}.")
 
         # OPTIONAL DEBUG PARAMS
         # this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
@@ -586,18 +608,17 @@ class FedMLServerRunner:
         # this_run_request_json = self.running_request_json.get(run_id_str, None)
         # logging.info(f"self.running_request_json now {this_run_request_json}")
 
-        assert run_id_str in self.model_runner_mapping, (f"Run id {run_id_str} is not in the model runner mapping."
-                                                         f"Current mapping {self.model_runner_mapping}.")
-
         # Set redis + sqlite deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
 
+        # Deal with different model status
         if model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED:
+            # remove
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 delete_deployment_result_with_device_id_and_replica_no(
                 end_point_id, end_point_name, model_name, device_id, replica_no)
         elif model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-            # add or update
+            # add or update or update-failed-rollback
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, end_point_name,
                                       model_name, model_version,
@@ -1013,8 +1034,12 @@ class FedMLServerRunner:
         if replica_controller.total_replica_version_diff_num == 0:
             return
 
-        logging.info(f"Debug !! {replica_controller.curr_replica_updating_window} "
-                     f"{replica_controller.total_replica_version_diff_num}")
+        if replica_controller.under_rollback:
+            replica_controller.intermediate_replica_version[device_id][replica_no] = replica_controller.start_version
+            return
+
+        logging.info(f"Curr updating window: {replica_controller.curr_replica_updating_window} "
+                     f"Curr version diff num: {replica_controller.total_replica_version_diff_num}")
 
         replica_controller.callback_update_updating_window(device_id, replica_no)
 

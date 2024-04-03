@@ -24,7 +24,7 @@ class FedMLDeviceReplicaHandler:
         self.gpu_per_replica = self.request_msg_obj.gpu_per_replica
 
         self.replica_num_diff = self.get_diff_replica_num_frm_request_json()
-        self.replica_version_diff = self.get_diff_replica_version_frm_request_json()
+        self.is_rollback, self.replica_version_diff = self.get_diff_replica_version_frm_request_json()
 
         self.end_point_name = self.request_msg_obj.end_point_name
         self.inference_model_name = self.request_msg_obj.model_name
@@ -73,9 +73,14 @@ class FedMLDeviceReplicaHandler:
         """
         if ("replica_version_diff" in self.request_json and
                 str(self.worker_id) in self.request_json["replica_version_diff"]):
-            return self.request_json["replica_version_diff"][str(self.worker_id)]
+            is_rollback = False
+            for replica_no, diff in self.request_json["replica_version_diff"][str(self.worker_id)].items():
+                if diff["op"] == "rollback":
+                    is_rollback = True
+                    break
+            return is_rollback, self.request_json["replica_version_diff"][str(self.worker_id)]
 
-        return None
+        return None, None
 
     def reconcile_num_replica(self):
         """
@@ -123,14 +128,20 @@ class FedMLDeviceReplicaHandler:
                 $replica_no: {"op": "update", "new_version": "v2", "old_version": "v1"},
                 $replica_no: {"op": "update", "new_version": "v2", "old_version": "v1"}
              }
-        for all replicas, update the version. i.e. stop and  remove the container, records in db, then start the new
+        or
+        {
+            $replica_no: {"op": "rollback", "new_version": "v2", "old_version": "v1"},
+            $replica_no: {"op": "rollback", "new_version": "v2", "old_version": "v1"}
+         }
+        for all replicas, update the version. i.e. stop and remove the container, records in db, then start the new
         container, and report when the new container is ready.
         """
-        replica_rank_to_update = []
-        ret_op = "update"
         if not self.replica_version_diff:
             logging.info(f"replica_version_diff is empty, will not reconcile.")
             return None, None
+
+        replica_rank_to_update = []
+        ret_op = "update" if not self.is_rollback else "rollback"
 
         for replica_no, diff in self.replica_version_diff.items():
             replica_rank_to_update.append(int(replica_no)-1)
