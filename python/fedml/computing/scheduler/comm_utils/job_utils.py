@@ -51,19 +51,26 @@ class JobRunnerUtils(Singleton):
                        model_master_device_id=None, model_slave_device_id=None):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
+
+            # For the "Switch" feature in deploy
             original_run_id = run_id
             run_id = inner_id if inner_id is not None else run_id
+
+            # switchable_device_id is used to store the worker device id for deploy
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
+
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
                         device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
             ):
+                # For launch job, the device_id plus the run_id should be a unique identifier
                 run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(device_id,
                                                                                                         run_id)
                 if run_gpu_ids:
                     raise Exception(f"GPUs already occupied for run_id: {run_id}, device_id: {device_id}.")
 
+                # For the "Switch" feature in deploy
                 if inner_id is not None and str(original_run_id) != str(inner_id):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
                                                                                                original_run_id)
@@ -83,6 +90,7 @@ class JobRunnerUtils(Singleton):
                     else:
                         available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
 
+                    # Get the matched gpu ids string by the request gpu num
                     cuda_visible_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
                                                                                                available_gpu_ids)
                     if cuda_visible_gpu_ids_str is None:
@@ -175,9 +183,10 @@ class JobRunnerUtils(Singleton):
         trimmed_gpu_ids = list(set(available_gpu_ids) - set(unavailable_gpu_ids))
         return trimmed_gpu_ids.copy()
 
-    def release_partial_job_gpu(self, run_id, device_id, release_gpu_ids):
+    @staticmethod
+    def release_partial_job_gpu(run_id, device_id, release_gpu_ids):
         """
-        In the deployment phase, if scale in, we need to release the gpu ids for the partial job.
+        In the deployment phase, if scale in or update, we need to release the gpu ids for the partial job.
         """
         ComputeCacheManager.get_instance().set_redis_params()
         # Reversely find the master (launch) device id and release the gpu ids
@@ -198,17 +207,18 @@ class JobRunnerUtils(Singleton):
                                                                                                     run_id)
 
             if not run_gpu_ids:
-                # Arrive here means this run is a rollback run
+                # Arrive here means this run is a rollback run, the reason that the run_gpu_ids is None is that
+                # the run_id is the original run_id, not the inner_id.
                 logging.info(f"Run {run_id} is None. Either it is already released or not occupied.")
                 return
 
             remain_gpu_ids = [gpu_id for gpu_id in run_gpu_ids if gpu_id not in release_gpu_ids]
 
-            # update the available gpu ids
+            # Update the available gpu ids
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(edge_device_id)
             ):
-                # set global available gpu ids
+                # Set global available gpu ids
                 available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                     edge_device_id)
                 available_gpu_ids.extend(release_gpu_ids.copy())
@@ -216,13 +226,15 @@ class JobRunnerUtils(Singleton):
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                     edge_device_id, available_gpu_ids)
 
-                # set run gpu ids
+                # Set this run gpu ids
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_gpu_ids(
                     device_id, run_id, remain_gpu_ids)
 
-                # set run gpu num
+                # Set this run gpu num
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(
                     device_id, run_id, len(remain_gpu_ids))
+
+                logging.info(f"Run {run_id} released partial gpu ids: {release_gpu_ids}")
 
     def release_gpu_ids(self, run_id, device_id):
         edge_device_id = None
