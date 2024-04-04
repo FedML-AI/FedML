@@ -14,7 +14,7 @@ class FedMLHttpInference:
     def __init__(self):
         pass
 
-    @staticmethod    
+    @staticmethod
     async def is_inference_ready(inference_url, timeout=None):
         """
         True: inference is ready
@@ -66,7 +66,19 @@ class FedMLHttpInference:
 
         try:
             if model_inference_json.get("stream", False):
+                if not isinstance(model_api_headers, dict):
+                    # 'Headers' object does not support item assignment
+                    # for Headers obj, need the following way to assign new key-value pair
+                    model_api_headers = model_api_headers.mutablecopy()
+                    # Transfer the headers to a dict
+                    model_api_headers = dict(model_api_headers)
+
+                # Overwrite the content-type and Cache-Control, remove content-length
+                model_api_headers.pop("content-type", None)
+                model_api_headers.pop("content-length", None)
+                model_api_headers["Content-Type"] = "text/event-stream"
                 model_api_headers["Cache-Control"] = "no-cache"
+
                 model_inference_result = StreamingResponse(
                     stream_generator(inference_url, input_json=model_inference_json),
                     media_type="text/event-stream",
@@ -78,7 +90,10 @@ class FedMLHttpInference:
                     inference_type, inference_url, model_api_headers, model_inference_json, timeout)
         except Exception as e:
             response_ok = False
-            model_inference_result = {"response": f"{traceback.format_exc()}"}
+            model_inference_result = {
+                "Body of the request": model_inference_json,
+                "Headers of the request": model_api_headers,
+                "response": {e}}
 
         return response_ok, model_inference_result
 
@@ -92,7 +107,8 @@ async def stream_generator(inference_url, input_json):
                 yield f"{chunk}\n"
 
 
-async def redirect_request_to_worker(inference_type, inference_url, model_api_headers, model_inference_json, timeout=None):
+async def redirect_request_to_worker(inference_type, inference_url, model_api_headers, model_inference_json,
+                                     timeout=None):
     response_ok = True
     try:
         async with httpx.AsyncClient() as client:
@@ -103,7 +119,7 @@ async def redirect_request_to_worker(inference_type, inference_url, model_api_he
         response_ok = False
         model_inference_result = {"error": e}
         return response_ok, model_inference_result
-    
+
     if response.status_code == 200:
         if inference_type == "default":
             model_inference_result = response.json()
@@ -116,4 +132,3 @@ async def redirect_request_to_worker(inference_type, inference_url, model_api_he
         model_inference_result = {"response": f"{response.content}"}
 
     return response_ok, model_inference_result
-    
