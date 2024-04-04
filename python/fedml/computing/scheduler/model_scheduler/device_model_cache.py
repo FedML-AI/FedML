@@ -20,7 +20,10 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
 
-    # On the worker
+    # Rate limit
+    FEDML_MODEL_ENDPOINT_RATE_LIMIT_TAG = "FEDML_MODEL_ENDPOINT_RATE_LIMIT_TAG-"
+
+    # On workers
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
 
     FEDML_KEY_COUNT_PER_SCAN = 1000
@@ -641,6 +644,63 @@ class FedMLModelCache(Singleton):
     def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                                       end_point_id, end_point_name, model_name, model_version)
+
+    @staticmethod
+    def get_rate_limit_key(endpoint_id):
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_RATE_LIMIT_TAG, endpoint_id)
+
+    @staticmethod
+    def get_rate_limit(endpoint_id) -> (int, int):
+        """
+        atomic operation to get the rate limit and current request number
+        {
+            current_req_num: 1   # int
+            max_req_limit: 10    # int
+        }
+        return (current_req_num, max_req_limit)
+        if not exist, return (None, None), this will accommodate the case when the rate limit is not set or old version
+        """
+        try:
+            res = FedMLModelCache.get_instance().redis_connection.get(FedMLModelCache.get_rate_limit_key(endpoint_id))
+        except Exception as e:
+            return None, None
+
+        res_json = json.loads(res)
+        current_req_num = int(res_json["current_req_num"])
+        max_req_limit = int(res_json["max_req_limit"])
+        return current_req_num, max_req_limit
+
+    def set_rate_limit(self, endpoint_id, rate_limit: int):
+        """
+        atomic operation to set the rate limit
+        """
+        current_req_num, _ = FedMLModelCache.get_rate_limit(endpoint_id)
+        if current_req_num is None:
+            current_req_num = 0
+        try:
+            self.redis_connection.set(FedMLModelCache.get_rate_limit_key(endpoint_id),
+                                      json.dumps({"current_req_num": current_req_num, "max_req_limit": rate_limit}))
+        except Exception as e:
+            logging.error(e)
+            pass
+
+    def change_ongoing_request_cnt(self, endpoint_id, op: str):
+        """
+        atomic operation to change the request count
+        """
+        current_req_num, max_req_limit = FedMLModelCache.get_rate_limit(endpoint_id)
+        if current_req_num is None:
+            return
+        if op == "add":
+            current_req_num += 1
+        elif op == "sub":
+            current_req_num -= 1
+        try:
+            self.redis_connection.set(FedMLModelCache.get_rate_limit_key(endpoint_id),
+                                      json.dumps({"current_req_num": current_req_num, "max_req_limit": max_req_limit}))
+        except Exception as e:
+            logging.error(e)
+            pass
 
 
 if __name__ == "__main__":
