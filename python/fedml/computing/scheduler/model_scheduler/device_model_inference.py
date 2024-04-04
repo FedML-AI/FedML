@@ -75,11 +75,11 @@ async def predict(request: Request):
     input_json = await request.json()
     end_point_id = input_json.get("end_point_id", None)
 
-    # Get header
-    header = request.headers
+    # Get headers
+    headers = request.headers
 
     try:
-        response = await _predict(end_point_id, input_json, header)
+        response = await _predict(end_point_id, input_json, headers)
     except Exception as e:
         response = {"error": True, "message": f"{traceback.format_exc()}"}
 
@@ -92,8 +92,8 @@ async def predict_openai(end_point_id, request: Request):
     # Get json data
     input_json = await request.json()
 
-    # Get header
-    header = request.headers
+    # Get headers
+    headers = request.headers
 
     # translate request keys
     input_json["end_point_name"] = input_json.get("model", None)
@@ -103,7 +103,7 @@ async def predict_openai(end_point_id, request: Request):
         input_json["token"] = authorization.split("Bearer ")[-1].strip()
 
     try:
-        response = await _predict(end_point_id, input_json, header)
+        response = await _predict(end_point_id, input_json, headers)
     except Exception as e:
         response = {"error": True, "message": f"{traceback.format_exc()}"}
 
@@ -115,11 +115,11 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     # Get json data
     input_json = await request.json()
 
-    # Get header
-    header = request.headers
+    # Get headers
+    headers = request.headers
 
     try:
-        inference_response = await _predict(end_point_id, input_json, header)
+        inference_response = await _predict(end_point_id, input_json, headers)
 
         if isinstance(inference_response, (Response, StreamingResponse)):
             error_code = inference_response.status_code
@@ -139,7 +139,7 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
 async def _predict(
         end_point_id,
         input_json,
-        header=None
+        headers=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
@@ -147,8 +147,8 @@ async def _predict(
     in_model_version = input_json.get("model_version", None)
     in_end_point_token = input_json.get("token", None)
     in_return_type = "default"
-    if header is not None:
-        in_return_type = header.get("Accept", "default")
+    if headers is not None:
+        in_return_type = headers.get("Accept", "default")
 
     if in_model_version is None:
         in_model_version = "*"  # * | latest | specific version
@@ -190,12 +190,19 @@ async def _predict(
         # Send inference request to idle device
         logging.info("inference url {}.".format(inference_output_url))
         if inference_output_url != "":
+            # Put the parameters under the "inputs" key into the input_list, which will be passed to
+            # Workers for inference.
             input_list = input_json.get("inputs", input_json)
+
+            # Check if the input_json has the "stream" key, if exists, set the "stream" key in the input_list.
             stream_flag = input_json.get("stream", False)
             input_list["stream"] = input_list.get("stream", stream_flag)
-            output_list = input_json.get("outputs", [])
+
+            output_list = input_json.get("outputs", [])     # Will deprecated in the future
+
             inference_response = await send_inference_request(
-                idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
+                idle_device, end_point_id, inference_output_url, input_list, output_list,
+                inference_type=in_return_type, headers=headers)
 
         # Calculate model metrics
         try:
@@ -274,17 +281,18 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
-                                 inference_type="default", has_public_ip=True):
+                                 inference_type="default", has_public_ip=True, headers=None):
     try:
         response_ok = await FedMLHttpInference.is_inference_ready(inference_url)
         if response_ok:
             response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                inference_url, input_list, output_list, inference_type=inference_type)
+                inference_url, input_list, output_list, inference_type=inference_type, headers=headers)
             logging.info(f"Use http inference. return {response_ok}")
             return inference_response
 
         response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url)
         if response_ok:
+            # TODO(Raphael): Handle the headers under proxy mode
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
                 endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
             logging.info(f"Use http proxy inference. return {response_ok}")

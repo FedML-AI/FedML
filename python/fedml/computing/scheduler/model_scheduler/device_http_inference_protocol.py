@@ -16,11 +16,11 @@ class FedMLHttpInference:
 
     @staticmethod    
     async def is_inference_ready(inference_url, timeout=None):
-        '''
+        """
         True: inference is ready
         False: cannot be reached, will try other protocols
         None: can be reached, but not ready
-        '''
+        """
         url_parsed = urlparse(inference_url)
         ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
         response_ok = False
@@ -47,33 +47,30 @@ class FedMLHttpInference:
     @staticmethod
     async def run_http_inference_with_curl_request(
             inference_url, inference_input_list, inference_output_list,
-            inference_type="default", engine_type="default", timeout=None
+            inference_type="default", engine_type="default", timeout=None, headers=None
     ):
-        model_inference_result = {}
-        if inference_type == "default":
+        if headers is None:
             model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                                  'Accept': 'application/json'}
         else:
-            model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
-                                 'Accept': inference_type}
+            model_api_headers = headers
+
+        # Body of the request
         if engine_type == "default":
             model_inference_json = inference_input_list
-        else:  # triton
+        else:  # Old triton interface, will be deprecated
             model_inference_json = {
                 "inputs": inference_input_list,
                 "outputs": inference_output_list
             }
 
-        response_ok = False
         try:
             if model_inference_json.get("stream", False):
+                model_api_headers["Cache-Control"] = "no-cache"
                 model_inference_result = StreamingResponse(
                     stream_generator(inference_url, input_json=model_inference_json),
                     media_type="text/event-stream",
-                    headers={
-                        "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
-                        "Cache-Control": "no-cache",
-                    }
+                    headers=model_api_headers
                 )
                 response_ok = True
             else:
@@ -91,7 +88,7 @@ async def stream_generator(inference_url, input_json):
         async with client.stream("POST", inference_url, json=input_json,
                                  timeout=ClientConstants.WORKER_STREAM_API_TIMEOUT) as response:
             async for chunk in response.aiter_lines():
-                # we consumed a newline, need to put it back
+                # Since consumed a newline, need to put it back
                 yield f"{chunk}\n"
 
 
