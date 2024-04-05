@@ -7,6 +7,7 @@ import docker
 import fedml
 from docker import errors, DockerClient
 import stat
+import zipfile
 
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
@@ -709,3 +710,14 @@ class JobRunnerUtils(Singleton):
         except Exception as e:
             logging.debug(f"Failed to get job obj with Exception {e}. Traceback: {traceback.format_exc()}")
         return job_type
+
+    @staticmethod
+    def unzip_file(zip_file, unzip_file_path) -> str:
+        if zipfile.is_zipfile(zip_file):
+            with zipfile.ZipFile(zip_file, "r") as zipf:
+                zipf.extractall(unzip_file_path)
+                unzipped_file_name = zipf.namelist()[0]
+        else:
+            raise Exception("Invalid zip file {}".format(zip_file))
+
+        return unzipped_file_name
