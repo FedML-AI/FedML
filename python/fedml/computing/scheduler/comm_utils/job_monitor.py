@@ -11,6 +11,9 @@ from urllib.parse import urlparse
 
 import asyncio
 
+import fedml
+import requests
+
 from fedml import mlops
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
@@ -19,6 +22,7 @@ from fedml.computing.scheduler.master import server_data_interface
 from fedml.computing.scheduler.model_scheduler import device_client_data_interface
 from fedml.computing.scheduler.model_scheduler import device_server_data_interface
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
@@ -111,11 +115,7 @@ class JobMonitor(Singleton):
 
         for endpoint_settings in endpoints_settings_list:
             endpoint_state = endpoint_settings["state"]
-            if endpoint_state == "DEPLOYED":
-                # TODO(Raphael): Check the future list, if there is one that is done,
-                #   send msg to asce, set the curr state to reconciling
-                #   If there is a endpoint that is not in reconciling and there is no task pending, then send
-                #   an async to Dimitris's func
+            if endpoint_state == "DEPLOYED" and endpoint_settings["enable_auto_scaling"]:
                 logging.info(f"After interval, check the autoscaler for async future list."
                              f"{self.endpoints_autoscale_predict_future}")
 
@@ -136,31 +136,53 @@ class JobMonitor(Singleton):
                     str(e_id))
 
                 new_replicas = current_replicas + scale_op.value
+
                 if current_replicas == new_replicas:
                     # Basically the autoscaler decided that no scaling operation should take place.
                     logging.info(f"No scaling operation for endpoint {e_id}.")
+                    return
+
+                # Should scale in / out
+                logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
+                curr_version = fedml.get_env_version()
+
+                if curr_version == "release":
+                    mlops_prefix = "https://open.fedml.ai/"
+                elif curr_version == "test":
+                    mlops_prefix = "https://open-test.fedml.ai/"
                 else:
-                    # Otherwise if the new replica number is different
-                    # from the previous number trigger a scaling operation.
-                    logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
-                    # TODO(raphael) hit backend endpoint set by asce.
-                    #  replicasDesired: new_replicas
-                    """
-                    url: https://open-test.fedml.ai/fedmlModelServer/api/v1/endpoint/auto-scale
-                    http method:  POST
-                    http header: key: Authorization, value: Bearer ${apiKey}
-                    http body:
-                    {
-                        "endpointId": 1529,
-                        "replicasDesired": 2
-                    }
-                    http response (when code is SUCCESS and data is true, it means success):
-                    {
-                        "message": "Succeeded to process request",
-                        "code": "SUCCESS",
-                        "data": true
-                    }
-                    """
+                    logging.error(f"Do not support the version {curr_version}.")
+                    return
+                autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
+                url = f"{mlops_prefix}{autoscale_url_path}"
+
+                api_key = get_api_key()
+                if api_key is None or api_key == "":
+                    logging.error(f"API key is not set.")
+                    return
+
+                req_header = {
+                    "Authorization": f"Bearer {api_key}"
+                }
+                req_body = {
+                    "endpointId": int(e_id),
+                    "replicasDesired": int(new_replicas)
+                }
+
+                try:
+                    logging.info(f"Sending the autoscale request to MLOps platform. url {url}, "
+                                 f"body {req_body}., header {req_header}")
+                    response = requests.post(
+                        url,
+                        headers=req_header,
+                        json=req_body
+                    )
+                    if response.status_code != 200:
+                        logging.error(f"Failed to send the autoscale request to MLOps platform.")
+                    else:
+                        logging.info(f"Successfully sent the autoscale request to MLOps platform.")
+                except Exception as e:
+                    logging.error(f"Failed to send the autoscale request to MLOps platform. {e}")
         return
 
     def monitor_slave_run_process_status(self):
