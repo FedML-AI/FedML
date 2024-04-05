@@ -114,7 +114,7 @@ if __name__ == "__main__":
         if testing_metric == "latency" else qps_reactive_policy_default
     policy_config["min_replicas"] = 1
     policy_config["max_replicas"] = 10
-    policy_config["current_replicas"] = 2
+    policy_config["current_replicas"] = 1
     print(policy_config)
 
     autoscaler = Autoscaler.get_instance(args.redis_addr, args.redis_port, args.redis_password)
@@ -129,7 +129,17 @@ if __name__ == "__main__":
         ts_epoch = int(datetime.datetime.strptime(
             ts, TrafficSimulation.CONFIG_DATETIME_FORMAT).timestamp() * 1e6)
         fedml_model_cache.set_monitor_metrics(
-            args.endpoint_id, "", "", "", latency, 0, 0, qps, 0, ts_epoch, 0)
+            end_point_id=args.endpoint_id,
+            end_point_name="",
+            model_name="",
+            model_version="",
+            total_latency=latency,
+            avg_latency=latency,
+            total_request_num=i,
+            current_qps=qps,
+            avg_qps=qps,
+            timestamp=ts_epoch,
+            device_id=0)
         scale_op = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             str(args.endpoint_id))
