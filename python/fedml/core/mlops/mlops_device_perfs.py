@@ -14,6 +14,7 @@ from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
 from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
+from ...computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 ROLE_DEVICE_INFO_REPORTER = 1
@@ -163,7 +164,7 @@ class MLOpsDevicePerfStats(object):
         total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, gpu_cores_total, \
             gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = sys_utils.get_sys_realtime_stats()
 
-        topic_name = "ml_client/mlops/gpu_device_info"
+        topic_name = MqttTopics.client_mlops_gpu_device_info()
 
         # We should report realtime available gpu count to MLOps, not from local redis cache.
         # Use gpu_available_ids from sys_utils.get_sys_realtime_stats()

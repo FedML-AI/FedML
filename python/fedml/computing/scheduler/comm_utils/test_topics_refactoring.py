@@ -3,6 +3,7 @@ from fedml.computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 
 def test_mqtt_topics():
     edge_id = 1
+    end_point_id = 10
     run_id = 100
     model_device_client_edge_id_list = [1, 2, 3]
 
@@ -90,3 +91,29 @@ def test_mqtt_topics():
     topic_model_serving_mlops_llm_input_output = "model_serving/mlops/llm_input_output_record"
     assert MqttTopics.model_serving_mlops_llm_input_output_record() == topic_model_serving_mlops_llm_input_output
 
+    topic_client_mlops_job_cost = "ml_client/mlops/job_computing_cost"
+    assert MqttTopics.client_mlops_job_cost() == topic_client_mlops_job_cost
+
+    topic_mlops_runtime_logs_run = "mlops/runtime_logs/" + str(run_id)
+    assert MqttTopics.mlops_runtime_logs_run(run_id=run_id) == topic_mlops_runtime_logs_run
+
+    topic_launch_mlops_artifacts = "launch_device/mlops/artifacts"
+    assert MqttTopics.launch_mlops_artifacts() == topic_launch_mlops_artifacts
+
+    deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
+    assert MqttTopics.deploy_mlops_status() == deployment_status_topic_prefix
+
+    topic_client_mlops_system_performance = "fl_client/mlops/system_performance"
+    assert MqttTopics.client_mlops_system_performance() == topic_client_mlops_system_performance
+
+    topic_client_mlops_gpu_device_info = "ml_client/mlops/gpu_device_info"
+    assert MqttTopics.client_mlops_gpu_device_info() == topic_client_mlops_gpu_device_info
+
+    topic_compute_mlops_endpoint = "compute/mlops/endpoint"
+    assert MqttTopics.compute_mlops_endpoint() == topic_compute_mlops_endpoint
+
+    topic_launch_mlops_release_gpu_ids = "launch_device/mlops/release_gpu_ids"
+    assert MqttTopics.launch_mlops_release_gpu_ids() == topic_launch_mlops_release_gpu_ids
+
+    topic_launch_mlops_sync_deploy_ids = "launch_device/mlops/sync_deploy_ids"
+    assert MqttTopics.launch_mlops_sync_deploy_ids() == topic_launch_mlops_sync_deploy_ids

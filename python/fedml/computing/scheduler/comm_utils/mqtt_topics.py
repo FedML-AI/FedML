@@ -45,6 +45,7 @@ class MqttTopics:
     # Run Topics
     __run_client_mlops_status = "fl_run/fl_client/mlops/status"
     __run_server_mlops_status = "fl_run/fl_server/mlops/status"
+    __client_mlops_job_cost = "ml_client/mlops/job_computing_cost"
 
     # ============== Server -> MLOps ==============
 
@@ -62,12 +63,27 @@ class MqttTopics:
     __server_mlops_deploy_progress = "fl_server/mlops/deploy_progress_and_eval"
     __model_serving_mlops_llm_input_output_record = "model_serving/mlops/llm_input_output_record"
 
+    # ============== Launch -> MLOps ==============
+    __launch_mlops_artifacts = "launch_device/mlops/artifacts"
+    __launch_mlops_release_gpu_ids = "launch_device/mlops/release_gpu_ids"
+    __launch_mlops_sync_deploy_ids = "launch_device/mlops/sync_deploy_ids"
+
+    # ============== Deploy -> MLOps ==============
+    __deploy_mlops_status = "model_ops/model_device/return_deployment_status"
+    __compute_mlops_endpoint = "compute/mlops/endpoint"
+
+    # ========= System Monitoring Topics ==========
+    __client_mlops_system_performance = "fl_client/mlops/system_performance"
+    __client_mlops_gpu_device_info = "ml_client/mlops/gpu_device_info"
+
+
     # TODO (alaydshah): Make sure these aren't used anywhere, and clean them up
     # ============== Deprecated ==============
 
     __server_run_exception = "flserver_agent/{run_id}/client_exit_train_with_exception"
     __server_mlops_status = "fl_server/mlops/status"
     __client_mlops_training_metrics = "fl_client/mlops/training_metrics"
+    __mlops_runtime_logs_run = "mlops/runtime_logs/{run_id}"
 
     @classmethod
     def server_client_start_train(cls, client_id: Union[int, str]):
@@ -176,3 +192,39 @@ class MqttTopics:
     @classmethod
     def model_serving_mlops_llm_input_output_record(cls):
         return cls.__model_serving_mlops_llm_input_output_record
+
+    @classmethod
+    def client_mlops_job_cost(cls):
+        return cls.__client_mlops_job_cost
+
+    @classmethod
+    def mlops_runtime_logs_run(cls, run_id: Union[int, str]):
+        return cls.__mlops_runtime_logs_run.format(run_id=run_id)
+
+    @classmethod
+    def launch_mlops_artifacts(cls):
+        return cls.__launch_mlops_artifacts
+
+    @classmethod
+    def deploy_mlops_status(cls):
+        return cls.__deploy_mlops_status
+
+    @classmethod
+    def client_mlops_system_performance(cls):
+        return cls.__client_mlops_system_performance
+
+    @classmethod
+    def client_mlops_gpu_device_info(cls):
+        return cls.__client_mlops_gpu_device_info
+
+    @classmethod
+    def compute_mlops_endpoint(cls):
+        return cls.__compute_mlops_endpoint
+
+    @classmethod
+    def launch_mlops_release_gpu_ids(cls):
+        return cls.__launch_mlops_release_gpu_ids
+
+    @classmethod
+    def launch_mlops_sync_deploy_ids(cls):
+        return cls.__launch_mlops_sync_deploy_ids

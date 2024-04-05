@@ -26,6 +26,7 @@ import requests
 
 import fedml
 from ..comm_utils.job_cleanup import JobCleanup
+from ..comm_utils.mqtt_topics import MqttTopics
 from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils
@@ -1280,7 +1281,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         return True, active_edge_info_dict, inactivate_edges
 
     def send_status_check_msg(self, run_id, edge_id, server_id, context=None):
-        topic_get_model_device_id = "server/client/request_device_info/" + str(edge_id)
+        topic_get_model_device_id = MqttTopics.server_client_request_device_info(client_id=edge_id)
         payload = {"server_id": server_id, "run_id": run_id}
         if context is not None:
             payload["context"] = context
@@ -1374,14 +1375,14 @@ class FedMLServerRunner(FedMLMessageCenter):
                         "machine_id": edge_id_item, "endpoint_gpu_count": gpu_num,
                         "master_deploy_id": edge_info.get("master_device_id", 0),
                         "slave_deploy_id": edge_info.get("slave_device_id", 0)})
-                topic_name = f"compute/mlops/endpoint"
+                topic_name = MqttTopics.compute_mlops_endpoint()
                 endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
                 print(f"endpoint_info_json {endpoint_info_json}")
                 self.message_center.send_message(topic_name, json.dumps(endpoint_info_json))
 
         client_rank = 1
         for edge_id in edge_id_list:
-            topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
+            topic_start_train = MqttTopics.server_client_start_train(client_id=edge_id)
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             request_json = self.request_json
             request_json["client_rank"] = client_rank
@@ -1409,7 +1410,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.client_agent_active_list[f"{run_id}"][f"server"] = server_id
         for edge_id in edge_ids:
             self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
-            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            edge_status_topic = MqttTopics.client_client_agent_status(client_id=edge_id)
             self.add_message_listener(edge_status_topic, self.callback_edge_status)
             self.subscribe_msg(edge_status_topic)
 
@@ -1418,7 +1419,7 @@ class FedMLServerRunner(FedMLMessageCenter):
             edge_ids = self.request_json["edgeids"]
 
         for edge_id in edge_ids:
-            edge_status_topic = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+            edge_status_topic = MqttTopics.client_client_agent_status(client_id=edge_id)
             self.unsubscribe_msg(edge_status_topic)
 
     def setup_listener_for_run_metrics(self, run_id):
@@ -1857,12 +1858,12 @@ class FedMLServerRunner(FedMLMessageCenter):
             payload_obj = json.loads(payload)
 
         for edge_id in edge_id_list:
-            topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
+            topic_stop_train = MqttTopics.server_client_stop_train(client_id=edge_id)
             logging.info("stop_train: send topic " + topic_stop_train)
             self.message_center.send_message(topic_stop_train, json.dumps(payload_obj))
 
     def send_training_stop_request_to_specific_edge(self, edge_id, payload):
-        topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
+        topic_stop_train = MqttTopics.server_client_stop_train(client_id=edge_id)
         logging.info("stop_train: send topic " + topic_stop_train)
         self.message_center.send_message(topic_stop_train, payload)
 

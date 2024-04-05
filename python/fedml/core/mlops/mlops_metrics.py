@@ -352,7 +352,7 @@ class MLOpsMetrics(object):
         """
         this is used for reporting the computing cost of a job running on an edge to MLOps
         """
-        topic_name = "ml_client/mlops/job_computing_cost"
+        topic_name = MqttTopics.client_mlops_job_cost()
         duration = computing_ended_time - computing_started_time
         if duration < 0:
             duration = 0
@@ -367,7 +367,7 @@ class MLOpsMetrics(object):
     def report_logs_updated(self, run_id):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "mlops/runtime_logs/" + str(run_id)
+        topic_name = MqttTopics.mlops_runtime_logs_run(run_id=run_id)
         msg = {"time": time.time()}
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
@@ -377,7 +377,7 @@ class MLOpsMetrics(object):
                              artifact_local_path, artifact_url,
                              artifact_ext_info, artifact_desc,
                              timestamp):
-        topic_name = "launch_device/mlops/artifacts"
+        topic_name = MqttTopics.launch_mlops_artifacts()
         artifact_info_json = {
             "job_id": job_id,
             "edge_id": edge_id,
@@ -394,7 +394,7 @@ class MLOpsMetrics(object):
 
     def report_endpoint_status(self, end_point_id, model_status, timestamp=None,
                                end_point_name="", model_name="", model_inference_url=""):
-        deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
+        deployment_status_topic_prefix = MqttTopics.deploy_mlops_status()
         deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
         time_param = time.time_ns() / 1000.0 if timestamp is None else timestamp
         deployment_status_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,

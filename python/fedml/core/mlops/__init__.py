@@ -16,7 +16,6 @@ import fedml
 from fedml import constants
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
-from .mlops_constants import MLOpsConstants
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
 from .mlops_runtime_log import MLOpsRuntimeLog
@@ -27,6 +26,7 @@ from .mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
 from .system_stats import SysStats
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 from ..distributed.communication.s3.remote_storage import S3Storage
+from ...computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from ...computing.scheduler.master.server_constants import ServerConstants
 from ...computing.scheduler.master.server_runner import FedMLServerRunner
 from ...computing.scheduler.slave.client_constants import ClientConstants
@@ -1444,7 +1444,7 @@ def release_resources(run_id, device_id):
 
     payload = {"run_id": run_id, "device_id": device_id, "gpu_count": 0}
     MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
-        MLOpsConstants.MSG_TOPIC_LAUNCH_RELEASE_GPU_IDS, json.dumps(payload))
+        MqttTopics.launch_mlops_release_gpu_ids(), json.dumps(payload))
 
 
 def sync_deploy_id(device_id, master_deploy_id, worker_deploy_id_list):
@@ -1454,5 +1454,4 @@ def sync_deploy_id(device_id, master_deploy_id, worker_deploy_id_list):
 
     payload = {"device_id": device_id, "master_deploy_id": master_deploy_id, "worker_deploy_ids": worker_deploy_id_list}
     MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
-        MLOpsConstants.MSG_TOPIC_LAUNCH_SYNC_DEPLOY_IDS, json.dumps(payload))
-
+        MqttTopics.launch_mlops_sync_deploy_ids(), json.dumps(payload))
