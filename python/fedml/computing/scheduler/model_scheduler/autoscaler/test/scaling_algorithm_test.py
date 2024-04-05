@@ -80,8 +80,6 @@ if __name__ == "__main__":
 
     fedml_model_cache = FedMLModelCache.get_instance()
     fedml_model_cache.set_redis_params(args.redis_addr, args.redis_port, args.redis_password)
-    fedml_model_cache.delete_model_endpoint_metrics(
-        endpoint_ids=[args.endpoint_id])
 
     # INFO To test different distributions, simply change the distribution value
     # to the following possible values:
@@ -114,9 +112,12 @@ if __name__ == "__main__":
         {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
     policy_config = latency_reactive_policy_default \
         if testing_metric == "latency" else qps_reactive_policy_default
+    policy_config["min_replicas"] = 1
+    policy_config["max_replicas"] = 10
+    policy_config["current_replicas"] = 2
     print(policy_config)
 
-    autoscaler = Autoscaler(args.redis_addr, args.redis_port, args.redis_password)
+    autoscaler = Autoscaler.get_instance(args.redis_addr, args.redis_port, args.redis_password)
     autoscaling_policy = ReactivePolicy(**policy_config)
     scale_operations = []
     ewm_values = []
@@ -150,3 +151,7 @@ if __name__ == "__main__":
         scale_operations=scale_operations,
         trend_lines=trend_lines,
         triggering_points=triggering_values_to_plot)
+
+    # Clear redis monitor keys.
+    fedml_model_cache.delete_model_endpoint_metrics(
+        endpoint_ids=[args.endpoint_id])

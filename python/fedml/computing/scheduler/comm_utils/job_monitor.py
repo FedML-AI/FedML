@@ -91,33 +91,70 @@ class JobMonitor(Singleton):
             fedml_model_cache.get_redis_params()
 
         # Get all endpoints info
-        endpoint_list = FedMLModelCache.get_instance().get_all_endpoints_user_setting()
+        endpoints_settings_list = fedml_model_cache.get_all_endpoints_user_setting()
 
         # Init the autoscaler
         autoscaler = Autoscaler(redis_addr, redis_port, redis_password)
 
-        # Set the policy
-        latency_policy_config = \
+        # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
+        # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
+        # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
+        autoscaling_policy_config = \
             {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
-        autoscaling_policy = ReactivePolicy(**latency_policy_config)
 
-        for endpoint in endpoint_list:
-            endpoint_state = endpoint["state"]
+        for endpoint_settings in endpoints_settings_list:
+            endpoint_state = endpoint_settings["state"]
             if endpoint_state == "DEPLOYED":
                 # TODO(Raphael): Check the future list, if there is one that is done,
                 #   send msg to asce, set the curr state to reconciling
                 #   If there is a endpoint that is not in reconciling and there is no task pending, then send
-                #   a async to Dimitris's func
+                #   an async to Dimitris's func
                 logging.info(f"After interval, check the autoscaler for async future list."
                              f"{self.endpoints_autoscale_predict_future}")
 
-                e_id = endpoint["end_point_id"]
-                logging.info(f"Start pondering the autoscaler for endpoint {e_id} with dict {endpoint}.")
+                e_id = endpoint_settings["end_point_id"]
+                logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
+
+                # For every endpoint we just update the policy configuration.
+                autoscaling_policy_config["min_replicas"] = endpoint_settings["scale_min"]
+                autoscaling_policy_config["max_replicas"] = endpoint_settings["scale_max"]
+                # We retrieve a list of replicas for every endpoint. The number
+                # of running replicas is the length of that list.
+                current_replicas = len(fedml_model_cache.get_endpoint_replicas_results(e_id))
+                autoscaling_policy_config["current_replicas"] = current_replicas
+                autoscaling_policy = ReactivePolicy(**autoscaling_policy_config)
+                logging.info(f"Endpoint {e_id} autoscaling policy: {autoscaling_policy}.")
+
                 scale_op = autoscaler.scale_operation_endpoint(
                     autoscaling_policy,
                     str(e_id))
 
-                logging.info(f"Scale operation for endpoint {e_id} is {scale_op}.")
+                new_replicas = current_replicas + scale_op.value
+                if current_replicas == new_replicas:
+                    # Basically the autoscaler decided that no scaling operation should take place.
+                    logging.info(f"No scaling operation for endpoint {e_id}.")
+                else:
+                    # Otherwise if the new replica number is different
+                    # from the previous number trigger a scaling operation.
+                    logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
+                    # TODO(raphael) hit backend endpoint set by asce.
+                    #  replicasDesired: new_replicas
+                    """
+                    url: https://open-test.fedml.ai/fedmlModelServer/api/v1/endpoint/auto-scale
+                    http method:  POST
+                    http header: key: Authorization, value: Bearer ${apiKey}
+                    http body:
+                    {
+                        "endpointId": 1529,
+                        "replicasDesired": 2
+                    }
+                    http response (when code is SUCCESS and data is true, it means success):
+                    {
+                        "message": "Succeeded to process request",
+                        "code": "SUCCESS",
+                        "data": true
+                    }
+                    """
         return
 
     def monitor_slave_run_process_status(self):

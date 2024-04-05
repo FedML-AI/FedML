@@ -7,7 +7,7 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
 from fedml.core.common.singleton import Singleton
-from typing import List, Any
+from typing import Any, Dict, List
 
 
 class FedMLModelCache(Singleton):
@@ -722,22 +722,6 @@ class FedMLModelCache(Singleton):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                                       end_point_id, end_point_name, model_name, model_version)
 
-
-    def get_endpoints_ids(self) -> List[str]:
-        key_pattern = "{}*".format(self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG)
-        model_deployment_endpoints_keys = self.redis_connection.keys(
-            pattern=key_pattern)
-        endpoints_ids = []
-        for k in model_deployment_endpoints_keys:
-            last_deployment_val = self.redis_connection.lindex(name=k, index=-1)
-            last_deployment_val_as_json = json.loads(last_deployment_val)
-            # Need to load the "result" again because it is not formatted properly
-            result = json.loads(last_deployment_val_as_json["result"])
-            endpoint_id = result["end_point_id"]
-            endpoints_ids.append(endpoint_id)
-        return endpoints_ids
-
-
     def get_endpoint_metrics(self,
                              endpoint_id,
                              k_recent=None) -> List[Any]:
@@ -777,9 +761,8 @@ class FedMLModelCache(Singleton):
 
         return model_deployment_monitor_metrics
 
-
-    def get_all_replicas(self, endpoint_id) -> List[Any]:
-        replicas = []
+    def get_endpoint_replicas_results(self, endpoint_id) -> List[Any]:
+        replicas_results = []
         try:
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG,
@@ -790,24 +773,42 @@ class FedMLModelCache(Singleton):
                 model_deployment_result_key = \
                     model_deployment_result_key[0]
             else:
-                raise Exception("Function `get_all_replicas` Key {} does not exist."
+                raise Exception("Function `get_endpoint_replicas_results` Key {} does not exist."
                                 .format(key_pattern))
-            replicas = \
+            replicas_results = \
                 self.redis_connection.lrange(
                     name=model_deployment_result_key,
                     start=0,
                     end=-1)
 
             # Format the result value to a properly formatted json.
-            for replica_idx, replica in enumerate(replicas):
-                replicas[replica_idx] = json.loads(replica)
-                replicas[replica_idx]["result"] = json.loads(replicas[replica_idx]["result"])
+            for replica_idx, replica in enumerate(replicas_results):
+                replicas_results[replica_idx] = json.loads(replica)
+                replicas_results[replica_idx]["result"] = json.loads(replicas_results[replica_idx]["result"])
 
         except Exception as e:
             logging.error(e)
 
-        return replicas
+        return replicas_results
 
+    def get_endpoint_settings(self, endpoint_id) -> Dict:
+        endpoint_settings = {}
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG,
+                endpoint_id)
+            endpoint_settings = \
+                self.redis_connection.keys(pattern=key_pattern)
+            if endpoint_settings:
+                endpoint_settings = \
+                    json.load(endpoint_settings[0])
+            else:
+                raise Exception("Function `get_endpoint_settings` Key {} does not exist."
+                                .format(key_pattern))
+        except Exception as e:
+            logging.error(e)
+
+        return endpoint_settings
 
     def delete_model_endpoint_metrics(self, endpoint_ids: list):
         for endpoint_id in endpoint_ids:
