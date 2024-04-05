@@ -6,7 +6,7 @@ from enum import Enum
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from pydantic import BaseModel, field_validator
 from utils.singleton import Singleton
-from typing import Any, Dict, Literal
+from typing import Dict
 
 
 class ScaleOp(Enum):
@@ -22,6 +22,9 @@ class AutoscalingPolicy(BaseModel):
     the length of the interval between during which the autoscaler
     should check the next scaling operation.
     """
+    min_replicas: int = 0
+    max_replicas: int = 0
+    current_replicas: int = 0
     scaleup_delay_secs: float = 300
     scaledown_delay_secs: float = 60
     endpoint_idleness_grace_period_secs: float = 300
@@ -74,7 +77,7 @@ class ReactivePolicy(AutoscalingPolicy):
 
 
 class PredictivePolicy(AutoscalingPolicy):
-    # TODO Not implemented yet!!!
+    # TODO(fedml-dimitris): TO BE COMPLETED!
     pass
 
 
@@ -86,72 +89,21 @@ class Autoscaler(metaclass=Singleton):
         self.fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
 
     @staticmethod
-    def get_instance():
-        return Autoscaler()
+    def get_instance(*args, **kwargs):
+        return Autoscaler(*args, **kwargs)
 
     @classmethod
     def scale_operation_predictive(cls,
                                    predictive_policy: PredictivePolicy,
-                                   metrics: Dict):
+                                   metrics: Dict) -> ScaleOp:
 
-        # TODO (fedml-dimitris): This is not ready!!!
-
-        df = pd.DataFrame.from_records(metrics)
-        df = df.set_index('timestamp')
-        # timestamp is supposed to be in micro-seconds, hence unit='us'.
-        df.index = pd.to_datetime(df.index, unit='us')
-
-        # Adding the context below to avoid having a series of warning messages.
-        with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=FutureWarning)
-            # For now, we use a 15-minute interval for the short EMA
-            # and 60-minutes interval for the long EMA.
-            short_period_data = df.last("15min")
-            long_period_data = df.last("60min")
-
-            # By using alpha = 0.1, we basically indicate that the most recent values is
-            # weighted more. The reason is that the formula in pandas is computed as:
-            #   Yt = X_t + (1-a) * X_{t-1} + (1-a)^2 X_{t-2} / (1 + (1-a) + (1-a)^2)
-            alpha = 0.5
-            short_period_ewm = short_period_data["total_latency"].ewm(alpha=alpha).mean()
-            long_period_ewm = long_period_data["total_latency"].ewm(alpha=alpha).mean()
-
-            # macd: Moving Average Convergence Divergence Index
-            macd = short_period_ewm - long_period_ewm
-
-        macd_cross = macd.values[-1]
-        latest_value = short_period_ewm.values[-1]
-        if predictive_policy.triggered_value is None:
-            predictive_policy.triggered_value = latest_value
-
-        rate = 100 * (latest_value - predictive_policy.triggered_value) / predictive_policy.triggered_value
-        scale_op = ScaleOp.NO_OP
-        # if rate of increase is greater than 50% then trigger a scaling operation.
-        if abs(rate) > 50:
-            predictive_policy.triggered_value = latest_value
-            if macd_cross > 0:
-                # If the cross is positive, then MACD crosses from the bottom. This is an indicator
-                # of uptrend. For any metric, this means that the metric value is increasing:
-                #   - if latency is increasing then add more resources.
-                #   - if qps is increasing then release resources.
-                # Here we consider Latency!
-                scale_op = ScaleOp.UP_OUT_OP
-            elif macd_cross < 0:
-                # If the cross is negative, then MACD crosses from the top. This is an indicator
-                # of downtrend. For any metric, this means that the metric value is decreasing:
-                #   - if latency is decreasing then release resources.
-                #   - if qps is decreasing then add more resources.
-                # Here we consider Latency!
-                scale_op = ScaleOp.DOWN_IN_OP
-            else:
-                scale_op = ScaleOp.NO_OP
-
-        return scale_op
+        # TODO(fedml-dimitris): TO BE COMPLETED!
+        pass
 
     @classmethod
     def scale_operation_reactive(cls,
                                  reactive_policy: ReactivePolicy,
-                                 metrics: Dict):
+                                 metrics: Dict) -> ScaleOp:
 
         df = pd.DataFrame.from_records(metrics)
         df = df.set_index('timestamp')
@@ -217,6 +169,10 @@ class Autoscaler(metaclass=Singleton):
             scale_op = self.scale_operation_reactive(
                 autoscaling_policy,
                 metrics)
+        elif isinstance(autoscaling_policy, PredictivePolicy):
+            scale_op = self.scale_operation_predictive(
+                autoscaling_policy,
+                metrics)
         else:
             raise RuntimeError("Not a valid autoscaling policy instance.")
 
@@ -239,40 +195,25 @@ class Autoscaler(metaclass=Singleton):
             0: do nothing
         """
 
-        # TODO: get the min, max, and current running replicas from Redis.
-        min_replicas = 1
-        max_replicas = 10
-        current_replicas = 3
-
-        endpoint_list = self.fedml_model_cache.get_all_endpoints_user_setting()
-
-        # Fetch all the previous timeseries values.
-        endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
-            endpoint_id=endpoint_id)
-
-        scale_op = ScaleOp.NO_OP
-        if current_replicas == 0:
+        if autoscaling_policy.current_replicas == 0:
             # if number_of requests > 1, then scale up/out
-            pass
+            scale_op = ScaleOp.NO_OP
         else:
-            scale_op = self.run_autoscaling_policy(autoscaling_policy, endpoint_metrics)
-
-        # We cannot be lower than the minimum number of replicas,
-        # nor exceed the maximum number of requested replicas.
-        new_running_replicas = current_replicas + scale_op.value
-        if new_running_replicas <= min_replicas:
-            scale_op = ScaleOp.NO_OP
-        if new_running_replicas >= max_replicas:
-            scale_op = ScaleOp.NO_OP
+            # Fetch all previous timeseries values.
+            endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
+                endpoint_id=endpoint_id)
+            if not endpoint_metrics:
+                # If no metrics are collected then do nothing.
+                scale_op = ScaleOp.NO_OP
+            else:
+                # Trigger autoscaler with the metrics we have collected.
+                scale_op = self.run_autoscaling_policy(autoscaling_policy, endpoint_metrics)
+                # We cannot be lower than the minimum number of replicas,
+                # nor exceed the maximum number of requested replicas.
+                new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
+                if new_running_replicas <= autoscaling_policy.min_replicas:
+                    scale_op = ScaleOp.NO_OP
+                if new_running_replicas >= autoscaling_policy.max_replicas:
+                    scale_op = ScaleOp.NO_OP
 
         return scale_op
-
-    def scale_operation_endpoints(self, autoscaling_policy) -> Dict[Any, ScaleOp]:
-        scale_operations = dict()
-        endpoint_ids = self.fedml_model_cache.get_endpoints_ids()
-        for eid in endpoint_ids:
-            scale_op = self.scale_operation_endpoint(
-                autoscaling_policy=autoscaling_policy,
-                endpoint_id=eid)
-            scale_operations[eid] = scale_op
-        return scale_operations
