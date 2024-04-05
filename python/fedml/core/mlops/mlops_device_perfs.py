@@ -133,8 +133,14 @@ class MLOpsDevicePerfStats(object):
         time_interval_map = {
             ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
             ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30,
-            ROLE_AUTO_SCALER: 120,
+            ROLE_AUTO_SCALER: 60,
         }
+
+        job_monitor_obj = None
+        if role == ROLE_AUTO_SCALER:
+            # job_monitor Should be initialized once
+            job_monitor_obj = JobMonitor.get_instance()
+
         while not self.should_stop_device_realtime_stats():
             try:
                 time.sleep(time_interval_map[role])
@@ -153,7 +159,7 @@ class MLOpsDevicePerfStats(object):
                 elif role == ROLE_ENDPOINT_LOGS:
                     JobMonitor.get_instance().monitor_endpoint_logs()
                 elif role == ROLE_AUTO_SCALER:
-                    JobMonitor.get_instance().autoscaler_reconcile_after_interval()
+                    job_monitor_obj.autoscaler_reconcile_after_interval()
 
             except Exception as e:
                 logging.error(f"exception {e} when reporting device pref: {traceback.format_exc()}.")
