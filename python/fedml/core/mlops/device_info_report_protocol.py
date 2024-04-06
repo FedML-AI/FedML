@@ -5,6 +5,7 @@ import threading
 import time
 import uuid
 
+from fedml.computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
@@ -48,12 +49,12 @@ class FedMLDeviceInfoReportProtocol:
         return None
 
     def setup_listener_for_device_info_response(self, server_id):
-        response_topic = f"client/server/response_device_info/{server_id}"
+        response_topic = MqttTopics.client_server_response_device_info(server_id=server_id)
         self.client_mqtt_mgr.add_message_listener(response_topic, self.callback_device_info_response)
         self.client_mqtt_mgr.subscribe_msg(response_topic)
 
     def remove_listener_for_device_info_response(self, server_id):
-        response_topic = f"client/server/response_device_info/{server_id}"
+        response_topic = MqttTopics.client_server_response_device_info(server_id=server_id)
         self.client_mqtt_mgr.remove_message_listener(response_topic)
         self.client_mqtt_mgr.unsubscribe_msg(response_topic)
 
@@ -128,6 +129,6 @@ class FedMLDeviceInfoReportProtocol:
             pass
 
     def request_device_info(self, run_id, edge_id, server_id):
-        topic_request_device_info = "server/client/request_device_info/" + str(edge_id)
+        topic_request_device_info = MqttTopics.server_client_request_device_info(client_id=edge_id)
         payload = {"server_id": server_id, "run_id": run_id, "need_running_process_list": True}
         self.client_mqtt_mgr.send_message(topic_request_device_info, json.dumps(payload))

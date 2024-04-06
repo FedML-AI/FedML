@@ -521,8 +521,8 @@ def register_run_status_callback(run_status_callback):
 
     MLOpsStore.mlops_run_status_callback = run_status_callback
 
-    topic_client_status = "fl_client/flclient_agent_" + str(MLOpsStore.mlops_edge_id) + "/status"
-    topic_server_status = "fl_server/flserver_agent_" + str(MLOpsStore.mlops_edge_id) + "/status"
+    topic_client_status = MqttTopics.client_client_agent_status(MLOpsStore.mlops_edge_id)
+    topic_server_status = MqttTopics.server_server_agent_status(MLOpsStore.mlops_edge_id)
     MLOpsStore.mlops_log_mqtt_mgr.add_message_listener(topic_client_status, callback_run_status_changed)
     MLOpsStore.mlops_log_mqtt_mgr.add_message_listener(topic_server_status, callback_run_status_changed)
     MLOpsStore.mlops_log_mqtt_mgr.subscribe_msg(topic_client_status)

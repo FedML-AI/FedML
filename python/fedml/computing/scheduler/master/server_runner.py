@@ -1423,21 +1423,21 @@ class FedMLServerRunner(FedMLMessageCenter):
             self.unsubscribe_msg(edge_status_topic)
 
     def setup_listener_for_run_metrics(self, run_id):
-        metric_topic = f"fedml_slave/fedml_master/metrics/{run_id}"
+        metric_topic = MqttTopics.client_server_metrics(run_id=run_id)
         self.add_message_listener(metric_topic, self.callback_run_metrics)
         self.subscribe_msg(metric_topic)
 
     def remove_listener_for_run_metrics(self, run_id):
-        metric_topic = f"fedml_slave/fedml_master/metrics/{run_id}"
+        metric_topic = MqttTopics.client_server_metrics(run_id=run_id)
         self.unsubscribe_msg(metric_topic)
 
     def setup_listener_for_run_logs(self, run_id):
-        logs_topic = f"fedml_slave/fedml_master/logs/{run_id}"
+        logs_topic = MqttTopics.client_server_logs(run_id=run_id)
         self.add_message_listener(logs_topic, self.callback_run_logs)
         self.subscribe_msg(logs_topic)
 
     def remove_listener_for_run_logs(self, run_id):
-        logs_topic = f"fedml_slave/fedml_master/logs/{run_id}"
+        logs_topic = MqttTopics.client_server_logs(run_id=run_id)
         self.unsubscribe_msg(logs_topic)
 
     def callback_run_logs(self, topic, payload):
@@ -1868,7 +1868,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.message_center.send_message(topic_stop_train, payload)
 
     def send_training_stop_request_to_cloud_server(self, edge_id, payload):
-        topic_stop_train = "mlops/flserver_agent_" + str(edge_id) + "/stop_train"
+        topic_stop_train = MqttTopics.mlops_server_stop_train(server_id=edge_id)
         logging.info("stop_train: send topic " + topic_stop_train)
         self.message_center.send_message(topic_stop_train, payload)
 
@@ -1881,7 +1881,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         else:
             payload_obj = json.loads(payload)
         payload_obj["run_status"] = ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION if status is None else status
-        topic_stop_train = "flserver_agent/" + str(self.edge_id) + "/stop_train"
+        topic_stop_train = MqttTopics.server_client_stop_train(self.edge_id)
         self.callback_stop_train(topic_stop_train, json.dumps(payload_obj), use_payload=payload_obj)
 
     def callback_stop_train(self, topic, payload, use_payload=None):
@@ -2323,7 +2323,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         self.response_device_info_to_mlops(topic, payload)
 
     def response_device_info_to_mlops(self, topic, payload):
-        response_topic = f"deploy/master_agent/mlops/response_device_info"
+        response_topic = MqttTopics.deploy_master_mlops_response_device_info()
         payload_json = json.loads(payload)
         need_gpu_info = payload_json.get("need_gpu_info", False)
         if self.mlops_metrics is not None:
@@ -2520,7 +2520,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         return MLOpsConfigs.fetch_all_configs()
 
     def send_agent_active_msg(self):
-        active_topic = "flserver_agent/active"
+        active_topic = MqttTopics.server_mlops_active()
         status = MLOpsStatus.get_instance().get_server_agent_status(self.edge_id)
         if (
                 status is not None
@@ -2557,7 +2557,7 @@ class FedMLServerRunner(FedMLMessageCenter):
                     current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
                 logging.info("start training after upgrading.")
                 server_agent_id = self.edge_id
-                topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
+                topic_start_train = MqttTopics.mlops_server_start_train(server_id=server_agent_id)
                 self.callback_start_train(topic_start_train, current_job.running_json)
         except Exception as e:
             logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
@@ -2567,37 +2567,37 @@ class FedMLServerRunner(FedMLMessageCenter):
 
         # Setup MQTT message listener for starting training
         server_agent_id = self.edge_id
-        topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
+        topic_start_train = MqttTopics.mlops_server_start_train(server_id=server_agent_id)
         self.add_message_listener(topic_start_train, self.callback_start_train)
         self.mqtt_mgr.add_message_listener(topic_start_train, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener for stopping training
-        topic_stop_train = "mlops/flserver_agent_" + str(server_agent_id) + "/stop_train"
+        topic_stop_train = MqttTopics.mlops_server_stop_train(server_id=server_agent_id)
         self.add_message_listener(topic_stop_train, self.callback_stop_train)
         self.mqtt_mgr.add_message_listener(topic_stop_train, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener for server status switching
-        topic_server_status = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
+        topic_server_status = MqttTopics.server_server_agent_status(server_id=server_agent_id)
         self.add_message_listener(topic_server_status, self.callback_runner_id_status)
         self.mqtt_mgr.add_message_listener(topic_server_status, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to report current device status.
-        topic_report_status = "mlops/report_device_status"
+        topic_report_status = MqttTopics.mlops_client_report_device_status()
         self.add_message_listener(topic_report_status, self.callback_report_current_status)
         self.mqtt_mgr.add_message_listener(topic_report_status, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to OTA messages from the MLOps.
-        topic_ota_msg = "mlops/flserver_agent_" + str(server_agent_id) + "/ota"
+        topic_ota_msg = MqttTopics.mlops_server_ota(server_id=server_agent_id)
         self.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to request device info from the client.
-        topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
+        topic_response_device_info = MqttTopics.client_server_response_device_info(server_id=self.edge_id)
         self.add_message_listener(topic_response_device_info, self.callback_response_device_info)
         self.mqtt_mgr.add_message_listener(topic_response_device_info, self.listener_message_dispatch_center)
 
         # Setup MQTT message listener to request device info from MLOps.
-        topic_request_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.edge_id}"
+        topic_request_device_info_from_mlops = MqttTopics.deploy_mlops_master_request_device_info(master_id=self.edge_id)
         self.add_message_listener(topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
         self.mqtt_mgr.add_message_listener(
             topic_request_device_info_from_mlops, self.listener_message_dispatch_center)

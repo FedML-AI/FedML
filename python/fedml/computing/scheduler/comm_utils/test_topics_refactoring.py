@@ -2,7 +2,9 @@ from fedml.computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 
 
 def test_mqtt_topics():
+    mqtt_client_id = 0
     edge_id = 1
+    server_id = 2
     end_point_id = 10
     run_id = 100
     model_device_client_edge_id_list = [1, 2, 3]
@@ -26,15 +28,20 @@ def test_mqtt_topics():
     assert MqttTopics.server_client_request_device_info(client_id=edge_id) == topic_request_device_info
 
     topic_request_edge_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{edge_id}"
-    assert MqttTopics.mlops_slave_request_device_info(slave_id=edge_id) == topic_request_edge_device_info_from_mlops
+    assert MqttTopics.deploy_mlops_slave_request_device_info(
+        slave_id=edge_id) == topic_request_edge_device_info_from_mlops
 
-    topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{edge_id}"
-    assert (MqttTopics.mlops_master_request_device_info(master_id=edge_id) ==
-            topic_request_deploy_master_device_info_from_mlops)
+    topic_request_client_device_info_from_mlops = f"deploy/mlops/client_agent/request_device_info/{edge_id}"
+    assert (MqttTopics.deploy_mlops_client_request_device_info(client_id=edge_id)
+            == topic_request_client_device_info_from_mlops)
+
+    topic_deploy_master_request_device_info = f"deploy/mlops/master_agent/request_device_info/{edge_id}"
+    assert (MqttTopics.deploy_mlops_master_request_device_info(master_id=edge_id) ==
+            topic_deploy_master_request_device_info)
 
     topic_request_deploy_slave_device_info_from_mlops = (f"deploy/mlops/slave_agent/request_device_info/"
                                                          f"{model_device_client_edge_id_list[0]}")
-    assert (MqttTopics.mlops_slave_request_device_info
+    assert (MqttTopics.deploy_mlops_slave_request_device_info
             (slave_id=model_device_client_edge_id_list[0]) == topic_request_deploy_slave_device_info_from_mlops)
 
     topic_client_logout = "mlops/client/logout/" + str(edge_id)
@@ -52,8 +59,8 @@ def test_mqtt_topics():
     topic_run_server_mlops_status = "fl_run/fl_server/mlops/status"
     assert MqttTopics.run_server_mlops_status() == topic_run_server_mlops_status
 
-    topic_server_server_agent_status = f"fl_server/flserver_agent_{edge_id}/status"
-    assert MqttTopics.server_server_agent_status(server_id=edge_id) == topic_server_server_agent_status
+    topic_server_server_agent_status = f"fl_server/flserver_agent_{server_id}/status"
+    assert MqttTopics.server_server_agent_status(server_id=server_id) == topic_server_server_agent_status
 
     topic_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
     assert MqttTopics.server_run_exception(run_id=run_id) == topic_exit_train_with_exception
@@ -117,3 +124,27 @@ def test_mqtt_topics():
 
     topic_launch_mlops_sync_deploy_ids = "launch_device/mlops/sync_deploy_ids"
     assert MqttTopics.launch_mlops_sync_deploy_ids() == topic_launch_mlops_sync_deploy_ids
+
+    topic_server_start_train = "mlops/flserver_agent_" + str(server_id) + "/start_train"
+    assert MqttTopics.mlops_server_start_train(server_id=server_id) == topic_server_start_train
+
+    topic_stop_train = "mlops/flserver_agent_" + str(server_id) + "/stop_train"
+    assert MqttTopics.mlops_server_stop_train(server_id=server_id) == topic_stop_train
+
+    topic_server_ota = "mlops/flserver_agent_" + str(server_id) + "/ota"
+    assert MqttTopics.mlops_server_ota(server_id=server_id) == topic_server_ota
+
+    topic_response_device_info = "client/server/response_device_info/" + str(server_id)
+    assert MqttTopics.client_server_response_device_info(server_id=server_id) == topic_response_device_info
+
+    topic_agent_mlops_active = "flclient_agent/active"
+    assert MqttTopics.client_mlops_active() == topic_agent_mlops_active
+
+    topic_server_mlops_active = "flserver_agent/active"
+    assert MqttTopics.server_mlops_active() == topic_server_mlops_active
+
+    topic_master_mlops_response_device_info = "deploy/master_agent/mlops/response_device_info"
+    assert MqttTopics.deploy_master_mlops_response_device_info() == topic_master_mlops_response_device_info
+
+    topic_test_mqtt_connection = "fedml/" + str(mqtt_client_id) + "/test_mqtt_msg"
+    assert MqttTopics.test_mqtt_connection(mqtt_client_id=mqtt_client_id) == topic_test_mqtt_connection
