@@ -211,7 +211,7 @@ class ComputeGpuCache(object):
             str_gpu_ids = self.map_list_to_str(gpu_ids)
             self.redis_connection.set(self.get_device_run_gpu_ids_key(device_id, run_id), str_gpu_ids)
         except Exception as e:
-            pass
+            logging.error(f"Error setting device_run_gpu_ids: {e}, Traceback: {traceback.format_exc()}")
 
         ComputeGpuDatabase.get_instance().set_device_run_gpu_ids(device_id, run_id, gpu_ids)
 

@@ -637,7 +637,14 @@ class FedMLServerRunner:
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 return
-            else:
+            elif run_operation == "UPDATE":
+                # Send the rollback message to the worker devices only if it has not been rollback
+                if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
+                    self.send_deployment_status(
+                        end_point_id, end_point_name, payload_json["model_name"], "",
+                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                    return
+
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = \
                     self.model_runner_mapping[run_id_str].replica_controller.rollback_get_replica_version_diff(
@@ -657,6 +664,9 @@ class FedMLServerRunner:
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTING)
 
                 # TODO(Raphael): Check if resource left not cleaned up
+                return
+            else:
+                logging.error(f"Unsupported operation {run_operation}.")
                 return
 
         # Move to the next state (rolling update, finish the deployment, etc.)
