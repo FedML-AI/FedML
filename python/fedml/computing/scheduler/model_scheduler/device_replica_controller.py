@@ -1,5 +1,8 @@
 import logging
 import copy
+
+from typing import List
+
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 from .device_client_constants import ClientConstants
@@ -42,7 +45,9 @@ class FedMLDeviceReplicaController:
         self.endpoint_name = self.request_msg_obj.end_point_name
         self.model_name = self.request_msg_obj.model_name
 
+        # Number control
         self.target_replica_num = self.init_id_replica_num()
+        self.target_replica_ids = self.generate_replica_ids()
 
         self.curr_replica_num = self.get_curr_replica_num_state_frm_db()
         self.intermediate_replica_num = copy.deepcopy(self.curr_replica_num)
@@ -52,10 +57,12 @@ class FedMLDeviceReplicaController:
         self.max_unavailable_rate = self.request_msg_obj.max_unavailable_rate
         self.curr_replica_updating_window = {}
 
-        self.curr_replica_version = self.get_curr_replica_version_frm_db()
+        self.start_version, self.curr_replica_version = self.get_curr_replica_version_frm_db()
         self.intermediate_replica_version = copy.deepcopy(self.curr_replica_version)
 
         self.total_replica_version_diff_num, self.total_replica_version_diff = self.diff_target_curr_replica_version()
+
+        self.under_rollback = False
 
     def calc_total_gpu_num(self):
         total_gpu_num = 0
@@ -74,6 +81,17 @@ class FedMLDeviceReplicaController:
                 raise ValueError("The number of gpus for each device should be divisible by gpu_per_replica")
             id_replica_num[str(id)] = avail_num // self.gpu_per_replica
         return id_replica_num
+
+    def generate_replica_ids(self) -> List[str]:
+        """
+        [id1_replicaNo1, id2_replicaNo2, ...]
+        replicaNo starts from 1
+        """
+        res = []
+        for device_id, replica_num in self.target_replica_num.items():
+            for i in range(replica_num):
+                res.append(f"{device_id}_{i+1}")
+        return res
 
     def diff_target_curr_replica_num(self):
         diff = self.diff_target_curr_replica_num_impl(self.target_replica_num, self.curr_replica_num)
@@ -214,8 +232,9 @@ class FedMLDeviceReplicaController:
         res_frm_db = FedMLModelCache.get_instance().get_deployment_result_list(
             self.e_id, self.endpoint_name, self.model_name)
         if res_frm_db is None or len(res_frm_db) == 0:
-            return None
+            return None, None
         else:
+            version = None
             for result_item in res_frm_db:
                 # Unpack the result_item
                 result_device_id, replica_no, result_payload = (FedMLModelCache.get_instance().
@@ -224,7 +243,11 @@ class FedMLDeviceReplicaController:
                     curr_versions[str(result_device_id)] = {}
                 curr_versions[str(result_device_id)][str(replica_no)] = result_payload["model_version"]
 
-        return curr_versions
+                if version is not None and version != result_payload["model_version"]:
+                    logging.warning(f"Detected different model versions for the same endpoint in the same device.")
+                version = result_payload["model_version"]
+
+        return version, curr_versions
 
     def generate_diff_to_request_json(self):
         """
@@ -437,7 +460,55 @@ class FedMLDeviceReplicaController:
         # Update the updating window
         self.init_update_updating_window(first_chunk_dict)
 
-        # Prepare and  return the request json
-        replica_num_diff_key = "replica_version_diff"
-        self.request_json[replica_num_diff_key] = first_chunk_dict
+        # Prepare and return the request json
+        replica_version_diff_key = "replica_version_diff"
+        self.request_json[replica_version_diff_key] = first_chunk_dict
         return self.request_json
+
+    def rollback_get_replica_version_diff(self, device_id_trigger, replica_no_trigger):
+        """
+        for rollback existing replica that has been updated, get the replica version diff.
+        rollback should be done at once, not rolling update.
+
+        schema:
+        {
+            "replica_rollback_diff": {
+                "id1": {
+                    $replica_no: {"op": "rollback", "new_version": "v1", "old_version": "v2"},
+                }
+            },
+        }
+        """
+        if self.start_version is None:
+            return None
+
+        devices_version_rollback = {}
+        # TODO(Raphael): Consider the case that, multiple replicas in the chunk failed.
+        for id, device_replicas_version in self.intermediate_replica_version.items():
+            for replica_no, version in device_replicas_version.items():
+                if version != self.start_version:
+                    if id not in devices_version_rollback:
+                        devices_version_rollback[id] = {}
+                    devices_version_rollback[id][replica_no] = {
+                        "op": "rollback",
+                        "new_version": self.start_version,
+                        "old_version": version
+                    }
+                # do not forget that the replica who triggered this failed callback, should also be rolled back.
+                if id == device_id_trigger and replica_no == str(replica_no_trigger):
+                    if id not in devices_version_rollback:
+                        devices_version_rollback[id] = {}
+
+                    devices_version_rollback[id][replica_no] = {
+                        "op": "rollback",
+                        "new_version": self.start_version,
+                        "old_version": version
+                    }
+        self.under_rollback = True
+        return devices_version_rollback
+
+    def rollback_setback_target_replica_version(self):
+        """
+        Set back the target replica version.
+        """
+        self.target_replica_version = self.start_version

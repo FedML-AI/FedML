@@ -143,7 +143,7 @@ class FedMLServerRunner:
         progress_int = int(progress)
         downloaded_kb = format(downloaded / 1024, '.2f')
 
-        # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
+        # since this hook function is stateless, we need a state to avoid printing progress repeatedly
         if count == 0:
             self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
@@ -276,7 +276,7 @@ class FedMLServerRunner:
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
+        inference_port = model_config_parameters.get("server_internal_port",  # Internal port is for the gateway
                                                      ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("server_external_port", inference_port)
 
@@ -550,36 +550,78 @@ class FedMLServerRunner:
         replica_no = payload_json.get("replica_no", None)  # "no" Idx start from 1
         run_id_str = str(end_point_id)
 
-        logging.info("==========callback_deployment_result_message==========")
+        # HotFix(Raphael): logging service cross talk
+        # Change the handler since each handler need to write to different log files
+        try:
+            # Remove the existing file handler
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                if isinstance(handler, logging.FileHandler):
+                    root_logger.removeHandler(handler)
 
-        logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
-                     f"model status {model_status}.")
+            # Correct log path: ~/.fedml/fedml-model-server/fedml/logs/fedml-run-$rid-edge-$eid.log
+            log_file = os.path.join(ServerConstants.get_log_file_dir(),
+                                    f"fedml-run-{run_id_str}-edge-{self.edge_id}.log")
 
-        # OPTIONAL DEBUG PARAMS
-        this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
+            filehandler = logging.FileHandler(log_file, "a")
 
-        logging.info(f"The current replica controller state is "
-                     f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
+            program_prefix = "FedML-Server @device-id-{}".format(self.edge_id)
+            formatter = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                     "message)s",
+                                          datefmt="%a, %d %b %Y %H:%M:%S")
 
-        # [Deprecated] Since it will overwrite by the new (concurrent) request_json
-        logging.info(f"self.request_json now {self.request_json}")
-
-        this_run_request_json = self.running_request_json.get(run_id_str, None)
-        logging.info(f"self.running_request_json now {this_run_request_json}")
-        logging.info("=========================================================")
+            filehandler.setFormatter(formatter)
+            root_logger.addHandler(filehandler)
+        except Exception as e:
+            logging.warning(f"Failed to change the logging handler due to {e}.")
 
         assert run_id_str in self.model_runner_mapping, (f"Run id {run_id_str} is not in the model runner mapping."
                                                          f"Current mapping {self.model_runner_mapping}.")
 
+        logging.info("========== callback_deployment_result_message ==========\n")
+        #  Identify the operation for this run (add, remove, update)
+        if run_id_str not in self.running_request_json:
+            logging.error(f"Run id {run_id_str} is not in the running request json.")
+            return
+
+        # The rolling update and scale out / in operation should not happen at the same time
+        assert not ("replica_num_diff" in self.running_request_json[run_id_str] and
+                    len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0 and
+                    "replica_version_diff" in self.running_request_json[run_id_str])
+
+        if "replica_version_diff" in self.running_request_json[run_id_str]:
+            run_operation = "UPDATE"
+        elif "replica_num_diff" in self.running_request_json[run_id_str] and \
+                len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0:
+            run_operation = "ADD_OR_REMOVE"
+        else:
+            logging.error(f"Unsupported operation for run id {run_id_str}. and request json "
+                          f"{self.running_request_json[run_id_str]}")
+            return
+
+        logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
+                     f"run_operation {run_operation} model status {model_status}.")
+
+        # OPTIONAL DEBUG PARAMS
+        # this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
+        # logging.info(f"The current replica controller state is "
+        #              f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
+        # logging.info(f"self.request_json now {self.request_json}")    # request_json will be deprecated
+        # this_run_request_json = self.running_request_json.get(run_id_str, None)
+        # logging.info(f"self.running_request_json now {this_run_request_json}")
+
         # Set redis + sqlite deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
 
+        # Deal with different model status
         if model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED:
+            # remove
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 delete_deployment_result_with_device_id_and_replica_no(
-                    end_point_id, end_point_name, model_name, device_id, replica_no)
+                end_point_id, end_point_name, model_name, device_id, replica_no)
         elif model_status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-            # add or update
+            # add or update or update-failed-rollback
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, end_point_name,
                                       model_name, model_version,
@@ -590,10 +632,47 @@ class FedMLServerRunner:
         else:
             if model_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                 logging.error(f"Unsupported model status {model_status}.")
-            self.send_deployment_status(
-                end_point_id, end_point_name, payload_json["model_name"], "",
-                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
 
+            # Failure handler
+            if run_operation == "ADD_OR_REMOVE":
+                # TODO(Raphael): Also support rollback for scale out / in operation
+                self.send_deployment_status(
+                    end_point_id, end_point_name, payload_json["model_name"], "",
+                    ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                return
+            elif run_operation == "UPDATE":
+                # Send the rollback message to the worker devices only if it has not been rollback
+                if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
+                    self.send_deployment_status(
+                        end_point_id, end_point_name, payload_json["model_name"], "",
+                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                    return
+
+                # Overwrite the json with the rollback version diff
+                rollback_version_diff = \
+                    self.model_runner_mapping[run_id_str].replica_controller.rollback_get_replica_version_diff(
+                        device_id_trigger=device_id, replica_no_trigger=replica_no)
+
+                # Change the target version to the start version
+                self.model_runner_mapping[run_id_str].replica_controller.rollback_setback_target_replica_version()
+
+                self.running_request_json[run_id_str]["replica_version_diff"] = copy.deepcopy(rollback_version_diff)
+
+                # Send the rollback message to the worker devices
+                self.send_rollback_msg(run_id_str)
+
+                # Set the deployment status to ABORTING
+                self.send_deployment_status(
+                    end_point_id, end_point_name, payload_json["model_name"], "",
+                    ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTING)
+
+                # TODO(Raphael): Check if resource left not cleaned up
+                return
+            else:
+                logging.error(f"Unsupported operation {run_operation}.")
+                return
+
+        # Move to the next state (rolling update, finish the deployment, etc.)
         # Notify the replica number controller
         (self.model_runner_mapping[run_id_str].
          replica_controller.callback_update_curr_replica_num_state(device_id, replica_no, model_status))
@@ -619,7 +698,7 @@ class FedMLServerRunner:
                 ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
             return
 
-        # Wait for all replica's result, not device-level
+        # Wait for all replica-level's result, not device-level
         if (self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_num_reconciled() and
                 self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_version_reconciled()):
             '''
@@ -645,7 +724,7 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE5["text"],
                                         "inference url: {}".format(model_inference_url))
 
-            # Prepare the result to MLOps
+            # Send the result to MLOps
             if self.model_runner_mapping[run_id_str].deployed_replica_payload is not None:
                 payload_json = self.model_runner_mapping[run_id_str].deployed_replica_payload
                 model_slave_url = payload_json["model_url"]
@@ -667,7 +746,9 @@ class FedMLServerRunner:
                 else:
                     raise Exception(f"Unsupported model metadata type {model_metadata['type']}")
 
-                self.send_deployment_results_with_payload(end_point_id, end_point_name, payload_json)
+                self.send_deployment_results_with_payload(
+                    end_point_id, end_point_name, payload_json,
+                    self.model_runner_mapping[run_id_str].replica_controller.target_replica_ids)
 
                 payload_json_saved = payload_json
                 payload_json_saved["model_slave_url"] = model_slave_url
@@ -680,10 +761,17 @@ class FedMLServerRunner:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, end_point_name, True)
 
-            self.send_deployment_status(end_point_id, end_point_name,
-                                        payload_json["model_name"],
-                                        model_inference_url,
-                                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
+            if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
+                self.send_deployment_status(end_point_id, end_point_name,
+                                            payload_json["model_name"],
+                                            model_inference_url,
+                                            ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTED)
+                self.model_runner_mapping[run_id_str].replica_controller.under_rollback = False
+            else:
+                self.send_deployment_status(end_point_id, end_point_name,
+                                            payload_json["model_name"],
+                                            model_inference_url,
+                                            ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
 
             self.slave_deployment_results_mapping[run_id_str] = dict()
 
@@ -822,7 +910,7 @@ class FedMLServerRunner:
         # Start log processor for current run
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs()
+        MLOpsRuntimeLog(args=self.args).init_logs()
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -959,7 +1047,22 @@ class FedMLServerRunner:
             # send start deployment request to each device
             self.send_deployment_start_request_to_edge(edge_id, self.request_json)
         return list(first_chunk_dict.keys())
-    
+
+    def send_rollback_msg(self, run_id_str):
+        # Avoid using the old request_json
+        self.delete_device_replica_info_on_master(
+            self.running_request_json[run_id_str]["end_point_id"],
+            self.running_request_json[run_id_str]["end_point_name"],
+            self.running_request_json[run_id_str]["model_config"]["model_name"],
+            self.running_request_json[run_id_str]["replica_version_diff"])
+
+        # Send the deployment msg to the devices, (we reuse the start_deployment msg)
+        for edge_id in self.running_request_json[run_id_str]["replica_version_diff"].keys():
+            if edge_id == self.edge_id:
+                continue
+            # send start deployment request to each device
+            self.send_deployment_start_request_to_edge(edge_id, self.running_request_json[run_id_str])
+
     def delete_device_replica_info_on_master(self, endpoint_id, endpoint_name, model_name, edge_id_replica_no_dict):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         # Remove the record of the replaced device
@@ -996,8 +1099,12 @@ class FedMLServerRunner:
         if replica_controller.total_replica_version_diff_num == 0:
             return
 
-        logging.info(f"Debug !! {replica_controller.curr_replica_updating_window} "
-                     f"{replica_controller.total_replica_version_diff_num}")
+        if replica_controller.under_rollback:
+            replica_controller.intermediate_replica_version[device_id][replica_no] = replica_controller.start_version
+            return
+
+        logging.info(f"Curr updating window: {replica_controller.curr_replica_updating_window} "
+                     f"Curr version diff num: {replica_controller.total_replica_version_diff_num}")
 
         replica_controller.callback_update_updating_window(device_id, replica_no)
 
@@ -1109,7 +1216,7 @@ class FedMLServerRunner:
         FedMLModelDatabase.get_instance().delete_deployment_run_info(
             end_point_id=model_msg_object.inference_end_point_id)
 
-    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
+    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload, replica_id_list=None):
         self.send_deployment_results(end_point_id, end_point_name,
                                      payload["model_name"], payload["model_url"],
                                      payload["model_version"], payload["port"],
@@ -1117,12 +1224,13 @@ class FedMLServerRunner:
                                      payload["model_metadata"],
                                      payload["model_config"],
                                      payload["input_json"],
-                                     payload["output_json"])
+                                     payload["output_json"],
+                                     replica_id_list=replica_id_list)
 
     def send_deployment_results(self, end_point_id, end_point_name,
                                 model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config, input_json, output_json):
+                                model_metadata, model_config, input_json, output_json, replica_id_list=None):
         deployment_results_topic_prefix = "model_ops/model_device/return_deployment_result"
         deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
         deployment_results_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
@@ -1133,7 +1241,8 @@ class FedMLServerRunner:
                                       "model_config": model_config,
                                       "input_json": input_json,
                                       "output_json": output_json,
-                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f')),
+                                      "replica_ids": replica_id_list}
         logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
@@ -1220,8 +1329,8 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ModelServerAgent_Metrics_@{}@_{}_{}_{}".format(self.user_name, self.args.current_device_id,
-                                                             str(os.getpid()),
-                                                             str(uuid.uuid4()))
+                                                                  str(os.getpid()),
+                                                                  str(uuid.uuid4()))
         )
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
