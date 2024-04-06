@@ -255,10 +255,15 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         run_params = run_config.get("parameters", {})
         serving_args = run_params.get("serving_args", {})
         endpoint_id = serving_args.get("endpoint_id", None)
-        cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
-            run_id, matched_gpu_num, edge_id, inner_id=endpoint_id,
-            model_master_device_id=model_master_device_id,
-            model_slave_device_id=model_slave_device_id)
+        job_yaml = run_params.get("job_yaml", {})
+        job_type = job_yaml.get("job_type", SchedulerConstants.JOB_TASK_TYPE_TRAIN)
+        cuda_visible_gpu_ids_str = None
+        if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
+                job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
+            cuda_visible_gpu_ids_str = JobRunnerUtils.get_instance().occupy_gpu_ids(
+                run_id, matched_gpu_num, edge_id, inner_id=endpoint_id,
+                model_master_device_id=model_master_device_id,
+                model_slave_device_id=model_slave_device_id)
         logging.info(
             f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(edge_id)}")
 

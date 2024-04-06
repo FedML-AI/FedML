@@ -18,7 +18,7 @@ class FedMLDeployJobRunnerMsgSender(object):
         self.request_json = None
         self.edge_id = None
 
-    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
+    def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload, replica_id_list=None):
         self.send_deployment_results(end_point_id, end_point_name,
                                      payload["model_name"], payload["model_url"],
                                      payload["model_version"], payload["port"],
@@ -26,12 +26,13 @@ class FedMLDeployJobRunnerMsgSender(object):
                                      payload["model_metadata"],
                                      payload["model_config"],
                                      payload["input_json"],
-                                     payload["output_json"])
+                                     payload["output_json"],
+                                     replica_id_list=replica_id_list)
 
     def send_deployment_results(self, end_point_id, end_point_name,
                                 model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config, input_json, output_json):
+                                model_metadata, model_config, input_json, output_json, replica_id_list=None):
         deployment_results_topic_prefix = "model_ops/model_device/return_deployment_result"
         deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
         deployment_results_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
@@ -42,7 +43,8 @@ class FedMLDeployJobRunnerMsgSender(object):
                                       "model_config": model_config,
                                       "input_json": input_json,
                                       "output_json": output_json,
-                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f')),
+                                      "replica_ids": replica_id_list}
         logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
         self.message_center.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
@@ -104,85 +106,16 @@ class FedMLDeployJobRunnerMsgSender(object):
                 continue
             should_added_devices.append(edge_id)
             # send start deployment request to each device
-            self.send_deployment_start_request_to_edge(edge_id)
+            self.send_deployment_start_request_to_edge(edge_id, self.request_json)
         return should_added_devices
 
-    def send_deployment_start_request_to_edge(self, edge_id):
+    def send_deployment_start_request_to_edge(self, edge_id, request_json):
         topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
         logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
-        self.message_center.send_message_json(topic_start_deployment, json.dumps(self.request_json))
+        self.message_center.send_message_json(topic_start_deployment, json.dumps(request_json))
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
-        if model_msg_object is None:    # Called after the diff operation
-            if "diff_devices" not in self.request_json or self.request_json["diff_devices"] is None:
-                return
-            else:
-                edge_id_list_to_delete = []
-                for device_id in self.request_json["diff_devices"]:
-                    if self.request_json["diff_devices"][device_id] == ServerConstants.DEVICE_DIFF_DELETE_OPERATION:
-                        edge_id_list_to_delete.append(device_id)
-                if len(edge_id_list_to_delete) == 0:
-                    return
-
-                try:
-                    FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port,
-                                                                    self.redis_password)
-
-                    # 1. Get & Delete the endpoint device info in Redis / SQLite
-                    device_objs = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_end_point_device_info(self.request_json["run_id"])
-
-                    if device_objs is None:
-                        raise Exception("The device list in local redis is None")
-                    else:
-                        total_device_objs_list = json.loads(device_objs)
-                        for device_obj in total_device_objs_list:
-                            if device_obj["id"] in edge_id_list_to_delete:
-                                total_device_objs_list.remove(device_obj)
-
-                    FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_end_point_device_info(
-                        self.request_json["end_point_id"], self.request_json["end_point_name"],
-                        json.dumps(total_device_objs_list))
-
-                    # 2 Delete the result in deployment result list in Redis / SQLite
-                    device_result_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                        get_deployment_result_list(self.request_json["end_point_id"],
-                                                   self.request_json["end_point_name"],
-                                                   self.request_json["model_config"]["model_name"])
-                    delete_device_result_list = []
-                    for device_result in device_result_list:
-                        device_result_dict = json.loads(device_result)
-                        if int(device_result_dict["cache_device_id"]) in edge_id_list_to_delete:
-                            delete_device_result_list.append(device_result)
-
-                    for delete_item in delete_device_result_list:
-                        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).delete_deployment_result(
-                            delete_item, self.request_json["end_point_id"],
-                            self.request_json["end_point_name"],
-                            self.request_json["model_config"]["model_name"]
-                        )
-
-                except Exception as e:
-                    run_id = self.request_json["run_id"]
-                    error_log_path = f"~/.fedml/fedml-model-server/fedml/logs/error_delete_{run_id}.txt"
-                    if not os.path.exists(os.path.dirname(os.path.expanduser(error_log_path))):
-                        os.makedirs(os.path.dirname(os.path.expanduser(error_log_path)))
-                    with open(os.path.expanduser(error_log_path), "w") as f:
-                        f.write(str(self.request_json))
-                        f.write(str(e))
-                        f.write('\n')
-                    raise e
-
-        else:   # Delete the whole endpoint
-            edge_id_list_to_delete = model_msg_object.device_ids
-
-        # For Debug
-        if payload is not None:
-            debug_log_path = f"~/.fedml/fedml-model-server/fedml/logs/tmp_debug_delete_payload.txt"
-            if not os.path.exists(os.path.dirname(os.path.expanduser(debug_log_path))):
-                os.makedirs(os.path.dirname(os.path.expanduser(debug_log_path)))
-            with open(os.path.expanduser(debug_log_path), "w") as f:
-                f.write(str(payload))
+        edge_id_list_to_delete = model_msg_object.device_ids
 
         # Remove the model master node id from the list using index 0
         edge_id_list_to_delete = edge_id_list_to_delete[1:]

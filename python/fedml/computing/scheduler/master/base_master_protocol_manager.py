@@ -76,8 +76,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # The topic for requesting device info from the client.
         self.topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
 
-        # The topic for requesting device info from MLOps.
-        self.topic_request_device_info_from_mlops = f"mlops/master_agent/request_device_info/{self.edge_id}"
+        # The topic for requesting device info from mlops.
+        self.topic_request_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.edge_id}"
 
         # The topic for getting job status from the status center.
         self.topic_requesst_job_status = f"anywhere/master_agent/request_job_status/{self.edge_id}"
@@ -114,6 +114,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_message_listener(self.topic_stop_train, self.callback_stop_train)
         self.add_message_listener(self.topic_ota_msg, FedMLBaseMasterProtocolManager.callback_server_ota_msg)
         self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
+        self.add_message_listener(self.topic_response_device_info, self.callback_response_device_info)
         self.add_message_listener(self.topic_response_device_info, self.callback_response_device_info)
         self.add_message_listener(self.topic_request_device_info_from_mlops,
                                   self.callback_request_device_info_from_mlops)
@@ -436,38 +437,10 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def response_device_info_to_mlops(self, topic, payload):
-        response_topic = f"master_agent/mlops/response_device_info"
-        payload_json = json.loads(payload)
-        need_gpu_info = payload_json.get("need_gpu_info", False)
+        response_topic = f"deploy/master_agent/mlops/response_device_info"
         if self.mlops_metrics is not None:
-            if not need_gpu_info:
-                response_payload = {
-                    "run_id": self.run_id,
-                    "master_agent_device_id": self.edge_id,
-                    "fedml_version": fedml.__version__
-                }
-            else:
-                total_mem, free_mem, total_disk_size, free_disk_size, cup_utilization, cpu_cores, \
-                    gpu_cores_total, gpu_cores_available, sent_bytes, recv_bytes, gpu_available_ids = \
-                    sys_utils.get_sys_realtime_stats()
-                gpu_available_ids = JobRunnerUtils.get_instance().get_available_gpu_id_list(self.edge_id)
-                gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
-                gpu_cores_available = len(gpu_available_ids)
-                response_payload = {
-                    "run_id": self.run_id,
-                    "master_agent_device_id": self.edge_id,
-                    "memoryTotal": round(total_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                    "memoryAvailable": round(free_mem * MLOpsUtils.BYTES_TO_GB, 2),
-                    "diskSpaceTotal": round(total_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                    "diskSpaceAvailable": round(free_disk_size * MLOpsUtils.BYTES_TO_GB, 2),
-                    "cpuUtilization": round(cup_utilization, 2),
-                    "cpuCores": cpu_cores,
-                    "gpuCoresTotal": gpu_cores_total,
-                    "gpuCoresAvailable": gpu_cores_available,
-                    "networkTraffic": sent_bytes + recv_bytes,
-                    "timestamp": int(MLOpsUtils.get_ntp_time()),
-                    "fedml_version": fedml.__version__
-                }
+            response_payload = {"run_id": self.run_id, "master_agent_device_id": self.edge_id,
+                                "fedml_version": fedml.__version__}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def init_job_task(self, request_json):
