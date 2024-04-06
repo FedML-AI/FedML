@@ -44,12 +44,25 @@ class ContainerUtils(Singleton):
 
         return container_obj
 
-    def get_container_logs(self, container_name):
+    def get_container_logs(self, container_name, timestamps=False):
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return None
 
-        logs_content = container_obj.logs(stdout=True, stderr=True, stream=False, follow=False)
+        logs_content = container_obj.logs(stdout=True, stderr=True, stream=False, follow=False, timestamps=timestamps)
+        if logs_content is None:
+            return None
+
+        logs_content = sys_utils.decode_our_err_result(logs_content)
+        return logs_content
+
+    def get_container_logs_since(self, container_name, since_time: int, timestamps=False):
+        container_obj = self.get_docker_object(container_name)
+        if container_obj is None:
+            return None
+
+        logs_content = container_obj.logs(stdout=True, stderr=True, stream=False, follow=False, since=since_time,
+                                          timestamps=timestamps)
         if logs_content is None:
             return None
 
@@ -154,7 +167,7 @@ class ContainerUtils(Singleton):
                 time.sleep(3)
 
         return inference_http_port
-    
+
     @staticmethod
     def get_container_rank_same_model(prefix: str):
         """
@@ -165,7 +178,7 @@ class ContainerUtils(Singleton):
             client = docker.from_env()
         except Exception:
             logging.error("Failed to connect to the docker daemon, please ensure that you have "
-                        "installed Docker Desktop or Docker Engine, and the docker is running")
+                          "installed Docker Desktop or Docker Engine, and the docker is running")
             return -1
 
         try:

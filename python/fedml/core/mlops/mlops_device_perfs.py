@@ -10,13 +10,11 @@ import multiprocessing
 import psutil
 
 from fedml.computing.scheduler.comm_utils import sys_utils
+from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
+from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
 from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
-from ...computing.scheduler.comm_utils.job_utils import JobRunnerUtils
-
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
-from .mlops_utils import MLOpsUtils
-from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 
 ROLE_DEVICE_INFO_REPORTER = 1
 ROLE_DEVICE_JOB_MONITOR = 2
@@ -136,8 +134,11 @@ class MLOpsDevicePerfStats(object):
 
         topic_name = "ml_client/mlops/gpu_device_info"
 
-        gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(edge_id)
-        gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
+        # We should report realtime available gpu count to MLOps, not from local redis cache.
+        # Use gpu_available_ids from sys_utils.get_sys_realtime_stats()
+        # Do not use the following two lines as the realtime available gpu ids.
+        # gpu_available_ids = JobRunnerUtils.get_available_gpu_id_list(edge_id)
+        # gpu_available_ids = JobRunnerUtils.trim_unavailable_gpu_ids(gpu_available_ids)
         gpu_cores_available = len(gpu_available_ids)
         deploy_worker_id_list = list()
         try:

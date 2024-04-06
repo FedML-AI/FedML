@@ -2,12 +2,12 @@
  <img src="assets/fedml_logo_light_mode.png" width="400px" alt="FedML logo">
 </div>
 
-# LLM Fine-tune
+# LLM Training
 
 This repo contains an MLOps-supported training pipeline to help users build their own large language model (LLM) on proprietary/private
 data.
 This repo aims to provide a minimalist example of efficient LLM training/fine-tuning
-and to illustrate how to use FedML Launch and fine-tuning.
+and to illustrate how to use FEDML Launch.
 We leverage Pythia 7B by default and recently added support for Llama 2.
 
 The repo contains:
@@ -17,6 +17,75 @@ The repo contains:
     - LoRA integration from [peft](https://github.com/huggingface/peft).
     - Supports [DeepSpeed](https://www.deepspeed.ai/).
     - Dataset implementation with [datasets](https://huggingface.co/docs/datasets/index).
+
+## Getting Started
+
+Clone the repo then go to the project directory:
+
+```shell
+# clone the repo
+git clone https://github.com/FedML-AI/FedML.git
+
+# go to the project directory
+cd python/examples/train/llm_train
+```
+
+Install dependencies with the following command:
+
+```shell
+pip install -r requirements.txt
+```
+
+See [Dependencies](#dependencies) for more information on the dependency versions.
+
+### Training
+
+The [`run_train.py`](run_train.py) contains a minimal example for conventional/centralized LLM training and fine-tuning
+on [`databricks-dolly-15k`](https://huggingface.co/datasets/FedML/databricks-dolly-15k-niid) dataset.
+
+Example scripts:
+
+```shell
+# train on a single GPU
+bash scripts/train.sh \
+  ... # additional arguments
+
+# train with PyTorch DDP
+bash scripts/train_ddp.sh \
+  ... # additional arguments
+
+# train with DeepSpeed
+bash scripts/train_deepspeed.sh \
+  ... # additional arguments
+```
+
+> **Note**
+> You can use `bash scripts/train.sh -h` to list all the supported CLI options.
+
+> **Note**
+> If you have an Amper or newer GPU (e.g., RTX 3000 series or newer), you could turn on **bf16** to have more
+> efficient training by passing `--bf16 "True"` in the command line.
+
+> **Warning**
+> when using PyTorch DDP with LoRA and gradient checkpointing, you need to turn off `find_unused_parameters`
+> by passing `--ddp_find_unused_parameters "False"` in the command line.
+
+### Train with FEDML Launch
+
+If you have trouble finding computing resources, you can launch your training job via [FEDML Launch](https://doc.fedml.ai/launch) and left FEDML to find the most cost-effective resource for your task.
+
+```shell
+# install fedml library
+pip3 install fedml
+
+# launch your training job
+fedml launch job.yaml
+```
+
+You can modify the training command in [job.yaml](job.yaml) by
+- specify training settings in `job` section
+- specify environment setup settings in `bootstrap` section
+- specify compute resources in `computing` section
 
 ## How to Use Llama 2
 
@@ -43,54 +112,6 @@ Hugging Face repo access.
 >   - Set environment variable `HUGGING_FACE_HUB_TOKEN="<your access token>"`
 >   - For centralized/conventional training, pass `--auth_token "<your access token>"` in the command line.
 
-## Getting Started
-
-Clone the repo then go to the project directory:
-
-```shell
-# clone the repo
-git clone https://github.com/FedML-AI/llm-finetune.git
-
-# go to the project directory
-cd llm-finetune
-```
-
-Install dependencies with the following command:
-
-```shell
-pip install -r requirements.txt
-```
-
-See [Dependencies](#dependencies) for more information on the dependency versions.
-
-### Conventional/Centralized Training
-
-The [`run_train.py`](run_train.py) contains a minimal example for conventional/centralized LLM training and fine-tuning
-on [`databricks-dolly-15k`](https://huggingface.co/datasets/FedML/databricks-dolly-15k-niid) dataset.
-
-Example scripts:
-
-```shell
-# train on a single GPU
-bash scripts/train.sh \
-  ... # additional arguments
-
-# train with PyTorch DDP
-bash scripts/train_ddp.sh \
-  ... # additional arguments
-
-# train with DeepSpeed
-bash scripts/train_deepspeed.sh \
-  ... # additional arguments
-```
-
-> **Note**
-> If you have an Amper or newer GPU (e.g., RTX 3000 series or newer), you could turn on **bf16** to have more
-> efficient training by passing `--bf16 "True"` in the command line.
-
-> **Warning**
-> when using PyTorch DDP with LoRA and gradient checkpointing, you need to turn off `find_unused_parameters`
-> by passing `--ddp_find_unused_parameters "False"` in the command line.
 
 ### Dependencies
 
@@ -98,14 +119,4 @@ We have tested our implement with the following setup:
 
 - Ubuntu `20.04.5 LTS` and `22.04.2 LTS`
 - CUDA `12.2`, `11.8`, `11.7` and `11.6`
-- Python `3.8.13` and `3.9.16`
-    - `fedml>=0.8.4a7`
-    - `torch>=2.0.0,<=2.1.0`
-    - `torchvision>=0.15.1,<=0.16.0`
-    - `transformers>=4.31.0,<=4.34.0`
-    - `peft>=0.4.0,<=0.5.0`
-    - `datasets>=2.11.0,<=2.14.5`
-    - `deepspeed>=0.9.1,<=0.10.3`
-    - `numpy>=1.24.3,<=1.24.4`
-    - `tensorboard>=2.12.2,<=2.13.0`
-    - `mpi4py>=3.1.4,<=3.1.5`
+- Python `3.8.13`, `3.9.16` and `3.10.13`

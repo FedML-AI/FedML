@@ -138,6 +138,12 @@ class FedMLModelCache(Singleton):
         except Exception as e:
             pass
 
+        device_id, replica_no, _ = self.get_result_item_info(element)
+        self.model_deployment_db.delete_deployment_result_with_device_id_and_rank(
+            end_point_id, end_point_name, model_name, device_id, replica_rank=replica_no-1)
+
+        return
+
     def delete_deployment_result_with_device_id_and_replica_no(self, end_point_id, end_point_name, model_name,
                                                                device_id, replica_no_to_delete):
         result_item_found = None
@@ -176,12 +182,6 @@ class FedMLModelCache(Singleton):
                 logging.info(e)
                 pass
         return result_list
-
-    def delete_deployment_result(self, element: str, end_point_id, end_point_name, model_name):
-        self.redis_connection.lrem(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
-                                   0, element)
-        device_id, _, _ = self.get_result_item_info(element)
-        self.model_deployment_db.delete_deployment_result(device_id, end_point_id, end_point_name, model_name)
 
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
         result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
@@ -224,7 +224,7 @@ class FedMLModelCache(Singleton):
             result_item_json = json.loads(result_item_json)
 
         device_id = result_item_json["cache_device_id"]
-        replica_no = result_item_json["cache_replica_no"]
+        replica_no = result_item_json.get("cache_replica_no", 1)    # Compatible with the old version
 
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
@@ -466,7 +466,7 @@ class FedMLModelCache(Singleton):
                     pass
 
         return device_info
-    
+
     def delete_end_point_device_info(self, end_point_id, end_point_name, edge_id_list_to_delete):
         '''
         Since the device info is stored in one key, we need to first delete the device info from the existing one.
@@ -497,7 +497,7 @@ class FedMLModelCache(Singleton):
             total_device_objs_list = json.loads(device_objs)
             new_device_info_json = json.loads(new_device_info)
             total_device_objs_list.append(new_device_info_json)
-        
+
         FedMLModelCache.get_instance().set_end_point_device_info(
             end_point_id, end_point_name, json.dumps(total_device_objs_list))
 
