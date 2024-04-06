@@ -285,7 +285,10 @@ class FedMLClientRunner:
                 logging.info(
                     f"[endpoint/device][{run_id}/{self.edge_id}] "
                     f"Failed to run the model deployment. run_impl return False.")
-                self.release_gpu_ids(run_id)
+
+                # This if condition only happens when run_impl return False in a controllable way
+                # Under this condition, the run_impl itself should have handled the cleanup
+                # So no need to self.release_gpu_ids(run_id)
         except RunnerError:
             logging.error(
                 f"[endpoint/device][{run_id}/{self.edge_id}] "
@@ -585,7 +588,8 @@ class FedMLClientRunner:
 
                 # TODO (Raphael) check if this will allow another job to seize the gpu during high concurrency:
                 try:
-                    JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+                    JobRunnerUtils.get_instance().release_partial_job_gpu(
+                        run_id, self.edge_id, replica_occupied_gpu_ids)
                 except Exception as e:
                     if op == "rollback":
                         pass
