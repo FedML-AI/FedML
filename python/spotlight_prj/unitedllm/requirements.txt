@@ -17,4 +17,5 @@ wandb
 zstandard
 ninja
 packaging
-pyyaml
+# fix https://github.com/yaml/pyyaml/issues/724#issuecomment-1638591821
+pyyaml!=6.0.0,!=5.4.0,!=5.4.1
