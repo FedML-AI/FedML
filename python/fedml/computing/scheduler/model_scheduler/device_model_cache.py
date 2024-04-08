@@ -653,10 +653,10 @@ class FedMLModelCache(Singleton):
 
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,
-                            total_latency, avg_latency,
+                            total_latency, avg_latency, current_latency,
                             total_request_num, current_qps,
                             avg_qps, timestamp, device_id):
-        metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency,
+        metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency, "current_latency": current_latency,
                         "total_request_num": total_request_num, "current_qps": current_qps,
                         "avg_qps": avg_qps, "timestamp": timestamp, "device_id": device_id}
         try:
@@ -666,7 +666,7 @@ class FedMLModelCache(Singleton):
             pass
         self.model_deployment_db.set_monitor_metrics(end_point_id, end_point_name,
                                                      model_name, model_version,
-                                                     total_latency, avg_latency,
+                                                     total_latency, avg_latency, current_latency,
                                                      total_request_num, current_qps,
                                                      avg_qps, timestamp, device_id)
 
