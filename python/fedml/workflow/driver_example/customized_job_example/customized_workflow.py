@@ -12,8 +12,8 @@ MY_API_KEY = ""  # Here you need to set your API key from nexus.fedml.ai
 
 
 class DeployImageJob(ModelDeployJob):
-    def __init__(self, name, endpoint_id=None, job_yaml_absolute_path=None, job_api_key=None):
-        super().__init__(name, endpoint_id=endpoint_id, job_yaml_absolute_path=job_yaml_absolute_path,
+    def __init__(self, name, endpoint_name=None, job_yaml_absolute_path=None, job_api_key=None):
+        super().__init__(name, endpoint_name=endpoint_name, job_yaml_absolute_path=job_yaml_absolute_path,
                          job_api_key=job_api_key)
 
     def run(self):
@@ -27,8 +27,8 @@ class DeployImageJob(ModelDeployJob):
 
 
 class InferenceImageJob(ModelInferenceJob):
-    def __init__(self, name, endpoint_id=None, job_api_key=None):
-        super().__init__(name, endpoint_id=endpoint_id, job_api_key=job_api_key)
+    def __init__(self, name, endpoint_name=None, job_api_key=None):
+        super().__init__(name, endpoint_name=endpoint_id, job_api_key=job_api_key)
         self.run_id = None
 
     def run(self):
@@ -77,9 +77,9 @@ def create_deploy_workflow(job_api_key=None):
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 
     # Generate the job object
-    endpoint_id = 100  # Here you need to set your own endpoint id
+    endpoint_name = "endpoint_alex_image"  # Here you need to set your own endpoint name
     deploy_image_job = DeployImageJob(
-        name="deploy_image_job", endpoint_id=endpoint_id,
+        name="deploy_image_job", endpoint_name=endpoint_name,
         job_yaml_absolute_path=deploy_image_job_yaml, job_api_key=job_api_key)
 
     # Define the workflow
@@ -103,7 +103,7 @@ def create_deploy_workflow(job_api_key=None):
 
 
 def create_inference_train_workflow(
-        job_api_key=None, endpoint_id_list: List[int] = None, input_json=None):
+        job_api_key=None, endpoint_name_list: List[str] = None, input_json=None):
     # Define the job yaml
     working_directory = os.path.dirname(os.path.abspath(__file__))
     deploy_image_job_yaml = os.path.join(working_directory, "deploy_image_job.yaml")
@@ -116,9 +116,9 @@ def create_inference_train_workflow(
 
     # Generate the job object
     inference_jobs = list()
-    for index, endpoint_id in enumerate(endpoint_id_list):
+    for index, endpoint_name in enumerate(endpoint_name_list):
         inference_job = InferenceImageJob(
-            name=f"inference_job_{index}", endpoint_id=endpoint_id, job_api_key=job_api_key)
+            name=f"inference_job_{index}", endpoint_name=endpoint_name, job_api_key=job_api_key)
         inference_jobs.append(inference_job)
     train_job = TrainJob(name="train_job", job_yaml_absolute_path=train_job_yaml, job_api_key=job_api_key)
 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--deploy", "-d", nargs="*", help="Create a deploy workflow")
     parser.add_argument("--inference", "-i", nargs="*", help='Create a inference workflow')
-    parser.add_argument("--endpoint_id", "-e", type=str, default=None, help='Endpoint id for inference')
+    parser.add_argument("--endpoint_name", "-e", type=str, default=None, help='Endpoint name for inference')
     parser.add_argument("--api_key", "-k", type=str, default=MY_API_KEY, help='API Key from the Nexus AI Platform')
     parser.add_argument("--infer_json", "-ij", type=str, default=None, help='Input json data for inference')
 
@@ -173,13 +173,13 @@ if __name__ == "__main__":
         is_inference = True
 
     workflow_status, outputs = None, None
-    deployed_endpoint_id = args.endpoint_id
+    deployed_endpoint_name = args.endpoint_name
     if is_deploy:
         workflow_status, outputs = create_deploy_workflow(job_api_key=args.api_key)
-        deployed_endpoint_id = outputs.get("endpoint_id", None)
+        deployed_endpoint_name = outputs.get("endpoint_name", None)
 
-    if is_inference and deployed_endpoint_id is not None:
+    if is_inference and deployed_endpoint_name is not None:
         create_inference_train_workflow(
-            job_api_key=args.api_key, endpoint_id_list=[deployed_endpoint_id, deployed_endpoint_id],
+            job_api_key=args.api_key, endpoint_name_list=[deployed_endpoint_name, deployed_endpoint_name],
             input_json=args.infer_json)
         exit(0)

@@ -8,9 +8,10 @@ import requests
 
 
 class ModelInferenceJob(CustomizedBaseJob):
-    def __init__(self, name, endpoint_id=None, job_api_key=None):
+    def __init__(self, name, endpoint_name=None, job_api_key=None):
         super().__init__(name, job_api_key=job_api_key)
-        self.endpoint_id = endpoint_id
+        self.endpoint_id = None
+        self.endpoint_name = endpoint_name
         self.endpoint_detail: FedMLEndpointDetail = None
         self.inference_url = None
         self.infer_request_body = None
@@ -18,7 +19,8 @@ class ModelInferenceJob(CustomizedBaseJob):
         self.out_response_json = None
 
         try:
-            self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.endpoint_id, self.job_api_key)
+            self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                endpoint_name=self.endpoint_name, user_api_key=self.job_api_key)
         except Exception as e:
             self.endpoint_detail = None
 
@@ -27,8 +29,8 @@ class ModelInferenceJob(CustomizedBaseJob):
     def run(self):
         if self.endpoint_detail is None:
             try:
-                self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(self.endpoint_id,
-                                                                                                self.job_api_key)
+                self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                    endpoint_name=self.endpoint_name, user_api_key=self.job_api_key)
             except Exception as e:
                 self.endpoint_detail = None
 
