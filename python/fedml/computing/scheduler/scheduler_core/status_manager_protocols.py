@@ -300,4 +300,4 @@ class FedMLStatusManager(object):
         # Request the job status from master agent.
         topic_request_job_status = f"{GeneralConstants.MSG_TOPIC_REQUEST_JOB_STATUS_PREFIX}{master_id}"
         payload_request_job_status = {"run_id": run_id, "edge_id": edge_id}
-        self.message_center.send_message(topic_request_job_status, payload_request_job_status)
+        self.message_center.send_message(topic_request_job_status, json.dumps(payload_request_job_status))

@@ -221,24 +221,20 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             logging.warning(f"Failed to change the logging handler due to {e}.")
 
         logging.info("========== callback_deployment_result_message ==========\n")
-        #  Identify the operation for this run (add, remove, update)
-        if run_id_str not in self.running_request_json:
-            logging.error(f"Run id {run_id_str} is not in the running request json.")
-            return
 
         # The rolling update and scale out / in operation should not happen at the same time
-        assert not ("replica_num_diff" in self.running_request_json[run_id_str] and
-                    len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0 and
-                    "replica_version_diff" in self.running_request_json[run_id_str])
+        assert not ("replica_num_diff" in self.request_json and
+                    len(self.request_json["replica_num_diff"]) > 0 and
+                    "replica_version_diff" in self.request_json)
 
-        if "replica_version_diff" in self.running_request_json[run_id_str]:
+        if "replica_version_diff" in self.request_json:
             run_operation = "UPDATE"
-        elif "replica_num_diff" in self.running_request_json[run_id_str] and \
-                len(self.running_request_json[run_id_str]["replica_num_diff"]) > 0:
+        elif "replica_num_diff" in self.request_json and \
+                len(self.request_json["replica_num_diff"]) > 0:
             run_operation = "ADD_OR_REMOVE"
         else:
             logging.error(f"Unsupported operation for run id {run_id_str}. and request json "
-                          f"{self.running_request_json[run_id_str]}")
+                          f"{self.request_json}")
             return
 
         logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
@@ -249,8 +245,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         # logging.info(f"The current replica controller state is "
         #              f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
         # logging.info(f"self.request_json now {self.request_json}")    # request_json will be deprecated
-        # this_run_request_json = self.running_request_json.get(run_id_str, None)
-        # logging.info(f"self.running_request_json now {this_run_request_json}")
+        # this_run_request_json = self.request_json
+        # logging.info(f"self.request_json now {this_run_request_json}")
 
         # Set redis + sqlite deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -290,7 +286,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 # Change the target version to the start version
                 self.replica_controller.rollback_setback_target_replica_version()
 
-                self.running_request_json[run_id_str]["replica_version_diff"] = copy.deepcopy(rollback_version_diff)
+                self.request_json["replica_version_diff"] = copy.deepcopy(rollback_version_diff)
 
                 # Send the rollback message to the worker devices
                 self.send_rollback_msg(run_id_str)
@@ -317,7 +313,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         logging.info("callback_deployment_result_message: topic {}, payload {}, result mapping {}.".format(
             topic, payload, self.slave_deployment_results_map))
 
-        request_json = self.running_request_json.get(run_id_str, None)
+        request_json = self.request_json
         if request_json is None:
             logging.error(f"The endpoint {end_point_id} is no longer running.")
             self.send_deployment_status(

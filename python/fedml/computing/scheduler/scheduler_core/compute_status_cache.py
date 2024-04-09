@@ -42,6 +42,8 @@ class ComputeStatusCache(object):
         return status
 
     def save_device_status_in_job(self, run_id, device_id, status):
+        if status is None:
+            return
         try:
             self.redis_connection.set(self._get_device_status_in_job_key(run_id, device_id), status)
         except Exception as e:

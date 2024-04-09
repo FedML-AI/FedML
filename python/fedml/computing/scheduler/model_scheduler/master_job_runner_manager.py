@@ -42,10 +42,11 @@ class FedMLDeployJobRunnerManager(FedMLBaseMasterJobRunnerManager, Singleton):
                 message_center=message_center
             )
 
-    def send_deployment_delete_request_to_edges(self, end_point_id, payload, model_msg_object):
+    def send_deployment_delete_request_to_edges(self, end_point_id, payload, model_msg_object, message_center=None):
         run_id_str = str(end_point_id)
         if self.job_runners.get(run_id_str, None) is not None:
-            self.job_runners[run_id_str].send_deployment_delete_request_to_edges(payload, model_msg_object)
+            self.job_runners[run_id_str].send_deployment_delete_request_to_edges(
+                payload, model_msg_object, message_center=message_center)
 
     def stop_device_inference_monitor(self, run_id, end_point_name, model_id, model_name, model_version):
         run_id_str = str(run_id)

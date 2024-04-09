@@ -114,7 +114,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             delete_end_point(model_msg_object.inference_end_point_id, model_msg_object.end_point_name,
                              model_msg_object.model_name, model_msg_object.model_version)
 
-        FedMLDeployJobRunnerManager.get_instance().send_deployment_delete_request_to_edges(payload, model_msg_object)
+        FedMLDeployJobRunnerManager.get_instance().send_deployment_delete_request_to_edges(
+            model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center)
 
         FedMLDeployJobRunnerManager.get_instance().stop_job_runner(model_msg_object.run_id)
 

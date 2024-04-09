@@ -82,6 +82,9 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         # Start the message center to process edge related messages.
         self.setup_message_center()
 
+        # Setup the message listener queue
+        self.setup_listener_message_queue()
+
         # Start the status center to process edge related status.
         self.start_status_listener_center()
 

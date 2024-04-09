@@ -24,26 +24,11 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
         # The topic for requesting device info from mlops.
         self.topic_request_edge_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
 
-        # The topic for requesting deployment master device info from mlops.
-        self.topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.model_device_server_id}"
-
-        # The topic for requesting deployment slave device info from mlops.
-        self.topic_request_deploy_slave_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.model_device_client_edge_id_list[0]}"
-
         self.add_subscribe_topic(self.topic_request_edge_device_info_from_mlops)
-        self.add_subscribe_topic(self.topic_request_deploy_master_device_info_from_mlops)
-        self.add_subscribe_topic(self.topic_request_deploy_slave_device_info_from_mlops)
 
     # Override
     def add_protocol_handler(self):
         super().add_protocol_handler()
-
-        self.add_message_listener(
-            self.topic_request_edge_device_info_from_mlops, self.callback_response_device_info_to_mlops)
-        self.add_message_listener(
-            self.topic_request_deploy_master_device_info_from_mlops, self.callback_response_device_info_to_mlops)
-        self.add_message_listener(
-            self.topic_request_deploy_slave_device_info_from_mlops, self.callback_response_device_info_to_mlops)
 
     # Override
     def _generate_protocol_manager_instance(self, args, agent_config=None):
@@ -121,6 +106,9 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
         os.environ["FEDML_DEPLOY_MASTER_ID"] = str(self.model_device_server_id)
         os.environ["FEDML_DEPLOY_WORKER_IDS"] = str(self.model_device_client_edge_id_list)
 
+        # Subscribe handshaking messages from MLOps.
+        self.subscribe_handshaking_messages_from_mlops()
+
         # Start the monitor process
         self.args = copy.deepcopy(in_args)
         self.mlops_metrics.stop_device_realtime_perf()
@@ -153,3 +141,19 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
                 response_payload["context"] = context
             self.message_center.send_message(response_topic, json.dumps(response_payload), run_id=run_id)
 
+    def subscribe_handshaking_messages_from_mlops(self):
+        # The topic for requesting deployment master device info from mlops.
+        self.topic_request_deploy_master_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.model_device_server_id}"
+
+        # The topic for requesting deployment slave device info from mlops.
+        self.topic_request_deploy_slave_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.model_device_client_edge_id_list[0]}"
+
+        self.add_subscribe_topic(self.topic_request_deploy_master_device_info_from_mlops)
+        self.add_subscribe_topic(self.topic_request_deploy_slave_device_info_from_mlops)
+
+        self.add_message_listener(
+            self.topic_request_edge_device_info_from_mlops, self.callback_response_device_info_to_mlops)
+        self.add_message_listener(
+            self.topic_request_deploy_master_device_info_from_mlops, self.callback_response_device_info_to_mlops)
+        self.add_message_listener(
+            self.topic_request_deploy_slave_device_info_from_mlops, self.callback_response_device_info_to_mlops)

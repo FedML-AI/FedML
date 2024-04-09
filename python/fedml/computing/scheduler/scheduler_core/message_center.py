@@ -200,6 +200,7 @@ class FedMLMessageCenter(object):
 
         while True:
             message_entity = None
+            message_body = None
             try:
                 self.check_message_stop_event()
             except MessageCenterStoppedException as e:
@@ -242,7 +243,7 @@ class FedMLMessageCenter(object):
                         f"payload {message_entity.payload}, {traceback.format_exc()}"
                     )
                 else:
-                    logging.info(f"Failed to send the message: {traceback.format_exc()}")
+                    logging.info(f"Failed to send the message with body {message_body}, {traceback.format_exc()}")
 
         self.release_sender_mqtt_mgr()
 
@@ -291,11 +292,18 @@ class FedMLMessageCenter(object):
     def get_listener_message_queue(self):
         return self.listener_message_queue
 
-    def start_listener(self, sender_message_queue=None, agent_config=None, message_center_name=None):
+    def setup_listener_message_queue(self):
+        self.listener_message_queue = Queue()
+
+    def start_listener(self, sender_message_queue=None, listener_message_queue=None, agent_config=None, message_center_name=None):
         if self.listener_message_center_process is not None:
             return
 
-        self.listener_message_queue = Queue()
+        if listener_message_queue is None:
+            if self.listener_message_queue is None:
+                self.listener_message_queue = Queue()
+        else:
+            self.listener_message_queue = listener_message_queue
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config

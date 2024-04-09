@@ -114,7 +114,7 @@ class FedMLDeployJobRunnerMsgSender(object):
         logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
         self.message_center.send_message_json(topic_start_deployment, json.dumps(request_json))
 
-    def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
+    def send_deployment_delete_request_to_edges(self, payload, model_msg_object, message_center=None):
         edge_id_list_to_delete = model_msg_object.device_ids
 
         # Remove the model master node id from the list using index 0
@@ -128,7 +128,10 @@ class FedMLDeployJobRunnerMsgSender(object):
             # send delete deployment request to each model device
             topic_delete_deployment = "model_ops/model_device/delete_deployment/{}".format(str(edge_id))
             logging.info("delete_deployment: send topic " + topic_delete_deployment + " to client...")
-            self.message_center.send_message_json(topic_delete_deployment, payload)
+            if message_center is not None:
+                message_center.send_message_json(topic_delete_deployment, payload)
+            else:
+                self.message_center.send_message_json(topic_delete_deployment, payload)
 
     def send_deployment_stop_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
