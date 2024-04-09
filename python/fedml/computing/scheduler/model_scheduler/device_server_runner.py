@@ -902,6 +902,7 @@ class FedMLServerRunner:
 
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
+        model_version = model_config["model_version"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config.get("instance_scale_min", 0)
@@ -923,7 +924,8 @@ class FedMLServerRunner:
 
         # Save the user setting (about replica number) of this run to Redis, if existed, update it
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(
-            end_point_id=run_id, replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
+            end_point_id=run_id, end_point_name=end_point_name, model_name=model_name, model_version=model_version,
+            replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
             scale_min=scale_min, scale_max=scale_max, state="DEPLOYING")
 
         # Start log processor for current run

@@ -101,11 +101,16 @@ class FedMLModelCache(Singleton):
     def get_instance(redis_addr="local", redis_port=6379):
         return FedMLModelCache()
 
-    def set_user_setting_replica_num(self, end_point_id, replica_num: int, enable_auto_scaling: bool = False,
+    def set_user_setting_replica_num(self, end_point_id,
+                                     end_point_name: str, model_name: str, model_version: str,
+                                     replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN") -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
         Value: {
+            "endpoint_name": end_point_name,
+            "model_name": model_name,
+            "model_version": model_version,
             "replica_num": replica_num,
             "enable_auto_scaling": enable_auto_scaling,
             "scale_min": scale_min,
@@ -119,7 +124,8 @@ class FedMLModelCache(Singleton):
         """
         assert state in ["UNKNOWN", "DEPLOYED", "DEPLOYING"]
         replica_num_dict = {
-            "end_point_id": end_point_id, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
+            "endpoint_id": end_point_id, "endpoint_name": end_point_name, "model_name": model_name,
+            "model_version": model_version, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
             "scale_min": scale_min, "scale_max": scale_max, "state": state}
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))

@@ -104,6 +104,8 @@ class FedMLModelMetrics:
         while True:
             # Frequency of sending monitoring metrics
             time.sleep(5)
+
+            # TODO(Raphael): Improve this uploading process
             try:
                 index = self.send_monitoring_metrics(index)
             except Exception as e:
