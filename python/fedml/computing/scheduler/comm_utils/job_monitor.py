@@ -79,12 +79,7 @@ class JobMonitor(Singleton):
         # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
         # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
         self.autoscaling_policy_config = {
-            "metric": "latency",
-            "ewm_mins": 1,
-            "ewm_alpha": 0.9,
-            "ub_threshold": 0.001,
-            "lb_threshold": 0.999
-        }
+            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
         self.autoscaling_policy = ReactivePolicy(**self.autoscaling_policy_config)
 
 
@@ -119,7 +114,8 @@ class JobMonitor(Singleton):
                 logging.info(f"After interval, check the autoscaler for async future list."
                              f"{self.endpoints_autoscale_predict_future}")
 
-                e_id = endpoint_settings["end_point_id"]
+                e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \
+                                              endpoint_settings["model_name"]
                 logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
 
                 # For every endpoint we just update the policy configuration.
@@ -156,13 +152,14 @@ class JobMonitor(Singleton):
                 autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
                 url = f"{mlops_prefix}{autoscale_url_path}"
 
-                api_key = get_api_key()
-                if api_key is None or api_key == "":
-                    logging.error(f"API key is not set.")
+                # Get cached token for authorization of autoscale request
+                cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
+                if cached_token is None:
+                    logging.error(f"Failed to get the cached token for endpoint {e_id}.")
                     return
 
                 req_header = {
-                    "Authorization": f"Bearer {api_key}"
+                    "Authorization": f"Bearer {cached_token}"
                 }
                 req_body = {
                     "endpointId": int(e_id),
