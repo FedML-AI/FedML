@@ -79,7 +79,7 @@ class JobMonitor(Singleton):
         # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
         # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
         self.autoscaling_policy_config = {
-            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.95}
         self.autoscaling_policy = ReactivePolicy(**self.autoscaling_policy_config)
 
 
@@ -133,13 +133,15 @@ class JobMonitor(Singleton):
 
                 new_replicas = current_replicas + scale_op.value
 
+                logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
+                logging.info(f"New Replicas {new_replicas} for endpoint {e_id} .")
+                logging.info(f"Current Replicas {current_replicas} for endpoint {e_id} .")
                 if current_replicas == new_replicas:
                     # Basically the autoscaler decided that no scaling operation should take place.
                     logging.info(f"No scaling operation for endpoint {e_id}.")
                     return
 
                 # Should scale in / out
-                logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
                 curr_version = fedml.get_env_version()
 
                 if curr_version == "release":
