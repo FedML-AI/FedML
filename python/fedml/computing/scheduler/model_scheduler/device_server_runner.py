@@ -670,15 +670,15 @@ class FedMLServerRunner:
                 payload_json_saved["model_slave_url"] = model_slave_url
                 FedMLServerDataInterface.get_instance().save_job_result(end_point_id, self.edge_id,
                                                                         json.dumps(payload_json_saved))
-
-                # For auto-scaling
-                # TODO(Raphael): Check if other place should also update state
-                FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                    update_user_setting_replica_num(end_point_id=end_point_id, state="DEPLOYED")
             else:
                 # Arrive here because only contains remove ops, so we do not need to update the model metadata
                 pass
 
+            # For auto-scaling, should update the state to "DEPLOYED"
+            FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                update_user_setting_replica_num(end_point_id=end_point_id, state="DEPLOYED")
+
+            # Set the end point activation status to True
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, end_point_name, True)
 
