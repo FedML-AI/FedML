@@ -43,6 +43,7 @@ class ModelInferenceJob(CustomizedBaseJob):
             return
 
         if self.endpoint_detail.status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+            print("Predicting..., please wait.")
             self.run_status = JobStatus.RUNNING
 
             self._build_in_params()
