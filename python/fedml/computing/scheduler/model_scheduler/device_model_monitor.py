@@ -43,7 +43,7 @@ class FedMLModelMetrics:
             get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
         logging.info(f"Calculated metrics_item: {metrics_item}")
         if metrics_item is not None:
-            total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
+            total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
 
         total_request_num += 1
@@ -126,7 +126,7 @@ class FedMLModelMetrics:
                                      self.current_model_name, self.current_model_version, index)
         if metrics_item is None:
             return index
-        total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
+        total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
         deployment_monitoring_topic_prefix = "model_ops/model_device/return_inference_monitoring"
         deployment_monitoring_topic = "{}/{}".format(deployment_monitoring_topic_prefix, self.current_end_point_id)
@@ -134,8 +134,10 @@ class FedMLModelMetrics:
                                          "model_id": self.current_model_id,
                                          "model_url": self.current_infer_url,
                                          "end_point_id": self.current_end_point_id,
-                                         "latency": float(avg_latency),
-                                         "qps": float(avg_qps),
+                                         # "latency": float(avg_latency),
+                                         # "qps": float(avg_qps),
+                                         "latency": float(current_latency),
+                                         "qps": float(current_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp,
                                          "edgeId": device_id}

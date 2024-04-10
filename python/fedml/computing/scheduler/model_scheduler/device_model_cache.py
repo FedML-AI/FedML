@@ -719,10 +719,14 @@ class FedMLModelCache(Singleton):
         avg_latency = metrics_item_json["avg_latency"]
         total_request_num = metrics_item_json["total_request_num"]
         current_qps = metrics_item_json["current_qps"]
+
+        # For the old version, the current_latency is not available
+        current_latency = metrics_item_json.get("current_latency", avg_latency)
+
         avg_qps = metrics_item_json["avg_qps"]
         timestamp = metrics_item_json["timestamp"]
         device_id = metrics_item_json["device_id"]
-        return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
+        return total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
 
     def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
