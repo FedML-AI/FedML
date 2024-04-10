@@ -439,6 +439,7 @@ class FedMLServerRunner:
     def start_device_inference_monitor(self, run_id, end_point_name,
                                        model_id, model_name, model_version, check_stopped_event=True):
         # start inference monitor server
+        # Will report the qps related metrics to the MLOps
         logging.info(f"start the model inference monitor, end point {run_id}, model name {model_name}...")
         if check_stopped_event:
             self.check_runner_stop_event()

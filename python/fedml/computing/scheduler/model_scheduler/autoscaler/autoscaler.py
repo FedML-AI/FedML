@@ -196,8 +196,10 @@ class Autoscaler(metaclass=Singleton):
         """
 
         if autoscaling_policy.current_replicas == 0:
-            # if number_of requests > 1, then scale up/out
+            # if the current number_of requests > 1, then scale up/out
             scale_op = ScaleOp.NO_OP
+        # if the current requests within the last X-minutes are 0
+        # then scale down.
         else:
             # Fetch all previous timeseries values.
             endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(

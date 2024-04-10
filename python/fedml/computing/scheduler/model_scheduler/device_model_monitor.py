@@ -103,13 +103,18 @@ class FedMLModelMetrics:
         index = 0
         while True:
             # Frequency of sending monitoring metrics
-            time.sleep(5)
+            time.sleep(10)
 
-            # TODO(Raphael): Improve this uploading process
-            try:
-                index = self.send_monitoring_metrics(index)
-            except Exception as e:
-                logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
+            while True:
+                # Report all the monitoring metrics between index and the latest one
+                previous_index = index
+                try:
+                    index = self.send_monitoring_metrics(index)
+                except Exception as e:
+                    logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
+
+                if index == previous_index:
+                    break
 
         self.monitor_mqtt_mgr.loop_stop()
         self.monitor_mqtt_mgr.disconnect()
