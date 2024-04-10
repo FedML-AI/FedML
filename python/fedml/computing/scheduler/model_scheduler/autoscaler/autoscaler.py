@@ -210,12 +210,13 @@ class Autoscaler(metaclass=Singleton):
             else:
                 # Trigger autoscaler with the metrics we have collected.
                 scale_op = self.run_autoscaling_policy(autoscaling_policy, endpoint_metrics)
-                # We cannot be lower than the minimum number of replicas,
-                # nor exceed the maximum number of requested replicas.
-                new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
-                if new_running_replicas <= autoscaling_policy.min_replicas:
-                    scale_op = ScaleOp.NO_OP
-                if new_running_replicas >= autoscaling_policy.max_replicas:
-                    scale_op = ScaleOp.NO_OP
+
+        # We cannot be lower than the minimum number of replicas,
+        # nor exceed the maximum number of requested replicas.
+        new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
+        if new_running_replicas < autoscaling_policy.min_replicas:
+            scale_op = ScaleOp.NO_OP
+        if new_running_replicas > autoscaling_policy.max_replicas:
+            scale_op = ScaleOp.NO_OP
 
         return scale_op
