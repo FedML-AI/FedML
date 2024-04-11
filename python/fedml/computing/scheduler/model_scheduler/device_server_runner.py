@@ -969,7 +969,7 @@ class FedMLServerRunner:
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
-                                    "Received request for end point {}".format(run_id))
+                                    "Received request for endpoint {}".format(run_id))
 
         # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
