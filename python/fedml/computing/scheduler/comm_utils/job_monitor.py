@@ -11,6 +11,9 @@ from urllib.parse import urlparse
 
 import asyncio
 
+import fedml
+import requests
+
 from fedml import mlops
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
@@ -19,11 +22,13 @@ from fedml.computing.scheduler.master import server_data_interface
 from fedml.computing.scheduler.model_scheduler import device_client_data_interface
 from fedml.computing.scheduler.model_scheduler import device_server_data_interface
 from fedml.core.common.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
+from ..model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from ..slave import client_constants
@@ -67,9 +72,117 @@ class JobMonitor(Singleton):
             """
             self.replica_log_channels = dict()
 
+        if not hasattr(self, "endpoints_autoscale_predict_future"):
+            self.endpoints_autoscale_predict_future = dict()
+
+        # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
+        # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
+        # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
+        self.autoscaling_policy_config = {
+            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        self.autoscaling_policy = ReactivePolicy(**self.autoscaling_policy_config)
+
+
     @staticmethod
     def get_instance():
         return JobMonitor()
+
+    def autoscaler_reconcile_after_interval(self):
+        """
+        For each endpoint,
+           if a prediction is pending, or during reconciling (scale out or in) -> wait for next round
+           else:
+            -> send the scale op (if not None) to MLOps platform
+            -> query autoscaler module
+        """
+
+        # Set the redis params
+        fedml_model_cache = FedMLModelCache.get_instance()
+        fedml_model_cache.set_redis_params()
+        redis_addr, redis_port, redis_password = \
+            fedml_model_cache.get_redis_params()
+
+        # Get all endpoints info
+        endpoints_settings_list = fedml_model_cache.get_all_endpoints_user_setting()
+
+        # Init the autoscaler
+        autoscaler = Autoscaler(redis_addr, redis_port, redis_password)
+
+        for endpoint_settings in endpoints_settings_list:
+            endpoint_state = endpoint_settings["state"]
+            if endpoint_state == "DEPLOYED" and endpoint_settings["enable_auto_scaling"]:
+                logging.info(f"After interval, check the autoscaler for async future list."
+                             f"{self.endpoints_autoscale_predict_future}")
+
+                e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \
+                                              endpoint_settings["model_name"]
+                logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
+
+                # For every endpoint we just update the policy configuration.
+                self.autoscaling_policy.min_replicas = endpoint_settings["scale_min"]
+                self.autoscaling_policy.max_replicas = endpoint_settings["scale_max"]
+                # We retrieve a list of replicas for every endpoint. The number
+                # of running replicas is the length of that list.
+                current_replicas = len(fedml_model_cache.get_endpoint_replicas_results(e_id))
+                self.autoscaling_policy.current_replicas = current_replicas
+                logging.info(f"Endpoint {e_id} autoscaling policy: {self.autoscaling_policy}.")
+
+                scale_op = autoscaler.scale_operation_endpoint(
+                    self.autoscaling_policy,
+                    str(e_id))
+
+                new_replicas = current_replicas + scale_op.value
+
+                logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
+                logging.info(f"New Replicas {new_replicas} for endpoint {e_id} .")
+                logging.info(f"Current Replicas {current_replicas} for endpoint {e_id} .")
+                if current_replicas == new_replicas:
+                    # Basically the autoscaler decided that no scaling operation should take place.
+                    logging.info(f"No scaling operation for endpoint {e_id}.")
+                    return
+
+                # Should scale in / out
+                curr_version = fedml.get_env_version()
+
+                if curr_version == "release":
+                    mlops_prefix = "https://open.fedml.ai/"
+                elif curr_version == "test":
+                    mlops_prefix = "https://open-test.fedml.ai/"
+                else:
+                    logging.error(f"Do not support the version {curr_version}.")
+                    return
+                autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
+                url = f"{mlops_prefix}{autoscale_url_path}"
+
+                # Get cached token for authorization of autoscale request
+                cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
+                if cached_token is None:
+                    logging.error(f"Failed to get the cached token for endpoint {e_id}.")
+                    return
+
+                req_header = {
+                    "Authorization": f"Bearer {cached_token}"
+                }
+                req_body = {
+                    "endpointId": int(e_id),
+                    "replicasDesired": int(new_replicas)
+                }
+
+                try:
+                    logging.info(f"Sending the autoscale request to MLOps platform. url {url}, "
+                                 f"body {req_body}., header {req_header}")
+                    response = requests.post(
+                        url,
+                        headers=req_header,
+                        json=req_body
+                    )
+                    if response.status_code != 200:
+                        logging.error(f"Failed to send the autoscale request to MLOps platform.")
+                    else:
+                        logging.info(f"Successfully sent the autoscale request to MLOps platform.")
+                except Exception as e:
+                    logging.error(f"Failed to send the autoscale request to MLOps platform. {e}")
+        return
 
     def monitor_slave_run_process_status(self):
         try:

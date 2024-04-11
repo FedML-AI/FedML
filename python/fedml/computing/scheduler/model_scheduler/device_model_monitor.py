@@ -43,24 +43,39 @@ class FedMLModelMetrics:
             get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
         logging.info(f"Calculated metrics_item: {metrics_item}")
         if metrics_item is not None:
-            total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
+            total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
-        cost_time = (time.time_ns() - self.start_time) / self.ns_per_ms
-        total_latency += cost_time
-        total_request_num += 1
-        current_qps = 1 / (cost_time / self.ms_per_sec)
-        current_qps = format(current_qps, '.6f')
-        avg_qps = total_request_num * 1.0 / (total_latency / self.ms_per_sec)
-        avg_qps = format(avg_qps, '.6f')
-        avg_latency = format(total_latency / total_request_num / self.ms_per_sec, '.6f')
 
+        total_request_num += 1
+
+        # Elapsed time for this current request
+        elapsed_time = (time.time_ns() - self.start_time)
+        elapsed_time_ms = elapsed_time / self.ns_per_ms
+        elapsed_time_sec = elapsed_time_ms / self.ms_per_sec
+
+        # Latency measurement
+        current_latency = elapsed_time_ms
+        total_latency += elapsed_time_ms
+        total_latency_sec = total_latency / self.ms_per_sec
+        avg_latency = format(total_latency_sec / total_request_num, '.6f')
+
+        # QPS measurement
+        current_qps = 1 / elapsed_time_sec
+        current_qps = format(current_qps, '.6f')
+        avg_qps = total_request_num * 1.0 / total_latency_sec
+        avg_qps = format(avg_qps, '.6f')
+
+        # Timestamp in milliseconds
         timestamp = int(format(time.time_ns()/1000.0, '.0f'))
+
+        # Set monitor metrics.
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_monitor_metrics(end_point_id,
                                                                                            end_point_name,
                                                                                            model_name,
                                                                                            model_version,
                                                                                            total_latency,
                                                                                            avg_latency,
+                                                                                           current_latency,
                                                                                            total_request_num,
                                                                                            current_qps, avg_qps,
                                                                                            timestamp,
@@ -88,11 +103,18 @@ class FedMLModelMetrics:
         index = 0
         while True:
             # Frequency of sending monitoring metrics
-            time.sleep(5)
-            try:
-                index = self.send_monitoring_metrics(index)
-            except Exception as e:
-                logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
+            time.sleep(10)
+
+            while True:
+                # Report all the monitoring metrics between index and the latest one
+                previous_index = index
+                try:
+                    index = self.send_monitoring_metrics(index)
+                except Exception as e:
+                    logging.info("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
+
+                if index == previous_index:
+                    break
 
         self.monitor_mqtt_mgr.loop_stop()
         self.monitor_mqtt_mgr.disconnect()
@@ -104,7 +126,7 @@ class FedMLModelMetrics:
                                      self.current_model_name, self.current_model_version, index)
         if metrics_item is None:
             return index
-        total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
+        total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
         deployment_monitoring_topic_prefix = "model_ops/model_device/return_inference_monitoring"
         deployment_monitoring_topic = "{}/{}".format(deployment_monitoring_topic_prefix, self.current_end_point_id)
@@ -112,8 +134,10 @@ class FedMLModelMetrics:
                                          "model_id": self.current_model_id,
                                          "model_url": self.current_infer_url,
                                          "end_point_id": self.current_end_point_id,
-                                         "latency": float(avg_latency),
-                                         "qps": float(avg_qps),
+                                         # "latency": float(avg_latency),
+                                         # "qps": float(avg_qps),
+                                         "latency": float(current_latency),
+                                         "qps": float(current_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp,
                                          "edgeId": device_id}
