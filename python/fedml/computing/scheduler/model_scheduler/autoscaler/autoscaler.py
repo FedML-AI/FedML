@@ -118,7 +118,7 @@ class Autoscaler(metaclass=Singleton):
             # recent values is weighted more. The reason is that the formula in pandas
             # is computed as:
             #   Yt = X_t + (1-a) * X_{t-1} + (1-a)^2 X_{t-2} / (1 + (1-a) + (1-a)^2)
-            metric_name = "avg_latency" \
+            metric_name = "current_latency" \
                 if reactive_policy.metric == "latency" else "avg_qps"
             ewm_period = short_period_data[metric_name]\
                 .ewm(alpha=reactive_policy.ewm_alpha).mean()

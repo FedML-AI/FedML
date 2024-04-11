@@ -79,7 +79,7 @@ class JobMonitor(Singleton):
         # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
         # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
         self.autoscaling_policy_config = {
-            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.95}
+            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
         self.autoscaling_policy = ReactivePolicy(**self.autoscaling_policy_config)
 
 
