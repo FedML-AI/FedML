@@ -373,7 +373,8 @@ class FedMLServerRunner:
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
                 return
         except Exception as e:
-            logging.info(f"Exception at update {traceback.format_exc()}")
+            logging.error(f"Failed to send first scroll update message due to {e}.")
+            logging.error(f"Exception traceback {traceback.format_exc()}.")
 
         logging.info("Start waiting for result callback from workers ...")
 

@@ -1,7 +1,6 @@
 import logging
 import time
 import traceback
-from distutils.util import strtobool
 from urllib.parse import urlparse
 import os
 from typing import Any, Mapping, MutableMapping, Union
@@ -277,8 +276,11 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
     try:
-        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", None)
-        http_infer_available = strtobool(http_infer_available) if http_infer_available is not None else True
+        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", True)
+        if not http_infer_available:
+            if http_infer_available == "False" or http_infer_available == "false":
+                http_infer_available = False
+
         if http_infer_available:
             response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
             if response_ok:
