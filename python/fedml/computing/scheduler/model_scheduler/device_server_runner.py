@@ -349,28 +349,31 @@ class FedMLServerRunner:
         devices_sent_add_or_remove_msg = self.send_deployment_start_request_to_edges()
 
         # Handle "op:update"
-        devices_sent_update_remove_msg = self.send_first_scroll_update_msg()
+        try:
+            devices_sent_update_remove_msg = self.send_first_scroll_update_msg()
 
-        if len(devices_sent_add_or_remove_msg) == 0 and len(devices_sent_update_remove_msg) == 0:
-            # No device is added, updated or removed
-            logging.info("No device is added, updated or removed. No action needed for reconciliation.")
-            ip = self.get_ip_address(self.request_json)
-            master_port = os.getenv("FEDML_MASTER_PORT", None)
-            if master_port is not None:
-                inference_port = int(master_port)
-            model_inference_port = inference_port
-            if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/api/v1/predict".format(ip)
-            else:
-                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+            if len(devices_sent_add_or_remove_msg) == 0 and len(devices_sent_update_remove_msg) == 0:
+                # No device is added, updated or removed
+                logging.info("No device is added, updated or removed. No action needed for reconciliation.")
+                ip = self.get_ip_address(self.request_json)
+                master_port = os.getenv("FEDML_MASTER_PORT", None)
+                if master_port is not None:
+                    inference_port = int(master_port)
+                model_inference_port = inference_port
+                if ip.startswith("http://") or ip.startswith("https://"):
+                    model_inference_url = "{}/api/v1/predict".format(ip)
+                else:
+                    model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
-            self.set_runner_completed_event(run_id)
+                self.set_runner_completed_event(run_id)
 
-            self.send_deployment_status(run_id, end_point_name,
-                                        model_name,
-                                        model_inference_url,
-                                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            return
+                self.send_deployment_status(run_id, end_point_name,
+                                            model_name,
+                                            model_inference_url,
+                                            ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
+                return
+        except Exception as e:
+            logging.info(f"Exception at update {traceback.format_exc()}")
 
         logging.info("Start waiting for result callback from workers ...")
 
