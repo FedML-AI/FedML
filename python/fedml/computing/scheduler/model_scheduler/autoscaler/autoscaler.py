@@ -1,3 +1,4 @@
+import time
 import warnings
 
 import pandas as pd
@@ -17,17 +18,17 @@ class ScaleOp(Enum):
 
 class AutoscalingPolicy(BaseModel):
     """
-    Below are some default values for every endpoint. The
-    `scale_loopback_interval_secs` parameter is used to specify
-    the length of the interval between during which the autoscaler
-    should check the next scaling operation.
+    Below are some default values for every endpoint.
+    The `replica_idle_grace_secs` parameter is used as
+    the monitoring interval after which a running replica
+    of an idle endpoint should be released.
     """
     min_replicas: int = 0
     max_replicas: int = 0
     current_replicas: int = 0
     scaleup_delay_secs: float = 300
     scaledown_delay_secs: float = 60
-    endpoint_idleness_grace_period_secs: float = 300
+    release_replica_after_idle_secs: float = 300
 
 
 class ReactivePolicy(AutoscalingPolicy):
@@ -120,8 +121,14 @@ class Autoscaler(metaclass=Singleton):
             #   Yt = X_t + (1-a) * X_{t-1} + (1-a)^2 X_{t-2} / (1 + (1-a) + (1-a)^2)
             metric_name = "current_latency" \
                 if reactive_policy.metric == "latency" else "avg_qps"
-            ewm_period = short_period_data[metric_name]\
+            ewm_period = short_period_data[metric_name] \
                 .ewm(alpha=reactive_policy.ewm_alpha).mean()
+
+        scale_op = ScaleOp.NO_OP
+        # If there is no exponential moving average within this
+        # time frame, then no scaling operation takes place.
+        if len(ewm_period.values) == 0:
+            return scale_op
 
         latest_value = ewm_period.values[-1]
         # Just keep track / update the latest EWM value.
@@ -134,7 +141,6 @@ class Autoscaler(metaclass=Singleton):
         upper_bound = (1 + reactive_policy.ub_threshold) * reactive_policy.triggering_value
         lower_bound = reactive_policy.lb_threshold * reactive_policy.triggering_value
 
-        scale_op = ScaleOp.NO_OP
         if latest_value <= lower_bound or latest_value >= upper_bound:
             # Replace the triggering value if the policy requests so.
             if not reactive_policy.freeze_triggering_value:
@@ -178,6 +184,18 @@ class Autoscaler(metaclass=Singleton):
 
         return scale_op
 
+    def validate_scaling_bounds(self,
+                                scale_op: ScaleOp,
+                                autoscaling_policy: AutoscalingPolicy) -> ScaleOp:
+        # We cannot be lower than the minimum number of replicas,
+        # nor exceed the maximum number of requested replicas.
+        new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
+        if new_running_replicas < autoscaling_policy.min_replicas:
+            scale_op = ScaleOp.NO_OP
+        elif new_running_replicas > autoscaling_policy.max_replicas:
+            scale_op = ScaleOp.NO_OP
+        return scale_op
+
     def scale_operation_endpoint(self,
                                  autoscaling_policy: AutoscalingPolicy,
                                  endpoint_id: str) -> ScaleOp:
@@ -195,28 +213,46 @@ class Autoscaler(metaclass=Singleton):
             0: do nothing
         """
 
-        if autoscaling_policy.current_replicas == 0:
-            # if the current number_of requests > 1, then scale up/out
-            scale_op = ScaleOp.NO_OP
-        # if the current requests within the last X-minutes are 0
-        # then scale down.
-        else:
-            # Fetch all previous timeseries values.
-            endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
-                endpoint_id=endpoint_id)
-            if not endpoint_metrics:
-                # If no metrics are collected then do nothing.
-                scale_op = ScaleOp.NO_OP
-            else:
-                # Trigger autoscaler with the metrics we have collected.
-                scale_op = self.run_autoscaling_policy(autoscaling_policy, endpoint_metrics)
+        # Fetch most recent metric record from the database.
+        most_recent_metric = self.fedml_model_cache.get_endpoint_metrics(
+            endpoint_id=endpoint_id,
+            k_recent=1)
 
-        # We cannot be lower than the minimum number of replicas,
-        # nor exceed the maximum number of requested replicas.
-        new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
-        if new_running_replicas < autoscaling_policy.min_replicas:
-            scale_op = ScaleOp.NO_OP
-        if new_running_replicas > autoscaling_policy.max_replicas:
-            scale_op = ScaleOp.NO_OP
+        # Default to nothing.
+        scale_op = ScaleOp.NO_OP
+        if not most_recent_metric:
+            # If no metric exists then no scaling operation.
+            return scale_op
+
+        # The `most_recent_metric` is of type list, hence we need to access index 0.
+        most_recent_metric = most_recent_metric[0]
+        latest_request_timestamp_ns = most_recent_metric["timestamp"]
+        elapsed_secs = time.time() - latest_request_timestamp_ns / 1e6
+        if elapsed_secs > autoscaling_policy.release_replica_after_idle_secs:
+            # If the elapsed time is greater than the requested idle time,
+            # in other words there was no incoming request then scale down.
+            scale_op = ScaleOp.DOWN_IN_OP
+        else:
+            # Otherwise, if there was a request within the elapsed time, then:
+            if autoscaling_policy.current_replicas == 0:
+                # Check if the current number of running replicas is 0,
+                # then we need more resources, hence ScaleOp.UP_OUT_OP.
+                scale_op = ScaleOp.UP_OUT_OP
+            else:
+                # Else, trigger the autoscaling policy. Fetch all previous
+                # timeseries values. We do not check if the list is empty,
+                # since we already have past requests.
+                endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
+                    endpoint_id=endpoint_id)
+                # Trigger autoscaler with the metrics we have collected.
+                scale_op = self.run_autoscaling_policy(
+                    autoscaling_policy=autoscaling_policy,
+                    metrics=endpoint_metrics)
+
+        # Finally, check the bounds of the current endpoint
+        # before triggering the scaling operation.
+        scale_op = self.validate_scaling_bounds(
+            scale_op=scale_op,
+            autoscaling_policy=autoscaling_policy)
 
         return scale_op
