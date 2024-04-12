@@ -463,7 +463,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
     while True:
         if not ClientConstants.is_running_on_k8s():
-            logging.info(f"Test: {inference_http_port}, Attempt: {deploy_attempt} / {deploy_attempt_threshold}")
+            logging.info(f"Attempt: {deploy_attempt} / {deploy_attempt_threshold} ...")
 
             try:
                 client = docker.from_env()
@@ -496,11 +496,13 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
-                    logging.error(f"Error logs from docker: {format(err_logs)}")
+                    if len(err_logs) > 0:
+                        logging.error(f"{format(err_logs)}")
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
-                    logging.info(f"Logs from docker: {format(out_logs)}")
+                    if len(out_logs) > 0:
+                        logging.info(f"{format(out_logs)}")
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically remove it".format(cmd_container_name))
@@ -527,8 +529,8 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
                                         inference_type="default", model_version="", request_input_example=None):
-    logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}, \
-                  inference_http_port: {inference_http_port}, local_infer_url {local_infer_url}")
+    # logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}, \
+    #               inference_http_port: {inference_http_port}, local_infer_url {local_infer_url}")
 
     if inference_type == "default":
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
