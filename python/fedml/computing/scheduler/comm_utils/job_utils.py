@@ -114,8 +114,14 @@ class JobRunnerUtils(Singleton):
                         switchable_device_id, run_id)
                     if existed_gpu_nums is not None and int(existed_gpu_nums) > 0:
                         matched_gpu_num += int(existed_gpu_nums)
-                        run_gpu_ids.extend(ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(
-                            switchable_device_id, run_id))
+                        device_run_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_gpu_ids(
+                            switchable_device_id, run_id)
+                        if run_gpu_ids is not None and device_run_gpu_ids is not None:
+                            run_gpu_ids.extend(device_run_gpu_ids)
+                        else:
+                            logging.warning("There is inconsistency between the run_gpu_nums and the run_gpu_ids."
+                                            f"existed_gpu_nums: {existed_gpu_nums}, run_gpu_ids: {run_gpu_ids}"
+                                            f"device_run_gpu_ids: {device_run_gpu_ids}")
 
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_run_num_gpus(switchable_device_id,
                                                                                                run_id,
