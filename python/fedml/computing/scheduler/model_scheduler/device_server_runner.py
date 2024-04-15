@@ -637,21 +637,31 @@ class FedMLServerRunner:
             if model_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                 logging.error(f"Unsupported model status {model_status}.")
 
-            # Failure handler
-            if run_operation == "ADD_OR_REMOVE":
-                # TODO(Raphael): Also support rollback for scale out / in operation
+            # Avoid endless loop, if the rollback also failed, we should report the failure to the MLOps
+            if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
                 self.send_deployment_status(
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 return
-            elif run_operation == "UPDATE":
-                # Send the rollback message to the worker devices only if it has not been rollback
-                if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
+
+            # Failure handler, send the rollback message to the worker devices only if it has not been rollback
+            if run_operation == "ADD_OR_REMOVE":
+                # During Scale out / in,
+                # the worker that already been scaled out / in should be sent the rollback message
+                rollback_dict = self.model_runner_mapping[run_id_str].replica_controller.rollback_add_or_remove_replica(
+                    device_id=device_id, replica_no=replica_no, op_type=run_operation
+                )
+                self.model_runner_mapping[run_id_str].replica_controller.under_rollback = True
+
+                if rollback_dict is not None and len(rollback_dict) > 0:
                     self.send_deployment_status(
                         end_point_id, end_point_name, payload_json["model_name"], "",
-                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTING)
+                    self.send_rollback_add_remove_op(run_id_str, rollback_dict)
                     return
-
+                else:
+                    pass    # This is the last worker that failed, so we should continue to "ABORTED" status
+            elif run_operation == "UPDATE":
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = \
                     self.model_runner_mapping[run_id_str].replica_controller.rollback_get_replica_version_diff(
@@ -705,9 +715,9 @@ class FedMLServerRunner:
         # Wait for all replica-level's result, not device-level
         if (self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_num_reconciled() and
                 self.model_runner_mapping[run_id_str].replica_controller.is_all_replica_version_reconciled()):
-            '''
+            """
             When all the devices have finished the add / delete / update operation
-            '''
+            """
             # Generate one unified inference api
             # Note that here we use the gateway port instead of the inference port that is used by the slave device
             model_config_parameters = request_json["parameters"]
@@ -793,7 +803,10 @@ class FedMLServerRunner:
             topic, payload))
         pass
 
-    def send_deployment_start_request_to_edges(self):
+    def send_deployment_start_request_to_edges(self, in_request_json=None):
+        if in_request_json is not None:
+            self.request_json = in_request_json
+
         # Iterate through replica_num_diff, both add and replace should be sent to the edge devices
         if "replica_num_diff" not in self.request_json or self.request_json["replica_num_diff"] is None:
             return []
@@ -1156,6 +1169,20 @@ class FedMLServerRunner:
                 # send start deployment request to each device
                 self.send_deployment_start_request_to_edge(edge_id, self.running_request_json[run_id_str])
         return
+
+    def send_rollback_add_remove_op(self, run_id, rollback_replica_dict):
+        """
+        This method is used when the original add op failed, we need to rollback by delete the existed replicas
+        Input example:
+        rollback_replica_dict = {'96684': {'curr_num': 2, 'op': 'remove', 'target_num': 1}}
+        """
+        existed_request_json = self.running_request_json[str(run_id)]
+        updated_request_json = copy.deepcopy(existed_request_json)
+
+        # Reverse the replica_num_diff
+        updated_request_json["replica_num_diff"] = rollback_replica_dict
+
+        self.send_deployment_start_request_to_edges(in_request_json=updated_request_json)
 
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))

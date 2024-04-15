@@ -314,6 +314,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
     environment["FEDML_CURRENT_RUN_ID"] = end_point_id
     environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+    environment["FEDML_REPLICA_RANK"] = replica_rank
     environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
     environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
     environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
