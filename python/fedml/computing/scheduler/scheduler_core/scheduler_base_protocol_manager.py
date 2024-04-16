@@ -30,7 +30,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         self.message_status_runner = None
         self.message_center = None
         self.status_center = None
-        self.message_center_name = "master_agent" if not is_master else "slave_agent"
+        self.message_center_name = "master_agent" if is_master else "slave_agent"
         self.run_id = None
         self.edge_id = args.edge_id
         self.general_edge_id = None
