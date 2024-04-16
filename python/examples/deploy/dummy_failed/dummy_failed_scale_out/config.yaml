@@ -1,0 +1,16 @@
+workspace: "./src"
+
+inference_image_name: "raphaeljin/fedml"
+enable_custom_image: true
+
+bootstrap: |
+  echo "Bootstrap start..."
+  cat serve_main.py
+  echo "Bootstrap finished"
+
+# Simulate a successful deployment
+job: |
+  python3 serve_main.py
+
+auto_detect_public_ip: true
+use_gpu: true

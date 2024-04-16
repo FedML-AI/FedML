@@ -512,3 +512,18 @@ class FedMLDeviceReplicaController:
         Set back the target replica version.
         """
         self.target_replica_version = self.start_version
+
+    def rollback_add_or_remove_replica(self, device_id, replica_no, op_type) -> dict:
+        """
+        During add or remove replica, in a specific step, the operation failed.
+
+        if failed in delete replica, we should add the deleted replicas back.
+        if failed in add replica, we should remove the added replicas.
+
+        """
+        reversed_diff = self.diff_target_curr_replica_num_impl(self.curr_replica_num, self.intermediate_replica_num)
+
+        # Reverse the target replica number to the initial state.
+        self.target_replica_num = copy.deepcopy(self.curr_replica_num)
+
+        return reversed_diff
