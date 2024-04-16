@@ -66,7 +66,8 @@ class FedMLModelMetrics:
         avg_qps = format(avg_qps, '.6f')
 
         # Timestamp in milliseconds
-        timestamp = int(format(time.time_ns()/1000.0, '.0f'))
+        # Should be start time of the request
+        timestamp = self.start_time / self.ns_per_ms
 
         # Set monitor metrics.
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_monitor_metrics(end_point_id,

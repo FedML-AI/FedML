@@ -91,7 +91,7 @@ if __name__ == "__main__":
             qps_distribution=args.distribution,
             latency_distribution=args.distribution,
             num_values=300,
-            submit_request_every_x_secs=30,
+            submit_request_every_x_secs=10,
             reverse=False,
             with_warmup=False)
     elif args.distribution == "seasonal":
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     testing_metric = args.metric
     testing_traffic = traffic_dist
     latency_reactive_policy_default = \
-        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.05, "ub_threshold": 0.5, "lb_threshold": 0.5}
     qps_reactive_policy_default = \
         {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
     policy_config = latency_reactive_policy_default \
@@ -133,6 +133,7 @@ if __name__ == "__main__":
             end_point_name="",
             model_name="",
             model_version="",
+            current_latency=latency,
             total_latency=latency,
             avg_latency=latency,
             total_request_num=i,
