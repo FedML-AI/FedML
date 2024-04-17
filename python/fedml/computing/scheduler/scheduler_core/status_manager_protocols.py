@@ -92,11 +92,9 @@ class FedMLStatusManager(object):
         run_id_str = str(run_id)
 
         # Process the job status
-        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
-            self.process_job_completed_status(server_id, status)
-        elif status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
-            self.process_job_completed_status(server_id, status)
-        elif status == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED:
+        if status in (ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                      ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED):
             self.process_job_completed_status(server_id, status)
         elif status == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
             self.process_job_exception_status(server_id, status)

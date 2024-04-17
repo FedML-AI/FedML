@@ -184,7 +184,7 @@ class FedMLAccountManager(Singleton):
         # Check if it is running in the fedml docker hub
         is_from_fedml_docker_hub = False
         dock_loc_file = GeneralConstants.get_deploy_docker_location_file(is_master=is_master) \
-            if is_deploy else GeneralConstants.get_deploy_docker_location_file(is_master=is_master)
+            if is_deploy else GeneralConstants.get_launch_docker_location_file(is_master=is_master)
         if os.path.exists(dock_loc_file):
             is_from_fedml_docker_hub = True
 
