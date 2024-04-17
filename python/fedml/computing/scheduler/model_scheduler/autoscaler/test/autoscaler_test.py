@@ -29,9 +29,9 @@ class AutoscalerTest(unittest.TestCase):
         fedml_model_cache = FedMLModelCache.get_instance()
         fedml_model_cache.set_redis_params(ENV_REDIS_ADDR, ENV_REDIS_PORT, ENV_REDIS_PASSWD)
         fedml_model_cache.set_monitor_metrics(
-            ENV_ENDPOINT_ID_1, "", "", "", 5, 5, 10, 100, 100, int(time.time_ns() / 1000), 0)
+            ENV_ENDPOINT_ID_1, "", "", "", 5, 5, 5, 10, 100, 100, int(time.time_ns() / 1000), 0)
         fedml_model_cache.set_monitor_metrics(
-            ENV_ENDPOINT_ID_1, "", "", "", 5, 5, 10, 100, 100, int(time.time_ns() / 1000), 0)
+            ENV_ENDPOINT_ID_1, "", "", "", 5, 5, 5, 10, 100, 100, int(time.time_ns() / 1000), 0)
 
         # Create autoscaler instance and define policy.
         autoscaler = Autoscaler.get_instance()
