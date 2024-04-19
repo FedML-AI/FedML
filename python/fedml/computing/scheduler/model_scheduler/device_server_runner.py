@@ -23,6 +23,7 @@ import torch
 
 import fedml
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+from fedml.core.mlops.mlops_runtime_log import MLOpsFormatter
 
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
@@ -570,10 +571,9 @@ class FedMLServerRunner:
             filehandler = logging.FileHandler(log_file, "a")
 
             program_prefix = "FedML-Server @device-id-{}".format(self.edge_id)
-            formatter = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                                                     "message)s",
-                                          datefmt="%a, %d %b %Y %H:%M:%S")
+            formatter = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                           "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                           "message)s")
 
             filehandler.setFormatter(formatter)
             root_logger.addHandler(filehandler)

@@ -6,6 +6,7 @@ import traceback
 
 import re
 from datetime import datetime
+from dateutil.parser import isoparse
 
 from urllib.parse import urlparse
 
@@ -816,10 +817,6 @@ class JobMonitor(Singleton):
             print(f"Exception when syncing endpoint process on the master agent {traceback.format_exc()}.")
             pass
 
-    @staticmethod
-    def clean_str(ts):
-        return re.sub("(\d{6})(\d+)", r"\1", ts).replace("Z", "+00:00")
-
     def monitor_endpoint_logs(self):
         try:
             fedml_args = mlops.get_fedml_args()
@@ -915,15 +912,16 @@ class JobMonitor(Singleton):
                                 continue
 
                             container_time = line.split(" ")[0]
-                            cleaned_time = JobMonitor.clean_str(container_time)
-                            t = datetime.fromisoformat(cleaned_time)
+                            nano_second_str = container_time.split(".")[1][:9]
+                            t_datetime_obj = isoparse(container_time)
+                            t_sec = t_datetime_obj.strftime("%a, %d %b %Y %H:%M:%S")
+                            t_nano_sec = f"[{t_sec}.{nano_second_str}]"
 
-                            time_prefix = f"[{t.strftime('%a, %d %b %Y %H:%M:%S.%f')[:-3]}]"
                             device_replica_prefix = f"[FedML-Replica @device-id-{job.edge_id} @replica-rank-{i}]"
                             log_level_prefix = "[INFO]"    # Use default level to represent the docker log level
                             program_location_prefix = "[Container Logs]"  # Use default location
 
-                            prefix = (f"{device_replica_prefix} {time_prefix} "
+                            prefix = (f"{device_replica_prefix} {t_nano_sec} "
                                       f"{log_level_prefix} {program_location_prefix} ")
 
                             # replace prefix
