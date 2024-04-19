@@ -8,6 +8,12 @@ IGNORE_INDEX = -100
 
 # -----------------------------------------------------------------
 MODEL_NAMES = [
+    "meta-llama/Meta-Llama-3-70B",
+    "meta-llama/Meta-Llama-3-8B",
+    "meta-llama/Llama-2-7b-hf",
+    "meta-llama/Llama-2-13b-hf",
+    "meta-llama/Llama-2-70b-hf",
+    "mistralai/Mistral-7B-v0.1"
     "EleutherAI/pythia-70m",
     "EleutherAI/pythia-160m",
     "EleutherAI/pythia-410m",
@@ -16,23 +22,11 @@ MODEL_NAMES = [
     "EleutherAI/pythia-2.8b",
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
-    "EleutherAI/pythia-70m-deduped",
-    "EleutherAI/pythia-160m-deduped",
-    "EleutherAI/pythia-410m-deduped",
-    "EleutherAI/pythia-1b-deduped",
-    "EleutherAI/pythia-1.4b-deduped",
-    "EleutherAI/pythia-2.8b-deduped",
-    "EleutherAI/pythia-6.9b-deduped",
-    "EleutherAI/pythia-12b-deduped",
     "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
     "databricks/dolly-v2-12b",
-    "meta-llama/Llama-2-7b-hf",
-    "meta-llama/Llama-2-13b-hf",
-    "meta-llama/Llama-2-70b-hf",
     "tiiuae/falcon-7b",
     "tiiuae/falcon-40b",
-    "mistralai/Mistral-7B-v0.1",
 ]
 
 DATASET_NAMES = [
