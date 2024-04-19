@@ -6,7 +6,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLMo
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.workflow.jobs import JobStatus
 import time
-import fedml
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi
 
 
 class ModelDeployJob(CustomizedBaseJob):
@@ -37,6 +37,15 @@ class ModelDeployJob(CustomizedBaseJob):
         super().run()
 
         os.remove(self.job_yaml_absolute_path_for_launch)
+
+        self.run_id = self.launch_result.inner_id
+        dependency_list = list()
+        for dep in self.dependencies:
+            dependency_list.append(dep.name)
+        result = WorkflowMLOpsApi.add_run(
+            workflow_id=self.workflow_id, job_name=self.name, run_id=self.run_id,
+            dependencies=dependency_list, api_key=self.job_api_key
+        )
 
         if self.launch_result_code != 0:
             self.output_data_dict = {

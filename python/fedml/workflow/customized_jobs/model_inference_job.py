@@ -5,13 +5,15 @@ from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLE
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.workflow.jobs import JobStatus
 import requests
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi
 
 
 class ModelInferenceJob(CustomizedBaseJob):
-    def __init__(self, name, endpoint_name=None, job_api_key=None):
+    def __init__(self, name, endpoint_name=None, job_api_key=None, endpoint_user_name=None):
         super().__init__(name, job_api_key=job_api_key)
         self.endpoint_id = None
         self.endpoint_name = endpoint_name
+        self.endpoint_user_name = endpoint_user_name
         self.endpoint_detail: FedMLEndpointDetail = None
         self.inference_url = None
         self.infer_request_body = None
@@ -45,6 +47,14 @@ class ModelInferenceJob(CustomizedBaseJob):
         if self.endpoint_detail.status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
             print("Predicting..., please wait.")
             self.run_status = JobStatus.RUNNING
+
+            dependency_list = list()
+            for dep in self.dependencies:
+                dependency_list.append(dep.name)
+            result = WorkflowMLOpsApi.add_run(
+                workflow_id=self.workflow_id, job_name=self.name, run_id=self.endpoint_detail.endpoint_id,
+                dependencies=dependency_list, api_key=self.job_api_key
+            )
 
             self._build_in_params()
 
@@ -80,6 +90,10 @@ class ModelInferenceJob(CustomizedBaseJob):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.key_token}',
         }
+
+        model_name = self.infer_request_body.get("model")
+        if model_name is None:
+            self.infer_request_body["model"] = f"{self.endpoint_user_name}/{self.endpoint_name}"
 
         response = requests.post(self.inference_url, headers=headers, json=self.infer_request_body, timeout=60*10)
         if response.status_code != 200:

@@ -8,6 +8,7 @@ from toposort import toposort
 
 from fedml.workflow.jobs import Job, JobStatus
 import time
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi, WorkflowType, WorkflowStatus
 
 
 @dataclass(frozen=True, eq=True, order=True)
@@ -46,12 +47,17 @@ class Workflow:
     - loop (bool): Whether the workflow should loop continuously.
     """
 
-    def __init__(self, name, loop: bool = False):
+    def __init__(self, name, loop: bool = False, api_key: str = None,
+                 workflow_type: WorkflowType = WorkflowType.WORKFLOW_TYPE_DEPLOY):
         self.name: str = name
         self._metadata: Metadata | None = None
         self._loop: bool = loop
         self.jobs: Dict[str, AdjacencyList] = dict()
         self.input: Dict[Any, Any] = dict()
+        self.api_key = api_key
+
+        self.id = WorkflowMLOpsApi.create_workflow(
+            workflow_name=self.name, workflow_type=workflow_type, api_key=self.api_key)
 
     @property
     def metadata(self):
@@ -98,12 +104,16 @@ class Workflow:
         if job.name in self.jobs:
             raise ValueError(f"Job {job.name} already exists in workflow.")
 
+        job.workflow_id = self.id
+        job.dependencies = dependencies
         self.jobs[job.name] = AdjacencyList(job=job, dependencies=dependencies)
 
     def run(self):
         """
         Run the workflow, executing jobs in the specified order.
         """
+
+        WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.RUNNING, api_key=self.api_key)
 
         self._compute_workflow_metadata()
         first_run = True
@@ -116,6 +126,8 @@ class Workflow:
                     jobs[0].set_inputs(self.input)
                     has_set_first_input = True
                 self._execute_and_wait(jobs)
+
+        WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FINISHED, api_key=self.api_key)
 
     def _execute_and_wait(self, jobs: List[Job]):
         """
@@ -151,10 +163,12 @@ class Workflow:
 
             if any_errored:
                 self._kill_jobs(jobs)
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+
                 raise ValueError(f"Following jobs errored out, hence workflow cannot be completed: {errored_jobs}."
                                  "Please check the logs for more information.")
 
-            time.sleep(10)
+            time.sleep(0.1)
 
     def _kill_jobs(self, jobs: List[Job]):
         """
