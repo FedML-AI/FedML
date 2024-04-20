@@ -1190,6 +1190,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         allowed_status_check_sleep_seconds_for_async = 30
         inactivate_edges = list()
         active_edge_info_dict = dict()
+        log_active_edge_info_flag = True
         while True:
             if callback_when_detecting is not None:
                 callback_when_detecting(args_for_callback_when_detecting)
@@ -1238,16 +1239,19 @@ class FedMLServerRunner(FedMLMessageCenter):
 
             # If all edges are ready then send the starting job message to them
             if active_edges_count == len(edge_id_list):
-                logging.info(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
+                if log_active_edge_info_flag:
+                    logging.debug(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
+                    log_active_edge_info_flag = False
                 if callback_when_edges_ready is not None:
                     logging.info("All edges are ready. Start to process the callback function.")
                     callback_when_edges_ready(active_edge_info_dict=active_edge_info_dict)
                 else:
-                    logging.info("All edges are ready. No callback function to process.")
+                    logging.debug("All edges are ready. No callback function to process.")
                 break
             else:
                 logging.info(f"All edges are not ready. Active edge id list: {active_edge_info_dict}, "
                              f"Inactive edge id list: {inactivate_edges}")
+                log_active_edge_info_flag = True
 
             # Check if runner needs to stop and sleep specific time
             self.check_runner_stop_event()
