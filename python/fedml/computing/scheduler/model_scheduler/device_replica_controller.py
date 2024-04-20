@@ -308,9 +308,8 @@ class FedMLDeviceReplicaController:
         """
         Check if all the replicas are ready. Including the number and version.
         """
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
-                     f"intermediate_replica_num: {self.intermediate_replica_num}")
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+        logging.info(f"[Replica Controller] [Endpoint {self.e_id} ] "
+                     f"intermediate_replica_num: {self.intermediate_replica_num}\n"
                      f"target_replica_num: {self.target_replica_num}")
 
         for id, replica_no in self.intermediate_replica_num.items():
@@ -437,9 +436,8 @@ class FedMLDeviceReplicaController:
         if self.total_replica_version_diff_num == 0:
             return True
 
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
-                     f"intermediate_replica_version: {self.intermediate_replica_version}")
-        logging.info(f"[Replica Controller] [endpoint {self.e_id} ] "
+        logging.info(f"[Replica Controller] [Endpoint {self.e_id} ] "
+                     f"intermediate_replica_version: {self.intermediate_replica_version}\n"
                      f"target_replica_version: {self.target_replica_version}")
 
         for id, device_replicas_version in self.intermediate_replica_version.items():

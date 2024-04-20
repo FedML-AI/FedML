@@ -100,9 +100,23 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
     def set_device_run_num_gpus(self, device_id, run_id, num_gpus):
         self.set_device_run_gpu_info(device_id, run_id, num_gpus=num_gpus)
 
+    def delete_device_run_num_gpus(self, device_id, run_id):
+        self.open_job_db()
+        self.db_connection.query(FedMLDeviceRunGpuInfoModel). \
+            filter(and_(FedMLDeviceRunGpuInfoModel.device_id == f'{device_id}',
+                        FedMLDeviceRunGpuInfoModel.run_id == f'{run_id}')).delete()
+        self.db_connection.commit()
+
     def set_device_run_gpu_ids(self, device_id, run_id, gpu_ids):
         str_gpu_ids = ComputeUtils.map_list_to_str(gpu_ids)
         self.set_device_run_gpu_info(device_id, run_id, gpu_ids=str_gpu_ids)
+
+    def delete_device_run_gpu_ids(self, device_id, run_id):
+        self.open_job_db()
+        self.db_connection.query(FedMLDeviceRunGpuInfoModel). \
+            filter(and_(FedMLDeviceRunGpuInfoModel.device_id == f'{device_id}',
+                        FedMLDeviceRunGpuInfoModel.run_id == f'{run_id}')).delete()
+        self.db_connection.commit()
 
     def set_device_available_gpu_ids(self, device_id, gpu_ids):
         str_gpu_ids = ComputeUtils.map_list_to_str(gpu_ids)
@@ -125,6 +139,19 @@ class ComputeGpuDatabase(Singleton, FedMLBaseDb):
 
     def set_endpoint_run_id_map(self, endpoint_id, run_id):
         self.set_endpoint_run_info(endpoint_id, run_id)
+
+    def delete_endpoint_run_id_map(self, endpoint_id):
+        self.open_job_db()
+        self.db_connection.query(FedMLEndpointRunInfoModel). \
+            filter(FedMLEndpointRunInfoModel.endpoint_id == f'{endpoint_id}').delete()
+        self.db_connection.commit()
+
+    def delete_edge_model_id_map(self, run_id):
+        # TODO(Raphael): Check if there is collision with the run_id for launch and deploy
+        self.open_job_db()
+        self.db_connection.query(FedMLRunGpuInfoModel). \
+            filter(FedMLRunGpuInfoModel.run_id == f'{run_id}').delete()
+        self.db_connection.commit()
 
     def set_database_base_dir(self, database_base_dir):
         self.db_base_dir = database_base_dir

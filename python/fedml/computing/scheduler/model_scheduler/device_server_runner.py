@@ -776,17 +776,24 @@ class FedMLServerRunner:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 update_user_setting_replica_num(end_point_id=end_point_id, state="DEPLOYED")
 
-            # Set the end point activation status to True
-            FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                set_end_point_activation(end_point_id, end_point_name, True)
-
             if self.model_runner_mapping[run_id_str].replica_controller.under_rollback:
-                self.send_deployment_status(end_point_id, end_point_name,
-                                            payload_json["model_name"],
-                                            model_inference_url,
-                                            ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTED)
+                # If first time failed (Still might need rollback), then send failed message to the MLOps
+                if not (FedMLModelCache.get_instance(self.redis_addr, self.redis_port).
+                        get_end_point_activation(end_point_id)):
+                    self.send_deployment_status(
+                        end_point_id, end_point_name, payload_json["model_name"], "",
+                        ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                else:
+                    self.send_deployment_status(end_point_id, end_point_name,
+                                                payload_json["model_name"],
+                                                model_inference_url,
+                                                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTED)
                 self.model_runner_mapping[run_id_str].replica_controller.under_rollback = False
             else:
+                # Set the end point activation status to True, for scaling out / in and rolling update
+                FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                    set_end_point_activation(end_point_id, end_point_name, True)
+
                 self.send_deployment_status(end_point_id, end_point_name,
                                             payload_json["model_name"],
                                             model_inference_url,
@@ -1120,7 +1127,7 @@ class FedMLServerRunner:
                 delete_item, endpoint_id, endpoint_name, model_name
             )
 
-        logging.info(f"Deleted the record of the replaced device {delete_device_result_list}")
+        logging.info(f"Deleted the replica record on master: {edge_id_replica_no_dict}")
 
     def send_next_scroll_update_msg(self, run_id_str, device_id, replica_no):
         """
@@ -1239,7 +1246,15 @@ class FedMLServerRunner:
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        # Set end point as deactivated status
+        # Delete SQLite records
+        FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
+        FedMLModelDatabase.get_instance().delete_deployment_result(
+            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
+            model_version=model_msg_object.model_version)
+        FedMLModelDatabase.get_instance().delete_deployment_run_info(
+            end_point_id=model_msg_object.inference_end_point_id)
+
+        # Delete Redis Records
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id,
@@ -1248,20 +1263,14 @@ class FedMLServerRunner:
             delete_end_point(model_msg_object.inference_end_point_id, model_msg_object.end_point_name,
                              model_msg_object.model_name, model_msg_object.model_version)
 
+        # Send delete deployment request to the edge devices
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
+        # Stop processes on master
         self.set_runner_stopped_event(model_msg_object.run_id)
-
         self.stop_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
                                            model_msg_object.model_id, model_msg_object.model_name,
                                            model_msg_object.model_version)
-
-        FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
-        FedMLModelDatabase.get_instance().delete_deployment_result(
-            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
-        FedMLModelDatabase.get_instance().delete_deployment_run_info(
-            end_point_id=model_msg_object.inference_end_point_id)
 
     def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload, replica_id_list=None):
         self.send_deployment_results(end_point_id, end_point_name,

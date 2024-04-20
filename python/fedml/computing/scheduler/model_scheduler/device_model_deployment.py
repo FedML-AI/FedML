@@ -44,11 +44,11 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
     client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
 
     if gpu_ids is None:
-        cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
+        cuda_visible_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
             end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
             model_master_device_id=master_device_id, model_slave_device_id=edge_id)
-        if cuda_visable_gpu_ids is not None:
-            gpu_ids = cuda_visable_gpu_ids.split(',')
+        if cuda_visible_gpu_ids is not None:
+            gpu_ids = cuda_visible_gpu_ids.split(',')
             gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
             logging.info(f"Requested cuda visible gpu ids: {gpu_ids}")
 
@@ -520,8 +520,16 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         # Not yet ready, retry
         deploy_attempt += 1
         if deploy_attempt >= deploy_attempt_threshold:
-            logging.info(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
-                         "exiting the deployment...")
+            logging.error(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
+                          f"exiting the deployment...")
+
+            try:
+                client = docker.from_env()
+                container_obj = client.containers.get(cmd_container_name)
+                if container_obj is not None:
+                    client.api.remove_container(container_obj.id, v=True, force=True)
+            except Exception as e:
+                logging.error(f"Failed to remove the container with exception {e}")
             break
 
         logging.info(f"Model {inference_model_name} not yet ready, retry in {retry_interval} seconds...")
