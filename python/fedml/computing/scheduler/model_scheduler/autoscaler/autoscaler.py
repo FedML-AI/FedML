@@ -96,7 +96,7 @@ class Autoscaler(metaclass=Singleton):
     @classmethod
     def scale_operation_predictive(cls,
                                    predictive_policy: PredictivePolicy,
-                                   metrics: Dict) -> ScaleOp:
+                                   metrics: pd.DataFrame) -> ScaleOp:
 
         # TODO(fedml-dimitris): TO BE COMPLETED!
         pass
@@ -104,23 +104,21 @@ class Autoscaler(metaclass=Singleton):
     @classmethod
     def scale_operation_reactive(cls,
                                  reactive_policy: ReactivePolicy,
-                                 metrics: Dict) -> ScaleOp:
+                                 metrics: pd.DataFrame) -> ScaleOp:
 
-        df = pd.DataFrame.from_records(metrics)
-        df = df.set_index('timestamp')
-        # timestamp is expected to be in micro-seconds, hence unit='us'.
-        df.index = pd.to_datetime(df.index, unit="us")
+        # Compute
+        traffic_per_second = len(metrics.last("60min")) / 3600
 
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
-            short_period_data = df.last("{}min".format(reactive_policy.ewm_mins))
+            short_period_data = metrics.last("{}min".format(reactive_policy.ewm_mins))
             # For instance, by using alpha = 0.1, we basically indicate that the most
             # recent values is weighted more. The reason is that the formula in pandas
             # is computed as:
             #   Yt = X_t + (1-a) * X_{t-1} + (1-a)^2 X_{t-2} / (1 + (1-a) + (1-a)^2)
             metric_name = "current_latency" \
-                if reactive_policy.metric == "latency" else "avg_qps"
+                if reactive_policy.metric == "latency" else "current_qps"
             ewm_period = short_period_data[metric_name] \
                 .ewm(alpha=reactive_policy.ewm_alpha).mean()
 
@@ -169,7 +167,7 @@ class Autoscaler(metaclass=Singleton):
 
     def run_autoscaling_policy(self,
                                autoscaling_policy: AutoscalingPolicy,
-                               metrics: Dict) -> ScaleOp:
+                               metrics: pd.DataFrame) -> ScaleOp:
 
         if isinstance(autoscaling_policy, ReactivePolicy):
             scale_op = self.scale_operation_reactive(
@@ -224,10 +222,14 @@ class Autoscaler(metaclass=Singleton):
             # If no metric exists then no scaling operation.
             return scale_op
 
+        # If we continue here, then it means that there was at least one request.
         # The `most_recent_metric` is of type list, hence we need to access index 0.
         most_recent_metric = most_recent_metric[0]
-        latest_request_timestamp_ns = most_recent_metric["timestamp"]
-        elapsed_secs = time.time() - latest_request_timestamp_ns / 1e6
+        latest_request_timestamp_micro_secs = most_recent_metric["timestamp"]
+        current_time_micro_seconds = time.time_ns() / 1e6
+        elapsed_time_micro_secs = current_time_micro_seconds - latest_request_timestamp_micro_secs
+        elapsed_secs = elapsed_time_micro_secs / 1e6  # convert to seconds
+        print(time.time_ns(), latest_request_timestamp_micro_secs, elapsed_secs)
         if elapsed_secs > autoscaling_policy.release_replica_after_idle_secs:
             # If the elapsed time is greater than the requested idle time,
             # in other words there was no incoming request then scale down.
@@ -242,12 +244,17 @@ class Autoscaler(metaclass=Singleton):
                 # Else, trigger the autoscaling policy. Fetch all previous
                 # timeseries values. We do not check if the list is empty,
                 # since we already have past requests.
-                endpoint_metrics = self.fedml_model_cache.get_endpoint_metrics(
+                metrics = self.fedml_model_cache.get_endpoint_metrics(
                     endpoint_id=endpoint_id)
+                metrics_df = pd.DataFrame.from_records(metrics)
+                metrics_df = metrics_df.set_index('timestamp')
+                # timestamp is expected to be in micro-seconds, hence unit='us'.
+                metrics_df.index = pd.to_datetime(metrics_df.index, unit="us")
+
                 # Trigger autoscaler with the metrics we have collected.
                 scale_op = self.run_autoscaling_policy(
                     autoscaling_policy=autoscaling_policy,
-                    metrics=endpoint_metrics)
+                    metrics=metrics_df)
 
         # Finally, check the bounds of the current endpoint
         # before triggering the scaling operation.

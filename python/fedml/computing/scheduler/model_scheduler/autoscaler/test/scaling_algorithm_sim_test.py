@@ -86,8 +86,11 @@ if __name__ == "__main__":
     #   "random", "linear", "exponential"
     # Moreover, you can also play around with the order of values in an
     # ascending (reverse=False) or descending (reverse=True) order.
+    start_date = datetime.datetime.strptime(
+        datetime.datetime.now().strftime(TrafficSimulation.CONFIG_DATETIME_FORMAT),
+        TrafficSimulation.CONFIG_DATETIME_FORMAT)
     if args.distribution in ["random", "linear", "exponential"]:
-        traffic_dist = TrafficSimulation.generate_traffic(
+        traffic_dist = TrafficSimulation(start_date=start_date).generate_traffic(
             qps_distribution=args.distribution,
             latency_distribution=args.distribution,
             num_values=300,
@@ -95,7 +98,7 @@ if __name__ == "__main__":
             reverse=False,
             with_warmup=False)
     elif args.distribution == "seasonal":
-        traffic_dist = TrafficSimulation.generate_traffic_with_seasonality(
+        traffic_dist = TrafficSimulation(start_date=start_date).generate_traffic_with_seasonality(
             num_values=1000,
             submit_request_every_x_secs=10,
             with_warmup=False)
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     testing_metric = args.metric
     testing_traffic = traffic_dist
     latency_reactive_policy_default = \
-        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.9, "ub_threshold": 0.5, "lb_threshold": 0.5}
     qps_reactive_policy_default = \
         {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
     policy_config = latency_reactive_policy_default \
@@ -135,6 +138,7 @@ if __name__ == "__main__":
             model_version="",
             total_latency=latency,
             avg_latency=latency,
+            current_latency=latency,
             total_request_num=i,
             current_qps=qps,
             avg_qps=qps,
@@ -143,6 +147,8 @@ if __name__ == "__main__":
         scale_op = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             str(args.endpoint_id))
+        autoscaling_policy.current_replicas = \
+            autoscaling_policy.current_replicas + scale_op.value
         ewm_values.append(autoscaling_policy.ewm_latest)
         triggering_values.append(autoscaling_policy.triggering_value)
         scale_operations.append(scale_op)

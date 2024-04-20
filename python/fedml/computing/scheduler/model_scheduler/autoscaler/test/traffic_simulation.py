@@ -15,9 +15,7 @@ random.seed(0)
 
 
 class TrafficSimulation(object):
-
     CONFIG_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
-    START_DATE = datetime.datetime(2001, 1, 1, 1, 1, 1)  # 2001-01-01T01:01:01z"
     WARMUP_ENDPOINT_QPS = [
         4.538, 3.615, 3.276, 5.176, 5.73, 2.998, 2.791, 4.089, 3.913, 5.199, 4.557,
         5.308, 3.521, 5.398, 5.336, 5.74, 3.453, 5.678, 3.674, 3.405, 5.099, 3.146,
@@ -33,14 +31,20 @@ class TrafficSimulation(object):
     LATENCY_MIN_VAL = 1
     LATENCY_MAX_VAL = 5
 
+    def __init__(self, start_date: datetime.datetime = None):
+        if not start_date:
+            self.START_DATE = datetime.datetime(2001, 1, 1, 1, 1, 1)  # 2001-01-01T01:01:01z"
+        else:
+            self.START_DATE = start_date
+
     @staticmethod
     def date_increment_sec(start_date, secs):
         timestamp = start_date + datetime.timedelta(seconds=secs)
         return timestamp
 
     @staticmethod
-    def date_increment_min(start_date, mins):
-        timestamp = start_date + datetime.timedelta(minutes=mins)
+    def date_increment_min(start_date, minutes):
+        timestamp = start_date + datetime.timedelta(minutes=minutes)
         return timestamp
 
     @classmethod
@@ -77,8 +81,7 @@ class TrafficSimulation(object):
             step = -step if reverse else step
         return low, high, step
 
-    @classmethod
-    def generate_traffic(cls,
+    def generate_traffic(self,
                          qps_distribution,
                          latency_distribution,
                          num_values,
@@ -87,10 +90,10 @@ class TrafficSimulation(object):
                          with_warmup=False):
 
         qps_values, latency_values = [], []
-        q_low, q_high, q_step = cls.low_high(qps=True, num_values=num_values, reverse=reverse)
-        l_low, l_high, l_step = cls.low_high(latency=True, num_values=num_values, reverse=reverse)
+        q_low, q_high, q_step = self.low_high(qps=True, num_values=num_values, reverse=reverse)
+        l_low, l_high, l_step = self.low_high(latency=True, num_values=num_values, reverse=reverse)
         if with_warmup:
-            qps_values, latency_values = cls.generate_warmup_traffic()
+            qps_values, latency_values = self.generate_warmup_traffic()
         if qps_distribution == "random":
             qps_values_tmp = np.round(np.random.uniform(q_low, q_high, num_values), 3).tolist()
             qps_values.extend(qps_values_tmp)
@@ -108,34 +111,33 @@ class TrafficSimulation(object):
                                       3).tolist()
             qps_values.extend(qps_values_tmp)
         if latency_distribution == "exponential":
-            low, high, _ = cls.low_high(latency=True, num_values=num_values, reverse=reverse)
+            low, high, _ = self.low_high(latency=True, num_values=num_values, reverse=reverse)
             latency_values_tmp = np.round(np.logspace(np.log(l_low), np.log(l_high), num_values, base=np.exp(1)),
                                           3).tolist()
             latency_values.extend(latency_values_tmp)
 
         traffic = []
-        current_timestamp = cls.START_DATE
+        current_timestamp = self.START_DATE
         for q, l in zip(qps_values, latency_values):
-            timestamp = current_timestamp.strftime(cls.CONFIG_DATETIME_FORMAT)
-            current_timestamp = cls.date_increment_sec(
+            timestamp = current_timestamp.strftime(self.CONFIG_DATETIME_FORMAT)
+            current_timestamp = self.date_increment_sec(
                 current_timestamp, secs=submit_request_every_x_secs)
             traffic.append((timestamp, q, l))
 
         return traffic
 
-    @classmethod
-    def generate_traffic_with_seasonality(cls,
+    def generate_traffic_with_seasonality(self,
                                           num_values,
                                           submit_request_every_x_secs=30,
                                           with_warmup=False):
         traffic = []
-        start_date = cls.START_DATE
+        start_date = self.START_DATE
         if with_warmup:
-            qps_values, latency_values = cls.generate_warmup_traffic()
+            qps_values, latency_values = self.generate_warmup_traffic()
             current_timestamp = start_date
             for q, l in zip(qps_values, latency_values):
-                timestamp = current_timestamp.strftime(conf.CONFIG_DATETIME_FORMAT)
-                current_timestamp = cls.date_increment_sec(
+                timestamp = current_timestamp.strftime(self.CONFIG_DATETIME_FORMAT)
+                current_timestamp = self.date_increment_sec(
                     current_timestamp, secs=submit_request_every_x_secs)
                 traffic.append((timestamp, q, l))
             start_date = current_timestamp
@@ -155,14 +157,15 @@ class TrafficSimulation(object):
 
         r_min, r_max = ts_values.min(), ts_values.max()
         scale_to_qps = \
-            lambda x: ((x - r_min) / (r_max - r_min)) * (cls.QPS_MAX_VAL - cls.QPS_MIN_VAL) + cls.QPS_MIN_VAL
+            lambda x: ((x - r_min) / (r_max - r_min)) * (self.QPS_MAX_VAL - self.QPS_MIN_VAL) + self.QPS_MIN_VAL
         scale_to_latency = \
-            lambda x: ((x - r_min) / (r_max - r_min)) * (cls.LATENCY_MAX_VAL - cls.LATENCY_MIN_VAL) + cls.LATENCY_MIN_VAL
+            lambda x: ((x - r_min) / (r_max - r_min)) * (
+                        self.LATENCY_MAX_VAL - self.LATENCY_MIN_VAL) + self.LATENCY_MIN_VAL
 
         for d, v in zip(ts_index, ts_values):
             qps = scale_to_qps(v)
             lat = scale_to_latency(v)
-            ts = d.strftime(cls.CONFIG_DATETIME_FORMAT)
+            ts = d.strftime(self.CONFIG_DATETIME_FORMAT)
             traffic.append((ts, qps, lat))
 
         return traffic
