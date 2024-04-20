@@ -86,7 +86,8 @@ class MLOpsFormatter(logging.Formatter):
         if datefmt:
             s = ct.strftime(datefmt)
         else:
-            s = ct.strftime("%a, %d %b %Y %H:%M:%S")
+            t = ct.strftime("%a, %d %b %Y %H:%M:%S")
+            s = "%s.%09d" % (t, int((record.created % 1) * 1e9))  # Get nanoseconds from record.created
         return s
 
 
@@ -191,10 +192,9 @@ class MLOpsRuntimeLog:
 
     def generate_format_str(self):
         log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path(self.args)
-        self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s.%(msecs)03d] [%(levelname)s] "
+        self.format_str = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
                                                                     "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                                                    "message)s",
-                                         datefmt="%a, %d %b %Y %H:%M:%S")
+                                                                    "message)s")
         self.format_str.ntp_offset = MLOpsUtils.get_ntp_offset()
 
 
