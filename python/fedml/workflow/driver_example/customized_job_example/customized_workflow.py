@@ -1,13 +1,9 @@
 import os
 
 import fedml
-from fedml.workflow.workflow import JobStatus, Workflow
-from fedml.workflow.customized_jobs.model_deploy_job import ModelDeployJob
-from fedml.workflow.customized_jobs.model_inference_job import ModelInferenceJob
-from fedml.workflow.customized_jobs.train_job import TrainJob
+from fedml.workflow import JobStatus, WorkflowType, Workflow, ModelDeployJob, ModelInferenceJob, TrainJob
 from typing import List
 import argparse
-from fedml.workflow.workflow_mlops_api import WorkflowType
 
 MY_API_KEY = ""  # Here you need to set your API key from nexus.fedml.ai
 MY_USER_NAME = ""
