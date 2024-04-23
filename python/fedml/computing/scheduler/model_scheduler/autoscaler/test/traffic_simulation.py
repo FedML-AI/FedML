@@ -5,10 +5,6 @@ import sys
 import numpy as np
 
 from datetime import timedelta
-from mockseries.noise import RedNoise
-from mockseries.utils import datetime_range
-from mockseries.seasonality import SinusoidalSeasonality
-from mockseries.trend import LinearTrend
 
 sys.path.insert(0, '..')  # Need to extend the path because the test script is a standalone script.
 random.seed(0)
@@ -130,6 +126,14 @@ class TrafficSimulation(object):
                                           num_values,
                                           submit_request_every_x_secs=30,
                                           with_warmup=False):
+
+        # We import mockseries here, because mockseries is not
+        # a standard package required by fedml to be installed.
+        from mockseries.noise import RedNoise
+        from mockseries.utils import datetime_range
+        from mockseries.seasonality import SinusoidalSeasonality
+        from mockseries.trend import LinearTrend
+
         traffic = []
         start_date = self.START_DATE
         if with_warmup:

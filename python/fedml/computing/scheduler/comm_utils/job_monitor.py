@@ -29,7 +29,7 @@ from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
-from ..model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
+from ..model_scheduler.autoscaler.autoscaler import Autoscaler, EWMPolicy, ConcurrentQueryPolicy
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from ..slave import client_constants
@@ -79,9 +79,9 @@ class JobMonitor(Singleton):
         # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
         # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
         # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
-        self.autoscaling_policy_config = {
-            "metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
-        self.autoscaling_policy = ReactivePolicy(**self.autoscaling_policy_config)
+        self.autoscaling_policy_config = \
+            {"queries_per_replica": 2, "window_size_secs": 60}
+        self.autoscaling_policy = ConcurrentQueryPolicy(**self.autoscaling_policy_config)
 
 
     @staticmethod

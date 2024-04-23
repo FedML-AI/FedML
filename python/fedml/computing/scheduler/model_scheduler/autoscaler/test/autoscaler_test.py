@@ -3,7 +3,7 @@ import unittest
 import time
 
 from collections import namedtuple
-from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler, EWMPolicy, ConcurrentQueryPolicy
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -23,7 +23,7 @@ class AutoscalerTest(unittest.TestCase):
         # autoscaler_{1,2} objects are the same.
         self.assertTrue(autoscaler_1 is autoscaler_2)
 
-    def test_scale_operation_single_endpoint_reactive(self):
+    def test_scale_operation_single_endpoint_ewm_policy(self):
 
         # Populate redis with some dummy values for each endpoint before running the test.
         fedml_model_cache = FedMLModelCache.get_instance()
@@ -39,14 +39,14 @@ class AutoscalerTest(unittest.TestCase):
             "min_replicas": 1,
             "max_replicas": 1,
             "current_replicas": 1,
-            "metric": "latency",
+            "metric": "ewm_latency",
             "ewm_mins": 15,
             "ewm_alpha": 0.5,
             "ub_threshold": 0.5,
             "lb_threshold": 0.5
         }
 
-        autoscaling_policy = ReactivePolicy(**latency_reactive_policy_default)
+        autoscaling_policy = EWMPolicy(**latency_reactive_policy_default)
         scale_op_1 = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             endpoint_id=ENV_ENDPOINT_ID_1)
@@ -58,8 +58,38 @@ class AutoscalerTest(unittest.TestCase):
         fedml_model_cache.delete_model_endpoint_metrics(
             endpoint_ids=[ENV_ENDPOINT_ID_1, ENV_ENDPOINT_ID_2])
 
+        # TODO Change to ScaleUP or ScaleDown not only not None.
         self.assertIsNotNone(scale_op_1)
         self.assertIsNotNone(scale_op_2)
+
+    def test_scale_operation_single_endpoint_concurrency_query_policy(self):
+
+        # Populate redis with some dummy values for each endpoint before running the test.
+        fedml_model_cache = FedMLModelCache.get_instance()
+        fedml_model_cache.set_redis_params(ENV_REDIS_ADDR, ENV_REDIS_PORT, ENV_REDIS_PASSWD)
+        fedml_model_cache.set_monitor_metrics(
+            ENV_ENDPOINT_ID_1, "", "", "", 5, 5, 5, 10, 100, 100, int(time.time_ns() / 1000), 0)
+
+        # Create autoscaler instance and define policy.
+        autoscaler = Autoscaler.get_instance()
+        concurrent_query_policy = {
+            "min_replicas": 1,
+            "max_replicas": 1,
+            "current_replicas": 1,
+            "queries_per_replica": 2, "window_size_secs": 60
+        }
+
+        autoscaling_policy = EWMPolicy(**concurrent_query_policy)
+        scale_op_1 = autoscaler.scale_operation_endpoint(
+            autoscaling_policy,
+            endpoint_id=ENV_ENDPOINT_ID_1)
+
+        # Clean up redis after test.
+        fedml_model_cache.delete_model_endpoint_metrics(
+            endpoint_ids=[ENV_ENDPOINT_ID_1])
+
+        # TODO Change to ScaleUP or ScaleDown not only not None.
+        self.assertIsNotNone(scale_op_1)
 
 
 if __name__ == "__main__":
