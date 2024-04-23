@@ -672,3 +672,10 @@ class S3Storage:
             logging.error(f"Failed to fetch metadata for key {path_s3} after max retry.")
             return data, message
         return data, message
+
+    // TODO: 
+    async def upload_file_stream(self, file_stream, file_key):
+
+    // TODO: 
+    def generate_presigned_url(self, file_key) -> str:
+    
