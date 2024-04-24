@@ -929,9 +929,8 @@ class FedMLServerRunner:
         enable_auto_scaling = request_json.get("enable_auto_scaling", False)
         desired_replica_num = request_json.get("desired_replica_num", 1)
 
-        # TODO :remove this debug info
-        enable_auto_scaling = True if enable_auto_scaling == 1 else False
-        logging.info(f"Debug enable_auto_scaling {enable_auto_scaling}")
+        target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
+        aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
 
         inference_end_point_id = run_id
 
@@ -944,7 +943,9 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(
             end_point_id=run_id, end_point_name=end_point_name, model_name=model_name, model_version=model_version,
             replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
-            scale_min=scale_min, scale_max=scale_max, state="DEPLOYING")
+            scale_min=scale_min, scale_max=scale_max, state="DEPLOYING",
+            aggregation_window_size_seconds=aggregation_window_size_seconds,
+            target_queries_per_replica=target_queries_per_replica)
 
         # Start log processor for current run
         self.args.run_id = run_id

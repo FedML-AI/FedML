@@ -76,12 +76,7 @@ class JobMonitor(Singleton):
         if not hasattr(self, "endpoints_autoscale_predict_future"):
             self.endpoints_autoscale_predict_future = dict()
 
-        # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
-        # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
-        # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
-        self.autoscaling_policy_config = \
-            {"queries_per_replica": 2, "window_size_secs": 60}
-        self.autoscaling_policy = ConcurrentQueryPolicy(**self.autoscaling_policy_config)
+
 
 
     @staticmethod
@@ -114,22 +109,30 @@ class JobMonitor(Singleton):
             if endpoint_state == "DEPLOYED" and endpoint_settings["enable_auto_scaling"]:
                 logging.info(f"After interval, check the autoscaler for async future list."
                              f"{self.endpoints_autoscale_predict_future}")
+                # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
+                # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
+                # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
+                autoscaling_policy_config = \
+                    {"queries_per_replica": endpoint_settings["target_queries_per_replica"],
+                     "window_size_secs": endpoint_settings["aggregation_window_size_seconds"]}
+                autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
 
                 e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \
                                               endpoint_settings["model_name"]
+
                 logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
 
                 # For every endpoint we just update the policy configuration.
-                self.autoscaling_policy.min_replicas = endpoint_settings["scale_min"]
-                self.autoscaling_policy.max_replicas = endpoint_settings["scale_max"]
+                autoscaling_policy.min_replicas = endpoint_settings["scale_min"]
+                autoscaling_policy.max_replicas = endpoint_settings["scale_max"]
                 # We retrieve a list of replicas for every endpoint. The number
                 # of running replicas is the length of that list.
                 current_replicas = len(fedml_model_cache.get_endpoint_replicas_results(e_id))
-                self.autoscaling_policy.current_replicas = current_replicas
-                logging.info(f"Endpoint {e_id} autoscaling policy: {self.autoscaling_policy}.")
+                autoscaling_policy.current_replicas = current_replicas
+                logging.info(f"Endpoint {e_id} autoscaling policy: {autoscaling_policy}.")
 
                 scale_op = autoscaler.scale_operation_endpoint(
-                    self.autoscaling_policy,
+                    autoscaling_policy,
                     str(e_id))
 
                 new_replicas = current_replicas + scale_op.value
