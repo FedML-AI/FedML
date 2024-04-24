@@ -62,6 +62,42 @@
     print("loop", workflow.loop)
 ```
 
+## Notes:
+1) You can get the output of your previous inference job in the model prediction API, which is as follows. The current prediction response will be transferred into the next inference job.
+```
+    def predict(self, request):
+       input_dict = request
+       arr = request["arr"]
+    
+       # If the output of previous job is present, then use this output value to predict.
+       # Here inference_job_0 is the name of previous job.
+       # You may use this method to get outputs of all previous jobs
+       output_of_previous_job = input_dict.get("inference_job_0")
+       if output_of_previous_job is not None:
+       question: str = output_of_previous_job
+       else:
+       question: str = input_dict.get("text", "").strip()
+       input_tensor = self.list_to_tensor_func(arr)
+       return self.model(input_tensor) # The response will be used as the input of the next inference job.
+```
+2) You can get the input of your previous job in the training script and set the output of your current training.
+```
+   if name == "__main__":
+       print("Hi everyone, I am an launch job.")
+    
+       print(f"current config is {fedml.get_env_version()}")
+    
+       run_id = os.getenv('FEDML_CURRENT_RUN_ID', 0)
+       edge_id = os.getenv('FEDML_CURRENT_EDGE_ID', 0)
+    
+       job_inputs = TrainJob.get_inputs()
+       job_input_from_inference_job_1 = job_inputs.get("inference_job_1")
+       print(f"Inputs from all previous jobs. {job_inputs}")
+       print(f"Input from inference_job_1. {job_input_from_inference_job_1}")
+    
+       TrainJob.set_outputs({"trained_model_output": "Here is the output of the trained model."})
+```
+
 # Examples:
 ## 1.install this version of fedml lib in your local python environment and the GPU server：
 ```
@@ -84,3 +120,6 @@
 ```
    python customized_workflow.py -t -k $YourApiKey
 ```
+## 6.Review the topology, status and logs.
+After the deploy workflow, inference workflow and train workflow are finished, 
+you can review the topology, status and logs of these workflows in the train/workflow and deploy/workflow of Nexus AI platform.
