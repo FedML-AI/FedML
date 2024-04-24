@@ -246,6 +246,7 @@ class JobMonitor(Singleton):
             print(f"Exception when monitoring run process on the slave agent.{traceback.format_exc()}")
             pass
 
+        # Deploy Job Type
         try:
             count = 0
             try:
@@ -265,13 +266,22 @@ class JobMonitor(Singleton):
                     if not self.released_endpoints.get(str(job.job_id), False):
                         self.released_endpoints[str(job.job_id)] = True
 
-                        # Release the gpu ids
-                        print(
-                            f"[endpoint/device][{job.job_id}/{job.edge_id}] Release gpu resource when monioring worker endpoint periodically.")
+                        # Release the gpu ids (In case it is not handled by the deployment process)
+                        logging.info(
+                            f"[endpoint/device][{job.job_id}/{job.edge_id}] "
+                            f"Release gpu resource when monitoring worker endpoint periodically.")
                         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
+                        # Set the status to MSG_MLOPS_CLIENT_STATUS_ARCHIVED
+                        device_client_data_interface.FedMLClientDataInterface.get_instance().save_job_status(
+                            job_id=job.job_id,
+                            edge_id=job.edge_id,
+                            status=device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_ARCHIVED,
+                            msg=f"Archive after release the gpu resource. Previous status is {job.status}."
+                        )
+
         except Exception as e:
-            print(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
+            logging.error(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):

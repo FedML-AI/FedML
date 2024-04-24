@@ -8,6 +8,7 @@ from fedml.computing.scheduler.model_scheduler.device_server_constants import Se
 from .device_model_db import FedMLModelDatabase
 from fedml.core.common.singleton import Singleton
 from typing import Any, Dict, List
+from fedml.computing.scheduler.scheduler_core.compute_gpu_cache import ComputeGpuCache
 
 
 class FedMLModelCache(Singleton):
@@ -489,6 +490,12 @@ class FedMLModelCache(Singleton):
 
         # TODO: Use Sqlite for the replica backup
 
+    def delete_all_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id):
+        prefix_key = self.get_replica_gpu_ids_key(end_point_id, end_point_name, model_name, device_id, 1)[:-2]
+        for key in self.redis_connection.scan_iter(prefix_key + "*"):
+            self.redis_connection.delete(key)
+        # TODO(Raphael): Delete the backup in Sqlite
+
     def get_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id, replica_no):
         try:
             if self.redis_connection.exists(self.get_replica_gpu_ids_key(end_point_id, end_point_name,
@@ -498,25 +505,56 @@ class FedMLModelCache(Singleton):
         except Exception as e:
             pass
 
-    def delete_end_point(self, end_point_id, end_point_name, model_name, model_version):
+    def delete_end_point(self, end_point_id, end_point_name, model_name, model_version, device_id=None):
+        # Device id is either deploy master or deploy worker
         try:
             logging.info("Will Delete the related redis keys permanently")
             self.redis_connection.expire(self.get_deployment_result_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_deployment_status_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_deployment_token_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_round_robin_prev_device(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            any_version_round_robin_key = self.get_round_robin_prev_device_any_version(end_point_id, end_point_name, model_name)
+            for key in self.redis_connection.scan_iter(any_version_round_robin_key + "*"):
+                self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
             self.redis_connection.expire(self.get_deployment_device_info_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_activation_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_status_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_user_setting_replica_num_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            # Delete all replicas gpu ids
+            matched_prefix_replica = self.get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name, device_id)
+            for key in self.redis_connection.scan_iter(matched_prefix_replica + "*"):
+                self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+                logging.info(f"Those keys are deleted: {key}")
+
+            # Delete the compute gpu cache
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_device_ids_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_edge_model_id_map_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            logging.info(f"Those keys are deleted:"
+                         f"{ComputeGpuCache.get_endpoint_run_id_map_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_total_num_gpus_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_total_num_gpus_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_device_ids_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_edge_model_id_map_key(end_point_id)}")
+
         except Exception as e:
             logging.error(f"error when deleting the redis keys: {e}")
             pass
 
     def get_end_point_activation(self, end_point_id):
-        # [Deprecated] activation logic is removed
-        return True
+        activation = False
+        try:
+            if self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
+                activation = self.redis_connection.get(self.get_end_point_activation_key(end_point_id))
+        except Exception as e:
+            activation = False
+        return activation
 
     def get_end_point_full_key_by_id(self, end_point_id):
         # e.g. FEDML_MODEL_DEPLOYMENT_RESULT--1234-dummy_endpoint_name-dummy_model_name
@@ -642,7 +680,8 @@ class FedMLModelCache(Singleton):
     def get_end_point_status_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
 
-    def get_end_point_activation_key(self, end_point_id):
+    @staticmethod
+    def get_end_point_activation_key(end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
 
     def get_deployment_device_info_key(self, end_point_id):
@@ -654,6 +693,11 @@ class FedMLModelCache(Singleton):
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
 
+    @staticmethod
+    def get_round_robin_prev_device_any_version(endpoint_id, endpoint_name, model_name):
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, endpoint_id,
+                                    endpoint_name, model_name)
+
     def get_endpoint_replica_num_key(self, end_point_id):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG, end_point_id, "replica_num", "key")
 
@@ -661,6 +705,11 @@ class FedMLModelCache(Singleton):
     def get_replica_gpu_ids_key(end_point_id, end_point_name, model_name, device_id, replica_no):
         return "{}-{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_REPLICA_GPU_IDS_TAG, end_point_id,
                                           end_point_name, model_name, device_id, replica_no)
+
+    @staticmethod
+    def get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name, device_id):
+        return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_REPLICA_GPU_IDS_TAG, end_point_id,
+                                       end_point_name, model_name, device_id)
 
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,

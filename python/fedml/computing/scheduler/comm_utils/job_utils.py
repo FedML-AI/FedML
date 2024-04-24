@@ -70,7 +70,7 @@ class JobRunnerUtils(Singleton):
                 if run_gpu_ids:
                     raise Exception(f"GPUs already occupied for run_id: {run_id}, device_id: {device_id}.")
 
-                # For the "Switch" feature in deploy
+                # Incase the run id for launch job is the same as the inner id for deploy job
                 if inner_id is not None and str(original_run_id) != str(inner_id):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(inner_id,
                                                                                                original_run_id)
@@ -79,7 +79,7 @@ class JobRunnerUtils(Singleton):
                         ComputeCacheManager.get_instance().get_gpu_cache().get_device_lock_key(device_id)
                 ):
 
-                    # Get the available GPU list from the cache
+                    # Get the available GPU list, FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG-${device_id}
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
 
@@ -102,6 +102,7 @@ class JobRunnerUtils(Singleton):
                             raise Exception(error_message)
                         return None
 
+                    # String to available set
                     run_gpu_ids = list(map(lambda x: int(x), cuda_visible_gpu_ids_str.split(",")))
                     available_gpu_ids = [gpu_id for gpu_id in available_gpu_ids if gpu_id not in set(run_gpu_ids)]
                     available_gpu_ids = list(set(available_gpu_ids))
@@ -134,6 +135,7 @@ class JobRunnerUtils(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().set_run_total_num_gpus(run_id, matched_gpu_num)
 
                     if model_master_device_id is not None and model_slave_device_id is not None:
+                        # Set (Launch Master, Deploy Master, Deploy Workers) device id map
                         ComputeCacheManager.get_instance().get_gpu_cache().set_edge_model_id_map(
                             run_id, device_id, model_master_device_id, model_slave_device_id)
 
@@ -199,7 +201,6 @@ class JobRunnerUtils(Singleton):
         with ComputeCacheManager.get_instance().lock(
                 ComputeCacheManager.get_instance().get_gpu_cache().get_run_lock_key(run_id)
         ):
-            original_run_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(run_id)
             edge_device_id, model_master_device_id, model_slave_device_id = \
                 ComputeCacheManager.get_instance().get_gpu_cache().get_edge_model_id_map(run_id)
             if edge_device_id is None:
