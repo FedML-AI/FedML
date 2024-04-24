@@ -141,6 +141,9 @@ async def _predict(
         input_json,
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
+    """
+    t1: timestamp the request was received by the Python API-Gateway from Java
+    """
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
@@ -153,7 +156,7 @@ async def _predict(
     if in_model_version is None:
         in_model_version = "*"  # * | latest | specific version
 
-    start_time = time.time_ns()
+    t1 = time.time_ns()
 
     # Allow missing end_point_name and model_name in the input parameters.
     if in_model_name is None or in_end_point_name is None:
@@ -185,7 +188,7 @@ async def _predict(
                                           settings.model_infer_url,
                                           settings.redis_addr, settings.redis_port, settings.redis_password,
                                           version=settings.version)
-        model_metrics.set_start_time(start_time)
+        model_metrics.set_start_time(t1)
 
         # Send inference request to idle device
         logging.info("inference url {}.".format(inference_output_url))
@@ -196,6 +199,10 @@ async def _predict(
             output_list = input_json.get("outputs", [])
             inference_response = await send_inference_request(
                 idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
+
+        # Get t3 and t4 from headers (if exists), which return by the replica container
+        t3 = header.get("fedml_t3", None)
+        t4 = header.get("fedml_t4", None)
 
         # Calculate model metrics
         try:

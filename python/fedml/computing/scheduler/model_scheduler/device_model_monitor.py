@@ -36,7 +36,17 @@ class FedMLModelMetrics:
 
     def calc_metrics(self, end_point_id, end_point_name,
                      model_id, model_name, model_version,
-                     inference_output_url, device_id):
+                     inference_output_url, device_id,
+                     t1, t2=None, t3=None, t4=None):
+        """
+        T1: timestamp the request was received by the Python API-Gateway from Java.
+        T2: timestamp the request was received by the physical node from the Python API-Gateway.
+            Note: in direct mode, T2 is the same as T1, Since the master will directly send the request to the replica.
+        T3: timestamp the request was received by the replica
+        T4: timestamp the replica processed the request and replied to the node
+        T5: timestamp the response was sent from the node to the API Gateway
+        """
+
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
