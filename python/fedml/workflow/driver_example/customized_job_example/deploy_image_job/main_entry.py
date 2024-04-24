@@ -30,8 +30,8 @@ class MnistPredictor(FedMLPredictor):
         input_dict = request
         arr = request["arr"]
 
-        # If the ouptput of previous job is present, then use this output value to predict.
-        # Here inference_job_0 is the name of prevous job.
+        # If the output of previous job is present, then use this output value to predict.
+        # Here inference_job_0 is the name of previous job.
         # You may use this method to get outputs of all previous jobs
         output_of_previous_job = input_dict.get("inference_job_0")
         if output_of_previous_job is not None:
