@@ -284,7 +284,9 @@ class Autoscaler(metaclass=Singleton):
         # The `most_recent_metric` is of type list, hence we need to access index 0.
         most_recent_metric = most_recent_metric[0]
         latest_request_timestamp_micro_secs = most_recent_metric["timestamp"]
-        current_time_micro_seconds = time.time_ns() / 1e6
+        # The time module does not have a micro-second function built-in, so we need to
+        # divide nanoseconds by 1e3 and convert to micro-seconds.
+        current_time_micro_seconds = time.time_ns() / 1e3
         # compute elapsed time and convert to seconds
         elapsed_time_secs = \
             (current_time_micro_seconds - latest_request_timestamp_micro_secs) / 1e6
