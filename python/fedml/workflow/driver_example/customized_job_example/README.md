@@ -49,3 +49,26 @@
     print("topological_order", workflow.metadata.topological_order)
     print("loop", workflow.loop)
 ```
+
+# Examples:
+## 1.install this version of fedml lib in your local python environment and the GPU server：
+```
+   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.58
+```
+## 2.Git clone the example in your local python environment：
+```
+   git clone -b alexleung/dev_branch_latest_sync https://github.com/FedML-AI/FedML
+   cd python/fedml/workflow/driver_example/customized_job_example
+```
+## 3.Run deploy workflow:
+```
+   python customized_workflow.py -d -k $YourApiKey -e $YourEndpointName
+```
+## 4.Run inference workflow:
+```
+   python customized_workflow.py -i -k $YourApiKey -u $YourUserName -e $YourDeployedEndpointName
+```
+## 5.Run train workflow:
+```
+   python customized_workflow.py -t -k $YourApiKey
+```
