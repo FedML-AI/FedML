@@ -54,7 +54,7 @@
     print(f"Output of all jobs is as follows. {all_jobs_outputs}")    
 ```
 
-## After the workflow finished, print the graph, nodes and topological order
+## After the workflow is finished, print the graph, nodes and topological order
 ```
     print("graph", workflow.metadata.graph)
     print("nodes", workflow.metadata.nodes)
