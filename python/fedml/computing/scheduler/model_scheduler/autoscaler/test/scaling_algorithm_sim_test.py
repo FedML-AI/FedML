@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from collections import namedtuple
-from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import Autoscaler, ReactivePolicy
+from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import \
+    Autoscaler, EWMPolicy, ConcurrentQueryPolicy
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.computing.scheduler.model_scheduler.autoscaler.test.traffic_simulation import TrafficSimulation
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
@@ -32,9 +33,9 @@ def plot_qps_vs_latency_vs_scale(
     for scale_op in scale_operations[1:]:
         running_instances.append(running_instances[-1] + scale_op.value)
 
-    if metric == "qps":
+    if "qps" in metric:
         ax.plot_date(ts, qps, color='purple', fmt="8--", linewidth=0.5, label="QPS")
-    else:
+    elif "latency" in metric:
         ax.plot_date(ts, latency, color='purple', fmt="p--", linewidth=0.5, label="Latency")
     ax.plot_date(ts, running_instances, color='green', fmt="*", linewidth=0.5, label="Instances")
 
@@ -71,8 +72,8 @@ if __name__ == "__main__":
     parser.add_argument('--redis_password', default="fedml_default")
     parser.add_argument('--endpoint_id', default=12345)
     parser.add_argument('--metric',
-                        default="latency",
-                        help="Either latency or qps")
+                        default="query_concurrency",
+                        help="Either ewm_latency, ewm_qps, query_concurrency")
     parser.add_argument('--distribution',
                         default="random",
                         help="Either random, linear, exponential or seasonal.")
@@ -86,16 +87,19 @@ if __name__ == "__main__":
     #   "random", "linear", "exponential"
     # Moreover, you can also play around with the order of values in an
     # ascending (reverse=False) or descending (reverse=True) order.
+    start_date = datetime.datetime.strptime(
+        datetime.datetime.now().strftime(TrafficSimulation.CONFIG_DATETIME_FORMAT),
+        TrafficSimulation.CONFIG_DATETIME_FORMAT)
     if args.distribution in ["random", "linear", "exponential"]:
-        traffic_dist = TrafficSimulation.generate_traffic(
+        traffic_dist = TrafficSimulation(start_date=start_date).generate_traffic(
             qps_distribution=args.distribution,
             latency_distribution=args.distribution,
             num_values=300,
-            submit_request_every_x_secs=30,
+            submit_request_every_x_secs=1,
             reverse=False,
             with_warmup=False)
     elif args.distribution == "seasonal":
-        traffic_dist = TrafficSimulation.generate_traffic_with_seasonality(
+        traffic_dist = TrafficSimulation(start_date=start_date).generate_traffic_with_seasonality(
             num_values=1000,
             submit_request_every_x_secs=10,
             with_warmup=False)
@@ -105,24 +109,32 @@ if __name__ == "__main__":
     # INFO Please remember to change these two variables below when attempting
     # to test the simulation of the autoscaling policy simulation.
     testing_metric = args.metric
-    testing_traffic = traffic_dist
-    latency_reactive_policy_default = \
-        {"metric": "latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
-    qps_reactive_policy_default = \
-        {"metric": "qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
-    policy_config = latency_reactive_policy_default \
-        if testing_metric == "latency" else qps_reactive_policy_default
-    policy_config["min_replicas"] = 1
-    policy_config["max_replicas"] = 10
-    policy_config["current_replicas"] = 1
+    if testing_metric == "ewm_latency":
+        policy_config = \
+            {"metric": "ewm_latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        autoscaling_policy = EWMPolicy(**policy_config)
+    elif testing_metric == "ewm_qps":
+        policy_config = \
+            {"metric": "ewm_qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
+        autoscaling_policy = EWMPolicy(**policy_config)
+    elif testing_metric == "query_concurrency":
+        policy_config = \
+            {"queries_per_replica": 2, "window_size_secs": 60}
+        autoscaling_policy = ConcurrentQueryPolicy(**policy_config)
+    else:
+        raise RuntimeError("Please define a valid policy metric.")
+
     print(policy_config)
 
     autoscaler = Autoscaler.get_instance(args.redis_addr, args.redis_port, args.redis_password)
-    autoscaling_policy = ReactivePolicy(**policy_config)
+    autoscaling_policy.min_replicas = 1  # Always 1.
+    autoscaling_policy.max_replicas = 1000  # Unlimited.
+    autoscaling_policy.current_replicas = 1
+
     scale_operations = []
     ewm_values = []
     triggering_values = []
-    for i, t in enumerate(testing_traffic):
+    for i, t in enumerate(traffic_dist):
         ts, qps, latency = t[0], t[1], t[2]
         # We convert the timestamp to epoch time with microseconds, since this
         # is the expected input in the REDIS database for the timestamp column.
@@ -135,6 +147,7 @@ if __name__ == "__main__":
             model_version="",
             total_latency=latency,
             avg_latency=latency,
+            current_latency=latency,
             total_request_num=i,
             current_qps=qps,
             avg_qps=qps,
@@ -143,8 +156,11 @@ if __name__ == "__main__":
         scale_op = autoscaler.scale_operation_endpoint(
             autoscaling_policy,
             str(args.endpoint_id))
-        ewm_values.append(autoscaling_policy.ewm_latest)
-        triggering_values.append(autoscaling_policy.triggering_value)
+        autoscaling_policy.current_replicas = \
+            autoscaling_policy.current_replicas + scale_op.value
+        if isinstance(autoscaling_policy, EWMPolicy):
+            ewm_values.append(autoscaling_policy.ewm_latest)
+        triggering_values.append(autoscaling_policy.last_triggering_value)
         scale_operations.append(scale_op)
 
     triggering_values_to_plot = []
@@ -154,10 +170,10 @@ if __name__ == "__main__":
         else:
             triggering_values_to_plot.append(v)
 
-    trend_lines = [ewm_values]
+    trend_lines = [ewm_values] if ewm_values else None
     plot_qps_vs_latency_vs_scale(
         metric=testing_metric,
-        traffic=testing_traffic,
+        traffic=traffic_dist,
         scale_operations=scale_operations,
         trend_lines=trend_lines,
         triggering_points=triggering_values_to_plot)
