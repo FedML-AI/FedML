@@ -95,7 +95,7 @@ if __name__ == "__main__":
             qps_distribution=args.distribution,
             latency_distribution=args.distribution,
             num_values=300,
-            submit_request_every_x_secs=20,
+            submit_request_every_x_secs=1,
             reverse=False,
             with_warmup=False)
     elif args.distribution == "seasonal":

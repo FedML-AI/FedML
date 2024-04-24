@@ -1,3 +1,4 @@
+import math
 import time
 import warnings
 
@@ -96,8 +97,8 @@ class ConcurrentQueryPolicy(AutoscalingPolicy):
     This policy captures the number of queries we want to support
     per replica over the defined window length in seconds.
     """
-    queries_per_replica: float = 1
-    window_size_secs: float = 60
+    queries_per_replica: int = 1
+    window_size_secs: int = 60
 
 
 class PredictivePolicy(AutoscalingPolicy):
@@ -192,17 +193,24 @@ class Autoscaler(metaclass=Singleton):
             period_data = metrics.last("{}s".format(concurrent_query_policy.window_size_secs))
             queries_num = period_data.shape[0]
 
-        # QSR: Queries per Second per Replica: (Number of Queries / Window Size) / (Number of Current Replicas)
-        # Comparing target QSR to current QSR
+        # QSR: Queries per Second per Replica: (Number of Queries / Number of Current Replicas) / Window Size
+        # Comparing target QSR to current QSR.
         target_qsr = \
             concurrent_query_policy.queries_per_replica / concurrent_query_policy.window_size_secs
+        # We need to floor the target queries per replica, therefore we need to ceil the division
+        # to ensure we will not have too much fluctuation. For instance, if the user requested to
+        # support 2 queries per replica per 60 seconds, the target QSR is 2/60 = 0.0333.
+        # Then, if we had 5 queries sent to 3 replicas in 60 seconds, the current QSR
+        # would be (5/3)/60 = 0.0277. To avoid the fluctuation, we need to round the incoming
+        # number of queries per replica to the nearest integer and then divide by the window size.
         current_qsr = \
-            (queries_num / concurrent_query_policy.window_size_secs) / concurrent_query_policy.current_replicas
+            (math.ceil(queries_num / concurrent_query_policy.current_replicas) /
+             concurrent_query_policy.window_size_secs)
 
         if current_qsr > target_qsr:
             concurrent_query_policy.last_triggering_value = current_qsr
             scale_op = ScaleOp.UP_OUT_OP
-        elif current_qsr <= target_qsr:
+        elif current_qsr < target_qsr:
             concurrent_query_policy.last_triggering_value = current_qsr
             scale_op = ScaleOp.DOWN_IN_OP
         else:
