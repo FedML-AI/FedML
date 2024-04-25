@@ -8,9 +8,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
-import GPUtil
 from GPUtil import getGPUs
-import psutil
 
 
 class ContainerUtils(Singleton):
@@ -162,7 +160,6 @@ class ContainerUtils(Singleton):
                     # Find the random port
                     port_info = client.api.port(container_object.id, container_port)
                     inference_http_port = port_info[0]["HostPort"]
-                    # logging.debug("inference_http_port: {}".format(inference_http_port))
                     break
             except:
                 if cnt >= 5:
@@ -340,8 +337,7 @@ class ContainerUtils(Singleton):
     @staticmethod
     def gpu_stats(gpu_ids):
         utilz, memory, temp = None, None, None
-        gpu_stats_map = {}  # gpu_id: int ->
-        # {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
+        gpu_stats_map = {}  # gpu_id: int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
         try:
             gpus = getGPUs()
 

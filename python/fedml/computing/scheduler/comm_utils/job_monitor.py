@@ -233,8 +233,6 @@ class JobMonitor(Singleton):
             }
 
             try:
-                # logging.debug(f"Sending the replica number request to MLOps platform. url {url}, "
-                #              f"body {req_body}., header {req_header}")
                 response = requests.post(
                     url,
                     headers=req_header,
