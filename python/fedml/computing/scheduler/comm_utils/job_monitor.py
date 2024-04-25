@@ -256,12 +256,10 @@ class JobMonitor(Singleton):
         try:
             fedml_args = mlops.get_fedml_args()
             ComputeCacheManager.get_instance().set_redis_params()
-            count = 0
             try:
                 device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
             except Exception as e:
                 pass
-            number_of_finished_jobs = 0
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
 
             for job in job_list.job_list:
@@ -323,7 +321,7 @@ class JobMonitor(Singleton):
 
                     if mqtt_mgr is not None:
                         mqtt_mgr.send_message_json(topic_name, message_json)
-                    break   # [TMP] Only report the first replica
+                    break   # TODO(Raphael, Asce): Change to replica-level reporting.
 
         except Exception as e:
             logging.error(f"Exception when monitoring replicas performance on the worker agent. error: {e}")

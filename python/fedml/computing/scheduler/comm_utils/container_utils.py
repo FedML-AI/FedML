@@ -249,7 +249,7 @@ class ContainerUtils(Singleton):
         CPU %     MEM USAGE / LIMIT     MEM %     NET I/O          BLOCK I/O
         0.26%     8.703GiB / 503.5GiB   1.73%     17.4GB / 176MB   545kB / 20.9GB
 
-        GPU: We currently use pynvml to get the GPU stats on host machine since one GPU is not
+        GPU: We currently use GPUtil to get the GPU stats on host machine since one GPU is not
         shared by multiple containers
         (TODO: get the GPU stats inside the container)
         """
@@ -258,9 +258,6 @@ class ContainerUtils(Singleton):
 
         # Get stats
         stats = container.stats(stream=False, decode=False)
-
-        # Show stats
-        # print(stats)
 
         # Calculate the memory usage
         mem_bytes_used = stats["memory_stats"]["usage"]
