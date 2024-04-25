@@ -358,7 +358,9 @@ class FedMLClientRunner:
                                                        ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT)
         inference_end_point_id = run_id
 
-        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
+        # We report when replica container is started
+        # self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
+
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         logging.info(f"[Worker] Received model deployment request from master for endpoint {run_id}.")

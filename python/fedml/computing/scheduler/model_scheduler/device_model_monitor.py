@@ -41,7 +41,7 @@ class FedMLModelMetrics:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
-        logging.info(f"Calculated metrics_item: {metrics_item}")
+
         if metrics_item is not None:
             total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
@@ -65,7 +65,7 @@ class FedMLModelMetrics:
         avg_qps = total_request_num * 1.0 / total_latency_sec
         avg_qps = format(avg_qps, '.6f')
 
-        # Timestamp in milliseconds
+        # Timestamp in microseconds
         timestamp = int(format(time.time_ns()/1000.0, '.0f'))
 
         # Set monitor metrics.
