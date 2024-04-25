@@ -1,4 +1,5 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, NonNegativeInt, NonNegativeFloat
+
 
 class AutoscalingPolicy(BaseModel):
     """
@@ -17,13 +18,13 @@ class AutoscalingPolicy(BaseModel):
     the monitoring interval after which a running replica
     of an idle endpoint should be released.
     """
-    current_replicas: int = 0
-    min_replicas: int = 0
-    max_replicas: int = 0
+    current_replicas: NonNegativeInt
+    min_replicas: NonNegativeInt
+    max_replicas: NonNegativeInt
     previous_triggering_value: float = None
-    release_replica_after_idle_secs: float = 300
-    scaledown_delay_secs: float = 60
-    scaleup_cost_secs: float = 300
+    release_replica_after_idle_secs: NonNegativeInt = 300  # default is after 5 minutes
+    scaledown_delay_secs: NonNegativeInt = 60  # default is 1 minute
+    scaleup_cost_secs: NonNegativeInt = 300  # default is 5 minutes
 
 
 class EWMPolicy(AutoscalingPolicy):
@@ -62,12 +63,12 @@ class EWMPolicy(AutoscalingPolicy):
 
         In other words, QPS is the inverse of Latency and vice versa.
     """
-    metric: str = "ewm_latency"
-    ewm_mins: int = 15
-    ewm_alpha: float = 0.5
-    ewm_latest: float = None
-    ub_threshold: float = 0.5
-    lb_threshold: float = 0.5
+    metric: str  # possible values: ["ewm_latency", "ewm_qps"]
+    ewm_mins: NonNegativeInt  # recommended value: 15 minutes
+    ewm_alpha: NonNegativeFloat  # recommended value: 0.1
+    ewm_latest: NonNegativeFloat = None  # will be filled by the algorithm
+    ub_threshold: NonNegativeFloat  # recommended value: 0.5
+    lb_threshold: NonNegativeFloat  # recommended value: 0.5
 
     @field_validator("metric")
     def validate_option(cls, v):
@@ -80,8 +81,8 @@ class ConcurrentQueryPolicy(AutoscalingPolicy):
     This policy captures the number of queries we want to support
     per replica over the defined window length in seconds.
     """
-    queries_per_replica: int = 1
-    window_size_secs: int = 60
+    queries_per_replica: NonNegativeInt  # recommended is at least 1 query
+    window_size_secs: NonNegativeInt  # recommended is at least 60seconds
 
 
 class MeetTrafficDemandPolicy(AutoscalingPolicy):
@@ -89,7 +90,7 @@ class MeetTrafficDemandPolicy(AutoscalingPolicy):
     This policy captures the number of queries we want to support
     per replica over the defined window length in seconds.
     """
-    window_size_secs: int = 60
+    window_size_secs: NonNegativeInt
 
 
 class PredictivePolicy(AutoscalingPolicy):

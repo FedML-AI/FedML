@@ -8,7 +8,7 @@ import matplotlib.dates as mdates
 
 from collections import namedtuple
 from fedml.computing.scheduler.model_scheduler.autoscaler.autoscaler import \
-    Autoscaler, EWMPolicy, ConcurrentQueryPolicy
+    Autoscaler, EWMPolicy, ConcurrentQueryPolicy, MeetTrafficDemandPolicy
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.computing.scheduler.model_scheduler.autoscaler.test.traffic_simulation import TrafficSimulation
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
@@ -73,9 +73,9 @@ if __name__ == "__main__":
     parser.add_argument('--endpoint_id', default=12345)
     parser.add_argument('--metric',
                         default="query_concurrency",
-                        help="Either ewm_latency, ewm_qps, query_concurrency")
+                        help="Either ewm_latency, ewm_qps, query_concurrency, meet_traffic_demand")
     parser.add_argument('--distribution',
-                        default="random",
+                        default="seasonal",
                         help="Either random, linear, exponential or seasonal.")
     args = parser.parse_args()
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     elif args.distribution == "seasonal":
         traffic_dist = TrafficSimulation(start_date=start_date).generate_traffic_with_seasonality(
             num_values=1000,
-            submit_request_every_x_secs=10,
+            submit_request_every_x_secs=30,
             with_warmup=False)
     else:
         raise RuntimeError("Not a supported distribution")
@@ -109,27 +109,37 @@ if __name__ == "__main__":
     # INFO Please remember to change these two variables below when attempting
     # to test the simulation of the autoscaling policy simulation.
     testing_metric = args.metric
+    policy_config = dict()
+    policy_config["min_replicas"] = 1  # Always 1.
+    policy_config["max_replicas"] = 1000  # Unlimited.
+    policy_config["current_replicas"] = 1
+    policy_config["scaledown_delay_secs"] = 0
+
     if testing_metric == "ewm_latency":
-        policy_config = \
-            {"metric": "ewm_latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5}
+        policy_config.update({
+            "metric": "ewm_latency", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 0.5, "lb_threshold": 0.5
+        })
         autoscaling_policy = EWMPolicy(**policy_config)
     elif testing_metric == "ewm_qps":
-        policy_config = \
-            {"metric": "ewm_qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5}
+        policy_config.update({
+            "metric": "ewm_qps", "ewm_mins": 15, "ewm_alpha": 0.5, "ub_threshold": 2, "lb_threshold": 0.5
+        })
         autoscaling_policy = EWMPolicy(**policy_config)
     elif testing_metric == "query_concurrency":
-        policy_config = \
-            {"queries_per_replica": 2, "window_size_secs": 60}
+        policy_config.update({
+            "queries_per_replica": 2, "window_size_secs": 60
+        })
         autoscaling_policy = ConcurrentQueryPolicy(**policy_config)
+    elif testing_metric == "meet_traffic_demand":
+        policy_config.update({
+            "window_size_secs": 60
+        })
+        autoscaling_policy = MeetTrafficDemandPolicy(**policy_config)
     else:
         raise RuntimeError("Please define a valid policy metric.")
 
     print(policy_config)
-
     autoscaler = Autoscaler.get_instance(args.redis_addr, args.redis_port, args.redis_password)
-    autoscaling_policy.min_replicas = 1  # Always 1.
-    autoscaling_policy.max_replicas = 1000  # Unlimited.
-    autoscaling_policy.current_replicas = 1
 
     scale_operations = []
     ewm_values = []

@@ -7,7 +7,7 @@ import pandas as pd
 
 from enum import Enum
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
-from policies import *
+from fedml.computing.scheduler.model_scheduler.autoscaler.policies import *
 from utils.singleton import Singleton
 
 
@@ -172,14 +172,15 @@ class Autoscaler(metaclass=Singleton):
             logging.error("Division by zero.")
             return ScaleOp.NO_OP
 
+        scale_op = ScaleOp.NO_OP
         if rs > qs:
             # Need to meet the demand.
-            return ScaleOp.UP_OUT_OP
+            scale_op = ScaleOp.UP_OUT_OP
         elif rs < qs:
             # Demand already met.
-            return ScaleOp.DOWN_IN_OP
-        else:
-            return ScaleOp.NO_OP
+            scale_op = ScaleOp.DOWN_IN_OP
+
+        return scale_op
 
     def run_autoscaling_policy(self,
                                autoscaling_policy: AutoscalingPolicy,
@@ -202,6 +203,7 @@ class Autoscaler(metaclass=Singleton):
                 autoscaling_policy,
                 metrics)
         else:
+            print(autoscaling_policy)
             raise RuntimeError("Not a valid autoscaling policy instance.")
 
         return scale_op
@@ -234,21 +236,30 @@ class Autoscaler(metaclass=Singleton):
         passed to the calling process, else it returns a no operation.
         """
 
-        # Get the timestamp of the previous scaling down timestamp (if any).
-        previous_timestamp = \
-            self.fedml_model_cache.get_endpoint_scaling_down_decision_time(endpoint_id)
+        # If the policy has no scaledown delay then return immediately.
+        if autoscaling_policy.scaledown_delay_secs == 0:
+            return ScaleOp.DOWN_IN_OP
+
+        # By default, we return a no operation.
+        scale_op = ScaleOp.NO_OP
+        previous_timestamp_exists = \
+            self.fedml_model_cache.exists_endpoint_scaling_down_decision_time(endpoint_id)
         current_timestamp = self.get_current_timestamp_micro_seconds()
-        diff_secs = (current_timestamp - previous_timestamp) / 1e6
-        if diff_secs >= autoscaling_policy.scaledown_delay_secs:
-            # At this point, we will perform the scaling down operation, hence
-            # we need to delete the previously stored scaling down timestamp (if any).
-            self.fedml_model_cache.delete_endpoint_scaling_down_decision_time(endpoint_id)
-            scale_op = ScaleOp.DOWN_IN_OP
+        if previous_timestamp_exists:
+            # Get the timestamp of the previous scaling down timestamp (if any), and
+            # compare the timestamps difference to measure interval's duration.
+            previous_timestamp = \
+                self.fedml_model_cache.get_endpoint_scaling_down_decision_time(endpoint_id)
+            diff_secs = (current_timestamp - previous_timestamp) / 1e6
+            if diff_secs > autoscaling_policy.scaledown_delay_secs:
+                # At this point, we will perform the scaling down operation, hence
+                # we need to delete the previously stored scaling down timestamp (if any).
+                self.fedml_model_cache.delete_endpoint_scaling_down_decision_time(endpoint_id)
+                scale_op = ScaleOp.DOWN_IN_OP
         else:
             # Record the timestamp of the scaling down operation.
             self.fedml_model_cache.set_endpoint_scaling_down_decision_time(
                 endpoint_id, current_timestamp)
-            scale_op = ScaleOp.NO_OP
 
         return scale_op
 
@@ -315,6 +326,8 @@ class Autoscaler(metaclass=Singleton):
         scale_op = self.validate_scaling_bounds(
             scale_op=scale_op,
             autoscaling_policy=autoscaling_policy)
+
+        print(scale_op)
 
         # If the scaling decision is a scale down operation, then perform
         # a final check to ensure the scaling down grace period is satisfied.

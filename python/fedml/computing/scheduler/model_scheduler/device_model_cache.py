@@ -25,7 +25,7 @@ class FedMLModelCache(Singleton):
     # For scale-out & scale-in
     FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
 
-    # For autoscaler state
+    # For keeping track scale down decisions state.
     FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG = "FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG-"
 
     # On the worker
@@ -928,39 +928,38 @@ class FedMLModelCache(Singleton):
     def set_endpoint_scaling_down_decision_time(self, end_point_id, timestamp) -> bool:
         status = True
         try:
-            redis_key = "{}{}".format(self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-                                      end_point_id)
-            self.redis_connection.set(redis_key, timestamp)
+            self.redis_connection.hset(
+                self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                mapping={end_point_id: timestamp})
         except Exception as e:
             logging.error(e)
             status = False
         return status
 
     def get_endpoint_scaling_down_decision_time(self, end_point_id) -> int:
-        scaling_down_decision_time = 0
         try:
-            redis_key = "{}{}".format(self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-                                      end_point_id)
             scaling_down_decision_time = \
-                self.redis_connection.keys(redis_key)
-            if scaling_down_decision_time:
-                scaling_down_decision_time = scaling_down_decision_time[0]
+                self.redis_connection.hget(
+                    self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                    end_point_id)
+            if len(scaling_down_decision_time) > 0:
+                scaling_down_decision_time = int(scaling_down_decision_time)
             else:
-                raise Exception("Function `get_endpoint_scaling_decision` Key {} does not exist."
-                                .format(redis_key))
+                scaling_down_decision_time = 0
         except Exception as e:
+            scaling_down_decision_time = 0
             logging.error(e)
 
         return scaling_down_decision_time
 
-    def delete_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
-        status = True
-        try:
-            redis_key = "{}{}".format(self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-                                      end_point_id)
-            self.redis_connection.delete(redis_key)
-        except Exception as e:
-            logging.error(e)
-            status = False
+    def exists_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        # The hash exists returns an integer 0 (not found), 1 (found), hence we need
+        # to cast it to a boolean value.
+        return bool(self.redis_connection.hexists(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
 
-        return status
+    def delete_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        return bool(self.redis_connection.hdel(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
