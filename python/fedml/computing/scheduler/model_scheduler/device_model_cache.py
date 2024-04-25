@@ -274,6 +274,19 @@ class FedMLModelCache(Singleton):
                 pass
         return result_list
 
+    def get_all_deployment_result_list(self):
+        result_list = list()
+        try:
+            key_pattern = "{}*".format(self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG)
+            result_keys = self.redis_connection.keys(pattern=key_pattern)
+            for key in result_keys:
+                result_list.extend(self.redis_connection.lrange(key, 0, -1))
+        except Exception as e:
+            logging.error(e)
+        # TODO(Raphael): Use Sqlite for the replica backup
+
+        return result_list
+
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
         result_list = self.get_deployment_result_list(end_point_id, end_point_name, model_name)
         return len(result_list)
@@ -658,6 +671,19 @@ class FedMLModelCache(Singleton):
 
         return token
 
+    def get_end_point_token_with_eid(self, end_point_id):
+        # Only support redis for now
+        token = None
+        try:
+            prefix = self.get_deployment_token_key_eid(end_point_id)
+            for key in self.redis_connection.scan_iter(prefix + "*"):
+                token = self.redis_connection.get(key)
+                break
+        except Exception as e:
+            token = None
+
+        return token
+
     def get_endpoint_devices_replica_num(self, end_point_id):
         """
         Return a endpoint_devices_replica_num dict {id1: 1, id2: 1}, if not exist, return None
@@ -687,8 +713,13 @@ class FedMLModelCache(Singleton):
     def get_deployment_device_info_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
 
-    def get_deployment_token_key(self, end_point_id, end_point_name, model_name):
+    @staticmethod
+    def get_deployment_token_key(end_point_id, end_point_name, model_name):
         return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id, end_point_name, model_name)
+
+    @staticmethod
+    def get_deployment_token_key_eid(end_point_id):
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
 
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)

@@ -350,6 +350,9 @@ def is_endpoint_activated(end_point_id):
 
 
 def logging_inference_request(request, response):
+    if os.getenv("ENABLE_FEDML_INFERENCE_LOG", "False") in ["False", "false", "0", ""]:
+        return
+
     try:
         log_dir = ServerConstants.get_log_file_dir()
         if not os.path.exists(log_dir):

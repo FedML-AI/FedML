@@ -23,7 +23,6 @@ from fedml.computing.scheduler.master import server_data_interface
 from fedml.computing.scheduler.model_scheduler import device_client_data_interface
 from fedml.computing.scheduler.model_scheduler import device_server_data_interface
 from fedml.core.common.singleton import Singleton
-from fedml.computing.scheduler.comm_utils.security_utils import get_api_key
 
 from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
@@ -75,9 +74,6 @@ class JobMonitor(Singleton):
 
         if not hasattr(self, "endpoints_autoscale_predict_future"):
             self.endpoints_autoscale_predict_future = dict()
-
-
-
 
     @staticmethod
     def get_instance():
@@ -187,6 +183,149 @@ class JobMonitor(Singleton):
                 except Exception as e:
                     logging.error(f"Failed to send the autoscale request to MLOps platform. {e}")
         return
+
+    @staticmethod
+    def monitor_replicas_number():
+        """
+        [If Master] Report the replica number.
+        """
+        FedMLModelCache.get_instance().set_redis_params()
+        res_frm_db = FedMLModelCache.get_instance().get_all_deployment_result_list()
+        res_to_mlops = {}  # endpoint_id -> num_replica
+
+        for endpoint_detail in res_frm_db:
+            endpoint_replicas_details = {}
+            if isinstance(endpoint_detail, str):
+                endpoint_replicas_details = json.loads(endpoint_detail)
+
+            if "result" in endpoint_replicas_details:
+                endpoint_replica_details = {}
+                if isinstance(endpoint_replicas_details["result"], str):
+                    endpoint_replica_details = json.loads(endpoint_replicas_details["result"])
+
+                res_to_mlops[endpoint_replica_details["end_point_id"]] = res_to_mlops.get(
+                    endpoint_replica_details["end_point_id"], 0) + 1
+
+        for endpoint_id, num_replica in res_to_mlops.items():
+            curr_version = fedml.get_env_version()
+            num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
+            if curr_version == "release":
+                mlops_prefix = "https://open.fedml.ai/"
+            elif curr_version == "test":
+                mlops_prefix = "https://open-test.fedml.ai/"
+            else:
+                logging.error(f"Do not support the version {curr_version}.")
+                return
+            url = f"{mlops_prefix}{num_replica_url_path}"
+
+            cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
+            if cached_token is None:
+                logging.error(f"Failed to get the cached token for endpoint {endpoint_id}.")
+                return
+
+            req_header = {
+                "Authorization": f"Bearer {cached_token}"
+            }
+            req_body = {
+                "endpointId": int(endpoint_id),
+                "replicaNumber": int(num_replica),
+                "timestamp": int(time.time() * 1000)
+            }
+
+            try:
+                response = requests.post(
+                    url,
+                    headers=req_header,
+                    json=req_body
+                )
+                if response.status_code != 200:
+                    logging.error(f"Failed to send the replica number request to MLOps platform.")
+                else:
+                    logging.debug(f"Successfully sent the replica number request to MLOps platform.")
+            except Exception as e:
+                logging.error(f"Failed to send the replica number request to MLOps platform. {e}")
+        return
+
+    @staticmethod
+    def monitor_replicas_perf(edge_id, mqtt_mgr=None):
+        """
+        For each worker, report the performance of each replica.
+        """
+        topic_name = "fl_client/mlops/system_performance"
+
+        try:
+            fedml_args = mlops.get_fedml_args()
+            ComputeCacheManager.get_instance().set_redis_params()
+            try:
+                device_client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
+            job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
+
+            for job in job_list.job_list:
+                if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                        job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
+                    MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(job.job_id, int(job.edge_id))
+                    continue
+
+                endpoint_json = json.loads(job.running_json) if job.running_json is not None else {}
+                model_config = endpoint_json.get("model_config", {})
+                model_name = model_config.get("model_name", None)
+                model_id = model_config.get("model_id", None)
+                model_version = model_config.get("model_version", None)
+                endpoint_name = endpoint_json.get("end_point_name", None)
+
+                # Get endpoint container name
+                endpoint_container_name_prefix = device_client_constants.ClientConstants.get_endpoint_container_name(
+                    endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
+                )
+
+                num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
+                    endpoint_container_name_prefix)
+
+                for i in range(num_containers):
+                    endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
+                    container_perf = ContainerUtils.get_instance().get_container_perf(endpoint_container_name)
+
+                    if container_perf is None:
+                        continue
+
+                    metrics_of_all_gpus = []
+                    for gpu_id, gpu_perf in container_perf.gpus_stat.items():
+                        # gpu_id:int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
+                        gpu_info = {
+                            "gpu_id": gpu_id,
+                            "gpu_utilization": round(gpu_perf["gpu_utilization"], 4),
+                            "gpu_memory_allocated": round(gpu_perf["gpu_memory_allocated"], 4),
+                            "gpu_temp": round(gpu_perf["gpu_temp"], 4),
+                            # "gpu_power_usage": round(gpu_perf["gpu_power_usage"], 4),
+                            # "gpu_time_spent_accessing_memory": round(gpu_perf["gpu_time_spent_accessing_memory"], 4),
+                        }
+                        metrics_of_all_gpus.append(gpu_info)
+
+                    # TODO(Raphael): Change to replica-level reporting, now is device-level reporting.
+                    device_info_json = {
+                        "run_id": job.job_id,
+                        "edge_id": job.edge_id,
+                        "cpu_utilization": round(container_perf.cpu_percent, 4),
+                        "process_memory_in_use": round(container_perf.mem_used_megabytes, 4),
+                        "process_memory_available": round(container_perf.mem_avail_megabytes, 4),
+                        "process_memory_in_use_size": round(
+                            (container_perf.mem_used_megabytes / container_perf.mem_avail_megabytes), 4),
+                        "disk_utilization": round(container_perf.blk_write_megabytes, 4),
+                        "network_traffic": round(container_perf.network_sent_megabytes, 4),
+                        "metrics_of_all_gpus": metrics_of_all_gpus,
+                    }
+
+                    message_json = json.dumps(device_info_json)
+
+                    if mqtt_mgr is not None:
+                        mqtt_mgr.send_message_json(topic_name, message_json)
+                    break   # TODO(Raphael, Asce): Change to replica-level reporting.
+
+        except Exception as e:
+            logging.error(f"Exception when monitoring replicas performance on the worker agent. error: {e}")
+            pass
 
     def monitor_slave_run_process_status(self):
         try:

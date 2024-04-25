@@ -307,6 +307,7 @@ class FedMLServerRunner:
             inference_end_point_id, use_gpu, memory_size, model_version, inference_port = self.parse_model_run_params(
             self.request_json)
 
+        # TODO(Raphael): This measurement is for the host machine. Change to container's metrics
         self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
 
         self.check_runner_stop_event()
