@@ -160,7 +160,7 @@ if __name__ == "__main__":
             autoscaling_policy.current_replicas + scale_op.value
         if isinstance(autoscaling_policy, EWMPolicy):
             ewm_values.append(autoscaling_policy.ewm_latest)
-        triggering_values.append(autoscaling_policy.last_triggering_value)
+        triggering_values.append(autoscaling_policy.previous_triggering_value)
         scale_operations.append(scale_op)
 
     triggering_values_to_plot = []
@@ -179,5 +179,5 @@ if __name__ == "__main__":
         triggering_points=triggering_values_to_plot)
 
     # Clear redis monitor keys.
-    fedml_model_cache.delete_model_endpoint_metrics(
+    fedml_model_cache.delete_endpoint_metrics(
         endpoint_ids=[args.endpoint_id])

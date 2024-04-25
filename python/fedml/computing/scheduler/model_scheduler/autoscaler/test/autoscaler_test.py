@@ -55,7 +55,7 @@ class AutoscalerTest(unittest.TestCase):
             endpoint_id=ENV_ENDPOINT_ID_2)
 
         # Clean up redis after test.
-        fedml_model_cache.delete_model_endpoint_metrics(
+        fedml_model_cache.delete_endpoint_metrics(
             endpoint_ids=[ENV_ENDPOINT_ID_1, ENV_ENDPOINT_ID_2])
 
         # TODO Change to ScaleUP or ScaleDown not only not None.
@@ -85,7 +85,7 @@ class AutoscalerTest(unittest.TestCase):
             endpoint_id=ENV_ENDPOINT_ID_1)
 
         # Clean up redis after test.
-        fedml_model_cache.delete_model_endpoint_metrics(
+        fedml_model_cache.delete_endpoint_metrics(
             endpoint_ids=[ENV_ENDPOINT_ID_1])
 
         # TODO Change to ScaleUP or ScaleDown not only not None.
