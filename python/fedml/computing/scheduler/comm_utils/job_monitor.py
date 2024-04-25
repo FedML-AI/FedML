@@ -267,20 +267,10 @@ class JobMonitor(Singleton):
             job_list = device_client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
 
             for job in job_list.job_list:
-                count += 1
-                if count >= 1000:
-                    break
-
                 if job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
                         job.status == device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
                     MLOpsRuntimeLogDaemon.get_instance(fedml_args).stop_log_processor(job.job_id, int(job.edge_id))
                     continue
-
-                if job.status != device_client_constants.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
-                    continue
-                number_of_finished_jobs += 1
-                if number_of_finished_jobs >= 100:
-                    break
 
                 endpoint_json = json.loads(job.running_json) if job.running_json is not None else {}
                 model_config = endpoint_json.get("model_config", {})
@@ -294,9 +284,6 @@ class JobMonitor(Singleton):
                     endpoint_name, model_name, model_version, job.job_id, model_id, edge_id=job.edge_id
                 )
 
-                logging.info(f"Monitoring the replicas performance on the worker agent. "
-                             f"{endpoint_container_name_prefix}")
-
                 num_containers = ContainerUtils.get_instance().get_container_rank_same_model(
                     endpoint_container_name_prefix)
 
@@ -307,19 +294,16 @@ class JobMonitor(Singleton):
                     if container_perf is None:
                         continue
 
-                    container_perf.show()   # For debugging
-
                     metrics_of_all_gpus = []
                     for gpu_id, gpu_perf in container_perf.gpus_stat.items():
-                        # gpu_id:int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp",
-                        # "gpu_power_usage", "gpu_time_spent_accessing_memory"}
+                        # gpu_id:int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
                         gpu_info = {
                             "gpu_id": gpu_id,
                             "gpu_utilization": round(gpu_perf["gpu_utilization"], 4),
                             "gpu_memory_allocated": round(gpu_perf["gpu_memory_allocated"], 4),
                             "gpu_temp": round(gpu_perf["gpu_temp"], 4),
-                            "gpu_power_usage": round(gpu_perf["gpu_power_usage"], 4),
-                            "gpu_time_spent_accessing_memory": round(gpu_perf["gpu_time_spent_accessing_memory"], 4),
+                            # "gpu_power_usage": round(gpu_perf["gpu_power_usage"], 4),
+                            # "gpu_time_spent_accessing_memory": round(gpu_perf["gpu_time_spent_accessing_memory"], 4),
                         }
                         metrics_of_all_gpus.append(gpu_info)
 
@@ -337,12 +321,9 @@ class JobMonitor(Singleton):
                         "metrics_of_all_gpus": metrics_of_all_gpus,
                     }
 
-                    logging.info(f"Sending the replica performance to the master agent. {device_info_json}")
-
                     message_json = json.dumps(device_info_json)
 
                     if mqtt_mgr is not None:
-                        logging.info(f"Sending the replica performance to the master agent. {message_json}")
                         mqtt_mgr.send_message_json(topic_name, message_json)
                     break   # [TMP] Only report the first replica
 

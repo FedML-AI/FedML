@@ -8,7 +8,8 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
-import pynvml
+import GPUtil
+from GPUtil import getGPUs
 import psutil
 
 
@@ -161,7 +162,7 @@ class ContainerUtils(Singleton):
                     # Find the random port
                     port_info = client.api.port(container_object.id, container_port)
                     inference_http_port = port_info[0]["HostPort"]
-                    logging.info("inference_http_port: {}".format(inference_http_port))
+                    # logging.debug("inference_http_port: {}".format(inference_http_port))
                     break
             except:
                 if cnt >= 5:
@@ -316,9 +317,6 @@ class ContainerUtils(Singleton):
         # Record timestamp
         timestamp = stats["read"]
 
-        # logging.debug(f"Memory: {mem_gb_used}GB / {mem_gb_avail}GB")
-        # logging.debug(f"CPU: {cpu_percent}%")
-
         return ContainerUtils.ContainerMetrics(cpu_percent, mem_gb_used, mem_gb_avail, recv_megabytes, sent_megabytes,
                                                blk_read_bytes, blk_write_bytes, timestamp, gpus_stat)
 
@@ -343,26 +341,18 @@ class ContainerUtils(Singleton):
     def gpu_stats(gpu_ids):
         utilz, memory, temp = None, None, None
         gpu_stats_map = {}  # gpu_id: int ->
-        # {"gpu_utilization", "gpu_memory_allocated", "gpu_temp", "gpu_power_usage", "gpu_time_spent_accessing_memory"}
+        # {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
         try:
-            pynvml.nvmlInit()
-            for i in gpu_ids:
-                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                try:
-                    utilz = pynvml.nvmlDeviceGetUtilizationRates(handle)
-                    memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                    temp = pynvml.nvmlDeviceGetTemperature(
-                        handle, pynvml.NVML_TEMPERATURE_GPU
-                    )
-                except pynvml.NVMLError:
-                    logging.error("Failed to get GPU stats")
+            gpus = getGPUs()
 
+            for i in gpu_ids:
+                gpu = gpus[i]
                 gpu_stats_map[i] = {
-                    "gpu_utilization": utilz.gpu,
-                    "gpu_memory_allocated": (memory.used / float(memory.total)) * 100,
-                    "gpu_temp": temp,
-                    "gpu_power_usage": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000,   # in watts
-                    "gpu_time_spent_accessing_memory": utilz.memory
+                    "gpu_utilization": gpu.load*100,
+                    "gpu_memory_allocated": gpu.memoryUtil*100,
+                    "gpu_temp": gpu.temperature,
+                    # "gpu_power_usage": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000,   # in watts
+                    # "gpu_time_spent_accessing_memory": utilz.memory   # in ms
                 }
         except Exception as e:
             logging.error(f"Failed to get GPU stats: {e}")
