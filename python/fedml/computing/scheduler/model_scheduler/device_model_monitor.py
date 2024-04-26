@@ -134,8 +134,8 @@ class FedMLModelMetrics:
                                          "model_id": self.current_model_id,
                                          "model_url": self.current_infer_url,
                                          "end_point_id": self.current_end_point_id,
-                                         "latency": float(avg_latency * 1000),     # milliseconds
-                                         "qps": float(avg_qps * 1000),             # milliseconds
+                                         "latency": float(avg_latency) * 1000,     # milliseconds
+                                         "qps": float(avg_qps) * 1000,             # milliseconds
                                          "current_latency": float(current_latency),
                                          "current_qps": float(current_qps),
                                          "total_request_num": int(total_request_num),
