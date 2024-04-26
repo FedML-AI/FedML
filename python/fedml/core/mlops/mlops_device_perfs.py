@@ -22,6 +22,9 @@ ROLE_ENDPOINT_SLAVE = 3
 ROLE_RUN_MASTER = 4
 ROLE_RUN_SLAVE = 5
 ROLE_ENDPOINT_LOGS = 6
+ROLE_AUTO_SCALER = 7
+ROLE_ENDPOINT_REPLICA_NUM = 8
+ROLE_ENDPOINT_REPLICA_PERF = 9
 
 
 class MLOpsDevicePerfStats(object):
@@ -33,6 +36,9 @@ class MLOpsDevicePerfStats(object):
         self.monitor_endpoint_master_process = None
         self.monitor_endpoint_slave_process = None
         self.monitor_endpoint_logs_process = None
+        self.monitor_auto_scaler_process = None
+        self.monitor_replica_num_process = None
+        self.monitor_replica_perf_process = None
         self.args = None
         self.device_id = None
         self.run_id = None
@@ -91,6 +97,25 @@ class MLOpsDevicePerfStats(object):
                 target=perf_stats.report_device_realtime_stats_entry,
                 args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
             self.monitor_endpoint_logs_process.start()
+
+            # Register auto-scaler process
+            self.monitor_auto_scaler_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER))
+            self.monitor_auto_scaler_process.start()
+
+            # Register replica number report channel
+            self.monitor_replica_num_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM))
+            self.monitor_replica_num_process.start()
+
+            # Register replica performance report channel
+            self.monitor_replica_perf_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF))
+            self.monitor_replica_perf_process.start()
+
         else:
             self.monitor_run_master_process = multiprocessing.Process(
                 target=perf_stats.report_device_realtime_stats_entry,
@@ -124,7 +149,15 @@ class MLOpsDevicePerfStats(object):
         sleep_time_interval = 10
         time_interval_map = {
             ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
-            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30}
+            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30,
+            ROLE_AUTO_SCALER: 60, ROLE_ENDPOINT_REPLICA_NUM: 30, ROLE_ENDPOINT_REPLICA_PERF: 30
+        }
+
+        job_monitor_obj = None
+        if role == ROLE_AUTO_SCALER:
+            # job_monitor Should be initialized once
+            job_monitor_obj = JobMonitor.get_instance()
+
         while not self.should_stop_device_realtime_stats():
             try:
                 time.sleep(time_interval_map[role])
@@ -142,6 +175,12 @@ class MLOpsDevicePerfStats(object):
                     JobMonitor.get_instance().monitor_master_endpoint_status()
                 elif role == ROLE_ENDPOINT_LOGS:
                     JobMonitor.get_instance().monitor_endpoint_logs()
+                elif role == ROLE_ENDPOINT_REPLICA_NUM:
+                    JobMonitor.get_instance().monitor_replicas_number()
+                elif role == ROLE_ENDPOINT_REPLICA_PERF:
+                    JobMonitor.get_instance().monitor_replicas_perf(self.edge_id, mqtt_mgr=mqtt_mgr)
+                elif role == ROLE_AUTO_SCALER:
+                    job_monitor_obj.autoscaler_reconcile_after_interval()
 
             except Exception as e:
                 logging.error(f"exception {e} when reporting device pref: {traceback.format_exc()}.")

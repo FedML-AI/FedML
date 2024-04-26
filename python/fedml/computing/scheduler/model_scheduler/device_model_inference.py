@@ -277,8 +277,11 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
     try:
-        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", None)
-        http_infer_available = strtobool(http_infer_available) if http_infer_available is not None else True
+        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", True)
+        if not http_infer_available:
+            if http_infer_available == "False" or http_infer_available == "false":
+                http_infer_available = False
+
         if http_infer_available:
             response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
             if response_ok:
@@ -348,6 +351,9 @@ def is_endpoint_activated(end_point_id):
 
 
 def logging_inference_request(request, response):
+    if os.getenv("ENABLE_FEDML_INFERENCE_LOG", "False") in ["False", "false", "0", ""]:
+        return
+
     try:
         log_dir = ServerConstants.get_log_file_dir()
         if not os.path.exists(log_dir):

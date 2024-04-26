@@ -73,8 +73,6 @@ class FedMLEndpointSyncProtocol(FedMLBaseProtocol):
             "device_id": worker_device_id, "end_point_id": end_point_id, "end_point_name": end_point_name,
             "model_id": model_id, "model_name": model_name, "model_version": model_version,
             "inference_port": inference_port, "disable": disable, "replica_no": replica_no}
-        logging.info("send_sync_inference_port: topic {}, payload {}.".format(
-            deployment_info_topic, deployment_info_payload))
         self.client_mqtt_mgr.send_message_json(deployment_info_topic, json.dumps(deployment_info_payload))
 
     def callback_sync_device_result(self, topic, payload):

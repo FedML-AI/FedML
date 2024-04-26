@@ -50,8 +50,9 @@ def validate_argument(ctx, param, value):
                                              "the data file or directory name.")
 @click.option("--description", "-d", type=str, help="Add description to your data to store. If not provided, "
                                                     "the description will be empty.")
-@click.option("--user_metadata", "-um", type=str, help="User-defined metadata in the form of a name-value (key-value) "
-                                                       "pair. Defaults to None.")
+@click.option("--user_metadata", "-um", type=str, help="User-defined metadata in the form of a dictionary, for instance, "
+                                                       " {'name':'value'} within double quotes. "" "
+                                                       "Defaults to None.")
 @click.option('--service', "-s", type=click.Choice(['R2']), default="R2", help="Storage service for object storage. "
                                                                                "Only R2 is supported as of now")
 @click.option(
