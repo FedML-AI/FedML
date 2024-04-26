@@ -373,6 +373,12 @@ class FedMLServerRunner:
                                             model_name,
                                             model_inference_url,
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
+
+                # Set setting to "DEPLOYED" for autoscaling service reference
+                FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+                FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                    update_user_setting_replica_num(end_point_id=run_id, state="DEPLOYED")
+
                 return
         except Exception as e:
             logging.error(f"Failed to send first scroll update message due to {e}.")
