@@ -42,7 +42,7 @@ class JobStatus(Enum):
 
 class Job(ABC):
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, workflow_id=None):
         """
         Initialize the Job instance.
 
@@ -50,6 +50,8 @@ class Job(ABC):
         - name (str): Name for the job. This is used to identify the job in the workflow so it should be unique.
         """
         self.name = name
+        self.workflow_id = workflow_id
+        self.dependencies = None
         self.input_data_dict: Dict[Any, Any] = dict()
         self.output_data_dict: Dict[Any, Any] = dict()
 

@@ -1006,9 +1006,12 @@ class FedMLModelCards(Singleton):
 
         return endpoint_inference_result
 
-    def query_endpoint_detail_api(self, endpoint_id, user_api_key):
+    def query_endpoint_detail_api(self, endpoint_name=None, user_api_key=None, endpoint_id=None):
         endpoint_detail_result = None
-        model_ops_url = ClientConstants.get_model_ops_endpoint_detail_url(endpoint_id, config_version=self.config_version)
+        if endpoint_id is None:
+            model_ops_url = ClientConstants.get_model_ops_endpoint_detail_by_name_url(endpoint_name, config_version=self.config_version)
+        else:
+            model_ops_url = ClientConstants.get_model_ops_endpoint_detail_url(endpoint_id, config_version=self.config_version)
         endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
                                 "Authorization": f"Bearer {user_api_key}"}
         args = {"config_version": self.config_version}

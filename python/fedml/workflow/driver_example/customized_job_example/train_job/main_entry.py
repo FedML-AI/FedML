@@ -1,7 +1,7 @@
 import os
 
 import fedml
-from fedml.workflow.customized_jobs.train_job import TrainJob
+from fedml.workflow import TrainJob
 
 if __name__ == "__main__":
     print("Hi everyone, I am an launch job.")
