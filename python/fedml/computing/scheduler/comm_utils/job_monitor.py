@@ -115,7 +115,8 @@ class JobMonitor(Singleton):
                         "min_replicas": int(endpoint_settings["scale_min"]),
                         "max_replicas": int(endpoint_settings["scale_max"]),
                         "queries_per_replica": int(endpoint_settings["target_queries_per_replica"]),
-                        "window_size_secs": int(endpoint_settings["aggregation_window_size_seconds"])
+                        "window_size_secs": int(endpoint_settings["aggregation_window_size_seconds"]),
+                        "scaledown_delay_secs": int(endpoint_settings["scale_down_delay_seconds"]),
                     }
                 autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
 

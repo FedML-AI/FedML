@@ -109,7 +109,8 @@ class FedMLModelCache(Singleton):
                                      end_point_name: str, model_name: str, model_version: str,
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
-                                     target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60
+                                     target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
+                                     scale_down_delay_seconds: int = 120
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -134,7 +135,8 @@ class FedMLModelCache(Singleton):
             "model_version": model_version, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
             "scale_min": scale_min, "scale_max": scale_max, "state": state,
             "target_queries_per_replica": target_queries_per_replica,
-            "aggregation_window_size_seconds": aggregation_window_size_seconds
+            "aggregation_window_size_seconds": aggregation_window_size_seconds,
+            "scale_down_delay_seconds": scale_down_delay_seconds
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
