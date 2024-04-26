@@ -1,7 +1,6 @@
 import logging
 import time
 import traceback
-from distutils.util import strtobool
 from urllib.parse import urlparse
 import os
 from typing import Any, Mapping, MutableMapping, Union

@@ -579,8 +579,8 @@ class FedMLServerRunner:
 
             program_prefix = "FedML-Server @device-id-{}".format(self.edge_id)
             formatter = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                           "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                           "message)s")
+                                                                  "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                  "message)s")
 
             filehandler.setFormatter(formatter)
             root_logger.addHandler(filehandler)
@@ -1088,12 +1088,9 @@ class FedMLServerRunner:
         first_chunk_dict = self.request_json["replica_version_diff"]
 
         # Delete the record of the replaced device
-        try:
-            self.delete_device_replica_info_on_master(
-                self.request_json["end_point_id"], self.request_json["end_point_name"],
-                self.request_json["model_config"]["model_name"], first_chunk_dict)
-        except Exception as e:
-            logging.info(f"Exceptipn at delete_device_replica_info_on_master {traceback.format_exc()}")
+        self.delete_device_replica_info_on_master(
+            self.request_json["end_point_id"], self.request_json["end_point_name"],
+            self.request_json["model_config"]["model_name"], first_chunk_dict)
 
         logging.info(f"Send the first scroll update msg to the device {first_chunk_dict} ")
 
@@ -1177,14 +1174,11 @@ class FedMLServerRunner:
             self.running_request_json[run_id_str]["replica_version_diff"] = next_chunk_dict
 
             # Avoid using the old request_json
-            try:
-                self.delete_device_replica_info_on_master(
-                    self.running_request_json[run_id_str]["end_point_id"],
-                    self.running_request_json[run_id_str]["end_point_name"],
-                    self.running_request_json[run_id_str]["model_config"]["model_name"],
-                    next_chunk_dict)
-            except Exception as e:
-                logging.info(f"Exceptipn at delete_device_replica_info_on_master {traceback.format_exc()}")
+            self.delete_device_replica_info_on_master(
+                self.running_request_json[run_id_str]["end_point_id"],
+                self.running_request_json[run_id_str]["end_point_name"],
+                self.running_request_json[run_id_str]["model_config"]["model_name"],
+                next_chunk_dict)
 
             # Send the deployment msg to the devices, (we reuse the start_deployment msg)
             for edge_id in next_chunk_dict.keys():
