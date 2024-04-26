@@ -88,7 +88,8 @@ class JobRunnerUtils(Singleton):
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
 
-                    logging.info(f"Check worker({device_id})'s DB record for run {run_id}: {available_gpu_ids}")
+                    logging.info(f"Check worker({device_id})'s realtime gpu availability in DB"
+                                 f" for run {run_id}: {available_gpu_ids}")
 
                     # If the available GPU list is not in the cache, set it to the current system available GPU list
                     if available_gpu_ids is None:
