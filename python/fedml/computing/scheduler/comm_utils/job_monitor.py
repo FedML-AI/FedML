@@ -28,7 +28,8 @@ from .container_utils import ContainerUtils
 from .job_utils import JobRunnerUtils
 from ..model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from ..model_scheduler.device_model_cache import FedMLModelCache
-from ..model_scheduler.autoscaler.autoscaler import Autoscaler, EWMPolicy, ConcurrentQueryPolicy
+from ..model_scheduler.autoscaler.autoscaler import Autoscaler
+from ..model_scheduler.autoscaler.policies import ConcurrentQueryPolicy
 from ..model_scheduler.device_model_db import FedMLModelDatabase
 from ..model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from ..slave import client_constants
@@ -109,8 +110,14 @@ class JobMonitor(Singleton):
                 # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
                 # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
                 autoscaling_policy_config = \
-                    {"queries_per_replica": endpoint_settings["target_queries_per_replica"],
-                     "window_size_secs": endpoint_settings["aggregation_window_size_seconds"]}
+                    {
+                        "current_replicas": int(endpoint_settings["replica_num"]),
+                        "min_replicas": int(endpoint_settings["scale_min"]),
+                        "max_replicas": int(endpoint_settings["scale_max"]),
+                        "queries_per_replica": int(endpoint_settings["target_queries_per_replica"]),
+                        "window_size_secs": int(endpoint_settings["aggregation_window_size_seconds"]),
+                        "scaledown_delay_secs": int(endpoint_settings["scale_down_delay_seconds"]),
+                    }
                 autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
 
                 e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \

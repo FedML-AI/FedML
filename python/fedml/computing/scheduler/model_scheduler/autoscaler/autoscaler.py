@@ -1,3 +1,4 @@
+import logging
 import math
 import time
 import warnings
@@ -6,104 +7,14 @@ import pandas as pd
 
 from enum import Enum
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
-from pydantic import BaseModel, field_validator
+from fedml.computing.scheduler.model_scheduler.autoscaler.policies import *
 from utils.singleton import Singleton
-from typing import Dict
 
 
 class ScaleOp(Enum):
     NO_OP = 0
     UP_OUT_OP = 1
     DOWN_IN_OP = -1
-
-
-class AutoscalingPolicy(BaseModel):
-    """
-    Below are some default values for every endpoint.
-
-    The following parameters refer to:
-    - current_replicas: the number of currently running replicas of the endpoint
-    - min_replicas: the minimum number of replicas of the endpoint in the instance group
-    - max_replicas: the maximum number of replicas of the endpoint in the instance group
-    - release_replica_after_idle_secs: when to release a single idle replica
-    - scaledown_delay_secs: how many seconds to wait before performing a scale down operation
-    - scaleup_cost_secs: how many seconds it takes/costs to perform a scale up operation
-    - last_triggering_value: the last value that triggered a scaling operation
-
-    The `replica_idle_grace_secs` parameter is used as
-    the monitoring interval after which a running replica
-    of an idle endpoint should be released.
-    """
-    current_replicas: int = 0
-    min_replicas: int = 0
-    max_replicas: int = 0
-    release_replica_after_idle_secs: float = 300
-    scaledown_delay_secs: float = 60
-    scaleup_cost_secs: float = 300
-    last_triggering_value: float = None
-
-
-class EWMPolicy(AutoscalingPolicy):
-    """
-    Configuration parameters for the reactive autoscaling policy.
-    EWM stands for Exponential Weighted Calculations, since we use
-    the pandas.DataFrame.ewm() functionality.
-
-    For panda's EWM using alpha = 0.1, we indicate that the most recent
-    values are weighted more. The reason is that the exponential weighted
-    mean formula in pandas is computed as:
-        Yt = X_t + (1-a) * X_{t-1} + (1-a)^2 X_{t-2} / (1 + (1-a) + (1-a)^2)
-
-    The following parameters refer to:
-    - ewm_mins: the length of the interval we consider for reactive decision
-    - ewm_alpha: the decay factor for the exponential weighted interval
-    - ewm_latest: the latest recorded value of the metric's exponential weighted mean
-    - ub_threshold: the upper bound scaling factor threshold for reactive decision
-    - lb_threshold: the lower bound scaling factor threshold for reactive decision
-
-    Example:
-
-        Let's say that we consider 15 minutes as the length of our interval and a
-        decay factor alpha with a value of 0.5:
-            Original Sequence: [0.1, 0.2, 0.4, 3, 5, 10]
-            EWM Sequence: [0.1, [0.166, 0.3, 1.74, 3.422, 6.763]
-
-        If we assume that our previous scaling operation was triggered at value Y,
-        then the conditions we use to decide whether to scale up or down are:
-            Latency:
-                ScaleUP: X > ((1 + ub_threshold) * Y)
-                ScaleDown: X < (lb_threshold * Y)
-            QPS:
-                ScaleUP: X < (lb_threshold * Y)
-                ScaleDown: X < ((1 + ub_threshold) * Y)
-
-        In other words, QPS is the inverse of Latency and vice versa.
-    """
-    metric: str = "ewm_latency"
-    ewm_mins: int = 15
-    ewm_alpha: float = 0.5
-    ewm_latest: float = None
-    ub_threshold: float = 0.5
-    lb_threshold: float = 0.5
-
-    @field_validator("metric")
-    def validate_option(cls, v):
-        assert v in ["ewm_latency", "ewm_qps"]
-        return v
-
-
-class ConcurrentQueryPolicy(AutoscalingPolicy):
-    """
-    This policy captures the number of queries we want to support
-    per replica over the defined window length in seconds.
-    """
-    queries_per_replica: int = 1
-    window_size_secs: int = 60
-
-
-class PredictivePolicy(AutoscalingPolicy):
-    # TODO(fedml-dimitris): TO BE COMPLETED!
-    pass
 
 
 class Autoscaler(metaclass=Singleton):
@@ -116,6 +27,11 @@ class Autoscaler(metaclass=Singleton):
     @staticmethod
     def get_instance(*args, **kwargs):
         return Autoscaler(*args, **kwargs)
+
+    @classmethod
+    def get_current_timestamp_micro_seconds(cls):
+        # in REDIS we record/operate in micro-seconds, hence the division by 1e3!
+        return int(format(time.time_ns() / 1000.0, '.0f'))
 
     @classmethod
     def scale_operation_predictive(cls,
@@ -133,10 +49,13 @@ class Autoscaler(metaclass=Singleton):
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
-            short_period_data = metrics.last("{}min".format(ewm_policy.ewm_mins))
+            period_data = metrics.last("{}min".format(ewm_policy.ewm_mins))
+            # If the data frame window is empty then do nothing more, just return.
+            if period_data.empty:
+                return ScaleOp.NO_OP
             metric_name = "current_latency" \
                 if "ewm_latency" == ewm_policy.metric else "current_qps"
-            ewm_period = short_period_data[metric_name] \
+            ewm_period = period_data[metric_name] \
                 .ewm(alpha=ewm_policy.ewm_alpha).mean()
 
         scale_op = ScaleOp.NO_OP
@@ -150,15 +69,15 @@ class Autoscaler(metaclass=Singleton):
         ewm_policy.ewm_latest = latest_value
         # Assign the triggering value the first time we call the reactive
         # policy, if of course it has not been assigned already.
-        if ewm_policy.last_triggering_value is None:
-            ewm_policy.last_triggering_value = latest_value
+        if ewm_policy.previous_triggering_value is None:
+            ewm_policy.previous_triggering_value = latest_value
 
-        upper_bound = (1 + ewm_policy.ub_threshold) * ewm_policy.last_triggering_value
-        lower_bound = ewm_policy.lb_threshold * ewm_policy.last_triggering_value
+        upper_bound = (1 + ewm_policy.ub_threshold) * ewm_policy.previous_triggering_value
+        lower_bound = ewm_policy.lb_threshold * ewm_policy.previous_triggering_value
 
         if latest_value <= lower_bound or latest_value >= upper_bound:
             # Replace the triggering value if the policy requests so.
-            ewm_policy.last_triggering_value = latest_value
+            ewm_policy.previous_triggering_value = latest_value
 
             if ewm_policy.metric == "ewm_latency":
                 # If the 'latency' is smaller than the
@@ -191,30 +110,75 @@ class Autoscaler(metaclass=Singleton):
             warnings.simplefilter(action='ignore', category=FutureWarning)
             # Here, the number of queries is the number of rows in the short period data frame.
             period_data = metrics.last("{}s".format(concurrent_query_policy.window_size_secs))
+            # If the data frame window is empty then do nothing more, just return.
+            if period_data.empty:
+                return ScaleOp.NO_OP
             queries_num = period_data.shape[0]
 
-        # QSR: Queries per Second per Replica: (Number of Queries / Number of Current Replicas) / Window Size
-        # Comparing target QSR to current QSR.
-        target_qsr = \
-            concurrent_query_policy.queries_per_replica / concurrent_query_policy.window_size_secs
-        # We need to floor the target queries per replica, therefore we need to ceil the division
-        # to ensure we will not have too much fluctuation. For instance, if the user requested to
-        # support 2 queries per replica per 60 seconds, the target QSR is 2/60 = 0.0333.
-        # Then, if we had 5 queries sent to 3 replicas in 60 seconds, the current QSR
-        # would be (5/3)/60 = 0.0277. To avoid the fluctuation, we need to round the incoming
-        # number of queries per replica to the nearest integer and then divide by the window size.
-        current_qsr = \
-            (math.ceil(queries_num / concurrent_query_policy.current_replicas) /
-             concurrent_query_policy.window_size_secs)
+        try:
+            # QSR: Queries per Second per Replica: (Number of Queries / Number of Current Replicas) / Window Size
+            # Comparing target QSR to current QSR.
+            target_qrs = \
+                concurrent_query_policy.queries_per_replica / concurrent_query_policy.window_size_secs
+            # We need to floor the target queries per replica, therefore we need to ceil the division
+            # to ensure we will not have too much fluctuation. For instance, if the user requested to
+            # support 2 queries per replica per 60 seconds, the target QSR is 2/60 = 0.0333.
+            # Then, if we had 5 queries sent to 3 replicas in 60 seconds, the current QSR
+            # would be (5/3)/60 = 0.0277. To avoid the fluctuation, we need to round the incoming
+            # number of queries per replica to the nearest integer and then divide by the window size.
+            current_qrs = \
+                (math.ceil(queries_num / concurrent_query_policy.current_replicas) /
+                 concurrent_query_policy.window_size_secs)
+        except ZeroDivisionError as error:
+            logging.error("Division by zero.")
+            return ScaleOp.NO_OP
 
-        if current_qsr > target_qsr:
-            concurrent_query_policy.last_triggering_value = current_qsr
+        if current_qrs > target_qrs:
+            concurrent_query_policy.previous_triggering_value = current_qrs
             scale_op = ScaleOp.UP_OUT_OP
-        elif current_qsr < target_qsr:
-            concurrent_query_policy.last_triggering_value = current_qsr
+        elif current_qrs < target_qrs:
+            concurrent_query_policy.previous_triggering_value = current_qrs
             scale_op = ScaleOp.DOWN_IN_OP
         else:
             scale_op = ScaleOp.NO_OP
+
+        return scale_op
+
+    @classmethod
+    def scale_operation_meet_traffic_demand(cls,
+                                            meet_traffic_demand_policy: MeetTrafficDemandPolicy,
+                                            metrics: pd.DataFrame) -> ScaleOp:
+
+        # Adding the context below to avoid having a series of warning messages.
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=FutureWarning)
+            # Here, the number of queries is the number of rows in the short period data frame.
+            period_data = metrics.last("{}s".format(meet_traffic_demand_policy.window_size_secs))
+            # If the data frame window is empty then do nothing more, just return.
+            if period_data.empty:
+                return ScaleOp.NO_OP
+
+        period_requests_num = period_data.shape[0]
+        all_latencies = metrics["current_latency"]
+        # Original value is milliseconds, convert to seconds.
+        average_latency = all_latencies.mean() / 1e3
+
+        try:
+            # RS: Requests_per_Second
+            rs = period_requests_num / meet_traffic_demand_policy.window_size_secs
+            # QS: Queries_per_Second
+            qs = 1 / average_latency
+        except ZeroDivisionError as error:
+            logging.error("Division by zero.")
+            return ScaleOp.NO_OP
+
+        scale_op = ScaleOp.NO_OP
+        if rs > qs:
+            # Need to meet the demand.
+            scale_op = ScaleOp.UP_OUT_OP
+        elif rs < qs:
+            # Demand already met.
+            scale_op = ScaleOp.DOWN_IN_OP
 
         return scale_op
 
@@ -230,11 +194,16 @@ class Autoscaler(metaclass=Singleton):
             scale_op = self.scale_operation_query_concurrency(
                 autoscaling_policy,
                 metrics)
+        elif isinstance(autoscaling_policy, MeetTrafficDemandPolicy):
+            scale_op = self.scale_operation_meet_traffic_demand(
+                autoscaling_policy,
+                metrics)
         elif isinstance(autoscaling_policy, PredictivePolicy):
             scale_op = self.scale_operation_predictive(
                 autoscaling_policy,
                 metrics)
         else:
+            print(autoscaling_policy)
             raise RuntimeError("Not a valid autoscaling policy instance.")
 
         return scale_op
@@ -250,6 +219,48 @@ class Autoscaler(metaclass=Singleton):
             scale_op = ScaleOp.NO_OP
         elif new_running_replicas > autoscaling_policy.max_replicas:
             scale_op = ScaleOp.NO_OP
+        return scale_op
+
+    def enforce_scaling_down_delay_interval(self,
+                                            endpoint_id,
+                                            autoscaling_policy: AutoscalingPolicy) -> ScaleOp:
+        """
+        This function checks if scaling down delay seconds set by the policy
+        has been exceeded. To enforce the delay it uses REDIS to persist the
+        time of the scaling down operation.
+
+        If such a record exists it fetches the previous scale down operation's timestamp
+        and compares the duration of the interval (delay).
+
+        If the interval is exceeded then it triggers/allows the scaling operation to be
+        passed to the calling process, else it returns a no operation.
+        """
+
+        # If the policy has no scaledown delay then return immediately.
+        if autoscaling_policy.scaledown_delay_secs == 0:
+            return ScaleOp.DOWN_IN_OP
+
+        # By default, we return a no operation.
+        scale_op = ScaleOp.NO_OP
+        previous_timestamp_exists = \
+            self.fedml_model_cache.exists_endpoint_scaling_down_decision_time(endpoint_id)
+        current_timestamp = self.get_current_timestamp_micro_seconds()
+        if previous_timestamp_exists:
+            # Get the timestamp of the previous scaling down timestamp (if any), and
+            # compare the timestamps difference to measure interval's duration.
+            previous_timestamp = \
+                self.fedml_model_cache.get_endpoint_scaling_down_decision_time(endpoint_id)
+            diff_secs = (current_timestamp - previous_timestamp) / 1e6
+            if diff_secs > autoscaling_policy.scaledown_delay_secs:
+                # At this point, we will perform the scaling down operation, hence
+                # we need to delete the previously stored scaling down timestamp (if any).
+                self.fedml_model_cache.delete_endpoint_scaling_down_decision_time(endpoint_id)
+                scale_op = ScaleOp.DOWN_IN_OP
+        else:
+            # Record the timestamp of the scaling down operation.
+            self.fedml_model_cache.set_endpoint_scaling_down_decision_time(
+                endpoint_id, current_timestamp)
+
         return scale_op
 
     def scale_operation_endpoint(self,
@@ -270,19 +281,18 @@ class Autoscaler(metaclass=Singleton):
         """
 
         # Fetch most recent metric record from the database.
-        most_recent_metric = self.fedml_model_cache.get_endpoint_metrics(
-            endpoint_id=endpoint_id,
-            k_recent=1)
+        metrics = self.fedml_model_cache.get_endpoint_metrics(
+            endpoint_id=endpoint_id)
 
         # Default to nothing.
         scale_op = ScaleOp.NO_OP
-        if not most_recent_metric:
+        if not metrics:
             # If no metric exists then no scaling operation.
             return scale_op
 
         # If we continue here, then it means that there was at least one request.
         # The `most_recent_metric` is of type list, hence we need to access index 0.
-        most_recent_metric = most_recent_metric[0]
+        most_recent_metric = metrics[-1]
         latest_request_timestamp_micro_secs = most_recent_metric["timestamp"]
         # The time module does not have a micro-second function built-in, so we need to
         # divide nanoseconds by 1e3 and convert to micro-seconds.
@@ -301,25 +311,28 @@ class Autoscaler(metaclass=Singleton):
                 # then we need more resources, hence ScaleOp.UP_OUT_OP.
                 scale_op = ScaleOp.UP_OUT_OP
             else:
-                # Else, trigger the autoscaling policy. Fetch all previous
-                # timeseries values. We do not check if the list is empty,
-                # since we already have past requests.
-                metrics = self.fedml_model_cache.get_endpoint_metrics(
-                    endpoint_id=endpoint_id)
+                # Else, trigger the autoscaling policy with all existing values.
                 metrics_df = pd.DataFrame.from_records(metrics)
                 metrics_df = metrics_df.set_index('timestamp')
                 # timestamp is expected to be in micro-seconds, hence unit='us'.
                 metrics_df.index = pd.to_datetime(metrics_df.index, unit="us")
-
-                # Trigger autoscaler with the metrics we have collected.
+                # Decide scaling operation given all metrics.
                 scale_op = self.run_autoscaling_policy(
                     autoscaling_policy=autoscaling_policy,
                     metrics=metrics_df)
 
-        # Finally, check the scaling bounds of the endpoint
+        # Check the scaling bounds of the endpoint
         # before triggering the scaling operation.
         scale_op = self.validate_scaling_bounds(
             scale_op=scale_op,
             autoscaling_policy=autoscaling_policy)
+
+        print(scale_op)
+
+        # If the scaling decision is a scale down operation, then perform
+        # a final check to ensure the scaling down grace period is satisfied.
+        if scale_op == scale_op.DOWN_IN_OP:
+            scale_op = self.enforce_scaling_down_delay_interval(
+                endpoint_id, autoscaling_policy)
 
         return scale_op

@@ -939,6 +939,7 @@ class FedMLServerRunner:
 
         target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
         aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
+        scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
 
         inference_end_point_id = run_id
 
@@ -953,7 +954,9 @@ class FedMLServerRunner:
             replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
             scale_min=scale_min, scale_max=scale_max, state="DEPLOYING",
             aggregation_window_size_seconds=aggregation_window_size_seconds,
-            target_queries_per_replica=target_queries_per_replica)
+            target_queries_per_replica=target_queries_per_replica,
+            scale_down_delay_seconds=int(scale_down_delay_seconds)
+        )
 
         # Start log processor for current run
         self.args.run_id = run_id

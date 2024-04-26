@@ -25,6 +25,9 @@ class FedMLModelCache(Singleton):
     # For scale-out & scale-in
     FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
 
+    # For keeping track scale down decisions state.
+    FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG = "FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG-"
+
     # On the worker
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
 
@@ -106,7 +109,8 @@ class FedMLModelCache(Singleton):
                                      end_point_name: str, model_name: str, model_version: str,
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
-                                     target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60
+                                     target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
+                                     scale_down_delay_seconds: int = 120
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -131,7 +135,8 @@ class FedMLModelCache(Singleton):
             "model_version": model_version, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
             "scale_min": scale_min, "scale_max": scale_max, "state": state,
             "target_queries_per_replica": target_queries_per_replica,
-            "aggregation_window_size_seconds": aggregation_window_size_seconds
+            "aggregation_window_size_seconds": aggregation_window_size_seconds,
+            "scale_down_delay_seconds": scale_down_delay_seconds
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -813,7 +818,7 @@ class FedMLModelCache(Singleton):
         device_id = metrics_item_json["device_id"]
         return total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
 
-    def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
+    def get_monitor_metrics_key(self, end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                                       end_point_id, end_point_name, model_name, model_version)
 
@@ -905,7 +910,8 @@ class FedMLModelCache(Singleton):
 
         return endpoint_settings
 
-    def delete_model_endpoint_metrics(self, endpoint_ids: list):
+    def delete_endpoint_metrics(self, endpoint_ids: list) -> bool:
+        status = True
         for endpoint_id in endpoint_ids:
             try:
                 key_pattern = "{}*{}*".format(
@@ -917,3 +923,45 @@ class FedMLModelCache(Singleton):
                     self.redis_connection.delete(k)
             except Exception as e:
                 logging.error(e)
+                # False if an error occurred.
+                status = False
+        return status
+
+    def set_endpoint_scaling_down_decision_time(self, end_point_id, timestamp) -> bool:
+        status = True
+        try:
+            self.redis_connection.hset(
+                self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                mapping={end_point_id: timestamp})
+        except Exception as e:
+            logging.error(e)
+            status = False
+        return status
+
+    def get_endpoint_scaling_down_decision_time(self, end_point_id) -> int:
+        try:
+            scaling_down_decision_time = \
+                self.redis_connection.hget(
+                    self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                    end_point_id)
+            if len(scaling_down_decision_time) > 0:
+                scaling_down_decision_time = int(scaling_down_decision_time)
+            else:
+                scaling_down_decision_time = 0
+        except Exception as e:
+            scaling_down_decision_time = 0
+            logging.error(e)
+
+        return scaling_down_decision_time
+
+    def exists_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        # The hash exists returns an integer 0 (not found), 1 (found), hence we need
+        # to cast it to a boolean value.
+        return bool(self.redis_connection.hexists(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
+
+    def delete_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        return bool(self.redis_connection.hdel(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
