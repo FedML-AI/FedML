@@ -522,6 +522,7 @@ class FedMLModelCache(Singleton):
                                                                               model_name, device_id, replica_no))
         except Exception as e:
             pass
+        return None
 
     def delete_end_point(self, end_point_id, end_point_name, model_name, model_version, device_id=None):
         # Device id is either deploy master or deploy worker

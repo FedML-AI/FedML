@@ -60,6 +60,11 @@ class JobRunnerUtils(Singleton):
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
 
+            logging.info(f"Request gpus on worker for run_id {run_id}: <<<<<<< "
+                         f"Device id {device_id}; Switchable id {switchable_device_id}; "
+                         f"Master id {model_master_device_id}; Slave id {model_slave_device_id}."
+                         f" >>>>>>>")
+
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
                         device_id, JobRunnerUtils.STATIC_RUN_LOCK_KEY_SUFFIX)
@@ -83,6 +88,9 @@ class JobRunnerUtils(Singleton):
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
 
+                    logging.info(f"Check worker({device_id})'s realtime gpu availability in DB"
+                                 f" for run {run_id}: {available_gpu_ids}")
+
                     # If the available GPU list is not in the cache, set it to the current system available GPU list
                     if available_gpu_ids is None:
                         # Get realtime GPU availability list from the system
@@ -101,6 +109,9 @@ class JobRunnerUtils(Singleton):
                             logging.error(error_message)
                             raise Exception(error_message)
                         return None
+                    else:
+                        logging.info(f"Occupied GPU ids for run {run_id}: {cuda_visible_gpu_ids_str}, all"
+                                     f" available GPU ids: {available_gpu_ids}")
 
                     # String to available set
                     run_gpu_ids = list(map(lambda x: int(x), cuda_visible_gpu_ids_str.split(",")))

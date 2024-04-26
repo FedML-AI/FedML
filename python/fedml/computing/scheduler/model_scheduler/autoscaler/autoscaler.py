@@ -203,7 +203,6 @@ class Autoscaler(metaclass=Singleton):
                 autoscaling_policy,
                 metrics)
         else:
-            print(autoscaling_policy)
             raise RuntimeError("Not a valid autoscaling policy instance.")
 
         return scale_op
@@ -262,6 +261,15 @@ class Autoscaler(metaclass=Singleton):
                 endpoint_id, current_timestamp)
 
         return scale_op
+
+    def clean_up_scaling_down_operation_state(self, endpoint_id) -> bool:
+        # We return True if the clean up operation succeeded, else False.
+        to_clean_up = \
+            self.fedml_model_cache.exists_endpoint_scaling_down_decision_time(endpoint_id)
+        if to_clean_up:
+            to_clean_up = \
+                self.fedml_model_cache.delete_endpoint_scaling_down_decision_time(endpoint_id)
+        return to_clean_up
 
     def scale_operation_endpoint(self,
                                  autoscaling_policy: AutoscalingPolicy,
@@ -327,12 +335,14 @@ class Autoscaler(metaclass=Singleton):
             scale_op=scale_op,
             autoscaling_policy=autoscaling_policy)
 
-        print(scale_op)
-
-        # If the scaling decision is a scale down operation, then perform
-        # a final check to ensure the scaling down grace period is satisfied.
         if scale_op == scale_op.DOWN_IN_OP:
+            # If the scaling decision is a scale down operation, perform a
+            # final check to ensure the scaling down grace period is satisfied.
+            # Basically check two consecutive scaling down requests.
             scale_op = self.enforce_scaling_down_delay_interval(
                 endpoint_id, autoscaling_policy)
+        else:
+            # Remove any stale (saved) scaling down decision operation.
+            self.clean_up_scaling_down_operation_state(endpoint_id)
 
         return scale_op
