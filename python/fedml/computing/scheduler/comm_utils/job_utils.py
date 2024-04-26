@@ -60,9 +60,10 @@ class JobRunnerUtils(Singleton):
             switchable_device_id = model_slave_device_id \
                 if inner_id is not None and model_slave_device_id is not None else device_id
 
-            logging.info(f"[Worker occupy_gpu_ids][Endpoint {run_id}]: \n"
-                         f"Device id {device_id}; Switchable id {switchable_device_id};"
-                         f"Master id {model_master_device_id}; Slave id {model_slave_device_id}.")
+            logging.info(f"Request gpus on worker for run_id {run_id}: <<<<<<< "
+                         f"Device id {device_id}; Switchable id {switchable_device_id}; "
+                         f"Master id {model_master_device_id}; Slave id {model_slave_device_id}."
+                         f" >>>>>>>")
 
             with ComputeCacheManager.get_instance().lock(
                     ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_lock_key(
