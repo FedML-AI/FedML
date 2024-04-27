@@ -268,13 +268,17 @@ class ContainerUtils(Singleton):
 
         # Calculate the CPU usage
         cpu_percent = 0.0
+        cpu_count = 1
         try:
             cpu_count = len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"])
-        except Exception as e:
+        except KeyError:
             try:
-                cpu_count = os.cpu_count()
-            except Exception as e:
-                cpu_count = 1
+                cpu_count = stats["cpu_stats"]["online_cpus"]
+            except KeyError:
+                try:
+                    cpu_count = os.cpu_count()
+                except Exception as e:
+                    pass
 
         cpu_delta = (float(stats["cpu_stats"]["cpu_usage"]["total_usage"]) -
                      float(stats["precpu_stats"]["cpu_usage"]["total_usage"]))
