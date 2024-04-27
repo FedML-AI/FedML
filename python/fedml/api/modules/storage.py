@@ -18,19 +18,7 @@ class StorageMetadata(object):
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
         size_in_bytes = data.get("fileSize", None)
-        if(size_in_bytes):
-            size = int(size_in_bytes)
-            size_in_gb = size / (1024 * 1024 * 1024)
-            size_in_mb = size / (1024 * 1024)
-            size_in_kb = size / 1024
-            if(size_in_gb >= 1):
-                self.size = f"{size_in_gb:.2f} GB"
-            elif(size_in_mb >= 1):
-                self.size = f"{size_in_mb:.2f} MB"
-            elif(size_in_kb >= 1):
-                self.size = f"{size_in_kb:.2f} KB"
-            else:
-                self.size = f"{size} B"
+        self.size = _get_size(size_in_bytes)
 
 
 # Todo (alaydshah): Store service name in metadata
@@ -371,3 +359,20 @@ def _get_data_from_response(message: str, response: requests.Response) -> (Respo
             return ResponseCode.FAILURE, message, None
 
     return ResponseCode.SUCCESS, "Successfully parsed data from response", data
+
+def _get_size(size_in_bytes:str)->str:
+    size_str = ""
+    if(size_in_bytes):
+        size = int(size_in_bytes)
+        size_in_gb = size / (1024 * 1024 * 1024)
+        size_in_mb = size / (1024 * 1024)
+        size_in_kb = size / 1024
+        if(size_in_gb >= 1):
+            size_str = f"{size_in_gb:.2f} GB"
+        elif(size_in_mb >= 1):
+            size_str = f"{size_in_mb:.2f} MB"
+        elif(size_in_kb >= 1):
+            size_str = f"{size_in_kb:.2f} KB"
+        else:
+            size_str = f"{size} B"
+    return size_str 
