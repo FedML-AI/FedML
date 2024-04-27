@@ -90,16 +90,16 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
 )
 def list_data(version, api_key):
     fedml.set_env_version(version)
-    response = fedml.api.list_storage_obects(api_key=api_key)
+    response = fedml.api.list_storage_objects(api_key=api_key)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Successfully fetched list of stored objects:")
         if not response.data:
             click.echo(f"No stored objects found for account linked with apikey: {api_key}")
             return
-        object_list_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
+        object_list_table = PrettyTable(["Data Name", "Data Size", "Description", "Created At", "Updated At"])
         for stored_object in response.data:
             object_list_table.add_row(
-                [stored_object.dataName, stored_object.description, stored_object.createdAt, stored_object.updatedAt])
+                [stored_object.dataName, stored_object.size, stored_object.description, stored_object.createdAt, stored_object.updatedAt])
         click.echo(object_list_table)
     else:
         click.echo(f"Failed to list stored objects for account linked with apikey {api_key}. "
@@ -157,8 +157,8 @@ def get_metadata(data_name, version, api_key):
             return
         click.echo(f"Successfully fetched metadata for object {data_name}:")
         # Todo (alaydshah): Add file size and tags
-        metadata_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
-        metadata_table.add_row([metadata.dataName, metadata.description, metadata.createdAt, metadata.updatedAt])
+        metadata_table = PrettyTable(["Data Name","Data Size","Description", "Created At", "Updated At"])
+        metadata_table.add_row([metadata.dataName,metadata.size,metadata.description, metadata.createdAt, metadata.updatedAt])
         click.echo(metadata_table)
         click.echo("")
     else:

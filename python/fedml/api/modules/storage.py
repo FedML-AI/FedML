@@ -18,10 +18,26 @@ class StorageMetadata(object):
         self.tags = data.get("description", None)
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
+        size_in_bytes = data.get("fileSize", None)
+        if(size_in_bytes):
+            size = int(size_in_bytes)
+            if(size > 1024*1024*1024):
+                self.size = f"{size/(1024*1024*1024):.2f} GB"
+            elif(size > 1024*1024):
+                self.size = f"{size/(1024*1024):.2f} MB"
+            elif(size > 1024):
+                self.size = f"{size/1024:.2f} KB"
+            else:
+                self.size = f"{size} B"
 
 
 # Todo (alaydshah): Add file size while creating objects. Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
+
+def check_data_path(data_path):
+    if not os.path.isdir(data_path) or not os.path.isfile(data_path):
+        return False
+    return True
 
 
 def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
@@ -32,6 +48,9 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
 
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+    
+    if(not check_data_path(data_path)):
+        return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
     archive_path, message = _archive_data(data_path)
     if not archive_path:
@@ -41,6 +60,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
     file_name = name + ".zip"
     dest_path = os.path.join(user_id, file_name)
+    file_size = os.path.getsize(archive_path)
 
     file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                         show_progress=show_progress,
@@ -53,7 +73,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     json_data = {
         "datasetName": name,
         "description": description,
-        "fileSize": "",
+        "fileSize": file_size,
         "fileUrl": file_uploaded_url,
         "tagNameList": [],
     }

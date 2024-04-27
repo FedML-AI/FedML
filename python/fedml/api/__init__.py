@@ -194,7 +194,7 @@ def get_storage_metadata(data_name, api_key=None) -> FedMLResponse:
     return storage.get_metadata(api_key=api_key, data_name=data_name)
 
 
-def list_storage_obects(api_key=None) -> FedMLResponse:
+def list_storage_objects(api_key=None) -> FedMLResponse:
     return storage.list_objects(api_key=api_key)
 
 
