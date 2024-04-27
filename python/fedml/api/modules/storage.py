@@ -10,7 +10,6 @@ from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.api.fedml_response import FedMLResponse, ResponseCode
 
 
-# Todo (alaydshah): Add file size
 class StorageMetadata(object):
     def __init__(self, data: dict):
         self.dataName = data.get("datasetName", None)
@@ -21,24 +20,21 @@ class StorageMetadata(object):
         size_in_bytes = data.get("fileSize", None)
         if(size_in_bytes):
             size = int(size_in_bytes)
-            if(size > 1024*1024*1024):
-                self.size = f"{size/(1024*1024*1024):.2f} GB"
-            elif(size > 1024*1024):
-                self.size = f"{size/(1024*1024):.2f} MB"
-            elif(size > 1024):
-                self.size = f"{size/1024:.2f} KB"
+            size_in_gb = size / (1024 * 1024 * 1024)
+            size_in_mb = size / (1024 * 1024)
+            size_in_kb = size / 1024
+            if(size_in_gb >= 1):
+                self.size = f"{size_in_gb:.2f} GB"
+            elif(size_in_mb >= 1):
+                self.size = f"{size_in_mb:.2f} MB"
+            elif(size_in_kb >= 1):
+                self.size = f"{size_in_kb:.2f} KB"
             else:
                 self.size = f"{size} B"
 
 
-# Todo (alaydshah): Add file size while creating objects. Store service name in metadata
+# Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
-
-def check_data_path(data_path):
-    if not os.path.isdir(data_path) or not os.path.isfile(data_path):
-        return False
-    return True
-
 
 def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
@@ -49,7 +45,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
     
-    if(not check_data_path(data_path)):
+    if(not _check_data_path(data_path)):
         return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
     archive_path, message = _archive_data(data_path)
@@ -247,6 +243,11 @@ def _get_storage_service(service):
         return S3Storage(configs[Configs.S3_CONFIG])
     else:
         raise NotImplementedError(f"Service {service} not implemented")
+
+def _check_data_path(data_path):
+    if not os.path.isdir(data_path) or not os.path.isfile(data_path):
+        return False
+    return True
 
 
 def _archive_data(data_path: str) -> (str, str):
