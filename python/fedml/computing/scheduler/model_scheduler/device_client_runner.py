@@ -502,8 +502,11 @@ class FedMLClientRunner:
                         run_id, end_point_name, model_name, self.edge_id, rank + 1)
                     logging.info(f"Release gpu ids {replica_occupied_gpu_ids_str} for "
                                  f"failed deployment of replica no {rank + 1}.")
-                    replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
-                    JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+
+                    if replica_occupied_gpu_ids_str is not None:
+                        replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
+                        JobRunnerUtils.get_instance().release_partial_job_gpu(run_id,
+                                                                              self.edge_id, replica_occupied_gpu_ids)
 
                     # Send failed result back to master
                     result_payload = self.send_deployment_results(
