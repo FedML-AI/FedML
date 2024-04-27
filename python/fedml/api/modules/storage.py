@@ -17,8 +17,7 @@ class StorageMetadata(object):
         self.tags = data.get("description", None)
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
-        size_in_bytes = data.get("fileSize", None)
-        self.size = _get_size(size_in_bytes)
+        self.size = _get_size(data.get("fileSize",None))
 
 
 # Todo (alaydshah): Store service name in metadata
