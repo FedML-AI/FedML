@@ -5,55 +5,8 @@ from fedml.workflow import JobStatus, WorkflowType, Workflow, ModelDeployJob, Mo
 from typing import List
 import argparse
 
-MY_API_KEY = ""  # Here you need to set your API key from nexus.fedml.ai
+MY_API_KEY = ""  # Here you need to set your default API key from nexus.fedml.ai
 MY_USER_NAME = ""
-
-
-class DeployImageJob(ModelDeployJob):
-    def __init__(self, name, endpoint_name=None, job_yaml_absolute_path=None, job_api_key=None):
-        super().__init__(name, endpoint_name=endpoint_name, job_yaml_absolute_path=job_yaml_absolute_path,
-                         job_api_key=job_api_key)
-
-    def run(self):
-        super().run()
-
-    def status(self):
-        return super().status()
-
-    def kill(self):
-        super().kill()
-
-
-class InferenceImageJob(ModelInferenceJob):
-    def __init__(self, name, endpoint_name=None, job_api_key=None, endpoint_user_name=None):
-        super().__init__(name, endpoint_name=endpoint_name, job_api_key=job_api_key,
-                         endpoint_user_name=endpoint_user_name)
-        self.run_id = None
-
-    def run(self):
-        super().run()
-
-    def status(self):
-        return super().status()
-
-    def kill(self):
-        super().kill()
-
-
-class TrainJob(TrainJob):
-    def __init__(self, name, job_yaml_absolute_path=None, job_api_key=None):
-        super().__init__(name, job_yaml_absolute_path=job_yaml_absolute_path,
-                         job_api_key=job_api_key)
-        self.run_id = None
-
-    def run(self):
-        super().run()
-
-    def status(self):
-        return super().status()
-
-    def kill(self):
-        super().kill()
 
 
 def show_workflow_metadata(workflow):
@@ -75,7 +28,7 @@ def create_deploy_workflow(job_api_key=None, endpoint_name=None):
     # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 
     # Generate the job object
-    deploy_image_job = DeployImageJob(
+    deploy_image_job = ModelDeployJob(
         name="deploy_image_job", endpoint_name=endpoint_name,
         job_yaml_absolute_path=deploy_image_job_yaml, job_api_key=job_api_key)
     deploy_image_job.config_version = fedml.get_env_version()
@@ -107,7 +60,7 @@ def create_inference_workflow(
     # Generate the job object
     inference_jobs = list()
     for index, endpoint_name in enumerate(endpoint_name_list):
-        inference_job = InferenceImageJob(
+        inference_job = ModelInferenceJob(
             name=f"inference_job_{index}", endpoint_name=endpoint_name, job_api_key=job_api_key,
             endpoint_user_name=user_name
         )
