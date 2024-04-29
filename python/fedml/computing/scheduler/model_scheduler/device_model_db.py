@@ -272,6 +272,12 @@ class FedMLModelDatabase(Singleton):
         except Exception as e:
             pass
 
+        try:
+            # Also for current_latency = Column(Float)
+            self.db_connection.execute(text("ALTER TABLE end_point_metrics ADD current_latency FLOAT default 1;"))
+        except Exception as e:
+            pass
+
     def close_job_db(self):
         if self.db_connection is not None:
             self.db_connection.close()
