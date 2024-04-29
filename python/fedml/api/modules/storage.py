@@ -10,7 +10,6 @@ from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.api.fedml_response import FedMLResponse, ResponseCode
 
 
-# Todo (alaydshah): Add file size
 class StorageMetadata(object):
     def __init__(self, data: dict):
         self.dataName = data.get("datasetName", None)
@@ -18,11 +17,11 @@ class StorageMetadata(object):
         self.tags = data.get("description", None)
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
+        self.size = _get_size(data.get("fileSize",None))
 
 
-# Todo (alaydshah): Add file size while creating objects. Store service name in metadata
+# Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
-
 
 def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
@@ -32,6 +31,9 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
 
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+    
+    if(not _check_data_path(data_path)):
+        return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
     archive_path, message = _archive_data(data_path)
     if not archive_path:
@@ -41,6 +43,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
     file_name = name + ".zip"
     dest_path = os.path.join(user_id, file_name)
+    file_size = os.path.getsize(archive_path)
 
     file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                         show_progress=show_progress,
@@ -53,7 +56,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
     json_data = {
         "datasetName": name,
         "description": description,
-        "fileSize": "",
+        "fileSize": file_size,
         "fileUrl": file_uploaded_url,
         "tagNameList": [],
     }
@@ -228,6 +231,11 @@ def _get_storage_service(service):
     else:
         raise NotImplementedError(f"Service {service} not implemented")
 
+def _check_data_path(data_path):
+    if not os.path.isdir(data_path) or not os.path.isfile(data_path):
+        return False
+    return True
+
 
 def _archive_data(data_path: str) -> (str, str):
     src_local_path = os.path.abspath(data_path)
@@ -350,3 +358,20 @@ def _get_data_from_response(message: str, response: requests.Response) -> (Respo
             return ResponseCode.FAILURE, message, None
 
     return ResponseCode.SUCCESS, "Successfully parsed data from response", data
+
+def _get_size(size_in_bytes:str)->str:
+    size_str = ""
+    if(size_in_bytes):
+        size = int(size_in_bytes)
+        size_in_gb = size / (1024 * 1024 * 1024)
+        size_in_mb = size / (1024 * 1024)
+        size_in_kb = size / 1024
+        if(size_in_gb >= 1):
+            size_str = f"{size_in_gb:.2f} GB"
+        elif(size_in_mb >= 1):
+            size_str = f"{size_in_mb:.2f} MB"
+        elif(size_in_kb >= 1):
+            size_str = f"{size_in_kb:.2f} KB"
+        else:
+            size_str = f"{size} B"
+    return size_str 
