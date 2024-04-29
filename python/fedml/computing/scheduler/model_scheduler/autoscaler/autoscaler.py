@@ -27,7 +27,6 @@ class Autoscaler(metaclass=Singleton):
         if any([not redis_addr, not redis_port, not redis_password]):
             self.fedml_model_cache.set_redis_params()
         else:
-
             self.fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
 
     @staticmethod
