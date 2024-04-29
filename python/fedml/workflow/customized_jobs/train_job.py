@@ -10,6 +10,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from typing import List, Dict, Any
 from os.path import expanduser
 import base64
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi
 
 
 class TrainJob(CustomizedBaseJob):
@@ -24,12 +25,13 @@ class TrainJob(CustomizedBaseJob):
                          job_api_key=job_api_key)
         self.in_trainning_params = None
         self.out_model_file = ""
+        self.job_yaml_absolute_path_origin = self.job_yaml_absolute_path
         self.job_yaml_dir = os.path.dirname(self.job_yaml_absolute_path)
         self.job_yaml_absolute_path_for_launch = os.path.join(
             self.job_yaml_dir, f"{str(uuid.uuid4())}.yaml")
 
     def run(self):
-        job_yaml_obj = self.load_yaml_config(self.job_yaml_absolute_path)
+        job_yaml_obj = self.load_yaml_config(self.job_yaml_absolute_path_origin)
         job_yaml_obj[TrainJob.TRAIN_JOB_INPUTS_CONFIG] = TrainJob._base64_encode(self.input_data_dict)
         job_yaml_obj[TrainJob.RUN_API_KEY_CONFIG] = sys_utils.random1(f"FEDML_NEXUS@{self.job_api_key}", "FEDML@88119999GREAT")
         self.generate_yaml_doc(job_yaml_obj, self.job_yaml_absolute_path_for_launch)
@@ -38,6 +40,21 @@ class TrainJob(CustomizedBaseJob):
         super().run()
 
         os.remove(self.job_yaml_absolute_path_for_launch)
+
+        dependency_list = list()
+        for dep in self.dependencies:
+            dependency_list.append(dep.name)
+        result = WorkflowMLOpsApi.add_run(
+            workflow_id=self.workflow_id, job_name=self.name, run_id=self.run_id,
+            dependencies=dependency_list, api_key=self.job_api_key
+        )
+
+        if self.launch_result_code != 0:
+            self.output_data_dict = {
+                "error": self.launch_result_code, "message": self.launch_result_message}
+            print(f"{self.output_data_dict}")
+            self.set_outputs(self.output_data_dict)
+            return
 
     def status(self):
         return super().status()

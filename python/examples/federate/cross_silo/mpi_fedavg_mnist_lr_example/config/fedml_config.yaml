@@ -13,7 +13,6 @@ model_args:
 
 train_args:
   federated_optimizer: "FedOpt"
-  client_optimizer:
   server_optimizer: "FedOpt"
   client_id_list:
   client_num_in_total: 1000

@@ -65,7 +65,7 @@ class ExperimentArguments(TrainingArguments):
     )
 
     def __post_init__(self):
-        if "none" in self.custom_logger:
+        if not bool(self.custom_logger) or "none" in self.custom_logger:
             self.custom_logger = []
         elif "all" in self.custom_logger:
             self.custom_logger = [l for l in CUSTOM_LOGGERS if l not in ("all", "none")]
@@ -75,6 +75,21 @@ class ExperimentArguments(TrainingArguments):
         self.extra_save_steps = sorted(set(self.extra_save_steps))
 
         super().__post_init__()
+
+        if (
+                compare_versions("torch", ">", "1.12") and
+                compare_versions("torch", "<=", "2.0.1") and
+                self.world_size > torch.cuda.device_count() and
+                self.full_determinism
+        ):
+            # when using multi-node with full_determinism
+            warnings.warn(
+                f"Multi-node training with 1.12 < torch <= 2.0.1 could lead to process hanging."
+                f" Setting `full_determinism` to `False`."
+                f" See https://github.com/huggingface/transformers/issues/22363#issuecomment-1483163515"
+                f" for detail."
+            )
+            self.full_determinism = False
 
         # for `transformers>=4.35.0`, `gradient_checkpointing_kwargs` is added to allow passing arguments directly to
         # `torch.utils.checkpoint.checkpoint`
@@ -368,8 +383,11 @@ class ModelArguments:
                 **peft_kwargs
             )
 
-        else:
+        elif self.peft_type == "none":
             return None
+
+        else:
+            raise ValueError(f"Received unsupported peft type: {self.peft_type}")
 
 
 @dataclass

@@ -334,7 +334,7 @@ class FedMLAppManager(Singleton):
         result = FedMLModelCards.get_instance().list_models(model_name, api_key=api_key)
         return result
 
-    def update_model(self, model_name, workspace, api_key):
+    def update_model(self, model_name, workspace, api_key, is_creating_model=True, model_object=None):
         error_code, model_zip_path = self.build_model(model_name, workspace)
         if error_code != 0:
             return None
@@ -350,9 +350,14 @@ class FedMLAppManager(Singleton):
             model_dir, device_client_constants.ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
         model_yaml = load_yaml_config(model_config_file)
 
-        upload_result = FedMLModelCards.get_instance().upload_model_api(model_name, model_yaml, model_storage_url,
-                                                                        None, "", api_key,
-                                                                        is_from_open=False)
+        if is_creating_model:
+            upload_result = FedMLModelCards.get_instance().upload_model_api(model_name, model_yaml, model_storage_url,
+                                                                            None, "", api_key,
+                                                                            is_from_open=False)
+        else:
+            upload_result = FedMLModelCards.get_instance().update_model_api(
+                model_name, model_yaml, model_storage_url, None, "", api_key, is_from_open=False,
+                model_id=model_object.id)
         if upload_result is None:
             return None
 

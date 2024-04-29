@@ -61,8 +61,10 @@ class FedMLModelDeviceServerRunner:
                 except Exception as e:
                     pass
 
+                # Get identity of the device from MLOps platform.
                 self.bind_device()
 
+                # Start the agent for the device.
                 self.start_agent()
             except Exception as e:
                 logging.info("Restart model device server: {}".format(traceback.format_exc()))

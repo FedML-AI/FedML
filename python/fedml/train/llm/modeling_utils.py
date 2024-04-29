@@ -147,10 +147,23 @@ def get_max_seq_length(model_or_config: Union[str, ModelConfigType, ModelType], 
     else:
         raise TypeError(f"\"{type(model_or_config)}\" is not a supported model_or_config type.")
 
-    for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
-        embedding_size = getattr(config, length_setting, None)
-        if embedding_size is not None:
-            return embedding_size
+    for length_setting in [
+        # Llama, GPTNeoX, OPT
+        "max_position_embeddings",
+        # GPT-2
+        "n_positions",
+        # MPT
+        "max_seq_len",
+        # ChatGLM2
+        "seq_length",
+        # Others
+        "max_sequence_length",
+        "max_seq_length",
+        "seq_len",
+    ]:
+        model_context_length = getattr(config, length_setting, None)
+        if model_context_length is not None:
+            return model_context_length
     else:
         return None
 
@@ -270,7 +283,7 @@ def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = Fa
 
 def to_dtype(
         data: T,
-        dtype: torch.dtype,
+        dtype: Union[torch.dtype, str],
         non_blocking: bool = False,
         floating_point_only: bool = True
 ) -> T:

@@ -8,17 +8,16 @@ import fedml
 
 
 class CustomizedBaseJob(Job):
-    CURRENT_CONFIG_VERSION = "release"
     CURRENT_ON_PREM_LOCAL_HOST = "localhost"
     CURRENT_ON_PREM_LOCAL_PORT = 18080
 
-    def __init__(self, name, job_yaml_absolute_path=None, job_api_key=None):
+    def __init__(self, name, job_yaml_absolute_path=None, job_api_key=None, version="release"):
         super().__init__(name)
         self.launch_result = None
         self.run_id = None
         self.job_yaml_absolute_path = job_yaml_absolute_path
         self.job_api_key = job_api_key
-        self.config_version = CustomizedBaseJob.CURRENT_CONFIG_VERSION
+        self.config_version = version
         self.local_on_prem_host = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_HOST
         self.local_on_prem_port = CustomizedBaseJob.CURRENT_ON_PREM_LOCAL_PORT
         self.launch_result_code = 0
@@ -38,6 +37,7 @@ class CustomizedBaseJob(Job):
         except Exception as e:
             self.launch_result_code = -1
             self.launch_result_message = f"Exception {traceback.format_exc()}"
+            raise e
 
     def status(self):
         if self.launch_result_code != 0:
@@ -47,6 +47,7 @@ class CustomizedBaseJob(Job):
         if self.run_id:
             try:
                 _, run_status = fedml.api.run_status(run_id=self.run_id, api_key=self.job_api_key)
+                # print(f"run_id: {self.run_id}, run_status: {run_status}")
                 return JobStatus.get_job_status_from_run_status(run_status)
             except Exception as e:
                 logging.error(f"Error while getting status of run {self.run_id}: {e}")

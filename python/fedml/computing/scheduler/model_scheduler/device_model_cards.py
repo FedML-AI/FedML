@@ -588,7 +588,7 @@ class FedMLModelCards(Singleton):
         process = subprocess.Popen(
             ["python3", main_entry_file] + extra_args,
             env=all_env_vars,
-        )
+            )
 
         print("Local deployment is started. Use Ctrl+C to stop it.")
         try:
@@ -674,7 +674,7 @@ class FedMLModelCards(Singleton):
         return model_list_result
 
     def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url,
-                         user_id, user_api_key, is_from_open=True, 
+                         user_id, user_api_key, is_from_open=True,
                          tag_names=None, model_id=None, version="v0"):
         model_upload_result = None
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
@@ -727,6 +727,60 @@ class FedMLModelCards(Singleton):
 
         return model_upload_result
 
+    def update_model_api(self, model_name, model_params, model_storage_url, model_net_url,
+                         user_id, user_api_key, is_from_open=True,
+                         tag_names=None, model_id=None, version="v0"):
+        model_update_result = None
+        model_ops_url = ClientConstants.get_model_ops_update_url(self.config_version)
+        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        tag_list = list()
+        if tag_names is not None:
+            for name in tag_names:
+                tag_list.append({"tagName": name})
+        if model_id is not None:
+            model_id = int(model_id)
+        model_upload_json = {
+            "description": model_name,
+            "githubLink": "",
+            "modelName": model_name,
+            "modelUrl": model_storage_url,
+            "owner": user_id,
+            "parameters": model_params,
+            "updateBy": user_id,
+            "userId": str(user_id),
+            "apiKey": user_api_key,
+            "isFromOpen": int(is_from_open),
+            "modelNetUrl": model_net_url,
+            "tagList": [] if tag_names is None else tag_list,
+            "id": model_id,
+            "modelVersion": version,
+        }
+        args = {"config_version": self.config_version}
+        _, cert_path = ModelOpsConfigs.get_request_params()
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    model_ops_url, verify=True, headers=model_api_headers, json=model_upload_json
+                )
+            except requests.exceptions.SSLError as err:
+                ModelOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    model_ops_url, verify=True, headers=model_api_headers, json=model_upload_json
+                )
+        else:
+            response = requests.post(model_ops_url, headers=model_api_headers, json=model_upload_json)
+        if response.status_code != 200:
+            pass
+        else:
+            resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            model_update_result = resp_data
+
+        return model_update_result
+
     def push_model_to_s3(self, model_name, model_zip_path, user_id, show_progress=True, progress_desc=None):
         args = {"config_version": self.config_version}
         _, s3_config = ModelOpsConfigs.get_instance(args).fetch_configs(self.config_version)
@@ -773,7 +827,6 @@ class FedMLModelCards(Singleton):
         }
         if endpoint_id is not None and endpoint_id != "":
             print(f"Updating endpoint {endpoint_id}...")
-            time.sleep(5)
             model_deployment_json["id"] = int(endpoint_id)
         if run_id is not None:
             model_deployment_json["run_id"] = run_id
@@ -808,7 +861,7 @@ class FedMLModelCards(Singleton):
 
         return model_deployment_result
 
-    def apply_endpoint_api(self, user_api_key, endpoint_name,
+    def apply_endpoint_api(self, user_api_key, endpoint_name, endpoint_id=None,
                            model_id=None, model_name=None, model_version=None, run_id=None):
         endpoint_apply_result = None
         model_ops_url = ClientConstants.get_model_ops_apply_endpoint_url(self.config_version)
@@ -818,6 +871,8 @@ class FedMLModelCards(Singleton):
             "endpointName": endpoint_name,
             "resourceType": "md.fedml_cloud_device"
         }
+        if endpoint_id is not None:
+            endpoint_apply_json["id"] = endpoint_id
         if model_id is not None:
             endpoint_apply_json["modelId"] = model_id
         if model_name is not None:
@@ -951,11 +1006,14 @@ class FedMLModelCards(Singleton):
 
         return endpoint_inference_result
 
-    def query_endpoint_detail_api(self, endpoint_id, user_api_key):
+    def query_endpoint_detail_api(self, endpoint_name=None, user_api_key=None, endpoint_id=None):
         endpoint_detail_result = None
-        model_ops_url = ClientConstants.get_model_ops_endpoint_detail_url(endpoint_id, config_version=self.config_version)
+        if endpoint_id is None:
+            model_ops_url = ClientConstants.get_model_ops_endpoint_detail_by_name_url(endpoint_name, config_version=self.config_version)
+        else:
+            model_ops_url = ClientConstants.get_model_ops_endpoint_detail_url(endpoint_id, config_version=self.config_version)
         endpoint_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
-                             "Authorization": f"Bearer {user_api_key}"}
+                                "Authorization": f"Bearer {user_api_key}"}
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_request_params()
         if cert_path is not None:
