@@ -25,7 +25,7 @@ def create_deploy_workflow(job_api_key=None, endpoint_name=None):
     # Load the job yaml and change some config items.
     # deploy_image_job_yaml_obj["computing"]["resource_type"] = "A100-80GB-SXM"
     # deploy_image_job_yaml_obj["computing"]["device_type"] = "GPU"
-    # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
+    # ModelDeployJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 
     # Generate the job object
     deploy_image_job = ModelDeployJob(
