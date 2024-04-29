@@ -1,6 +1,6 @@
 
 # Make your own workflow with multiple jobs
-## Define the job yaml
+## Define the job yaml based on the FEDML® Launch docs (https://doc.fedml.ai/launch)
 ```
     working_directory = os.path.dirname(os.path.abspath(__file__))
     deploy_image_job_yaml = os.path.join(working_directory, "deploy_image_job.yaml")
@@ -32,6 +32,11 @@
     workflow.add_job(deploy_image_job)
     #workflow.add_job(deploy_job2, dependencies=[deploy_image_job])
 ```
+
+## Deploy the workflow
+``` 
+    workflow.deploy()
+``` 
 
 ## Set the input of the workflow
 ``` 

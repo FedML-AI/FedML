@@ -73,9 +73,10 @@ class WorkflowMLOpsApi:
                        "Authorization": f"Bearer {api_key}"}
         request_body = {
             "jobName": job_name,
-            "runId": run_id,
             "workflowId": workflow_id
         }
+        if run_id is not None:
+            request_body["runId"] = run_id
         if dependencies is not None and len(dependencies) > 0:
             request_body["dependencies"] = list()
             for dependency in dependencies:

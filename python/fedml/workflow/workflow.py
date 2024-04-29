@@ -56,8 +56,8 @@ class Workflow:
         self.input: Dict[Any, Any] = dict()
         self.api_key = api_key
 
-        self.id = WorkflowMLOpsApi.create_workflow(
-            workflow_name=self.name, workflow_type=workflow_type, api_key=self.api_key)
+        self.workflow_type = workflow_type
+        self.id = None
 
     @property
     def metadata(self):
@@ -260,3 +260,34 @@ class Workflow:
     def get_workflow(workflow_name=None):
         workflow_name = os.environ.get("FEDML_CURRENT_WORKFLOW") if workflow_name is None else workflow_name
         return Workflow(workflow_name)
+
+    def deploy(self):
+        self.id = WorkflowMLOpsApi.create_workflow(
+            workflow_name=self.name, workflow_type=self.workflow_type, api_key=self.api_key)
+        if not self.id:
+            raise Exception("Failed to deploy the workflow, unable to upload workflow metadata to the backend.")
+
+        for job_name, adjacency_list in self.jobs.items():
+            dependency_list = list()
+            for dependency in adjacency_list.dependencies:
+                dependency_list.append(dependency.name)
+
+            adjacency_list.job.workflow_id = self.id
+            adjacency_list.job.dependencies = dependency_list
+
+            result = WorkflowMLOpsApi.add_run(
+                workflow_id=self.id, job_name=job_name, run_id=None,
+                dependencies=dependency_list, api_key=self.api_key
+            )
+            if not result:
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+                raise Exception("Failed to deploy the workflow, unable to add job metadata to the backend.")
+
+            try:
+                adjacency_list.job.update_run_metadata()
+            except Exception as e:
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+                raise e
+
+
+

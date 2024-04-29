@@ -106,3 +106,6 @@ class Job(ABC):
     @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):
         Constants.generate_yaml_doc(run_config_object, yaml_file)
+
+    def update_run_metadata(self):
+        pass
