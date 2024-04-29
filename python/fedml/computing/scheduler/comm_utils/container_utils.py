@@ -1,6 +1,8 @@
 import logging
 import os
 import traceback
+import datetime
+from dateutil.parser import isoparse
 
 import docker
 from docker import errors
@@ -363,3 +365,34 @@ class ContainerUtils(Singleton):
             logging.error(f"Failed to get GPU stats: {e}")
 
         return gpu_stats_map
+
+    @staticmethod
+    def get_container_deploy_time_offset(container_name) -> int:
+        """
+        Diff between the host machine's time and the container's time, in seconds
+        """
+        time_diff = 0
+        try:
+            client = docker.from_env()
+            container = client.containers.get(container_name)
+            logs_content = container.logs(stdout=True, stderr=True, stream=False, follow=False, timestamps=True)
+            logs_content = sys_utils.decode_our_err_result(logs_content)
+            line_of_logs = logs_content.split("\n")
+
+            for line in line_of_logs:
+                if line == "":
+                    continue
+
+                container_time = line.split(" ")[0]
+                nano_second_str = container_time.split(".")[1][:9]
+                t_container_datetime_obj = isoparse(container_time)
+                curr_host_time = datetime.datetime.now()
+
+                # Calculate the time difference between the container time and the host time
+                # The time difference is in seconds
+                time_diff = (curr_host_time - t_container_datetime_obj.replace(tzinfo=None)).total_seconds()
+                break
+        except Exception as e:
+            logging.error(f"Failed to get container deploy time offset: {e}")
+
+        return time_diff
