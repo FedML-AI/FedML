@@ -579,8 +579,8 @@ class FedMLServerRunner:
 
             program_prefix = "FedML-Server @device-id-{}".format(self.edge_id)
             formatter = MLOpsFormatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                                           "[%(filename)s:%(lineno)d:%(funcName)s] %("
-                                           "message)s")
+                                                                  "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                  "message)s")
 
             filehandler.setFormatter(formatter)
             root_logger.addHandler(filehandler)

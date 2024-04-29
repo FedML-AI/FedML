@@ -292,6 +292,11 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
+    def get_model_ops_endpoint_detail_by_name_url(endpoint_name, config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/queryDetailByNameFromCli?endpointName={endpoint_name}"
+        return model_ops_url
+
+    @staticmethod
     def get_model_ops_apply_endpoint_url(config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/applyEndpointId"
         return model_ops_url
