@@ -1,6 +1,6 @@
 
 # Make your own workflow with multiple jobs
-## Define the job yaml
+## Define the job yaml based on the FEDML® Launch docs (https://doc.fedml.ai/launch)
 ```
     working_directory = os.path.dirname(os.path.abspath(__file__))
     deploy_image_job_yaml = os.path.join(working_directory, "deploy_image_job.yaml")
@@ -8,15 +8,15 @@
 
 ## If needed, we may load the job yaml and change some config items.
 ``` 
-    deploy_image_job_yaml_obj = DeployImageJob.load_yaml_config(deploy_image_job_yaml)
+    deploy_image_job_yaml_obj = ModelDeployJob.load_yaml_config(deploy_image_job_yaml)
     # deploy_image_job_yaml_obj["computing"]["resource_type"] = "A100-80GB-SXM"
     # deploy_image_job_yaml_obj["computing"]["device_type"] = "GPU"
-    # DeployImageJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
+    # ModelDeployJob.generate_yaml_doc(deploy_image_job_yaml_obj, deploy_image_job_yaml)
 ```
 
 ## Generate the job object
 ```
-    deploy_image_job = DeployImageJob(
+    deploy_image_job = ModelDeployJob(
         name="deploy_image_job", endpoint_name="endpoint_test1",
         job_yaml_absolute_path=deploy_image_job_yaml, job_api_key=job_api_key)
 ```
@@ -32,6 +32,11 @@
     workflow.add_job(deploy_image_job)
     #workflow.add_job(deploy_job2, dependencies=[deploy_image_job])
 ```
+
+## Deploy the workflow
+``` 
+    workflow.deploy()
+``` 
 
 ## Set the input of the workflow
 ``` 

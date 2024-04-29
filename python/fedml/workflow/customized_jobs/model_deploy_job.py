@@ -46,6 +46,8 @@ class ModelDeployJob(CustomizedBaseJob):
             workflow_id=self.workflow_id, job_name=self.name, run_id=self.run_id,
             dependencies=dependency_list, api_key=self.job_api_key
         )
+        if not result:
+            raise Exception("Unable to upload job metadata to the backend.")
 
         if self.launch_result_code != 0:
             self.output_data_dict = {

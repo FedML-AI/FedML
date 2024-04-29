@@ -48,14 +48,6 @@ class ModelInferenceJob(CustomizedBaseJob):
             print("Predicting..., please wait.")
             self.run_status = JobStatus.RUNNING
 
-            dependency_list = list()
-            for dep in self.dependencies:
-                dependency_list.append(dep.name)
-            result = WorkflowMLOpsApi.add_run(
-                workflow_id=self.workflow_id, job_name=self.name, run_id=self.endpoint_detail.endpoint_id,
-                dependencies=dependency_list, api_key=self.job_api_key
-            )
-
             self._build_in_params()
 
             self.out_response_json = self._inference()
@@ -102,5 +94,28 @@ class ModelInferenceJob(CustomizedBaseJob):
             return {"error": True, "message": str(response.content)}
         else:
             return response.json()
+
+    def update_run_metadata(self):
+        if self.endpoint_detail is None:
+            try:
+                self.endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                    endpoint_name=self.endpoint_name, user_api_key=self.job_api_key)
+            except Exception as e:
+                self.endpoint_detail = None
+
+        if self.endpoint_detail is None:
+            raise Exception("Unable to query endpoint details from the backend.")
+
+        dependency_list = list()
+        for dep in self.dependencies:
+            dependency_list.append(dep)
+        result = WorkflowMLOpsApi.add_run(
+            workflow_id=self.workflow_id, job_name=self.name, run_id=self.endpoint_detail.endpoint_id,
+            dependencies=dependency_list, api_key=self.job_api_key
+        )
+        if not result:
+            raise Exception(f"Unable to add endpoint {self.endpoint_detail.endpoint_name} "
+                            f"to the workflow in the backend.")
+
 
 
