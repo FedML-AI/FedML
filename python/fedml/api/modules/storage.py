@@ -232,9 +232,9 @@ def _get_storage_service(service):
         raise NotImplementedError(f"Service {service} not implemented")
 
 def _check_data_path(data_path):
-    if not os.path.isdir(data_path) or not os.path.isfile(data_path):
-        return False
-    return True
+    if os.path.isdir(data_path) or os.path.isfile(data_path):
+        return True
+    return False
 
 
 def _archive_data(data_path: str) -> (str, str):
