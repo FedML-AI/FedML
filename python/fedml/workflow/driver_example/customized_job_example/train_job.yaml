@@ -22,11 +22,13 @@ job_type: train              # options: train, deploy, federate
 # Bootstrap shell commands which will be executed before running entry commands.
 # Support multiple lines, which can be empty.
 bootstrap: |
-  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.90b10
+  pip install PyYAML==5.3.1 -i https://pypi.org/simple
+  pip install fedml
+  pip install -U typing_extensions -i https://pypi.org/simple
   echo "Bootstrap finished."
 
 computing:
-  resource_type: RTX-3090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: RTX-4090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $10    # max cost per hour of all machines for your job
   # device_type: GPU # GPU or CPU

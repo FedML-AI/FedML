@@ -1,64 +1,37 @@
-import os
-
-import fedml.api
 from fedml.serving import FedMLPredictor
 from fedml.serving import FedMLInferenceRunner
-from langchain import PromptTemplate, LLMChain
-from langchain.llms import HuggingFacePipeline
-import torch
-from transformers import (
-    AutoConfig,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TextGenerationPipeline,
-)
-import uuid
+from model.minist_model import LogisticRegression
 
+# This is the model file that will upload to MLOps
+MODEL_PARMS_DIR = "./model/model_parms_from_mlops"
+# If you do not want to upload the model file to MLOps,
+# (i.e., you want to use the model file in the lcoal DATA_CACHE_DIR)
+# Please use the DATA_CACHE_DIR and specify DATA_CACHE_DIR
+# in the fedml_model_config.yaml
+# DATA_CACHE_DIR = ""
 
-class Chatbot(FedMLPredictor):  # Inherit FedMLClientPredictor
+class MnistPredictor(FedMLPredictor):
     def __init__(self):
-        super().__init__()
-        PROMPT_FOR_GENERATION_FORMAT = f""""Below is an instruction that describes a task. Write a response that appropriately completes the request."
+        import pickle
+        import torch
 
-        ### Instruction:
-        {{instruction}}
+        with open(MODEL_PARMS_DIR, 'rb') as model_file_obj:
+            model_params = pickle.load(model_file_obj)
 
-        ### Response:
-        """
+        output_dim = 10
 
-        prompt = PromptTemplate(
-            input_variables=["instruction"],
-            template=PROMPT_FOR_GENERATION_FORMAT
-        )
+        self.model = LogisticRegression(28 * 28, output_dim)
 
-        config = AutoConfig.from_pretrained("EleutherAI/pythia-70m")
-        model = AutoModelForCausalLM.from_pretrained(
-            "EleutherAI/pythia-70m",
-            torch_dtype=torch.float32,  # float 16 not supported on CPU
-            trust_remote_code=True,
-            device_map="auto"
-        )
-        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m", device_map="auto")
+        self.model.load_state_dict(model_params)
 
-        hf_pipeline = HuggingFacePipeline(
-            pipeline=TextGenerationPipeline(
-                model=model,
-                tokenizer=tokenizer,
-                return_full_text=True,
-                task="text-generation",
-                do_sample=True,
-                max_new_tokens=256,
-                top_p=0.92,
-                top_k=0
-            )
-        )
-        self.chatbot = LLMChain(llm=hf_pipeline, prompt=prompt, verbose=True)
+        self.list_to_tensor_func = torch.tensor
 
-    def predict(self, request: dict):
+    def predict(self, request):
         input_dict = request
+        arr = request["arr"]
 
-        # If the ouptput of previous job is present, then use this output value to predict.
-        # Here inference_job_0 is the name of prevous job.
+        # If the output of previous job is present, then use this output value to predict.
+        # Here inference_job_0 is the name of previous job.
         # You may use this method to get outputs of all previous jobs
         output_of_previous_job = input_dict.get("inference_job_0")
         if output_of_previous_job is not None:
@@ -66,15 +39,11 @@ class Chatbot(FedMLPredictor):  # Inherit FedMLClientPredictor
         else:
             question: str = input_dict.get("text", "").strip()
 
-        if len(question) == 0:
-            response_text = "<received empty input; no response generated.>"
-        else:
-            response_text = self.chatbot.predict(instruction=question)
-
-        return {"response": str(response_text)}
+        input_tensor = self.list_to_tensor_func(arr)
+        return self.model(input_tensor)
 
 
 if __name__ == "__main__":
-    chatbot = Chatbot()
-    fedml_inference_runner = FedMLInferenceRunner(chatbot)
+    predictor = MnistPredictor()
+    fedml_inference_runner = FedMLInferenceRunner(predictor)
     fedml_inference_runner.run()

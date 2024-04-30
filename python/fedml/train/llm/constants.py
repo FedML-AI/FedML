@@ -8,6 +8,12 @@ IGNORE_INDEX = -100
 
 # -----------------------------------------------------------------
 MODEL_NAMES = [
+    "meta-llama/Meta-Llama-3-70B",
+    "meta-llama/Meta-Llama-3-8B",
+    "meta-llama/Llama-2-7b-hf",
+    "meta-llama/Llama-2-13b-hf",
+    "meta-llama/Llama-2-70b-hf",
+    "mistralai/Mistral-7B-v0.1"
     "EleutherAI/pythia-70m",
     "EleutherAI/pythia-160m",
     "EleutherAI/pythia-410m",
@@ -19,17 +25,13 @@ MODEL_NAMES = [
     "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
     "databricks/dolly-v2-12b",
-    "meta-llama/Llama-2-7b-hf",
-    "meta-llama/Llama-2-13b-hf",
-    "meta-llama/Llama-2-70b-hf",
     "tiiuae/falcon-7b",
     "tiiuae/falcon-40b",
-    "mistralai/Mistral-7B-v0.1",
 ]
 
 DATASET_NAMES = [
-    "FedML/PubMedQA_instruction",
-    "FedML/databricks-dolly-15k-niid",
+    "fedml/PubMedQA_instruction",
+    "fedml/databricks-dolly-15k-niid",
     "databricks/databricks-dolly-15k",
     "medalpaca/medical_meadow_mediqa",
     "bitext/Bitext-customer-support-llm-chatbot-training-dataset",

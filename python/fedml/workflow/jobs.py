@@ -1,8 +1,9 @@
 from enum import Enum
 from abc import ABC, abstractmethod
 from fedml.api.constants import RunStatus
-from typing import List, Dict, Any
-import argparse
+from typing import Dict, Any
+from fedml.computing.scheduler.comm_utils import yaml_utils
+from fedml.computing.scheduler.scheduler_entry.constants import Constants
 
 
 # Define an enum for job status
@@ -41,7 +42,7 @@ class JobStatus(Enum):
 
 class Job(ABC):
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, workflow_id=None):
         """
         Initialize the Job instance.
 
@@ -49,6 +50,8 @@ class Job(ABC):
         - name (str): Name for the job. This is used to identify the job in the workflow so it should be unique.
         """
         self.name = name
+        self.workflow_id = workflow_id
+        self.dependencies = None
         self.input_data_dict: Dict[Any, Any] = dict()
         self.output_data_dict: Dict[Any, Any] = dict()
 
@@ -96,16 +99,13 @@ class Job(ABC):
         """
         return self.output_data_dict
 
+    @staticmethod
+    def load_yaml_config(yaml_path):
+        return yaml_utils.load_yaml_config(yaml_path)
 
-class NullJob(Job):
-    def __init__(self, name="NullJob"):
-        super().__init__(name)
+    @staticmethod
+    def generate_yaml_doc(run_config_object, yaml_file):
+        Constants.generate_yaml_doc(run_config_object, yaml_file)
 
-    def run(self):
-        self.output_data_dict = self.input_data_dict.copy()
-
-    def status(self):
-        return JobStatus.FINISHED
-
-    def kill(self):
+    def update_run_metadata(self):
         pass

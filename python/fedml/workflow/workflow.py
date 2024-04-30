@@ -1,16 +1,42 @@
 import os
-from collections import defaultdict, namedtuple, deque
+from collections import namedtuple
+from dataclasses import dataclass
 from datetime import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set
 from types import MappingProxyType
 from toposort import toposort
 
-from fedml.workflow.jobs import Job, JobStatus, NullJob
+from fedml.workflow.jobs import Job, JobStatus
 import time
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi, WorkflowType, WorkflowStatus
 
 
-Metadata = namedtuple('Metadata', ['nodes', 'topological_order', 'graph'])
-Node = namedtuple('Node', ['name', 'job'])
+@dataclass(frozen=True, eq=True, order=True)
+class Node:
+    name: str
+    job: Job
+
+    def __repr__(self):
+        return f"Node(name={self.name}, job={self.job})"
+
+
+@dataclass(frozen=True, eq=True, order=True)
+class Metadata:
+    nodes: Set[Node]
+    topological_order: Any
+    graph: Any
+
+    def __repr__(self):
+        return f"Metadata(nodes={self.nodes}, topological_order={self.topological_order}, graph={self.graph})"
+
+
+@dataclass(frozen=True, eq=True, order=True)
+class AdjacencyList:
+    job: Job
+    dependencies: List[Job]
+
+    def __repr__(self):
+        return f"AdjacencyList(job={self.job}, dependencies={self.dependencies})"
 
 
 class Workflow:
@@ -21,12 +47,17 @@ class Workflow:
     - loop (bool): Whether the workflow should loop continuously.
     """
 
-    def __init__(self, name, loop: bool = False):
+    def __init__(self, name, loop: bool = False, api_key: str = None,
+                 workflow_type: WorkflowType = WorkflowType.WORKFLOW_TYPE_DEPLOY):
         self.name: str = name
         self._metadata: Metadata | None = None
         self._loop: bool = loop
-        self.jobs: Dict[str, Dict[str, Any]] = dict()
+        self.jobs: Dict[str, AdjacencyList] = dict()
         self.input: Dict[Any, Any] = dict()
+        self.api_key = api_key
+
+        self.workflow_type = workflow_type
+        self.id = None
 
     @property
     def metadata(self):
@@ -73,12 +104,16 @@ class Workflow:
         if job.name in self.jobs:
             raise ValueError(f"Job {job.name} already exists in workflow.")
 
-        self.jobs[job.name] = {'job': job, 'dependencies': dependencies}
+        job.workflow_id = self.id
+        job.dependencies = dependencies
+        self.jobs[job.name] = AdjacencyList(job=job, dependencies=dependencies)
 
     def run(self):
         """
         Run the workflow, executing jobs in the specified order.
         """
+
+        WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.RUNNING, api_key=self.api_key)
 
         self._compute_workflow_metadata()
         first_run = True
@@ -92,6 +127,8 @@ class Workflow:
                     has_set_first_input = True
                 self._execute_and_wait(jobs)
 
+        WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FINISHED, api_key=self.api_key)
+
     def _execute_and_wait(self, jobs: List[Job]):
         """
         Execute the jobs and wait for them to complete.
@@ -101,7 +138,7 @@ class Workflow:
         """
 
         for job in jobs:
-            dependencies = self.get_job_dependencies(job.name)
+            dependencies = self.jobs.get(job.name).dependencies
             for dep in dependencies:
                 job.append_input(dep.name, dep.get_outputs())
 
@@ -126,10 +163,12 @@ class Workflow:
 
             if any_errored:
                 self._kill_jobs(jobs)
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+
                 raise ValueError(f"Following jobs errored out, hence workflow cannot be completed: {errored_jobs}."
                                  "Please check the logs for more information.")
 
-            time.sleep(10)
+            time.sleep(0.1)
 
     def _kill_jobs(self, jobs: List[Job]):
         """
@@ -148,11 +187,11 @@ class Workflow:
         node_dict = dict()
         graph = dict()
 
-        for job_name, job_instance in self.jobs.items():
-            node = node_dict.setdefault(job_name, Node(name=job_name, job=job_instance['job']))
+        for job_name, adjacency_list in self.jobs.items():
+            node = node_dict.setdefault(job_name, Node(name=job_name, job=adjacency_list.job))
             graph.setdefault(node, set())
 
-            for dependency in job_instance['dependencies']:
+            for dependency in adjacency_list.dependencies:
                 dependency_node = node_dict.setdefault(dependency.name, Node(name=dependency.name, job=dependency))
                 graph[node].add(dependency_node)
 
@@ -161,9 +200,6 @@ class Workflow:
                                  topological_order=tuple(toposort(graph)))
 
         return self.metadata
-
-    def get_job_dependencies(self, job_name):
-        return self.jobs.get(job_name).get('dependencies')
 
     def get_job_status(self, job_name):
         for nodes in self.metadata.topological_order:
@@ -199,7 +235,7 @@ class Workflow:
 
         return JobStatus.RUNNING
 
-    def set_workflow_input(self, input):
+    def set_workflow_input(self, input: Dict[Any, Any]):
         self.input = input
 
     def get_workflow_output(self):
@@ -224,3 +260,34 @@ class Workflow:
     def get_workflow(workflow_name=None):
         workflow_name = os.environ.get("FEDML_CURRENT_WORKFLOW") if workflow_name is None else workflow_name
         return Workflow(workflow_name)
+
+    def deploy(self):
+        self.id = WorkflowMLOpsApi.create_workflow(
+            workflow_name=self.name, workflow_type=self.workflow_type, api_key=self.api_key)
+        if not self.id:
+            raise Exception("Failed to deploy the workflow, unable to upload workflow metadata to the backend.")
+
+        for job_name, adjacency_list in self.jobs.items():
+            dependency_list = list()
+            for dependency in adjacency_list.dependencies:
+                dependency_list.append(dependency.name)
+
+            adjacency_list.job.workflow_id = self.id
+            adjacency_list.job.dependencies = dependency_list
+
+            result = WorkflowMLOpsApi.add_run(
+                workflow_id=self.id, job_name=job_name, run_id=None,
+                dependencies=dependency_list, api_key=self.api_key
+            )
+            if not result:
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+                raise Exception("Failed to deploy the workflow, unable to add job metadata to the backend.")
+
+            try:
+                adjacency_list.job.update_run_metadata()
+            except Exception as e:
+                WorkflowMLOpsApi.update_workflow(workflow_id=self.id, workflow_status=WorkflowStatus.FAILED, api_key=self.api_key)
+                raise e
+
+
+

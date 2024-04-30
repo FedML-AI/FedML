@@ -80,7 +80,6 @@ class FedMLLaunchManager(Singleton):
 
     def cleanup_launch(self, run_id, inner_id):
         user_api_key = get_api_key()
-        FedMLAppManager.get_instance().delete_endpoint(user_api_key, inner_id)
 
     def _create_and_update_model_card(self, yaml_file, user_api_key):
         if self.job_config.task_type == Constants.JOB_TASK_TYPE_DEPLOY or \
@@ -104,16 +103,27 @@ class FedMLLaunchManager(Singleton):
 
                 models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
                 if models is None or len(models.model_list) <= 0:
-                    raise Exception("Failed to upload the model package to MLOps.")
+                    raise Exception("Failed to list the model package from MLOps.")
 
                 model_update_result.model_id = models.model_list[0].id
-                model_update_result.model_version = models.model_list[0].model_version \
+                model_update_result.model_version = models.model_list[0].latest_model_version \
                     if self.job_config.serving_model_version is None else self.job_config.serving_model_version
                 model_update_result.endpoint_name = self.job_config.serving_endpoint_name
             else:
+                model_update_result = FedMLAppManager.get_instance().update_model(self.job_config.model_app_name,
+                                                                                  self.job_config.workspace,
+                                                                                  user_api_key,
+                                                                                  is_creating_model=False,
+                                                                                  model_object=models.model_list[0])
+                if model_update_result is None:
+                    raise Exception("Failed to upload the model package to MLOps.")
+                models = FedMLAppManager.get_instance().check_model_exists(self.job_config.model_app_name, user_api_key)
+                if models is None or len(models.model_list) <= 0:
+                    raise Exception("Failed to list the model package from MLOps.")
+
                 model_update_result = FedMLModelUploadResult(
                     self.job_config.model_app_name, model_id=models.model_list[0].id,
-                    model_version=models.model_list[0].model_version \
+                    model_version=models.model_list[0].latest_model_version \
                         if self.job_config.serving_model_version is None else self.job_config.serving_model_version,
                     model_storage_url=self.job_config.serving_model_s3_url,
                     endpoint_name=self.job_config.serving_endpoint_name)
@@ -122,14 +132,22 @@ class FedMLLaunchManager(Singleton):
             self.job_config.model_app_name = model_app_name
 
             # Apply model endpoint id and act as job id
-            if self.job_config.serving_endpoint_id is None:
-                self.job_config.serving_endpoint_id = FedMLModelCards.get_instance().apply_endpoint_api(
-                    user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
-                    model_name=models.model_list[0].model_name, model_version=models.model_list[0].model_version)
-                if self.job_config.serving_endpoint_id is None:
-                    raise Exception("Failed to apply endpoint for your model.")
+            applied_endpoint_id = FedMLModelCards.get_instance().apply_endpoint_api(
+                user_api_key, self.job_config.serving_endpoint_name, model_id=models.model_list[0].id,
+                model_name=models.model_list[0].model_name, model_version=models.model_list[0].latest_model_version,
+                endpoint_id=self.job_config.serving_endpoint_id)
+            if applied_endpoint_id is None:
+                raise Exception("Failed to apply endpoint for your model.")
+            if applied_endpoint_id == 0:
+                raise Exception("Your endpoint id is occupied by other users.")
+            endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                endpoint_id=applied_endpoint_id, user_api_key=user_api_key)
+            if endpoint_detail is None:
+                raise Exception("Failed to get the endpoint detail.")
+            self.job_config.serving_endpoint_id = applied_endpoint_id
+            self.job_config.serving_endpoint_name = endpoint_detail.endpoint_name
             self.job_config.serving_model_name = models.model_list[0].model_name
-            self.job_config.serving_model_version = models.model_list[0].model_version \
+            self.job_config.serving_model_version = models.model_list[0].latest_model_version \
                 if self.job_config.serving_model_version is None else self.job_config.serving_model_version
             self.job_config.serving_model_id = models.model_list[0].id
 

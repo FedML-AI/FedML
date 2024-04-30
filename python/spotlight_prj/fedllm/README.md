@@ -148,7 +148,7 @@ data_args:
 
 model_args:
   skip_log_model_net: True  # toggle auto model input shape inference; if set to `False`, could slow down the training
-  model_name_or_path: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
+  model_name_or_path: "EleutherAI/pythia-70m"  # choose any decoder-only hugging face model
   peft_type: "lora"
   # need to install `flash_attn` package first, see https://github.com/Dao-AILab/flash-attention for detail
   use_flash_attention: False

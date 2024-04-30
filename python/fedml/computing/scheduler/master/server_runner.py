@@ -55,6 +55,7 @@ from ..scheduler_core.metrics_manager import MetricsManager
 from ..scheduler_core.master_api_daemon import MasterApiDaemon
 from fedml.utils.debugging import debug
 from ..scheduler_core.message_center import FedMLMessageCenter
+import ssl
 
 
 class RunnerError(Exception):
@@ -228,8 +229,8 @@ class FedMLServerRunner(FedMLMessageCenter):
         local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        package_url_without_query_path = urljoin(package_url, urlparse(package_url).path)
-        urllib.request.urlretrieve(package_url_without_query_path, local_package_file,
+        ssl._create_default_https_context = ssl._create_unverified_context
+        urllib.request.urlretrieve(package_url, local_package_file,
                                    reporthook=self.package_download_progress)
         unzip_package_path = os.path.join(ClientConstants.get_package_unzip_dir(),
                                           f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
@@ -1189,6 +1190,7 @@ class FedMLServerRunner(FedMLMessageCenter):
         allowed_status_check_sleep_seconds_for_async = 30
         inactivate_edges = list()
         active_edge_info_dict = dict()
+        log_active_edge_info_flag = True
         while True:
             if callback_when_detecting is not None:
                 callback_when_detecting(args_for_callback_when_detecting)
@@ -1237,16 +1239,19 @@ class FedMLServerRunner(FedMLMessageCenter):
 
             # If all edges are ready then send the starting job message to them
             if active_edges_count == len(edge_id_list):
-                logging.info(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
+                if log_active_edge_info_flag:
+                    logging.debug(f"All edges are ready. Active edge id list is as follows. {active_edge_info_dict}")
+                    log_active_edge_info_flag = False
                 if callback_when_edges_ready is not None:
                     logging.info("All edges are ready. Start to process the callback function.")
                     callback_when_edges_ready(active_edge_info_dict=active_edge_info_dict)
                 else:
-                    logging.info("All edges are ready. No callback function to process.")
+                    logging.debug("All edges are ready. No callback function to process.")
                 break
             else:
                 logging.info(f"All edges are not ready. Active edge id list: {active_edge_info_dict}, "
                              f"Inactive edge id list: {inactivate_edges}")
+                log_active_edge_info_flag = True
 
             # Check if runner needs to stop and sleep specific time
             self.check_runner_stop_event()
@@ -1520,12 +1525,6 @@ class FedMLServerRunner(FedMLMessageCenter):
             MLOpsConfigs.fetch_all_configs()
         except Exception as e:
             pass
-
-        # get training params
-        if self.run_as_cloud_server:
-            message_bytes = payload.encode("ascii")
-            base64_bytes = base64.b64decode(message_bytes)
-            payload = base64_bytes.decode("ascii")
 
         # [NOTES] Example Request JSON: https://fedml-inc.larksuite.com/wiki/ScnIwUif9iupbjkYS0LuBrd6sod#WjbEdhYrvogmlGxKTOGu98C6sSb
         request_json = json.loads(payload)
@@ -2627,9 +2626,16 @@ class FedMLServerRunner(FedMLMessageCenter):
         # Broadcast the first active message.
         self.send_agent_active_msg()
 
+        # Start the message center for listener
+        self.start_listener(sender_message_queue=self.message_center.get_message_queue(),
+                            agent_config=self.agent_config)
+
         if self.run_as_cloud_server:
             # Start the FedML server
-            self.callback_start_train(payload=self.args.runner_cmd)
+            message_bytes = self.args.runner_cmd.encode("ascii")
+            base64_bytes = base64.b64decode(message_bytes)
+            payload = base64_bytes.decode("ascii")
+            self.receive_message_json(topic_start_train, payload)
 
         # Echo results
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout()
@@ -2639,10 +2645,6 @@ class FedMLServerRunner(FedMLMessageCenter):
             + str(self.unique_device_id)
         )
         MLOpsRuntimeLog.get_instance(self.args).enable_show_log_to_stdout(enable=True)
-
-        # Start the message center for listener
-        self.start_listener(sender_message_queue=self.message_center.get_message_queue(),
-                            agent_config=self.agent_config)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(

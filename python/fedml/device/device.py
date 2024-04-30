@@ -2,9 +2,10 @@ import logging
 
 from ..ml.engine import ml_engine_adapter
 
-
 from fedml.constants import (
+    FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL,
     FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
+    FEDML_TRAINING_PLATFORM_CROSS_CLOUD,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
 )
 
@@ -82,7 +83,7 @@ def get_device(args):
         )
         logging.info("device = {}".format(device))
         return device
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+    elif args.training_type in (FEDML_TRAINING_PLATFORM_CROSS_CLOUD, FEDML_TRAINING_PLATFORM_CROSS_SILO):
 
         from .gpu_mapping_cross_silo import (
             mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
@@ -90,7 +91,7 @@ def get_device(args):
 
         device_type = get_device_type(args)
 
-        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+        if args.scenario in (FEDML_CROSS_CLOUD_SCENARIO_HIERARCHICAL, FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL):
             worker_number = args.n_proc_in_silo
             process_id = args.proc_rank_in_silo
         else:
