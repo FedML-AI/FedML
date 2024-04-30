@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     if is_inference and deployed_endpoint_name is not None:
         create_inference_workflow(
-            job_api_key=args.api_key, endpoint_name_list=[deployed_endpoint_name, "fedml-dimitris-mistral-7b"],
+            job_api_key=args.api_key, endpoint_name_list=[deployed_endpoint_name],
             input_json=args.infer_json, user_name=args.user_name)
 
     if is_train:
