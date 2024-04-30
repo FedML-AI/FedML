@@ -3,9 +3,9 @@ import logging
 import os
 import time
 import traceback
+import datetime
 
 import re
-from datetime import datetime
 from dateutil.parser import isoparse
 
 from urllib.parse import urlparse
@@ -1056,6 +1056,13 @@ class JobMonitor(Singleton):
                         endpoint_logs = ContainerUtils.get_instance().get_container_logs(endpoint_container_name,
                                                                                          timestamps=True)
 
+                        # Sync Time by setting the offset
+                        if endpoint_logs is not None:
+                            t_sec_offset = ContainerUtils.get_instance().get_container_deploy_time_offset(
+                                endpoint_container_name)
+                            self.replica_log_channels[job.job_id][job.edge_id][i]["deploy_container_t_offset"] = (
+                                t_sec_offset)
+
                     if (endpoint_logs is None or endpoint_logs == "\n" or endpoint_logs == "\r\n" or
                             endpoint_logs == "\r" or endpoint_logs == "" or endpoint_logs == " "):
                         continue
@@ -1066,13 +1073,26 @@ class JobMonitor(Singleton):
                     with open(log_file_path, "a") as f:
                         line_of_logs = endpoint_logs.split("\n")
 
+                        # Add NTP offset
+                        channel_info = self.replica_log_channels[job.job_id][job.edge_id][i]
+                        t_sec_offset = channel_info.get("deploy_container_t_offset", None)
+
                         for line in line_of_logs:
                             if line == "":
                                 continue
 
-                            container_time = line.split(" ")[0]
-                            nano_second_str = container_time.split(".")[1][:9]
-                            t_datetime_obj = isoparse(container_time)
+                            try:
+                                container_time = line.split(" ")[0]
+                                nano_second_str = container_time.split(".")[1][:9]
+                                t_datetime_obj = isoparse(container_time)
+
+                                if t_sec_offset is not None:
+                                    t_datetime_obj = t_datetime_obj + datetime.timedelta(seconds=t_sec_offset)
+                            except Exception as e:
+                                logging.error(f"Exception when parsing the container log time {e}")
+                                t_datetime_obj = datetime.datetime.now()
+                                nano_second_str = "000000000"
+
                             t_sec = t_datetime_obj.strftime("%a, %d %b %Y %H:%M:%S")
                             t_nano_sec = f"[{t_sec}.{nano_second_str}]"
 

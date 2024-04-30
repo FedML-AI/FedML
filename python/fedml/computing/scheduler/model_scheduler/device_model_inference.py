@@ -282,14 +282,16 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
                 http_infer_available = False
 
         if http_infer_available:
-            response_ok = await FedMLHttpInference.is_inference_ready(inference_url, timeout=5)
+            response_ok = await FedMLHttpInference.is_inference_ready(
+                inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_READY_TIMEOUT", 20))
             if response_ok:
                 response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
                     inference_url, input_list, output_list, inference_type=inference_type)
                 logging.info(f"Use http inference. return {response_ok}")
                 return inference_response
 
-        response_ok = await FedMLHttpProxyInference.is_inference_ready(inference_url, timeout=10)
+        response_ok = await FedMLHttpProxyInference.is_inference_ready(
+            inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_PROXY_READY_TIMEOUT", 20))
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
                 endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
