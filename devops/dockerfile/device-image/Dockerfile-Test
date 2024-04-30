@@ -19,6 +19,8 @@ RUN pip3 install -e ./
 #RUN pip3 install -e '.[jax]'
 #RUN pip3 install -e '.[mxnet]'
 RUN pip3 install MNN==1.1.6
+RUN pip3 install -U pydantic
+RUN pip3 install -U fastapi
 
 WORKDIR /fedml
 

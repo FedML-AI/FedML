@@ -19,10 +19,15 @@ class ScaleOp(Enum):
 
 class Autoscaler(metaclass=Singleton):
 
-    def __init__(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
+    def __init__(self, redis_addr=None, redis_port=None, redis_password=None):
         super().__init__()
         self.fedml_model_cache = FedMLModelCache.get_instance()
-        self.fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
+        # If at least one redis configuration is None, then use the default values.
+        # Else, set Redis parameters with given configuration.
+        if any([not redis_addr, not redis_port, not redis_password]):
+            self.fedml_model_cache.set_redis_params()
+        else:
+            self.fedml_model_cache.set_redis_params(redis_addr, redis_port, redis_password)
 
     @staticmethod
     def get_instance(*args, **kwargs):
