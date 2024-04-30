@@ -25,10 +25,13 @@ bootstrap: |
   pip install PyYAML==5.3.1 -i https://pypi.org/simple
   pip install fedml==0.8.29
   pip install -U typing_extensions -i https://pypi.org/simple
+  pip install -U pydantic
+  pip install -U fastapi
   echo "Bootstrap finished."
 
 computing:
-  resource_type: RTX-4090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  #resource_type: RTX-4090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: A100-80GB-SXM
   minimum_num_gpus: 1             # minimum # of GPUs to provision
   maximum_cost_per_hour: $10    # max cost per hour of all machines for your job
   # device_type: GPU # GPU or CPU
