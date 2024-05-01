@@ -303,25 +303,26 @@ class Autoscaler(metaclass=Singleton):
             # If no metric exists then no scaling operation.
             return scale_op
 
-        # If we continue here, then it means that there was at least one request.
-        # The `most_recent_metric` is of type list, hence we need to access index 0.
-        most_recent_metric = metrics[-1]
-        latest_request_timestamp_micro_secs = most_recent_metric["timestamp"]
-        # The time module does not have a micro-second function built-in, so we need to
-        # divide nanoseconds by 1e3 and convert to micro-seconds.
-        current_time_micro_seconds = time.time_ns() / 1e3
-        # compute elapsed time and convert to seconds
-        elapsed_time_secs = \
-            (current_time_micro_seconds - latest_request_timestamp_micro_secs) / 1e6
-        if elapsed_time_secs > autoscaling_policy.release_replica_after_idle_secs:
+        if autoscaling_policy.release_replica_after_idle_secs:
+            # At this point it means that there was at least one request. The
+            # `most_recent_metric` is of type list, hence we need to access index 0.
+            most_recent_metric = metrics[-1]
+            latest_request_timestamp_micro_secs = most_recent_metric["timestamp"]
+            # The time module does not have a micro-second function built-in,
+            # so we need to divide nanoseconds by 1e3 and convert to micro-seconds.
+            current_time_micro_seconds = time.time_ns() / 1e3
+            # Compute the elapsed time and convert to seconds.
+            elapsed_time_secs = \
+                (current_time_micro_seconds - latest_request_timestamp_micro_secs) / 1e6
             # If the elapsed time is greater than the requested idle time,
             # in other words there was no incoming request then scale down.
-            scale_op = ScaleOp.DOWN_IN_OP
+            if elapsed_time_secs > autoscaling_policy.release_replica_after_idle_secs:
+                scale_op = ScaleOp.DOWN_IN_OP
         else:
-            # Otherwise, it means there was a request within the elapsed time, then:
+            # Otherwise, it means there was a request within the elapsed time, then,
+            # Check if the current number of running replicas is 0 it means
+            # we need more resources, hence we need to scale up: ScaleOp.UP_OUT_OP.
             if autoscaling_policy.current_replicas == 0:
-                # Check if the current number of running replicas is 0,
-                # then we need more resources, hence ScaleOp.UP_OUT_OP.
                 scale_op = ScaleOp.UP_OUT_OP
             else:
                 # Else, trigger the autoscaling policy with all existing values.
