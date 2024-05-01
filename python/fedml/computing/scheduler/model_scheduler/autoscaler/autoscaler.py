@@ -55,13 +55,17 @@ class Autoscaler(metaclass=Singleton):
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
             period_data = metrics.last("{}min".format(ewm_policy.ewm_mins))
-            # If the data frame window is empty then do nothing more, just return.
-            if period_data.empty:
-                return ScaleOp.NO_OP
-            metric_name = "current_latency" \
-                if "ewm_latency" == ewm_policy.metric else "current_qps"
-            ewm_period = period_data[metric_name] \
-                .ewm(alpha=ewm_policy.ewm_alpha).mean()
+
+        # If the data frame window is empty then it means we
+        # did not have any incoming request, so we need to scale down.
+        if period_data.empty:
+            return ScaleOp.DOWN_IN_OP
+
+        # Otherwise, we proceed as normal.
+        metric_name = "current_latency" \
+            if "ewm_latency" == ewm_policy.metric else "current_qps"
+        ewm_period = period_data[metric_name] \
+            .ewm(alpha=ewm_policy.ewm_alpha).mean()
 
         scale_op = ScaleOp.NO_OP
         # If there is no exponential moving average within this
@@ -115,10 +119,14 @@ class Autoscaler(metaclass=Singleton):
             warnings.simplefilter(action='ignore', category=FutureWarning)
             # Here, the number of queries is the number of rows in the short period data frame.
             period_data = metrics.last("{}s".format(concurrent_query_policy.window_size_secs))
-            # If the data frame window is empty then do nothing more, just return.
-            if period_data.empty:
-                return ScaleOp.NO_OP
-            queries_num = period_data.shape[0]
+
+        # If the data frame window is empty then it means we
+        # did not have any incoming request, so we need to scale down.
+        if period_data.empty:
+            return ScaleOp.DOWN_IN_OP
+
+        # Otherwise, we proceed as normal.
+        queries_num = period_data.shape[0]
 
         try:
             # QSR: Queries per Second per Replica: (Number of Queries / Number of Current Replicas) / Window Size
@@ -159,10 +167,13 @@ class Autoscaler(metaclass=Singleton):
             warnings.simplefilter(action='ignore', category=FutureWarning)
             # Here, the number of queries is the number of rows in the short period data frame.
             period_data = metrics.last("{}s".format(meet_traffic_demand_policy.window_size_secs))
-            # If the data frame window is empty then do nothing more, just return.
-            if period_data.empty:
-                return ScaleOp.NO_OP
 
+        # If the data frame window is empty then it means we
+        # did not have any incoming request, so we need to scale down.
+        if period_data.empty:
+            return ScaleOp.DOWN_IN_OP
+
+        # Otherwise, we proceed as normal.
         period_requests_num = period_data.shape[0]
         all_latencies = metrics["current_latency"]
         # Original value is milliseconds, convert to seconds.
@@ -293,7 +304,7 @@ class Autoscaler(metaclass=Singleton):
             0: do nothing
         """
 
-        # Fetch most recent metric record from the database.
+        # Fetch all metrics record from the database.
         metrics = self.fedml_model_cache.get_endpoint_metrics(
             endpoint_id=endpoint_id)
 
