@@ -51,6 +51,7 @@ class Autoscaler(metaclass=Singleton):
                             ewm_policy: EWMPolicy,
                             metrics: pd.DataFrame) -> ScaleOp:
 
+        logging.info("Executing the ExponentialWeightMoving average autoscaling policy.")
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -114,6 +115,7 @@ class Autoscaler(metaclass=Singleton):
                                           concurrent_query_policy: ConcurrentQueryPolicy,
                                           metrics: pd.DataFrame) -> ScaleOp:
 
+        logging.info("Executing the QueryConcurrency autoscaling policy.")
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -162,6 +164,7 @@ class Autoscaler(metaclass=Singleton):
                                             meet_traffic_demand_policy: MeetTrafficDemandPolicy,
                                             metrics: pd.DataFrame) -> ScaleOp:
 
+        logging.info("Executing the MeetTrafficDemand autoscaling policy.")
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -227,6 +230,7 @@ class Autoscaler(metaclass=Singleton):
     def validate_scaling_bounds(cls,
                                 scale_op: ScaleOp,
                                 autoscaling_policy: AutoscalingPolicy) -> ScaleOp:
+        logging.info("Validating scaling bounds.")
         # We cannot be lower than the minimum number of replicas,
         # nor exceed the maximum number of requested replicas.
         new_running_replicas = autoscaling_policy.current_replicas + scale_op.value
@@ -266,6 +270,7 @@ class Autoscaler(metaclass=Singleton):
             previous_timestamp = \
                 self.fedml_model_cache.get_endpoint_scaling_down_decision_time(endpoint_id)
             diff_secs = (current_timestamp - previous_timestamp) / 1e6
+            logging.info("Difference in seconds between scaling down operations: {}".format(diff_secs))
             if diff_secs > autoscaling_policy.scaledown_delay_secs:
                 # At this point, we will perform the scaling down operation, hence
                 # we need to delete the previously stored scaling down timestamp (if any).
@@ -279,7 +284,8 @@ class Autoscaler(metaclass=Singleton):
         return scale_op
 
     def clean_up_scaling_down_operation_state(self, endpoint_id) -> bool:
-        # We return True if the clean up operation succeeded, else False.
+        # We return True if the cleaning up operation succeeded, else False.
+        logging.info("Not a scaling down operation, cleaning up scale down state from Redis.")
         to_clean_up = \
             self.fedml_model_cache.exists_endpoint_scaling_down_decision_time(endpoint_id)
         if to_clean_up:
@@ -312,6 +318,7 @@ class Autoscaler(metaclass=Singleton):
         scale_op = ScaleOp.NO_OP
         if not metrics:
             # If no metric exists then no scaling operation.
+            logging.info("No existing metric, so no scaling operation.")
             return scale_op
 
         if autoscaling_policy.release_replica_after_idle_secs:
@@ -328,12 +335,15 @@ class Autoscaler(metaclass=Singleton):
             # If the elapsed time is greater than the requested idle time,
             # in other words there was no incoming request then scale down.
             if elapsed_time_secs > autoscaling_policy.release_replica_after_idle_secs:
+                logging.info("Endpoint remained idle for {} seconds, need to scale down.".format(
+                    elapsed_time_secs))
                 scale_op = ScaleOp.DOWN_IN_OP
         else:
             # Otherwise, it means there was a request within the elapsed time, then,
             # Check if the current number of running replicas is 0 it means
             # we need more resources, hence we need to scale up: ScaleOp.UP_OUT_OP.
             if autoscaling_policy.current_replicas == 0:
+                logging.info("Incoming requests but with 0 replicas, scaling up.")
                 scale_op = ScaleOp.UP_OUT_OP
             else:
                 # Else, trigger the autoscaling policy with all existing values.
