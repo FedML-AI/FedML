@@ -352,6 +352,8 @@ class JobMonitor(Singleton):
                     continue
 
                 # Check if all processes of the specific run are exited
+                # FIXME: Proactively release the gpu ids when the run processes have not even started yet as the docker
+                #  image is being pulled
                 run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
                 all_run_processes_exited = True if len(run_process_list) <= 0 else False
                 if all_run_processes_exited:
