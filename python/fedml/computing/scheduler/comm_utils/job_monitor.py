@@ -574,6 +574,15 @@ class JobMonitor(Singleton):
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
 
+                            # [Hotfix] Under high-concurrency situation, the ready endpoint might not be available
+                            # But the container is in health state
+                            # In this case, we need to have an exact 503 code, instead of timeout to decide to restart
+                            # TODO(Raphael): Split the /ready endpoint and predict endpoint traffic
+                            if not self._lenient_check_replica_ready(deployment_result):
+                                is_endpoint_ready = False
+                            else:
+                                is_endpoint_ready = True
+
                             # Get endpoint container name prefix, prepare for restart
                             endpoint_container_name_prefix = \
                                 (device_client_constants.ClientConstants.get_endpoint_container_name(
@@ -736,6 +745,28 @@ class JobMonitor(Singleton):
                 except Exception as e:
                     pass
 
+    def _lenient_check_replica_ready(
+            self, deployment_result
+    ):
+        """
+        Double-check the replica's liveness using /ready api:
+            if 200 -> return True
+            [Critical] if timeout -> Could be under high pressure -> return True
+            if HTTP_202_ACCEPTED -> unhealthy -> return False
+        """
+        result_json = deployment_result
+        inference_url = result_json.get("model_url", None)
+
+        # Make a curl get to inference_url with timeout 5s
+        # TODO(Raphael): Also support PROXY and MQTT to check the readiness
+        response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=5))
+        if response_ok is None:
+            # This means the server return 202
+            return False
+
+        # 200 or Timeout
+        return True
+
     def _check_and_reset_endpoint_status(
             self, endpoint_id, device_id, deployment_result, only_check_inference_ready_status=False,
             should_release_gpu_ids=False
@@ -761,6 +792,7 @@ class JobMonitor(Singleton):
 
             if self.endpoint_unavailable_counter.get(str(endpoint_id)) is None:
                 self.endpoint_unavailable_counter[str(endpoint_id)] = 0
+
             if not response_ok:
                 self.endpoint_unavailable_counter[str(endpoint_id)] += 1
             else:
