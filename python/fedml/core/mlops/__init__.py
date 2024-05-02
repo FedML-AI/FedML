@@ -9,7 +9,6 @@ import time
 import uuid
 from multiprocessing import Process
 
-import click
 import requests
 
 import fedml
@@ -95,9 +94,9 @@ def init(args, should_init_logs=True):
     if not mlops_parrot_enabled(args):
         if not hasattr(args, "config_version"):
             args.config_version = "release"
-        fetch_config(args, args.config_version)
         if should_init_logs:
             MLOpsRuntimeLog.get_instance(args).init_logs()
+        fetch_config(args, args.config_version)
         return
     else:
         if hasattr(args, "simulator_daemon"):
@@ -137,7 +136,7 @@ def init(args, should_init_logs=True):
             MLOpsStore.mlops_project_id = project_id
             MLOpsStore.mlops_run_id = run_id
     if result_project is False or result_run is False:
-        click.echo("Failed to init project and run.")
+        print("Failed to init project and run.")
         return
 
     # Init runtime logs
@@ -973,10 +972,9 @@ def _generate_log_metrics(metrics: dict, step: int = None, customized_step_key: 
 
 def log_mlops_running_logs(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None,
                            only_push_artifact=False):
-    fedml_args = get_fedml_args()
 
     artifact_archive_zip_file, artifact_storage_url = push_artifact_to_s3(
-        artifact, version=version if version is not None else fedml_args.config_version, show_progress=False)
+        artifact, version=version if version is not None else fedml.get_env_version(), show_progress=False)
 
     if only_push_artifact:
         return artifact_storage_url
@@ -1274,8 +1272,8 @@ def bind_simulation_device(args, userid):
             continue
 
     if config_try_count >= 5:
-        click.echo("\nNote: Internet is not connected. "
-                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
+        logging.info("\nNote: Internet is not connected. "
+                     "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
         return False
 
     # Build unique device id
@@ -1301,8 +1299,8 @@ def bind_simulation_device(args, userid):
             continue
 
     if edge_id <= 0:
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
-        click.echo("Please check whether your network is normal!")
+        print("Oops, you failed to login the FedML MLOps platform.")
+        print("Please check whether your network is normal!")
         return False
     MLOpsStore.mlops_edge_id = edge_id
     setattr(MLOpsStore.mlops_args, "client_id", edge_id)
@@ -1353,8 +1351,8 @@ def fetch_config(args, version="release"):
             continue
 
     if config_try_count >= 5:
-        click.echo("\nNote: Internet is not connected. "
-                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
+        logging.info("\nNote: Internet is not connected. "
+                     "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
         return False
 
 
