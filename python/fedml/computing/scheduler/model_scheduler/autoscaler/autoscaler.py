@@ -8,7 +8,7 @@ import pandas as pd
 from enum import Enum
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.autoscaler.policies import *
-from utils.singleton import Singleton
+from fedml.computing.scheduler.model_scheduler.autoscaler.utils.singleton import Singleton
 
 
 class ScaleOp(Enum):
@@ -39,6 +39,26 @@ class Autoscaler(metaclass=Singleton):
         return int(format(time.time_ns() / 1000.0, '.0f'))
 
     @classmethod
+    def filter_by_timestamp(cls,
+                            metrics,
+                            before_now_minutes=None,
+                            before_now_seconds=None) -> pd.DataFrame:
+
+        # We subtract the number of seconds/minutes from the current timestamp, and then we query
+        # the data frame to fetch all the records whose timestamp is within the given range.
+        # By default, we return all records.
+        filtered = metrics
+        if before_now_minutes:
+            less_than_ts = \
+                str(pd.Timestamp.now() - pd.Timedelta(minutes=before_now_minutes))
+            filtered = metrics.query("'{}' <= {}".format(less_than_ts, "timestamp"))
+        if before_now_seconds:
+            less_than_ts = \
+                str(pd.Timestamp.now() - pd.Timedelta(seconds=before_now_seconds))
+            filtered = metrics.query("'{}' <= {}".format(less_than_ts, "timestamp"))
+        return filtered
+
+    @classmethod
     def scale_operation_predictive(cls,
                                    predictive_policy: PredictivePolicy,
                                    metrics: pd.DataFrame) -> ScaleOp:
@@ -55,7 +75,8 @@ class Autoscaler(metaclass=Singleton):
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
-            period_data = metrics.last("{}min".format(ewm_policy.ewm_mins))
+            period_data = cls.filter_by_timestamp(metrics,
+                                                  before_now_minutes=ewm_policy.ewm_mins)
 
         # If the data frame window is empty then it means we
         # did not have any incoming request, so we need to scale down.
@@ -119,8 +140,9 @@ class Autoscaler(metaclass=Singleton):
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
-            # Here, the number of queries is the number of rows in the short period data frame.
-            period_data = metrics.last("{}s".format(concurrent_query_policy.window_size_secs))
+            period_data = cls.filter_by_timestamp(
+                metrics,
+                before_now_seconds=concurrent_query_policy.window_size_secs)
 
         # If the data frame window is empty then it means we
         # did not have any incoming request, so we need to scale down.
@@ -168,8 +190,9 @@ class Autoscaler(metaclass=Singleton):
         # Adding the context below to avoid having a series of warning messages.
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=FutureWarning)
-            # Here, the number of queries is the number of rows in the short period data frame.
-            period_data = metrics.last("{}s".format(meet_traffic_demand_policy.window_size_secs))
+            period_data = cls.filter_by_timestamp(
+                metrics,
+                before_now_seconds=meet_traffic_demand_policy.window_size_secs)
 
         # If the data frame window is empty then it means we
         # did not have any incoming request, so we need to scale down.
@@ -257,6 +280,7 @@ class Autoscaler(metaclass=Singleton):
 
         # If the policy has no scaledown delay then return immediately.
         if autoscaling_policy.scaledown_delay_secs == 0:
+            logging.info("No scale down delay, so scale down immediately.")
             return ScaleOp.DOWN_IN_OP
 
         # By default, we return a no operation.
@@ -270,11 +294,13 @@ class Autoscaler(metaclass=Singleton):
             previous_timestamp = \
                 self.fedml_model_cache.get_endpoint_scaling_down_decision_time(endpoint_id)
             diff_secs = (current_timestamp - previous_timestamp) / 1e6
-            logging.info("Difference in seconds between scaling down operations: {}".format(diff_secs))
             if diff_secs > autoscaling_policy.scaledown_delay_secs:
+                logging.info("Scaling down since the time difference: {}secs, "
+                             "is above the delay period: {} secs.".format(
+                    diff_secs, autoscaling_policy.scaledown_delay_secs))
                 # At this point, we will perform the scaling down operation, hence
                 # we need to delete the previously stored scaling down timestamp (if any).
-                self.fedml_model_cache.delete_endpoint_scaling_down_decision_time(endpoint_id)
+                self.clean_up_scaling_down_operation_state(endpoint_id)
                 scale_op = ScaleOp.DOWN_IN_OP
         else:
             # Record the timestamp of the scaling down operation.
@@ -285,7 +311,7 @@ class Autoscaler(metaclass=Singleton):
 
     def clean_up_scaling_down_operation_state(self, endpoint_id) -> bool:
         # We return True if the cleaning up operation succeeded, else False.
-        logging.info("Not a scaling down operation, cleaning up scale down state from Redis.")
+        logging.info("Cleaning up scale down state from Redis.")
         to_clean_up = \
             self.fedml_model_cache.exists_endpoint_scaling_down_decision_time(endpoint_id)
         if to_clean_up:
