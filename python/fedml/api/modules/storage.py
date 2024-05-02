@@ -18,12 +18,13 @@ class StorageMetadata(object):
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
         self.size = _get_size(data.get("fileSize",None))
+        self.tag_list = data.get("tags", None)
 
 
 # Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
 
-def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
+def upload(data_path, api_key, name, description, tag_list, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
     api_key = authenticate(api_key)
 
@@ -58,7 +59,7 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
         "description": description,
         "fileSize": file_size,
         "fileUrl": file_uploaded_url,
-        "tagNameList": [],
+        "tagNameList": tag_list,
     }
 
     try:
