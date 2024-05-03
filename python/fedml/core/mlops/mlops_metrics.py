@@ -12,6 +12,7 @@ from .mlops_device_perfs import MLOpsDevicePerfStats
 from .mlops_job_perfs import MLOpsJobPerfStats
 from ...computing.scheduler.master.server_constants import ServerConstants
 from ...computing.scheduler.slave.client_constants import ClientConstants
+from ...computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from ...core.mlops.mlops_status import MLOpsStatus
 
 
@@ -89,7 +90,7 @@ class MLOpsMetrics(object):
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE:
             return
 
-        topic_name = "fl_client/mlops/status"
+        topic_name = MqttTopics.client_mlops_status()
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status, "version": "v1.0"}
         message_json = json.dumps(msg)
         logging.info("report_client_device_status. message_json = %s" % message_json)
@@ -104,7 +105,7 @@ class MLOpsMetrics(object):
         this is used for notifying the client status to MLOps (both FedML CLI and backend can consume it)
         Currently, the INITIALIZING, and RUNNING are report using this method.
         """
-        topic_name = "fl_run/fl_client/mlops/status"
+        topic_name = MqttTopics.run_client_mlops_status()
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
@@ -133,14 +134,14 @@ class MLOpsMetrics(object):
         this is used for broadcasting the client status to MLOps (backend can consume it)
         Currently, the FINISHED are report using this method.
         """
-        topic_name = "fl_run/fl_client/mlops/status"
+        topic_name = MqttTopics.run_client_mlops_status()
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("broadcast_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def client_send_exit_train_msg(self, run_id, edge_id, status, msg=None):
-        topic_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+        topic_exit_train_with_exception = MqttTopics.server_run_exception(run_id)
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "msg": msg if msg is not None else ""}
         message_json = json.dumps(msg)
         logging.info("client_send_exit_train_msg.")
@@ -168,7 +169,7 @@ class MLOpsMetrics(object):
         """
         this is used for communication between client agent (FedML cli module) and client
         """
-        topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+        topic_name = MqttTopics.client_client_agent_status(client_id=edge_id)
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id, "msg": msg}
         message_json = json.dumps(msg)
         # logging.info("report_client_id_status. message_json = %s" % message_json)
@@ -186,6 +187,7 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
+    # TODO (alaydshah): This method and the topic both seem to be deprecated. Confirm and remove.
     def report_server_device_status_to_web_ui(self, run_id, status, edge_id=0, role=None):
         """
         this is used for notifying the server device status to MLOps Frontend
@@ -193,7 +195,7 @@ class MLOpsMetrics(object):
         if status == ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE:
             return
 
-        topic_name = "fl_server/mlops/status"
+        topic_name = MqttTopics.server_mlops_status()
         if role is None:
             role = "normal"
         msg = {
@@ -211,7 +213,7 @@ class MLOpsMetrics(object):
     def common_report_server_training_status(self, run_id, status, role=None, edge_id=0):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_run/fl_server/mlops/status"
+        topic_name = MqttTopics.run_server_mlops_status()
         if role is None:
             role = "normal"
         msg = {
@@ -228,7 +230,7 @@ class MLOpsMetrics(object):
     def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False, edge_id=None):
         if self.messenger is None:
             return
-        topic_name = "fl_run/fl_server/mlops/status"
+        topic_name = MqttTopics.run_server_mlops_status()
         if role is None:
             role = "normal"
         msg = {
@@ -251,8 +253,7 @@ class MLOpsMetrics(object):
     def report_server_id_status(self, run_id, status, edge_id=None, server_id=None, server_agent_id=None):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/flserver_agent_" + str(server_agent_id if server_agent_id is not None else
-                                                       self.server_agent_id) + "/status"
+        topic_name = MqttTopics.server_server_agent_status(server_id=server_id)
         msg = {"run_id": run_id, "edge_id": edge_id if edge_id is not None else self.edge_id, "status": status}
         if server_id is not None:
             msg["server_id"] = server_id
@@ -262,10 +263,11 @@ class MLOpsMetrics(object):
         # logging.info("report_server_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
+    # TODO(alaydshah): This method and the topic both seem to be deprecated. Confirm and remove.
     def report_client_training_metric(self, metric_json):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_client/mlops/training_metrics"
+        topic_name = MqttTopics.client_mlops_training_metrics()
         logging.info("report_client_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -273,7 +275,7 @@ class MLOpsMetrics(object):
     def report_server_training_metric(self, metric_json, payload=None):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/training_progress_and_eval"
+        topic_name = MqttTopics.server_mlops_training_progress()
         if payload is not None:
             message_json = payload
         else:
@@ -284,7 +286,7 @@ class MLOpsMetrics(object):
     def report_endpoint_metric(self, metric_json, payload=None):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/deploy_progress_and_eval"
+        topic_name = MqttTopics.server_mlops_deploy_progress()
         if payload is not None:
             message_json = payload
         else:
@@ -295,7 +297,7 @@ class MLOpsMetrics(object):
     def report_fedml_train_metric(self, metric_json, run_id=0, is_endpoint=False):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = f"fedml_slave/fedml_master/metrics/{run_id}"
+        topic_name = MqttTopics.client_server_metrics(run_id = run_id)
         logging.info("report_fedml_train_metric. message_json = %s" % metric_json)
         metric_json["is_endpoint"] = is_endpoint
         message_json = json.dumps(metric_json)
@@ -304,42 +306,42 @@ class MLOpsMetrics(object):
     def report_fedml_run_logs(self, logs_json, run_id=0):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = f"fedml_slave/fedml_master/logs/{run_id}"
+        topic_name = MqttTopics.client_server_logs(run_id=run_id)
         message_json = json.dumps(logs_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/training_roundx"
+        topic_name = MqttTopics.server_mlops_training_rounds()
         message_json = json.dumps(round_info)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_model_info(self, model_info_json):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/client_model"
+        topic_name = MqttTopics.server_mlops_client_model()
         message_json = json.dumps(model_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_aggregated_model_info(self, model_info_json):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/global_aggregated_model"
+        topic_name = MqttTopics.server_mlops_aggregated_model()
         message_json = json.dumps(model_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_training_model_net_info(self, model_net_info_json):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/training_model_net"
+        topic_name = MqttTopics.server_mlops_training_model_net()
         message_json = json.dumps(model_net_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_llm_record(self, metric_json):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "model_serving/mlops/llm_input_output_record"
+        topic_name = MqttTopics.model_serving_mlops_llm_input_output_record()
         logging.info("report_llm_record. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -350,7 +352,7 @@ class MLOpsMetrics(object):
         """
         this is used for reporting the computing cost of a job running on an edge to MLOps
         """
-        topic_name = "ml_client/mlops/job_computing_cost"
+        topic_name = MqttTopics.client_mlops_job_cost()
         duration = computing_ended_time - computing_started_time
         if duration < 0:
             duration = 0
@@ -365,7 +367,7 @@ class MLOpsMetrics(object):
     def report_logs_updated(self, run_id):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "mlops/runtime_logs/" + str(run_id)
+        topic_name = MqttTopics.mlops_runtime_logs_run(run_id=run_id)
         msg = {"time": time.time()}
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
@@ -375,7 +377,7 @@ class MLOpsMetrics(object):
                              artifact_local_path, artifact_url,
                              artifact_ext_info, artifact_desc,
                              timestamp):
-        topic_name = "launch_device/mlops/artifacts"
+        topic_name = MqttTopics.launch_mlops_artifacts()
         artifact_info_json = {
             "job_id": job_id,
             "edge_id": edge_id,
@@ -392,7 +394,7 @@ class MLOpsMetrics(object):
 
     def report_endpoint_status(self, end_point_id, model_status, timestamp=None,
                                end_point_name="", model_name="", model_inference_url=""):
-        deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
+        deployment_status_topic_prefix = MqttTopics.deploy_mlops_status()
         deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
         time_param = time.time_ns() / 1000.0 if timestamp is None else timestamp
         deployment_status_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,

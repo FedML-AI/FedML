@@ -10,6 +10,7 @@ import psutil
 
 from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
+from ...computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
@@ -38,7 +39,7 @@ class MLOpsJobPerfStats(object):
         if run_id_str == "0" or run_id_str == "":
             return
 
-        topic_name = "fl_client/mlops/system_performance"
+        topic_name = MqttTopics.client_mlops_system_performance()
         if metric_json is None:
             if sys_stats_obj is None:
                 sys_stats_obj = SysStats(process_id=os.getpid())

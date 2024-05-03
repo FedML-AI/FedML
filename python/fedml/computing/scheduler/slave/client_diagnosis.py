@@ -6,6 +6,7 @@ import uuid
 from threading import Thread
 
 import fedml
+from fedml.computing.scheduler.comm_utils.mqtt_topics import MqttTopics
 from fedml.core.distributed.communication.message import Message
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
@@ -209,7 +210,7 @@ class ClientDiagnosis(Singleton):
         self.is_mqtt_connected = True
 
         print("on_test_mqtt_connected")
-        topic_test_mqtt_msg = "fedml/" + str(self.mqtt_mgr._client_id) + "/test_mqtt_msg"
+        topic_test_mqtt_msg = MqttTopics.test_mqtt_connection(mqtt_client_id=self.mqtt_mgr._client_id)
         self.mqtt_mgr.add_message_listener(topic_test_mqtt_msg, self.callback_test_mqtt_msg)
         mqtt_client_object.subscribe(topic_test_mqtt_msg)
 
@@ -222,7 +223,7 @@ class ClientDiagnosis(Singleton):
 
         print("on_test_mqtt_disconnected")
 
-        topic_test_mqtt_msg = "fedml/" + str(self.mqtt_mgr._client_id) + "/test_mqtt_msg"
+        topic_test_mqtt_msg = MqttTopics.test_mqtt_connection(mqtt_client_id=self.mqtt_mgr._client_id)
         self.mqtt_mgr.remove_message_listener(topic_test_mqtt_msg)
         mqtt_client_object.subscribe(topic_test_mqtt_msg)
 
@@ -233,7 +234,7 @@ class ClientDiagnosis(Singleton):
 
     def send_test_mqtt_msg(self):
         while True:
-            topic_test_mqtt_msg = "fedml/" + str(self.mqtt_mgr._client_id) + "/test_mqtt_msg"
+            topic_test_mqtt_msg = MqttTopics.test_mqtt_connection(mqtt_client_id=self.mqtt_mgr._client_id)
             test_mqtt_msg_payload = {"id": self.mqtt_mgr._client_id, "msg": topic_test_mqtt_msg}
 
             ret = self.mqtt_mgr.send_message(topic_test_mqtt_msg, json.dumps(test_mqtt_msg_payload))
