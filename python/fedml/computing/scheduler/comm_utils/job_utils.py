@@ -13,16 +13,49 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+from ..scheduler_entry.constants import Constants
 from dataclasses import dataclass, field, fields
 
 from fedml.computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
-from typing import List
+from typing import List, Dict, Any, Optional
 import threading
 import json
 
 run_docker_without_gpu = False
+
+
+@dataclass
+class JobArgs:
+    request_json: Dict[str, Any]
+    conf_file_object: Any
+    fedml_config_object: field(default_factory=dict)
+    client_rank: Optional[int] = None
+
+    def __post_init__(self):
+        self.run_config = self.request_json.get("run_config", {})
+        self.run_params = self.run_config.get("parameters", {})
+        self.client_rank = self.request_json.get("client_rank", 1) if self.client_rank is None else self.client_rank
+        self.job_yaml = self.run_params.get("job_yaml", {})
+        self.job_yaml_default_none = self.run_params.get("job_yaml", None)
+        self.job_api_key = self.run_params.get("job_api_key", None)
+        self.job_api_key = self.job_yaml.get("fedml_run_dynamic_params", None) if self.job_api_key is None else self.job_api_key
+        self.assigned_gpu_ids = self.run_params.get("gpu_ids", None)
+        self.job_type = self.job_yaml.get("job_type", None)
+        # TODO: Can we remove task_type?
+        self.job_type = self.job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if self.job_type is None else self.job_type
+        self.containerize = self.fedml_config_object.get("containerize", None)
+        self.image_pull_policy = self.fedml_config_object.get("image_pull_policy", Constants.IMAGE_PULL_POLICY_ALWAYS)
+        self.entry_args_dict = self.conf_file_object.get("fedml_entry_args", {})
+        self.entry_args = self.entry_args_dict.get("entry_args", None)
+        self.scheduler_match_info = self.request_json.get("scheduler_match_info", {})
+        self.env_args = self.fedml_config_object.get("environment_args", None)
+        self.docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs,
+                                                                    self.fedml_config_object.get("docker", {}))
+        self.executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
+            if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
+        self.framework_type = self.job_yaml.get("framework_type", None)
 
 
 @dataclass
@@ -393,30 +426,49 @@ class JobRunnerUtils(Singleton):
         return instance
 
     @staticmethod
-    def generate_bootstrap_commands(bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file):
-        if os.path.exists(bootstrap_script_path):
-            bootstrap_stat = os.stat(bootstrap_script_path)
-            if platform.system() == 'Windows':
-                os.chmod(bootstrap_script_path,
-                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                bootstrap_scripts = "{}".format(bootstrap_script_path)
-            else:
-                os.chmod(bootstrap_script_path,
-                         bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                bootstrap_scripts = "cd {}; ./{}".format(
-                    bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+    def generate_bootstrap_commands(env_args, unzip_package_path) -> (List[str], str):
+        bootstrap_cmd_list = list()
+        bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
 
-            bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
-            shell_cmd_list = list()
-            shell_cmd_list.append(bootstrap_scripts)
-            return shell_cmd_list
+        if env_args is not None:
+            bootstrap_script_file = env_args.get("bootstrap", None)
+            if bootstrap_script_file is not None:
+                bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+                if platform.system() == 'Windows':
+                    bootstrap_script_file = bootstrap_script_file.rstrip('.sh') + '.bat'
+                if bootstrap_script_file is not None:
+                    bootstrap_script_dir = os.path.join(unzip_package_path, "fedml",
+                                                        os.path.dirname(bootstrap_script_file))
+                    bootstrap_script_path = os.path.join(
+                        bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
+                    )
+
+        if bootstrap_script_path:
+            logging.info("Bootstrap commands are being generated...")
+            if os.path.exists(bootstrap_script_path):
+                bootstrap_stat = os.stat(bootstrap_script_path)
+                if platform.system() == 'Windows':
+                    os.chmod(bootstrap_script_path,
+                             bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                    bootstrap_scripts = "{}".format(bootstrap_script_path)
+                else:
+                    os.chmod(bootstrap_script_path,
+                             bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                    bootstrap_scripts = "cd {}; ./{}".format(
+                        bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+
+                bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
+                bootstrap_cmd_list.append(bootstrap_scripts)
+        if len(bootstrap_cmd_list):
+            logging.info(f"Generated following Bootstrap commands: {bootstrap_cmd_list}")
+        else:
+            logging.info("No Bootstrap commands generated.")
+        return bootstrap_cmd_list, bootstrap_script_file
 
     @staticmethod
-    def generate_job_execute_commands(run_id, edge_id, version,
-                                      package_type, executable_interpreter, entry_file_full_path,
-                                      conf_file_object, entry_args, assigned_gpu_ids,
-                                      job_api_key, client_rank, scheduler_match_info=None,
-                                      cuda_visible_gpu_ids_str=None):
+    def generate_job_execute_commands(run_id, edge_id, version, package_type, entry_file_full_path,
+                                      job_args: JobArgs, cuda_visible_gpu_ids_str: str = None):
+
         shell_cmd_list = list()
         entry_commands_origin = list()
 
@@ -430,12 +482,12 @@ class JobRunnerUtils(Singleton):
         # Generate the export env list for publishing environment variables
         export_cmd = "set" if platform.system() == "Windows" else "export"
         export_config_env_list, config_env_name_value_map = JobRunnerUtils.parse_config_args_as_env_variables(
-            export_cmd, conf_file_object)
+            export_cmd, job_args.conf_file_object)
 
         # Generate the export env list about scheduler matching info for publishing environment variables
         export_match_env_list, match_env_name_value_map = \
             JobRunnerUtils.assign_matched_resources_to_run_and_generate_envs(
-                run_id, export_cmd, scheduler_match_info
+                run_id, export_cmd, job_args.scheduler_match_info
             )
 
         # Replace entry commands with environment variable values
@@ -447,7 +499,7 @@ class JobRunnerUtils(Singleton):
         )
 
         # Replace entry arguments with environment variable values
-        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, config_env_name_value_map)
+        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(job_args.entry_args, config_env_name_value_map)
         entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, match_env_name_value_map)
 
         # Add the export env list to the entry commands
@@ -462,13 +514,13 @@ class JobRunnerUtils(Singleton):
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_ENV_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
-        entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
+        entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={job_args.client_rank}\n")
         entry_commands.insert(0,
                               f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST={fedml.get_local_on_premise_platform_host()}\n")
         entry_commands.insert(0,
                               f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT={fedml.get_local_on_premise_platform_port()}\n")
-        if job_api_key is not None and str(job_api_key).strip() != "":
-            random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
+        if job_args.job_api_key is not None and str(job_args.job_api_key).strip() != "":
+            random_out = sys_utils.random2(job_args.job_api_key, "FEDML@88119999GREAT")
             random_list = random_out.split("FEDML_NEXUS@")
             entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={random_list[1]}\n")
 
@@ -510,7 +562,7 @@ class JobRunnerUtils(Singleton):
             entry_file_handle.close()
 
         # Generate the shell commands to be executed
-        shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
+        shell_cmd_list.append(f"{job_args.executable_interpreter} {entry_file_full_path}")
 
         return shell_cmd_list
 
