@@ -54,7 +54,7 @@ requirements = [
     'redis',
     'scikit-learn',
     'smart-open==6.3.0',
-    'spacy',
+    'spacy>=3.2.0,<3.3.0',
     'sqlalchemy',
     'toposort',
     'torch>=1.13.1',
