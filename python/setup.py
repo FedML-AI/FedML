@@ -47,7 +47,6 @@ requirements = [
     'prettytable',
     'py-machineid',
     'pydantic',
-    'pydantic-settings',
     'pytest',
     'pytest-mock',
     'python-rapidjson>=0.9.1',
