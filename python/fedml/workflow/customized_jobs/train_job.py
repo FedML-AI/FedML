@@ -43,7 +43,7 @@ class TrainJob(CustomizedBaseJob):
 
         dependency_list = list()
         for dep in self.dependencies:
-            dependency_list.append(dep.name)
+            dependency_list.append(dep)
         result = WorkflowMLOpsApi.add_run(
             workflow_id=self.workflow_id, job_name=self.name, run_id=self.run_id,
             dependencies=dependency_list, api_key=self.job_api_key

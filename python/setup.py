@@ -47,14 +47,13 @@ requirements = [
     'prettytable',
     'py-machineid',
     'pydantic',
-    'pydantic-settings',
     'pytest',
     'pytest-mock',
     'python-rapidjson>=0.9.1',
     'redis',
     'scikit-learn',
     'smart-open==6.3.0',
-    'spacy',
+    'spacy>=3.2.0,<3.3.0',
     'sqlalchemy',
     'toposort',
     'torch>=1.13.1',
@@ -118,7 +117,7 @@ requirements_extra_deepspeed = [
 
 setup(
     name="fedml",
-    version="0.8.29a11",
+    version="0.8.30",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

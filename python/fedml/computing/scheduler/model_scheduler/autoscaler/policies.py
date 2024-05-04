@@ -22,7 +22,7 @@ class AutoscalingPolicy(BaseModel):
     min_replicas: NonNegativeInt
     max_replicas: NonNegativeInt
     previous_triggering_value: float = None
-    release_replica_after_idle_secs: NonNegativeInt = 300  # default is after 5 minutes
+    release_replica_after_idle_secs: NonNegativeInt = None
     scaledown_delay_secs: NonNegativeInt = 60  # default is 1 minute
     scaleup_cost_secs: NonNegativeInt = 300  # default is 5 minutes
 

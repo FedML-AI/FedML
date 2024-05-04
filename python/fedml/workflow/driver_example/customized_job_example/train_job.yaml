@@ -23,7 +23,7 @@ job_type: train              # options: train, deploy, federate
 # Support multiple lines, which can be empty.
 bootstrap: |
   pip install PyYAML==5.3.1 -i https://pypi.org/simple
-  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml==0.8.58
+  pip install fedml==0.8.29
   pip install -U typing_extensions -i https://pypi.org/simple
   echo "Bootstrap finished."
 
