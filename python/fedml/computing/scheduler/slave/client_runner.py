@@ -560,7 +560,6 @@ class FedMLClientRunner(FedMLMessageCenter):
                            conf_file_object=load_yaml_config(conf_file_full_path),
                            fedml_config_object=fedml_config_object)
 
-        is_run_ok = False
         if job_args.job_type == Constants.JOB_TASK_TYPE_TRAIN:
             process, is_launch_task, error_list = self.execute_train_job_task(job_args=job_args,
                                                                               unzip_package_path=unzip_package_path,
@@ -573,35 +572,35 @@ class FedMLClientRunner(FedMLMessageCenter):
                                                                         dynamic_args_config=dynamic_args_config,
                                                                         fedml_config_object=self.fedml_config_object)
 
-            logging.info("====Your Run Logs End===")
-            logging.info("                        ")
-            logging.info("                        ")
+        logging.info("====Your Run Logs End===")
+        logging.info("                        ")
+        logging.info("                        ")
 
-            ret_code, out, err = process.returncode if process else None, None, None
-            is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
-            if is_launch_task:
-                is_run_ok = True
-            if error_list is not None and len(error_list) > 0:
-                is_run_ok = False
-            if ret_code is None or ret_code <= 0:
-                self.check_runner_stop_event()
+        ret_code, out, err = process.returncode if process else None, None, None
+        is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
+        if is_launch_task:
+            is_run_ok = True
+        if error_list is not None and len(error_list) > 0:
+            is_run_ok = False
+        if ret_code is None or ret_code <= 0:
+            self.check_runner_stop_event()
 
-                if is_run_ok:
-                    if out is not None:
-                        out_str = sys_utils.decode_our_err_result(out)
-                        if out_str != "":
-                            logging.info("{}".format(out_str))
+            if is_run_ok:
+                if out is not None:
+                    out_str = sys_utils.decode_our_err_result(out)
+                    if out_str != "":
+                        logging.info("{}".format(out_str))
 
-                    self.mlops_metrics.report_client_id_status(
-                        self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                        server_id=self.server_id, run_id=run_id)
+                self.mlops_metrics.report_client_id_status(
+                    self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+                    server_id=self.server_id, run_id=run_id)
 
-                    if is_launch_task:
-                        sys_utils.log_return_info(f"job {run_id}", ret_code)
-                    else:
-                        sys_utils.log_return_info(entry_file, ret_code)
-            else:
-                is_run_ok = False
+                if is_launch_task:
+                    sys_utils.log_return_info(f"job {run_id}", ret_code)
+                else:
+                    sys_utils.log_return_info(entry_file, ret_code)
+        else:
+            is_run_ok = False
 
         if not is_run_ok:
             # If the run status is killed or finished, then return with the normal state.
@@ -666,17 +665,23 @@ class FedMLClientRunner(FedMLMessageCenter):
 
         return process, is_launch_task, error_list
 
-    def execute_job_task(self, job_args: JobArgs, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
+    def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
                          fedml_config_object):
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        job_yaml_default_none = run_params.get("job_yaml", None)
+        job_type = job_yaml.get("job_type", None)
+        # TODO: Can we remove task_type?
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
 
         # Bootstrap Info
         env_args = fedml_config_object.get("environment_args", None)
         bootstrap_cmd_list, bootstrap_script_file = JobRunnerUtils.generate_bootstrap_commands(env_args,
                                                                                                unzip_package_path)
 
-        # if not containerize:
-        if len(bootstrap_cmd_list) and not (job_args.job_type == Constants.JOB_TASK_TYPE_DEPLOY or
-                                            job_args.job_type == Constants.JOB_TASK_TYPE_SERVE):
+        if len(bootstrap_cmd_list) and not (job_type == Constants.JOB_TASK_TYPE_DEPLOY or
+                                            job_type == Constants.JOB_TASK_TYPE_SERVE):
             bootstrapping_successful = self.run_bootstrap_script(bootstrap_cmd_list=bootstrap_cmd_list,
                                                                  bootstrap_script_file=bootstrap_script_file)
 
@@ -692,7 +697,7 @@ class FedMLClientRunner(FedMLMessageCenter):
             ClientConstants.cleanup_bootstrap_process(self.request_json["runId"])
 
         # Generate the job executing commands for previous federated learning (Compatibility)
-        if job_args.job_yaml_default_none is None:
+        if job_yaml_default_none is None:
             python_program = get_python_program()
             logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
                 python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
@@ -705,7 +710,6 @@ class FedMLClientRunner(FedMLMessageCenter):
             process, error_list = ClientConstants.execute_commands_with_live_logs(
                 shell_cmd_list, callback=self.callback_start_fl_job, should_write_log_file=False)
             is_launch_task = False
-
             return process, is_launch_task, error_list
 
     def callback_start_fl_job(self, job_pid):

@@ -28,7 +28,7 @@ import fedml
 from ..comm_utils.job_cleanup import JobCleanup
 from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
-from ..comm_utils.job_utils import JobRunnerUtils, JobArgs
+from ..comm_utils.job_utils import JobRunnerUtils
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -902,11 +902,24 @@ class FedMLServerRunner(FedMLMessageCenter):
         return True
 
     def execute_job_task(self, entry_file_full_path, conf_file_full_path, run_id):
-        job_args = JobArgs(request_json=self.request_json,
-                           conf_file_object=load_yaml_config(conf_file_full_path),
-                           client_rank=0)
+        run_config = self.request_json["run_config"]
+        run_params = run_config.get("parameters", {})
+        job_yaml = run_params.get("job_yaml", {})
+        job_yaml_default_none = run_params.get("job_yaml", None)
+        job_api_key = job_yaml.get("run_api_key", None)
+        job_api_key = job_yaml.get("fedml_run_dynamic_params", None) if job_api_key is None else job_api_key
+        assigned_gpu_ids = run_params.get("gpu_ids", None)
+        framework_type = job_yaml.get("framework_type", None)
+        job_type = job_yaml.get("job_type", None)
+        job_type = job_yaml.get("task_type", Constants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        conf_file_object = load_yaml_config(conf_file_full_path)
+        entry_args_dict = conf_file_object.get("fedml_entry_args", {})
+        entry_args = entry_args_dict.get("arg_items", None)
 
-        if job_args.job_yaml_default_none is None:
+        executable_interpreter = ClientConstants.CLIENT_SHELL_PS \
+            if platform.system() == ClientConstants.PLATFORM_WINDOWS else ClientConstants.CLIENT_SHELL_BASH
+
+        if job_yaml_default_none is None:
             # Generate the job executing commands for previous federated learning (Compatibility)
             python_program = get_python_program()
             logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
@@ -929,7 +942,9 @@ class FedMLServerRunner(FedMLMessageCenter):
             # Generate the job executing commands
             job_executing_commands = JobRunnerUtils.generate_job_execute_commands(
                 run_id=self.run_id, edge_id=self.edge_id, version=self.version, package_type=self.package_type,
-                entry_file_full_path=entry_file_full_path, job_args=job_args)
+                executable_interpreter=executable_interpreter, entry_file_full_path=entry_file_full_path,
+                conf_file_object=conf_file_object, entry_args=entry_args, assigned_gpu_ids=assigned_gpu_ids,
+                job_api_key=job_api_key, client_rank=0)
 
             # Run the job executing commands
             logging.info(f"Run the server job with job id {self.run_id}, device id {self.edge_id}.")

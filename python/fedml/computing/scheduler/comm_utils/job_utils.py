@@ -427,7 +427,7 @@ class JobRunnerUtils(Singleton):
 
     @staticmethod
     def generate_bootstrap_commands(env_args, unzip_package_path) -> (List[str], str):
-        bootstrap_cmd_list = list()
+        bootstrap_cmd_list, bootstrap_script_path = list()
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
 
         if env_args is not None:
@@ -466,9 +466,11 @@ class JobRunnerUtils(Singleton):
         return bootstrap_cmd_list, bootstrap_script_file
 
     @staticmethod
-    def generate_job_execute_commands(run_id, edge_id, version, package_type, entry_file_full_path,
-                                      job_args: JobArgs, cuda_visible_gpu_ids_str: str = None):
-
+    def generate_job_execute_commands(run_id, edge_id, version,
+                                      package_type, executable_interpreter, entry_file_full_path,
+                                      conf_file_object, entry_args, assigned_gpu_ids,
+                                      job_api_key, client_rank, scheduler_match_info=None,
+                                      cuda_visible_gpu_ids_str=None):
         shell_cmd_list = list()
         entry_commands_origin = list()
 
@@ -482,12 +484,12 @@ class JobRunnerUtils(Singleton):
         # Generate the export env list for publishing environment variables
         export_cmd = "set" if platform.system() == "Windows" else "export"
         export_config_env_list, config_env_name_value_map = JobRunnerUtils.parse_config_args_as_env_variables(
-            export_cmd, job_args.conf_file_object)
+            export_cmd, conf_file_object)
 
         # Generate the export env list about scheduler matching info for publishing environment variables
         export_match_env_list, match_env_name_value_map = \
             JobRunnerUtils.assign_matched_resources_to_run_and_generate_envs(
-                run_id, export_cmd, job_args.scheduler_match_info
+                run_id, export_cmd, scheduler_match_info
             )
 
         # Replace entry commands with environment variable values
@@ -499,7 +501,7 @@ class JobRunnerUtils(Singleton):
         )
 
         # Replace entry arguments with environment variable values
-        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(job_args.entry_args, config_env_name_value_map)
+        entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, config_env_name_value_map)
         entry_args = JobRunnerUtils.replace_entry_args_with_env_variable(entry_args, match_env_name_value_map)
 
         # Add the export env list to the entry commands
@@ -514,13 +516,13 @@ class JobRunnerUtils(Singleton):
         entry_commands.insert(0, f"{export_cmd} FEDML_CURRENT_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_ENV_VERSION={version}\n")
         entry_commands.insert(0, f"{export_cmd} FEDML_USING_MLOPS=true\n")
-        entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={job_args.client_rank}\n")
+        entry_commands.insert(0, f"{export_cmd} FEDML_CLIENT_RANK={client_rank}\n")
         entry_commands.insert(0,
                               f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST={fedml.get_local_on_premise_platform_host()}\n")
         entry_commands.insert(0,
                               f"{export_cmd} FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT={fedml.get_local_on_premise_platform_port()}\n")
-        if job_args.job_api_key is not None and str(job_args.job_api_key).strip() != "":
-            random_out = sys_utils.random2(job_args.job_api_key, "FEDML@88119999GREAT")
+        if job_api_key is not None and str(job_api_key).strip() != "":
+            random_out = sys_utils.random2(job_api_key, "FEDML@88119999GREAT")
             random_list = random_out.split("FEDML_NEXUS@")
             entry_commands.insert(0, f"{export_cmd} FEDML_RUN_API_KEY={random_list[1]}\n")
 
@@ -562,7 +564,7 @@ class JobRunnerUtils(Singleton):
             entry_file_handle.close()
 
         # Generate the shell commands to be executed
-        shell_cmd_list.append(f"{job_args.executable_interpreter} {entry_file_full_path}")
+        shell_cmd_list.append(f"{executable_interpreter} {entry_file_full_path}")
 
         return shell_cmd_list
 
