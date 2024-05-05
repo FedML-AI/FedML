@@ -460,6 +460,11 @@ class S3Storage:
         if metadata is None:
             metadata = {}
         file_uploaded_url = ""
+        '''
+        Uncomment for debugging purpose - remove in the final commit.
+        '''
+        # print("Bucket Name: ", self.bucket_name)
+        # print("Dest S3 Path: ", dest_s3_path)
         progress_desc_text = "Uploading Package to Remote Storage"
         if progress_desc is not None:
             progress_desc_text = progress_desc
