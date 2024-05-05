@@ -53,7 +53,6 @@ requirements = [
     'redis',
     'scikit-learn',
     'smart-open==6.3.0',
-    'spacy>=3.2.0,<3.3.0',
     'sqlalchemy',
     'toposort',
     'torch>=1.13.1',
@@ -110,6 +109,10 @@ requirements_extra_llm = [
 
 requirements_extra_deepspeed = [
     "deepspeed>=0.10.2",
+]
+
+requirements_extra_nlp = [
+    'spacy>=3.2.0,<3.3.0',
 ]
 
 # if platform.machine() == "x86_64":
@@ -177,6 +180,7 @@ setup(
         "llm": requirements_extra_llm,
         "mxnet": requirements_extra_mxnet,
         "tensorflow": requirements_extra_tf,
+        "nlp": requirements_extra_nlp,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
