@@ -558,7 +558,7 @@ class FedMLClientRunner(FedMLMessageCenter):
 
         job_args = JobArgs(request_json=self.request_json,
                            conf_file_object=load_yaml_config(conf_file_full_path),
-                           fedml_config_object=fedml_config_object)
+                           fedml_config_object=self.fedml_config_object)
 
         if job_args.job_type == Constants.JOB_TASK_TYPE_TRAIN:
             process, is_launch_task, error_list = self.execute_train_job_task(job_args=job_args,
