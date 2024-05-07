@@ -17,11 +17,13 @@ import uuid
 import zipfile
 from urllib.parse import urljoin, urlparse
 
+import docker.types
 import requests
 from fedml.computing.scheduler.comm_utils import job_utils
 
 import fedml
 from ..comm_utils.constants import SchedulerConstants
+from ..comm_utils.container_utils import ContainerUtils
 from ..comm_utils.job_cleanup import JobCleanup
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs, JobArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
@@ -664,6 +666,67 @@ class FedMLClientRunner(FedMLMessageCenter):
         is_launch_task = False if job_args.job_type == Constants.JOB_TASK_TYPE_FEDERATE else True
 
         return process, is_launch_task, error_list
+
+    def create_docker_container(self, job_args: JobArgs, docker_args: DockerArgs,
+                                unzip_package_path: str, entry_file_full_path: str,
+                                bootstrap_cmd_list, image_pull_policy: str = None):
+
+        docker_client = JobRunnerUtils.get_docker_client(docker_args=job_args.docker_args)
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, job_args.docker_args.image,
+                                                             client=docker_client)
+
+        container_name = JobRunnerUtils.get_run_container_name(self.run_id)
+        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+        device_requests = []
+        volumes = []
+        binds = {}
+        environment = {"MAIN_ENTRY": entry_file_full_path}
+        destination_launch_dir = "/home/fedml/launch"
+
+        # Generate the bootstrap commands
+        auto_gen_bootstrap_file_name = "fedml-launch-bootstrap-auto-gen.sh"
+        if bootstrap_cmd_list:
+            bootstrap_script_file = os.path.join(unzip_package_path, auto_gen_bootstrap_file_name)
+            with open(bootstrap_script_file, "w") as f:
+                f.write("#!/bin/bash\n")
+                f.write("set -e\n")
+                f.write(f"cd {destination_launch_dir}\n")
+                f.write("\n".join(bootstrap_cmd_list))
+            destination_bootstrap_dir = os.path.join(destination_launch_dir, auto_gen_bootstrap_file_name)
+            environment["BOOTSTRAP_DIR"] = destination_bootstrap_dir
+
+        # Source Code Mounting
+        source_code_dir = os.path.join(unzip_package_path, "fedml")
+        volumes.append(source_code_dir)
+        binds[source_code_dir] = {
+            "bind": destination_launch_dir,
+            "mode": "rw"
+        }
+
+        if self.cuda_visible_gpu_ids_str is not None:
+            gpu_id_list = self.cuda_visible_gpu_ids_str.split(",")
+            device_requests.append(
+                docker.types.DeviceRequest(device_ids=gpu_id_list, capabilities=[["gpu"]]))
+        logging.info(f"device_requests: {device_requests}")
+
+        try:
+            container = docker_client.api.create_container(
+                image=docker_args.image,
+                name=container_name,
+                remove=True,
+                tty=True,
+                host_config=docker_client.api.create_host_config(
+                    binds=binds,
+                    devices=device_requests,
+                ),
+                ports=job_args.docker_args.ports,
+                volumes=volumes,
+                detach=True  # Run container in detached mode
+            )
+        except Exception as e:
+            logging.error(f"Failed to create docker container with Exception {e}. Traceback: {traceback.format_exc()}")
+            raise Exception(f"Failed to create docker container with Exception {e}")
+        return container
 
     def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
                          fedml_config_object):
