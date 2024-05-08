@@ -639,10 +639,9 @@ class FedMLClientRunner(FedMLMessageCenter):
         bootstrap_cmd_list, bootstrap_script_file = JobRunnerUtils.generate_bootstrap_commands(job_args.env_args,
                                                                                                unzip_package_path)
 
-        container = self.create_docker_container(job_args=job_args, docker_args=job_args.docker_args,
+        container = self.create_docker_container(docker_args=job_args.docker_args,
                                                  unzip_package_path=unzip_package_path,
-                                                 entry_file_full_path=entry_file_full_path,
-                                                 bootstrap_script_file=bootstrap_script_file)
+                                                 image_pull_policy=job_args.image_pull_policy)
         try:
             job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=job_args.docker_args,
                                                                                    run_id=self.run_id,
@@ -671,34 +670,29 @@ class FedMLClientRunner(FedMLMessageCenter):
 
         return process, is_launch_task, error_list
 
-    def create_docker_container(self, job_args: JobArgs, docker_args: DockerArgs,
-                                unzip_package_path: str, entry_file_full_path: str,
-                                bootstrap_script_file: str = None):
+    def create_docker_container(self, docker_args: DockerArgs,
+                                unzip_package_path: str,
+                                image_pull_policy: str = None):
 
-        docker_client = JobRunnerUtils.get_docker_client(docker_args=job_args.docker_args)
-        logging.info(f"Start pulling the launch job image {job_args.docker_args.image}... "
-                     f"with policy {job_args.image_pull_policy}")
+        docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
+        logging.info(f"Start pulling the launch job image {docker_args.image}... "
+                     f"with policy {image_pull_policy}")
         try:
-            ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy=job_args.image_pull_policy,
-                                                                 image_name=job_args.docker_args.image,
-                                                                 client=docker_client)
+            ContainerUtils.get_instance().pull_image_with_policy(image_name=docker_args.image,
+                                                                 client=docker_client,
+                                                                 image_pull_policy=image_pull_policy)
         except Exception as e:
-            raise Exception(f"Failed to pull the launch job image {job_args.docker_args.image} with Exception {e}")
+            raise Exception(f"Failed to pull the launch job image {docker_args.image} with Exception {e}")
 
         container_name = JobRunnerUtils.get_run_container_name(self.run_id)
         JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
         device_requests = []
         volumes = []
         binds = {}
-        environment = {"MAIN_ENTRY": entry_file_full_path}
-        destination_launch_dir = "/home/fedml/launch"
-
-        # Generate the bootstrap commands
-        if bootstrap_script_file is not None:
-            environment["BOOTSTRAP_SCRIPT"] = bootstrap_script_file
 
         # Source Code Mounting
         source_code_dir = os.path.join(unzip_package_path, "fedml")
+        destination_launch_dir = "/home/fedml/launch"
         volumes.append(source_code_dir)
         binds[source_code_dir] = {
             "bind": destination_launch_dir,
@@ -712,16 +706,16 @@ class FedMLClientRunner(FedMLMessageCenter):
         logging.info(f"device_requests: {device_requests}")
 
         try:
+            host_config = docker_client.api.create_host_config(
+                binds=binds,
+                device_requests=device_requests,
+            )
             container = docker_client.api.create_container(
                 image=docker_args.image,
                 name=container_name,
-                remove=True,
                 tty=True,
-                host_config=docker_client.api.create_host_config(
-                    binds=binds,
-                    devices=device_requests,
-                ),
-                ports=job_args.docker_args.ports,
+                host_config=host_config,
+                ports=docker_args.ports,
                 volumes=volumes,
                 detach=True  # Run container in detached mode
             )
