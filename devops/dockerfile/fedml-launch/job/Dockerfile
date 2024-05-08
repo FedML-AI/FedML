@@ -2,12 +2,12 @@
 ARG BASE_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 FROM ${BASE_IMAGE}
 
-ARG HOME_DIR = /home/fedml
+ARG HOME_DIR=/home/fedml
 ## Only Modify if you want to use a different version of FedML
 RUN mkdir -p ${HOME_DIR}/fedml-pip
-ADD ./python ${HOME_DIR}/fedml-pip
-WORKDIR .${HOME_DIR}/fedml-pip
-RUN pip3 install -e ./
+COPY ./python ${HOME_DIR}/fedml-pip
+WORKDIR ${HOME_DIR}/fedml-pip
+RUN pip3 install ./
 
 # 1. Specify Bootrap path (If any)
 ENV BOOTSTRAP_DIR=""
