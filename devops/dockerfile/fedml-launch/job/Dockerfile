@@ -19,7 +19,7 @@ VOLUME ["/home/fedml/launch"]
 # 4. Enter the bootstrap and job entrypoints
 WORKDIR ${HOME_DIR}/launch
 ENV BOOTSTRAP_SCRIPT="fedml_bootstrap_generated.sh"
-ENV MAIN_ENTRY="fedml_job_entry_pack.sh'"
+ENV MAIN_ENTRY="fedml_job_entry_pack.sh"
 
 # Run Bootstrap Script and Main Entry File
 CMD /bin/bash ${BOOTSTRAP_SCRIPT}; /bin/bash ${MAIN_ENTRY}
