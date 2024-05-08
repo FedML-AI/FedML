@@ -667,7 +667,30 @@ class FedMLServerRunner:
                     self.send_rollback_add_remove_op(run_id_str, rollback_dict)
                     return
                 else:
-                    pass    # This is the last worker that failed, so we should continue to "ABORTED" status
+                    # This is the last worker that failed, so we should continue to "ABORTED" status
+                    model_config_parameters = self.running_request_json[run_id_str]["parameters"]
+                    inference_port = model_config_parameters.get("server_internal_port",
+                                                                 ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                    inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+                    ip = self.get_ip_address(self.running_request_json[run_id_str])
+                    if ip.startswith("http://") or ip.startswith("https://"):
+                        model_inference_url = "{}/inference/{}".format(ip, end_point_id)
+                    else:
+                        model_inference_url = "http://{}:{}/inference/{}".format(ip, inference_port_external,
+                                                                                 end_point_id)
+
+                    self.send_deployment_status(end_point_id, end_point_name,
+                                                payload_json["model_name"],
+                                                model_inference_url,
+                                                ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_ABORTED)
+
+                    # For auto-scaling, should update the state to "DEPLOYED"
+                    FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                        update_user_setting_replica_num(end_point_id=end_point_id, state="DEPLOYED")
+
+                    self.model_runner_mapping[run_id_str].replica_controller.under_rollback = False
+
+                    return
             elif run_operation == "UPDATE":
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = \

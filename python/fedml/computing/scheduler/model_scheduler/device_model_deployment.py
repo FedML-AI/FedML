@@ -507,6 +507,22 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically remove it".format(cmd_container_name))
+
+                    # Save the failed log into ~/.fedml/fedml-model-client/fedml/logs/failed_logs/
+                    # $run_id/$container_name.log
+                    try:
+                        parent_dir = os.path.join(ClientConstants.get_deploy_failed_log_dir())
+                        os.makedirs(parent_dir, exist_ok=True)
+                        error_logs_dir = os.path.join(ClientConstants.get_deploy_failed_log_dir(), str(end_point_id))
+                        os.makedirs(error_logs_dir, exist_ok=True)
+                        error_log_file = os.path.join(error_logs_dir, f"{cmd_container_name}.log")
+                        with open(error_log_file, "w") as f:
+                            f.write(f"Container {cmd_container_name} has exited\n")
+                            f.write(f"Error logs: {err_logs}\n")
+                            f.write(f"Output logs: {out_logs}\n")
+                    except Exception as e:
+                        logging.error(f"Failed to save the error logs with exception {e}")
+
                     client.api.remove_container(container_obj.id, v=True, force=True)
                     break
 
