@@ -642,7 +642,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         container = self.create_docker_container(job_args=job_args, docker_args=job_args.docker_args,
                                                  unzip_package_path=unzip_package_path,
                                                  entry_file_full_path=entry_file_full_path,
-                                                 bootstrap_cmd_list=bootstrap_cmd_list)
+                                                 bootstrap_script_file=bootstrap_script_file)
         try:
             job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=job_args.docker_args,
                                                                                    run_id=self.run_id,
@@ -673,12 +673,17 @@ class FedMLClientRunner(FedMLMessageCenter):
 
     def create_docker_container(self, job_args: JobArgs, docker_args: DockerArgs,
                                 unzip_package_path: str, entry_file_full_path: str,
-                                bootstrap_cmd_list):
+                                bootstrap_script_file: str = None):
 
         docker_client = JobRunnerUtils.get_docker_client(docker_args=job_args.docker_args)
-        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy=job_args.image_pull_policy,
-                                                             image_name=job_args.docker_args.image,
-                                                             client=docker_client)
+        logging.info(f"Start pulling the launch job image {job_args.docker_args.image}... "
+                     f"with policy {job_args.image_pull_policy}")
+        try:
+            ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy=job_args.image_pull_policy,
+                                                                 image_name=job_args.docker_args.image,
+                                                                 client=docker_client)
+        except Exception as e:
+            raise Exception(f"Failed to pull the launch job image {job_args.docker_args.image} with Exception {e}")
 
         container_name = JobRunnerUtils.get_run_container_name(self.run_id)
         JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
@@ -689,16 +694,8 @@ class FedMLClientRunner(FedMLMessageCenter):
         destination_launch_dir = "/home/fedml/launch"
 
         # Generate the bootstrap commands
-        auto_gen_bootstrap_file_name = "fedml-launch-bootstrap-auto-gen.sh"
-        if bootstrap_cmd_list:
-            bootstrap_script_file = os.path.join(unzip_package_path, auto_gen_bootstrap_file_name)
-            with open(bootstrap_script_file, "w") as f:
-                f.write("#!/bin/bash\n")
-                f.write("set -e\n")
-                f.write(f"cd {destination_launch_dir}\n")
-                f.write("\n".join(bootstrap_cmd_list))
-            destination_bootstrap_dir = os.path.join(destination_launch_dir, auto_gen_bootstrap_file_name)
-            environment["BOOTSTRAP_DIR"] = destination_bootstrap_dir
+        if bootstrap_script_file is not None:
+            environment["BOOTSTRAP_SCRIPT"] = bootstrap_script_file
 
         # Source Code Mounting
         source_code_dir = os.path.join(unzip_package_path, "fedml")

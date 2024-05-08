@@ -9,8 +9,8 @@ COPY ./python ${HOME_DIR}/fedml-pip
 WORKDIR ${HOME_DIR}/fedml-pip
 RUN pip3 install ./
 
-# 1. Specify Bootrap path (If any)
-ENV BOOTSTRAP_DIR=""
+# 1. Specify Bootrap file path (If any)
+ENV BOOTSTRAP_SCRIPT=""
     
 # 2. MOUNT User's Local Folder (If any)
 ENV DATA_FOLDER=""
@@ -23,5 +23,5 @@ VOLUME ["/home/fedml/launch"]
 WORKDIR ${HOME_DIR}/launch
 ENV MAIN_ENTRY=""
 
-# if bootstrap dir is not empty, then run the bootstrap script
-CMD /bin/bash ${BOOTSTRAP_DIR}; python3 ${MAIN_ENTRY}
+# Run Bootstrap Script and Main Entry File
+CMD /bin/bash ${BOOTSTRAP_SCRIPT}; python3 ${MAIN_ENTRY}
