@@ -639,6 +639,10 @@ class FedMLClientRunner(FedMLMessageCenter):
         bootstrap_cmd_list, bootstrap_script_file = JobRunnerUtils.generate_bootstrap_commands(job_args.env_args,
                                                                                                unzip_package_path)
 
+        container = self.create_docker_container(job_args=job_args, docker_args=job_args.docker_args,
+                                                 unzip_package_path=unzip_package_path,
+                                                 entry_file_full_path=entry_file_full_path,
+                                                 bootstrap_cmd_list=bootstrap_cmd_list)
         try:
             job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=job_args.docker_args,
                                                                                    run_id=self.run_id,
@@ -669,10 +673,11 @@ class FedMLClientRunner(FedMLMessageCenter):
 
     def create_docker_container(self, job_args: JobArgs, docker_args: DockerArgs,
                                 unzip_package_path: str, entry_file_full_path: str,
-                                bootstrap_cmd_list, image_pull_policy: str = None):
+                                bootstrap_cmd_list):
 
         docker_client = JobRunnerUtils.get_docker_client(docker_args=job_args.docker_args)
-        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, job_args.docker_args.image,
+        ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy=job_args.image_pull_policy,
+                                                             image_name=job_args.docker_args.image,
                                                              client=docker_client)
 
         container_name = JobRunnerUtils.get_run_container_name(self.run_id)
