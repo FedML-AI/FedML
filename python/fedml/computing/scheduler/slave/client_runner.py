@@ -540,7 +540,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         #####
 
         if not os.path.exists(unzip_package_path):
-            logging.info("failed to unzip file.")
+            logging.error("Failed to unzip file.")
             self.check_runner_stop_event()
             # Send failed msg when exceptions.
             self.cleanup_run_when_starting_failed(status=ClientConstants.MSG_MLOPS_CLIENT_STATUS_EXCEPTION)

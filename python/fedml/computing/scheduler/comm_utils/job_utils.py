@@ -427,7 +427,7 @@ class JobRunnerUtils(Singleton):
 
     @staticmethod
     def generate_bootstrap_commands(env_args, unzip_package_path) -> (List[str], str):
-        bootstrap_cmd_list, bootstrap_script_path = list()
+        bootstrap_cmd_list = list()
         bootstrap_script_path, bootstrap_script_dir, bootstrap_script_file = [None] * 3
 
         if env_args is not None:
