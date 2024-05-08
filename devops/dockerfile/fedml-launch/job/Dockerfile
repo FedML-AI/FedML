@@ -4,11 +4,13 @@ FROM ${BASE_IMAGE}
 
 ARG HOME_DIR=/home/fedml
 ## Only Modify if you want to use a different version of FedML
-RUN mkdir -p ${HOME_DIR}/fedml-pip
-COPY ./python ${HOME_DIR}/fedml-pip
-WORKDIR ${HOME_DIR}/fedml-pip
-RUN pip3 install ./
-    
+RUN pip3 install -U fedml
+## Only Uncomment if you want to use a local version of FedML
+# RUN mkdir -p ${HOME_DIR}/fedml-pip
+# COPY ./python ${HOME_DIR}/fedml-pip
+# WORKDIR ${HOME_DIR}/fedml-pip
+# RUN pip3 install ./
+
 # 2. MOUNT User's Local Folder (If any)
 ENV DATA_FOLDER=""
 VOLUME [ DATA_FOLDER ]
