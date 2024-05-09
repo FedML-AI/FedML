@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import sys
+from datetime import datetime
 
 from multiprocessing import Process
 import os
@@ -642,6 +643,7 @@ class FedMLClientRunner(FedMLMessageCenter):
         container = self.create_docker_container(docker_args=job_args.docker_args,
                                                  unzip_package_path=unzip_package_path,
                                                  image_pull_policy=job_args.image_pull_policy)
+
         try:
             job_executing_commands = JobRunnerUtils.generate_launch_docker_command(docker_args=job_args.docker_args,
                                                                                    run_id=self.run_id,
@@ -674,18 +676,17 @@ class FedMLClientRunner(FedMLMessageCenter):
                                 unzip_package_path: str,
                                 image_pull_policy: str = None):
 
-        docker_client = JobRunnerUtils.get_docker_client(docker_args=docker_args)
         logging.info(f"Start pulling the launch job image {docker_args.image}... "
                      f"with policy {image_pull_policy}")
         try:
             ContainerUtils.get_instance().pull_image_with_policy(image_name=docker_args.image,
-                                                                 client=docker_client,
+                                                                 client=docker_args.client,
                                                                  image_pull_policy=image_pull_policy)
         except Exception as e:
             raise Exception(f"Failed to pull the launch job image {docker_args.image} with Exception {e}")
 
         container_name = JobRunnerUtils.get_run_container_name(self.run_id)
-        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
+        JobRunnerUtils.remove_run_container_if_exists(container_name, docker_args.client)
         device_requests = []
         volumes = []
         binds = {}
@@ -706,11 +707,11 @@ class FedMLClientRunner(FedMLMessageCenter):
         logging.info(f"device_requests: {device_requests}")
 
         try:
-            host_config = docker_client.api.create_host_config(
+            host_config = docker_args.client.api.create_host_config(
                 binds=binds,
                 device_requests=device_requests,
             )
-            container = docker_client.api.create_container(
+            container = docker_args.client.api.create_container(
                 image=docker_args.image,
                 name=container_name,
                 tty=True,
@@ -719,6 +720,7 @@ class FedMLClientRunner(FedMLMessageCenter):
                 volumes=volumes,
                 detach=True  # Run container in detached mode
             )
+            docker_args.client.api.start(container=container.get("Id"))
         except Exception as e:
             logging.error(f"Failed to create docker container with Exception {e}. Traceback: {traceback.format_exc()}")
             raise Exception(f"Failed to create docker container with Exception {e}")

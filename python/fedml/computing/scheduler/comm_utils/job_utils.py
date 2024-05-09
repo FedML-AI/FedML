@@ -66,6 +66,9 @@ class DockerArgs:
     registry: str = ""
     ports: List[int] = field(default_factory=lambda: [2345])
 
+    def __post_init__(self):
+        self.client = JobRunnerUtils.get_docker_client(self)
+
 
 class JobRunnerUtils(Singleton):
     STATIC_RUN_LOCK_KEY_SUFFIX = "STATIC"
