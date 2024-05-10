@@ -4,7 +4,7 @@
 Backed by TensorOpera AI: Your Generative AI Platform at Scale (https://TensorOpera.ai)
 
 <div align="center">
- <img src="docs/images/fedml_logo_light_mode.png" width="400px">
+ <img src="docs/images/TensorOpera_arch.png" width="400px">
 </div>
 
 TensorOpera Documentation: https://docs.TensorOpera.ai
