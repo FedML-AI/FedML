@@ -10,7 +10,7 @@ Backed by TensorOpera AI: Your Generative AI Platform at Scale (https://TensorOp
 TensorOpera Documentation: https://docs.TensorOpera.ai
 
 TensorOpera Homepage: https://TensorOpera.ai/ \
-TensorOpera Blog: https://blog.TensorOpera.ai/ \
+TensorOpera Blog: https://blog.TensorOpera.ai/
 
 Join the Community:
 Slack: https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w \
