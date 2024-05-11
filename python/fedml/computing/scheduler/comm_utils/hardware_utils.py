@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, List
 
-from fedml.computing.scheduler.comm_utils.GPUCardUtil import GPUCardUtil, GPUCard
+from fedml.computing.scheduler.comm_utils.gpu_utils import GPUCardUtil, GPUCard
 from fedml.computing.scheduler.comm_utils.singleton import Singleton
 
 

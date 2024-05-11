@@ -3,7 +3,7 @@ from typing import List
 
 from GPUtil import GPUtil, GPU
 
-from fedml.computing.scheduler.comm_utils.GPUCardUtil import GPUCard, GPUCardUtil, GPUCardType
+from fedml.computing.scheduler.comm_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
 def _convert(gpu: GPU) -> GPUCard:
