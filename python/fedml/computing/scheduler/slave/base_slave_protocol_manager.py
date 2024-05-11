@@ -240,7 +240,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # Print the payload
         logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+            f"FedMLDebug - run id {run_id}, Receive at callback_start_train: topic ({topic}), payload ({payload})"
         )
 
         # Occupy GPUs
@@ -418,6 +418,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         edge_id = payload_json.get("edge_id", None)
 
         # process the status
+        logging.info("process status in the device status callback.")
         self.process_status(run_id, job_status, edge_id)
 
     def callback_response_job_status(self, topic, payload):
@@ -430,6 +431,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         edge_id = payload_json.get("edge_id", None)
 
         # process the status
+        logging.info("process status in the job status callback.")
         self.process_status(run_id, job_status, edge_id)
 
     def callback_broadcasted_job_status(self, topic, payload):
@@ -439,6 +441,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         job_status = payload_json.get("status", None)
 
         # process the status
+        logging.info("process status in the broadcast job status callback.")
         self.process_status(run_id, job_status, self.edge_id)
 
     def generate_protocol_manager(self):

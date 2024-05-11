@@ -3,16 +3,10 @@ import base64
 import json
 import logging
 import fedml
-from ..scheduler_core.scheduler_matcher import SchedulerMatcher
 from ..comm_utils.constants import SchedulerConstants
-from ..comm_utils.job_utils import JobRunnerUtils
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_configs import MLOpsConfigs
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
-from ..comm_utils import sys_utils
-from ....core.mlops.mlops_utils import MLOpsUtils
-from ..model_scheduler import device_client_constants
-from fedml.utils.debugging import debug
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 from ..scheduler_core.ota_upgrade import FedMLOtaUpgrade
 from .deploy_job_launcher import FedMLDeployJobLauncher
@@ -91,9 +85,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # The topic for last-will messages.
         self.topic_last_will = "flserver_agent/last_will_msg"
 
-        # The topic for sending training request to edges (Request from the job runner when all edges are ready)
-        self.topic_send_training_request_to_edges = GeneralConstants.MSG_TOPIC_SEND_TRAINING_REQUEST_TO_EDGES
-
         # Subscribe topics for starting train, stopping train and fetching client status.
         self.subscribed_topics.clear()
         self.add_subscribe_topic(self.topic_start_train)
@@ -115,13 +106,10 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_message_listener(self.topic_ota_msg, FedMLBaseMasterProtocolManager.callback_server_ota_msg)
         self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
         self.add_message_listener(self.topic_response_device_info, self.callback_response_device_info)
-        self.add_message_listener(self.topic_response_device_info, self.callback_response_device_info)
         self.add_message_listener(self.topic_request_device_info_from_mlops,
                                   self.callback_request_device_info_from_mlops)
         self.add_message_listener(self.topic_requesst_job_status, self.callback_request_job_status)
         self.add_message_listener(self.topic_requesst_device_status_in_job, self.callback_request_device_status_in_job)
-        self.add_message_listener(self.topic_send_training_request_to_edges,
-                                  self.callback_send_training_request_to_edges)
 
     @abstractmethod
     def _get_job_runner_manager(self):
@@ -197,7 +185,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # Print the payload
         logging.info("callback_start_train payload: {}".format(payload))
         logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+            f"FedMLDebug - run id {run_id}, Receive at callback_start_train: topic ({topic}), payload ({payload})"
         )
 
         # Save the parameters
@@ -212,7 +200,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         if not self.run_as_cloud_server:
             self.mlops_metrics.report_server_id_status(
                 run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
-                server_id=self.edge_id, server_agent_id=self.edge_id)
+                server_id=self.edge_id, server_agent_id=self.edge_id, running_json=payload)
 
         # Start server with multiprocessing mode
         if self.run_as_edge_server_and_agent or self.enable_simulation_cloud_agent:
@@ -230,6 +218,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             process = self._get_job_runner_manager().get_runner_process(run_id)
             if process is not None:
                 GeneralConstants.save_run_process(run_id, process.pid, is_master=True)
+
+            self.send_status_msg_to_edges(edge_id_list, run_id, self.edge_id)
         elif self.run_as_cloud_agent:
             self.init_job_task(request_json)
 
@@ -260,6 +250,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 listener_message_queue=self.get_listener_message_queue(),
                 status_center_queue=self.get_status_queue()
             )
+
+            self.send_status_msg_to_edges(edge_id_list, run_id, self.edge_id)
 
     def callback_stop_train(self, topic, payload, use_payload=None):
         # Print the payload
@@ -346,7 +338,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # Put device info into a multiprocessing queue so master runner checks if all edges are ready
         if context is None:
-            self._get_job_runner_manager().put_run_edge_device_info_to_queue(run_id, device_info)
+            self._get_job_runner_manager().put_run_edge_device_info_to_queue(run_id, edge_id, device_info)
 
             # if self.run_edge_device_info_global_queue is None:
             #     self.run_edge_device_info_global_queue = Array('i', list())
@@ -367,10 +359,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
     def callback_request_device_status_in_job(self, topic, payload):
         self.response_device_status_in_job(topic, payload)
-
-    def callback_send_training_request_to_edges(self, topic, payload):
-        payload_json = json.loads(payload)
-        self.send_training_request_to_edges(active_edge_info_dict=payload_json)
 
     def generate_protocol_manager(self):
         message_status_runner = self._generate_protocol_manager_instance(
@@ -457,124 +445,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.setup_listener_for_run_metrics(run_id)
         self.setup_listener_for_run_logs(run_id)
 
-    @debug
-    def send_training_request_to_edges(self, active_edge_info_dict=None):
-        run_id = self.request_json["runId"]
-        edge_id_list = self.request_json["edgeids"]
-        run_config = self.request_json.get("run_config", {})
-        run_params = run_config.get("parameters", {})
-        job_yaml = run_params.get("job_yaml", {})
-        job_yaml_default_none = run_params.get("job_yaml", None)
-        computing = job_yaml.get("computing", {})
-        request_num_gpus = computing.get("minimum_num_gpus", None)
-        job_gpu_id_list = self.request_json.get("job_gpu_id_list", None)
-        assigned_gpu_num_dict = dict()
-        assigned_gpu_ids_dict = dict()
-        master_node_addr = ""
-        master_node_port = 0
-
-        logging.info("Send training request to Edge ids: " + str(edge_id_list))
-
-        should_match_gpu = False
-        if job_yaml_default_none is not None and request_num_gpus is not None and \
-                int(request_num_gpus) > 0 and active_edge_info_dict is not None:
-            should_match_gpu = True
-            SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(active_edge_info_dict, show_gpu_list=True)
-
-            # Match and assign gpus to each device
-            assigned_gpu_num_dict, assigned_gpu_ids_dict = SchedulerMatcher.match_and_assign_gpu_resources_to_devices(
-                request_num_gpus, edge_id_list, active_edge_info_dict, job_gpu_id_list=job_gpu_id_list)
-            if assigned_gpu_num_dict is None or assigned_gpu_ids_dict is None:
-                # If no resources available, send failed message to MLOps and send exception message to all edges.
-                gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
-                    active_edge_info_dict, should_print=True)
-                err_info = f"No resources available." \
-                           f"Total available GPU count {gpu_available_count} is less than " \
-                           f"request GPU count {request_num_gpus}"
-                logging.error(err_info)
-
-                # Bug fix: This mqtt message needs to be sent so platform can clean up the failed run and change the
-                # status from running to failed.
-                self.mlops_metrics.report_server_training_status(
-                    run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id
-                )
-
-                self.status_reporter.report_server_id_status(
-                    run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
-                    server_id=self.edge_id, server_agent_id=self.server_agent_id)
-                self.report_exception_status(run_id)
-
-                serving_args = job_yaml.get("serving_args", {})
-                endpoint_id = serving_args.get("endpoint_id", None)
-                if endpoint_id is not None:
-                    fedml.mlops.log_endpoint_status(
-                        endpoint_id, device_client_constants.ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-                    fedml.mlops.log_run_log_lines(
-                        endpoint_id, 0, [err_info],
-                        log_source=device_client_constants.ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT
-                    )
-                return
-
-            # Generate master node addr and port
-            master_node_addr, master_node_port = SchedulerMatcher.get_master_node_info(edge_id_list,
-                                                                                       active_edge_info_dict)
-
-            # Generate new edge id list after matched
-            edge_id_list = SchedulerMatcher.generate_new_edge_list_for_gpu_matching(assigned_gpu_num_dict)
-            if len(edge_id_list) <= 0:
-                gpu_count, gpu_available_count = SchedulerMatcher.parse_and_print_gpu_info_for_all_edges(
-                    active_edge_info_dict, should_print=True)
-                logging.error(f"Request parameter for GPU num is invalid."
-                              f"Total available GPU count {gpu_available_count}."
-                              f"Request GPU num {request_num_gpus}")
-                self.status_reporter.report_server_id_status(
-                    run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,
-                    server_id=self.edge_id, server_agent_id=self.server_agent_id)
-                self.report_exception_status(run_id)
-                return
-
-        if should_match_gpu:
-            # Report gpu num and related infos to MLOps.
-            serving_args = job_yaml.get("serving_args", {})
-            endpoint_id = serving_args.get("endpoint_id", None)
-            if endpoint_id is not None:
-                endpoint_info = list()
-                for edge_id_item, gpu_num in assigned_gpu_num_dict.items():
-                    edge_info = active_edge_info_dict.get(str(edge_id_item), {})
-                    endpoint_info.append({
-                        "machine_id": edge_id_item, "endpoint_gpu_count": gpu_num,
-                        "master_deploy_id": edge_info.get("master_device_id", 0),
-                        "slave_deploy_id": edge_info.get("slave_device_id", 0)})
-                topic_name = f"compute/mlops/endpoint"
-                endpoint_info_json = {"endpoint_id": endpoint_id, "endpoint_info": endpoint_info}
-                print(f"endpoint_info_json {endpoint_info_json}")
-                self.message_center.send_message(topic_name, json.dumps(endpoint_info_json))
-
-        client_rank = 1
-        for edge_id in edge_id_list:
-            topic_start_train = "flserver_agent/" + str(edge_id) + "/start_train"
-            logging.info("start_train: send topic " + topic_start_train + " to client...")
-            request_json = self.request_json
-            request_json["client_rank"] = client_rank
-            client_rank += 1
-
-            if active_edge_info_dict is not None:
-                edge_info = active_edge_info_dict.get(str(edge_id), {})
-                model_master_device_id = edge_info.get("master_device_id", None)
-                model_slave_device_id = edge_info.get("slave_device_id", None)
-                model_slave_device_id_list = edge_info.get("slave_device_id_list", None)
-
-                if should_match_gpu:
-                    request_json["scheduler_match_info"] = SchedulerMatcher.generate_match_info_for_scheduler(
-                        edge_id, edge_id_list, master_node_addr, master_node_port,
-                        assigned_gpu_num_dict, assigned_gpu_ids_dict,
-                        model_master_device_id=model_master_device_id,
-                        model_slave_device_id=model_slave_device_id,
-                        model_slave_device_id_list=model_slave_device_id_list
-                    )
-
-            self.message_center.send_message(topic_start_train, json.dumps(request_json))
-
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
         edge_status_topic = "fl_client/flclient_agent_" + str(server_id) + "/status"
         payload = {"run_id": run_id, "init_all_edge_id_list": edge_ids, "init_server_id": server_id}
@@ -627,6 +497,18 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
         logging.info("stop_train: send topic " + topic_stop_train)
         self.message_center.send_message(topic_stop_train, payload)
+
+    def send_status_check_msg(self, run_id, edge_id, server_id, context=None):
+        topic_status_check = f"server/client/request_device_info/{edge_id}"
+        payload = {"server_id": server_id, "run_id": run_id}
+        if context is not None:
+            payload["context"] = context
+        self.message_center.send_message(topic_status_check, json.dumps(payload))
+
+    def send_status_msg_to_edges(self, edge_id_list, run_id, server_id, context=None):
+        # Send status message to all edges
+        for edge_id in edge_id_list:
+            self.send_status_check_msg(run_id, edge_id, self.edge_id, context=context)
 
     def report_exception_status(self, run_id):
         self.status_reporter.report_job_status(run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION)

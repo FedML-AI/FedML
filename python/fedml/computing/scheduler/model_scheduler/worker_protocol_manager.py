@@ -15,6 +15,8 @@ from .device_client_data_interface import FedMLClientDataInterface
 from ..slave.base_slave_protocol_manager import FedMLBaseSlaveProtocolManager
 from .worker_job_runner_manager import FedMLDeployJobRunnerManager
 from .device_mqtt_inference_protocol import FedMLMqttInference
+from ..scheduler_core.compute_cache_manager import ComputeCacheManager
+from .device_model_cache import FedMLModelCache
 
 
 class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
@@ -141,7 +143,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
+        MLOpsRuntimeLog(args=self.args).init_logs()
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -193,3 +195,23 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
             self.edge_id)
+
+        # Delete FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG-${run_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_endpoint_run_id_map(str(model_msg_object.run_id))
+
+        # Delete FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG-${run_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_edge_model_id_map(str(model_msg_object.run_id))
+
+        # Delete FEDML_GLOBAL_DEVICE_RUN_GPU_IDS_TAG-${run_id}-${device_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_device_run_gpu_ids(str(self.edge_id),
+                                                                               str(model_msg_object.run_id))
+
+        # Delete FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG-${run_id}-${device_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_device_run_num_gpus(str(self.edge_id),
+                                                                                str(model_msg_object.run_id))
+
+        # Delete FEDML_MODEL_REPLICA_GPU_IDS_TAG-${run_id}-${end_point_name}-${model_name}-${device_id}-*
+        FedMLModelCache.get_instance().set_redis_params()
+        FedMLModelCache.get_instance().delete_all_replica_gpu_ids(model_msg_object.run_id,
+                                                                  model_msg_object.end_point_name,
+                                                                  model_msg_object.model_name, self.edge_id)

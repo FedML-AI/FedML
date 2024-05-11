@@ -24,6 +24,8 @@ import yaml
 import fedml
 from fedml import mlops
 from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
+from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+
 from fedml.computing.scheduler.scheduler_core.compute_utils import ComputeUtils
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from .device_model_cache import FedMLModelCache
@@ -356,7 +358,6 @@ class FedMLClientRunner:
                                                        ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT)
         inference_end_point_id = run_id
 
-        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         logging.info(f"[Worker] Received model deployment request from master for endpoint {run_id}.")
@@ -478,7 +479,6 @@ class FedMLClientRunner:
         if op == "add":
             worker_ip = self.get_ip_address(self.request_json)
             for rank in range(prev_rank + 1, prev_rank + 1 + op_num):
-                # TODO: Support Rollback if this for loop failed
                 try:
                     running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
                         start_deployment(
@@ -495,6 +495,18 @@ class FedMLClientRunner:
 
                 if inference_output_url == "":
                     logging.error("[Worker] Failed to deploy the model.")
+
+                    # Release the gpu occupancy
+                    FedMLModelCache.get_instance().set_redis_params()
+                    replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
+                        run_id, end_point_name, model_name, self.edge_id, rank + 1)
+                    logging.info(f"Release gpu ids {replica_occupied_gpu_ids_str} for "
+                                 f"failed deployment of replica no {rank + 1}.")
+
+                    if replica_occupied_gpu_ids_str is not None:
+                        replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
+                        JobRunnerUtils.get_instance().release_partial_job_gpu(run_id,
+                                                                              self.edge_id, replica_occupied_gpu_ids)
 
                     # Send failed result back to master
                     result_payload = self.send_deployment_results(
@@ -892,7 +904,7 @@ class FedMLClientRunner:
         run_id = inference_end_point_id
         self.args.run_id = run_id
         self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
+        MLOpsRuntimeLog(args=self.args).init_logs()
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
@@ -977,6 +989,26 @@ class FedMLClientRunner:
         FedMLModelDatabase.get_instance().delete_deployment_result_with_device_id(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
             self.edge_id)
+
+        # Delete FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG-${run_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_endpoint_run_id_map(str(model_msg_object.run_id))
+
+        # Delete FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG-${run_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_edge_model_id_map(str(model_msg_object.run_id))
+
+        # Delete FEDML_GLOBAL_DEVICE_RUN_GPU_IDS_TAG-${run_id}-${device_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_device_run_gpu_ids(str(self.edge_id),
+                                                                               str(model_msg_object.run_id))
+
+        # Delete FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG-${run_id}-${device_id} both in redis and local db
+        ComputeCacheManager.get_instance().gpu_cache.delete_device_run_num_gpus(str(self.edge_id),
+                                                                                str(model_msg_object.run_id))
+
+        # Delete FEDML_MODEL_REPLICA_GPU_IDS_TAG-${run_id}-${end_point_name}-${model_name}-${device_id}-*
+        FedMLModelCache.get_instance().set_redis_params()
+        FedMLModelCache.get_instance().delete_all_replica_gpu_ids(model_msg_object.run_id,
+                                                                  model_msg_object.end_point_name,
+                                                                  model_msg_object.model_name, self.edge_id)
 
     def exit_run_with_exception_entry(self):
         try:

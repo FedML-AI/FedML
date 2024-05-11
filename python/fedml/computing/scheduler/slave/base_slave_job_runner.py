@@ -1,3 +1,4 @@
+import json
 import logging
 import multiprocessing
 import os
@@ -104,7 +105,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
         self.status_reporter.report_client_id_status(
             self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
-            running_json=self.start_request_json, run_id=run_id)
+            running_json=json.dumps(self.request_json), run_id=run_id)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")

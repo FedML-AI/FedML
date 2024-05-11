@@ -90,7 +90,10 @@ class FedMLDeployJobRunnerMsgSender(object):
         logging.info(f"-------- Stages has been sent to mlops with stage {model_stages_index} and "
                      f"payload {deployment_stages_payload}")
 
-    def send_deployment_start_request_to_edges(self):
+    def send_deployment_start_request_to_edges(self, in_request_json=None):
+        if in_request_json is not None:
+            self.request_json = in_request_json
+
         # Iterate through replica_num_diff, both add and replace should be sent to the edge devices
         if "replica_num_diff" not in self.request_json or self.request_json["replica_num_diff"] is None:
             return []

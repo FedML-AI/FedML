@@ -209,7 +209,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         infer_host = "127.0.0.1"
 
     try:
-        client = docker.from_env()
+        client = docker.from_env(timeout=5, version="auto")
         if enable_custom_image and docker_registry_user_name != "" and docker_registry_user_password != "" \
                 and docker_registry != "":
             client.login(username=docker_registry_user_name, password=docker_registry_user_password,
@@ -466,7 +466,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
             logging.info(f"Test: {inference_http_port}, Attempt: {deploy_attempt} / {deploy_attempt_threshold}")
 
             try:
-                client = docker.from_env()
+                client = docker.from_env(timeout=5, version="auto")
             except Exception:
                 logging.error("Failed to connect to the docker daemon, please ensure that you have "
                               "installed Docker Desktop or Docker Engine, and the docker is running")

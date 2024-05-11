@@ -2,11 +2,11 @@ import json
 import logging
 import os
 import platform
+import random
 import shutil
+import time
 import traceback
-import urllib
 import zipfile
-from urllib.parse import urljoin, urlparse
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
@@ -82,6 +82,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
             "${FEDSYS.CLIENT_OBJECT_LIST}": "",
             "${FEDSYS.LOG_SERVER_URL}": "",
         }
+        self.download_time = time.time()
+        self.download_finished = False
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -154,18 +156,91 @@ class FedMLSchedulerBaseJobRunner(ABC):
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
 
+    def download_package_proc(self, package_url, local_package_file):
+        import requests
+        headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                                 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'}
+        user_agent_list = [
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:77.0) Gecko/20100101 Firefox/77.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+        ]
+        for _ in user_agent_list:
+            user_agent = random.choice(user_agent_list)
+            headers = {'User-Agent': user_agent}
+
+        # Set the stream to true so that we can reduce the memory footprint when downloading large files.
+        request = requests.get(package_url, headers=headers, timeout=(10, 15), stream=True)
+        with open(local_package_file, 'wb') as f:
+            # 1024 * 1024 is 1MiB
+            download_size = 1024 * 1024
+            total_size = 0
+            for chunk in request.iter_content(download_size):
+                # Write the chunk to the file
+                written_size = f.write(chunk)
+                total_size += written_size
+                logging.info(f"package downloaded size {total_size/1024} KB")
+                self.download_time = time.time()
+        self.download_finished = True
+
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = self.agent_package_download_dir
         os.makedirs(local_package_path, exist_ok=True)
         filename, filename_without_extension, file_extension = GeneralConstants.get_filename_and_extension(package_url)
-        local_package_file = os.path.join(local_package_path, f"fedml_run_{self.run_id}_{filename_without_extension}")
+        local_package_file = os.path.join(
+            local_package_path, f"fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
         ssl._create_default_https_context = ssl._create_unverified_context
-        urllib.request.urlretrieve(package_url, local_package_file,
-                                   reporthook=self.package_download_progress)
+
+        # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
+        self.download_finished = False
+        self.download_time = time.time()
+        from multiprocessing import Process
+        download_process = Process(target=self.download_package_proc, args=(package_url, local_package_file))
+        download_process.start()
+        allowed_block_download_time = 30
+        while True:
+            block_time = time.time() - self.download_time
+            if block_time > allowed_block_download_time:
+                break
+            if self.download_finished:
+                break
+            time.sleep(3)
+        try:
+            if not self.download_finished:
+                download_process.terminate()
+                download_process.kill()
+        except Exception as e:
+            pass
+
+        # Another method to async download.
+        # import socket
+        # socket.setdefaulttimeout(15)
+        # try:
+        #     urllib.request.urlretrieve(package_url, local_package_file,
+        #                                reporthook=self.package_download_progress)
+        # except socket.timeout:
+        #     retry_count = 1
+        #     max_retry_num = 5
+        #     while retry_count <= max_retry_num:
+        #         try:
+        #             urllib.request.urlretrieve(package_url, local_package_file,
+        #                                        reporthook=self.package_download_progress)
+        #             break
+        #         except socket.timeout:
+        #             error_info = 'Retry %d time' % retry_count if retry_count == 1 else \
+        #                 'Reloading for %d times' % retry_count
+        #             logging.info(error_info)
+        #             retry_count += 1
+        #     if retry_count > max_retry_num:
+        #         logging.error("Download failed.")
+        #         raise Exception("Download failed")
+
         unzip_package_path = os.path.join(self.agent_package_unzip_dir,
-                                          f"unzip_fedml_run_{self.run_id}_{filename_without_extension}")
+                                          f"unzip_fedml_run_{self.run_id}_{self.edge_id}_{filename_without_extension}")
         try:
             shutil.rmtree(unzip_package_path, ignore_errors=True)
         except Exception as e:
@@ -485,7 +560,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
     def start_job_perf(self, job_pid):
         GeneralConstants.save_learning_process(self.run_id, job_pid, data_dir=self.agent_data_dir)
-        self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
+        #self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_list):
         self.check_runner_stop_event()
@@ -516,10 +591,10 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
 
             # Terminate the run docker container if exists
-            container_name = JobRunnerUtils.get_run_container_name(run_id)
-            docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
-            logging.info(f"Terminating the run docker container {container_name} if exists...")
             try:
+                container_name = JobRunnerUtils.get_run_container_name(run_id)
+                docker_client = JobRunnerUtils.get_docker_client(DockerArgs())
+                logging.info(f"Terminating the run docker container {container_name} if exists...")
                 JobRunnerUtils.remove_run_container_if_exists(container_name, docker_client)
             except Exception as e:
                 logging.error(f"Exception {e} occurred when terminating docker container. "

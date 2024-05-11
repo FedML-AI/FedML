@@ -218,7 +218,7 @@ class FedMLMessageCenter(object):
                     message_body = None
                 if message_body is None:
                     time.sleep(0.1)
-                    self.retry_sending_undelivered_message()
+                    # self.retry_sending_undelivered_message()
                     continue
 
                 # Generate the message entity object

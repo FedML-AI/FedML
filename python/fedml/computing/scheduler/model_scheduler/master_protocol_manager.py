@@ -105,7 +105,15 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        # Set end point as deactivated status
+        # Delete SQLite records
+        FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
+        FedMLModelDatabase.get_instance().delete_deployment_result(
+            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
+            model_version=model_msg_object.model_version)
+        FedMLModelDatabase.get_instance().delete_deployment_run_info(
+            end_point_id=model_msg_object.inference_end_point_id)
+
+        # Delete Redis Records
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id,
@@ -114,21 +122,15 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             delete_end_point(model_msg_object.inference_end_point_id, model_msg_object.end_point_name,
                              model_msg_object.model_name, model_msg_object.model_version)
 
+        # Send delete deployment request to the edge devices
         FedMLDeployJobRunnerManager.get_instance().send_deployment_delete_request_to_edges(
             model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center)
 
+        # Stop processes on master
         FedMLDeployJobRunnerManager.get_instance().stop_job_runner(model_msg_object.run_id)
-
         FedMLDeployJobRunnerManager.get_instance().stop_device_inference_monitor(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_id,
             model_msg_object.model_name, model_msg_object.model_version)
-
-        FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
-        FedMLModelDatabase.get_instance().delete_deployment_result(
-            model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_name,
-            model_version=model_msg_object.model_version)
-        FedMLModelDatabase.get_instance().delete_deployment_run_info(
-            end_point_id=model_msg_object.inference_end_point_id)
 
     def callback_start_deployment(self, topic, payload):
         # noinspection PyBroadException
@@ -149,14 +151,35 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
+        model_version = model_config["model_version"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config.get("instance_scale_min", 0)
         scale_max = model_config.get("instance_scale_max", 0)
         inference_engine = model_config.get("inference_engine", 0)
+        enable_auto_scaling = request_json.get("enable_auto_scaling", False)
+        desired_replica_num = request_json.get("desired_replica_num", 1)
+
+        target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
+        aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
+        scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
+
         inference_end_point_id = run_id
 
         logging.info("[Master] received start deployment request for end point {}.".format(run_id))
+
+        # Set redis config
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+
+        # Save the user setting (about replica number) of this run to Redis, if existed, update it
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(
+            end_point_id=run_id, end_point_name=end_point_name, model_name=model_name, model_version=model_version,
+            replica_num=desired_replica_num, enable_auto_scaling=enable_auto_scaling,
+            scale_min=scale_min, scale_max=scale_max, state="DEPLOYING",
+            aggregation_window_size_seconds=aggregation_window_size_seconds,
+            target_queries_per_replica=target_queries_per_replica,
+            scale_down_delay_seconds=int(scale_down_delay_seconds)
+        )
 
         # Start log processor for current run
         self.args.run_id = run_id
@@ -176,8 +199,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         self.running_request_json[run_id_str] = request_json
         self.request_json["master_node_ip"] = GeneralConstants.get_ip_address(self.request_json)
 
-        # Target status of the devices
-        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+        # Set the target status of the devices to redis
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(request_json["end_point_id"], end_point_name, json.dumps(device_objs))
 
@@ -194,7 +216,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Report stage to mlops: MODEL_DEPLOYMENT_STAGE1 = "Received"
         FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
             self.run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
-            ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"], "Received request for end point {}".format(run_id),
+            ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"], "Received request for endpoint {}".format(run_id),
             message_center=self.message_center)
 
         # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"

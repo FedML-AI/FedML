@@ -78,7 +78,7 @@ class FedMLStatusManager(object):
 
     def process_job_running_status(self, master_id, status):
         self.message_reporter.report_server_training_status(
-            self.run_id, status, edge_id=master_id, running_json=self.running_scheduler_contract)
+            self.run_id, status, edge_id=master_id, running_json=self.running_scheduler_contract, update_db=False)
 
     def status_center_process_master_status(self, topic, payload):
         request_json = json.loads(payload)
@@ -121,13 +121,13 @@ class FedMLStatusManager(object):
                 status, edge_status_item)
             if consensus_device_status is not None:
                 self.message_reporter.report_client_training_status(
-                    edge_id_item, consensus_device_status, run_id=run_id)
+                    edge_id_item, consensus_device_status, run_id=run_id, update_db=False)
 
         # Save the job status to local storage
         FedMLServerDataInterface.get_instance().save_job_status(run_id, master_id, status, status)
 
         # Report the status to message center
-        self.message_reporter.report_server_training_status(run_id, status, edge_id=master_id)
+        self.message_reporter.report_server_training_status(run_id, status, edge_id=master_id, update_db=False)
 
         # Broadcast the status to slave agents
         self.message_reporter.report_job_status(run_id, status)
@@ -207,7 +207,7 @@ class FedMLStatusManager(object):
 
         # Report client status
         consensus_status = self.get_device_consensus_status_in_current_device(edge_id, status)
-        self.message_reporter.report_client_training_status(edge_id, consensus_status, run_id=run_id)
+        self.message_reporter.report_client_training_status(edge_id, consensus_status, run_id=run_id, update_db=False)
 
         # Report server status based on the fault tolerance model and parameters
         edge_nums = len(edge_id_status_dict.keys()) - 1
@@ -263,7 +263,7 @@ class FedMLStatusManager(object):
 
     def report_server_status(self, run_id, edge_id, server_id, status):
         self.status_reporter.report_server_id_status(
-            run_id, status, edge_id=edge_id, server_id=server_id, server_agent_id=edge_id)
+            run_id, status, edge_id=edge_id, server_id=server_id, server_agent_id=edge_id, update_db=False)
 
     def report_exception_status(
             self, edge_id_list, run_id=0, server_id=None, status=None, payload=None):
@@ -282,7 +282,7 @@ class FedMLStatusManager(object):
         self.message_center.send_message(topic, payload)
 
         # Post the status message to the listener queue of message center
-        self.message_center.receive_message(GeneralConstants.MSG_TOPIC_REPORT_DEVICE_STATUS_IN_JOB, payload)
+        #self.message_center.receive_message(GeneralConstants.MSG_TOPIC_REPORT_DEVICE_STATUS_IN_JOB, payload)
 
     def status_center_process_slave_status_to_mlops_in_slave_agent(self, topic, payload):
         # Forward the status message to message center.

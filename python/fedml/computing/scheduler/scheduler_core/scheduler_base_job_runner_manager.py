@@ -44,10 +44,9 @@ class FedMLSchedulerBaseJobRunnerManager(ABC):
         if self.job_runners.get(run_id_str, None) is not None:
             self.job_runners[run_id_str].trigger_completed_event()
 
-    def put_run_edge_device_info_to_queue(self, run_id, device_info):
-        run_id_str = str(run_id)
-        if self.job_runners.get(run_id_str, None) is not None:
-            self.job_runners[run_id_str].put_run_edge_device_info_to_queue(run_id, device_info)
+    def put_run_edge_device_info_to_queue(self, run_id, edge_id, device_info):
+        for job_run_id, job_runner in self.job_runners.items():
+            job_runner.put_run_edge_device_info_to_queue(run_id, edge_id, device_info)
 
     def get_runner_process(self, run_id, is_cloud_server=False):
         run_id_str = str(run_id)

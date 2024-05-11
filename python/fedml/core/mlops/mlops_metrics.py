@@ -67,15 +67,17 @@ class MLOpsMetrics(object):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False, run_id=0):
+    def report_client_training_status(self, edge_id, status, running_json=None,
+                                      is_from_model=False, run_id=0, update_db=True):
         self.common_report_client_training_status(edge_id, status, run_id=run_id)
 
-        if is_from_model:
-            from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
-            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
-        else:
-            from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
-            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
+                FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
+                FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def report_client_device_status_to_web_ui(self, edge_id, status, run_id=0):
         """
@@ -169,20 +171,22 @@ class MLOpsMetrics(object):
         # logging.info("report_client_id_status. message_json = %s" % message_json)
         self.send_message(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status, edge_id=0, role=None, running_json=None, is_from_model=False):
+    def report_server_training_status(self, run_id, status, edge_id=0, role=None,
+                                      running_json=None, is_from_model=False, update_db=True):
         # if not self.comm_sanity_check():
         #     return
         self.common_report_server_training_status(run_id, status, role=role, edge_id=edge_id)
 
-        if is_from_model:
-            from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
-        else:
-            from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
     def report_job_status(self, run_id, status):
-        topic_name = "master_agent/slave_agent/job_status"
+        topic_name = f"master_agent/slave_agent/job_status/{run_id}"
         payload = {"run_id": run_id, "status": status}
 
         message_json = json.dumps(payload)
@@ -251,7 +255,7 @@ class MLOpsMetrics(object):
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
     def report_server_id_status(self, run_id, status, edge_id=None, server_id=None, server_agent_id=None,
-                                is_from_model=False, running_json=None):
+                                is_from_model=False, running_json=None, update_db=True):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id if server_agent_id is not None else
@@ -267,12 +271,13 @@ class MLOpsMetrics(object):
         # logging.info("report_server_id_status. message_json = %s" % message_json)
         self.send_message(topic_name, message_json)
 
-        if is_from_model:
-            from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
-        else:
-            from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
 
     def report_client_training_metric(self, metric_json):
         # if not self.comm_sanity_check():

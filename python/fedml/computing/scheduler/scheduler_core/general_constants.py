@@ -51,6 +51,8 @@ class GeneralConstants:
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
+    FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+
     @staticmethod
     def get_package_unzip_dir(package_download_dir):
         package_unzip_dir = package_download_dir

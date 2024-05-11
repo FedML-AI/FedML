@@ -77,6 +77,18 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
     def update_local_fedml_config(self, run_id, model_config, model_config_parameters=None):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
+        end_point_name = self.request_json["end_point_name"]
+        model_version = model_config["model_version"]
+
+        # Generate the model package dir for downloading.
+        model_version = model_version.replace(" ", "-")     # Avoid using space for folder name
+        model_version = model_version.replace(":", "-")     # Since docker mount will conflict with ":"
+        local_package_path = ClientConstants.get_model_package_dir()
+        os.makedirs(local_package_path, exist_ok=True)
+        this_run_model_dir = f"{run_id}_{end_point_name}_{model_name}_{model_version}"
+        this_run_model_full_path = os.path.join(local_package_path, this_run_model_dir)
+        self.agent_package_download_dir = this_run_model_full_path
+        self.agent_package_unzip_dir = this_run_model_full_path
 
         # Retrieve model package or model binary file.
         if self.model_is_from_open:
@@ -127,7 +139,6 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                                        ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT)
         inference_end_point_id = run_id
 
-        self.mlops_metrics.report_sys_perf(self.args, self.agent_config["mqtt_config"], run_id=run_id)
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
         logging.info(f"[Worker] Received model deployment request from master for endpoint {run_id}.")
@@ -250,7 +261,6 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         if op == "add":
             worker_ip = GeneralConstants.get_ip_address(self.request_json)
             for rank in range(prev_rank + 1, prev_rank + 1 + op_num):
-                # TODO: Support Rollback if this for loop failed
                 try:
                     running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
                         start_deployment(
@@ -392,15 +402,17 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                 if inference_output_url == "":
                     logging.error("Failed to deploy the model...")
 
-                    # If update failed, should release this replica's gpu
+                    # Release the gpu occupancy
                     FedMLModelCache.get_instance().set_redis_params()
                     replica_occupied_gpu_ids_str = FedMLModelCache.get_instance().get_replica_gpu_ids(
                         run_id, end_point_name, model_name, self.edge_id, rank + 1)
+                    logging.info(f"Release gpu ids {replica_occupied_gpu_ids_str} for "
+                                 f"failed deployment of replica no {rank + 1}.")
 
-                    replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
-
-                    JobRunnerUtils.get_instance().release_partial_job_gpu(
-                        run_id, self.edge_id, replica_occupied_gpu_ids)
+                    if replica_occupied_gpu_ids_str is not None:
+                        replica_occupied_gpu_ids = json.loads(replica_occupied_gpu_ids_str)
+                        JobRunnerUtils.get_instance().release_partial_job_gpu(
+                            run_id, self.edge_id, replica_occupied_gpu_ids)
 
                     result_payload = self.send_deployment_results(
                         end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
