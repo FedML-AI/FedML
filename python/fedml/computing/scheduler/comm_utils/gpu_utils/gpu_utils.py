@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, List
@@ -29,20 +29,7 @@ class GPUCard:
     temperature: Optional[float]
 
 
-class GPUTypeRegistry(type, ABC):
-    GPU_TYPE_REGISTRY = {}
-
-    def __new__(cls, name, bases, attrs):
-        new_cls = type.__new__(cls, name, bases, attrs)
-        cls.GPU_TYPE_REGISTRY[new_cls.__name__.lower()] = new_cls
-        return new_cls
-
-    @classmethod
-    def get_gpu_utils(cls):
-        return cls.GPU_TYPE_REGISTRY.values()
-
-
-class GPUCardUtil(metaclass=GPUTypeRegistry):
+class GPUCardUtil(ABC):
 
     @classmethod
     @abstractmethod

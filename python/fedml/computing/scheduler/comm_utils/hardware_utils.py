@@ -1,9 +1,11 @@
 import logging
-
 from typing import Optional, List
 
-from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil, GPUCard, GPUTypeRegistry
+from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil, GPUCard
+from fedml.computing.scheduler.comm_utils.gpu_utils.nvidia_utils import NvidiaGPUtil
 from fedml.computing.scheduler.comm_utils.singleton import Singleton
+
+GPU_CARD_UTILS = [NvidiaGPUtil]
 
 
 class HardwareUtil(metaclass=Singleton):
@@ -14,7 +16,7 @@ class HardwareUtil(metaclass=Singleton):
         if HardwareUtil.__gpu_util is not None:
             return HardwareUtil.__gpu_util
 
-        for gpu_util in GPUTypeRegistry.get_gpu_utils():
+        for gpu_util in GPU_CARD_UTILS:
             try:
                 if gpu_util.detectGPUCardType() is not None:
                     HardwareUtil._gpu_util = gpu_util()
