@@ -1,9 +1,9 @@
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from GPUtil import GPUtil, GPU
 
-from fedml.computing.scheduler.comm_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
+from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
 def _convert(gpu: GPU) -> GPUCard:
@@ -24,19 +24,18 @@ def _convert(gpu: GPU) -> GPUCard:
 
 
 class NvidiaGPUtil(GPUCardUtil):
-
-    @staticmethod
-    def getAvailableGPUCardIDs() -> List[int]:
-        return GPUtil.getAvailable()
-
-    @staticmethod
-    def getGPUCards() -> List[GPUCard]:
-        return [_convert(gpu) for gpu in GPUtil.getGPUs()]
-
     @classmethod
-    def detectGPUCardType(cls):
+    def detectGPUCardType(cls) -> Optional[GPUCardType]:
         try:
             subprocess.check_output(["nvidia-smi"], universal_newlines=True)
             return GPUCardType.NVIDIA
         except Exception:
             return None
+
+    @staticmethod
+    def getGPUCards() -> List[GPUCard]:
+        return [_convert(gpu) for gpu in GPUtil.getGPUs()]
+
+    @staticmethod
+    def getAvailableGPUCardIDs() -> List[int]:
+        return GPUtil.getAvailable()

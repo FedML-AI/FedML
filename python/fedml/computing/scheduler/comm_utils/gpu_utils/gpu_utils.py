@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, List
@@ -32,7 +32,7 @@ class GPUCard:
 class GPUCardUtil(ABC):
 
     @classmethod
-    def detectGPUCardType(cls) -> GPUCardType:
+    def detectGPUCardType(cls) -> Optional[GPUCardType]:
         raise NotImplementedError
 
     @staticmethod
@@ -44,3 +44,4 @@ class GPUCardUtil(ABC):
     @abstractmethod
     def getGPUCards() -> List[GPUCard]:
         raise NotImplementedError
+
