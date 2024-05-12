@@ -1,12 +1,15 @@
 import subprocess
-from typing import List, Optional
+from typing import List, Optional, Dict
 
+import docker
+from docker import types
 from GPUtil import GPUtil, GPU
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
 class NvidiaGPUtil(GPUCardUtil):
+
     @classmethod
     def detect_gpu_card_type(cls) -> Optional[GPUCardType]:
         try:
@@ -22,6 +25,12 @@ class NvidiaGPUtil(GPUCardUtil):
     @staticmethod
     def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
         return GPUtil.getAvailable(order=order, limit=limit, maxLoad=max_load, maxMemory=max_memory)
+
+    @staticmethod
+    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
+        if gpu_ids and len(gpu_ids):
+            return {"device_requests": [docker.types.DeviceRequest(device_ids=gpu_ids, capabilities=[["gpu"]])]}
+        return None
 
     @staticmethod
     def __convert(gpu: GPU) -> GPUCard:

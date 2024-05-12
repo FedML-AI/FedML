@@ -2,12 +2,13 @@ import logging
 import math
 import subprocess
 import sys
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
 class QualcommNPUtil(GPUCardUtil):
+
     def __init__(self):
         sys.path.append("/opt/qti-aic/dev/lib/x86_64/")
 
@@ -48,6 +49,12 @@ class QualcommNPUtil(GPUCardUtil):
         gpu_cards.sort(key=lambda card: float('inf') if math.isnan(card.memoryUtil) else card.memoryUtil, reverse=False)
         gpu_cards = gpu_cards[0:min(limit, len(gpu_cards))]
         return list(map(lambda card: card.id, gpu_cards))
+
+    @staticmethod
+    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
+        if gpu_ids and len(gpu_ids):
+            return {"devices": [f"/dev/accel/accel{gpu_id}:/dev/accel/accel{gpu_id}" for gpu_id in gpu_ids]}
+        return None
 
     @staticmethod
     def __convert(npu) -> GPUCard:

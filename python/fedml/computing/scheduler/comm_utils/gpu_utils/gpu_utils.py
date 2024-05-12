@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 
 class GPUCardType(Enum):
@@ -46,4 +46,9 @@ class GPUCardUtil(ABC):
     @staticmethod
     @abstractmethod
     def get_gpu_cards() -> List[GPUCard]:
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
         raise NotImplementedError
