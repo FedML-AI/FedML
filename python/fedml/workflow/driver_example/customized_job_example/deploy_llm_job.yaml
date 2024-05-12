@@ -1,0 +1,29 @@
+# Local directory where your source code resides.
+# It should be the relative path to this job yaml file or the absolute path.
+# If your job doesn't contain any source code, it can be empty.
+workspace: deploy_llm_job
+
+# Running entry commands which will be executed as the job entry point.
+# Support multiple lines, which can not be empty.
+job: |
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
+    echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+    echo "Hello, Here is the FedML Nexus AI platform."
+    echo "Current directory is as follows."
+    pwd
+    sleep 3
+
+job_type: deploy              # options: train, deploy, federate
+
+# Bootstrap shell commands which will be executed before running entry commands.
+# Support multiple lines, which can be empty.
+bootstrap: |
+  pip install -r requirements.txt
+  echo "Bootstrap finished."
+
+computing:
+  #resource_type: RTX-3090    # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: A100-80GB-SXM
+  minimum_num_gpus: 1             # minimum # of GPUs to provision
+  maximum_cost_per_hour: $10    # max cost per hour of all machines for your job
+  # device_type: GPU # GPU or CPU
