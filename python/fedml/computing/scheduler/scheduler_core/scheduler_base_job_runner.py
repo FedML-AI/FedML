@@ -112,7 +112,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.RUN_ID}"] = run_id
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.PRIVATE_LOCAL_DATA}"] = private_data_dir.replace(" ", "")
-        self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_ID_LIST}"] = str(local_edge_id_list).replace(" ", "")
+        self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_ID_LIST}"] = \
+            str(self.get_client_id_list(server_edge_id_list)).replace(" ", "")
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.SYNTHETIC_DATA_URL}"] = synthetic_data_url.replace(" ", "")
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.IS_USING_LOCAL_DATA}"] = str(is_using_local_data)
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.CLIENT_NUM}"] = len(server_edge_id_list)
@@ -128,6 +129,11 @@ class FedMLSchedulerBaseJobRunner(ABC):
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES["${FEDSYS.LOG_SERVER_URL}"] = self.agent_config["ml_ops_config"][
             "LOG_SERVER_URL"
         ]
+
+    def get_client_id_list(self, server_edge_id_list):
+        local_edge_id_list = list()
+        local_edge_id_list.append(int(self.edge_id))
+        return local_edge_id_list
 
     @staticmethod
     def unzip_file(zip_file, unzip_file_path) -> str:
@@ -497,11 +503,12 @@ class FedMLSchedulerBaseJobRunner(ABC):
         if job_yaml_default_none is None:
             # Generate the job executing commands for previous federated learning (Compatibility)
             python_program = get_python_program()
-            logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
-                python_program, entry_file_full_path, conf_file_full_path, str(dynamic_args_config.get("rank", 1))))
             rank = str(dynamic_args_config.get("rank", 1))
+            role = "server" if rank == "0" else "client"
+            logging.info(f"Run the {role}: {python_program} {entry_file_full_path} --cf {conf_file_full_path} "
+                         f"--rank {rank} --role {role}")
             entry_command = f"{python_program} {entry_file_full_path} --cf " \
-                            f"{conf_file_full_path} --rank {rank} --role client"
+                            f"{conf_file_full_path} --rank {rank} --role {role}"
             shell_cmd_list = [entry_command]
 
             # Run the job executing commands for previous federated learning (Compatibility)

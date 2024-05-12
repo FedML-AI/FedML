@@ -182,10 +182,12 @@ class FedMLStatusManager(object):
         server_id = edge_id_status_dict.get("server", 0)
         enable_fault_tolerance, fault_tolerance_rate = self.parse_fault_tolerance_params(run_id)
         running_edges_list = list()
+        edge_nums = 0
         for edge_id_item, status_item in edge_id_status_dict.items():
             if edge_id_item == "server":
                 continue
 
+            edge_nums += 1
             if status_item is None or status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
                     status_item == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
                 number_of_failed_edges += 1
@@ -210,7 +212,8 @@ class FedMLStatusManager(object):
         self.message_reporter.report_client_training_status(edge_id, consensus_status, run_id=run_id, update_db=False)
 
         # Report server status based on the fault tolerance model and parameters
-        edge_nums = len(edge_id_status_dict.keys()) - 1
+        if edge_nums <= 0:
+            return
         status_to_report = self.calculate_server_status(
             run_id, edge_nums, number_of_failed_edges, number_of_finished_edges, number_of_killed_edges,
             running_edges_list, enable_fault_tolerance=enable_fault_tolerance,

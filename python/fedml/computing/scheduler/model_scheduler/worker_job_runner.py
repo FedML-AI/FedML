@@ -353,7 +353,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
             return True
         elif op == "update" or op == "rollback":
             # Update is combine of delete and add
-            worker_ip = self.get_ip_address(self.request_json)
+            worker_ip = GeneralConstants.get_ip_address(self.request_json)
             for rank in replica_rank_to_update:
                 # Delete a replica (container) if exists
                 self.replica_handler.remove_replica(rank)
