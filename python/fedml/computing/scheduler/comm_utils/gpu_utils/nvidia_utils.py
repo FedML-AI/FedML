@@ -29,7 +29,8 @@ class NvidiaGPUtil(GPUCardUtil):
     @staticmethod
     def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
         if gpu_ids and len(gpu_ids):
-            return {"device_requests": [docker.types.DeviceRequest(device_ids=gpu_ids, capabilities=[["gpu"]])]}
+            gpu_id_list = list(map(lambda x: str(x), gpu_ids))
+            return {"device_requests": [docker.types.DeviceRequest(device_ids=gpu_id_list, capabilities=[["gpu"]])]}
         return None
 
     @staticmethod
