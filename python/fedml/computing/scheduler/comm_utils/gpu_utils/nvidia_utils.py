@@ -6,26 +6,9 @@ from GPUtil import GPUtil, GPU
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
-def _convert(gpu: GPU) -> GPUCard:
-    return GPUCard(
-        id=gpu.id,
-        uuid=gpu.uuid,
-        name=gpu.name,
-        load=gpu.load,
-        memoryTotal=gpu.memoryTotal,
-        memoryUsed=gpu.memoryUsed,
-        memoryFree=gpu.memoryFree,
-        driver=gpu.driver,
-        serial=gpu.serial,
-        display_mode=gpu.display_mode,
-        display_active=gpu.display_active,
-        temperature=gpu.temperature
-    )
-
-
 class NvidiaGPUtil(GPUCardUtil):
     @classmethod
-    def detectGPUCardType(cls) -> Optional[GPUCardType]:
+    def detect_gpu_card_type(cls) -> Optional[GPUCardType]:
         try:
             subprocess.check_output(["nvidia-smi"], universal_newlines=True)
             return GPUCardType.NVIDIA
@@ -33,9 +16,27 @@ class NvidiaGPUtil(GPUCardUtil):
             return None
 
     @staticmethod
-    def getGPUCards() -> List[GPUCard]:
-        return [_convert(gpu) for gpu in GPUtil.getGPUs()]
+    def get_gpu_cards() -> List[GPUCard]:
+        return [NvidiaGPUtil.__convert(gpu) for gpu in GPUtil.getGPUs()]
 
     @staticmethod
-    def getAvailableGPUCardIDs() -> List[int]:
-        return GPUtil.getAvailable()
+    def get_available_gpu_card_ids(order: str = "memory", limit: int = 1, maxLoad: float = 0.01, maxMemory: float = 0.01) -> List[int]:
+        return GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
+
+    @staticmethod
+    def __convert(gpu: GPU) -> GPUCard:
+        return GPUCard(
+            id=gpu.id,
+            name=gpu.name,
+            driver=gpu.driver,
+            serial=gpu.serial,
+            memoryTotal=gpu.memoryTotal,
+            memoryFree=gpu.memoryFree,
+            memoryUsed=gpu.memoryUsed,
+            memoryUtil=gpu.memoryUtil,
+            load=gpu.load,
+            uuid=gpu.uuid,
+            display_mode=gpu.display_mode,
+            display_active=gpu.display_active,
+            temperature=gpu.temperature
+        )

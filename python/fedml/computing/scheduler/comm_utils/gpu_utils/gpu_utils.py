@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Optional, List
 
@@ -16,32 +16,34 @@ class GPUCardType(Enum):
 @dataclass
 class GPUCard:
     id: int
-    uuid: str
     name: str
-    load: float
-    memoryTotal: float
-    memoryUsed: float
-    memoryFree: float
     driver: str
-    serial: Optional[str]
-    display_mode: Optional[str]
-    display_active: Optional[str]
-    temperature: Optional[float]
+    serial: str
+    memoryTotal: float
+    memoryFree: float
+    memoryUsed: float
+    memoryUtil: float
+    load: Optional[float] = 0.0
+    uuid: Optional[str] = ""
+    display_mode: Optional[str] = ""
+    display_active: Optional[str] = ""
+    temperature: Optional[float] = 0.0
 
 
 class GPUCardUtil(ABC):
 
     @classmethod
     @abstractmethod
-    def detectGPUCardType(cls) -> Optional[GPUCardType]:
+    def detect_gpu_card_type(cls) -> Optional[GPUCardType]:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def getAvailableGPUCardIDs() -> List[int]:
+    def get_available_gpu_card_ids(order: str = "memory", limit: int = 1, max_load: float = 0.01,
+                                   max_memory: float = 0.01) -> List[int]:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def getGPUCards() -> List[GPUCard]:
+    def get_gpu_cards() -> List[GPUCard]:
         raise NotImplementedError

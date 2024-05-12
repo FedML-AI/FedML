@@ -3,24 +3,25 @@ from typing import Optional, List
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil, GPUCard
 from fedml.computing.scheduler.comm_utils.gpu_utils.nvidia_utils import NvidiaGPUtil
+from fedml.computing.scheduler.comm_utils.gpu_utils.qualcomm_utils import QualcommNPUtil
 from fedml.computing.scheduler.comm_utils.singleton import Singleton
 
-GPU_CARD_UTILS = [NvidiaGPUtil]
+GPU_CARD_UTILS = [NvidiaGPUtil, QualcommNPUtil]
 
 
 class HardwareUtil(metaclass=Singleton):
     __gpu_util: Optional[GPUCardUtil] = None
 
-    @staticmethod
-    def __get_util() -> Optional[GPUCardUtil]:
-        if HardwareUtil.__gpu_util is not None:
-            return HardwareUtil.__gpu_util
+    @classmethod
+    def __get_util(cls) -> Optional[GPUCardUtil]:
+        if cls.__gpu_util is not None:
+            return cls.__gpu_util
 
         for gpu_util in GPU_CARD_UTILS:
             try:
-                if gpu_util.detectGPUCardType() is not None:
-                    HardwareUtil._gpu_util = gpu_util()
-                    return HardwareUtil._gpu_util
+                if gpu_util.detect_gpu_card_type() is not None:
+                    cls.__gpu_util = gpu_util()
+                    return cls.__gpu_util
             except Exception as e:
                 pass
 
@@ -28,18 +29,18 @@ class HardwareUtil(metaclass=Singleton):
         return None
 
     @staticmethod
-    def getGPUs() -> List[GPUCard]:
+    def get_gpus() -> List[GPUCard]:
         gpu_util = HardwareUtil.__get_util()
-        return gpu_util.getGPUCards() if gpu_util is not None else []
+        return gpu_util.get_gpu_cards() if gpu_util is not None else []
 
     @staticmethod
-    def getAvailableGPUCardIDs() -> List[int]:
+    def get_available_gpu_card_ids() -> List[int]:
         gpu_util = HardwareUtil.__get_util()
-        return gpu_util.getAvailableGPUCardIDs() if gpu_util is not None else []
+        return gpu_util.get_available_gpu_card_ids() if gpu_util is not None else []
 
 
 if __name__ == "__main__":
-    gpus = HardwareUtil.getGPUs()
-    get_available_gpu_cards = HardwareUtil.getAvailableGPUCardIDs()
+    gpus = HardwareUtil.get_gpus()
+    get_available_gpu_cards = HardwareUtil.get_available_gpu_card_ids()
     print(gpus)
     print(get_available_gpu_cards)
