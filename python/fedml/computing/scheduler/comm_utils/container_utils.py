@@ -227,9 +227,8 @@ class ContainerUtils(Singleton):
             raise Exception(f"Unsupported image pull policy: {image_pull_policy}")
 
     class ContainerMetrics:
-        def __init__(self, cpu_percent, mem_used_megabytes, mem_avail_megabytes, network_recv_megabytes, network_sent_megabytes,
-                     blk_read_megabytes, blk_write_megabytes, timestamp, gpus_stat
-                     ):
+        def __init__(self, cpu_percent, mem_used_megabytes, mem_avail_megabytes, network_recv_megabytes,
+                     network_sent_megabytes, blk_read_megabytes, blk_write_megabytes, timestamp, gpus_stat):
             self.cpu_percent = cpu_percent
             self.mem_used_megabytes = mem_used_megabytes
             self.mem_avail_megabytes = mem_avail_megabytes

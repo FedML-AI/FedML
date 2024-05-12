@@ -55,8 +55,8 @@ class QualcommNPUtil(GPUCardUtil):
         return list(map(lambda card: card.id, gpu_cards))
 
     @staticmethod
-    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
-        if gpu_ids and len(gpu_ids):
+    def get_docker_gpu_device_mapping(gpu_ids: Optional[List[int]], num_gpus: int = 0) -> Optional[Dict]:
+        if gpu_ids is not None and len(gpu_ids):
             return {
                 "devices": [f"{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}:{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}" for gpu_id
                             in gpu_ids]}

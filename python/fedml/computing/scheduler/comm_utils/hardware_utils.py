@@ -42,10 +42,10 @@ class HardwareUtil(metaclass=Singleton):
         return gpu_util.get_available_gpu_card_ids(order, limit, max_load, max_memory) if gpu_util is not None else []
 
     @staticmethod
-    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
+    def get_docker_gpu_device_mapping(gpu_ids: Optional[List[int]], num_gpus: int = 0) -> Optional[Dict]:
         gpu_util = HardwareUtil.__get_util()
         if gpu_util is not None:
-            return gpu_util.get_docker_gpu_device_mapping(gpu_ids)
+            return gpu_util.get_docker_gpu_device_mapping(gpu_ids, num_gpus)
         return None
 
     @staticmethod

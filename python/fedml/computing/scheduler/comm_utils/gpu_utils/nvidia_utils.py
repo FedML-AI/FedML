@@ -28,11 +28,12 @@ class NvidiaGPUtil(GPUCardUtil):
         return GPUtil.getAvailable(order=order, limit=limit, maxLoad=max_load, maxMemory=max_memory)
 
     @staticmethod
-    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
-        if gpu_ids and len(gpu_ids):
+    def get_docker_gpu_device_mapping(gpu_ids: List[int], num_gpus: int = 0) -> Optional[Dict]:
+        if gpu_ids is not None and len(gpu_ids):
             gpu_id_list = list(map(lambda x: str(x), gpu_ids))
             return {"device_requests": [docker.types.DeviceRequest(device_ids=gpu_id_list, capabilities=[["gpu"]])]}
-        return None
+        else:
+            return {"device_requests": [docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']])]}
 
     @staticmethod
     def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
