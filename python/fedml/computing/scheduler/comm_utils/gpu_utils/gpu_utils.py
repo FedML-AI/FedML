@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, List, Dict
 
+from docker import DockerClient
+
 
 class GPUCardType(Enum):
     NVIDIA = auto()
@@ -51,4 +53,9 @@ class GPUCardUtil(ABC):
     @staticmethod
     @abstractmethod
     def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
         raise NotImplementedError

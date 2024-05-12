@@ -1,6 +1,8 @@
 import logging
 from typing import Optional, List, Dict
 
+from docker import DockerClient
+
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil, GPUCard
 from fedml.computing.scheduler.comm_utils.gpu_utils.nvidia_utils import NvidiaGPUtil
 from fedml.computing.scheduler.comm_utils.gpu_utils.qualcomm_utils import QualcommNPUtil
@@ -42,7 +44,17 @@ class HardwareUtil(metaclass=Singleton):
     @staticmethod
     def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
         gpu_util = HardwareUtil.__get_util()
-        return gpu_util.get_docker_gpu_device_mapping(gpu_ids)
+        if gpu_util is not None:
+            return gpu_util.get_docker_gpu_device_mapping(gpu_ids)
+        return None
+
+    @staticmethod
+    def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
+        gpu_ids = []
+        gpu_util = HardwareUtil.__get_util()
+        if gpu_util is not None:
+            gpu_ids = gpu_util.get_docker_gpu_ids_by_container_name(container_name, docker_client)
+        return gpu_ids
 
 
 if __name__ == "__main__":

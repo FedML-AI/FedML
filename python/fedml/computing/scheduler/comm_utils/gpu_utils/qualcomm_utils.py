@@ -1,13 +1,17 @@
 import logging
 import math
+import re
 import subprocess
 import sys
 from typing import List, Optional, Dict
+
+from docker import DockerClient
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 
 
 class QualcommNPUtil(GPUCardUtil):
+    NPU_CARD_PATH = "/dev/accel/accel"
 
     def __init__(self):
         sys.path.append("/opt/qti-aic/dev/lib/x86_64/")
@@ -53,8 +57,21 @@ class QualcommNPUtil(GPUCardUtil):
     @staticmethod
     def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
         if gpu_ids and len(gpu_ids):
-            return {"devices": [f"/dev/accel/accel{gpu_id}:/dev/accel/accel{gpu_id}" for gpu_id in gpu_ids]}
+            return {
+                "devices": [f"{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}:{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}" for gpu_id
+                            in gpu_ids]}
         return None
+
+    @staticmethod
+    def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
+        gpu_ids = []
+        try:
+            docker_inspect_info = docker_client.api.inspect_container(container_name)
+            gpu_ids = QualcommNPUtil.__parse_gpu_ids(docker_inspect_info.get("HostConfig", {}))
+        except Exception as e:
+            logging.error(f"Failed to get GPU IDs: {e}")
+            pass
+        return gpu_ids
 
     @staticmethod
     def __convert(npu) -> GPUCard:
@@ -75,3 +92,39 @@ class QualcommNPUtil(GPUCardUtil):
             memoryUsed=memory_used,
             memoryUtil=memory_utilized,
         )
+
+    @staticmethod
+    def __parse_gpu_ids(host_config: dict) -> List[int]:
+        devices = host_config.get('Devices', [])
+        gpu_ids = []
+        for device in devices:
+            gpu_id = QualcommNPUtil.__extract_integer_from_host_path(device.get('PathOnHost', None))
+
+            # Check explicitly if gpu_id is not None, as gpu_id can be 0, which is a valid value to include.
+            if gpu_id is not None:
+                gpu_ids.append(gpu_id)
+        return gpu_ids
+
+    @staticmethod
+    def __extract_integer_from_host_path(host_path: str) -> Optional[int]:
+        if not host_path:
+            logging.error("Host Path is None; GPU Id extraction Failed")
+            return None
+
+        npu_card_path = QualcommNPUtil.NPU_CARD_PATH
+
+        # Check if host_path starts with npu_card_path
+        if host_path.startswith(npu_card_path):
+
+            # Extract the numeric suffix from the host path
+            suffix = host_path[len(npu_card_path):]  # Get the substring after npu_card_path
+            match = re.match(r'^(\d+)', suffix)  # Use regex to match the leading integer
+            if match:
+                return int(match.group(1))  # Return the extracted integer
+            else:
+                logging.error(f"Failed to extract GPU id from Host Path {host_path}")
+        else:
+            logging.error(f"Host Path {host_path} doesn't start with NPU Card Path {npu_card_path}")
+
+        # Return None if extraction fails
+        return None

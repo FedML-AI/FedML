@@ -1,8 +1,9 @@
+import logging
 import subprocess
 from typing import List, Optional, Dict
 
 import docker
-from docker import types
+from docker import types, DockerClient
 from GPUtil import GPUtil, GPU
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
@@ -32,6 +33,16 @@ class NvidiaGPUtil(GPUCardUtil):
             gpu_id_list = list(map(lambda x: str(x), gpu_ids))
             return {"device_requests": [docker.types.DeviceRequest(device_ids=gpu_id_list, capabilities=[["gpu"]])]}
         return None
+
+    @staticmethod
+    def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
+        try:
+            gpu_ids = docker_client.api.inspect_container(container_name)["HostConfig"]["DeviceRequests"][0]["DeviceIDs"]
+            return list(map(int, gpu_ids))
+        except Exception as e:
+            logging.error(f"Failed to get GPU IDs: {e}")
+            pass
+        return []
 
     @staticmethod
     def __convert(gpu: GPU) -> GPUCard:
