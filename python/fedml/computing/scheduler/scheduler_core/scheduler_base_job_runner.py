@@ -187,7 +187,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 # Write the chunk to the file
                 written_size = f.write(chunk)
                 total_size += written_size
-                logging.info(f"package downloaded size {total_size/1024} KB")
+                logging.info("package downloaded size %.2f KB", total_size/1024)
                 self.download_time = time.time()
         self.download_finished = True
 
