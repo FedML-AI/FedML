@@ -221,10 +221,10 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
     def run_server_job(
             self, process_event, completed_event, edge_id_status_queue=None,
-            edge_device_info_queue=None, run_metrics_queue=None,
-            run_event_queue=None, run_artifacts_queue=None, run_logs_queue=None,
-            sender_message_queue=None, listener_message_queue=None,
-            edge_device_info_global_queue=None, status_center_queue=None
+            edge_device_info_queue=None, run_metrics_queue=None, run_event_queue=None,
+            run_artifacts_queue=None, run_logs_queue=None, edge_device_info_global_queue=None,
+            run_extend_queue_list=None, sender_message_center_queue=None, listener_message_queue=None,
+            status_center_queue=None
     ):
         print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
 
@@ -239,10 +239,10 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
 
-            self.rebuild_message_status_center(sender_message_queue, listener_message_queue, status_center_queue)
+            self.rebuild_message_status_center(sender_message_center_queue, listener_message_queue, status_center_queue)
 
             self.run_server_job_impl(process_event, completed_event,
-                                     message_center_queue=sender_message_queue)
+                                     message_center_queue=sender_message_center_queue)
         except RunnerError:
             logging.info("Runner stopped.")
             self.status_reporter.report_server_id_status(
@@ -702,6 +702,9 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             return True, self.async_check_timeout
 
         return False, self.async_check_timeout
+
+    def get_client_id_list(self, server_edge_id_list):
+        return server_edge_id_list
 
 
 

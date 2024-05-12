@@ -166,11 +166,14 @@ class MLOpsDevicePerfStats(object):
         sleep_time_interval_for_server_monitor = 60
 
         while not self.should_stop_device_realtime_stats():
-            if role == ROLE_DEVICE_INFO_REPORTER:
-                time.sleep(sleep_time_interval_for_device_info)
-            elif role == ROLE_DEVICE_JOB_TOTAL_MONITOR:
-                time.sleep(sleep_time_interval_for_client_monitor if is_client
-                           else sleep_time_interval_for_server_monitor)
+            if self.enable_job_total_monitor:
+                if role == ROLE_DEVICE_INFO_REPORTER:
+                    time.sleep(sleep_time_interval_for_device_info)
+                elif role == ROLE_DEVICE_JOB_TOTAL_MONITOR:
+                    time.sleep(sleep_time_interval_for_client_monitor if is_client
+                               else sleep_time_interval_for_server_monitor)
+            else:
+                time.sleep(time_interval_map[role])
 
             try:
                 if role == ROLE_DEVICE_INFO_REPORTER:

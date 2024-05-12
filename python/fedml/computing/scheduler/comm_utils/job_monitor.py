@@ -208,6 +208,8 @@ class JobMonitor(Singleton):
             endpoint_replicas_details = {}
             if isinstance(endpoint_detail, str):
                 endpoint_replicas_details = json.loads(endpoint_detail)
+                if isinstance(endpoint_replicas_details, str):
+                    endpoint_replicas_details = json.loads(endpoint_replicas_details)
 
             if "result" in endpoint_replicas_details:
                 endpoint_replica_details = {}
@@ -220,13 +222,7 @@ class JobMonitor(Singleton):
         for endpoint_id, num_replica in res_to_mlops.items():
             curr_version = fedml.get_env_version()
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
-            if curr_version == "release":
-                mlops_prefix = "https://open.fedml.ai/"
-            elif curr_version == "test":
-                mlops_prefix = "https://open-test.fedml.ai/"
-            else:
-                logging.error(f"Do not support the version {curr_version}.")
-                return
+            mlops_prefix = fedml._get_backend_service()
             url = f"{mlops_prefix}{num_replica_url_path}"
 
             cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
