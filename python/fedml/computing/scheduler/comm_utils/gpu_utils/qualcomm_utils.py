@@ -51,6 +51,7 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def __convert(npu) -> GPUCard:
+        # TODO (alaydshah): Add support for load, memoryUtil, temperature
         memory_total = npu.devData.resourceInfo.dramTotal / 1024
         memory_free = npu.devData.resourceInfo.dramFree / 1024
         memory_used = memory_total - memory_free
@@ -61,6 +62,7 @@ class QualcommNPUtil(GPUCardUtil):
             name=npu.pciInfo.devicename,
             driver=npu.devData.fwQCImageVersionString,
             serial=npu.devData.serial,
+            vendor=GPUCardType.QUALCOMM.name,
             memoryTotal=memory_total,
             memoryFree=memory_free,
             memoryUsed=memory_used,

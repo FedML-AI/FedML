@@ -30,6 +30,7 @@ class NvidiaGPUtil(GPUCardUtil):
             name=gpu.name,
             driver=gpu.driver,
             serial=gpu.serial,
+            vendor=GPUCardType.NVIDIA.name,
             memoryTotal=gpu.memoryTotal,
             memoryFree=gpu.memoryFree,
             memoryUsed=gpu.memoryUsed,
@@ -38,5 +39,5 @@ class NvidiaGPUtil(GPUCardUtil):
             uuid=gpu.uuid,
             display_mode=gpu.display_mode,
             display_active=gpu.display_active,
-            temperature=gpu.temperature
+            temperature=gpu.temperature,
         )

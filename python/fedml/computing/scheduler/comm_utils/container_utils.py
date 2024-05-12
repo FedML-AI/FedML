@@ -8,10 +8,10 @@ import docker
 from docker import errors
 
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
-from GPUtil import getGPUs
 
 
 class ContainerUtils(Singleton):
@@ -252,7 +252,7 @@ class ContainerUtils(Singleton):
         CPU %     MEM USAGE / LIMIT     MEM %     NET I/O          BLOCK I/O
         0.26%     8.703GiB / 503.5GiB   1.73%     17.4GB / 176MB   545kB / 20.9GB
 
-        GPU: We currently use GPUtil to get the GPU stats on host machine since one GPU is not
+        GPU: We currently use HardwareUtil to get the GPU stats on host machine since one GPU is not
         shared by multiple containers
         (TODO: get the GPU stats inside the container)
         """
@@ -350,7 +350,7 @@ class ContainerUtils(Singleton):
         utilz, memory, temp = None, None, None
         gpu_stats_map = {}  # gpu_id: int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
         try:
-            gpus = getGPUs()
+            gpus = HardwareUtil.get_gpus()
 
             for i in gpu_ids:
                 gpu = gpus[i]

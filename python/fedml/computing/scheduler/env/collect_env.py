@@ -1,9 +1,8 @@
 import os
 import traceback
 
-import GPUtil
-
 import fedml
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 
 
@@ -59,8 +58,7 @@ def collect_env():
 
     try:
         print("\n======== GPU Configuration ========")
-        import GPUtil
-        gpus = GPUtil.getGPUs()
+        gpus = HardwareUtil.get_gpus()
         memory_total = 0.0
         memory_free = 0.0
         gpu_name = ""
