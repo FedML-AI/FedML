@@ -2,6 +2,8 @@ import logging
 import os
 import traceback
 import datetime
+from typing import List
+
 from dateutil.parser import isoparse
 
 import docker
@@ -335,7 +337,7 @@ class ContainerUtils(Singleton):
         return gpu_stats
 
     @staticmethod
-    def gpu_stats(gpu_ids):
+    def gpu_stats(gpu_ids: List[int]):
         utilz, memory, temp = None, None, None
         gpu_stats_map = {}  # gpu_id: int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
         gpu_ids = set(gpu_ids)
