@@ -320,7 +320,7 @@ class ContainerUtils(Singleton):
             round(blk_read_bytes / (1024 * 1024), 1), round(blk_write_bytes / (1024 * 1024), 1))
 
         # Calculate the gpu usage
-        gpus_stat = self.generate_container_gpu_stats(c_name)
+        gpus_stat = self.generate_container_gpu_stats(container_name=c_name)
 
         # Record timestamp
         timestamp = stats["read"]
@@ -328,39 +328,27 @@ class ContainerUtils(Singleton):
         return ContainerUtils.ContainerMetrics(cpu_percent, mem_gb_used, mem_gb_avail, recv_megabytes, sent_megabytes,
                                                blk_read_bytes, blk_write_bytes, timestamp, gpus_stat)
 
-    def generate_container_gpu_stats(self, c_name):
-        gpu_ids = self.get_gpu_ids_by_container_name(c_name)
+    def generate_container_gpu_stats(self, container_name):
+        client = self.get_docker_client()
+        gpu_ids = HardwareUtil.get_docker_gpu_ids_by_container_name(container_name=container_name, docker_client=client)
         gpu_stats = self.gpu_stats(gpu_ids)
         return gpu_stats
-
-    def get_gpu_ids_by_container_name(self, c_name):
-        client = self.get_docker_client()
-        gpu_ids = []
-        try:
-            gpu_ids = client.api.inspect_container(c_name)["HostConfig"]["DeviceRequests"][0]["DeviceIDs"]
-            gpu_ids = list(map(int, gpu_ids))
-        except Exception as e:
-            logging.error(f"Failed to get GPU IDs: {e}")
-            pass
-
-        return gpu_ids
 
     @staticmethod
     def gpu_stats(gpu_ids):
         utilz, memory, temp = None, None, None
         gpu_stats_map = {}  # gpu_id: int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
+        gpu_ids = set(gpu_ids)
         try:
-            gpus = HardwareUtil.get_gpus()
-
-            for i in gpu_ids:
-                gpu = gpus[i]
-                gpu_stats_map[i] = {
-                    "gpu_utilization": gpu.load*100,
-                    "gpu_memory_allocated": gpu.memoryUtil*100,
-                    "gpu_temp": gpu.temperature,
-                    # "gpu_power_usage": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000,   # in watts
-                    # "gpu_time_spent_accessing_memory": utilz.memory   # in ms
-                }
+            for gpu in HardwareUtil.get_gpus():
+                if gpu.id in gpu_ids:
+                    gpu_stats_map[gpu.id] = {
+                        "gpu_utilization": gpu.load * 100,
+                        "gpu_memory_allocated": gpu.memoryUsed / gpu.memoryTotal * 100,
+                        "gpu_temp": gpu.temperature,
+                        # "gpu_power_usage": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000,   # in watts
+                        # "gpu_time_spent_accessing_memory": utilz.memory   # in ms
+                    }
         except Exception as e:
             logging.error(f"Failed to get GPU stats: {e}")
 
