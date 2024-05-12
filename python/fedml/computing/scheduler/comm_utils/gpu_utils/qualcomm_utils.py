@@ -1,13 +1,16 @@
 import logging
 import math
 import subprocess
+import sys
 from typing import List, Optional
 
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
-from qaicrt import Util, QIDList, QDevInfo, QStatus
 
 
 class QualcommNPUtil(GPUCardUtil):
+    def __init__(self):
+        sys.path.append("/opt/qti-aic/dev/lib/x86_64/")
+
     @classmethod
     def detect_gpu_card_type(cls) -> Optional[GPUCardType]:
         try:
@@ -18,6 +21,8 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def get_gpu_cards() -> List[GPUCard]:
+        from qaicrt import Util, QIDList, QDevInfo, QStatus
+
         cards = []
         util = Util()
         status, card_list = util.getDeviceIds()
