@@ -16,15 +16,33 @@ from .system_stats import SysStats
 from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
+
+ROLE_DEVICE_JOB_TOTAL_MONITOR = 0
 ROLE_DEVICE_INFO_REPORTER = 1
-ROLE_DEVICE_JOB_MONITOR = 2
+ROLE_ENDPOINT_MASTER = 2
+ROLE_ENDPOINT_SLAVE = 3
+ROLE_RUN_MASTER = 4
+ROLE_RUN_SLAVE = 5
+ROLE_ENDPOINT_LOGS = 6
+ROLE_AUTO_SCALER = 7
+ROLE_ENDPOINT_REPLICA_NUM = 8
+ROLE_ENDPOINT_REPLICA_PERF = 9
 
 
 class MLOpsDevicePerfStats(object):
     def __init__(self):
         self.device_realtime_stats_process = None
         self.device_realtime_stats_event = None
-        self.device_monitor_process = None
+        self.monitor_run_slave_process = None
+        self.monitor_run_master_process = None
+        self.monitor_endpoint_master_process = None
+        self.monitor_endpoint_slave_process = None
+        self.monitor_endpoint_logs_process = None
+        self.monitor_auto_scaler_process = None
+        self.monitor_replica_num_process = None
+        self.monitor_replica_perf_process = None
+        self.job_total_monitor_process = None
+        self.enable_job_total_monitor = False
         self.args = None
         self.device_id = None
         self.run_id = None
@@ -63,12 +81,52 @@ class MLOpsDevicePerfStats(object):
             args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client))
         self.device_realtime_stats_process.start()
 
-        self.device_monitor_process = multiprocessing.Process(
-            target=perf_stats.report_device_realtime_stats_entry,
-            args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_MONITOR, self.is_client))
-        self.device_monitor_process.start()
+        if self.enable_job_total_monitor:
+            self.job_total_monitor_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_TOTAL_MONITOR, self.is_client))
+            self.job_total_monitor_process.start()
+        else:
+            if self.is_client:
+                self.monitor_endpoint_master_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER))
+                self.monitor_endpoint_master_process.start()
 
-    def report_device_realtime_stats_entry(self, sys_event, role, is_client):
+                self.monitor_run_slave_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
+                self.monitor_run_slave_process.start()
+
+                self.monitor_endpoint_logs_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
+                self.monitor_endpoint_logs_process.start()
+
+                # Register auto-scaler process
+                self.monitor_auto_scaler_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER))
+                self.monitor_auto_scaler_process.start()
+
+                # Register replica number report channel
+                self.monitor_replica_num_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM))
+                self.monitor_replica_num_process.start()
+
+                # Register replica performance report channel
+                self.monitor_replica_perf_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF))
+                self.monitor_replica_perf_process.start()
+            else:
+                self.monitor_run_master_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_RUN_MASTER))
+                self.monitor_run_master_process.start()
+
+    def report_device_realtime_stats_entry(self, sys_event, role, is_client=False):
         # print(f"Report device realtime stats, process id {os.getpid()}")
 
         self.device_realtime_stats_event = sys_event
@@ -91,25 +149,58 @@ class MLOpsDevicePerfStats(object):
         JobMonitor.get_instance().mqtt_config = self.args.mqtt_config_path
 
         # Notify MLOps with system information.
+        sleep_time_interval = 10
+        time_interval_map = {
+            ROLE_DEVICE_INFO_REPORTER: 10, ROLE_RUN_SLAVE: 60, ROLE_RUN_MASTER: 70,
+            ROLE_ENDPOINT_SLAVE: 80, ROLE_ENDPOINT_MASTER: 90, ROLE_ENDPOINT_LOGS: 30,
+            ROLE_AUTO_SCALER: 60, ROLE_ENDPOINT_REPLICA_NUM: 30, ROLE_ENDPOINT_REPLICA_PERF: 30
+        }
+
+        job_monitor_obj = None
+        if role == ROLE_AUTO_SCALER:
+            # job_monitor Should be initialized once
+            job_monitor_obj = JobMonitor.get_instance()
+
         sleep_time_interval_for_device_info = 60
         sleep_time_interval_for_client_monitor = 30
         sleep_time_interval_for_server_monitor = 60
+
         while not self.should_stop_device_realtime_stats():
             if role == ROLE_DEVICE_INFO_REPORTER:
                 time.sleep(sleep_time_interval_for_device_info)
-            elif role == ROLE_DEVICE_JOB_MONITOR:
+            elif role == ROLE_DEVICE_JOB_TOTAL_MONITOR:
                 time.sleep(sleep_time_interval_for_client_monitor if is_client
                            else sleep_time_interval_for_server_monitor)
 
             try:
                 if role == ROLE_DEVICE_INFO_REPORTER:
                     MLOpsDevicePerfStats.report_gpu_device_info(self.edge_id, mqtt_mgr=mqtt_mgr)
-                elif role == ROLE_DEVICE_JOB_MONITOR:
+                elif role == ROLE_RUN_SLAVE:
+                    JobMonitor.get_instance().monitor_slave_run_process_status()
+                elif role == ROLE_RUN_MASTER:
+                    JobMonitor.get_instance().monitor_master_run_process_status(
+                        self.edge_id, device_info_reporter=device_info_reporter)
+                elif role == ROLE_ENDPOINT_SLAVE:
+                    JobMonitor.get_instance().monitor_slave_endpoint_status()
+                elif role == ROLE_ENDPOINT_MASTER:
+                    JobMonitor.get_instance().monitor_master_endpoint_status()
+                elif role == ROLE_ENDPOINT_LOGS:
+                    JobMonitor.get_instance().monitor_endpoint_logs()
+                elif role == ROLE_ENDPOINT_REPLICA_NUM:
+                    JobMonitor.get_instance().monitor_replicas_number()
+                elif role == ROLE_ENDPOINT_REPLICA_PERF:
+                    JobMonitor.get_instance().monitor_replicas_perf(self.edge_id, mqtt_mgr=mqtt_mgr)
+                elif role == ROLE_AUTO_SCALER:
+                    job_monitor_obj.autoscaler_reconcile_after_interval()
+                elif role == ROLE_DEVICE_JOB_TOTAL_MONITOR:
                     if is_client:
                         JobMonitor.get_instance().monitor_slave_run_process_status()
                         JobMonitor.get_instance().monitor_slave_endpoint_status()
                         JobMonitor.get_instance().monitor_master_endpoint_status()
                         JobMonitor.get_instance().monitor_endpoint_logs()
+                        JobMonitor.get_instance().monitor_replicas_number()
+                        JobMonitor.get_instance().monitor_replicas_perf(self.edge_id, mqtt_mgr=mqtt_mgr)
+                        job_monitor_obj.autoscaler_reconcile_after_interval()
                     else:
                         JobMonitor.get_instance().monitor_master_run_process_status(
                             self.edge_id, device_info_reporter=device_info_reporter)

@@ -50,8 +50,10 @@ def validate_argument(ctx, param, value):
                                              "the data file or directory name.")
 @click.option("--description", "-d", type=str, help="Add description to your data to store. If not provided, "
                                                     "the description will be empty.")
-@click.option("--user_metadata", "-um", type=str, help="User-defined metadata in the form of a name-value (key-value) "
-                                                       "pair. Defaults to None.")
+@click.option("--user_metadata", "-um", type=str, help="User-defined metadata in the form of a dictionary, for instance, "
+                                                       " {'name':'value'} within double quotes. "" "
+                                                       "Defaults to None.")
+@click.option("--tags", "-t", type=str, help="Add tags to your data to store. Give tags in comma separated form like 'cv,unet,segmentation' If not provided, the tags will be empty.")
 @click.option('--service', "-s", type=click.Choice(['R2']), default="R2", help="Storage service for object storage. "
                                                                                "Only R2 is supported as of now")
 @click.option(
@@ -64,10 +66,11 @@ def validate_argument(ctx, param, value):
     default="release",
     help=version_help,
 )
-def upload(data_path: str, name: str, user_metadata: str, description: str, version: str, api_key: str, service):
+def upload(data_path: str, name: str, user_metadata: str, description: str, version: str, api_key: str, tags:str, service):
     metadata = _parse_metadata(user_metadata)
+    tag_list = _parse_tags(tags)
     fedml.set_env_version(version)
-    response = fedml.api.upload(data_path=data_path, api_key=api_key, name=name, service=service, show_progress=True,
+    response = fedml.api.upload(data_path=data_path, api_key=api_key, name=name, tag_list = tag_list, service=service, show_progress=True,
                                 description=description, metadata=metadata)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Data uploaded successfully. | url: {response.data}")
@@ -89,16 +92,16 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
 )
 def list_data(version, api_key):
     fedml.set_env_version(version)
-    response = fedml.api.list_storage_obects(api_key=api_key)
+    response = fedml.api.list_storage_objects(api_key=api_key)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Successfully fetched list of stored objects:")
         if not response.data:
             click.echo(f"No stored objects found for account linked with apikey: {api_key}")
             return
-        object_list_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
+        object_list_table = PrettyTable(["Data Name", "Data Size", "Description", "Data Tags","Created At", "Updated At"])
         for stored_object in response.data:
             object_list_table.add_row(
-                [stored_object.dataName, stored_object.description, stored_object.createdAt, stored_object.updatedAt])
+                [stored_object.dataName, stored_object.size, stored_object.description, stored_object.tag_list,stored_object.createdAt, stored_object.updatedAt])
         click.echo(object_list_table)
     else:
         click.echo(f"Failed to list stored objects for account linked with apikey {api_key}. "
@@ -156,8 +159,8 @@ def get_metadata(data_name, version, api_key):
             return
         click.echo(f"Successfully fetched metadata for object {data_name}:")
         # Todo (alaydshah): Add file size and tags
-        metadata_table = PrettyTable(["Data Name", "Description", "Created At", "Updated At"])
-        metadata_table.add_row([metadata.dataName, metadata.description, metadata.createdAt, metadata.updatedAt])
+        metadata_table = PrettyTable(["Data Name","Data Size","Description","Data Tags","Created At", "Updated At"])
+        metadata_table.add_row([metadata.dataName,metadata.size,metadata.description,metadata.tag_list,metadata.createdAt, metadata.updatedAt])
         click.echo(metadata_table)
         click.echo("")
     else:
@@ -237,3 +240,9 @@ def _parse_metadata(metadata: str):
         click.echo(
             f"Input metadata cannot be evaluated. Please make sure metadata is in the correct format. Error: {e}.")
         exit()
+
+def _parse_tags(tags:str):
+    if not tags:
+        return []
+    tag_list = tags.split(",")
+    return tag_list 

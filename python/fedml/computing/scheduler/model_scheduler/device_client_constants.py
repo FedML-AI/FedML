@@ -37,6 +37,7 @@ class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_KILLED = "KILLED"
     MSG_MLOPS_CLIENT_STATUS_FAILED = "FAILED"
     MSG_MLOPS_CLIENT_STATUS_FINISHED = "FINISHED"
+    MSG_MLOPS_CLIENT_STATUS_ARCHIVED = "ARCHIVED"
 
     MSG_MLOPS_SERVER_DEVICE_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_DEVICE_STATUS_IDLE = "IDLE"
@@ -274,6 +275,13 @@ class ClientConstants(object):
         return model_file_dir
 
     @staticmethod
+    def get_deploy_failed_log_dir():
+        model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs", "failed_logs")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir, exist_ok=True)
+        return model_file_dir
+
+    @staticmethod
     def get_model_infer_data_dir():
         model_infer_data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_infer_data")
         if not os.path.exists(model_infer_data_dir):
@@ -288,6 +296,11 @@ class ClientConstants(object):
     @staticmethod
     def get_model_ops_endpoint_detail_url(endpoint_id, config_version="release"):
         model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/queryEndpointDetailFromCli?endpointId={endpoint_id}"
+        return model_ops_url
+
+    @staticmethod
+    def get_model_ops_endpoint_detail_by_name_url(endpoint_name, config_version="release"):
+        model_ops_url = f"{ClientConstants.get_model_ops_url(config_version)}/api/v1/endpoint/queryDetailByNameFromCli?endpointName={endpoint_name}"
         return model_ops_url
 
     @staticmethod

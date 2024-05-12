@@ -10,6 +10,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from typing import List, Dict, Any
 from os.path import expanduser
 import base64
+from fedml.workflow.workflow_mlops_api import WorkflowMLOpsApi
 
 
 class TrainJob(CustomizedBaseJob):
@@ -39,6 +40,21 @@ class TrainJob(CustomizedBaseJob):
         super().run()
 
         os.remove(self.job_yaml_absolute_path_for_launch)
+
+        dependency_list = list()
+        for dep in self.dependencies:
+            dependency_list.append(dep)
+        result = WorkflowMLOpsApi.add_run(
+            workflow_id=self.workflow_id, job_name=self.name, run_id=self.run_id,
+            dependencies=dependency_list, api_key=self.job_api_key
+        )
+
+        if self.launch_result_code != 0:
+            self.output_data_dict = {
+                "error": self.launch_result_code, "message": self.launch_result_message}
+            print(f"{self.output_data_dict}")
+            self.set_outputs(self.output_data_dict)
+            return
 
     def status(self):
         return super().status()

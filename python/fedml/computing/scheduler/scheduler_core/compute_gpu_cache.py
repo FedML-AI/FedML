@@ -44,6 +44,14 @@ class ComputeGpuCache(object):
 
         return device_run_num_gpus
 
+    def delete_device_run_num_gpus(self, device_id, run_id):
+        try:
+            self.redis_connection.delete(self.get_device_run_num_gpus_key(device_id, run_id))
+        except Exception as e:
+            logging.error(f"Error deleting device_run_num_gpus: {e}, Traceback: {traceback.format_exc()}")
+
+        ComputeGpuDatabase.get_instance().delete_device_run_num_gpus(device_id, run_id)
+
     def get_device_run_gpu_ids(self, device_id, run_id):
         device_run_gpu_ids = None
         try:
@@ -66,6 +74,14 @@ class ComputeGpuCache(object):
 
         device_run_gpu_ids = self.map_str_list_to_int_list(device_run_gpu_ids.split(','))
         return device_run_gpu_ids
+
+    def delete_device_run_gpu_ids(self, device_id, run_id):
+        try:
+            self.redis_connection.delete(self.get_device_run_gpu_ids_key(device_id, run_id))
+        except Exception as e:
+            logging.error(f"Error deleting device_run_gpu_ids: {e}, Traceback: {traceback.format_exc()}")
+
+        ComputeGpuDatabase.get_instance().delete_device_run_gpu_ids(device_id, run_id)
 
     def get_device_available_gpu_ids(self, device_id):
         device_available_gpu_ids = None
@@ -176,6 +192,8 @@ class ComputeGpuCache(object):
         return edge_id, model_master_device_id, model_slave_device_id
 
     def get_endpoint_run_id_map(self, endpoint_id):
+        # Map the endpoint_id (Deploy) to the run_id (Launch)
+        # TODO(Raphael): Check if we can depreciate this function
         run_id = None
         try:
             if self.redis_connection.exists(self.get_endpoint_run_id_map_key(endpoint_id)):
@@ -259,6 +277,14 @@ class ComputeGpuCache(object):
 
         ComputeGpuDatabase.get_instance().set_edge_model_id_map(run_id, edge_id, model_master_device_id, model_slave_device_id)
 
+    def delete_edge_model_id_map(self, run_id):
+        try:
+            self.redis_connection.delete(self.get_edge_model_id_map_key(run_id))
+        except Exception as e:
+            logging.error(f"Error deleting edge_model_id_map: {e}, Traceback: {traceback.format_exc()}")
+
+        ComputeGpuDatabase.get_instance().delete_edge_model_id_map(run_id)
+
     def set_endpoint_run_id_map(self, endpoint_id, run_id):
         try:
             self.redis_connection.set(self.get_endpoint_run_id_map_key(endpoint_id), f"{run_id}")
@@ -267,10 +293,20 @@ class ComputeGpuCache(object):
 
         ComputeGpuDatabase.get_instance().set_endpoint_run_id_map(endpoint_id, run_id)
 
-    def get_device_run_num_gpus_key(self, device_id, run_id):
+    def delete_endpoint_run_id_map(self, endpoint_id):
+        try:
+            self.redis_connection.delete(self.get_endpoint_run_id_map_key(endpoint_id))
+        except Exception as e:
+            logging.error(f"Error deleting endpoint_run_id_map: {e}, Traceback: {traceback.format_exc()}")
+
+        ComputeGpuDatabase.get_instance().delete_endpoint_run_id_map(endpoint_id)
+
+    @staticmethod
+    def get_device_run_num_gpus_key(device_id, run_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG}{device_id}_{run_id}"
 
-    def get_device_run_gpu_ids_key(self, device_id, run_id):
+    @staticmethod
+    def get_device_run_gpu_ids_key(device_id, run_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_RUN_GPU_IDS_TAG}{device_id}_{run_id}"
 
     def get_device_available_gpu_ids_key(self, device_id):
@@ -279,10 +315,12 @@ class ComputeGpuCache(object):
     def get_device_total_num_gpus_key(self, device_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_TOTAL_NUM_GPUS_TAG}{device_id}"
 
-    def get_run_total_num_gpus_key(self, run_id):
+    @staticmethod
+    def get_run_total_num_gpus_key(run_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_RUN_TOTAL_NUM_GPUS_TAG}{run_id}"
 
-    def get_run_device_ids_key(self, run_id):
+    @staticmethod
+    def get_run_device_ids_key(run_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_RUN_DEVICE_IDS_TAG}{run_id}"
 
     def get_device_run_lock_key(self, device_id, run_id):
@@ -297,13 +335,12 @@ class ComputeGpuCache(object):
     def get_run_info_sync_lock_key(self, run_id):
         return f"{ComputeGpuCache.FEDML_RUN_INFO_SYNC_LOCK_TAG}{run_id}"
 
-    def get_edge_model_id_map_key(self, run_id):
+    @staticmethod
+    def get_edge_model_id_map_key(run_id):
         return f"{ComputeGpuCache.FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG}{run_id}"
 
-    def get_edge_model_id_map_key(self, run_id):
-        return f"{ComputeGpuCache.FEDML_EDGE_ID_MODEL_DEVICE_ID_MAP_TAG}{run_id}"
-
-    def get_endpoint_run_id_map_key(self, endpoint_id):
+    @staticmethod
+    def get_endpoint_run_id_map_key(endpoint_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_ENDPOINT_RUN_ID_MAP_TAG}{endpoint_id}"
 
     def map_list_to_str(self, list_obj):

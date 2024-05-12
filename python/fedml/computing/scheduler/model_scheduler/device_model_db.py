@@ -219,12 +219,13 @@ class FedMLModelDatabase(Singleton):
 
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,
-                            total_latency, avg_latency,
+                            total_latency, avg_latency, current_latency,
                             total_request_num, current_qps,
                             avg_qps, timestamp, device_id):
         self.set_end_point_metrics(end_point_id, end_point_name,
                                    model_name, model_version,
                                    total_latency=total_latency, avg_latency=avg_latency,
+                                   current_latency=current_latency,
                                    total_request_num=total_request_num, current_qps=current_qps,
                                    avg_qps=avg_qps, timestamp=timestamp, device_id=device_id)
 
@@ -268,6 +269,12 @@ class FedMLModelDatabase(Singleton):
         # Compatibility for old version
         try:
             self.db_connection.execute(text("ALTER TABLE deployment_result_info ADD replica_no TEXT default '1';"))
+        except Exception as e:
+            pass
+
+        try:
+            # Also for current_latency = Column(Float)
+            self.db_connection.execute(text("ALTER TABLE end_point_metrics ADD current_latency FLOAT default 1;"))
         except Exception as e:
             pass
 
@@ -431,7 +438,7 @@ class FedMLModelDatabase(Singleton):
 
     def set_end_point_metrics(self, end_point_id, end_point_name,
                               model_name, model_version,
-                              total_latency=None, avg_latency=None,
+                              total_latency=None, avg_latency=None, current_latency=None,
                               total_request_num=None, current_qps=None,
                               avg_qps=None, timestamp=None, device_id=None):
         self.open_job_db()
@@ -440,11 +447,19 @@ class FedMLModelDatabase(Singleton):
                         FedMLEndPointMetricsModel.end_point_name == f'{end_point_name}',
                         FedMLEndPointMetricsModel.model_name == f'{model_name}',
                         FedMLEndPointMetricsModel.model_version == f'{model_version}')).first()
+
+        # For current_latency, compatible with old version
+        try:
+            self.db_connection.execute(text("ALTER TABLE end_point_metrics ADD current_latency FLOAT default 0;"))
+        except Exception as e:
+            pass
+
         if endpoint_metric is None:
             endpoint_metric = FedMLEndPointMetricsModel(end_point_id=end_point_id,
                                                         end_point_name=end_point_name,
                                                         model_name=model_name, model_version=model_version,
                                                         total_latency=total_latency, avg_latency=avg_latency,
+                                                        current_latency=current_latency,
                                                         total_request_num=total_request_num, current_qps=current_qps,
                                                         avg_qps=avg_qps, timestamp=timestamp, device_id=device_id)
             self.db_connection.add(endpoint_metric)
@@ -515,6 +530,7 @@ class FedMLEndPointMetricsModel(Base):
     model_version = Column(TEXT)
     total_latency = Column(Float)
     avg_latency = Column(Float)
+    current_latency = Column(Float)
     total_request_num = Column(Integer)
     current_qps = Column(Float)
     avg_qps = Column(Float)

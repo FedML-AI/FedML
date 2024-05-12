@@ -37,6 +37,7 @@ class CustomizedBaseJob(Job):
         except Exception as e:
             self.launch_result_code = -1
             self.launch_result_message = f"Exception {traceback.format_exc()}"
+            raise e
 
     def status(self):
         if self.launch_result_code != 0:

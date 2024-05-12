@@ -179,12 +179,11 @@ def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
 
 
-def upload(data_path, api_key=None, service="R2", name=None, description=None, metadata=None, show_progress=False,
+def upload(data_path, api_key=None, tag_list=[], service="R2", name=None, description=None, metadata=None, show_progress=False,
            out_progress_to_err=True, progress_desc=None) -> FedMLResponse:
-    return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description,
+    return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description, tag_list =tag_list,
                           service=service, progress_desc=progress_desc, show_progress=show_progress,
                           out_progress_to_err=out_progress_to_err, metadata=metadata)
-
 
 def get_storage_user_defined_metadata(data_name, api_key=None) -> FedMLResponse:
     return storage.get_user_metadata(data_name=data_name, api_key=api_key)
@@ -194,7 +193,7 @@ def get_storage_metadata(data_name, api_key=None) -> FedMLResponse:
     return storage.get_metadata(api_key=api_key, data_name=data_name)
 
 
-def list_storage_obects(api_key=None) -> FedMLResponse:
+def list_storage_objects(api_key=None) -> FedMLResponse:
     return storage.list_objects(api_key=api_key)
 
 

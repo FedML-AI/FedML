@@ -6,6 +6,7 @@ import requests
 import httpx
 from fastapi.responses import Response
 from fastapi.responses import StreamingResponse
+from .device_http_inference_protocol import stream_generator
 
 
 class FedMLHttpProxyInference:
@@ -71,23 +72,40 @@ class FedMLHttpProxyInference:
         response_ok = False
         model_inference_result = {}
         try:
-            async with httpx.AsyncClient() as client:
-                inference_response = await client.post(
-                    url=http_proxy_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
+            if inference_input_list.get("stream", False):
+                model_inference_result = StreamingResponse(
+                    stream_generator(http_proxy_url, input_json=model_inference_json),
+                    media_type="text/event-stream",
+                    headers={
+                        "Content-Type": model_api_headers.get("Accept", "text/event-stream"),
+                        "Cache-Control": "no-cache",
+                    }
                 )
-
-            if isinstance(inference_response, (Response, StreamingResponse)):
-                error_code = inference_response.status_code
-            elif isinstance(inference_response, Mapping):
-                error_code = inference_response.get("error_code")
-            else:
-                error_code = inference_response.status_code
-
-            if error_code == 200:
                 response_ok = True
-                return response_ok, inference_response.content
             else:
-                model_inference_result = {"response": f"{inference_response.content}"}
+                async with httpx.AsyncClient() as client:
+                    inference_response = await client.post(
+                        url=http_proxy_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
+                    )
+
+                if isinstance(inference_response, (Response, StreamingResponse)):
+                    error_code = inference_response.status_code
+                elif isinstance(inference_response, Mapping):
+                    error_code = inference_response.get("error_code")
+                else:
+                    error_code = inference_response.status_code
+
+                if error_code == 200:
+                    if inference_type == "default":
+                        model_inference_result = inference_response.json()
+                    elif inference_type == "image/png":
+                        binary_content: bytes = inference_response.content
+                        model_inference_result = Response(content=binary_content, media_type="image/png")
+                    else:
+                        model_inference_result = inference_response.json()
+                    response_ok = True
+                else:
+                    model_inference_result = {"response": f"{inference_response.content}"}
         except Exception as e:
             response_ok = False
             model_inference_result = {"response": f"{traceback.format_exc()}"}

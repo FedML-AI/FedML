@@ -140,7 +140,8 @@ class FedMLLaunchManager(Singleton):
                 raise Exception("Failed to apply endpoint for your model.")
             if applied_endpoint_id == 0:
                 raise Exception("Your endpoint id is occupied by other users.")
-            endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(applied_endpoint_id, user_api_key)
+            endpoint_detail = FedMLModelCards.get_instance().query_endpoint_detail_api(
+                endpoint_id=applied_endpoint_id, user_api_key=user_api_key)
             if endpoint_detail is None:
                 raise Exception("Failed to get the endpoint detail.")
             self.job_config.serving_endpoint_id = applied_endpoint_id

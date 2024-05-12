@@ -44,11 +44,11 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
     client_device_id = os.getenv("FEDML_CURRENT_EDGE_ID")
 
     if gpu_ids is None:
-        cuda_visable_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
+        cuda_visible_gpu_ids = JobRunnerUtils.get_instance().occupy_gpu_ids(
             end_point_id, num_gpus, client_device_id, inner_id=end_point_id,
             model_master_device_id=master_device_id, model_slave_device_id=edge_id)
-        if cuda_visable_gpu_ids is not None:
-            gpu_ids = cuda_visable_gpu_ids.split(',')
+        if cuda_visible_gpu_ids is not None:
+            gpu_ids = cuda_visible_gpu_ids.split(',')
             gpu_ids = ComputeUtils.map_str_list_to_int_list(gpu_ids)
             logging.info(f"Requested cuda visible gpu ids: {gpu_ids}")
 
@@ -314,6 +314,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
     environment["FEDML_CURRENT_RUN_ID"] = end_point_id
     environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+    environment["FEDML_REPLICA_RANK"] = replica_rank
     environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
     environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
     environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
@@ -463,7 +464,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
     while True:
         if not ClientConstants.is_running_on_k8s():
-            logging.info(f"Test: {inference_http_port}, Attempt: {deploy_attempt} / {deploy_attempt_threshold}")
+            logging.info(f"Attempt: {deploy_attempt} / {deploy_attempt_threshold} ...")
 
             try:
                 client = docker.from_env(timeout=5, version="auto")
@@ -496,14 +497,32 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
-                    logging.error(f"Error logs from docker: {format(err_logs)}")
+                    if len(err_logs) > 0:
+                        logging.error(f"{format(err_logs)}")
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
-                    logging.info(f"Logs from docker: {format(out_logs)}")
+                    if len(out_logs) > 0:
+                        logging.info(f"{format(out_logs)}")
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically remove it".format(cmd_container_name))
+
+                    # Save the failed log into ~/.fedml/fedml-model-client/fedml/logs/failed_logs/
+                    # $run_id/$container_name.log
+                    try:
+                        parent_dir = os.path.join(ClientConstants.get_deploy_failed_log_dir())
+                        os.makedirs(parent_dir, exist_ok=True)
+                        error_logs_dir = os.path.join(ClientConstants.get_deploy_failed_log_dir(), str(end_point_id))
+                        os.makedirs(error_logs_dir, exist_ok=True)
+                        error_log_file = os.path.join(error_logs_dir, f"{cmd_container_name}.log")
+                        with open(error_log_file, "w") as f:
+                            f.write(f"Container {cmd_container_name} has exited\n")
+                            f.write(f"Error logs: {err_logs}\n")
+                            f.write(f"Output logs: {out_logs}\n")
+                    except Exception as e:
+                        logging.error(f"Failed to save the error logs with exception {e}")
+
                     client.api.remove_container(container_obj.id, v=True, force=True)
                     break
 
@@ -517,8 +536,16 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         # Not yet ready, retry
         deploy_attempt += 1
         if deploy_attempt >= deploy_attempt_threshold:
-            logging.info(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
-                         "exiting the deployment...")
+            logging.error(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
+                          f"exiting the deployment...")
+
+            try:
+                client = docker.from_env()
+                container_obj = client.containers.get(cmd_container_name)
+                if container_obj is not None:
+                    client.api.remove_container(container_obj.id, v=True, force=True)
+            except Exception as e:
+                logging.error(f"Failed to remove the container with exception {e}")
             break
 
         logging.info(f"Model {inference_model_name} not yet ready, retry in {retry_interval} seconds...")
@@ -527,8 +554,8 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
                                         inference_type="default", model_version="", request_input_example=None):
-    logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}, \
-                  inference_http_port: {inference_http_port}, local_infer_url {local_infer_url}")
+    # logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}, \
+    #               inference_http_port: {inference_http_port}, local_infer_url {local_infer_url}")
 
     if inference_type == "default":
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)

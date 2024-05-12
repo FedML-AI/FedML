@@ -7,6 +7,8 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from .device_model_db import FedMLModelDatabase
 from fedml.core.common.singleton import Singleton
+from typing import Any, Dict, List
+from fedml.computing.scheduler.scheduler_core.compute_gpu_cache import ComputeGpuCache
 
 
 class FedMLModelCache(Singleton):
@@ -19,6 +21,12 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
+
+    # For scale-out & scale-in
+    FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
+
+    # For keeping track scale down decisions state.
+    FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG = "FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG-"
 
     # On the worker
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
@@ -33,6 +41,7 @@ class FedMLModelCache(Singleton):
         if not hasattr(self, "model_deployment_db"):
             self.model_deployment_db = FedMLModelDatabase().get_instance()
             self.model_deployment_db.create_table()
+        self.redis_addr, self.redis_port, self.redis_password = None, None, None
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
         _, env_redis_addr, env_redis_port, env_redis_pwd, disable_redis = \
@@ -79,15 +88,102 @@ class FedMLModelCache(Singleton):
         return is_connected
 
     def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
+        self.redis_addr, self.redis_port, self.redis_password = redis_addr, redis_port, redis_password
         if self.redis_pool is None:
             if redis_addr is None or redis_addr == "local":
                 self.setup_redis_connection("localhost", redis_port, redis_password)
             else:
                 self.setup_redis_connection(redis_addr, redis_port, redis_password)
 
+    def get_redis_params(self):
+        if any([self.redis_addr is None, self.redis_port is None, self.redis_password is None]):
+            raise RuntimeError("Redis parameters are not set.")
+        else:
+            return self.redis_addr, self.redis_port, self.redis_password
+
     @staticmethod
     def get_instance(redis_addr="local", redis_port=6379):
         return FedMLModelCache()
+
+    def set_user_setting_replica_num(self, end_point_id,
+                                     end_point_name: str, model_name: str, model_version: str,
+                                     replica_num: int, enable_auto_scaling: bool = False,
+                                     scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
+                                     target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
+                                     scale_down_delay_seconds: int = 120
+                                     ) -> bool:
+        """
+        Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
+        Value: {
+            "endpoint_name": end_point_name,
+            "model_name": model_name,
+            "model_version": model_version,
+            "replica_num": replica_num,
+            "enable_auto_scaling": enable_auto_scaling,
+            "scale_min": scale_min,
+            "scale_max": scale_max,
+            "state": state
+        }
+        replica_num is used for manual scale.
+        scale_min and scale_max are used for auto-scaling.
+
+        state should in "UNKNOWN", "DEPLOYED", "DEPLOYING".
+        """
+        assert state in ["UNKNOWN", "DEPLOYED", "DEPLOYING"]
+        replica_num_dict = {
+            "endpoint_id": end_point_id, "endpoint_name": end_point_name, "model_name": model_name,
+            "model_version": model_version, "replica_num": replica_num, "enable_auto_scaling": enable_auto_scaling,
+            "scale_min": scale_min, "scale_max": scale_max, "state": state,
+            "target_queries_per_replica": target_queries_per_replica,
+            "aggregation_window_size_seconds": aggregation_window_size_seconds,
+            "scale_down_delay_seconds": scale_down_delay_seconds
+        }
+        try:
+            self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
+        except Exception as e:
+            logging.error(e)
+            return False
+        return True
+
+    def update_user_setting_replica_num(self, end_point_id: str, state: str = "UNKNOWN") -> bool:
+        assert state in ["UNKNOWN", "DEPLOYED", "DEPLOYING"]
+        # Get existed value
+        try:
+            replica_num_dict = self.redis_connection.get(self.get_user_setting_replica_num_key(end_point_id))
+            replica_num_dict = json.loads(replica_num_dict)
+        except Exception as e:
+            logging.error(e)
+            return False
+
+        # Update the state
+        replica_num_dict["state"] = state
+
+        # Set the new value
+        try:
+            self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
+        except Exception as e:
+            logging.error(e)
+            return False
+        return True
+
+    def get_all_endpoints_user_setting(self) -> List[dict]:
+        """
+        Return a list of dict, each dict is the user setting of an endpoint.
+        """
+        user_setting_list = list()
+        try:
+            key_pattern = "{}*".format(self.get_user_setting_replica_num_key(""))
+            user_setting_keys = self.redis_connection.keys(pattern=key_pattern)
+            for key in user_setting_keys:
+                user_setting = self.redis_connection.get(key)
+                user_setting_list.append(json.loads(user_setting))
+        except Exception as e:
+            logging.error(e)
+        return user_setting_list
+
+    @staticmethod
+    def get_user_setting_replica_num_key(end_point_id):
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG, end_point_id)
 
     def set_deployment_result(self, end_point_id, end_point_name,
                               model_name, model_version, device_id, deployment_result, replica_no):
@@ -181,6 +277,19 @@ class FedMLModelCache(Singleton):
             except Exception as e:
                 logging.info(e)
                 pass
+        return result_list
+
+    def get_all_deployment_result_list(self):
+        result_list = list()
+        try:
+            key_pattern = "{}*".format(self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG)
+            result_keys = self.redis_connection.keys(pattern=key_pattern)
+            for key in result_keys:
+                result_list.extend(self.redis_connection.lrange(key, 0, -1))
+        except Exception as e:
+            logging.error(e)
+        # TODO(Raphael): Use Sqlite for the replica backup
+
         return result_list
 
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
@@ -399,6 +508,12 @@ class FedMLModelCache(Singleton):
 
         # TODO: Use Sqlite for the replica backup
 
+    def delete_all_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id):
+        prefix_key = self.get_replica_gpu_ids_key(end_point_id, end_point_name, model_name, device_id, 1)[:-2]
+        for key in self.redis_connection.scan_iter(prefix_key + "*"):
+            self.redis_connection.delete(key)
+        # TODO(Raphael): Delete the backup in Sqlite
+
     def get_replica_gpu_ids(self, end_point_id, end_point_name, model_name, device_id, replica_no):
         try:
             if self.redis_connection.exists(self.get_replica_gpu_ids_key(end_point_id, end_point_name,
@@ -407,25 +522,58 @@ class FedMLModelCache(Singleton):
                                                                               model_name, device_id, replica_no))
         except Exception as e:
             pass
+        return None
 
-    def delete_end_point(self, end_point_id, end_point_name, model_name, model_version):
+    def delete_end_point(self, end_point_id, end_point_name, model_name, model_version, device_id=None):
+        # Device id is either deploy master or deploy worker
         try:
             logging.info("Will Delete the related redis keys permanently")
             self.redis_connection.expire(self.get_deployment_result_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_deployment_status_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_deployment_token_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_round_robin_prev_device(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            any_version_round_robin_key = self.get_round_robin_prev_device_any_version(end_point_id, end_point_name, model_name)
+            for key in self.redis_connection.scan_iter(any_version_round_robin_key + "*"):
+                self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
             self.redis_connection.expire(self.get_deployment_device_info_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_activation_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
             self.redis_connection.expire(self.get_end_point_status_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_user_setting_replica_num_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            # Delete all replicas gpu ids
+            matched_prefix_replica = self.get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name, device_id)
+            for key in self.redis_connection.scan_iter(matched_prefix_replica + "*"):
+                self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+                logging.info(f"Those keys are deleted: {key}")
+
+            # Delete the compute gpu cache
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_device_ids_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_edge_model_id_map_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+
+            logging.info(f"Those keys are deleted:"
+                         f"{ComputeGpuCache.get_endpoint_run_id_map_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_total_num_gpus_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_total_num_gpus_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_run_device_ids_key(end_point_id)}, "
+                         f"{ComputeGpuCache.get_edge_model_id_map_key(end_point_id)}")
+
         except Exception as e:
             logging.error(f"error when deleting the redis keys: {e}")
             pass
 
     def get_end_point_activation(self, end_point_id):
-        # [Deprecated] activation logic is removed
-        return True
+        activation = False
+        try:
+            if self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
+                activation = self.redis_connection.get(self.get_end_point_activation_key(end_point_id))
+        except Exception as e:
+            activation = False
+        return activation
 
     def get_end_point_full_key_by_id(self, end_point_id):
         # e.g. FEDML_MODEL_DEPLOYMENT_RESULT--1234-dummy_endpoint_name-dummy_model_name
@@ -529,6 +677,19 @@ class FedMLModelCache(Singleton):
 
         return token
 
+    def get_end_point_token_with_eid(self, end_point_id):
+        # Only support redis for now
+        token = None
+        try:
+            prefix = self.get_deployment_token_key_eid(end_point_id)
+            for key in self.redis_connection.scan_iter(prefix + "*"):
+                token = self.redis_connection.get(key)
+                break
+        except Exception as e:
+            token = None
+
+        return token
+
     def get_endpoint_devices_replica_num(self, end_point_id):
         """
         Return a endpoint_devices_replica_num dict {id1: 1, id2: 1}, if not exist, return None
@@ -551,17 +712,28 @@ class FedMLModelCache(Singleton):
     def get_end_point_status_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
 
-    def get_end_point_activation_key(self, end_point_id):
+    @staticmethod
+    def get_end_point_activation_key(end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
 
     def get_deployment_device_info_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
 
-    def get_deployment_token_key(self, end_point_id, end_point_name, model_name):
+    @staticmethod
+    def get_deployment_token_key(end_point_id, end_point_name, model_name):
         return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id, end_point_name, model_name)
+
+    @staticmethod
+    def get_deployment_token_key_eid(end_point_id):
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
 
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
+
+    @staticmethod
+    def get_round_robin_prev_device_any_version(endpoint_id, endpoint_name, model_name):
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, endpoint_id,
+                                    endpoint_name, model_name)
 
     def get_endpoint_replica_num_key(self, end_point_id):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG, end_point_id, "replica_num", "key")
@@ -571,12 +743,17 @@ class FedMLModelCache(Singleton):
         return "{}-{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_REPLICA_GPU_IDS_TAG, end_point_id,
                                           end_point_name, model_name, device_id, replica_no)
 
+    @staticmethod
+    def get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name, device_id):
+        return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_REPLICA_GPU_IDS_TAG, end_point_id,
+                                       end_point_name, model_name, device_id)
+
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,
-                            total_latency, avg_latency,
+                            total_latency, avg_latency, current_latency,
                             total_request_num, current_qps,
                             avg_qps, timestamp, device_id):
-        metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency,
+        metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency, "current_latency": current_latency,
                         "total_request_num": total_request_num, "current_qps": current_qps,
                         "avg_qps": avg_qps, "timestamp": timestamp, "device_id": device_id}
         try:
@@ -586,7 +763,7 @@ class FedMLModelCache(Singleton):
             pass
         self.model_deployment_db.set_monitor_metrics(end_point_id, end_point_name,
                                                      model_name, model_version,
-                                                     total_latency, avg_latency,
+                                                     total_latency, avg_latency, current_latency,
                                                      total_request_num, current_qps,
                                                      avg_qps, timestamp, device_id)
 
@@ -633,21 +810,159 @@ class FedMLModelCache(Singleton):
         avg_latency = metrics_item_json["avg_latency"]
         total_request_num = metrics_item_json["total_request_num"]
         current_qps = metrics_item_json["current_qps"]
+
+        # For the old version, the current_latency is not available
+        current_latency = metrics_item_json.get("current_latency", avg_latency)
+
         avg_qps = metrics_item_json["avg_qps"]
         timestamp = metrics_item_json["timestamp"]
         device_id = metrics_item_json["device_id"]
-        return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
+        return total_latency, avg_latency, current_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
 
-    def get_monitor_metrics_key(self,end_point_id, end_point_name, model_name, model_version):
+    def get_monitor_metrics_key(self, end_point_id, end_point_name, model_name, model_version):
         return "{}{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                                       end_point_id, end_point_name, model_name, model_version)
 
+    def get_endpoint_metrics(self,
+                             endpoint_id,
+                             k_recent=None) -> List[Any]:
+        model_deployment_monitor_metrics = list()
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                endpoint_id)
+            model_deployment_monitor_endpoint_keys = \
+                self.redis_connection.keys(pattern=key_pattern)
+            # Since the reply is a list, we need to make sure the list
+            # is non-empty otherwise the index will raise an error.
+            if model_deployment_monitor_endpoint_keys:
+                model_deployment_monitor_endpoint_key = \
+                    model_deployment_monitor_endpoint_keys[0]
+            else:
+                raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
+                                .format(key_pattern))
+            # Set start and end index depending on the size of the
+            # list and the requested number of most recent records.
+            num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
+            # if k_most_recent is None, then fetch all by default.
+            start, end = 0, -1
+            # if k_most_recent is positive then fetch [-k_most_recent:]
+            if k_recent and k_recent > 0:
+                start = num_records - k_recent
+            model_deployment_monitor_metrics = \
+                self.redis_connection.lrange(
+                    name=model_deployment_monitor_endpoint_key,
+                    start=start,
+                    end=end)
+            model_deployment_monitor_metrics = [
+                json.loads(m) for m in model_deployment_monitor_metrics]
 
-if __name__ == "__main__":
-    _end_point_id_ = "4f63aa70-312e-4a9c-872d-cc6e8d95f95b"
-    _end_point_name_ = "my-llm"
-    _model_name_ = "my-model"
-    _model_version_ = "v1"
-    _status_list_ = FedMLModelCache.get_instance().get_deployment_status_list(_end_point_id_, _end_point_name_, _model_name_)
-    _result_list_ = FedMLModelCache.get_instance().get_deployment_result_list(_end_point_id_, _end_point_name_, _model_name_)
-    idle_result_payload = FedMLModelCache.get_instance().get_idle_device(_end_point_id_, _end_point_name_, _model_name_, _model_version_)
+        except Exception as e:
+            logging.error(e)
+
+        return model_deployment_monitor_metrics
+
+    def get_endpoint_replicas_results(self, endpoint_id) -> List[Any]:
+        replicas_results = []
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG,
+                endpoint_id)
+            model_deployment_result_key = \
+                self.redis_connection.keys(pattern=key_pattern)
+            if model_deployment_result_key:
+                model_deployment_result_key = \
+                    model_deployment_result_key[0]
+            else:
+                raise Exception("Function `get_endpoint_replicas_results` Key {} does not exist."
+                                .format(key_pattern))
+            replicas_results = \
+                self.redis_connection.lrange(
+                    name=model_deployment_result_key,
+                    start=0,
+                    end=-1)
+
+            # Format the result value to a properly formatted json.
+            for replica_idx, replica in enumerate(replicas_results):
+                replicas_results[replica_idx] = json.loads(replica)
+                replicas_results[replica_idx]["result"] = json.loads(replicas_results[replica_idx]["result"])
+
+        except Exception as e:
+            logging.error(e)
+
+        return replicas_results
+
+    def get_endpoint_settings(self, endpoint_id) -> Dict:
+        endpoint_settings = {}
+        try:
+            key_pattern = "{}*{}*".format(
+                self.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG,
+                endpoint_id)
+            endpoint_settings = \
+                self.redis_connection.keys(pattern=key_pattern)
+            if endpoint_settings:
+                endpoint_settings = \
+                    json.load(endpoint_settings[0])
+            else:
+                raise Exception("Function `get_endpoint_settings` Key {} does not exist."
+                                .format(key_pattern))
+        except Exception as e:
+            logging.error(e)
+
+        return endpoint_settings
+
+    def delete_endpoint_metrics(self, endpoint_ids: list) -> bool:
+        status = True
+        for endpoint_id in endpoint_ids:
+            try:
+                key_pattern = "{}*{}*".format(
+                    self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                    endpoint_id)
+                model_deployment_monitor_endpoint_keys = \
+                    self.redis_connection.keys(pattern=key_pattern)
+                for k in model_deployment_monitor_endpoint_keys:
+                    self.redis_connection.delete(k)
+            except Exception as e:
+                logging.error(e)
+                # False if an error occurred.
+                status = False
+        return status
+
+    def set_endpoint_scaling_down_decision_time(self, end_point_id, timestamp) -> bool:
+        status = True
+        try:
+            self.redis_connection.hset(
+                self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                mapping={end_point_id: timestamp})
+        except Exception as e:
+            logging.error(e)
+            status = False
+        return status
+
+    def get_endpoint_scaling_down_decision_time(self, end_point_id) -> int:
+        try:
+            scaling_down_decision_time = \
+                self.redis_connection.hget(
+                    self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+                    end_point_id)
+            if len(scaling_down_decision_time) > 0:
+                scaling_down_decision_time = int(scaling_down_decision_time)
+            else:
+                scaling_down_decision_time = 0
+        except Exception as e:
+            scaling_down_decision_time = 0
+            logging.error(e)
+
+        return scaling_down_decision_time
+
+    def exists_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        # The hash exists returns an integer 0 (not found), 1 (found), hence we need
+        # to cast it to a boolean value.
+        return bool(self.redis_connection.hexists(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
+
+    def delete_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+        return bool(self.redis_connection.hdel(
+            self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
+            end_point_id))
