@@ -2,7 +2,6 @@ import logging
 import os
 import platform
 import traceback
-import GPUtil
 import docker
 import fedml
 from docker import errors, DockerClient
@@ -159,22 +158,7 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     def search_and_refresh_available_gpu_ids(available_gpu_ids):
         trimmed_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
-        # if len(trimmed_gpu_ids) <= 0:
-        #     available_gpu_ids = JobRunnerUtils.balance_available_gpu_ids(trimmed_gpu_ids)
         return trimmed_gpu_ids
-
-    @staticmethod
-    def balance_available_gpu_ids(available_gpu_ids):
-        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
-        available_gpu_ids = realtime_available_gpu_ids
-        if len(available_gpu_ids) <= 0:
-            for gpu in gpu_list:
-                gpu = GPUtil.GPU(gpu)
-                if gpu.memoryUtil > 0.8:
-                    continue
-                available_gpu_ids.append(gpu.id)
-
-        return available_gpu_ids.copy()
 
     @staticmethod
     def request_gpu_ids(request_gpu_num, available_gpu_ids):
