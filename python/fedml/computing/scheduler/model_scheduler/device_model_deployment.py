@@ -18,6 +18,7 @@ import collections.abc
 import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 
 for type_name in collections.abc.__all__:
@@ -231,24 +232,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     except docker.errors.APIError:
         raise Exception("Failed to get the container object")
 
-    # Allocate the GPU
-    # TODO: Make sure no competition for each replica in a single deployment
-    if exist_container_obj is not None:
-        client.api.remove_container(exist_container_obj.id, v=True, force=True)
-    device_requests = []
-    if no_real_gpu_allocation is not None:
-        use_gpu = not no_real_gpu_allocation
-    if use_gpu:
-        logging.info("Number of GPUs: {}".format(num_gpus))
-        if gpu_ids is not None:
-            gpu_id_list = map(lambda x: str(x), gpu_ids)
-            device_requests.append(
-                docker.types.DeviceRequest(device_ids=list(gpu_id_list), capabilities=[['gpu']]))
-        else:
-            device_requests.append(
-                docker.types.DeviceRequest(count=num_gpus, capabilities=[['gpu']]))
-    logging.info(f"device_requests: {device_requests}")
-
     # Pull the inference image
     logging.info(f"Start pulling the inference image {inference_image_name}... with policy {image_pull_policy}")
     ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
@@ -306,6 +289,32 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         }
         environment["MAIN_ENTRY"] = relative_entry
 
+    host_config_dict = {
+        "binds": binds,
+        "port_bindings": {
+            port_inside_container: usr_indicated_worker_port
+        },
+        "shm_size": shm_size,
+        "storage_opt": storage_opt,
+        "tmpfs": tmpfs,
+        "cpu_count": cpus,
+        "mem_limit": memory
+    }
+
+    # Allocate the GPU
+    # TODO: Make sure no competition for each replica in a single deployment
+    if exist_container_obj is not None:
+        client.api.remove_container(exist_container_obj.id, v=True, force=True)
+    device_requests = {}
+    if no_real_gpu_allocation is not None:
+        use_gpu = not no_real_gpu_allocation
+    if use_gpu:
+        logging.info("Number of GPUs: {}".format(num_gpus))
+        device_requests = HardwareUtil.get_docker_gpu_device_mapping(gpu_ids, num_gpus)
+    logging.info(f"device_requests: {device_requests}")
+
+    host_config_dict.update(device_requests)
+
     # Environment variables
     if not enable_custom_image:
         # For some image, the default user is root. Unified to fedml.
@@ -325,24 +334,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             environment[key] = extra_envs[key]
 
     try:
+        host_config = client.api.create_host_config(**host_config_dict)
         new_container = client.api.create_container(
             image=inference_image_name,
             name=default_server_container_name,
             volumes=volumns,
             ports=[port_inside_container],  # port open inside the container
             environment=environment,
-            host_config=client.api.create_host_config(
-                binds=binds,
-                port_bindings={
-                    port_inside_container: usr_indicated_worker_port  # Could be either None or a port number
-                },
-                device_requests=device_requests,
-                shm_size=shm_size,
-                storage_opt=storage_opt,
-                tmpfs=tmpfs,
-                cpu_count=cpus,
-                mem_limit=memory,
-            ),
+            host_config=host_config,
             detach=True,
             command=customized_image_entry_cmd if enable_custom_image else None,
             entrypoint=customized_image_entry_cmd if enable_custom_image else None

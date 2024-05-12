@@ -52,7 +52,7 @@ class GPUCardUtil(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_docker_gpu_device_mapping(gpu_ids: List[int]) -> Optional[Dict]:
+    def get_docker_gpu_device_mapping(gpu_ids: Optional[List[int]], num_gpus: int = 0) -> Optional[Dict]:
         raise NotImplementedError
 
     @staticmethod
