@@ -301,7 +301,8 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # logging.info("Stop run with multiprocessing...")
         # Stop client with multiprocessing mode
         run_id_str = str(run_id)
-        self._get_job_runner_manager().cleanup_containers_and_release_gpus(run_id, edge_id)
+        self._get_job_runner_manager().cleanup_containers_and_release_gpus(
+            run_id, edge_id, SchedulerConstants.JOB_TASK_TYPE_TRAIN)
         self.sync_run_stop_status(run_status=run_status)
 
         # Register the job stopping message into the status center
@@ -512,7 +513,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 job_type = JobRunnerUtils.parse_job_type(running_json)
                 if not SchedulerConstants.is_deploy_job(job_type):
                     logging.info(f"[run/device][{run_id}/{edge_id}] Release gpu resource when run ended.")
-                    self._get_job_runner_manager().cleanup_containers_and_release_gpus(run_id, edge_id)
+                    self._get_job_runner_manager().cleanup_containers_and_release_gpus(run_id, edge_id, job_type)
 
             # Stop the runner process
             run_process = self._get_job_runner_manager().get_runner_process(run_id)

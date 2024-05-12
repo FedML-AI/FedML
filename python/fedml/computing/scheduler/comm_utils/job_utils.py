@@ -728,6 +728,9 @@ class JobRunnerUtils(Singleton):
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type",
                                 SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        model_config = running_json_obj.get("model_config", None)
+        if model_config is not None:
+            job_type = SchedulerConstants.JOB_TASK_TYPE_DEPLOY
         return job_type
 
     @staticmethod

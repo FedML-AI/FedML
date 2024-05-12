@@ -17,6 +17,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
     def __init__(self, args, agent_config=None):
         FedMLBaseMasterProtocolManager.__init__(self, args, agent_config=agent_config)
 
+        self.message_center_name = "deploy_master_agent"
+
         self.topic_start_deployment = None
         self.topic_activate_endpoint = None
         self.topic_deactivate_deployment = None
