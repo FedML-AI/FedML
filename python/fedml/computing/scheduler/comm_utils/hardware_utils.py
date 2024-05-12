@@ -34,13 +34,14 @@ class HardwareUtil(metaclass=Singleton):
         return gpu_util.get_gpu_cards() if gpu_util is not None else []
 
     @staticmethod
-    def get_available_gpu_card_ids() -> List[int]:
+    def get_available_gpu_card_ids(order: str = "memory", limit: int = 1, max_load: float = 0.01,
+                                   max_memory: float = 0.01) -> List[int]:
         gpu_util = HardwareUtil.__get_util()
-        return gpu_util.get_available_gpu_card_ids() if gpu_util is not None else []
+        return gpu_util.get_available_gpu_card_ids(order, limit, max_load, max_memory) if gpu_util is not None else []
 
 
 if __name__ == "__main__":
     gpus = HardwareUtil.get_gpus()
-    get_available_gpu_cards = HardwareUtil.get_available_gpu_card_ids()
+    get_available_gpu_cards = HardwareUtil.get_available_gpu_card_ids(limit=len(gpus))
     print(gpus)
     print(get_available_gpu_cards)

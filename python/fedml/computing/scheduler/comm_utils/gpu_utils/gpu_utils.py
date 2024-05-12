@@ -39,8 +39,7 @@ class GPUCardUtil(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_available_gpu_card_ids(order: str = "memory", limit: int = 1, max_load: float = 0.01,
-                                   max_memory: float = 0.01) -> List[int]:
+    def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
         raise NotImplementedError
 
     @staticmethod

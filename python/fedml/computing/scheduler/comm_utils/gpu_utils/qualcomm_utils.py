@@ -1,4 +1,5 @@
 import logging
+import math
 import subprocess
 from typing import List, Optional
 
@@ -31,15 +32,17 @@ class QualcommNPUtil(GPUCardUtil):
         return cards
 
     @staticmethod
-    def get_available_gpu_card_ids(order: str = "memory", limit: int = 1, max_load: float = 0.01,
-                                   max_memory: float = 0.01) -> List[int]:
-        available_gpu_card_ids = []
+    def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
 
         if order != "memory":
             raise NotImplementedError(f"Qualcomm utils doesn't have support to compute availability based on {order}. "
                                       f"Supported criteria: [memory]")
 
-        return available_gpu_card_ids
+        gpu_cards: List[GPUCard] = QualcommNPUtil.get_gpu_cards()
+        gpu_cards = list(filter(lambda card: card.memoryUtil < max_memory, gpu_cards))
+        gpu_cards.sort(key=lambda card: float('inf') if math.isnan(card.memoryUtil) else card.memoryUtil, reverse=False)
+        gpu_cards = gpu_cards[0:min(limit, len(gpu_cards))]
+        return list(map(lambda card: card.id, gpu_cards))
 
     @staticmethod
     def __convert(npu) -> GPUCard:
