@@ -20,8 +20,8 @@ class NvidiaGPUtil(GPUCardUtil):
         return [NvidiaGPUtil.__convert(gpu) for gpu in GPUtil.getGPUs()]
 
     @staticmethod
-    def get_available_gpu_card_ids(order: str, limit: int, maxLoad: float, maxMemory: float) -> List[int]:
-        return GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
+    def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
+        return GPUtil.getAvailable(order=order, limit=limit, maxLoad=max_load, maxMemory=max_memory)
 
     @staticmethod
     def __convert(gpu: GPU) -> GPUCard:
