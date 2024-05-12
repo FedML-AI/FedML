@@ -191,8 +191,8 @@ def get_available_gpu_id_list(limit=1) -> List[int]:
                 available_gpu_ids.append(count)
         return available_gpu_ids[0:simulation_gpu_count]
 
-    gpu_available_list = HardwareUtil.get_available_gpu_card_ids(order='memory', limit=limit, max_load=0.01,
-                                                                 max_memory=0.01)
+    gpu_available_list = HardwareUtil.get_available_gpu_ids(order='memory', limit=limit, max_load=0.01,
+                                                            max_memory=0.01)
     return gpu_available_list
 
 
