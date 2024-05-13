@@ -305,15 +305,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     # TODO: Make sure no competition for each replica in a single deployment
     if exist_container_obj is not None:
         client.api.remove_container(exist_container_obj.id, v=True, force=True)
-    device_requests = {}
+    device_mapping = {}
     if no_real_gpu_allocation is not None:
         use_gpu = not no_real_gpu_allocation
     if use_gpu:
         logging.info("Number of GPUs: {}".format(num_gpus))
-        device_requests = HardwareUtil.get_docker_gpu_device_mapping(gpu_ids, num_gpus)
-    logging.info(f"device_requests: {device_requests}")
+        device_mapping = HardwareUtil.get_docker_gpu_device_mapping(gpu_ids, num_gpus)
+    logging.info(f"device_mapping: {device_mapping}")
 
-    host_config_dict.update(device_requests)
+    host_config_dict.update(device_mapping)
 
     # Environment variables
     if not enable_custom_image:
