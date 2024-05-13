@@ -74,6 +74,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
             inference_end_point_id, use_gpu, memory_size, model_version, inference_port = \
             FedMLDeployMasterJobRunner.parse_model_run_params(self.request_json)
+        self.run_id = run_id
 
         # Print request parameters.
         logging.info("model deployment request: {}".format(self.request_json))
@@ -120,9 +121,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.stop_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
         self.start_device_inference_monitor(
-            run_id, end_point_name, model_id, model_name, model_version,
-            redis_addr=self.redis_addr, redis_port=self.redis_port, redis_password=self.redis_password
-        )
+            run_id, end_point_name, model_id, model_name, model_version)
 
         # Changed the status to "IDLE"
         self.status_reporter.report_server_id_status(
@@ -467,7 +466,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     def start_device_inference_gateway(
             run_id, end_point_name, model_id,
             model_name, model_version, inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
-            agent_config=None, redis_addr=None, redis_port=None, redis_password=None
+            agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
         # start unified inference server
         running_model_name = ServerConstants.get_running_model_name(end_point_name,
@@ -515,7 +514,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     @staticmethod
     def start_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version, check_stopped_event=True,
-            redis_addr=None, redis_port=None, redis_password=None
+            redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
         # start inference monitor server
         # Will report the qps related metrics to the MLOps
@@ -530,7 +529,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             [python_program, monitor_file, "-v", fedml.get_env_version(), "-ep", run_id_str,
              "-epn", str(end_point_name), "-mi", str(model_id), "-mn", model_name,
              "-mv", model_version, "-iu", "infer_url", "-ra", redis_addr,
-             "-rp", redis_port, "-rpw", redis_password],
+             "-rp", str(redis_port), "-rpw", redis_password],
             should_capture_stdout=False, should_capture_stderr=False
         )
         return monitor_process
@@ -543,7 +542,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                                                   model_id, model_name, model_version)
 
     @staticmethod
-    def recover_inference_and_monitor(redis_addr=None, redis_port=None, redis_password=None):
+    def recover_inference_and_monitor():
         # noinspection PyBroadException
         try:
             history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
@@ -559,9 +558,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     inference_end_point_id, use_gpu, memory_size, model_version, inference_port = \
                     FedMLDeployMasterJobRunner.parse_model_run_params(json.loads(job.running_json))
 
-                FedMLModelCache.get_instance().set_redis_params(redis_addr, redis_password)
-                is_activated = FedMLModelCache.get_instance(redis_addr, redis_port). \
-                    get_end_point_activation(run_id)
+                FedMLModelCache.get_instance().set_redis_params()
+                is_activated = FedMLModelCache.get_instance().get_end_point_activation(run_id)
                 if not is_activated:
                     continue
 
@@ -573,16 +571,12 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
                 FedMLDeployMasterJobRunner.start_device_inference_gateway(
                     run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port,
-                    agent_config=agent_config, redis_addr=redis_addr, redis_port=redis_port, redis_password=redis_password)
+                    agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
                 FedMLDeployMasterJobRunner.start_device_inference_monitor(
-                    run_id, end_point_name, model_id, model_name, model_version,
-                    redis_addr=FedMLDeployMasterJobRunner.default_redis_addr,
-                    redis_port=FedMLDeployMasterJobRunner.default_redis_port,
-                    redis_password=FedMLDeployMasterJobRunner.default_redis_password
-                )
+                    run_id, end_point_name, model_id, model_name, model_version)
         except Exception as e:
             logging.info("recover inference and monitor: {}".format(traceback.format_exc()))
 

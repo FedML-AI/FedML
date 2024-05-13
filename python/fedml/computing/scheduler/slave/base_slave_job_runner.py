@@ -15,6 +15,7 @@ from ....core.mlops.mlops_utils import MLOpsUtils
 from multiprocessing import Process
 from ..scheduler_core.scheduler_base_job_runner import FedMLSchedulerBaseJobRunner, RunnerError, RunnerCompletedError
 from ..scheduler_core.general_constants import GeneralConstants
+from ..comm_utils.job_utils import JobRunnerUtils
 
 
 class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
@@ -78,7 +79,8 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                                                                   self.computing_started_time, computing_ended_time,
                                                                   self.args.account_id, self.args.api_key)
             logging.info("Release resources.")
-            FedMLSchedulerBaseJobRunner.cleanup_containers_and_release_gpus(self.run_id, self.edge_id)
+            job_type = JobRunnerUtils.parse_job_type(self.request_json)
+            FedMLSchedulerBaseJobRunner.cleanup_containers_and_release_gpus(self.run_id, self.edge_id, job_type)
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()

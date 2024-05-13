@@ -157,7 +157,7 @@ class MLOpsDevicePerfStats(object):
         }
 
         job_monitor_obj = None
-        if role == ROLE_AUTO_SCALER:
+        if role == ROLE_AUTO_SCALER or role == ROLE_DEVICE_JOB_TOTAL_MONITOR:
             # job_monitor Should be initialized once
             job_monitor_obj = JobMonitor.get_instance()
 

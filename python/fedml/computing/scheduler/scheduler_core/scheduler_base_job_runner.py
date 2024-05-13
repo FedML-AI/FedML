@@ -187,7 +187,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 # Write the chunk to the file
                 written_size = f.write(chunk)
                 total_size += written_size
-                logging.info(f"package downloaded size {total_size/1024} KB")
+                logging.info("package downloaded size %.2f KB", total_size/1024)
                 self.download_time = time.time()
         self.download_finished = True
 
@@ -584,15 +584,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         return None
 
     @staticmethod
-    def cleanup_containers_and_release_gpus(run_id, edge_id):
-        job_type = JobRunnerUtils.get_job_type_from_run_id(run_id)
-
-        if not job_type:
-            logging.info(f"Failed to get job type from run id {run_id}. This is not an error as it would usually "
-                         f"happen when the job is not found in the database because job is already finished and "
-                         f"cleaned up. Exiting cleanup_containers_and_release_gpus.")
-            return
-
+    def cleanup_containers_and_release_gpus(run_id, edge_id, job_type=SchedulerConstants.JOB_TASK_TYPE_TRAIN):
         # Check if the job type is not "serve" or "deploy"
         if not (job_type == SchedulerConstants.JOB_TASK_TYPE_SERVE or
                 job_type == SchedulerConstants.JOB_TASK_TYPE_DEPLOY):
