@@ -21,8 +21,6 @@ TensorOpera® AI (https://TensorOpera.ai) is the next-gen cloud service for LLMs
 
 Highly integrated with TensorOpera open source library, TensorOpera AI provides holistic support of three interconnected AI infrastructure layers: user-friendly MLOps, a well-managed scheduler, and high-performance ML libraries for running any AI jobs across GPU Clouds.
 
-![fedml-nexus-ai-overview.png](./docs/images/fedml-nexus-ai-overview.png)
-
 A typical workflow is showing in figure above. When developer wants to run a pre-built job in Studio or Job Store, TensorOpera®Launch swiftly pairs AI jobs with the most economical GPU resources, auto-provisions, and effortlessly runs the job, eliminating complex environment setup and management. When running the job, TensorOpera®Launch orchestrates the compute plane in different cluster topologies and configuration so that any complex AI jobs are enabled, regardless model training, deployment, or even federated learning. TensorOpera®Open Source is unified and scalable machine learning library for running these AI jobs anywhere at any scale. 
 
 In the MLOps layer of TensorOpera AI
