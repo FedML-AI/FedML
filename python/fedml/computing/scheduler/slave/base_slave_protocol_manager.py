@@ -10,6 +10,7 @@ import fedml
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
+from ....core.mlops import MLOpsMetrics
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_configs import MLOpsConfigs
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
@@ -55,8 +56,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.fl_topic_request_device_info = None
         self.communication_mgr = None
         self.subscribed_topics = list()
-        self.mlops_metrics = None
-        self.status_reporter = None
         self.job_runners = dict()
         self.ota_upgrade = FedMLOtaUpgrade(edge_id=args.edge_id)
         self.running_request_json = dict()
@@ -263,6 +262,10 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 run_id, matched_gpu_num, edge_id, inner_id=endpoint_id,
                 model_master_device_id=model_master_device_id,
                 model_slave_device_id=model_slave_device_id)
+        else:
+            self.generate_status_report(run_id, edge_id, server_agent_id=server_agent_id).report_client_id_status(
+                edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id)
+            return
         logging.info(
             f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(edge_id)}")
 

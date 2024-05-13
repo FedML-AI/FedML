@@ -232,6 +232,15 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         self.status_reporter.edge_id = self.edge_id
         self.status_reporter.server_agent_id = self.server_agent_id
 
+    def generate_status_report(self, run_id, edge_id, server_agent_id=None):
+        status_reporter = MLOpsMetrics()
+        status_reporter.set_messenger(self, send_message_func=self.send_status_message)
+        status_reporter.run_id = run_id
+        status_reporter.edge_id = edge_id
+        if server_agent_id is not None:
+            status_reporter.server_agent_id = server_agent_id
+        return status_reporter
+
     @abstractmethod
     def generate_protocol_manager(self):
         # Generate the protocol manager instance and set the attribute values.

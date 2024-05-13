@@ -138,6 +138,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         inference_engine = model_config_parameters.get("inference_engine",
                                                        ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT)
         inference_end_point_id = run_id
+        self.run_id = run_id
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 

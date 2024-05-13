@@ -199,7 +199,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         self.request_json = request_json
         run_id_str = str(run_id)
         self.running_request_json[run_id_str] = request_json
-        self.request_json["master_node_ip"] = GeneralConstants.get_ip_address(self.request_json)
+        self.request_json["master_node_ip"] = GeneralConstants.get_ip_address(request_json)
 
         # Set the target status of the devices to redis
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -217,13 +217,13 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Report stage to mlops: MODEL_DEPLOYMENT_STAGE1 = "Received"
         FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
-            self.run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
+            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
             ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"], "Received request for endpoint {}".format(run_id),
             message_center=self.message_center)
 
         # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
-            self.run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE2["index"],
+            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE2["index"],
             ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"], ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"],
             message_center=self.message_center)
 
@@ -262,7 +262,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Send stage: MODEL_DEPLOYMENT_STAGE3 = "StartRunner"
         FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
-            self.run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
+            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
             ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"], ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"],
             message_center=self.message_center)
 
