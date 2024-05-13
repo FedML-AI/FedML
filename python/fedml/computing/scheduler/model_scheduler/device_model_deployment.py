@@ -313,7 +313,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         device_mapping = HardwareUtil.get_docker_gpu_device_mapping(gpu_ids, num_gpus)
     logging.info(f"device_mapping: {device_mapping}")
 
-    host_config_dict.update(device_mapping)
+    if device_mapping:
+        host_config_dict.update(device_mapping)
 
     # Environment variables
     if not enable_custom_image:
