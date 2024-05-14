@@ -71,7 +71,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             logging.error(f"Runner exited with errors. Exception: {e}, Traceback {traceback.format_exc()}")
             self.status_reporter.report_client_id_status(
                 self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                server_id=self.server_id, run_id=self.run_id)
+                is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=self.run_id)
         finally:
             if self.mlops_metrics is not None:
                 computing_ended_time = MLOpsUtils.get_ntp_time()
@@ -107,7 +107,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
         self.status_reporter.report_client_id_status(
             self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
-            running_json=json.dumps(self.request_json), run_id=run_id)
+            is_from_model=self.is_deployment_runner, running_json=json.dumps(self.request_json), run_id=run_id)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -192,7 +192,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
                 self.status_reporter.report_client_id_status(
                     self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                    server_id=self.server_id, run_id=run_id)
+                    is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=run_id)
 
                 if is_launch_task:
                     sys_utils.log_return_info(f"job {run_id}", ret_code)
@@ -225,7 +225,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             # Send failed msg when exceptions.
             self.status_reporter.report_client_id_status(
                 self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                server_id=self.server_id, run_id=run_id)
+                is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=run_id)
 
     @abstractmethod
     def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None):
@@ -239,7 +239,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         self.status_reporter.run_id = self.run_id
         self.status_reporter.edge_id = edge_id
         self.status_reporter.report_client_id_status(
-            edge_id, status, server_id=self.server_id, run_id=self.run_id)
+            edge_id, status, is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=self.run_id)
 
     def start_runner_process(
             self, run_id, request_json, edge_id=None,

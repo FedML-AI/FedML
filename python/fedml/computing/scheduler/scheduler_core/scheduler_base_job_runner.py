@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 import os
 import platform
 import random
@@ -7,6 +8,7 @@ import shutil
 import time
 import traceback
 import zipfile
+import queue
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
@@ -82,8 +84,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
             "${FEDSYS.CLIENT_OBJECT_LIST}": "",
             "${FEDSYS.LOG_SERVER_URL}": "",
         }
-        self.download_time = time.time()
-        self.download_finished = False
+        self.is_deployment_runner = False
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -162,7 +163,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
 
-    def download_package_proc(self, package_url, local_package_file):
+    def download_package_proc(self, package_url, local_package_file, completed_event, info_queue):
         import requests
         headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                                  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'}
@@ -188,8 +189,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 written_size = f.write(chunk)
                 total_size += written_size
                 logging.info("package downloaded size %.2f KB", total_size/1024)
-                self.download_time = time.time()
-        self.download_finished = True
+                info_queue.put(time.time())
+        completed_event.set()
 
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = self.agent_package_download_dir
@@ -202,25 +203,42 @@ class FedMLSchedulerBaseJobRunner(ABC):
         ssl._create_default_https_context = ssl._create_unverified_context
 
         # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
-        self.download_finished = False
-        self.download_time = time.time()
         from multiprocessing import Process
-        download_process = Process(target=self.download_package_proc, args=(package_url, local_package_file))
+        completed_event = multiprocessing.Event()
+        info_queue = multiprocessing.Queue()
+        download_process = Process(target=self.download_package_proc,
+                                   args=(package_url, local_package_file, completed_event, info_queue))
         download_process.start()
-        allowed_block_download_time = 30
+        allowed_block_download_time = 60
+        download_finished = False
+        download_time = time.time()
         while True:
-            block_time = time.time() - self.download_time
+            try:
+                queue_time = info_queue.get(block=False, timeout=3)
+                download_time = queue_time
+            except queue.Empty as e:
+                pass
+
+            block_time = time.time() - download_time
             if block_time > allowed_block_download_time:
                 break
-            if self.download_finished:
+
+            if completed_event.is_set():
+                download_finished = True
                 break
             time.sleep(3)
         try:
-            if not self.download_finished:
+            if not download_finished:
                 download_process.terminate()
                 download_process.kill()
         except Exception as e:
             pass
+
+        if not download_finished:
+            raise Exception("Download timeout, please check if your network is stable.")
+
+        if not os.path.exists(local_package_file):
+            raise Exception(f"Failed to download, the zip file is not exist at {local_package_file}.")
 
         # Another method to async download.
         # import socket

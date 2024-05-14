@@ -224,6 +224,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
 
     def rebuild_status_center(self, status_center_queue):
         self.status_center = FedMLStatusCenter(message_queue=status_center_queue)
+        self.status_center.is_deployment_status_center = self.is_deployment_status_center
 
         if self.status_reporter is None:
             self.status_reporter = MLOpsMetrics()

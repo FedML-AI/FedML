@@ -24,6 +24,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
 
         self.message_center_name = "deploy_slave_agent"
+        self.is_deployment_status_center = True
 
         self.topic_start_deployment = None
         self.topic_delete_deployment = None

@@ -4,7 +4,7 @@ import time
 import fedml
 
 # Login
-fedml.set_env_version("local")
+fedml.set_env_version("test")
 fedml.set_local_on_premise_platform_port(18080)
 error_code, error_msg = fedml.api.fedml_login(api_key="1316b93c82da40ce90113a2ed12f0b14")
 if error_code != 0:
@@ -19,7 +19,7 @@ yaml_file = os.path.join(python_dir, "examples", "launch", "hello_job.yaml")
 
 # Launch job
 launch_result_list = list()
-for i in range(0, 1):
+for i in range(0, 10):
     launch_result = fedml.api.launch_job(yaml_file)
     launch_result_list.append(launch_result)
     # launch_result = fedml.api.launch_job_on_cluster(yaml_file, "alex-cluster")
@@ -33,7 +33,7 @@ while len(launch_result_list) > 0:
         if log_result is None or log_result.run_status is None:
             print(f"Failed to get job status.")
             #exit(1)
-        print(f"Run status {log_result.run_status}")
+        print(f"Run {launch_result.run_id}, status {log_result.run_status}")
         time.sleep(0.5)
 
 # Get job logs

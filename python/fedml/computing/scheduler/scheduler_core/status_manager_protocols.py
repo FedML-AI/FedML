@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import time
 from os import listdir
 
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
@@ -66,6 +67,9 @@ class FedMLStatusManager(object):
         # self.stop_cloud_server()
         # self.remove_listener_for_run_metrics(self.run_id)
         # self.remove_listener_for_run_logs(self.run_id)
+
+        if self.status_center.is_deployment_status_center and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
 
     def process_job_exception_status(self, master_id, status):
         # Send the exception status to slave devices.
@@ -302,3 +306,14 @@ class FedMLStatusManager(object):
         topic_request_job_status = f"{GeneralConstants.MSG_TOPIC_REQUEST_JOB_STATUS_PREFIX}{master_id}"
         payload_request_job_status = {"run_id": run_id, "edge_id": edge_id}
         self.message_center.send_message(topic_request_job_status, json.dumps(payload_request_job_status))
+
+    def report_deployment_status(self, run_id, status):
+        deployment_status_topic = "model_ops/model_device/return_deployment_status"
+        deployment_status_payload = {"end_point_id": run_id, "end_point_name": "",
+                                     "model_name": "",
+                                     "model_url": "",
+                                     "model_status": status,
+                                     "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
+        logging.info(f"[StatusCenter] deployment_status_payload is sent to mlops: {deployment_status_payload}")
+
+        self.message_center.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
