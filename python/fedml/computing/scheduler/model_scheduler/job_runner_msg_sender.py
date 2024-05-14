@@ -33,8 +33,7 @@ class FedMLDeployJobRunnerMsgSender(object):
                                 model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config, input_json, output_json, replica_id_list=None):
-        deployment_results_topic_prefix = "model_ops/model_device/return_deployment_result"
-        deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
+        deployment_results_topic = "model_ops/model_device/return_deployment_result"
         deployment_results_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
                                       "model_name": model_name, "model_url": model_inference_url,
                                       "version": model_version, "port": inference_port,
@@ -48,15 +47,13 @@ class FedMLDeployJobRunnerMsgSender(object):
         logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
         self.message_center.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
-        self.message_center.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
 
     @staticmethod
     def send_deployment_status(
             end_point_id, end_point_name, model_name, model_inference_url, model_status, message_center=None):
         if message_center is None:
             return
-        deployment_status_topic_prefix = "model_ops/model_device/return_deployment_status"
-        deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
+        deployment_status_topic = "model_ops/model_device/return_deployment_status"
         deployment_status_payload = {"end_point_id": end_point_id, "end_point_name": end_point_name,
                                      "model_name": model_name,
                                      "model_url": model_inference_url,
@@ -65,7 +62,6 @@ class FedMLDeployJobRunnerMsgSender(object):
         logging.info(f"[Master] deployment_status_payload is sent to mlops: {deployment_status_payload}")
 
         message_center.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
-        message_center.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
 
     @staticmethod
     def send_deployment_stages(end_point_id, model_name, model_id, model_inference_url,
@@ -73,8 +69,7 @@ class FedMLDeployJobRunnerMsgSender(object):
                                message_center=None):
         if message_center is None:
             return
-        deployment_stages_topic_prefix = "model_ops/model_device/return_deployment_stages"
-        deployment_stages_topic = "{}/{}".format(deployment_stages_topic_prefix, end_point_id)
+        deployment_stages_topic = "model_ops/model_device/return_deployment_stages"
         deployment_stages_payload = {"model_name": model_name,
                                      "model_id": model_id,
                                      "model_url": model_inference_url,
@@ -85,7 +80,6 @@ class FedMLDeployJobRunnerMsgSender(object):
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
 
         message_center.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
-        message_center.send_message_json(deployment_stages_topic_prefix, json.dumps(deployment_stages_payload))
 
         logging.info(f"-------- Stages has been sent to mlops with stage {model_stages_index} and "
                      f"payload {deployment_stages_payload}")

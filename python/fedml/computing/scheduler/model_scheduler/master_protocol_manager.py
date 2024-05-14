@@ -18,6 +18,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         FedMLBaseMasterProtocolManager.__init__(self, args, agent_config=agent_config)
 
         self.message_center_name = "deploy_master_agent"
+        self.is_deployment_status_center = True
 
         self.topic_start_deployment = None
         self.topic_activate_endpoint = None
@@ -215,18 +216,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         self.subscribe_deployment_messages_from_slave_devices(request_json)
 
-        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE1 = "Received"
-        FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
-            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
-            ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"], "Received request for endpoint {}".format(run_id),
-            message_center=self.message_center)
-
-        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
-        FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
-            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE2["index"],
-            ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"], ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"],
-            message_center=self.message_center)
-
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # Num diff
@@ -259,6 +248,18 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         process = self._get_job_runner_manager().get_runner_process(run_id)
         if process is not None:
             ServerConstants.save_run_process(run_id, process.pid)
+
+        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE1 = "Received"
+        FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
+            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
+            ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"], "Received request for endpoint {}".format(run_id),
+            message_center=self.message_center)
+
+        # Report stage to mlops: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
+        FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
+            run_id, model_name, model_id, "", ServerConstants.MODEL_DEPLOYMENT_STAGE2["index"],
+            ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"], ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"],
+            message_center=self.message_center)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE3 = "StartRunner"
         FedMLDeployJobRunnerManager.get_instance().send_deployment_stages(
@@ -327,6 +328,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             self.subscribe_msg(deployment_results_topic)
 
             logging.info("subscribe device messages {}".format(deployment_results_topic))
+
+        self.setup_listeners_for_edge_status(run_id, edge_id_list, self.edge_id)
 
     def subscribe_spec_device_message(self, run_id, device_id):
         if device_id == self.edge_id:

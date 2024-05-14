@@ -31,6 +31,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
             agent_log_file_dir=ClientConstants.get_log_file_dir()
         )
 
+        self.is_deployment_runner = True
         self.infer_host = "127.0.0.1"
         self.redis_addr = "local"
         self.redis_port = "6379"
@@ -286,11 +287,8 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                         inference_engine, model_metadata, model_config)
 
                     self.status_reporter.run_id = self.run_id
-                    self.status_reporter.report_client_id_status(
-                        self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
-                        is_from_model=True, run_id=self.run_id)
 
-                    return False
+                    raise Exception("[Worker] Failed to deploy the model.")
                 else:
                     # Send failed successful result back to master
                     logging.info("Finished deployment, continue to send results to master...")

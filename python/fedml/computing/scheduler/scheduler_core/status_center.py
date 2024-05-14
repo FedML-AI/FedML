@@ -99,6 +99,7 @@ class FedMLStatusCenter(object):
         self.status_message_center = None
         self.status_manager_instance = None
         self.status_runner = None
+        self.is_deployment_status_center = False
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(

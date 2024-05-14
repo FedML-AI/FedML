@@ -41,6 +41,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             agent_log_file_dir=ServerConstants.get_log_file_dir()
         )
 
+        self.is_deployment_runner = True
         self.infer_host = "127.0.0.1"
         self.redis_addr = "local"
         self.redis_port = "6379"
@@ -306,7 +307,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     return
                 else:
                     # This is the last worker that failed, so we should continue to "ABORTED" status
-                    model_config_parameters = self.running_request_json[run_id_str]["parameters"]
+                    model_config_parameters = self.request_json["parameters"]
                     inference_port = model_config_parameters.get("server_internal_port",
                                                                  ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                     inference_port_external = model_config_parameters.get("server_external_port", inference_port)
