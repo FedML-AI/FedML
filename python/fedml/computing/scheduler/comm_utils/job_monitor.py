@@ -208,6 +208,8 @@ class JobMonitor(Singleton):
             endpoint_replicas_details = {}
             if isinstance(endpoint_detail, str):
                 endpoint_replicas_details = json.loads(endpoint_detail)
+                if isinstance(endpoint_replicas_details, str):
+                    endpoint_replicas_details = json.loads(endpoint_replicas_details)
 
             if "result" in endpoint_replicas_details:
                 endpoint_replica_details = {}
@@ -220,13 +222,7 @@ class JobMonitor(Singleton):
         for endpoint_id, num_replica in res_to_mlops.items():
             curr_version = fedml.get_env_version()
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
-            if curr_version == "release":
-                mlops_prefix = "https://open.fedml.ai/"
-            elif curr_version == "test":
-                mlops_prefix = "https://open-test.fedml.ai/"
-            else:
-                logging.error(f"Do not support the version {curr_version}.")
-                return
+            mlops_prefix = fedml._get_backend_service()
             url = f"{mlops_prefix}{num_replica_url_path}"
 
             cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
@@ -348,7 +344,7 @@ class JobMonitor(Singleton):
                     break
 
                 # Calc the timeout
-                started_time = int(float(job.started_time))
+                started_time = JobMonitor.get_started_time(job)
                 timeout = time.time() - started_time
 
                 job_type = JobRunnerUtils.parse_job_type(job.running_json)
@@ -436,6 +432,15 @@ class JobMonitor(Singleton):
             logging.error(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
+    @staticmethod
+    def get_started_time(job):
+        started_time = int(float(job.started_time))
+        if started_time <= 0:
+            started_time = int(float(job.updated_time))
+            if started_time <= 0:
+                started_time = time.time()
+        return started_time
+
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
@@ -447,7 +452,7 @@ class JobMonitor(Singleton):
                     break
 
                 # Calc the timeout
-                started_time = int(float(job.started_time))
+                started_time = JobMonitor.get_started_time(job)
                 timeout = time.time() - started_time
 
                 # Get the timeout threshold
@@ -704,7 +709,7 @@ class JobMonitor(Singleton):
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
 
-                        started_time = int(float(job.started_time))
+                        started_time = JobMonitor.get_started_time(job)
                         timeout = time.time() - started_time
                         if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
                             print(f"[Worker][{job.job_id}:{job.edge_id}] Due to timeout, "

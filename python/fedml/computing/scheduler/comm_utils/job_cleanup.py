@@ -44,6 +44,7 @@ class JobCleanup(Singleton):
                     ComputeCacheManager.get_instance().get_gpu_cache().get_run_info_sync_lock_key("")
             ):
                 count = 0
+                client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
                 job_list = client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
                 for job in job_list.job_list:
                     count += 1

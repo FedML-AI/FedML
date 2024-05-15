@@ -1,0 +1,12 @@
+workspace: "."
+entry_point: "main_entry.py"
+
+auto_detect_public_ip: true
+server_external_port: 20203
+server_internal_port: 2203
+
+bootstrap: |
+  echo "Bootstrap start..."
+  pip install -U fedml
+  sh ./config/bootstrap.sh
+  echo "Bootstrap finished"

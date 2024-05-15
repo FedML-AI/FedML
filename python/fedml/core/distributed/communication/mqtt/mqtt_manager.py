@@ -14,7 +14,7 @@ import fedml
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
                  client_id, last_will_topic=None, last_will_msg=None,
-                 clean_session=True, retain_msg=False):
+                 clean_session=True, retain_msg=True):
         self._client = None
         self.mqtt_connection_id = None
         self._host = host
