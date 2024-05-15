@@ -206,3 +206,8 @@ class GeneralConstants:
             ip = infer_host
 
         return ip
+
+    @staticmethod
+    def get_topic_exit_train(server_id):
+        topic_exit_train = f"status_center/flserver_agent_{server_id}/exit_train"
+        return topic_exit_train

@@ -67,6 +67,9 @@ class FedMLStatusManager(object):
         # self.stop_cloud_server()
         # self.remove_listener_for_run_metrics(self.run_id)
         # self.remove_listener_for_run_logs(self.run_id)
+        payload_exit_train = {"runId": self.run_id, "serverId": master_id}
+        self.message_center.receive_message(
+            GeneralConstants.get_topic_exit_train(master_id), json.dumps(payload_exit_train))
 
         if self.status_center.is_deployment_status_center and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
             self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)

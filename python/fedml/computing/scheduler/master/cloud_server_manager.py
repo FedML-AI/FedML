@@ -12,6 +12,7 @@ class FedMLCloudServerManager:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     STATUS_IDLE = "IDLE"
+    FEDML_SERVER_BASE_IMAGE = "/fedml-device-image:"
 
     def __init__(self, args, run_id=None, edge_id=None, request_json=None, agent_config=None, version=None):
         self.server_docker_image = None
@@ -26,7 +27,7 @@ class FedMLCloudServerManager:
         image_version = self.version
         if image_version == "local":
             image_version = "test"
-        self.server_docker_base_image = "/fedml-device-image:" + image_version
+        self.server_docker_base_image = FedMLCloudServerManager._get_server_base_image(image_version)
         self.cloud_server_name = None
 
     @staticmethod
@@ -125,44 +126,52 @@ class FedMLCloudServerManager:
         logging.info("start run with k8s: " + run_deployment_cmd)
         os.system(run_deployment_cmd)
 
-    def stop_cloud_server(self):
-        self.cloud_server_name = FedMLCloudServerManager.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id) \
-                                 + "-" + str(self.edge_id)
-        self.server_docker_image = (
-                self.agent_config["docker_config"]["registry_server"]
-                + self.agent_config["docker_config"]["registry_dir"]
-                + self.server_docker_base_image
+    @staticmethod
+    def stop_cloud_server(run_id, server_id, agent_config):
+        cloud_server_name = FedMLCloudServerManager._get_cloud_server_name(run_id, server_id)
+        server_docker_image = (
+                agent_config["docker_config"]["registry_server"]
+                + agent_config["docker_config"]["registry_dir"]
+                + FedMLCloudServerManager._get_server_base_image(fedml.get_env_version())
         )
         delete_deployment_cmd = (
                 "export FEDML_AGGREGATOR_NAME="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";export FEDML_AGGREGATOR_SVC="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";export FEDML_AGGREGATOR_VERSION="
-                + self.version
+                + fedml.get_env_version()
                 + ';export FEDML_AGGREGATOR_IMAGE_PATH="'
-                + self.server_docker_image
+                + server_docker_image
                 + '"'
                 + ";export FEDML_CONF_ID="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";export FEDML_DATA_PV_ID="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";export FEDML_DATA_PVC_ID="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";export FEDML_REGISTRY_SECRET_SUFFIX="
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";kubectl -n fedml-devops-aggregator-"
-                + self.version
+                + fedml.get_env_version()
                 + " delete deployment "
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";kubectl -n fedml-devops-aggregator-"
-                + self.version
+                + fedml.get_env_version()
                 + " delete svc "
-                + self.cloud_server_name
+                + cloud_server_name
                 + ";kubectl -n fedml-devops-aggregator-"
-                + self.version
+                + fedml.get_env_version()
                 + " delete secret secret-"
-                + self.cloud_server_name
+                + cloud_server_name
         )
         logging.info("stop run with k8s: " + delete_deployment_cmd)
         os.system(delete_deployment_cmd)
+
+    @staticmethod
+    def _get_server_base_image(version):
+        return f"{FedMLCloudServerManager.FEDML_SERVER_BASE_IMAGE}{version}"
+
+    @staticmethod
+    def _get_cloud_server_name(run_id, server_id):
+        return f"{FedMLCloudServerManager.FEDML_CLOUD_SERVER_PREFIX}{run_id}-{server_id}"

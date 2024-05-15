@@ -33,6 +33,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.agent_config = agent_config
         self.topic_start_train = None
         self.topic_stop_train = None
+        self.topic_exit_train = None
         self.topic_report_status = None
         self.topic_ota_msg = None
         self.topic_response_device_info = None
@@ -60,6 +61,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # The topi for stopping training
         self.topic_stop_train = "mlops/flserver_agent_" + str(self.edge_id) + "/stop_train"
+
+        # The topi for exiting training
+        self.topic_exit_train = GeneralConstants.get_topic_exit_train(self.edge_id)
 
         # The topic for reporting current device status.
         self.topic_report_status = "mlops/report_device_status"
@@ -89,6 +93,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.subscribed_topics.clear()
         self.add_subscribe_topic(self.topic_start_train)
         self.add_subscribe_topic(self.topic_stop_train)
+        self.add_subscribe_topic(self.topic_exit_train)
         self.add_subscribe_topic(self.topic_report_status)
         self.add_subscribe_topic(self.topic_ota_msg)
         self.add_subscribe_topic(self.topic_response_device_info)
@@ -103,6 +108,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # Add the message listeners for all topics
         self.add_message_listener(self.topic_start_train, self.callback_start_train)
         self.add_message_listener(self.topic_stop_train, self.callback_stop_train)
+        self.add_message_listener(self.topic_exit_train, self.callback_exit_train)
         self.add_message_listener(self.topic_ota_msg, FedMLBaseMasterProtocolManager.callback_server_ota_msg)
         self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
         self.add_message_listener(self.topic_response_device_info, self.callback_response_device_info)
@@ -270,13 +276,24 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         if self.running_request_json.get(run_id_str, None) is not None:
             self.running_request_json.pop(run_id_str)
 
-        # Send the stopping request to edges
-        if self.run_as_cloud_agent:
-            self.send_training_stop_request_to_cloud_server(server_id, payload)
+        # Stop the job runner
+        self._get_job_runner_manager().stop_job_runner(
+            run_id, args=self.args, server_id=server_id, request_json=request_json,
+            run_as_cloud_agent=self.run_as_cloud_agent)
+
+    def callback_exit_train(self, topic, payload):
+        # Parse the parameters.
+        request_json = json.loads(payload)
+        run_id = request_json.get("runId", None)
+        run_id = request_json.get("id", None) if run_id is None else run_id
+        run_id_str = str(run_id)
+        server_id = request_json.get("serverId", None)
+        if server_id is None:
+            server_id = request_json.get("server_id", None)
 
         # Stop the job runner
         self._get_job_runner_manager().stop_job_runner(
-            run_id, args=self.args, edge_id=self.edge_id, request_json=request_json,
+            run_id, args=self.args, server_id=server_id, request_json=request_json,
             run_as_cloud_agent=self.run_as_cloud_agent)
 
     def callback_run_logs(self, topic, payload):
