@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import traceback
+
+import fedml
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 
 
@@ -18,10 +20,12 @@ class FedMLCloudServerManager:
         self.edge_id = edge_id
         self.request_json = request_json
         self.agent_config = agent_config
+        if version is None:
+            version = fedml.get_env_version()
         self.version = version
         image_version = self.version
         if image_version == "local":
-            image_version = "dev"
+            image_version = "test"
         self.server_docker_base_image = "/fedml-device-image:" + image_version
         self.cloud_server_name = None
 

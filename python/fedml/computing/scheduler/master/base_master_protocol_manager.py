@@ -44,7 +44,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.run_as_cloud_server = False
         self.run_as_edge_server_and_agent = False
         self.run_as_cloud_server_and_agent = False
-        self.enable_simulation_cloud_agent = True
+        self.enable_simulation_cloud_agent = False
         self.use_local_process_as_cloud_server = False
         self.ota_upgrade = FedMLOtaUpgrade(edge_id=args.edge_id)
         self.running_request_json = dict()
@@ -139,12 +139,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             MLOpsConfigs.fetch_all_configs()
         except Exception:
             pass
-
-        # Parse the message when running in the cloud server mode.
-        if self.run_as_cloud_server:
-            message_bytes = payload.encode("ascii")
-            base64_bytes = base64.b64decode(message_bytes)
-            payload = base64_bytes.decode("ascii")
 
         # Parse the parameters
         # [NOTES] Example Request JSON:
@@ -264,6 +258,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         run_id = request_json.get("runId", None)
         run_id = request_json.get("id", None) if run_id is None else run_id
         run_id_str = str(run_id)
+        server_id = request_json.get("serverId", None)
+        if server_id is None:
+            server_id = request_json.get("server_id", None)
 
         # Broadcast the job status to all edges
         self.rebuild_status_center(self.get_status_queue())
@@ -273,8 +270,14 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         if self.running_request_json.get(run_id_str, None) is not None:
             self.running_request_json.pop(run_id_str)
 
+        # Send the stopping request to edges
+        if self.run_as_cloud_agent:
+            self.send_training_stop_request_to_cloud_server(server_id, payload)
+
         # Stop the job runner
-        self._get_job_runner_manager().stop_job_runner(run_id)
+        self._get_job_runner_manager().stop_job_runner(
+            run_id, args=self.args, edge_id=self.edge_id, request_json=request_json,
+            run_as_cloud_agent=self.run_as_cloud_agent)
 
     def callback_run_logs(self, topic, payload):
         run_id = str(topic).split('/')[-1]
@@ -495,6 +498,11 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
     def send_training_stop_request_to_specific_edge(self, edge_id, payload):
         topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
+        logging.info("stop_train: send topic " + topic_stop_train)
+        self.message_center.send_message(topic_stop_train, payload)
+
+    def send_training_stop_request_to_cloud_server(self, edge_id, payload):
+        topic_stop_train = "mlops/flserver_agent_" + str(edge_id) + "/stop_train"
         logging.info("stop_train: send topic " + topic_stop_train)
         self.message_center.send_message(topic_stop_train, payload)
 

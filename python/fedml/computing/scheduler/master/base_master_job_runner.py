@@ -136,6 +136,10 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
         logging.info("Detect all status of Edge ids: " + str(edge_ids))
 
+        self.status_reporter.report_server_id_status(
+            self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
+            server_id=self.edge_id, server_agent_id=self.edge_id)
+
         status_ok, active_edge_info_dict, inactivate_edges = self.detect_edges_status(
             edge_device_info_queue, edge_device_info_global_queue=edge_device_info_global_queue,
             callback_when_edges_ready=self.send_training_request_to_edges)

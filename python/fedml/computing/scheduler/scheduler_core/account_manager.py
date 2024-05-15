@@ -48,10 +48,10 @@ class FedMLAccountManager(Singleton):
     def get_instance():
         return FedMLAccountManager()
 
-    def login(self, user_id, api_key="", device_id=None, os_name=None, role=None):
+    def login(self, user_id, api_key="", device_id=None, os_name=None, role=None, runner_cmd=None):
         # Build the agent args
         self.build_agent_args(
-            user_id, api_key=api_key, device_id=device_id, os_name=os_name, role=role
+            user_id, api_key=api_key, device_id=device_id, os_name=os_name, role=role, runner_cmd=runner_cmd
         )
 
         # Fetch configs from the MLOps config server.
@@ -126,7 +126,7 @@ class FedMLAccountManager(Singleton):
 
         return self.agent_args
 
-    def build_agent_args(self, user_id, api_key=None, device_id=None, os_name=None, role=None):
+    def build_agent_args(self, user_id, api_key=None, device_id=None, os_name=None, role=None, runner_cmd=None):
         # Generate the suffix for device based on the role
         device_id_suffix = None
         is_master = False
@@ -197,6 +197,7 @@ class FedMLAccountManager(Singleton):
         # Set the unique device id
         self.agent_args.is_from_docker = is_from_docker or is_from_fedml_docker_hub
         self.agent_args.unique_device_id = unique_device_id
+        self.agent_args.runner_cmd = runner_cmd
 
     def fill_argent_args(
             self, log_server_url=None, server_id=None, edge_id=None,
@@ -440,6 +441,7 @@ class AgentArgs:
         self.using_mlops = True
         self.server_agent_id = None
         self.general_edge_id = None
+        self.runner_cmd = None
 
     def is_cloud_server(self):
         return self.role == FedMLAccountManager.ROLE_CLOUD_SERVER
