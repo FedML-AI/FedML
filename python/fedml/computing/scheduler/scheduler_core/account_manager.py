@@ -138,7 +138,7 @@ class FedMLAccountManager(Singleton):
             device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_CLOUD_AGENT
             is_master = True
         elif role == FedMLAccountManager.ROLE_CLOUD_SERVER:
-            device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_CLOUD_SERVER
+            device_id_suffix = ""
             is_master = True
         elif role == FedMLAccountManager.ROLE_EDGE_DEVICE:
             device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_EDGE_DEVICE
@@ -193,6 +193,8 @@ class FedMLAccountManager(Singleton):
         docker_tag = FedMLAccountManager.DEVICE_ID_DOCKER_HUB_TAG if is_from_fedml_docker_hub else docker_tag
         unique_device_id = f"{self.agent_args.current_device_id}@{self.agent_args.os_name}" \
                            f"{docker_tag}{device_id_suffix}"
+        if role == FedMLAccountManager.ROLE_CLOUD_SERVER:
+            unique_device_id = self.agent_args.current_device_id
 
         # Set the unique device id
         self.agent_args.is_from_docker = is_from_docker or is_from_fedml_docker_hub
