@@ -361,8 +361,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         # Update the global deployment result mapping
         self.slave_deployment_results_map[str(device_id)] = model_status
 
-        logging.info("callback_deployment_result_message: topic {}, payload {}, result mapping {}.".format(
-            topic, payload, self.slave_deployment_results_map))
+        logging.info("callback_deployment_result_message: topic {}, payload {}.".format(topic, payload))
 
         request_json = self.request_json
         if request_json is None:

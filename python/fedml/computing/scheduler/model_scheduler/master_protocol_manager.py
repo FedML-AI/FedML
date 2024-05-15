@@ -100,8 +100,11 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         pass
 
     def callback_deployment_result_message(self, topic=None, payload=None):
-        logging.info(f"Received deployment result: {self}")
+        logging.info(f"Received deployment result")
         FedMLDeployJobRunnerManager.get_instance().save_deployment_result(topic, payload)
+
+    def callback_exit_train(self, topic, payload):
+        pass
 
     def callback_delete_deployment(self, topic, payload):
         logging.info("[Master] callback_delete_deployment")

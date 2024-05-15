@@ -47,6 +47,17 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
                 target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
             stopping_process.start()
 
+    def complete_job_runner(
+            self, run_id, args=None, server_id=None, request_json=None,
+            run_as_cloud_agent=False, run_as_cloud_server=False
+    ):
+        super().complete_job_runner(run_id)
+
+        if run_as_cloud_agent or run_as_cloud_server:
+            stopping_process = Process(
+                target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
+            stopping_process.start()
+
     def _start_cloud_server(
             self, args, run_id, request_json, edge_id=None,
             use_local_process_as_cloud_server=False

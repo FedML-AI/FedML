@@ -292,7 +292,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             server_id = request_json.get("server_id", None)
 
         # Stop the job runner
-        self._get_job_runner_manager().stop_job_runner(
+        self._get_job_runner_manager().complete_job_runner(
             run_id, args=self.args, server_id=server_id, request_json=request_json,
             run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server)
 
