@@ -115,8 +115,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
         # start unified inference server
         self.start_device_inference_gateway(
-            run_id, end_point_name, model_id, model_name, model_version,
-            agent_config=self.agent_config, inference_port=inference_port)
+            inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
         self.stop_device_inference_monitor(
@@ -464,20 +463,16 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
     @staticmethod
     def start_device_inference_gateway(
-            run_id, end_point_name, model_id,
-            model_name, model_version, inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+            inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
             agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
         # start unified inference server
-        running_model_name = ServerConstants.get_running_model_name(end_point_name,
-                                                                    model_name, model_version, run_id, model_id)
         python_program = get_python_program()
         master_port = os.getenv("FEDML_MASTER_PORT", None)
         if master_port is not None:
             inference_port = int(master_port)
         if not ServerConstants.is_running_on_k8s():
-            logging.info(f"start the model inference gateway, end point {run_id}, "
-                         f"model name {model_name} at port {inference_port}...")
+            logging.info(f"start the model inference gateway...")
             use_mqtt_inference = os.getenv("FEDML_USE_MQTT_INFERENCE", "False")
             use_mqtt_inference = True if use_mqtt_inference.lower() == 'true' else False
             use_worker_gateway = os.getenv("FEDML_USE_WORKER_GATEWAY", "False")
@@ -501,8 +496,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
                     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                     "--log-level critical".format(
-                        redis_addr, redis_port, redis_password, end_point_name,
-                        model_name, model_version, "", fedml.get_env_version(), use_mqtt_inference,
+                        redis_addr, str(redis_port), redis_password, "",
+                        "", "", "", fedml.get_env_version(), use_mqtt_inference,
                         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
                         fedml_base_dir),
                     should_capture_stdout=False, should_capture_stderr=False)
@@ -545,6 +540,14 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     def recover_inference_and_monitor():
         # noinspection PyBroadException
         try:
+            agent_config = dict()
+            try:
+                agent_config["mqtt_config"], _, _, _ = MLOpsConfigs.fetch_all_configs()
+            except Exception as e:
+                pass
+
+            FedMLDeployMasterJobRunner.start_device_inference_gateway(agent_config=agent_config)
+
             history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
             for job in history_jobs.job_list:
                 if job.running_json is None:
@@ -562,16 +565,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 is_activated = FedMLModelCache.get_instance().get_end_point_activation(run_id)
                 if not is_activated:
                     continue
-
-                agent_config = dict()
-                try:
-                    agent_config["mqtt_config"], _, _, _ = MLOpsConfigs.fetch_all_configs()
-                except Exception as e:
-                    pass
-
-                FedMLDeployMasterJobRunner.start_device_inference_gateway(
-                    run_id, end_point_name, model_id, model_name, model_version, inference_port=inference_port,
-                    agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
