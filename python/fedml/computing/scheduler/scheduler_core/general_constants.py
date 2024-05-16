@@ -208,6 +208,11 @@ class GeneralConstants:
         return ip
 
     @staticmethod
-    def get_topic_exit_train(server_id):
-        topic_exit_train = f"status_center/flserver_agent_{server_id}/exit_train"
-        return topic_exit_train
+    def get_topic_complete_job(server_id):
+        topic_complete_job = f"status_center/master_agent_{server_id}/complete_job"
+        return topic_complete_job
+
+    @staticmethod
+    def get_payload_complete_job(run_id, server_id):
+        payload_complete_job = {"runId": run_id, "serverId": server_id}
+        return payload_complete_job
