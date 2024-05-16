@@ -553,7 +553,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
         os.system(f"{python_program} {monitor_file} -v {fedml.get_env_version()} -ep {run_id_str} "
                   f"-epn {end_point_name} -mi {model_id} -mn {model_name} -mv \"{model_version}\" "
-                  f"-iu infer_url -ra {redis_addr} -rp {redis_port} -rpw redis_password")
+                  f"-iu infer_url -ra {redis_addr} -rp {redis_port} -rpw {redis_password}")
 
         # from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
         # monitor_center = FedMLModelMetrics(
