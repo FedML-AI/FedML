@@ -25,7 +25,6 @@ from .job_runner_msg_sender import FedMLDeployJobRunnerMsgSender
 
 
 class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerMsgSender, ABC):
-
     default_redis_addr = "local"
     default_redis_port = "6379"
     default_redis_password = "fedml_default"
@@ -54,7 +53,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.deployment_result_queue = Queue()
 
     # Override
-    def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None,):
+    def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None, ):
         return FedMLDeployMasterJobRunner(
             args, run_id=run_id, request_json=request_json, agent_config=self.agent_config, edge_id=edge_id
         )
@@ -65,10 +64,10 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
     # Override
     def run_impl(
-        self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-        run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
-        run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
-        status_center_queue=None
+            self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
+            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
+            run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
+            status_center_queue=None
     ):
         # Parse the model parameters.
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
@@ -331,7 +330,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             elif run_operation == "UPDATE":
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = self.replica_controller.rollback_get_replica_version_diff(
-                        device_id_trigger=device_id, replica_no_trigger=replica_no)
+                    device_id_trigger=device_id, replica_no_trigger=replica_no)
 
                 # Change the target version to the start version
                 self.replica_controller.rollback_setback_target_replica_version()
@@ -466,6 +465,15 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
             agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
+        from multiprocessing import Process
+        Process(target=FedMLDeployMasterJobRunner.start_device_inference_gateway_entry,
+                args=(inference_port, agent_config, redis_addr, redis_port, redis_password)).start()
+
+    @staticmethod
+    def start_device_inference_gateway_entry(
+            inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+            agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
+    ):
         # start unified inference server
         python_program = get_python_program()
         master_port = os.getenv("FEDML_MASTER_PORT", None)
@@ -489,25 +497,47 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     agent_config["mqtt_config"]["MQTT_USER"] + connect_str +
                     agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
                     str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
-                inference_gateway_process = ServerConstants.exec_console_with_script(
-                    "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                    "END_POINT_NAME=\"{}\" "
-                    "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                    "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
-                    "--log-level critical".format(
-                        redis_addr, str(redis_port), redis_password, "",
-                        "", "", "", fedml.get_env_version(), use_mqtt_inference,
-                        use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
-                        fedml_base_dir),
-                    should_capture_stdout=False, should_capture_stderr=False)
+                python_program = get_python_program()
+                os.system("REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                          "END_POINT_NAME=\"{}\" "
+                          "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                          "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
+                          "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                          "--log-level critical".format(
+                    redis_addr, str(redis_port), redis_password, "",
+                    "", "", "", fedml.get_env_version(), use_mqtt_inference,
+                    use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
+                    fedml_base_dir))
 
-                return inference_gateway_process
+                # inference_gateway_process = ServerConstants.exec_console_with_script(
+                #     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                #     "END_POINT_NAME=\"{}\" "
+                #     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                #     "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
+                #     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                #     "--log-level critical".format(
+                #         redis_addr, str(redis_port), redis_password, "",
+                #         "", "", "", fedml.get_env_version(), use_mqtt_inference,
+                #         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
+                #         fedml_base_dir),
+                #     should_capture_stdout=False, should_capture_stderr=False)
+                #
+                # return inference_gateway_process
 
         return None
 
     @staticmethod
     def start_device_inference_monitor(
+            run_id, end_point_name, model_id, model_name, model_version, check_stopped_event=True,
+            redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
+    ):
+        from multiprocessing import Process
+        Process(target=FedMLDeployMasterJobRunner.start_device_inference_monitor_entry,
+                args=(run_id, end_point_name, model_id, model_name, model_version, check_stopped_event,
+                      redis_addr, redis_port, redis_password)).start()
+
+    @staticmethod
+    def start_device_inference_monitor_entry(
             run_id, end_point_name, model_id, model_name, model_version, check_stopped_event=True,
             redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
@@ -520,14 +550,25 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         python_program = get_python_program()
         running_model_name = ServerConstants.get_running_model_name(end_point_name,
                                                                     model_name, model_version, run_id, model_id)
-        monitor_process = ServerConstants.exec_console_with_shell_script_list(
-            [python_program, monitor_file, "-v", fedml.get_env_version(), "-ep", run_id_str,
-             "-epn", str(end_point_name), "-mi", str(model_id), "-mn", model_name,
-             "-mv", model_version, "-iu", "infer_url", "-ra", redis_addr,
-             "-rp", str(redis_port), "-rpw", redis_password],
-            should_capture_stdout=False, should_capture_stderr=False
-        )
-        return monitor_process
+
+        os.system(f"{python_program} {monitor_file} -v {fedml.get_env_version()} -ep {run_id_str} "
+                  f"-epn {end_point_name} -mi {model_id} -mn {model_name} -mv \"{model_version}\" "
+                  f"-iu infer_url -ra {redis_addr} -rp {redis_port} -rpw redis_password")
+
+        # from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
+        # monitor_center = FedMLModelMetrics(
+        #     run_id_str, end_point_name, model_id, model_name, model_version,
+        #     "infer_url", redis_addr, redis_port, redis_password, version=fedml.get_env_version())
+        # monitor_center.start_monitoring_metrics_center()
+
+        # monitor_process = ServerConstants.exec_console_with_shell_script_list(
+        #     [python_program, monitor_file, "-v", fedml.get_env_version(), "-ep", run_id_str,
+        #      "-epn", str(end_point_name), "-mi", str(model_id), "-mn", model_name,
+        #      "-mv", model_version, "-iu", "infer_url", "-ra", redis_addr,
+        #      "-rp", str(redis_port), "-rpw", redis_password],
+        #     should_capture_stdout=False, should_capture_stderr=False
+        # )
+        # return monitor_process
 
     @staticmethod
     def stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version):
@@ -779,7 +820,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
+        inference_port = model_config_parameters.get("server_internal_port",  # Internal port is for the gateway
                                                      ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("server_external_port", inference_port)
 
