@@ -460,17 +460,11 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             time.sleep(3)
             self.trigger_completed_event()
 
-    @staticmethod
-    def start_device_inference_gateway(
-            inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
-            agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
-    ):
-        from multiprocessing import Process
-        Process(target=FedMLDeployMasterJobRunner.start_device_inference_gateway_entry,
-                args=(inference_port, agent_config, redis_addr, redis_port, redis_password)).start()
+    def cleanup_runner_process(self, run_id):
+        ServerConstants.cleanup_run_process(run_id, not_kill_subprocess=True)
 
     @staticmethod
-    def start_device_inference_gateway_entry(
+    def start_device_inference_gateway(
             inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
             agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
@@ -498,46 +492,27 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
                     str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
                 python_program = get_python_program()
-                os.system("REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                          "END_POINT_NAME=\"{}\" "
-                          "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                          "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
-                          "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
-                          "--log-level critical".format(
-                    redis_addr, str(redis_port), redis_password, "",
-                    "", "", "", fedml.get_env_version(), use_mqtt_inference,
-                    use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
-                    fedml_base_dir))
+                inference_gateway_process = ServerConstants.exec_console_with_script(
+                    "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                    "END_POINT_NAME=\"{}\" "
+                    "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                    "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
+                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                    "--log-level critical".format(
+                        redis_addr, str(redis_port), redis_password, "",
+                        "", "", "", fedml.get_env_version(), use_mqtt_inference,
+                        use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
+                        fedml_base_dir),
+                    should_capture_stdout=False, should_capture_stderr=False)
 
-                # inference_gateway_process = ServerConstants.exec_console_with_script(
-                #     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                #     "END_POINT_NAME=\"{}\" "
-                #     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                #     "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
-                #     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
-                #     "--log-level critical".format(
-                #         redis_addr, str(redis_port), redis_password, "",
-                #         "", "", "", fedml.get_env_version(), use_mqtt_inference,
-                #         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
-                #         fedml_base_dir),
-                #     should_capture_stdout=False, should_capture_stderr=False)
-                #
-                # return inference_gateway_process
+                return inference_gateway_process
+            else:
+                return inference_gateway_pids[0]
 
         return None
 
     @staticmethod
     def start_device_inference_monitor(
-            run_id, end_point_name, model_id, model_name, model_version, check_stopped_event=True,
-            redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
-    ):
-        from multiprocessing import Process
-        Process(target=FedMLDeployMasterJobRunner.start_device_inference_monitor_entry,
-                args=(run_id, end_point_name, model_id, model_name, model_version, check_stopped_event,
-                      redis_addr, redis_port, redis_password)).start()
-
-    @staticmethod
-    def start_device_inference_monitor_entry(
             run_id, end_point_name, model_id, model_name, model_version, check_stopped_event=True,
             redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
@@ -550,25 +525,14 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         python_program = get_python_program()
         running_model_name = ServerConstants.get_running_model_name(end_point_name,
                                                                     model_name, model_version, run_id, model_id)
-
-        os.system(f"{python_program} {monitor_file} -v {fedml.get_env_version()} -ep {run_id_str} "
-                  f"-epn {end_point_name} -mi {model_id} -mn {model_name} -mv \"{model_version}\" "
-                  f"-iu infer_url -ra {redis_addr} -rp {redis_port} -rpw {redis_password}")
-
-        # from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
-        # monitor_center = FedMLModelMetrics(
-        #     run_id_str, end_point_name, model_id, model_name, model_version,
-        #     "infer_url", redis_addr, redis_port, redis_password, version=fedml.get_env_version())
-        # monitor_center.start_monitoring_metrics_center()
-
-        # monitor_process = ServerConstants.exec_console_with_shell_script_list(
-        #     [python_program, monitor_file, "-v", fedml.get_env_version(), "-ep", run_id_str,
-        #      "-epn", str(end_point_name), "-mi", str(model_id), "-mn", model_name,
-        #      "-mv", model_version, "-iu", "infer_url", "-ra", redis_addr,
-        #      "-rp", str(redis_port), "-rpw", redis_password],
-        #     should_capture_stdout=False, should_capture_stderr=False
-        # )
-        # return monitor_process
+        monitor_process = ServerConstants.exec_console_with_shell_script_list(
+            [python_program, monitor_file, "-v", fedml.get_env_version(), "-ep", run_id_str,
+             "-epn", str(end_point_name), "-mi", str(model_id), "-mn", model_name,
+             "-mv", model_version, "-iu", "infer_url", "-ra", redis_addr,
+             "-rp", str(redis_port), "-rpw", redis_password],
+            should_capture_stdout=False, should_capture_stderr=False
+        )
+        return monitor_process
 
     @staticmethod
     def stop_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version):

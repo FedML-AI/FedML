@@ -111,9 +111,12 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             if self.mlops_metrics is not None:
                 self.mlops_metrics.stop_sys_perf()
             time.sleep(3)
-            ServerConstants.cleanup_run_process(self.run_id)
+            self.cleanup_runner_process(self.run_id)
             ServerConstants.cleanup_learning_process(self.run_id)
             ServerConstants.cleanup_bootstrap_process(self.run_id)
+
+    def cleanup_runner_process(self, run_id):
+        ServerConstants.cleanup_run_process(run_id)
 
     @debug
     @abstractmethod
