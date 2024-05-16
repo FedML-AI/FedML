@@ -114,13 +114,13 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             message_center=self.message_center)
 
         # start unified inference server
-        self.inference_gateway_process = self.start_device_inference_gateway(
+        FedMLDeployMasterJobRunner.start_device_inference_gateway(
             inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
-        self.stop_device_inference_monitor(
+        FedMLDeployMasterJobRunner.stop_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
-        self.monitor_process = self.start_device_inference_monitor(
+        FedMLDeployMasterJobRunner.start_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
 
         # Changed the status to "IDLE"
@@ -546,8 +546,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             except Exception as e:
                 pass
 
-            FedMLDeployMasterJobRunner.start_device_inference_gateway(agent_config=agent_config)
-
             history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
             for job in history_jobs.job_list:
                 if job.running_json is None:
@@ -565,6 +563,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 is_activated = FedMLModelCache.get_instance().get_end_point_activation(run_id)
                 if not is_activated:
                     continue
+
+                FedMLDeployMasterJobRunner.start_device_inference_gateway(
+                    inference_port=inference_port, agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
