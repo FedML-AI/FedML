@@ -25,7 +25,6 @@ from .job_runner_msg_sender import FedMLDeployJobRunnerMsgSender
 
 
 class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerMsgSender, ABC):
-
     default_redis_addr = "local"
     default_redis_port = "6379"
     default_redis_password = "fedml_default"
@@ -54,7 +53,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.deployment_result_queue = Queue()
 
     # Override
-    def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None,):
+    def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None, ):
         return FedMLDeployMasterJobRunner(
             args, run_id=run_id, request_json=request_json, agent_config=self.agent_config, edge_id=edge_id
         )
@@ -65,10 +64,10 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
     # Override
     def run_impl(
-        self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-        run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
-        run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
-        status_center_queue=None
+            self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
+            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
+            run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
+            status_center_queue=None
     ):
         # Parse the model parameters.
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
@@ -114,13 +113,13 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             message_center=self.message_center)
 
         # start unified inference server
-        self.start_device_inference_gateway(
+        FedMLDeployMasterJobRunner.start_device_inference_gateway(
             inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
-        self.stop_device_inference_monitor(
+        FedMLDeployMasterJobRunner.stop_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
-        self.start_device_inference_monitor(
+        FedMLDeployMasterJobRunner.start_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
 
         # Changed the status to "IDLE"
@@ -331,7 +330,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             elif run_operation == "UPDATE":
                 # Overwrite the json with the rollback version diff
                 rollback_version_diff = self.replica_controller.rollback_get_replica_version_diff(
-                        device_id_trigger=device_id, replica_no_trigger=replica_no)
+                    device_id_trigger=device_id, replica_no_trigger=replica_no)
 
                 # Change the target version to the start version
                 self.replica_controller.rollback_setback_target_replica_version()
@@ -461,6 +460,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             time.sleep(3)
             self.trigger_completed_event()
 
+    def cleanup_runner_process(self, run_id):
+        ServerConstants.cleanup_run_process(run_id, not_kill_subprocess=True)
+
     @staticmethod
     def start_device_inference_gateway(
             inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
@@ -489,6 +491,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     agent_config["mqtt_config"]["MQTT_USER"] + connect_str +
                     agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
                     str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
+                python_program = get_python_program()
                 inference_gateway_process = ServerConstants.exec_console_with_script(
                     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                     "END_POINT_NAME=\"{}\" "
@@ -503,6 +506,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     should_capture_stdout=False, should_capture_stderr=False)
 
                 return inference_gateway_process
+            else:
+                return inference_gateway_pids[0]
 
         return None
 
@@ -546,8 +551,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             except Exception as e:
                 pass
 
-            FedMLDeployMasterJobRunner.start_device_inference_gateway(agent_config=agent_config)
-
             history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
             for job in history_jobs.job_list:
                 if job.running_json is None:
@@ -565,6 +568,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 is_activated = FedMLModelCache.get_instance().get_end_point_activation(run_id)
                 if not is_activated:
                     continue
+
+                FedMLDeployMasterJobRunner.start_device_inference_gateway(
+                    inference_port=inference_port, agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
@@ -778,7 +784,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",    # Internal port is for the gateway
+        inference_port = model_config_parameters.get("server_internal_port",  # Internal port is for the gateway
                                                      ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
         inference_port_external = model_config_parameters.get("server_external_port", inference_port)
 

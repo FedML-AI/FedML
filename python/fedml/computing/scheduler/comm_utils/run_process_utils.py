@@ -14,8 +14,10 @@ class RunProcessUtils:
         return f"{prefix}-run@{run_id}@pid@"
 
     @staticmethod
-    def cleanup_run_process(run_id, data_dir, info_dir,
-                            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS):
+    def cleanup_run_process(
+            run_id, data_dir, info_dir,
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS, not_kill_subprocess=False
+    ):
         try:
             local_pkg_data_dir = data_dir
             run_process_dir = os.path.join(local_pkg_data_dir, info_dir)
@@ -43,12 +45,13 @@ class RunProcessUtils:
 
                 try:
                     process = psutil.Process(int(process_id))
-                    child_processes = process.children(recursive=True)
-                    for sub_process in child_processes:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
-                        else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
+                    if not not_kill_subprocess:
+                        child_processes = process.children(recursive=True)
+                        for sub_process in child_processes:
+                            if platform.system() == 'Windows':
+                                os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                            else:
+                                os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':

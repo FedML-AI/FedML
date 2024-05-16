@@ -26,35 +26,35 @@ except Exception as e:
     pass
 
 
-class Settings(BaseSettings):
-    redis_addr: str
-    redis_port: str
-    redis_password: str
-    end_point_name: str
-    model_name: str
-    model_version: str
-    model_infer_url: str
-    version: str
-    use_mqtt_inference: bool
-    use_worker_gateway: bool
-    ext_info: str
-
-
-settings = Settings()
-
-# class settings:
-#     redis_addr = "127.0.0.1"
-#     redis_port = 6379
-#     redis_password = "fedml_default"
-#     end_point_name = ""
-#     model_name = ""
-#     model_version = ""
-#     model_infer_url = "127.0.0.1"
-#     version = "dev"
-#     use_mqtt_inference = False
-#     use_worker_gateway = False
-#     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+# class Settings(BaseSettings):
+#     redis_addr: str
+#     redis_port: str
+#     redis_password: str
+#     end_point_name: str
+#     model_name: str
+#     model_version: str
+#     model_infer_url: str
+#     version: str
+#     use_mqtt_inference: bool
+#     use_worker_gateway: bool
+#     ext_info: str
 #
+#
+# settings = Settings()
+
+class settings:
+    redis_addr = "127.0.0.1"
+    redis_port = 6379
+    redis_password = "fedml_default"
+    end_point_name = ""
+    model_name = ""
+    model_version = ""
+    model_infer_url = "127.0.0.1"
+    version = "dev"
+    use_mqtt_inference = False
+    use_worker_gateway = False
+    ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+
 
 api = FastAPI()
 
