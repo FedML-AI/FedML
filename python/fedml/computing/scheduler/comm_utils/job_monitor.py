@@ -223,7 +223,7 @@ class JobMonitor(Singleton):
             curr_version = fedml.get_env_version()
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
             mlops_prefix = fedml._get_backend_service()
-            url = f"{mlops_prefix}{num_replica_url_path}"
+            url = f"{mlops_prefix}/{num_replica_url_path}"
 
             cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
             if cached_token is None:
