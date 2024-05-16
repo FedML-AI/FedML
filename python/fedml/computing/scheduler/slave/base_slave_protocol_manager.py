@@ -48,6 +48,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.topic_report_status = None
         self.topic_ota_msg = None
         self.topic_request_device_info = None
+        self.topic_request_device_info_from_mlops = None
         self.topic_client_logout = None
         self.topic_response_job_status = None
         self.topic_report_device_status_in_job = None
@@ -87,6 +88,9 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # The topic for requesting device info from the client.
         self.topic_request_device_info = "server/client/request_device_info/" + str(self.edge_id)
 
+        # The topic for requesting device info from mlops.
+        self.topic_request_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+
         # The topic for requesting device info from MLOps.
         self.topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
 
@@ -114,6 +118,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_subscribe_topic(self.topic_report_status)
         self.add_subscribe_topic(self.topic_ota_msg)
         self.add_subscribe_topic(self.topic_request_device_info)
+        self.add_subscribe_topic(self.topic_request_device_info_from_mlops)
         self.add_subscribe_topic(self.topic_client_logout)
         self.add_subscribe_topic(self.topic_response_job_status)
         self.add_subscribe_topic(self.topic_report_device_status_in_job)
@@ -132,6 +137,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_message_listener(self.topic_ota_msg, FedMLBaseSlaveProtocolManager.callback_client_ota_msg)
         self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
         self.add_message_listener(self.topic_request_device_info, self.callback_report_device_info)
+        self.add_message_listener(self.topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
         self.add_message_listener(self.topic_client_logout, self.callback_client_logout)
         self.add_message_listener(self.topic_response_job_status, self.callback_response_job_status)
         self.add_message_listener(self.topic_report_device_status_in_job, self.callback_response_device_status_in_job)
@@ -401,6 +407,15 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             if context is not None:
                 response_payload["context"] = context
             self.message_center.send_message(response_topic, json.dumps(response_payload), run_id=run_id)
+
+    def callback_request_device_info_from_mlops(self, topic, payload):
+        self.response_device_info_to_mlops(topic, payload)
+
+    def response_device_info_to_mlops(self, topic, payload):
+        response_topic = f"deploy/slave_agent/mlops/response_device_info"
+        response_payload = {"run_id": self.run_id, "slave_agent_device_id": self.edge_id,
+                            "fedml_version": fedml.__version__}
+        self.message_center.send_message(response_topic, json.dumps(response_payload))
 
     def callback_client_logout(self, topic, payload):
         payload_json = json.loads(payload)
