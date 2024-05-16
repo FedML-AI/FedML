@@ -114,13 +114,13 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             message_center=self.message_center)
 
         # start unified inference server
-        self.start_device_inference_gateway(
+        self.inference_gateway_process = self.start_device_inference_gateway(
             inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
         self.stop_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
-        self.start_device_inference_monitor(
+        self.monitor_process = self.start_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
 
         # Changed the status to "IDLE"
