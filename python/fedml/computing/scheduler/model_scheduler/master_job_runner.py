@@ -115,7 +115,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
         # start unified inference server
         self.start_device_inference_gateway(
-            agent_config=self.agent_config, inference_port=inference_port)
+            inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
         self.stop_device_inference_monitor(
@@ -540,6 +540,14 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     def recover_inference_and_monitor():
         # noinspection PyBroadException
         try:
+            agent_config = dict()
+            try:
+                agent_config["mqtt_config"], _, _, _ = MLOpsConfigs.fetch_all_configs()
+            except Exception as e:
+                pass
+
+            FedMLDeployMasterJobRunner.start_device_inference_gateway(agent_config=agent_config)
+
             history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
             for job in history_jobs.job_list:
                 if job.running_json is None:
@@ -557,15 +565,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 is_activated = FedMLModelCache.get_instance().get_end_point_activation(run_id)
                 if not is_activated:
                     continue
-
-                agent_config = dict()
-                try:
-                    agent_config["mqtt_config"], _, _, _ = MLOpsConfigs.fetch_all_configs()
-                except Exception as e:
-                    pass
-
-                FedMLDeployMasterJobRunner.start_device_inference_gateway(
-                    inference_port=inference_port, agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
