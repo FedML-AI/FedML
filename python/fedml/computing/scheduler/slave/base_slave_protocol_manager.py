@@ -414,7 +414,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def response_device_info_to_mlops(self, topic, payload):
         response_topic = f"deploy/slave_agent/mlops/response_device_info"
         response_payload = {"run_id": self.run_id, "slave_agent_device_id": self.edge_id,
-                            "fedml_version": fedml.__version__}
+                            "fedml_version": fedml.__version__, "edge_id": self.edge_id}
         self.message_center.send_message(response_topic, json.dumps(response_payload))
 
     def callback_client_logout(self, topic, payload):
