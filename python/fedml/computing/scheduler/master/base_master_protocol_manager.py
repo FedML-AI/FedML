@@ -448,7 +448,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         response_topic = f"deploy/master_agent/mlops/response_device_info"
         if self.mlops_metrics is not None:
             response_payload = {"run_id": self.run_id, "master_agent_device_id": self.edge_id,
-                                "fedml_version": fedml.__version__}
+                                "fedml_version": fedml.__version__, "edge_id": self.edge_id}
             self.mlops_metrics.report_json_message(response_topic, json.dumps(response_payload))
 
     def init_job_task(self, request_json):
