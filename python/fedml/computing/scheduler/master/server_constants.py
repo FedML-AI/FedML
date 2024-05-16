@@ -268,9 +268,10 @@ class ServerConstants(object):
         return get_dataset_metadata_url
 
     @staticmethod
-    def cleanup_run_process(run_id):
+    def cleanup_run_process(run_id, not_kill_subprocess=False):
         RunProcessUtils.cleanup_run_process(
-            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            not_kill_subprocess=not_kill_subprocess)
 
     @staticmethod
     def save_run_process(run_id, process_id):
