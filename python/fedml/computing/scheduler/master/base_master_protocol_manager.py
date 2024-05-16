@@ -291,10 +291,10 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         if server_id is None:
             server_id = request_json.get("server_id", None)
 
-        # Complete the job runner
-        self._get_job_runner_manager().complete_job_runner(
-            run_id, args=self.args, server_id=server_id, request_json=request_json,
-            run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server)
+        self._process_job_complete_status(run_id, server_id, request_json)
+
+    def _process_job_complete_status(self, run_id, server_id, complete_payload):
+        pass
 
     def callback_run_logs(self, topic, payload):
         run_id = str(topic).split('/')[-1]

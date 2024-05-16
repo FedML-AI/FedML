@@ -103,9 +103,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         logging.info(f"Received deployment result")
         FedMLDeployJobRunnerManager.get_instance().save_deployment_result(topic, payload)
 
-    def callback_complete_job(self, topic, payload):
-        pass
-
     def callback_delete_deployment(self, topic, payload):
         logging.info("[Master] callback_delete_deployment")
         # Parse payload as the model message object.
