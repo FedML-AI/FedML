@@ -17,18 +17,18 @@ class FedMLBaseMasterAgent(ABC):
         self.master_api_process = None
         self.mlops_metrics = MLOpsMetrics()
         self.status_reporter = None
-        self.enable_simulation_cloud_agent = True
+        self.enable_simulation_cloud_agent = False
         self.use_local_process_as_cloud_server = False
         self.protocol_mgr = None
 
     def login(
             self, user_id, api_key=None, device_id=None,
-            os_name=None, role=None
+            os_name=None, role=None, runner_cmd=None
     ):
         # Login account
         login_result = FedMLAccountManager.get_instance().login(
             user_id, api_key=api_key, device_id=device_id,
-            os_name=os_name, role=role
+            os_name=os_name, role=role, runner_cmd=runner_cmd
         )
         if login_result is not None:
             self.agent_args = login_result
