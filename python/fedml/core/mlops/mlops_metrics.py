@@ -7,7 +7,8 @@ import time
 import requests
 
 import fedml
-from . import MLOpsConfigs, MLOpsUtils
+from .mlops_utils import MLOpsUtils
+from .mlops_configs import MLOpsConfigs
 from .mlops_device_perfs import MLOpsDevicePerfStats
 from .mlops_job_perfs import MLOpsJobPerfStats
 from ...computing.scheduler.master.server_constants import ServerConstants
