@@ -354,15 +354,15 @@ class JobMonitor(Singleton):
                 # Check if all processes of the specific run are exited
                 # FIXME: Proactively release the gpu ids when the run processes have not even started yet as the docker
                 #  image is being pulled
-                run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
-                all_run_processes_exited = True if len(run_process_list) <= 0 else False
-                if all_run_processes_exited:
-                    if not self.released_runs.get(str(job.job_id), False):
-                        self.released_runs[str(job.job_id)] = True
-                        # Release the gpu ids
-                        print(
-                            f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
-                        JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
+                # run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
+                # all_run_processes_exited = True if len(run_process_list) <= 0 else False
+                # if all_run_processes_exited:
+                #     if not self.released_runs.get(str(job.job_id), False):
+                #         self.released_runs[str(job.job_id)] = True
+                #         # Release the gpu ids
+                #         print(
+                #             f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
+                #         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                 # Get the timeout threshold
                 timeout_threshold = None
@@ -381,8 +381,9 @@ class JobMonitor(Singleton):
 
                 # If the run processes have exited but run status is not completed and
                 # timeout is out of the range, then release gpu ids and report failed status to the master agent.
-                if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
-                        timeout_threshold is not None and timeout > timeout_threshold:
+                # if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
+                #         timeout_threshold is not None and timeout > timeout_threshold:
+                if timeout_threshold is not None and timeout > timeout_threshold:
                     # Report failed status to the master agent
                     mlops.log_training_failed_status(
                         run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
