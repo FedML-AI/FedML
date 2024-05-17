@@ -1,8 +1,6 @@
 import logging
 import time
 
-from ..slave.client_constants import ClientConstants
-from ..master.server_constants import ServerConstants
 from enum import Enum, unique
 import multiprocessing
 from multiprocessing import Process, Queue
@@ -11,7 +9,6 @@ from .message_common import FedMLMessageEntity, FedMLStatusEntity
 from .message_center import FedMLMessageCenter
 import traceback
 from .status_manager_protocols import FedMLStatusManager
-from .compute_cache_manager import ComputeCacheManager
 
 
 @unique
@@ -87,11 +84,6 @@ class FedMLStatusCenter(object):
 
     def __init__(self, message_queue=None):
         self.status_queue = message_queue
-        self.job_status_in_slave = dict()
-        self.entire_job_status = None
-        self.job_status_in_master = dict()
-        self.slave_devices_status = dict()
-        self.master_devices_status = dict()
         self.status_center_process = None
         self.status_event = None
         self.status_sender_message_center_queue = None
@@ -107,50 +99,6 @@ class FedMLStatusCenter(object):
             id=id(self) & 0xFFFFFF,
             attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
         )
-
-    def add_job_status_in_slave(self, device_id, status):
-        self.job_status_in_slave[device_id] = self._status_transition(status)
-
-    def add_job_status_in_master(self, device_id, status):
-        self.job_status_in_master[device_id] = self._status_transition(status)
-
-    def set_entire_job_status(self, status):
-        self.entire_job_status = status
-
-    def add_slave_device_status(self, device_id, status):
-        self.slave_devices_status[device_id] = self._status_transition(status)
-
-    def add_master_device_status(self, device_id, status):
-        self.master_devices_status[device_id] = self._status_transition(status)
-
-    def get_job_status_in_slave(self, device_id):
-        return self.job_status_in_slave.get(device_id, None)
-
-    def get_job_status_in_master(self, device_id):
-        return self.job_status_in_master.get(device_id, None)
-
-    def get_entire_job_status(self):
-        return self.entire_job_status
-
-    def get_slave_device_status(self, device_id):
-        return self.slave_devices_status.get(device_id, None)
-
-    def get_master_device_status(self, device_id):
-        return self.master_devices_status.get(device_id, None)
-
-    def _status_transition(self, status):
-        transition_status = status
-        if self.entire_job_status is not None:
-            if self.entire_job_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
-                    self.entire_job_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
-                if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
-                        status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
-                        status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
-                    transition_status = status
-                else:
-                    transition_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED
-
-        return transition_status
 
     def get_status_runner(self):
         return None
@@ -204,16 +152,6 @@ class FedMLStatusCenter(object):
 
     def rebuild_status_center(self, status_queue):
         pass
-
-    @staticmethod
-    def save_job_status(run_id, status):
-        ComputeCacheManager.get_instance().set_redis_params()
-        ComputeCacheManager.get_instance().get_status_cache().save_job_status(run_id, status)
-
-    @staticmethod
-    def save_device_status_in_job(run_id, device_id, status):
-        ComputeCacheManager.get_instance().set_redis_params()
-        ComputeCacheManager.get_instance().get_status_cache().save_device_status_in_job(run_id, device_id, status)
 
     def run_status_dispatcher(self, status_event, status_queue,
                               sender_message_center_queue,
@@ -272,6 +210,10 @@ class FedMLStatusCenter(object):
                 else:
                     status_manager_instances[status_entity.run_id].edge_id = status_entity.edge_id
 
+                # if the job status is completed then continue
+                if status_manager_instances[status_entity.run_id].is_job_completed():
+                    continue
+
                 # Process the master and slave status.
                 if message_entity.topic.startswith(FedMLStatusCenter.TOPIC_MASTER_STATUS_PREFIX):
                     # Process the job status
@@ -279,7 +221,12 @@ class FedMLStatusCenter(object):
                         message_entity.topic, message_entity.payload)
 
                     # Save the job status
-                    FedMLStatusCenter.save_job_status(status_entity.run_id, self.get_entire_job_status())
+                    status_manager_instances[status_entity.run_id].save_job_status()
+
+                    # Popup the status manager instance when the job status is completed
+                    if status_manager_instances[status_entity.run_id].is_job_completed():
+                        status_manager_instances.pop(status_entity.run_id)
+                        continue
 
                 elif message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_STATUS_PREFIX):
                     # Process the slave device status
@@ -287,8 +234,7 @@ class FedMLStatusCenter(object):
                         message_entity.topic, message_entity.payload)
 
                     # Save the device status in job
-                    FedMLStatusCenter.save_device_status_in_job(status_entity.run_id, status_entity.edge_id,
-                                                                self.get_job_status_in_slave(status_entity.edge_id))
+                    status_manager_instances[status_entity.run_id].save_device_status_in_job(status_entity.edge_id)
 
             except Exception as e:
                 if message_entity is not None:
