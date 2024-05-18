@@ -184,21 +184,21 @@ def status(platform, run_name, run_id, api_key, version):
     "--page_num",
     "-pn",
     type=int,
-    default=0,
+    default=1,
     help="request page num for logs. --need_all_logs should be set to False if you want to use this option.",
 )
 @click.option(
     "--page_size",
     "-ps",
     type=int,
-    default=0,
+    default=10,
     help="request page size for logs, --need_all_logs should be set to False if you want to use this option.",
 )
 @click.option(
     "--need_all_logs",
     "-a",
     type=bool,
-    default=True,
+    default=False,
     help="boolean value representing if all logs are needed. Default to True",
 )
 def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs):
@@ -217,8 +217,8 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         return
 
     # Show run log summary info
-    log_head_table = PrettyTable(['Run ID', 'Total Log Lines', 'Log URL'])
-    log_head_table.add_row([run_id, run_log_result.total_log_lines, run_logs.log_full_url])
+    log_head_table = PrettyTable(['Run ID', 'Printed Log Lines', 'Total Log Lines', 'Log URL'])
+    log_head_table.add_row([run_id, len(run_log_result.log_line_list), run_logs.total_num, run_logs.log_full_url])
     click.echo("\nLogs summary info is as follows.")
     print(log_head_table)
 
@@ -234,7 +234,7 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
     if len(run_log_result.log_line_list) > 0:
         click.echo("\nAll logs is as follows.")
         for log_line in run_log_result.log_line_list:
-            click.echo(log_line.rstrip('\n'))
+            click.echo(log_line)
 
 
 def _print_run_table(run_list_obj):
