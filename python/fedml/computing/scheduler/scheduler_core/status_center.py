@@ -309,7 +309,7 @@ class FedMLStatusCenter(object):
                             if iter_status_mgr.is_job_completed():
                                 status_manager_instances.pop(iter_run_id)
                                 break
-                                
+
                     status_manager_instances[run_id_str] = FedMLStatusManager(
                         run_id=run_id_int, edge_id=status_entity.edge_id, status_center=self,
                         message_center=message_center)
