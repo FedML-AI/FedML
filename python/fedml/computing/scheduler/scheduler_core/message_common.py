@@ -49,6 +49,7 @@ class FedMLStatusEntity(object):
         self.payload = payload
         self.run_id = None
         self.edge_id = None
+        self.server_id = None
         self.status = None
         if status_msg_body is not None:
             self.from_message_body(status_msg_body=status_msg_body)
@@ -61,6 +62,7 @@ class FedMLStatusEntity(object):
             self.run_id = payload_json.get("run_id", None)
             self.run_id = payload_json.get("runId", None) if self.run_id is None else self.run_id
             self.edge_id = payload_json.get("edge_id", None)
+            self.server_id = payload_json.get("server_id", None)
             self.status = payload_json.get("status", None)
 
     def get_message_body(self):

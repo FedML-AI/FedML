@@ -294,7 +294,7 @@ class FedMLStatusManager(object):
             fault_tolerance_rate=fault_tolerance_rate)
         if status_to_report is not None:
             logging.info(f"Run completed when processing edge status, will report status {status_to_report}")
-            self.report_server_status(run_id, edge_id, server_id, status_to_report)
+            self.report_server_status(run_id, server_id, server_id, status_to_report)
 
     def calculate_server_status(
             self, run_id, total_edge_nums, number_of_failed_edges, number_of_finished_edges,
@@ -340,7 +340,7 @@ class FedMLStatusManager(object):
 
     def report_server_status(self, run_id, edge_id, server_id, status):
         self.status_reporter.report_server_id_status(
-            run_id, status, edge_id=edge_id, server_id=server_id, server_agent_id=edge_id, update_db=False)
+            run_id, status, edge_id=edge_id, server_id=server_id, server_agent_id=server_id, update_db=False)
 
     def report_exception_status(self, status):
         self.status_reporter.report_job_status(self.run_id, status)

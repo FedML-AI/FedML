@@ -11,6 +11,7 @@ from ..master.base_master_protocol_manager import FedMLBaseMasterProtocolManager
 from .master_job_runner_manager import FedMLDeployJobRunnerManager
 from ..scheduler_core.general_constants import GeneralConstants
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
+from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
@@ -134,6 +135,11 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         FedMLDeployJobRunnerManager.get_instance().stop_device_inference_monitor(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_id,
             model_msg_object.model_name, model_msg_object.model_version)
+
+        # Report the launch job status with killed status.
+        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(self.run_id)
+        if launch_job_id is not None:
+            self.status_reporter.report_server_id_status(launch_job_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
     def callback_start_deployment(self, topic, payload):
         # noinspection PyBroadException
