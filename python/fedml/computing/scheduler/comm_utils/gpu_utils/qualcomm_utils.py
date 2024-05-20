@@ -43,14 +43,16 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
-
-        if order != "memory":
-            raise NotImplementedError(f"Qualcomm utils doesn't have support to compute availability based on {order}. "
-                                      f"Supported criteria: [memory]")
-
         gpu_cards: List[GPUCard] = QualcommNPUtil.get_gpu_cards()
-        gpu_cards = list(filter(lambda card: card.memoryUtil < max_memory, gpu_cards))
-        gpu_cards.sort(key=lambda card: float('inf') if math.isnan(card.memoryUtil) else card.memoryUtil, reverse=False)
+        gpu_cards = list(filter(lambda card: (card.memoryUtil < max_memory and card.load < max_load), gpu_cards))
+        if order == 'memory':
+            gpu_cards.sort(key=lambda card: float('inf') if math.isnan(card.memoryUtil) else card.memoryUtil, reverse=False)
+        elif order == 'load':
+            gpu_cards.sort(key=lambda card: float('inf') if math.isnan(card.memoryUtil) else card.load, reverse=False)
+        else:
+            raise NotImplementedError(f"Qualcomm utils doesn't have support to compute availability based on {order}. "
+                                      f"Supported criteria: [memory, load]")
+
         gpu_cards = gpu_cards[0:min(limit, len(gpu_cards))]
         return list(map(lambda card: card.id, gpu_cards))
 
@@ -75,11 +77,14 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def __convert(npu) -> GPUCard:
-        # TODO (alaydshah): Add support for load, memoryUtil, temperature
+        # TODO (alaydshah): Add support for temperature
         memory_total = npu.devData.resourceInfo.dramTotal / 1024
         memory_free = npu.devData.resourceInfo.dramFree / 1024
         memory_used = memory_total - memory_free
         memory_utilized = float(memory_used) / float(memory_total)
+        nsp_free = npu.devData.resourceInfo.nspFree
+        nsp_total = npu.devData.resourceInfo.nspTotal
+        load = (nsp_total - nsp_free) / nsp_total
 
         return GPUCard(
             id=npu.qid,
@@ -91,6 +96,7 @@ class QualcommNPUtil(GPUCardUtil):
             memoryFree=memory_free,
             memoryUsed=memory_used,
             memoryUtil=memory_utilized,
+            load=load,
         )
 
     @staticmethod
