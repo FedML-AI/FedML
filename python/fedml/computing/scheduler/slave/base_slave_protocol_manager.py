@@ -57,7 +57,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.fl_topic_request_device_info = None
         self.communication_mgr = None
         self.subscribed_topics = list()
-        self.job_runners = dict()
         self.ota_upgrade = FedMLOtaUpgrade(edge_id=args.edge_id)
         self.running_request_json = dict()
         self.start_request_json = None
@@ -423,8 +422,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         if secret is None or str(secret) != "246b1be6-0eeb-4b17-b118-7d74de1975d4":
             return
         logging.info("Received the logout request.")
-        for runner in self.job_runners:
-            runner.trigger_stop_event()
+        self._get_job_runner_manager().stop_all_job_runner()
         self.disable_client_login = True
         time.sleep(3)
         os.system("fedml logout")
@@ -451,7 +449,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # process the status
         logging.info("process status in the job status callback.")
-        self.process_status(run_id, job_status, edge_id)
+        self.process_status(run_id, job_status, edge_id, master_id=master_agent)
 
     def callback_broadcasted_job_status(self, topic, payload):
         # Parse the parameters
@@ -489,15 +487,14 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         return message_status_runner
 
-    def process_status(self, run_id, status, edge_id):
+    def process_status(self, run_id, status, edge_id, master_id=None):
         run_id_str = str(run_id)
 
         # Process the completed status
         if status == GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
                 status == GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
                 status == GeneralConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
-            if self.job_runners.get(run_id_str, None) is not None:
-                self.job_runners[run_id_str].trigger_completed_event()
+            self._get_job_runner_manager().complete_job_runner(run_id)
 
             # Stop the sys perf process
             # noinspection PyBoardException
@@ -584,9 +581,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         return run_process_dict
 
     def stop_job(self, run_id):
-        run_id_str = str(run_id)
-        if self.job_runners.get(run_id_str, None) is not None:
-            self.job_runners[run_id_str].trigger_stop_event()
+        self._get_job_runner_manager().stop_job_runner(run_id)
 
     @staticmethod
     def get_start_train_topic_with_edge_id(edge_id):

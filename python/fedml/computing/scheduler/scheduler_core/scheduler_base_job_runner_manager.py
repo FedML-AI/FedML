@@ -39,6 +39,10 @@ class FedMLSchedulerBaseJobRunnerManager(ABC):
         if self.job_runners.get(run_id_str, None) is not None:
             self.job_runners[run_id_str].trigger_stop_event()
 
+    def stop_all_job_runner(self):
+        for run_id, job_runner in self.job_runners.items():
+            job_runner.trigger_stop_event()
+
     def complete_job_runner(self, run_id):
         run_id_str = str(run_id)
         if self.job_runners.get(run_id_str, None) is not None:

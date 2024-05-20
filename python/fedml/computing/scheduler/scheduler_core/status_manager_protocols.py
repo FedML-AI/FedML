@@ -343,7 +343,7 @@ class FedMLStatusManager(object):
             run_id, status, edge_id=edge_id, server_id=server_id, server_agent_id=server_id, update_db=False)
 
     def report_exception_status(self, status):
-        self.status_reporter.report_job_status(self.run_id, status)
+        self.message_reporter.report_job_status(self.run_id, status)
 
     def status_center_process_slave_status_to_master_in_slave_agent(self, topic, payload):
         # Forward the status message to the sender queue of message center.
