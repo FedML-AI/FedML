@@ -111,7 +111,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Get the launch job id
         ComputeCacheManager.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(self.run_id)
+        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(model_msg_object.run_id)
 
         # Delete SQLite records
         FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
@@ -142,7 +142,9 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Report the launch job status with killed status.
         if launch_job_id is not None:
-            self.status_reporter.report_server_id_status(launch_job_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
+            self.generate_status_report(model_msg_object.run_id, self.edge_id, server_agent_id=self.edge_id).\
+                report_server_id_status(launch_job_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
+                                        server_id=self.edge_id, server_agent_id=self.edge_id)
 
     def callback_start_deployment(self, topic, payload):
         # noinspection PyBroadException
