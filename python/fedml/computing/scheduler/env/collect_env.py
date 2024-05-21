@@ -1,9 +1,8 @@
 import os
 import traceback
 
-import GPUtil
-
 import fedml
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 
 
@@ -12,7 +11,7 @@ def collect_env():
     print("FedML version: " + str(fedml.__version__))
     env_version = fedml.get_env_version()
     print("FedML ENV version: " + str(env_version))
-    
+
     print("Execution path:" + str(os.path.abspath(fedml.__file__)))
 
     print("\n======== Running Environment ========")
@@ -59,30 +58,28 @@ def collect_env():
 
     try:
         print("\n======== GPU Configuration ========")
-        import GPUtil
-        gpus = GPUtil.getGPUs()
+        gpus = HardwareUtil.get_gpus()
         memory_total = 0.0
         memory_free = 0.0
         gpu_name = ""
+        vendor = ""
         for gpu in gpus:
             memory_total += gpu.memoryTotal
             memory_free += gpu.memoryFree
             gpu_name = gpu.name
+            vendor = gpu.vendor
 
-        print("NVIDIA GPU Info: " + gpu_name)
+        print(f"{vendor} GPU Info: " + gpu_name)
         print("Available GPU memory: {:.1f} G / {:.1f}G".format(
             memory_free / 1024.0, memory_total / 1024.0))
+
+        device_count = len(gpus)
+        print("device_count = {}".format(device_count))
 
         import torch
 
         torch_is_available = torch.cuda.is_available()
         print("torch_is_available = {}".format(torch_is_available))
-
-        device_count = torch.cuda.device_count()
-        print("device_count = {}".format(device_count))
-
-        device_name = torch.cuda.get_device_name(0)
-        print("device_name = {}".format(device_name))
 
     except:
         print("No GPU devices")

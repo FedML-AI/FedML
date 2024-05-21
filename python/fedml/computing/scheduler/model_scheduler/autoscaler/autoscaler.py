@@ -8,7 +8,7 @@ import pandas as pd
 from enum import Enum
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.autoscaler.policies import *
-from fedml.computing.scheduler.model_scheduler.autoscaler.utils.singleton import Singleton
+from fedml.computing.scheduler.comm_utils.singleton import Singleton
 
 
 class ScaleOp(Enum):
