@@ -81,6 +81,7 @@ class FedMLStatusCenter(object):
     TOPIC_SLAVE_JOB_LAUNCH_SUFFIX = "/start_train"
     TOPIC_SLAVE_JOB_STOP_PREFIX = "flserver_agent/"
     TOPIC_SLAVE_JOB_STOP_SUFFIX = "/stop_train"
+    ALLOWED_MAX_JOB_STATUS_CACHE_NUM = 1000
 
     def __init__(self, message_queue=None):
         self.status_queue = message_queue
@@ -203,38 +204,43 @@ class FedMLStatusCenter(object):
                 status_entity = FedMLStatusEntity(status_msg_body=message_body)
 
                 # Generate status manager instance
-                if status_manager_instances.get(status_entity.run_id) is None:
-                    status_manager_instances[status_entity.run_id] = FedMLStatusManager(
-                        run_id=status_entity.run_id, edge_id=status_entity.edge_id, status_center=self,
+                run_id_str = str(status_entity.run_id)
+                run_id_int = int(status_entity.run_id)
+                if status_manager_instances.get(run_id_str) is None:
+                    if len(status_manager_instances.keys()) >= FedMLStatusCenter.ALLOWED_MAX_JOB_STATUS_CACHE_NUM:
+                        for iter_run_id, iter_status_mgr in status_manager_instances.items():
+                            if iter_status_mgr.is_job_completed():
+                                status_manager_instances.pop(iter_run_id)
+                                break
+                    status_manager_instances[run_id_str] = FedMLStatusManager(
+                        run_id=run_id_int, edge_id=status_entity.edge_id,
+                        server_id=status_entity.server_id, status_center=self,
                         message_center=message_center)
                 else:
-                    status_manager_instances[status_entity.run_id].edge_id = status_entity.edge_id
+                    status_manager_instances[run_id_str].edge_id = status_entity.edge_id
+                    if status_entity.server_id is None and status_entity.server_id != 0:
+                        status_manager_instances[run_id_str].server_id = status_entity.server_id
 
                 # if the job status is completed then continue
-                if status_manager_instances[status_entity.run_id].is_job_completed():
+                if status_manager_instances[run_id_str].is_job_completed():
                     continue
 
                 # Process the master and slave status.
                 if message_entity.topic.startswith(FedMLStatusCenter.TOPIC_MASTER_STATUS_PREFIX):
                     # Process the job status
-                    status_manager_instances[status_entity.run_id].status_center_process_master_status(
+                    status_manager_instances[run_id_str].status_center_process_master_status(
                         message_entity.topic, message_entity.payload)
 
                     # Save the job status
-                    status_manager_instances[status_entity.run_id].save_job_status()
-
-                    # Popup the status manager instance when the job status is completed
-                    if status_manager_instances[status_entity.run_id].is_job_completed():
-                        status_manager_instances.pop(status_entity.run_id)
-                        continue
+                    status_manager_instances[run_id_str].save_job_status()
 
                 elif message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_STATUS_PREFIX):
                     # Process the slave device status
-                    status_manager_instances[status_entity.run_id].status_center_process_slave_status(
+                    status_manager_instances[run_id_str].status_center_process_slave_status(
                         message_entity.topic, message_entity.payload)
 
                     # Save the device status in job
-                    status_manager_instances[status_entity.run_id].save_device_status_in_job(status_entity.edge_id)
+                    status_manager_instances[run_id_str].save_device_status_in_job(status_entity.edge_id)
 
             except Exception as e:
                 if message_entity is not None:
@@ -295,40 +301,49 @@ class FedMLStatusCenter(object):
                 status_entity = FedMLStatusEntity(status_msg_body=message_body)
 
                 # Generate status manager instance
-                if status_manager_instances.get(status_entity.run_id) is None:
-                    status_manager_instances[status_entity.run_id] = FedMLStatusManager(
-                        run_id=status_entity.run_id, edge_id=status_entity.edge_id, status_center=self,
+                run_id_str = str(status_entity.run_id)
+                run_id_int = int(status_entity.run_id)
+                if status_manager_instances.get(run_id_str) is None:
+                    if len(status_manager_instances.keys()) >= FedMLStatusCenter.ALLOWED_MAX_JOB_STATUS_CACHE_NUM:
+                        for iter_run_id, iter_status_mgr in status_manager_instances.items():
+                            if iter_status_mgr.is_job_completed():
+                                status_manager_instances.pop(iter_run_id)
+                                break
+
+                    status_manager_instances[run_id_str] = FedMLStatusManager(
+                        run_id=run_id_int, edge_id=status_entity.edge_id, status_center=self,
                         message_center=message_center)
                 else:
-                    status_manager_instances[status_entity.run_id].edge_id = status_entity.edge_id
+                    status_manager_instances[run_id_str].edge_id = status_entity.edge_id
 
                 # Process the slave status
                 if message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_STATUS_PREFIX):
                     # Report the slave status to master
-                    status_manager_instances[status_entity.run_id]. \
+                    status_manager_instances[run_id_str]. \
                         status_center_process_slave_status_to_master_in_slave_agent(
                         message_entity.topic, message_entity.payload
                     )
                 elif message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_STATUS_TO_MLOPS_PREFIX):
                     # Report slave status to mlops (Active/IDLE message)
-                    status_manager_instances[status_entity.run_id]. \
+                    status_manager_instances[run_id_str]. \
                         status_center_process_slave_status_to_mlops_in_slave_agent(
                         message_entity.topic, message_entity.payload
                     )
                 elif (message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_LAUNCH_PREFIX) and
                       message_entity.topic.endswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_LAUNCH_SUFFIX)):
+                    pass
                     # Async request the job status from master when launching the job
-                    job_launch_message_map[status_entity.run_id] = {"topic": message_entity.topic,
-                                                                    "payload": message_entity.payload}
-                    # status_manager_instances[status_entity.run_id]. \
+                    # job_launch_message_map[run_id_str] = {"topic": message_entity.topic,
+                    #                                       "payload": message_entity.payload}
+                    # status_manager_instances[run_id_str]. \
                     #     status_center_request_job_status_from_master_in_slave_agent(
                     #     message_entity.topic, message_entity.payload
                     # )
                 elif (message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_STOP_PREFIX) and
                       message_entity.topic.endswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_STOP_SUFFIX)):
                     # Cleanup when stopped the job
-                    if job_launch_message_map.get(status_entity.run_id, None) is not None:
-                        job_launch_message_map.pop(status_entity.run_id)
+                    if job_launch_message_map.get(run_id_str, None) is not None:
+                        job_launch_message_map.pop(run_id_str)
 
             except Exception as e:
                 if message_entity is not None:

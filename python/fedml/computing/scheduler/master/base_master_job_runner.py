@@ -285,6 +285,10 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         self.args.run_id = self.run_id
         MLOpsRuntimeLog.get_instance(self.args).init_logs(log_level=logging.INFO)
 
+        self.status_reporter.report_server_id_status(
+            run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING, edge_id=self.edge_id,
+            server_id=self.edge_id, server_agent_id=self.edge_id)
+
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
         is_using_local_data = 0
@@ -562,7 +566,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         return True, active_edge_info_dict, inactivate_edges
 
     def report_exception_status(self, run_id):
-        self.status_reporter.report_job_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION)
+        self.mlops_metrics.report_job_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION)
 
     def callback_run_logs(self, topic, payload):
         run_id = str(topic).split('/')[-1]
@@ -617,12 +621,6 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                            f"Total available GPU count {gpu_available_count} is less than " \
                            f"request GPU count {request_num_gpus}"
                 logging.error(err_info)
-
-                # Bug fix: This mqtt message needs to be sent so platform can clean up the failed run and change the
-                # status from running to failed.
-                self.mlops_metrics.report_server_training_status(
-                    run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id
-                )
 
                 self.status_reporter.report_server_id_status(
                     run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_FAILED, edge_id=self.edge_id,

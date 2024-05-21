@@ -186,9 +186,11 @@ class MLOpsMetrics(object):
                 from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
                 FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
-    def report_job_status(self, run_id, status):
+    def report_job_status(self, run_id, status, master_id=None):
         topic_name = f"master_agent/slave_agent/job_status/{run_id}"
-        payload = {"run_id": run_id, "status": status}
+        payload = {"run_id": run_id, "status": status, "fedml_version": fedml.__version__}
+        if master_id is not None:
+            payload["master_agent"] = master_id
 
         message_json = json.dumps(payload)
         self.send_message(topic_name, message_json)

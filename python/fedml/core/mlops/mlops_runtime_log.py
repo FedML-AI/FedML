@@ -143,6 +143,8 @@ class MLOpsRuntimeLog:
             self.should_write_log_file = args.using_mlops
         else:
             self.should_write_log_file = False
+        if not hasattr(args, "log_file_dir"):
+            setattr(args, "log_file_dir", "./logs")
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id

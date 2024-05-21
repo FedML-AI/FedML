@@ -51,6 +51,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.deployed_replica_payload = None
         self.slave_deployment_results_map = dict()
         self.deployment_result_queue = Queue()
+        self.is_fresh_endpoint = True
 
     # Override
     def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None, ):
@@ -75,6 +76,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             inference_end_point_id, use_gpu, memory_size, model_version, inference_port = \
             FedMLDeployMasterJobRunner.parse_model_run_params(self.request_json)
         self.run_id = run_id
+        self.is_fresh_endpoint = self.request_json.get("is_fresh_endpoint", True)
 
         # Print request parameters.
         logging.info("model deployment request: {}".format(self.request_json))
@@ -246,7 +248,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                           f"{self.request_json}")
             return
 
-        logging.info(f"End point {end_point_id}; Device {device_id}; replica {replica_no}; "
+        logging.info(f"Endpoint {end_point_id}; Device {device_id}; replica {replica_no}; "
                      f"run_operation {run_operation} model status {model_status}.")
 
         # OPTIONAL DEBUG PARAMS
@@ -280,7 +282,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 logging.error(f"Unsupported model status {model_status}.")
 
             # Avoid endless loop, if the rollback also failed, we should report the failure to the MLOps
-            if self.replica_controller.under_rollback:
+            if self.replica_controller.under_rollback or self.is_fresh_endpoint:
                 self.send_deployment_status(
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
