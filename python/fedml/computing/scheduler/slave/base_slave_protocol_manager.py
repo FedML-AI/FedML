@@ -257,6 +257,12 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 model_master_device_id=model_master_device_id,
                 model_slave_device_id=model_slave_device_id)
         else:
+            # Save the relationship between run id and endpoint
+            ComputeCacheManager.get_instance().set_redis_params()
+            ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(
+                endpoint_id, run_id)
+
+            # Report the run status with finished status and return
             self.generate_status_report(run_id, edge_id, server_agent_id=server_agent_id).report_client_id_status(
                 edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id)
             return
