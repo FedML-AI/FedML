@@ -331,9 +331,10 @@ class FedMLStatusCenter(object):
                     )
                 elif (message_entity.topic.startswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_LAUNCH_PREFIX) and
                       message_entity.topic.endswith(FedMLStatusCenter.TOPIC_SLAVE_JOB_LAUNCH_SUFFIX)):
+                    pass
                     # Async request the job status from master when launching the job
-                    job_launch_message_map[run_id_str] = {"topic": message_entity.topic,
-                                                                    "payload": message_entity.payload}
+                    # job_launch_message_map[run_id_str] = {"topic": message_entity.topic,
+                    #                                       "payload": message_entity.payload}
                     # status_manager_instances[run_id_str]. \
                     #     status_center_request_job_status_from_master_in_slave_agent(
                     #     message_entity.topic, message_entity.payload

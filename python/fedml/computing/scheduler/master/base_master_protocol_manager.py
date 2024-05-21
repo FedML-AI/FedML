@@ -284,6 +284,10 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 report_client_id_status(iter_edge_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
                                         run_id=run_id, server_id=server_id)
 
+        # To be compatible to the previous version of edge devices, we just send the stopping train message to edges.
+        # Currently, the latest version of edge devices don't need to process the stopping train message.
+        self.send_training_stop_request_to_edges(edge_ids, payload=payload, run_id=run_id)
+
     def callback_complete_job(self, topic, payload):
         # Parse the parameters.
         request_json = json.loads(payload)
@@ -508,13 +512,12 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             self, edge_id_list, payload=None, run_id=0):
         if payload is None:
             payload_obj = {"runId": run_id, "edgeids": edge_id_list}
-        else:
-            payload_obj = json.loads(payload)
+            payload = json.dumps(payload_obj)
 
         for edge_id in edge_id_list:
             topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
             logging.info("stop_train: send topic " + topic_stop_train)
-            self.message_center.send_message(topic_stop_train, json.dumps(payload_obj))
+            self.message_center.send_message(topic_stop_train, payload)
 
     def send_training_stop_request_to_specific_edge(self, edge_id, payload):
         topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"

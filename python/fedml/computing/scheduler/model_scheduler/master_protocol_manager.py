@@ -109,6 +109,10 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
+        # Get the launch job id
+        ComputeCacheManager.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(self.run_id)
+
         # Delete SQLite records
         FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
         FedMLModelDatabase.get_instance().delete_deployment_result(
@@ -137,7 +141,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             model_msg_object.model_name, model_msg_object.model_version)
 
         # Report the launch job status with killed status.
-        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(self.run_id)
         if launch_job_id is not None:
             self.status_reporter.report_server_id_status(launch_job_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
@@ -179,6 +182,11 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Set redis config
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+
+        # Query if the endpoint exists
+        endpoint_device_info = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_device_info(
+            request_json["end_point_id"])
+        request_json["is_fresh_endpoint"] = True if endpoint_device_info is None else False
 
         # Save the user setting (about replica number) of this run to Redis, if existed, update it
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(

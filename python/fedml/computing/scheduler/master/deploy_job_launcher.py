@@ -3,6 +3,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.model_scheduler import device_client_constants
 from fedml.computing.scheduler.model_scheduler.device_model_cards import FedMLModelCards
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
+from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class FedMLDeployJobLauncher:
@@ -40,6 +41,8 @@ class FedMLDeployJobLauncher:
                 "", random_list[1], None,
                 in_model_id=model_id, in_model_version=model_version,
                 endpoint_name=endpoint_name, endpoint_id=endpoint_id, run_id=run_id)
+            return endpoint_id
+        return None
 
     def check_model_device_ready_and_deploy(self, request_json, run_id, master_device_id,
                                             slave_device_id, run_edge_ids=None):
@@ -87,4 +90,11 @@ class FedMLDeployJobLauncher:
         serving_devices.extend(device_slave_ids)
 
         # Start to deploy the model
-        FedMLDeployJobLauncher.deploy_model(serving_devices, request_json, run_id=run_id)
+        endpoint_id = FedMLDeployJobLauncher.deploy_model(serving_devices, request_json, run_id=run_id)
+
+        # Save the relationship between run id and endpoint
+        ComputeCacheManager.get_instance().set_redis_params()
+        ComputeCacheManager.get_instance().get_gpu_cache().set_endpoint_run_id_map(
+            endpoint_id, run_id)
+
+

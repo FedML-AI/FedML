@@ -10,7 +10,6 @@ import fedml
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..comm_utils.run_process_utils import RunProcessUtils
-from ....core.mlops import MLOpsMetrics
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_configs import MLOpsConfigs
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
@@ -44,7 +43,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.unique_device_id = args.unique_device_id
         self.agent_config = agent_config
         self.topic_start_train = None
-        self.topic_stop_train = None
         self.topic_report_status = None
         self.topic_ota_msg = None
         self.topic_request_device_info = None
@@ -53,7 +51,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.topic_response_job_status = None
         self.topic_report_device_status_in_job = None
         self.fl_topic_start_train = None
-        self.fl_topic_stop_train = None
         self.fl_topic_request_device_info = None
         self.communication_mgr = None
         self.subscribed_topics = list()
@@ -74,9 +71,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # The topic for stopping training
         self.topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
-
-        # The topi for stopping training
-        self.topic_stop_train = "flserver_agent/" + str(self.edge_id) + "/stop_train"
 
         # The topic for reporting current device status.
         self.topic_report_status = "mlops/report_device_status"
@@ -107,13 +101,11 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         if self.general_edge_id is not None:
             self.fl_topic_start_train = "flserver_agent/" + str(self.general_edge_id) + "/start_train"
-            self.fl_topic_stop_train = "flserver_agent/" + str(self.general_edge_id) + "/stop_train"
             self.fl_topic_request_device_info = "server/client/request_device_info/" + str(self.general_edge_id)
 
         # Subscribe topics for starting train, stopping train and fetching client status.
         self.subscribed_topics.clear()
         self.add_subscribe_topic(self.topic_start_train)
-        self.add_subscribe_topic(self.topic_stop_train)
         self.add_subscribe_topic(self.topic_report_status)
         self.add_subscribe_topic(self.topic_ota_msg)
         self.add_subscribe_topic(self.topic_request_device_info)
@@ -123,7 +115,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_subscribe_topic(self.topic_report_device_status_in_job)
         if self.general_edge_id is not None:
             self.add_subscribe_topic(self.fl_topic_start_train)
-            self.add_subscribe_topic(self.fl_topic_stop_train)
             self.add_subscribe_topic(self.fl_topic_request_device_info)
 
     @abstractmethod
@@ -132,7 +123,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # self.add_message_listener(self.topic_start_train, self.callback_start_train)
         # Add the message listeners for all topics
         self.add_message_listener(self.topic_start_train, self.callback_start_train)
-        self.add_message_listener(self.topic_stop_train, self.callback_stop_train)
         self.add_message_listener(self.topic_ota_msg, FedMLBaseSlaveProtocolManager.callback_client_ota_msg)
         self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
         self.add_message_listener(self.topic_request_device_info, self.callback_report_device_info)
@@ -141,7 +131,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.add_message_listener(self.topic_response_job_status, self.callback_response_job_status)
         self.add_message_listener(self.topic_report_device_status_in_job, self.callback_response_device_status_in_job)
         self.add_message_listener(self.fl_topic_start_train, self.callback_start_train)
-        self.add_message_listener(self.fl_topic_stop_train, self.callback_stop_train)
         self.add_message_listener(self.fl_topic_request_device_info, self.callback_report_device_info)
 
     @abstractmethod
@@ -294,27 +283,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         # Register the job launch message into the status center
         self.register_job_launch_message(topic, payload)
-
-    def callback_stop_train(self, topic, payload):
-        # Parse the parameters.
-        edge_id = str(topic).split("/")[-2]
-        request_json = json.loads(payload)
-        is_retain = request_json.get("is_retain", False)
-        if is_retain:
-            return
-        run_id = request_json.get("runId", None)
-        run_id = request_json.get("id", None) if run_id is None else run_id
-        run_status = request_json.get("run_status", GeneralConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
-
-        # logging.info("Stop run with multiprocessing...")
-        # Stop client with multiprocessing mode
-        run_id_str = str(run_id)
-        self._get_job_runner_manager().cleanup_containers_and_release_gpus(
-            run_id, edge_id, SchedulerConstants.JOB_TASK_TYPE_TRAIN)
-        self.sync_run_stop_status(run_status=run_status)
-
-        # Register the job stopping message into the status center
-        self.register_job_stop_message(topic, payload)
 
     def callback_report_current_status(self, topic, payload):
         logging.info(
@@ -560,14 +528,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         topic_job_status_from_master = f"master_agent/slave_agent/job_status/{run_id}"
         self.remove_message_listener(topic_job_status_from_master)
         self.unsubscribe_msg(topic_job_status_from_master)
-
-    def sync_run_stop_status(self, run_status=GeneralConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
-        try:
-            self.status_reporter.report_client_id_status(
-                self.edge_id, run_status, server_id=self.server_id, run_id=self.run_id)
-        except Exception as e:
-            logging.error(f"Failed to sync run stop status with Exception {e}. Traceback: {traceback.format_exc()}")
-            pass
 
     def get_all_run_process_list_map(self):
         run_process_dict = dict()
