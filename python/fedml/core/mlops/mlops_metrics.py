@@ -7,7 +7,8 @@ import time
 import requests
 
 import fedml
-from . import MLOpsConfigs
+from .mlops_utils import MLOpsUtils
+from .mlops_configs import MLOpsConfigs
 from .mlops_device_perfs import MLOpsDevicePerfStats
 from .mlops_job_perfs import MLOpsJobPerfStats
 from ...computing.scheduler.master.server_constants import ServerConstants
@@ -221,6 +222,7 @@ class MLOpsMetrics(object):
         if role is None:
             role = "normal"
         msg = {
+            "timestamp": MLOpsUtils.get_ntp_time(),
             "run_id": run_id,
             "edge_id": edge_id,
             "status": status,
