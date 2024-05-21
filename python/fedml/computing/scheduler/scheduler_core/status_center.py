@@ -218,7 +218,7 @@ class FedMLStatusCenter(object):
                         message_center=message_center)
                 else:
                     status_manager_instances[run_id_str].edge_id = status_entity.edge_id
-                    if status_entity.server_id is not None and status_entity.server_id != 0:
+                    if status_entity.server_id is not None and str(status_entity.server_id) != "0":
                         status_manager_instances[run_id_str].server_id = status_entity.server_id
 
                 # if the job status is completed then continue
