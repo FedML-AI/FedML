@@ -11,6 +11,7 @@ from ..master.base_master_protocol_manager import FedMLBaseMasterProtocolManager
 from .master_job_runner_manager import FedMLDeployJobRunnerManager
 from ..scheduler_core.general_constants import GeneralConstants
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
+from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
@@ -108,6 +109,10 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
+        # Get the launch job id
+        ComputeCacheManager.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+        launch_job_id = ComputeCacheManager.get_instance().get_gpu_cache().get_endpoint_run_id_map(model_msg_object.run_id)
+
         # Delete SQLite records
         FedMLServerDataInterface.get_instance().delete_job_from_db(model_msg_object.run_id)
         FedMLModelDatabase.get_instance().delete_deployment_result(
@@ -134,6 +139,12 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         FedMLDeployJobRunnerManager.get_instance().stop_device_inference_monitor(
             model_msg_object.run_id, model_msg_object.end_point_name, model_msg_object.model_id,
             model_msg_object.model_name, model_msg_object.model_version)
+
+        # Report the launch job status with killed status.
+        if launch_job_id is not None:
+            self.generate_status_report(model_msg_object.run_id, self.edge_id, server_agent_id=self.edge_id).\
+                report_server_id_status(launch_job_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
+                                        server_id=self.edge_id, server_agent_id=self.edge_id)
 
     def callback_start_deployment(self, topic, payload):
         # noinspection PyBroadException
@@ -173,6 +184,11 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Set redis config
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
+
+        # Query if the endpoint exists
+        endpoint_device_info = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_device_info(
+            request_json["end_point_id"])
+        request_json["is_fresh_endpoint"] = True if endpoint_device_info is None else False
 
         # Save the user setting (about replica number) of this run to Redis, if existed, update it
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(

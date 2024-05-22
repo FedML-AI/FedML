@@ -40,6 +40,8 @@ class FedMLDeployJobLauncher:
                 "", random_list[1], None,
                 in_model_id=model_id, in_model_version=model_version,
                 endpoint_name=endpoint_name, endpoint_id=endpoint_id, run_id=run_id)
+            return endpoint_id
+        return None
 
     def check_model_device_ready_and_deploy(self, request_json, run_id, master_device_id,
                                             slave_device_id, run_edge_ids=None):
@@ -88,3 +90,6 @@ class FedMLDeployJobLauncher:
 
         # Start to deploy the model
         FedMLDeployJobLauncher.deploy_model(serving_devices, request_json, run_id=run_id)
+
+
+
