@@ -26,7 +26,7 @@ class ContainerUtils(Singleton):
 
     def get_docker_client(self):
         try:
-            client = docker.from_env(timeout=5, version="auto")
+            client = docker.from_env()
         except Exception:
             logging.error("Failed to connect to the docker daemon, please ensure that you have "
                           "installed Docker Desktop or Docker Engine, and the docker is running")
@@ -180,7 +180,7 @@ class ContainerUtils(Singleton):
         running_model_name = hash("model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}")
         """
         try:
-            client = docker.from_env(timeout=5, version="auto")
+            client = docker.from_env()
         except Exception:
             logging.error("Failed to connect to the docker daemon, please ensure that you have "
                           "installed Docker Desktop or Docker Engine, and the docker is running")
