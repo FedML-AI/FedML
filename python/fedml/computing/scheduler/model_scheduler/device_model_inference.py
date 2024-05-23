@@ -141,6 +141,17 @@ async def _predict(
         input_json,
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
+
+    logging.error("=== HEADER HACK START ===")
+    for k, v in header.items():
+        logging.error("Header: {}, Value: {}".format(k, v))
+    logging.error("=== HEADER HACK END ===")
+
+    logging.error("=== JSON HACK START ===")
+    for k, v in input_json.items():
+        logging.error("Key: {}, Value: {}".format(k, v))
+    logging.error("=== JSON HACK END ===")
+
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
     in_model_name = input_json.get("model_name", None)
@@ -163,28 +174,30 @@ async def _predict(
         if in_end_point_name is None:
             in_end_point_name = ret_endpoint_name
 
-    # Authenticate request token
+    # Authenticate request token.
     inference_response = {}
     if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
-        # Check the endpoint is activated
+        # Check the endpoint is activated.
         if not is_endpoint_activated(in_end_point_id):
             inference_response = {"error": True, "message": "endpoint is not activated."}
             logging_inference_request(input_json, inference_response)
             return inference_response
 
-        # Found idle inference device
+        # Found idle inference device.
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
             return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                     "message": "can not found active inference worker for this endpoint."}
 
-        # Start timing for model metrics
+        # Start timing for model metrics.
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
                                           model_id, in_model_name, model_version,
                                           settings.model_infer_url,
                                           settings.redis_addr, settings.redis_port, settings.redis_password,
                                           version=settings.version)
+
+        # Setting time to the time before authentication and idle device discovery.
         model_metrics.set_start_time(start_time)
 
         # Send inference request to idle device
@@ -286,7 +299,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
                 inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_READY_TIMEOUT", 20))
             if response_ok:
                 response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url, input_list, output_list, inference_type=inference_type)
+                    inference_url, input_list, output_list, inference_type=inference_type, timeout=tout)
                 logging.info(f"Use http inference. return {response_ok}")
                 return inference_response
 
@@ -294,7 +307,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_PROXY_READY_TIMEOUT", 20))
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type, timeout=tout)
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
