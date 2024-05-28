@@ -33,6 +33,8 @@ class FedMLModelCache(Singleton):
 
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
+    FEDML_PENDING_REQUESTS_COUNTER = "FEDML_PENDING_REQUESTS_COUNTER"
+
     def __init__(self):
         if not hasattr(self, "redis_pool"):
             self.redis_pool = None
@@ -966,3 +968,9 @@ class FedMLModelCache(Singleton):
         return bool(self.redis_connection.hdel(
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
+
+    def get_pending_requests_counter(self) -> int:
+        return int(self.redis_connection.get(self.FEDML_PENDING_REQUESTS_COUNTER))
+
+    def pending_requests_counter(self, increase=False, decrease=False) -> bool:
+        pass

@@ -57,7 +57,32 @@ class settings:
 
 
 api = FastAPI()
+fedml_model_cache = FedMLModelCache.get_instance()
 
+
+@api.middleware("http")
+async def auth_middleware(request: Request, call_next):
+
+    if request.url.path.startswith("/inference"):
+        INFERENCE_TIMEOUT = 3
+        end_point_id = request.json().get("end_point_id", None)
+        # L = measure latency REDIS
+        pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
+            endpoint_id=end_point_id,
+            k_recent=10)
+        past_k_latencies = [float(j_obj["current_latency"]) for j_obj in pask_k_metrics]
+        if past_k_latencies:
+            mean_latency = sum(past_k_latencies) / len(past_k_latencies)
+            # R = count pending requests REDIS
+            pending_requests_num = fedml_model_cache.pending_requests_total()
+            if (mean_latency * pending_requests_num) > INFERENCE_TIMEOUT:
+                # cancel request
+                return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+
+        return Response(status_code=401, content="Unauthorized")
+
+    response = await call_next(request)
+    return response
 
 @api.get('/')
 async def root():
@@ -142,15 +167,8 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
 
-    logging.error("=== HEADER HACK START ===")
-    for k, v in header.items():
-        logging.error("Header: {}, Value: {}".format(k, v))
-    logging.error("=== HEADER HACK END ===")
-
-    logging.error("=== JSON HACK START ===")
-    for k, v in input_json.items():
-        logging.error("Key: {}, Value: {}".format(k, v))
-    logging.error("=== JSON HACK END ===")
+    fedml_model_cache.pending_requests(increase=True)
+    inference_response = {}
 
     in_end_point_id = end_point_id
     in_end_point_name = input_json.get("end_point_name", None)
@@ -175,18 +193,19 @@ async def _predict(
             in_end_point_name = ret_endpoint_name
 
     # Authenticate request token.
-    inference_response = {}
     if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
         # Check the endpoint is activated.
         if not is_endpoint_activated(in_end_point_id):
             inference_response = {"error": True, "message": "endpoint is not activated."}
             logging_inference_request(input_json, inference_response)
+            fedml_model_cache.pending_request_counter(decrease=True)
             return inference_response
 
         # Found idle inference device.
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
+            fedml_model_cache.pending_request_counter(decrease=True)
             return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                     "message": "can not found active inference worker for this endpoint."}
 
@@ -220,11 +239,12 @@ async def _predict(
             pass
 
         logging_inference_request(input_json, inference_response)
-
+        fedml_model_cache.pending_request_counter(decrease=True)
         return inference_response
     else:
         inference_response = {"error": True, "message": "token is not valid."}
         logging_inference_request(input_json, inference_response)
+        fedml_model_cache.pending_request_counter(decrease=True)
         return inference_response
 
 
@@ -299,7 +319,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
                 inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_READY_TIMEOUT", 20))
             if response_ok:
                 response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url, input_list, output_list, inference_type=inference_type, timeout=tout)
+                    inference_url, input_list, output_list, inference_type=inference_type)
                 logging.info(f"Use http inference. return {response_ok}")
                 return inference_response
 
@@ -307,7 +327,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_PROXY_READY_TIMEOUT", 20))
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type, timeout=tout)
+                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
