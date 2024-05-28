@@ -34,7 +34,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.30"
+__version__ = "0.8.31"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -90,9 +90,13 @@ def init(args=None, check_env=True, should_init_logs=True):
     # Windows/Linux/MacOS compatability issues on multi-processing
     # https://github.com/pytorch/pytorch/issues/3492
     """
-    if multiprocessing.get_start_method() != "spawn":
-        # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
-        multiprocessing.set_start_method("spawn", force=True)
+    if multiprocessing.get_start_method() != "fork":
+        # force all platforms (Windows/Linux/macOS) to use the same way (fork) for multiprocessing
+        multiprocessing.set_start_method("fork", force=True)
+
+    # if multiprocessing.get_start_method() != "spawn":
+    #     # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
+    #     multiprocessing.set_start_method("spawn", force=True)
 
     """
     # https://stackoverflow.com/questions/53014306/error-15-initializing-libiomp5-dylib-but-found-libiomp5-dylib-already-initial

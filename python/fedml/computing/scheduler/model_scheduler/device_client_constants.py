@@ -275,6 +275,13 @@ class ClientConstants(object):
         return model_file_dir
 
     @staticmethod
+    def get_deploy_failed_log_dir():
+        model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs", "failed_logs")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir, exist_ok=True)
+        return model_file_dir
+
+    @staticmethod
     def get_model_infer_data_dir():
         model_infer_data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_infer_data")
         if not os.path.exists(model_infer_data_dir):

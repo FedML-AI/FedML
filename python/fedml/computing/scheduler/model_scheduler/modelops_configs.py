@@ -4,6 +4,7 @@ import time
 
 import certifi
 import requests
+import cachetools.func
 
 import fedml
 from fedml.core.mlops.mlops_utils import MLOpsUtils
@@ -32,6 +33,7 @@ class ModelOpsConfigs(Singleton):
         return ModelOpsConfigs._config_instance
 
     @staticmethod
+    @cachetools.func.ttl_cache(ttl=600)
     def get_request_params():
         url = fedml._get_backend_service()
         url = "{}/fedmlOpsServer/configs/fetch".format(url)

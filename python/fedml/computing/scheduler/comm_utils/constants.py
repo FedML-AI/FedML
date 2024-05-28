@@ -83,7 +83,7 @@ class SchedulerConstants:
     TRAIN_PROVISIONING_TIMEOUT = 60 * 25
     TRAIN_STARTING_TIMEOUT = 60 * 15
     TRAIN_STOPPING_TIMEOUT = 60 * 5
-    TRAIN_RUNNING_TIMEOUT = 60 * 60 * 12
+    TRAIN_RUNNING_TIMEOUT = 60 * 60 * 24 * 2000
     TRAIN_INIT_TIMEOUT = 60 * 5
 
     PUBLIC_REDIS_PORT = 6379
@@ -103,7 +103,7 @@ class SchedulerConstants:
     RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS = "bootstrap-process"
 
     FEDML_DEFAULT_LAUNCH_CONTAINER_PREFIX = "fedml_default_launch_container"
-    FEDML_DEFAULT_LAUNCH_IMAGE = "fedml/fedml-default-launch:cu12.1-u22.04"
+    FEDML_DEFAULT_LAUNCH_IMAGE = "fedml/fedml-launch-job:cu12.1-u22.04"
     FEDML_DEFAULT_LOG_DIR = ".fedml/fedml-client/fedml/logs"
     FEDML_DEFAULT_DATA_DIR = ".fedml/fedml-client/fedml/data"
 

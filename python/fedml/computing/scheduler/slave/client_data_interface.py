@@ -143,7 +143,7 @@ class FedMLClientDataInterface(Singleton):
                    updated_time TEXT,
                    round_index INT,
                    total_rounds INT,
-                   running_json TEXT);''')
+                   running_json TEXT NULL);''')
             self.db_connection.commit()
         except Exception as e:
             pass
@@ -405,14 +405,14 @@ class FedMLClientJobModel(object):
     def __init__(self):
         self.job_id = 0
         self.edge_id = 0
-        self.started_time = ""
-        self.ended_time = ""
-        self.progress = 0
-        self.eta = 0
-        self.failed_time = ""
+        self.started_time = "0"
+        self.ended_time = "0"
+        self.progress = 0.0
+        self.eta = 0.0
+        self.failed_time = "0"
         self.error_code = -1
         self.msg = ""
-        self.updated_time = ""
+        self.updated_time = "0"
         self.round_index = 0
         self.total_rounds = 0
         self.status = ""
