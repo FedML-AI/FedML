@@ -3,12 +3,12 @@ import logging
 
 import redis
 
+from .device_model_db import FedMLModelDatabase
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
-from .device_model_db import FedMLModelDatabase
+from fedml.computing.scheduler.scheduler_core.compute_gpu_cache import ComputeGpuCache
 from fedml.core.common.singleton import Singleton
 from typing import Any, Dict, List
-from fedml.computing.scheduler.scheduler_core.compute_gpu_cache import ComputeGpuCache
 
 
 class FedMLModelCache(Singleton):
@@ -970,7 +970,15 @@ class FedMLModelCache(Singleton):
             end_point_id))
 
     def get_pending_requests_counter(self) -> int:
+        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
+            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
         return int(self.redis_connection.get(self.FEDML_PENDING_REQUESTS_COUNTER))
 
-    def pending_requests_counter(self, increase=False, decrease=False) -> bool:
-        pass
+    def pending_requests_counter(self, increase=False, decrease=False) -> int:
+        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
+            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+        if increase:
+            self.redis_connection.incr(self.FEDML_PENDING_REQUESTS_COUNTER)
+        if decrease:
+            self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
+        return self.get_pending_requests_counter()

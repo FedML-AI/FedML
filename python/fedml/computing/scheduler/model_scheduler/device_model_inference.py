@@ -1,8 +1,9 @@
 import logging
 import time
 import traceback
-from urllib.parse import urlparse
 import os
+
+from urllib.parse import urlparse
 from typing import Any, Mapping, MutableMapping, Union
 
 from fastapi import FastAPI, Request, Response, status
@@ -58,25 +59,26 @@ class settings:
 
 api = FastAPI()
 fedml_model_cache = FedMLModelCache.get_instance()
+fedml_model_cache.set_redis_params()
 
 
 @api.middleware("http")
 async def auth_middleware(request: Request, call_next):
 
-    if request.url.path.startswith("/inference"):
+    if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
         INFERENCE_TIMEOUT = 3
         end_point_id = request.json().get("end_point_id", None)
-        # L = measure latency REDIS
+        # Measure the latency of the past k requests.
         pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
             endpoint_id=end_point_id,
             k_recent=10)
         past_k_latencies = [float(j_obj["current_latency"]) for j_obj in pask_k_metrics]
         if past_k_latencies:
             mean_latency = sum(past_k_latencies) / len(past_k_latencies)
-            # R = count pending requests REDIS
-            pending_requests_num = fedml_model_cache.pending_requests_total()
+            # Get total pending requests.
+            pending_requests_num = fedml_model_cache.get_pending_requests_counter()
             if (mean_latency * pending_requests_num) > INFERENCE_TIMEOUT:
-                # cancel request
+                # Return a timed out error.
                 return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
         return Response(status_code=401, content="Unauthorized")
