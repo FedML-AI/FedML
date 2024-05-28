@@ -66,22 +66,24 @@ fedml_model_cache.set_redis_params()
 async def auth_middleware(request: Request, call_next):
 
     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
+        # TODO Hardcoded!
         INFERENCE_TIMEOUT = 3
-        end_point_id = request.json().get("end_point_id", None)
-        # Measure the latency of the past k requests.
-        pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
-            endpoint_id=end_point_id,
-            k_recent=10)
-        past_k_latencies = [float(j_obj["current_latency"]) for j_obj in pask_k_metrics]
-        if past_k_latencies:
-            mean_latency = sum(past_k_latencies) / len(past_k_latencies)
-            # Get total pending requests.
-            pending_requests_num = fedml_model_cache.get_pending_requests_counter()
+        request_json = await request.json()
+        end_point_id = request_json.get("end_point_id", None)
+        # Get total pending requests.
+        pending_requests_num = fedml_model_cache.get_pending_requests_counter()
+        if pending_requests_num:
+            # Fetch metrics of the past k=10 requests.
+            pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
+                endpoint_id=end_point_id,
+                k_recent=10)
+            # Measure the average latency in seconds(!), hence the 0.001 multiplier.
+            past_k_latencies_sec = \
+                [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
+            mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
+            # If timeout threshold is exceeded then cancel and return time out error.
             if (mean_latency * pending_requests_num) > INFERENCE_TIMEOUT:
-                # Return a timed out error.
                 return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
-
-        return Response(status_code=401, content="Unauthorized")
 
     response = await call_next(request)
     return response
@@ -169,7 +171,7 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
 
-    fedml_model_cache.pending_requests(increase=True)
+    fedml_model_cache.pending_requests_counter(increase=True)
     inference_response = {}
 
     in_end_point_id = end_point_id
@@ -200,14 +202,14 @@ async def _predict(
         if not is_endpoint_activated(in_end_point_id):
             inference_response = {"error": True, "message": "endpoint is not activated."}
             logging_inference_request(input_json, inference_response)
-            fedml_model_cache.pending_request_counter(decrease=True)
+            fedml_model_cache.pending_requests_counter(decrease=True)
             return inference_response
 
         # Found idle inference device.
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
-            fedml_model_cache.pending_request_counter(decrease=True)
+            fedml_model_cache.pending_requests_counter(decrease=True)
             return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                     "message": "can not found active inference worker for this endpoint."}
 
@@ -241,12 +243,12 @@ async def _predict(
             pass
 
         logging_inference_request(input_json, inference_response)
-        fedml_model_cache.pending_request_counter(decrease=True)
+        fedml_model_cache.pending_requests_counter(decrease=True)
         return inference_response
     else:
         inference_response = {"error": True, "message": "token is not valid."}
         logging_inference_request(input_json, inference_response)
-        fedml_model_cache.pending_request_counter(decrease=True)
+        fedml_model_cache.pending_requests_counter(decrease=True)
         return inference_response
 
 
