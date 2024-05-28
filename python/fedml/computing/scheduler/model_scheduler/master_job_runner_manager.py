@@ -64,4 +64,4 @@ class FedMLDeployJobRunnerManager(FedMLBaseMasterJobRunnerManager, Singleton):
 
     @staticmethod
     def generate_request_json_with_replica_version_diff(run_id, edge_id, request_json):
-        return FedMLDeployMasterJobRunner.generate_request_json_with_replica_num_diff(run_id, edge_id, request_json)
+        return FedMLDeployMasterJobRunner.generate_request_json_with_replica_version_diff(run_id, edge_id, request_json)
