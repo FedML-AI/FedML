@@ -50,11 +50,11 @@ class Autoscaler(metaclass=Singleton):
         filtered = metrics
         if before_now_minutes:
             less_than_ts = \
-                str(pd.Timestamp.now() - pd.Timedelta(minutes=before_now_minutes))
+                str(pd.Timestamp.utcnow().replace(tzinfo=None) - pd.Timedelta(minutes=before_now_minutes))
             filtered = metrics.query("'{}' <= {}".format(less_than_ts, "timestamp"))
         if before_now_seconds:
             less_than_ts = \
-                str(pd.Timestamp.now() - pd.Timedelta(seconds=before_now_seconds))
+                str(pd.Timestamp.utcnow().replace(tzinfo=None) - pd.Timedelta(seconds=before_now_seconds))
             filtered = metrics.query("'{}' <= {}".format(less_than_ts, "timestamp"))
         return filtered
 
@@ -151,6 +151,7 @@ class Autoscaler(metaclass=Singleton):
 
         # Otherwise, we proceed as normal.
         queries_num = period_data.shape[0]
+        logging.info(f"Detect {queries_num} of requests in {concurrent_query_policy.window_size_secs} seconds")
 
         try:
             # QSR: Queries per Second per Replica: (Number of Queries / Number of Current Replicas) / Window Size
