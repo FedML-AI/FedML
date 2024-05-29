@@ -92,6 +92,7 @@ class FedMLAccountManager(Singleton):
         while register_try_count < 5:
             # noinspection PyBroadException
             try:
+                print("The Unique Device ID : ", self.agent_args.unique_device_id)
                 edge_id, user_name, extra_url, general_edge_id = FedMLAccountManager.bind_account_and_device_id(
                     service_config["ml_ops_config"]["EDGE_BINDING_URL"], self.agent_args.account_id,
                     self.agent_args.unique_device_id, self.agent_args.os_name,
