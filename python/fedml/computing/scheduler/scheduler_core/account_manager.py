@@ -225,6 +225,7 @@ class FedMLAccountManager(Singleton):
 
     @staticmethod
     def get_device_id(data_dir, use_machine_id=False):
+        print("get_device_id method ",use_machine_id)
         device_file_path = os.path.join(data_dir, FedMLAccountManager.LOCAL_RUNNER_INFO_DIR_NAME)
         file_for_device_id = os.path.join(device_file_path, "devices.id")
         if not os.path.exists(device_file_path):
@@ -233,6 +234,7 @@ class FedMLAccountManager(Singleton):
             with open(file_for_device_id, 'r', encoding='utf-8') as f:
                 device_id_from_file = f.readline()
                 if device_id_from_file is not None and device_id_from_file != "":
+                    print("Returning from file ", device_id_from_file)
                     return device_id_from_file
 
         if platform.system() == "Darwin":
@@ -271,7 +273,7 @@ class FedMLAccountManager(Singleton):
                 if device_id is None:
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
-                        print("device_id from not use machine id ",device_id)
+                        print("device_id from not use machine id ", device_id)
                     else:
                         device_id = device_id = FedMLAccountManager.get_gpu_machine_id()
                         print("from getGpuMachineId ", device_id)
