@@ -192,6 +192,9 @@ class FedMLAccountManager(Singleton):
         # Build unique device id
         docker_tag = FedMLAccountManager.DEVICE_ID_DOCKER_TAG if is_from_docker else ""
         docker_tag = FedMLAccountManager.DEVICE_ID_DOCKER_HUB_TAG if is_from_fedml_docker_hub else docker_tag
+        print("Building agent args Current Device ID : ", self.agent_args.current_device_id)
+        print("Device ID suffix ", device_id_suffix)
+
         unique_device_id = f"{self.agent_args.current_device_id}@{self.agent_args.os_name}" \
                            f"{docker_tag}{device_id_suffix}"
         if role == FedMLAccountManager.ROLE_CLOUD_SERVER:
@@ -262,12 +265,16 @@ class FedMLAccountManager(Singleton):
                 device_id = str(get_uuid())
                 logging.info(device_id)
             elif "posix" in os.name:
+                print("Posix system!")
                 device_id = sys_utils.get_device_id_in_docker()
+                print("device_id from docker ", device_id)
                 if device_id is None:
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
+                        print("device_id from not use machine id ",device_id)
                     else:
                         device_id = device_id = FedMLAccountManager.get_gpu_machine_id()
+                        print("from getGpuMachineId ", device_id)
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
@@ -282,6 +289,7 @@ class FedMLAccountManager(Singleton):
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
 
+        print("Returning ",device_id)
         return device_id
 
     @staticmethod
