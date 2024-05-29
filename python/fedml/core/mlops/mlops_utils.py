@@ -150,10 +150,11 @@ class MLOpsLoggingUtils:
                     else:
                         edge_id = 0
             else:
-                if getattr(args, "client_id", None) is not None:
+                if getattr(args, "edge_id", None) is not None:
                     edge_id = args.edge_id
                 else:
                     edge_id = 0
+
         return edge_id
 
     @staticmethod
