@@ -82,7 +82,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         except Exception as e:
             pass
 
-        FedMLDeployJobRunnerManager.recover_inference_and_monitor()
+        FedMLDeployJobRunnerManager.recover_inference_and_monitor(args = self.args)
 
     # Override
     def _process_connection_ready(self):

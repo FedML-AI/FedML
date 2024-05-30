@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import multiprocessing
 import os
 import time
 import queue
@@ -9,6 +10,7 @@ from abc import ABC
 from multiprocessing import Queue
 
 import fedml
+import uvicorn
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsConfigs
 from fedml.core.mlops.mlops_runtime_log import MLOpsFormatter
 from .device_client_constants import ClientConstants
@@ -22,6 +24,7 @@ from ..scheduler_core.general_constants import GeneralConstants
 from ..master.base_master_job_runner import FedMLBaseMasterJobRunner
 from .device_replica_controller import FedMLDeviceReplicaController
 from .job_runner_msg_sender import FedMLDeployJobRunnerMsgSender
+from .device_model_inference import set_logging_args
 
 
 class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerMsgSender, ABC):
@@ -62,6 +65,11 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     # Override
     def _generate_extend_queue_list(self):
         return [self.deployment_result_queue]
+
+    @staticmethod
+    def start_inference_gateway_server(inference_gw_cmd, port, args):
+        set_logging_args(args)
+        uvicorn.run(inference_gw_cmd, host="0.0.0.0", port=port, log_level="info")
 
     # Override
     def run_impl(
@@ -116,7 +124,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
         # start unified inference server
         FedMLDeployMasterJobRunner.start_device_inference_gateway(
-            inference_port=inference_port, agent_config=self.agent_config)
+            args=self.args, inference_port=inference_port, agent_config=self.agent_config)
 
         # start inference monitor server
         FedMLDeployMasterJobRunner.stop_device_inference_monitor(
@@ -462,13 +470,14 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             time.sleep(3)
             self.trigger_completed_event()
 
+
     def cleanup_runner_process(self, run_id):
         ServerConstants.cleanup_run_process(run_id, not_kill_subprocess=True)
 
     @staticmethod
     def start_device_inference_gateway(
-            inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
-            agent_config=None, redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
+            args, inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT, agent_config=None,
+            redis_addr="localhost", redis_port=6379, redis_password="fedml_default"
     ):
         # start unified inference server
         python_program = get_python_program()
@@ -477,35 +486,39 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             inference_port = int(master_port)
         if not ServerConstants.is_running_on_k8s():
             logging.info(f"start the model inference gateway...")
-            use_mqtt_inference = os.getenv("FEDML_USE_MQTT_INFERENCE", "False")
-            use_mqtt_inference = True if use_mqtt_inference.lower() == 'true' else False
-            use_worker_gateway = os.getenv("FEDML_USE_WORKER_GATEWAY", "False")
-            use_worker_gateway = True if use_worker_gateway.lower() == 'true' else False
+            # use_mqtt_inference = os.getenv("FEDML_USE_MQTT_INFERENCE", "False")
+            # use_mqtt_inference = True if use_mqtt_inference.lower() == 'true' else False
+            # use_worker_gateway = os.getenv("FEDML_USE_WORKER_GATEWAY", "False")
+            # use_worker_gateway = True if use_worker_gateway.lower() == 'true' else False
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
-                cur_dir = os.path.dirname(__file__)
-                fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
-                connect_str = "@FEDML@"
-                ext_info = sys_utils.random1(
-                    agent_config["mqtt_config"]["BROKER_HOST"] + connect_str +
-                    str(agent_config["mqtt_config"]["BROKER_PORT"]) + connect_str +
-                    agent_config["mqtt_config"]["MQTT_USER"] + connect_str +
-                    agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
-                    str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
-                python_program = get_python_program()
-                inference_gateway_process = ServerConstants.exec_console_with_script(
-                    "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                    "END_POINT_NAME=\"{}\" "
-                    "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                    "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
-                    "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
-                    "--log-level critical".format(
-                        redis_addr, str(redis_port), redis_password, "",
-                        "", "", "", fedml.get_env_version(), use_mqtt_inference,
-                        use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
-                        fedml_base_dir),
-                    should_capture_stdout=False, should_capture_stderr=False)
+                # cur_dir = os.path.dirname(__file__)
+                # fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                # connect_str = "@FEDML@"
+                # ext_info = sys_utils.random1(
+                #     agent_config["mqtt_config"]["BROKER_HOST"] + connect_str +
+                #     str(agent_config["mqtt_config"]["BROKER_PORT"]) + connect_str +
+                #     agent_config["mqtt_config"]["MQTT_USER"] + connect_str +
+                #     agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
+                #     str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
+                # python_program = get_python_program()
+                inference_gateway_process = multiprocessing.Process(
+                    target=FedMLDeployMasterJobRunner.start_inference_gateway_server, args=(inference_gw_cmd,
+                                                                                            inference_port, args)
+                )
+                # inference_gateway_process = ServerConstants.exec_console_with_script(
+                #     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                #     "END_POINT_NAME=\"{}\" "
+                #     "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                #     "USE_MQTT_INFERENCE={} USE_WORKER_GATEWAY={} EXT_INFO={} "
+                #     "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
+                #     "--log-level critical".format(
+                #         redis_addr, str(redis_port), redis_password, "",
+                #         "", "", "", fedml.get_env_version(), use_mqtt_inference,
+                #         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
+                #         fedml_base_dir),
+                #     should_capture_stdout=False, should_capture_stderr=False)
 
                 return inference_gateway_process
             else:
@@ -544,7 +557,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                                                   model_id, model_name, model_version)
 
     @staticmethod
-    def recover_inference_and_monitor():
+    def recover_inference_and_monitor(args):
         # noinspection PyBroadException
         try:
             agent_config = dict()
@@ -571,8 +584,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 if not is_activated:
                     continue
 
-                FedMLDeployMasterJobRunner.start_device_inference_gateway(
-                    inference_port=inference_port, agent_config=agent_config)
+                FedMLDeployMasterJobRunner.start_device_inference_gateway(args=args, inference_port=inference_port, agent_config=agent_config)
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
@@ -807,3 +819,4 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     # Override
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
+

@@ -15,6 +15,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLMo
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 
 try:
     from pydantic import BaseSettings
@@ -55,6 +56,8 @@ class settings:
     use_worker_gateway = False
     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
 
+
+logging_args = None
 
 api = FastAPI()
 
@@ -229,7 +232,8 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
         model_name = ""
         if in_end_point_name is not None:
             end_point_name = in_end_point_name
-            model_name = redis_key[len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
+            model_name = redis_key[
+                         len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
         else:
             # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
             try:
@@ -366,8 +370,20 @@ def logging_inference_request(request, response):
         logging.info("failed to log inference request and response to file.")
 
 
+def set_logging_args(args=None):
+    global logging_args
+    logging_args = args
+    if logging_args is not None:
+        # Force run id to 0, as the gateway is shared by all the runs.
+        setattr(args, "run_id", "0")
+        MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
+        MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.edge_id)
+        logging.info("start the log processor")
+
+
 if __name__ == "__main__":
     import uvicorn
+
     port = 2203
     logging.basicConfig(level=logging.INFO)
     uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")
