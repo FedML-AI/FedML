@@ -10,7 +10,6 @@ import uuid
 
 import asyncio
 
-from ..comm_utils.constants import SchedulerConstants
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -105,9 +104,9 @@ class FedMLMqttInference:
             only_do_health_check=only_do_health_check, timeout=timeout
         )
 
-        allowed_inference_timeout = SchedulerConstants.MQTT_INFERENCE_TIMEOUT if timeout is None else timeout
         sleep_time_interval = 0.05
         total_sleep_time = 0
+        timeout = timeout if timeout else -1
         while True:
             if self.run_inference_event_map[str_endpoint_id][inference_req_id].is_set():
                 self.release_client_mqtt_mgr()
@@ -115,7 +114,7 @@ class FedMLMqttInference:
 
             total_sleep_time += sleep_time_interval
             time.sleep(sleep_time_interval)
-            if total_sleep_time > allowed_inference_timeout:
+            if total_sleep_time > timeout:
                 break
 
         self.release_client_mqtt_mgr()
