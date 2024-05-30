@@ -570,7 +570,7 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     def get_docker_client(docker_args: DockerArgs) -> DockerClient:
         try:
-            client = docker.from_env(timeout=5, version="auto")
+            client = docker.from_env()
             if docker_args.username != "" and docker_args.registry != "":
                 client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
         except Exception as e:
