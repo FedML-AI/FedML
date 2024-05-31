@@ -12,21 +12,23 @@ from fedml.computing.scheduler.scheduler_core.compute_gpu_cache import ComputeGp
 
 
 class FedMLModelCache(Singleton):
+
     FEDML_MODEL_DEPLOYMENT_RESULT_TAG = "FEDML_MODEL_DEPLOYMENT_RESULT-"
     FEDML_MODEL_DEPLOYMENT_STATUS_TAG = "FEDML_MODEL_DEPLOYMENT_STATUS-"
     FEDML_MODEL_DEPLOYMENT_MONITOR_TAG = "FEDML_MODEL_DEPLOYMENT_MONITOR-"
-    FEDML_MODEL_END_POINT_ACTIVATION_TAG = "FEDML_MODEL_END_POINT_ACTIVATION-"
-    FEDML_MODEL_END_POINT_STATUS_TAG = "FEDML_MODEL_END_POINT_STATUS-"
     FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
-    FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
-    FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
-    FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
 
+    FEDML_MODEL_ENDPOINT_ACTIVATION_TAG = "FEDML_MODEL_ENDPOINT_ACTIVATION-"
+    FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE = "FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE"
+    FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
     # For scale-out & scale-in
     FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
-
     # For keeping track scale down decisions state.
     FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG = "FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG-"
+    FEDML_MODEL_ENDPOINT_STATUS_TAG = "FEDML_MODEL_ENDPOINT_STATUS-"
+    FEDML_MODEL_ENDPOINT_TOKEN_TAG = "FEDML_MODEL_ENDPOINT_TOKEN_TAG-"
+
+    FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
 
     # On the worker
     FEDML_MODEL_REPLICA_GPU_IDS_TAG = "FEDML_MODEL_REPLICA_GPU_IDS_TAG-"
@@ -710,22 +712,22 @@ class FedMLModelCache(Singleton):
         return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id, end_point_name, model_name)
 
     def get_end_point_status_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_STATUS_TAG, end_point_id)
 
     @staticmethod
     def get_end_point_activation_key(end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_ACTIVATION_TAG, end_point_id)
 
     def get_deployment_device_info_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
 
     @staticmethod
     def get_deployment_token_key(end_point_id, end_point_name, model_name):
-        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id, end_point_name, model_name)
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_TOKEN_TAG, end_point_id, end_point_name, model_name)
 
     @staticmethod
     def get_deployment_token_key_eid(end_point_id):
-        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
+        return "{}-{}".format(FedMLModelCache.FEDML_MODEL_ENDPOINT_TOKEN_TAG, end_point_id)
 
     def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
         return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
@@ -928,23 +930,23 @@ class FedMLModelCache(Singleton):
                 status = False
         return status
 
-    def set_endpoint_scaling_down_decision_time(self, end_point_id, timestamp) -> bool:
+    def set_endpoint_scaling_down_decision_time(self, endpoint_id, timestamp) -> bool:
         status = True
         try:
             self.redis_connection.hset(
                 self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-                mapping={end_point_id: timestamp})
+                mapping={endpoint_id: timestamp})
         except Exception as e:
             logging.error(e)
             status = False
         return status
 
-    def get_endpoint_scaling_down_decision_time(self, end_point_id) -> int:
+    def get_endpoint_scaling_down_decision_time(self, endpoint_id) -> int:
         try:
             scaling_down_decision_time = \
                 self.redis_connection.hget(
                     self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-                    end_point_id)
+                    endpoint_id)
             if len(scaling_down_decision_time) > 0:
                 scaling_down_decision_time = int(scaling_down_decision_time)
             else:
@@ -955,14 +957,35 @@ class FedMLModelCache(Singleton):
 
         return scaling_down_decision_time
 
-    def exists_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+    def exists_endpoint_scaling_down_decision_time(self, endpoint_id) -> bool:
         # The hash exists returns an integer 0 (not found), 1 (found), hence we need
         # to cast it to a boolean value.
         return bool(self.redis_connection.hexists(
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-            end_point_id))
+            endpoint_id))
 
-    def delete_endpoint_scaling_down_decision_time(self, end_point_id) -> bool:
+    def delete_endpoint_scaling_down_decision_time(self, endpoint_id) -> bool:
         return bool(self.redis_connection.hdel(
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
-            end_point_id))
+            endpoint_id))
+
+    def set_endpoint_inference_protocol_type(self, endpoint_id, protocol: str) -> bool:
+        status = True
+        try:
+            self.redis_connection.hset(
+                self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE,
+                mapping={endpoint_id: protocol})
+        except Exception as e:
+            logging.error(e)
+            status = False
+        return status
+
+    def get_endpoint_inference_protocol_type(self, endpoint_id) -> str:
+        protocol = None
+        try:
+            protocol = self.redis_connection.hget(
+                self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE,
+                endpoint_id)
+        except Exception as e:
+            logging.error(e)
+        return protocol

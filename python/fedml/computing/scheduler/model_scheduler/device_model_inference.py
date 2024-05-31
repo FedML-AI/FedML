@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from urllib.parse import urlparse
 from typing import Any, Mapping, MutableMapping, Union
 
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
@@ -16,7 +17,6 @@ from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLMo
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
 from fedml.computing.scheduler.comm_utils import sys_utils
-from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 
 try:
     from pydantic import BaseSettings
@@ -64,13 +64,6 @@ fedml_model_cache.set_redis_params(
     redis_addr=settings.redis_addr,
     redis_port=settings.redis_port,
     redis_password=settings.redis_password)
-
-
-@api.on_event("startup")
-async def startup_event():
-    # Ping the end point to see whether it supports http,
-    # http proxy or mqtt and store this info in REDIS.
-    pass
 
 
 @api.get('/')
@@ -209,7 +202,12 @@ async def _predict(
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
             inference_response = await send_inference_request(
-                idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
+                idle_device,
+                end_point_id,
+                inference_output_url,
+                input_list,
+                output_list,
+                inference_type=in_return_type)
 
         # Calculate model metrics
         try:
@@ -287,32 +285,55 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
-                                 inference_type="default", has_public_ip=True):
+async def get_inference_protocol_type(endpoint_id, inference_url, timeout) -> str:
+    # Retrieve protocol type if exists, else perform a round-robin protocol ping
+    # to identify, save and return the communication protocol for this endpoint.
+    inference_protocol_type = fedml_model_cache.get_endpoint_inference_protocol_type(endpoint_id)
 
-    inference_request_timeout = SchedulerConstants.INFERENCE_REQUEST_TIMEOUT
-    try:
-        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", True)
-        if not http_infer_available:
-            if http_infer_available == "False" or http_infer_available == "false":
-                http_infer_available = False
+    # If protocol is set, return immediately.
+    if inference_protocol_type:
+        return inference_protocol_type
 
-        if http_infer_available:
-            response_ok = await FedMLHttpInference.is_inference_ready(
-                inference_url,
-                timeout=inference_request_timeout)
-            if response_ok:
-                response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url, input_list, output_list,
-                    inference_type=inference_type,
-                    timeout=inference_request_timeout)
-                logging.info(f"Use http inference. return {response_ok}")
-                return inference_response
-
+    # First attempt HTTP.
+    response_ok = await FedMLHttpInference.is_inference_ready(
+        inference_url,
+        timeout=timeout)
+    if response_ok:
+        inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_HTTP
+    else:
+        # Second attempt HTTP Proxy.
         response_ok = await FedMLHttpProxyInference.is_inference_ready(
             inference_url,
-            timeout=inference_request_timeout)
+            timeout=timeout)
         if response_ok:
+            inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_HTTP_PROXY
+        else:
+            # Fall back to MQTT.
+            inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_MQTT
+
+    fedml_model_cache.set_endpoint_inference_protocol_type(
+        endpoint_id, inference_protocol_type)
+    return inference_protocol_type
+
+
+async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
+                                 inference_type="default"):
+
+    inference_request_timeout = ClientConstants.INFERENCE_REQUEST_TIMEOUT
+    inference_protocol_type = await get_inference_protocol_type(
+        endpoint_id, inference_url, inference_request_timeout)
+
+    try:
+
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_HTTP:
+            response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, input_list, output_list,
+                inference_type=inference_type,
+                timeout=inference_request_timeout)
+            logging.info(f"Use http inference. return {response_ok}")
+            return inference_response
+
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_HTTP_PROXY:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
                 endpoint_id, inference_url, input_list, output_list,
                 inference_type=inference_type,
@@ -320,7 +341,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
-        if not has_public_ip:
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_MQTT:
             connect_str = "@FEDML@"
             random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
             config_list = random_out.split(connect_str)
@@ -337,13 +358,14 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
             if response_ok:
                 response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-                    idle_device, endpoint_id, inference_url, input_list, output_list,
-                    inference_type=inference_type,
-                    timeout=inference_request_timeout)
+                    idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
 
-            logging.info(f"Use mqtt inference. return {response_ok}.")
+            logging.info(f"Using mqtt inference. return {response_ok}.")
             return inference_response
-        return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
+
+        # Inference request failed for all communication protocols.
+        return {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
+
     except Exception as e:
         inference_response = {"error": True,
                               "message": f"Exception when using http, http-proxy and mqtt "
