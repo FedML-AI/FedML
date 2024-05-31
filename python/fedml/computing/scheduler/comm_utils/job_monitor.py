@@ -48,6 +48,7 @@ from ..model_scheduler.device_server_constants import ServerConstants
 class JobMonitor(Singleton):
     ENDPOINT_CONTAINER_LOG_PREFIX = "endpoint"
     TIME_INTERVAL_FOR_INFERENCE_ON_GATEWAY = 60 * 10
+    ENDPOINT_CONTAINER_LOG_SUBDIR = "monitor_endpoint_logs"
 
     def __init__(self):
         if not hasattr(self, "endpoint_unavailable_counter"):
@@ -1055,8 +1056,11 @@ class JobMonitor(Singleton):
                 model_version = model_config.get("model_version", None)
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
+                log_file_dir = os.path.join(
+                    device_client_constants.ClientConstants.get_log_file_dir(),
+                    JobMonitor.ENDPOINT_CONTAINER_LOG_SUBDIR)
                 log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path_with_run_params(
-                    job.job_id, int(job.edge_id), device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                    job.job_id, int(job.edge_id), log_file_dir, is_server=False,
                     log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
                 )
 
@@ -1130,8 +1134,9 @@ class JobMonitor(Singleton):
                                 nano_second_str = container_time.split(".")[1][:9]
                                 t_datetime_obj = isoparse(container_time)
 
-                                if t_sec_offset is not None:
-                                    t_datetime_obj = t_datetime_obj + datetime.timedelta(seconds=t_sec_offset)
+                                # ISSUE: this will cause the timestamp is not correct.
+                                #if t_sec_offset is not None:
+                                #    t_datetime_obj = t_datetime_obj + datetime.timedelta(seconds=t_sec_offset)
                             except Exception as e:
                                 logging.error(f"Exception when parsing the container log time {e}")
                                 t_datetime_obj = datetime.datetime.now()

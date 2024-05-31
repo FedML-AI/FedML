@@ -12,7 +12,7 @@ import queue
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
-from ....core.mlops import MLOpsMetrics
+from ....core.mlops import MLOpsMetrics, MLOpsRuntimeLogDaemon
 from ....core.mlops.mlops_device_perfs import MLOpsDevicePerfStats
 from ..comm_utils.yaml_utils import load_yaml_config
 from .general_constants import GeneralConstants
@@ -449,9 +449,15 @@ class FedMLSchedulerBaseJobRunner(ABC):
         if self.run_process_event is not None:
             self.run_process_event.set()
 
+        time.sleep(1)
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+
     def trigger_completed_event(self):
         if self.run_process_completed_event is not None:
             self.run_process_completed_event.set()
+
+        time.sleep(1)
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
 
     def execute_job_task(self, unzip_package_path, entry_file_full_path, conf_file_full_path, dynamic_args_config,
                          fedml_config_object):

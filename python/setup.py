@@ -64,6 +64,8 @@ requirements = [
     'uvicorn',
     'wandb==0.13.2',
     'wget',
+    # Need to pin this version due to breaking change released in python docker sdk
+    'requests<2.32',
 ]
 
 requirements_extra_mpi = [

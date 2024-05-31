@@ -23,7 +23,7 @@ class FedMLStatusManager(object):
         self.edge_id = edge_id
         self.server_id = server_id
         self.edge_id_list = edge_id_list
-        self.client_agent_active_list = dict()
+        self.edge_status_dict = None
         self.running_scheduler_contract = running_scheduler_contract if running_scheduler_contract is not None else dict()
         self.message_reporter = MLOpsMetrics()
         self.message_reporter.set_messenger(message_center)
@@ -163,6 +163,8 @@ class FedMLStatusManager(object):
         status = request_json["status"]
         edge_id = request_json["edge_id"]
         server_id = request_json.get("server_id", None)
+        if server_id is None or str(server_id) == "0":
+            server_id = self.server_id
         run_id_str = str(run_id)
 
         # Process the job status
@@ -185,8 +187,7 @@ class FedMLStatusManager(object):
         status = self.get_entire_job_status()
 
         # Set the device status based on the job status
-        edge_id_status_dict = self.client_agent_active_list.get(f"{run_id}", {})
-        for edge_id_item, edge_status_item in edge_id_status_dict.items():
+        for edge_id_item, edge_status_item in self.edge_status_dict.items():
             if edge_id_item == "server":
                 continue
 
@@ -233,18 +234,17 @@ class FedMLStatusManager(object):
         init_edge_id_list = payload_json.get("init_all_edge_id_list", None)
         init_server_id = payload_json.get("init_server_id", None)
 
-        active_item_dict = self.client_agent_active_list.get(f"{run_id}", None)
-        if active_item_dict is None:
-            self.client_agent_active_list[f"{run_id}"] = dict()
+        if self.edge_status_dict is None:
+            self.edge_status_dict = dict()
 
         if init_edge_id_list is not None:
-            self.client_agent_active_list[f"{run_id}"][f"server"] = init_server_id
+            self.edge_status_dict[f"server"] = init_server_id
             for edge_id_item in init_edge_id_list:
-                self.client_agent_active_list[f"{run_id}"][f"{edge_id_item}"] = \
+                self.edge_status_dict[f"{edge_id_item}"] = \
                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
 
         if run_id is not None and edge_id is not None:
-            self.client_agent_active_list[f"{run_id}"][f"{edge_id}"] = status
+            self.edge_status_dict[f"{edge_id}"] = status
 
             self.process_device_status(run_id, edge_id, status)
 
@@ -252,12 +252,11 @@ class FedMLStatusManager(object):
         number_of_failed_edges = 0
         number_of_finished_edges = 0
         number_of_killed_edges = 0
-        edge_id_status_dict = self.client_agent_active_list.get(f"{run_id}", {})
-        server_id = edge_id_status_dict.get("server", 0)
+        server_id = self.edge_status_dict.get("server", 0)
         enable_fault_tolerance, fault_tolerance_rate = self.parse_fault_tolerance_params(run_id)
         running_edges_list = list()
         edge_nums = 0
-        for edge_id_item, status_item in edge_id_status_dict.items():
+        for edge_id_item, status_item in self.edge_status_dict.items():
             if edge_id_item == "server":
                 continue
 

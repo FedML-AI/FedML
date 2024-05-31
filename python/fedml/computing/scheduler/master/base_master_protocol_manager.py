@@ -264,23 +264,26 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         run_id = request_json.get("runId", None)
         run_id = request_json.get("id", None) if run_id is None else run_id
         run_id_str = str(run_id)
+        edge_ids = request_json.get("edgeids", None)
         server_id = request_json.get("serverId", None)
         if server_id is None:
             server_id = request_json.get("server_id", None)
-        edge_ids = request_json.get("edgeids", None)
-
-        # Stop the job runner
-        self._get_job_runner_manager().stop_job_runner(
-            run_id, args=self.args, server_id=server_id, request_json=request_json,
-            run_as_cloud_agent=self.run_as_cloud_agent)
+        server_agent_id = server_id
 
         # Cleanup the cached object
         if self.running_request_json.get(run_id_str, None) is not None:
             self.running_request_json.pop(run_id_str)
 
+        # If it is the cloud agent, then forward the stopping request to the corresponding cloud server.
+        if self.run_as_cloud_agent:
+            server_agent_id = self.edge_id
+            topic_stop_train_to_cloud_server = f"mlops/flserver_agent_{server_id}/stop_train"
+            self.message_center.send_message(topic_stop_train_to_cloud_server, payload)
+            return
+
         # Reset all edge status and server status
         for iter_edge_id in edge_ids:
-            self.generate_status_report(run_id, iter_edge_id, server_agent_id=server_id).\
+            self.generate_status_report(run_id, iter_edge_id, server_agent_id=server_agent_id).\
                 report_client_id_status(iter_edge_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
                                         run_id=run_id, server_id=server_id)
 
