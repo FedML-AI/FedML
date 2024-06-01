@@ -3,6 +3,7 @@ import os
 import shutil
 
 import requests
+import math
 from fedml.api.modules.utils import authenticate
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
@@ -45,6 +46,14 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
     file_name = name + ".zip"
     dest_path = os.path.join(user_id, file_name)
     file_size = os.path.getsize(archive_path)
+
+    size_in_mb = file_size / 1024 * 1024
+
+    if(size_in_mb > 100):
+        presigned_url = _single_presigned_url(api_key,dest_path)
+    else:
+        num_chunks = _get_num_chunks(file_size)
+        presigned_urls = _multipart_presigned_url(api_key,dest_path,num_chunks)
 
     file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
                                                         show_progress=show_progress,
@@ -195,6 +204,53 @@ def delete(data_name, service, api_key=None) -> FedMLResponse:
     else:
         logging.error(message, data_name, service)
         return FedMLResponse(code=ResponseCode.FAILURE, message=message, data=False)
+
+def _single_presigned_url(api_key:str,file_key:str):
+    single_presigned_request_url = ServerConstants.get_presigned_single_part_url()
+    cert_path = MLOpsConfigs.get_cert_path_with_version()
+    headers = ServerConstants.API_HEADERS
+    headers["Authorization"] = f"Bearer {api_key}"
+
+    if cert_path is None:
+        try:
+            requests.session().verify = cert_path
+            response = requests.get(single_presigned_request_url, verify=True, headers=headers)
+        except requests.exceptions.SSLError as err:
+            MLOpsConfigs.install_root_ca_file()
+            response = requests.get(single_presigned_request_url, verify=True, headers=headers)
+    else:
+        response = requests.get(single_presigned_request_url, verify=True, headers=headers)
+
+    if(response.status_code != 200):
+        message = (f"Failed to get presigned URL with status code = {response.status_code}, "
+                   f"response.content: {response.content}")
+        logging.error(message)
+        return None,message
+    else:
+        resp_data = response.json()
+        code = resp_data.get("code", None)
+        data = resp_data.get("data", None)
+
+        if code is None or data is None or code == "FAILURE":
+            message = resp_data.get("message", None)
+            message = (f"Failed getting presigned URL with following meesage: {message}, "
+                       f"response.content: {response.content}")
+            return None, message
+
+    upload_url = data.get("uploadUrl")
+    download_url = data.get("downloadUrl")
+
+
+
+
+
+
+
+
+
+def _multipart_presigned_url():
+    multipart_presigned_request_url = ServerConstants.get_presigned_multi_part_url()
+
 
 
 def _get_user_id_from_api_key(api_key: str) -> (str, str):
@@ -375,4 +431,9 @@ def _get_size(size_in_bytes:str)->str:
             size_str = f"{size_in_kb:.2f} KB"
         else:
             size_str = f"{size} B"
-    return size_str 
+    return size_str
+
+def _get_num_chunks(file_size):
+    chunk_size = 100 * 1024 * 1024 #100 MB
+    num_chunks = math.ceil(file_size/chunk_size)
+    return num_chunks

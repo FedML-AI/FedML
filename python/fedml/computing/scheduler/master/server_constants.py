@@ -268,6 +268,20 @@ class ServerConstants(object):
         return get_dataset_metadata_url
 
     @staticmethod
+    def get_presigned_single_part_url():
+        get_presigned_single_part_url = "{}/system/api/v1/cli/oss/presigned-url".format(
+            ServerConstants.get_mlops_url()
+        )
+        return get_presigned_single_part_url
+
+    @staticmethod
+    def get_presigned_multi_part_url():
+        get_presigned_multi_part_url = "{}/system/api/v1/cli/oss/multipart/presigned-url".format(
+            ServerConstants.get_mlops_url()
+        )
+        return get_presigned_multi_part_url
+
+    @staticmethod
     def cleanup_run_process(run_id, not_kill_subprocess=False):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,

@@ -473,6 +473,7 @@ class S3Storage:
                     with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
                                    file=sys.stderr if out_progress_to_err else sys.stdout,
                                    desc=progress_desc_text) as pbar:
+
                         self.aws_s3_client.upload_fileobj(
                             f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read", "Metadata": metadata},
                             Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
