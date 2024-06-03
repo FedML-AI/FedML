@@ -9,6 +9,7 @@ from typing import Any, Mapping, MutableMapping, Union
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import StreamingResponse
 
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
@@ -27,23 +28,7 @@ except Exception as e:
     pass
 
 
-# class Settings(BaseSettings):
-#     redis_addr: str
-#     redis_port: str
-#     redis_password: str
-#     end_point_name: str
-#     model_name: str
-#     model_version: str
-#     model_infer_url: str
-#     version: str
-#     use_mqtt_inference: bool
-#     use_worker_gateway: bool
-#     ext_info: str
-#
-#
-# settings = Settings()
-
-class settings:
+class Settings:
     redis_addr = "127.0.0.1"
     redis_port = 6379
     redis_password = "fedml_default"
@@ -59,7 +44,10 @@ class settings:
 
 api = FastAPI()
 fedml_model_cache = FedMLModelCache.get_instance()
-fedml_model_cache.set_redis_params()
+fedml_model_cache.set_redis_params(
+    redis_addr=Settings.redis_addr,
+    redis_port=Settings.redis_port,
+    redis_password=Settings.redis_password)
 
 
 @api.middleware("http")
@@ -67,16 +55,16 @@ async def auth_middleware(request: Request, call_next):
 
     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
         # TODO Hardcoded!
-        INFERENCE_TIMEOUT = 3
+        INFERENCE_TIMEOUT = 0.0001
         request_json = await request.json()
         end_point_id = request_json.get("end_point_id", None)
         # Get total pending requests.
         pending_requests_num = fedml_model_cache.get_pending_requests_counter()
         if pending_requests_num:
-            # Fetch metrics of the past k=10 requests.
+            # Fetch metrics of the past k=3 requests.
             pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
                 endpoint_id=end_point_id,
-                k_recent=10)
+                k_recent=5)
             # Measure the average latency in seconds(!), hence the 0.001 multiplier.
             past_k_latencies_sec = \
                 [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
@@ -87,6 +75,7 @@ async def auth_middleware(request: Request, call_next):
 
     response = await call_next(request)
     return response
+
 
 @api.get('/')
 async def root():
@@ -171,7 +160,7 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
 
-    fedml_model_cache.pending_requests_counter(increase=True)
+    fedml_model_cache.update_pending_requests_counter(increase=True)
     inference_response = {}
 
     in_end_point_id = end_point_id
@@ -202,23 +191,23 @@ async def _predict(
         if not is_endpoint_activated(in_end_point_id):
             inference_response = {"error": True, "message": "endpoint is not activated."}
             logging_inference_request(input_json, inference_response)
-            fedml_model_cache.pending_requests_counter(decrease=True)
+            fedml_model_cache.update_pending_requests_counter(decrease=True)
             return inference_response
 
         # Found idle inference device.
         idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
         if idle_device is None or idle_device == "":
-            fedml_model_cache.pending_requests_counter(decrease=True)
+            fedml_model_cache.update_pending_requests_counter(decrease=True)
             return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                     "message": "can not found active inference worker for this endpoint."}
 
         # Start timing for model metrics.
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
                                           model_id, in_model_name, model_version,
-                                          settings.model_infer_url,
-                                          settings.redis_addr, settings.redis_port, settings.redis_password,
-                                          version=settings.version)
+                                          Settings.model_infer_url,
+                                          Settings.redis_addr, Settings.redis_port, Settings.redis_password,
+                                          version=Settings.version)
 
         # Setting time to the time before authentication and idle device discovery.
         model_metrics.set_start_time(start_time)
@@ -243,12 +232,12 @@ async def _predict(
             pass
 
         logging_inference_request(input_json, inference_response)
-        fedml_model_cache.pending_requests_counter(decrease=True)
+        fedml_model_cache.update_pending_requests_counter(decrease=True)
         return inference_response
     else:
         inference_response = {"error": True, "message": "token is not valid."}
         logging_inference_request(input_json, inference_response)
-        fedml_model_cache.pending_requests_counter(decrease=True)
+        fedml_model_cache.update_pending_requests_counter(decrease=True)
         return inference_response
 
 
@@ -258,8 +247,8 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
     We allow missing end_point_name and model_name in the input parameters.
     return end_point_name, model_name
     """
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    redis_key = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    redis_key = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_end_point_full_key_by_id(end_point_id)
     if redis_key is not None:
         end_point_name = ""
@@ -291,8 +280,8 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     inference_output_url = ""
     model_version = ""
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    payload, idle_device = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
         logging.info("found idle deployment result {}".format(payload))
@@ -337,7 +326,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
 
         if not has_public_ip:
             connect_str = "@FEDML@"
-            random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
+            random_out = sys_utils.random2(Settings.ext_info, "FEDML@9999GREAT")
             config_list = random_out.split(connect_str)
             agent_config = dict()
             agent_config["mqtt_config"] = dict()
@@ -369,8 +358,8 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    cached_token = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_end_point_token(end_point_id, end_point_name, model_name)
     if cached_token is not None and str(cached_token) == str(token):
         return True
@@ -382,8 +371,8 @@ def is_endpoint_activated(end_point_id):
     if end_point_id is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    activated = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_end_point_activation(
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    activated = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port).get_end_point_activation(
         end_point_id)
     return activated
 
