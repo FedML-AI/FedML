@@ -90,7 +90,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         logging.info("model deployment request: {}".format(self.request_json))
         logging.info("send deployment stages...")
 
-        # Generate the replica controller object.
+        # Generate the replica controller object
         self.replica_controller = FedMLDeviceReplicaController(self.edge_id, self.request_json)
 
         # Start the process to report system performance(cpu,memory,etc.) to MLOps
@@ -519,6 +519,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 #         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
                 #         fedml_base_dir),
                 #     should_capture_stdout=False, should_capture_stderr=False)
+                inference_gateway_process.daemon = True
+                inference_gateway_process.start()
 
                 return inference_gateway_process
             else:
