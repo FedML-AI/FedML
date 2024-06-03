@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 import traceback
@@ -6,7 +7,7 @@ import os
 from urllib.parse import urlparse
 from typing import Any, Mapping, MutableMapping, Union
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, Response, status, HTTPException
 from fastapi.responses import StreamingResponse
 
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
@@ -43,35 +44,41 @@ class Settings:
 
 
 api = FastAPI()
-fedml_model_cache = FedMLModelCache.get_instance()
-fedml_model_cache.set_redis_params(
-    redis_addr=Settings.redis_addr,
-    redis_port=Settings.redis_port,
-    redis_password=Settings.redis_password)
 
 
 @api.middleware("http")
 async def auth_middleware(request: Request, call_next):
 
     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
-        # TODO Hardcoded!
-        INFERENCE_TIMEOUT = 0.0001
-        request_json = await request.json()
-        end_point_id = request_json.get("end_point_id", None)
+        try:
+            # Attempt to parse the JSON body.
+            request_json = await request.json()
+        except json.JSONDecodeError:
+            return Response("Invalid JSON.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        fedml_model_cache = FedMLModelCache.get_instance()
+        fedml_model_cache.set_redis_params(
+            redis_addr=Settings.redis_addr,
+            redis_port=Settings.redis_port,
+            redis_password=Settings.redis_password)
         # Get total pending requests.
         pending_requests_num = fedml_model_cache.get_pending_requests_counter()
         if pending_requests_num:
+            end_point_id = request_json.get("end_point_id", None)
             # Fetch metrics of the past k=3 requests.
             pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
                 endpoint_id=end_point_id,
-                k_recent=5)
-            # Measure the average latency in seconds(!), hence the 0.001 multiplier.
-            past_k_latencies_sec = \
-                [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
-            mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
-            # If timeout threshold is exceeded then cancel and return time out error.
-            if (mean_latency * pending_requests_num) > INFERENCE_TIMEOUT:
-                return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+                k_recent=3)
+            # Only proceed if the past k metrics collection is not empty.
+            if pask_k_metrics:
+                # Measure the average latency in seconds(!), hence the 0.001 multiplier.
+                past_k_latencies_sec = \
+                    [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
+                mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
+                # If timeout threshold is exceeded then cancel and return time out error.
+                # TODO Hardcoded inference request timeout!
+                if (mean_latency * pending_requests_num) > ClientConstants.INFERENCE_REQUEST_TIMEOUT:
+                    return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
     response = await call_next(request)
     return response
@@ -79,7 +86,7 @@ async def auth_middleware(request: Request, call_next):
 
 @api.get('/')
 async def root():
-    return {'message': 'FedML Federated Inference Service!'}
+    return {'message': 'TensorOpera Inference Service!'}
 
 
 @api.get('/ready')
@@ -160,6 +167,11 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
 
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(
+        redis_addr=Settings.redis_addr,
+        redis_port=Settings.redis_port,
+        redis_password=Settings.redis_password)
     fedml_model_cache.update_pending_requests_counter(increase=True)
     inference_response = {}
 
@@ -220,7 +232,12 @@ async def _predict(
             input_list["stream"] = input_list.get("stream", stream_flag)
             output_list = input_json.get("outputs", [])
             inference_response = await send_inference_request(
-                idle_device, end_point_id, inference_output_url, input_list, output_list, inference_type=in_return_type)
+                idle_device,
+                end_point_id,
+                inference_output_url,
+                input_list,
+                output_list,
+                inference_type=in_return_type)
 
         # Calculate model metrics
         try:
@@ -247,9 +264,12 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
     We allow missing end_point_name and model_name in the input parameters.
     return end_point_name, model_name
     """
-    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
-    redis_key = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
-        get_end_point_full_key_by_id(end_point_id)
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(
+        redis_addr=Settings.redis_addr,
+        redis_port=Settings.redis_port,
+        redis_password=Settings.redis_password)
+    redis_key = fedml_model_cache.get_end_point_full_key_by_id(end_point_id)
     if redis_key is not None:
         end_point_name = ""
         model_name = ""
@@ -279,9 +299,13 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     inference_host = ""
     inference_output_url = ""
     model_version = ""
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(
+        redis_addr=Settings.redis_addr,
+        redis_port=Settings.redis_port,
+        redis_password=Settings.redis_password)
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
-    payload, idle_device = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
+    payload, idle_device = fedml_model_cache.\
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
         logging.info("found idle deployment result {}".format(payload))
@@ -301,6 +325,9 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
+
+    inference_request_timeout = ClientConstants.INFERENCE_REQUEST_TIMEOUT
+
     try:
         http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", True)
         if not http_infer_available:
@@ -309,18 +336,29 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
 
         if http_infer_available:
             response_ok = await FedMLHttpInference.is_inference_ready(
-                inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_READY_TIMEOUT", 20))
+                inference_url,
+                timeout=inference_request_timeout)
             if response_ok:
                 response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url, input_list, output_list, inference_type=inference_type)
+                    inference_url,
+                    input_list,
+                    output_list,
+                    inference_type=inference_type,
+                    timeout=inference_request_timeout)
                 logging.info(f"Use http inference. return {response_ok}")
                 return inference_response
 
         response_ok = await FedMLHttpProxyInference.is_inference_ready(
-            inference_url, timeout=os.getenv("FEDML_GATEWAY_HTTP_PROXY_READY_TIMEOUT", 20))
+            inference_url,
+            timeout=inference_request_timeout)
         if response_ok:
             response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+                endpoint_id,
+                inference_url,
+                input_list,
+                output_list,
+                inference_type=inference_type,
+                timeout=inference_request_timeout)
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
@@ -337,15 +375,26 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
             agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
             mqtt_inference = FedMLMqttInference(agent_config=agent_config, run_id=endpoint_id)
             response_ok = mqtt_inference.run_mqtt_health_check_with_request(
-                idle_device, endpoint_id, inference_url)
+                idle_device,
+                endpoint_id,
+                inference_url,
+                timeout=inference_request_timeout)
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
             if response_ok:
                 response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-                    idle_device, endpoint_id, inference_url, input_list, output_list, inference_type=inference_type)
+                    idle_device,
+                    endpoint_id,
+                    inference_url,
+                    input_list,
+                    output_list,
+                    inference_type=inference_type,
+                    timeout=inference_request_timeout)
 
             logging.info(f"Use mqtt inference. return {response_ok}.")
             return inference_response
+
         return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
+
     except Exception as e:
         inference_response = {"error": True,
                               "message": f"Exception when using http, http-proxy and mqtt "
@@ -358,9 +407,12 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
-    cached_token = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
-        get_end_point_token(end_point_id, end_point_name, model_name)
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(
+        redis_addr=Settings.redis_addr,
+        redis_port=Settings.redis_port,
+        redis_password=Settings.redis_password)
+    cached_token = fedml_model_cache.get_end_point_token(end_point_id, end_point_name, model_name)
     if cached_token is not None and str(cached_token) == str(token):
         return True
 
@@ -371,9 +423,13 @@ def is_endpoint_activated(end_point_id):
     if end_point_id is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
-    activated = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port).get_end_point_activation(
-        end_point_id)
+    fedml_model_cache = FedMLModelCache.get_instance()
+    fedml_model_cache.set_redis_params(
+        redis_addr=Settings.redis_addr,
+        redis_port=Settings.redis_port,
+        redis_password=Settings.redis_password)
+
+    activated = fedml_model_cache.get_end_point_activation(end_point_id)
     return activated
 
 

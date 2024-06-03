@@ -364,7 +364,7 @@ class FedMLModelCache(Singleton):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
 
-        logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
+        logging.info(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
 
         if len(idle_device_list) <= 0:
             return None, None
@@ -833,31 +833,29 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
                 endpoint_id)
-            model_deployment_monitor_endpoint_keys = \
+            model_deployment_monitor_endpoint_key = \
                 self.redis_connection.keys(pattern=key_pattern)
             # Since the reply is a list, we need to make sure the list
             # is non-empty otherwise the index will raise an error.
-            if model_deployment_monitor_endpoint_keys:
+            if model_deployment_monitor_endpoint_key:
                 model_deployment_monitor_endpoint_key = \
-                    model_deployment_monitor_endpoint_keys[0]
-            else:
-                raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
-                                .format(key_pattern))
-            # Set start and end index depending on the size of the
-            # list and the requested number of most recent records.
-            num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
-            # if k_most_recent is None, then fetch all by default.
-            start, end = 0, -1
-            # if k_most_recent is positive then fetch [-k_most_recent:]
-            if k_recent and k_recent > 0:
-                start = num_records - k_recent
-            model_deployment_monitor_metrics = \
-                self.redis_connection.lrange(
-                    name=model_deployment_monitor_endpoint_key,
-                    start=start,
-                    end=end)
-            model_deployment_monitor_metrics = [
-                json.loads(m) for m in model_deployment_monitor_metrics]
+                    model_deployment_monitor_endpoint_key[0]
+
+                # Set start and end index depending on the size of the
+                # list and the requested number of most recent records.
+                num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
+                # if k_most_recent is None, then fetch all by default.
+                start, end = 0, -1
+                # if k_most_recent is positive then fetch [-k_most_recent:]
+                if k_recent and k_recent > 0:
+                    start = num_records - k_recent
+                model_deployment_monitor_metrics = \
+                    self.redis_connection.lrange(
+                        name=model_deployment_monitor_endpoint_key,
+                        start=start,
+                        end=end)
+                model_deployment_monitor_metrics = [
+                    json.loads(m) for m in model_deployment_monitor_metrics]
 
         except Exception as e:
             logging.error(e)
