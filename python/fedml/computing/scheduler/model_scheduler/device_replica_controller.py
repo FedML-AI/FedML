@@ -67,7 +67,9 @@ class FedMLDeviceReplicaController:
     def calc_total_gpu_num(self):
         total_gpu_num = 0
         for device_id, gpu_num in self.devices_avail_gpus.items():
-            total_gpu_num += gpu_num
+            if type(gpu_num) is not int:
+                logging.warning(f"The value in gpu_topology should be int, but got {type(gpu_num)}. Try to convert it.")
+            total_gpu_num += int(gpu_num)
         return total_gpu_num
 
     def init_id_replica_num(self):
@@ -77,6 +79,11 @@ class FedMLDeviceReplicaController:
         """
         id_replica_num = {}
         for id, avail_num in self.devices_avail_gpus.items():
+            if type(avail_num) is not int:
+                logging.warning(f"The value in gpu_topology should be int, "
+                                f"but got {type(avail_num)}. Try to convert it.")
+            avail_num = int(avail_num)
+
             if avail_num % self.gpu_per_replica != 0:
                 raise ValueError("The number of gpus for each device should be divisible by gpu_per_replica")
             id_replica_num[str(id)] = avail_num // self.gpu_per_replica
