@@ -19,7 +19,7 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
 
     FEDML_MODEL_ENDPOINT_ACTIVATION_TAG = "FEDML_MODEL_ENDPOINT_ACTIVATION-"
-    FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE = "FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE"
+    FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE = "FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
     # For scale-out & scale-in
     FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
@@ -969,23 +969,25 @@ class FedMLModelCache(Singleton):
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             endpoint_id))
 
-    def set_endpoint_inference_protocol_type(self, endpoint_id, protocol: str) -> bool:
+    def get_endpoint_inference_protocol_type_key(self, endpoint_id, device_id) -> str:
+        return "{}-{}-{}".format(self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE, endpoint_id, device_id)
+
+    def set_endpoint_inference_protocol_type(self, endpoint_id, device_id, protocol: str) -> bool:
         status = True
         try:
-            self.redis_connection.hset(
-                self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE,
-                mapping={endpoint_id: protocol})
+            self.redis_connection.set(
+                self.get_endpoint_inference_protocol_type_key(endpoint_id, device_id),
+                protocol)
         except Exception as e:
             logging.error(e)
             status = False
         return status
 
-    def get_endpoint_inference_protocol_type(self, endpoint_id) -> str:
+    def get_endpoint_inference_protocol_type(self, endpoint_id, device_id) -> str:
         protocol = None
         try:
-            protocol = self.redis_connection.hget(
-                self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE,
-                endpoint_id)
+            protocol = self.redis_connection.get(
+                self.get_endpoint_inference_protocol_type_key(endpoint_id, device_id))
         except Exception as e:
             logging.error(e)
         return protocol

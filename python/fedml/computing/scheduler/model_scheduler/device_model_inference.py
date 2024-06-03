@@ -285,10 +285,11 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-async def get_inference_protocol_type(endpoint_id, inference_url, timeout) -> str:
+async def get_inference_protocol_type(endpoint_id, idle_device, inference_url, timeout) -> str:
     # Retrieve protocol type if exists, else perform a round-robin protocol ping
     # to identify, save and return the communication protocol for this endpoint.
-    inference_protocol_type = fedml_model_cache.get_endpoint_inference_protocol_type(endpoint_id)
+    inference_protocol_type = \
+        fedml_model_cache.get_endpoint_inference_protocol_type(endpoint_id, idle_device)
 
     # If protocol is set, return immediately.
     if inference_protocol_type:
@@ -312,7 +313,7 @@ async def get_inference_protocol_type(endpoint_id, inference_url, timeout) -> st
             inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_MQTT
 
     fedml_model_cache.set_endpoint_inference_protocol_type(
-        endpoint_id, inference_protocol_type)
+        endpoint_id, idle_device, inference_protocol_type)
     return inference_protocol_type
 
 
@@ -321,7 +322,8 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
 
     inference_request_timeout = ClientConstants.INFERENCE_REQUEST_TIMEOUT
     inference_protocol_type = await get_inference_protocol_type(
-        endpoint_id, inference_url, inference_request_timeout)
+        endpoint_id, idle_device, inference_url, inference_request_timeout)
+    logging.info("Inference protocol type: {}".format(inference_protocol_type))
 
     try:
 
