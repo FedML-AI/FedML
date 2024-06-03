@@ -61,6 +61,7 @@ async def auth_middleware(request: Request, call_next):
             redis_addr=Settings.redis_addr,
             redis_port=Settings.redis_port,
             redis_password=Settings.redis_password)
+
         # Get total pending requests.
         pending_requests_num = fedml_model_cache.get_pending_requests_counter()
         if pending_requests_num:
@@ -69,15 +70,20 @@ async def auth_middleware(request: Request, call_next):
             pask_k_metrics = fedml_model_cache.get_endpoint_metrics(
                 endpoint_id=end_point_id,
                 k_recent=3)
+
+            # Get the request timeout from the endpoint settings.
+            request_timeout_s = (fedml_model_cache.get_endpoint_settings(end_point_id)
+                                 .get("request_timeout_s", ClientConstants.INFERENCE_REQUEST_TIMEOUT))
+
             # Only proceed if the past k metrics collection is not empty.
             if pask_k_metrics:
                 # Measure the average latency in seconds(!), hence the 0.001 multiplier.
                 past_k_latencies_sec = \
                     [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
                 mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
+
                 # If timeout threshold is exceeded then cancel and return time out error.
-                # TODO Hardcoded inference request timeout!
-                if (mean_latency * pending_requests_num) > ClientConstants.INFERENCE_REQUEST_TIMEOUT:
+                if (mean_latency * pending_requests_num) > request_timeout_s:
                     return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
     response = await call_next(request)

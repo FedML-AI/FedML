@@ -112,7 +112,7 @@ class FedMLModelCache(Singleton):
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
                                      target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
-                                     scale_down_delay_seconds: int = 120
+                                     scale_down_delay_seconds: int = 120, time_out_s: int = 30
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -138,7 +138,8 @@ class FedMLModelCache(Singleton):
             "scale_min": scale_min, "scale_max": scale_max, "state": state,
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
-            "scale_down_delay_seconds": scale_down_delay_seconds
+            "scale_down_delay_seconds": scale_down_delay_seconds,
+            "request_timeout_s": time_out_s
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -898,11 +899,17 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG,
                 endpoint_id)
-            endpoint_settings = \
+
+            endpoint_settings_keys = \
                 self.redis_connection.keys(pattern=key_pattern)
-            if endpoint_settings:
+
+            if len(endpoint_settings_keys) > 0:
                 endpoint_settings = \
-                    json.load(endpoint_settings[0])
+                    self.redis_connection.get(endpoint_settings_keys[0])
+
+                if not isinstance(endpoint_settings, dict):
+                    endpoint_settings = json.loads(endpoint_settings)
+
             else:
                 raise Exception("Function `get_endpoint_settings` Key {} does not exist."
                                 .format(key_pattern))
