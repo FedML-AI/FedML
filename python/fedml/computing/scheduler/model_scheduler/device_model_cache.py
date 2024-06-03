@@ -827,13 +827,13 @@ class FedMLModelCache(Singleton):
                                       end_point_id, end_point_name, model_name, model_version)
 
     def get_endpoint_metrics(self,
-                             endpoint_id,
+                             end_point_id,
                              k_recent=None) -> List[Any]:
         model_deployment_monitor_metrics = list()
         try:
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
-                endpoint_id)
+                end_point_id)
             model_deployment_monitor_endpoint_key = \
                 self.redis_connection.keys(pattern=key_pattern)
             # Since the reply is a list, we need to make sure the list
