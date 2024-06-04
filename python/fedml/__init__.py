@@ -461,7 +461,7 @@ def get_env_version():
     dotenv.load_dotenv(dotenv_path=env_file)
     version = "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
     dotenv.set_key(env_file, "FEDML_ENV_VERSION", version)
-
+    return version
 
 def _get_backend_service():
     version = get_env_version()
