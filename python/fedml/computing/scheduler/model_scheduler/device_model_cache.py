@@ -985,5 +985,9 @@ class FedMLModelCache(Singleton):
         if increase:
             self.redis_connection.incr(self.FEDML_PENDING_REQUESTS_COUNTER)
         if decrease:
-            self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
+            # Making sure the counter never becomes negative!
+            if self.get_pending_requests_counter() < 0:
+                self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+            else:
+                self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
         return self.get_pending_requests_counter()

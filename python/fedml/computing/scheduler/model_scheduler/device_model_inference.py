@@ -173,92 +173,98 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
 
+    # Always increase the pending requests counter on a new incoming request.
     FEDML_MODEL_CACHE.update_pending_requests_counter(increase=True)
     inference_response = {}
 
-    in_end_point_id = end_point_id
-    in_end_point_name = input_json.get("end_point_name", None)
-    in_model_name = input_json.get("model_name", None)
-    in_model_version = input_json.get("model_version", None)
-    in_end_point_token = input_json.get("token", None)
-    in_return_type = "default"
-    if header is not None:
-        in_return_type = header.get("Accept", "default")
+    try:
+        in_end_point_id = end_point_id
+        in_end_point_name = input_json.get("end_point_name", None)
+        in_model_name = input_json.get("model_name", None)
+        in_model_version = input_json.get("model_version", None)
+        in_end_point_token = input_json.get("token", None)
+        in_return_type = "default"
+        if header is not None:
+            in_return_type = header.get("Accept", "default")
 
-    if in_model_version is None:
-        in_model_version = "*"  # * | latest | specific version
+        if in_model_version is None:
+            in_model_version = "*"  # * | latest | specific version
 
-    start_time = time.time_ns()
+        start_time = time.time_ns()
 
-    # Allow missing end_point_name and model_name in the input parameters.
-    if in_model_name is None or in_end_point_name is None:
-        ret_endpoint_name, ret_model_name = retrieve_info_by_endpoint_id(in_end_point_id, in_end_point_name)
-        if in_model_name is None:
-            in_model_name = ret_model_name
-        if in_end_point_name is None:
-            in_end_point_name = ret_endpoint_name
+        # Allow missing end_point_name and model_name in the input parameters.
+        if in_model_name is None or in_end_point_name is None:
+            ret_endpoint_name, ret_model_name = retrieve_info_by_endpoint_id(in_end_point_id, in_end_point_name)
+            if in_model_name is None:
+                in_model_name = ret_model_name
+            if in_end_point_name is None:
+                in_end_point_name = ret_endpoint_name
 
-    # Authenticate request token
-    inference_response = {}
-    if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
-        # Check the endpoint is activated
-        if not is_endpoint_activated(in_end_point_id):
-            inference_response = {"error": True, "message": "endpoint is not activated."}
+        # Authenticate request token
+        if auth_request_token(in_end_point_id, in_end_point_name, in_model_name, in_end_point_token):
+            # Check the endpoint is activated
+            if not is_endpoint_activated(in_end_point_id):
+                inference_response = {"error": True, "message": "endpoint is not activated."}
+                logging_inference_request(input_json, inference_response)
+                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                return inference_response
+
+            # Found idle inference device
+            idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
+                found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
+            if idle_device is None or idle_device == "":
+                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
+                        "message": "can not found active inference worker for this endpoint."}
+
+            # Start timing for model metrics
+            model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
+                                              model_id, in_model_name, model_version,
+                                              Settings.model_infer_url,
+                                              Settings.redis_addr,
+                                              Settings.redis_port,
+                                              Settings.redis_password,
+                                              version=Settings.version)
+            # Setting time to the time before authentication and idle device discovery.
+            model_metrics.set_start_time(start_time)
+
+            # Send inference request to idle device
+            logging.info("inference url {}.".format(inference_output_url))
+            if inference_output_url != "":
+                input_list = input_json.get("inputs", input_json)
+                stream_flag = input_json.get("stream", False)
+                input_list["stream"] = input_list.get("stream", stream_flag)
+                output_list = input_json.get("outputs", [])
+                inference_response = await send_inference_request(
+                    idle_device,
+                    end_point_id,
+                    inference_output_url,
+                    input_list,
+                    output_list,
+                    inference_type=in_return_type)
+
+            # Calculate model metrics
+            try:
+                model_metrics.calc_metrics(end_point_id, in_end_point_name,
+                                           model_id, model_name, model_version,
+                                           inference_output_url, idle_device)
+            except Exception as e:
+                logging.info("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
+                pass
+
+            logging_inference_request(input_json, inference_response)
+            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+            return inference_response
+        else:
+            inference_response = {"error": True, "message": "token is not valid."}
             logging_inference_request(input_json, inference_response)
             FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
             return inference_response
 
-        # Found idle inference device
-        idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
-            found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
-        if idle_device is None or idle_device == "":
-            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
-            return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
-                    "message": "can not found active inference worker for this endpoint."}
-
-        # Start timing for model metrics
-        model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
-                                          model_id, in_model_name, model_version,
-                                          Settings.model_infer_url,
-                                          Settings.redis_addr,
-                                          Settings.redis_port,
-                                          Settings.redis_password,
-                                          version=Settings.version)
-        # Setting time to the time before authentication and idle device discovery.
-        model_metrics.set_start_time(start_time)
-
-        # Send inference request to idle device
-        logging.info("inference url {}.".format(inference_output_url))
-        if inference_output_url != "":
-            input_list = input_json.get("inputs", input_json)
-            stream_flag = input_json.get("stream", False)
-            input_list["stream"] = input_list.get("stream", stream_flag)
-            output_list = input_json.get("outputs", [])
-            inference_response = await send_inference_request(
-                idle_device,
-                end_point_id,
-                inference_output_url,
-                input_list,
-                output_list,
-                inference_type=in_return_type)
-
-        # Calculate model metrics
-        try:
-            model_metrics.calc_metrics(end_point_id, in_end_point_name,
-                                       model_id, model_name, model_version,
-                                       inference_output_url, idle_device)
-        except Exception as e:
-            logging.info("Calculate Inference Metrics Exception: {}".format(traceback.format_exc()))
-            pass
-
-        logging_inference_request(input_json, inference_response)
+    except Exception as e:
+        logging.error("Inference Exception: {}".format(traceback.format_exc()))
+        # Need to reduce the pending requests counter in whatever exception that may be raised.
         FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
-        return inference_response
-    else:
-        inference_response = {"error": True, "message": "token is not valid."}
-        logging_inference_request(input_json, inference_response)
-        FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
-        return inference_response
 
 
 def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_name=None,
