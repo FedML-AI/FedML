@@ -11,7 +11,7 @@ import fedml
 import dotenv
 
 from .computing.scheduler.env.collect_env import collect_env
-from fedml.computing.scheduler.env import get_env_file
+from fedml.computing.scheduler.env import set_env_kv, load_env
 from .constants import (
     FEDML_BACKEND_SERVICE_URL_DEV,
     FEDML_BACKEND_SERVICE_URL_LOCAL,
@@ -451,15 +451,13 @@ def _run_distributed():
 
 
 def set_env_version(version):
-    env_file = get_env_file()
-    dotenv.load_dotenv(dotenv_path=env_file)
-    dotenv.set_key(env_file, "FEDML_ENV_VERSION", version)
+    set_env_kv("FEDML_ENV_VERSION", version)
+    load_env()
 
 
 def get_env_version():
-    env_file = get_env_file()
-    dotenv.load_dotenv(dotenv_path=env_file)
-    version = os.getenv('FEDML_ENV_VERSION')
+    load_env()
+    version = os.getenv("FEDML_ENV_VERSION")
     if version is None:
         version = "release"
         set_env_version(version)

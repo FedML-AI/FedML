@@ -2,6 +2,7 @@ import os
 import traceback
 
 import fedml
+import dotenv
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
 from ..slave.client_constants import ClientConstants
@@ -112,10 +113,21 @@ def collect_env():
 
 
 def get_env_file():
-    global_serivces_dir = ClientConstants.get_global_services_dir()
-    env_config_file = os.path.join(global_serivces_dir, ".env")
+    global_services_dir = ClientConstants.get_global_services_dir()
+    env_config_file = os.path.join(global_services_dir, ".env")
     # Create file if not exists
     if not os.path.exists(env_config_file):
         with open(env_config_file, 'w') as f:
             f.write("")
     return env_config_file
+
+
+def load_env():
+    env_config_file = get_env_file()
+    dotenv.load_dotenv(dotenv_path=env_config_file, override=True)
+
+
+def set_env_kv(key, value):
+    env_config_file = get_env_file()
+    dotenv.set_key(env_config_file, key, value)
+    load_env()
