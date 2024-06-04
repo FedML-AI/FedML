@@ -1,5 +1,4 @@
 import logging
-from copy import deepcopy
 
 import multiprocess as multiprocessing
 import os
@@ -9,7 +8,10 @@ import numpy as np
 import torch
 
 import fedml
+import dotenv
+
 from .computing.scheduler.env.collect_env import collect_env
+from fedml.computing.scheduler.env import get_env_file
 from .constants import (
     FEDML_BACKEND_SERVICE_URL_DEV,
     FEDML_BACKEND_SERVICE_URL_LOCAL,
@@ -449,10 +451,13 @@ def _run_distributed():
 
 
 def set_env_version(version):
-    os.environ['FEDML_ENV_VERSION'] = version
+    env_file = get_env_file()
+    dotenv.load_dotenv(dotenv_path=env_file)
+    dotenv.set_key(env_file, "FEDML_ENV_VERSION", version)
 
 
 def get_env_version():
+    dotenv.load_dotenv(dotenv_path=get_env_file())
     return "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
 
 

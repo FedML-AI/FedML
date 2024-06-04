@@ -4,6 +4,7 @@ import traceback
 import fedml
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
+from ..slave.client_constants import ClientConstants
 
 
 def collect_env():
@@ -108,3 +109,13 @@ def collect_env():
     except Exception as e:
         print(f"The connection exception: {traceback.format_exc()}")
         pass
+
+
+def get_env_file():
+    global_serivces_dir = ClientConstants.get_global_services_dir()
+    env_config_file = os.path.join(global_serivces_dir, ".env")
+    # Create file if not exists
+    if not os.path.exists(env_config_file):
+        with open(env_config_file, 'w') as f:
+            f.write("")
+    return env_config_file
