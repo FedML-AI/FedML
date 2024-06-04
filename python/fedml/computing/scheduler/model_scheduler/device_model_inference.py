@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from typing import Any, Mapping, MutableMapping, Union
 
 from fastapi import FastAPI, Request, Response, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
@@ -60,7 +60,9 @@ async def auth_middleware(request: Request, call_next):
             # Attempt to parse the JSON body.
             request_json = await request.json()
         except json.JSONDecodeError:
-            return Response("Invalid JSON.", status_code=status.HTTP_400_BAD_REQUEST)
+            return JSONResponse(
+                {"error": True, "message": "Invalid JSON."},
+                status_code=status.HTTP_400_BAD_REQUEST)
 
         # Get total pending requests.
         pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter()
@@ -84,7 +86,9 @@ async def auth_middleware(request: Request, call_next):
 
                 # If timeout threshold is exceeded then cancel and return time out error.
                 if (mean_latency * pending_requests_num) > request_timeout_s:
-                    return Response("Request timed out.", status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+                    return JSONResponse(
+                        {"error": True, "message": "Request timed out."},
+                        status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
     response = await call_next(request)
     return response
