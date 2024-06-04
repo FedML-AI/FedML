@@ -282,6 +282,13 @@ class ServerConstants(object):
         return get_presigned_multi_part_url
 
     @staticmethod
+    def get_complete_multipart_upload_url():
+        complete_multipart_upload_url = "{}/system/api/v1/cli/oss/multipart/upload/complete".format(
+            ServerConstants.get_mlops_url()
+        )
+        return complete_multipart_upload_url
+
+    @staticmethod
     def cleanup_run_process(run_id, not_kill_subprocess=False):
         RunProcessUtils.cleanup_run_process(
             run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
