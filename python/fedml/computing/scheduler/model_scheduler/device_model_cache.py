@@ -21,6 +21,7 @@ class FedMLModelCache(Singleton):
     FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
     FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_NUM_TAG-"
+    FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE = "FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE-"
 
     # For scale-out & scale-in
     FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG = "FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG-"
@@ -987,3 +988,26 @@ class FedMLModelCache(Singleton):
         if decrease:
             self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
         return self.get_pending_requests_counter()
+
+    def get_endpoint_inference_protocol_type_key(self, endpoint_id, device_id) -> str:
+        return "{}-{}-{}".format(self.FEDML_MODEL_ENDPOINT_INFERENCE_PROTOCOL_TYPE, endpoint_id, device_id)
+
+    def set_endpoint_inference_protocol_type(self, endpoint_id, device_id, protocol: str) -> bool:
+        status = True
+        try:
+            self.redis_connection.set(
+                self.get_endpoint_inference_protocol_type_key(endpoint_id, device_id),
+                protocol)
+        except Exception as e:
+            logging.error(e)
+            status = False
+        return status
+
+    def get_endpoint_inference_protocol_type(self, endpoint_id, device_id) -> str:
+        protocol = None
+        try:
+            protocol = self.redis_connection.get(
+                self.get_endpoint_inference_protocol_type_key(endpoint_id, device_id))
+        except Exception as e:
+            logging.error(e)
+        return protocol

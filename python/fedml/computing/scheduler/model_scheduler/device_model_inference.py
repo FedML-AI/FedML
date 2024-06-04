@@ -316,47 +316,69 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url
 
 
-async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
-                                 inference_type="default", has_public_ip=True):
+async def get_inference_protocol_type(endpoint_id, device_id, inference_url, timeout) -> str:
+    # Retrieve protocol type if exists, else perform a round-robin protocol ping
+    # to identify, save and return the communication protocol for this endpoint.
+    inference_protocol_type = FEDML_MODEL_CACHE.get_endpoint_inference_protocol_type(
+        endpoint_id=endpoint_id,
+        device_id=device_id)
 
-    request_timeout_sec = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
-        .get("request_timeout_sec", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
+    # If protocol is set, return immediately.
+    if inference_protocol_type:
+        return inference_protocol_type
 
-    try:
-        http_infer_available = os.getenv("FEDML_INFERENCE_HTTP_AVAILABLE", True)
-        if not http_infer_available:
-            if http_infer_available == "False" or http_infer_available == "false":
-                http_infer_available = False
-
-        if http_infer_available:
-            response_ok = await FedMLHttpInference.is_inference_ready(
-                inference_url,
-                timeout=request_timeout_sec)
-            if response_ok:
-                response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url,
-                    input_list,
-                    output_list,
-                    inference_type=inference_type,
-                    timeout=request_timeout_sec)
-                logging.info(f"Use http inference. return {response_ok}")
-                return inference_response
-
+    # First attempt HTTP.
+    response_ok = await FedMLHttpInference.is_inference_ready(
+        inference_url,
+        timeout=timeout)
+    if response_ok:
+        inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_HTTP
+    else:
+        # Second attempt HTTP Proxy.
         response_ok = await FedMLHttpProxyInference.is_inference_ready(
             inference_url,
-            timeout=request_timeout_sec)
+            timeout=timeout)
         if response_ok:
-            response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                end_point_id,
-                inference_url,
-                input_list,
-                output_list,
+            inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_HTTP_PROXY
+        else:
+            # Fall back to MQTT.
+            inference_protocol_type = ClientConstants.INFERENCE_PROTOCOL_MQTT
+
+    FEDML_MODEL_CACHE.set_endpoint_inference_protocol_type(
+        endpoint_id, device_id, inference_protocol_type)
+
+    return inference_protocol_type
+
+
+async def send_inference_request(idle_device, endpoint_id, inference_url, input_list, output_list,
+                                 inference_type="default"):
+
+    # The inference request timeout is applied to every request.
+    inference_request_timeout = ClientConstants.INFERENCE_REQUEST_TIMEOUT
+    # The detection of which inference protocol type we should use is
+    # performed once when the endpoint receives its first incoming request.
+    inference_protocol_type = await get_inference_protocol_type(
+        endpoint_id, idle_device, inference_url, inference_request_timeout)
+
+    try:
+
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_HTTP:
+            response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
+                inference_url, input_list, output_list,
                 inference_type=inference_type,
-                timeout=request_timeout_sec)
+                timeout=inference_request_timeout)
+            logging.info(f"Use http inference. return {response_ok}")
+            return inference_response
+
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_HTTP_PROXY:
+            response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
+                endpoint_id, inference_url, input_list, output_list,
+                inference_type=inference_type,
+                timeout=inference_request_timeout)
             logging.info(f"Use http proxy inference. return {response_ok}")
             return inference_response
 
-        if not has_public_ip:
+        if inference_protocol_type == ClientConstants.INFERENCE_PROTOCOL_MQTT:
             connect_str = "@FEDML@"
             random_out = sys_utils.random2(Settings.ext_info, "FEDML@9999GREAT")
             config_list = random_out.split(connect_str)
@@ -369,32 +391,35 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
             agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
             mqtt_inference = FedMLMqttInference(
                 agent_config=agent_config,
-                run_id=end_point_id)
+                run_id=endpoint_id)
             response_ok = mqtt_inference.run_mqtt_health_check_with_request(
                 idle_device,
-                end_point_id,
+                endpoint_id,
                 inference_url,
-                timeout=request_timeout_sec)
+                timeout=inference_request_timeout)
             inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
             if response_ok:
                 response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
                     idle_device,
-                    end_point_id,
+                    endpoint_id,
                     inference_url,
                     input_list,
                     output_list,
                     inference_type=inference_type,
-                    timeout=request_timeout_sec)
-
-            logging.info(f"Use mqtt inference. return {response_ok}.")
+                    timeout=inference_request_timeout)
+            logging.info(f"Using mqtt inference. return {response_ok}.")
             return inference_response
-        return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
+
+        # Inference request failed for all communication protocols.
+        return {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
+
     except Exception as e:
         inference_response = {"error": True,
                               "message": f"Exception when using http, http-proxy and mqtt "
                                          f"for inference: {traceback.format_exc()}."}
         logging.info("Inference Exception: {}".format(traceback.format_exc()))
-        return inference_response
+
+    return inference_response
 
 
 def auth_request_token(end_point_id, end_point_name, model_name, token):
@@ -407,6 +432,7 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
         return True
 
     return False
+
 
 def is_endpoint_activated(end_point_id):
     if end_point_id is None:

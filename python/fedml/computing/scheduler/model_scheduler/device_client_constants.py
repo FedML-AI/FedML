@@ -25,6 +25,7 @@ from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUti
 from ..comm_utils.yaml_utils import load_yaml_config
 from ..comm_utils import security_utils
 
+
 class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE"
@@ -95,6 +96,9 @@ class ClientConstants(object):
     INFERENCE_ENGINE_TYPE_INT_DEFAULT = 2
     INFERENCE_MODEL_VERSION = "1"
     INFERENCE_INFERENCE_SERVER_VERSION = "v2"
+    INFERENCE_PROTOCOL_HTTP = "HTTP"
+    INFERENCE_PROTOCOL_HTTP_PROXY = "HTTP_PROXY"
+    INFERENCE_PROTOCOL_MQTT = "MQTT"
     INFERENCE_REQUEST_TIMEOUT = 30
 
     MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING = "INITIALIZING"
