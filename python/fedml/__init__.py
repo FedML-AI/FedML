@@ -1,5 +1,4 @@
 import logging
-from copy import deepcopy
 
 import multiprocess as multiprocessing
 import os
@@ -9,7 +8,10 @@ import numpy as np
 import torch
 
 import fedml
+import dotenv
+
 from .computing.scheduler.env.collect_env import collect_env
+from fedml.computing.scheduler.env import set_env_kv, load_env
 from .constants import (
     FEDML_BACKEND_SERVICE_URL_DEV,
     FEDML_BACKEND_SERVICE_URL_LOCAL,
@@ -449,11 +451,17 @@ def _run_distributed():
 
 
 def set_env_version(version):
-    os.environ['FEDML_ENV_VERSION'] = version
+    set_env_kv("FEDML_ENV_VERSION", version)
+    load_env()
 
 
 def get_env_version():
-    return "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
+    load_env()
+    version = os.getenv("FEDML_ENV_VERSION")
+    if version is None:
+        version = "release"
+        set_env_version(version)
+    return version
 
 
 def _get_backend_service():
@@ -510,7 +518,7 @@ def get_local_on_premise_platform_port():
 
 def _get_local_s3_like_service_url():
     return FEDML_S3_DOMAIN_LOCAL
-    
+
 
 from fedml import device
 from fedml import data
