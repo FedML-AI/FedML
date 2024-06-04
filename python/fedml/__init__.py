@@ -463,6 +463,7 @@ def get_env_version():
     dotenv.set_key(env_file, "FEDML_ENV_VERSION", version)
     return version
 
+
 def _get_backend_service():
     version = get_env_version()
     # from inspect import getframeinfo, stack
@@ -517,7 +518,7 @@ def get_local_on_premise_platform_port():
 
 def _get_local_s3_like_service_url():
     return FEDML_S3_DOMAIN_LOCAL
-    
+
 
 from fedml import device
 from fedml import data
