@@ -156,7 +156,8 @@ class MLOpsConfigs(object):
 
     @staticmethod
     def fetch_mqtt_config():
-        return MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG})
+        fetched_config = MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG})
+        return fetched_config[Configs.MQTT_CONFIG]
 
 
 if __name__ == "__main__":

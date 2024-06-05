@@ -55,8 +55,8 @@ class FedMLDeployJobRunnerManager(FedMLBaseMasterJobRunnerManager, Singleton):
                 run_id, end_point_name, model_id, model_name, model_version)
 
     @staticmethod
-    def recover_inference_and_monitor(args):
-        FedMLDeployMasterJobRunner.recover_inference_and_monitor(args=args)
+    def recover_inference_and_monitor():
+        FedMLDeployMasterJobRunner.recover_inference_and_monitor()
 
     @staticmethod
     def generate_request_json_with_replica_num_diff(run_id, edge_id, request_json):
