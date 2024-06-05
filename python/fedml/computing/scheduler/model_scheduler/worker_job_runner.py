@@ -521,6 +521,9 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
 
         exact_matched = False
 
+        if unzip_fd == "":
+            return res
+
         for folder in os.listdir(unzip_fd):
             if folder == model_name:
                 res = os.path.join(unzip_fd, folder)
