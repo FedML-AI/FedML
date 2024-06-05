@@ -116,11 +116,11 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING,
             message_center=self.message_center)
 
-        # start unified inference server
+        # start unified inference gateway process if not started
         FedMLDeployMasterJobRunner.start_device_inference_gateway(
             args=self.args, inference_port=inference_port, agent_config=self.agent_config)
 
-        # start inference monitor server
+        # start inference monitor process
         FedMLDeployMasterJobRunner.stop_device_inference_monitor(
             run_id, end_point_name, model_id, model_name, model_version)
         FedMLDeployMasterJobRunner.start_device_inference_monitor(

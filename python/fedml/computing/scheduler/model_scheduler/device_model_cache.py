@@ -33,6 +33,8 @@ class FedMLModelCache(Singleton):
 
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
+    FEDML_PENDING_REQUESTS_COUNTER = "FEDML_PENDING_REQUESTS_COUNTER"
+
     def __init__(self):
         if not hasattr(self, "redis_pool"):
             self.redis_pool = None
@@ -110,7 +112,7 @@ class FedMLModelCache(Singleton):
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
                                      target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
-                                     scale_down_delay_seconds: int = 120
+                                     scale_down_delay_seconds: int = 120, timeout_s: int = 30
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -136,7 +138,8 @@ class FedMLModelCache(Singleton):
             "scale_min": scale_min, "scale_max": scale_max, "state": state,
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
-            "scale_down_delay_seconds": scale_down_delay_seconds
+            "scale_down_delay_seconds": scale_down_delay_seconds,
+            "request_timeout_sec": timeout_s
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -362,7 +365,7 @@ class FedMLModelCache(Singleton):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
 
-        logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
+        logging.info(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
 
         if len(idle_device_list) <= 0:
             return None, None
@@ -824,38 +827,37 @@ class FedMLModelCache(Singleton):
                                       end_point_id, end_point_name, model_name, model_version)
 
     def get_endpoint_metrics(self,
-                             endpoint_id,
+                             end_point_id,
                              k_recent=None) -> List[Any]:
         model_deployment_monitor_metrics = list()
         try:
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
-                endpoint_id)
-            model_deployment_monitor_endpoint_keys = \
+                end_point_id)
+            model_deployment_monitor_endpoint_key = \
                 self.redis_connection.keys(pattern=key_pattern)
             # Since the reply is a list, we need to make sure the list
             # is non-empty otherwise the index will raise an error.
-            if model_deployment_monitor_endpoint_keys:
+            if model_deployment_monitor_endpoint_key:
                 model_deployment_monitor_endpoint_key = \
-                    model_deployment_monitor_endpoint_keys[0]
-            else:
-                raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
-                                .format(key_pattern))
-            # Set start and end index depending on the size of the
-            # list and the requested number of most recent records.
-            num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
-            # if k_most_recent is None, then fetch all by default.
-            start, end = 0, -1
-            # if k_most_recent is positive then fetch [-k_most_recent:]
-            if k_recent and k_recent > 0:
-                start = num_records - k_recent
-            model_deployment_monitor_metrics = \
-                self.redis_connection.lrange(
-                    name=model_deployment_monitor_endpoint_key,
-                    start=start,
-                    end=end)
-            model_deployment_monitor_metrics = [
-                json.loads(m) for m in model_deployment_monitor_metrics]
+                    model_deployment_monitor_endpoint_key[0]
+
+                # Set start and end index depending on the size of the
+                # list and the requested number of most recent records.
+                num_records = self.redis_connection.llen(
+                    name=model_deployment_monitor_endpoint_key)
+                # if k_most_recent is None, then fetch all by default.
+                start, end = 0, -1
+                # if k_most_recent is positive then fetch [-k_most_recent:]
+                if k_recent and k_recent > 0:
+                    start = num_records - k_recent
+                model_deployment_monitor_metrics = \
+                    self.redis_connection.lrange(
+                        name=model_deployment_monitor_endpoint_key,
+                        start=start,
+                        end=end)
+                model_deployment_monitor_metrics = [
+                    json.loads(m) for m in model_deployment_monitor_metrics]
 
         except Exception as e:
             logging.error(e)
@@ -868,24 +870,24 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG,
                 endpoint_id)
-            model_deployment_result_key = \
+            model_deployment_result_keys = \
                 self.redis_connection.keys(pattern=key_pattern)
-            if model_deployment_result_key:
+            if model_deployment_result_keys:
                 model_deployment_result_key = \
-                    model_deployment_result_key[0]
+                    model_deployment_result_keys[0]
+                replicas_results = \
+                    self.redis_connection.lrange(
+                        name=model_deployment_result_key,
+                        start=0,
+                        end=-1)
+                # Format the result value to a properly formatted json.
+                for replica_idx, replica in enumerate(replicas_results):
+                    replicas_results[replica_idx] = json.loads(replica)
+                    replicas_results[replica_idx]["result"] = \
+                        json.loads(replicas_results[replica_idx]["result"])
             else:
                 raise Exception("Function `get_endpoint_replicas_results` Key {} does not exist."
                                 .format(key_pattern))
-            replicas_results = \
-                self.redis_connection.lrange(
-                    name=model_deployment_result_key,
-                    start=0,
-                    end=-1)
-
-            # Format the result value to a properly formatted json.
-            for replica_idx, replica in enumerate(replicas_results):
-                replicas_results[replica_idx] = json.loads(replica)
-                replicas_results[replica_idx]["result"] = json.loads(replicas_results[replica_idx]["result"])
 
         except Exception as e:
             logging.error(e)
@@ -898,11 +900,16 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG,
                 endpoint_id)
-            endpoint_settings = \
+
+            endpoint_settings_keys = \
                 self.redis_connection.keys(pattern=key_pattern)
-            if endpoint_settings:
+
+            if len(endpoint_settings_keys) > 0:
                 endpoint_settings = \
-                    json.load(endpoint_settings[0])
+                    self.redis_connection.get(endpoint_settings_keys[0])
+
+                if not isinstance(endpoint_settings, dict):
+                    endpoint_settings = json.loads(endpoint_settings)
             else:
                 raise Exception("Function `get_endpoint_settings` Key {} does not exist."
                                 .format(key_pattern))
@@ -966,3 +973,21 @@ class FedMLModelCache(Singleton):
         return bool(self.redis_connection.hdel(
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
+
+    def get_pending_requests_counter(self) -> int:
+        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
+            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+        return int(self.redis_connection.get(self.FEDML_PENDING_REQUESTS_COUNTER))
+
+    def update_pending_requests_counter(self, increase=False, decrease=False) -> int:
+        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
+            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+        if increase:
+            self.redis_connection.incr(self.FEDML_PENDING_REQUESTS_COUNTER)
+        if decrease:
+            # Making sure the counter never becomes negative!
+            if self.get_pending_requests_counter() < 0:
+                self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+            else:
+                self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
+        return self.get_pending_requests_counter()
