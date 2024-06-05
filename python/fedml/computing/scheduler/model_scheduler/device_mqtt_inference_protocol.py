@@ -105,7 +105,7 @@ class FedMLMqttInference:
             only_do_health_check=only_do_health_check, timeout=timeout
         )
 
-        allowed_inference_timeout = SchedulerConstants.MQTT_INFERENCE_TIMEOUT if timeout is None else timeout
+        allowed_inference_timeout = timeout if timeout else -1
         sleep_time_interval = 0.05
         total_sleep_time = 0
         while True:

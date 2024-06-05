@@ -178,6 +178,9 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
         scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
 
+        model_config_parameters = request_json.get("parameters", {})
+        timeout_s = model_config_parameters.get("request_timeout_sec", 30)
+
         inference_end_point_id = run_id
 
         logging.info("[Master] received start deployment request for end point {}.".format(run_id))
@@ -197,7 +200,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             scale_min=scale_min, scale_max=scale_max, state="DEPLOYING",
             aggregation_window_size_seconds=aggregation_window_size_seconds,
             target_queries_per_replica=target_queries_per_replica,
-            scale_down_delay_seconds=int(scale_down_delay_seconds)
+            scale_down_delay_seconds=int(scale_down_delay_seconds),
+            timeout_s=timeout_s
         )
 
         # Start log processor for current run

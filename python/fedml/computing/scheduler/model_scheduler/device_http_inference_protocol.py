@@ -1,13 +1,12 @@
-import traceback
-from typing import Mapping
-from urllib.parse import urlparse
-
 import httpx
+import traceback
 
 from .device_client_constants import ClientConstants
-import requests
+
 from fastapi.responses import Response
 from fastapi.responses import StreamingResponse
+from urllib.parse import urlparse
+from typing import Mapping
 
 
 class FedMLHttpInference:
