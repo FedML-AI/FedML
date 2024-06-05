@@ -485,7 +485,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                                                                                      f"--port {str(inference_port)} "
                                                                                      f"--reload --reload-delay 3 "
                                                                                      f"--reload-dir {fedml_base_dir} "
-                                                                                     f"--log-level critical",
+                                                                                     f"--log-level info",
                                                                                      should_capture_stdout=False,
                                                                                      should_capture_stderr=False)
                 return inference_gateway_process
