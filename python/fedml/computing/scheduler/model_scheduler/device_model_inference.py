@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 import traceback
@@ -8,58 +9,38 @@ from typing import Any, Mapping, MutableMapping, Union
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import StreamingResponse
 
+import fedml
+from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedMLModelMetrics
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 
-try:
-    from pydantic import BaseSettings
-except Exception as e:
-    pass
-try:
-    from pydantic_settings import BaseSettings
-except Exception as e:
-    pass
 
-
-# class Settings(BaseSettings):
-#     redis_addr: str
-#     redis_port: str
-#     redis_password: str
-#     end_point_name: str
-#     model_name: str
-#     model_version: str
-#     model_infer_url: str
-#     version: str
-#     use_mqtt_inference: bool
-#     use_worker_gateway: bool
-#     ext_info: str
-#
-#
-# settings = Settings()
-
-class settings:
-    redis_addr = "127.0.0.1"
-    redis_port = 6379
-    redis_password = "fedml_default"
-    end_point_name = ""
-    model_name = ""
-    model_version = ""
-    model_infer_url = "127.0.0.1"
-    version = "dev"
-    use_mqtt_inference = False
-    use_worker_gateway = False
+class Settings:
+    fedml.load_env()
+    redis_addr = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR)
+    redis_port = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT)
+    redis_password = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD)
+    model_infer_host = os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST)
+    version = fedml.get_env_version()
+    mqtt_config = MLOpsConfigs.fetch_mqtt_config()
     ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
 
 
 logging_args = None
 
 api = FastAPI()
+
+
+@api.on_event("startup")
+async def startup_event():
+    configure_logging()
 
 
 @api.get('/')
@@ -185,9 +166,9 @@ async def _predict(
         # Start timing for model metrics
         model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
                                           model_id, in_model_name, model_version,
-                                          settings.model_infer_url,
-                                          settings.redis_addr, settings.redis_port, settings.redis_password,
-                                          version=settings.version)
+                                          Settings.model_infer_host,
+                                          Settings.redis_addr, Settings.redis_port, Settings.redis_password,
+                                          version=Settings.version)
         model_metrics.set_start_time(start_time)
 
         # Send inference request to idle device
@@ -224,8 +205,8 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
     We allow missing end_point_name and model_name in the input parameters.
     return end_point_name, model_name
     """
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    redis_key = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    redis_key = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_end_point_full_key_by_id(end_point_id)
     if redis_key is not None:
         end_point_name = ""
@@ -258,8 +239,8 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     inference_output_url = ""
     model_version = ""
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    payload, idle_device = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    payload, idle_device = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
         logging.info("found idle deployment result {}".format(payload))
@@ -304,7 +285,7 @@ async def send_inference_request(idle_device, endpoint_id, inference_url, input_
 
         if not has_public_ip:
             connect_str = "@FEDML@"
-            random_out = sys_utils.random2(settings.ext_info, "FEDML@9999GREAT")
+            random_out = sys_utils.random2(Settings.ext_info, "FEDML@9999GREAT")
             config_list = random_out.split(connect_str)
             agent_config = dict()
             agent_config["mqtt_config"] = dict()
@@ -336,8 +317,8 @@ def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    cached_token = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port). \
         get_end_point_token(end_point_id, end_point_name, model_name)
     if cached_token is not None and str(cached_token) == str(token):
         return True
@@ -349,8 +330,8 @@ def is_endpoint_activated(end_point_id):
     if end_point_id is None:
         return False
 
-    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    activated = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_end_point_activation(
+    FedMLModelCache.get_instance().set_redis_params(Settings.redis_addr, Settings.redis_port, Settings.redis_password)
+    activated = FedMLModelCache.get_instance(Settings.redis_addr, Settings.redis_port).get_end_point_activation(
         end_point_id)
     return activated
 
@@ -361,8 +342,6 @@ def logging_inference_request(request, response):
 
     try:
         log_dir = ServerConstants.get_log_file_dir()
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
         inference_log_file = os.path.join(log_dir, "inference.log")
         with open(inference_log_file, "a") as f:
             f.writelines([f"request: {request}, response: {response}\n"])
@@ -370,15 +349,24 @@ def logging_inference_request(request, response):
         logging.info("failed to log inference request and response to file.")
 
 
-def set_logging_args(args=None):
-    global logging_args
-    logging_args = args
-    if logging_args is not None:
-        # Force run id to 0, as the gateway is shared by all the runs.
-        setattr(args, "run_id", "0")
-        MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
-        MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.edge_id)
-        logging.info("start the log processor")
+def configure_logging():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    args = parser.parse_args([])
+
+    setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
+    setattr(args, "run_id", "inference_gateway")
+    setattr(args, "role", "server")
+    setattr(args, "using_mlops", True)
+    setattr(args, "config_version", fedml.get_env_version())
+
+    runner_info = ServerConstants.get_runner_infos()
+    if not (runner_info and "edge_id" in runner_info):
+        raise Exception("Inference gateway couldn't be started as edge_id couldn't be parsed from runner_infos.yaml")
+    setattr(args, "edge_id", runner_info.get("edge_id"))
+
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.edge_id)
+    logging.info("start the log processor for inference gateway")
 
 
 if __name__ == "__main__":

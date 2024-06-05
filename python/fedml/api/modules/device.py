@@ -58,14 +58,15 @@ def _bind(
         docker, docker_rank, infer_host,
         redis_addr, redis_port, redis_password
 ):
+    fedml.load_env()
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_HOST] = infer_host
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_HOST, infer_host)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR] = redis_addr
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, redis_addr)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PORT] = redis_port
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, redis_port)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD] = redis_password
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, redis_password)
 
     url = fedml._get_backend_service()
     platform_name = platform.system()

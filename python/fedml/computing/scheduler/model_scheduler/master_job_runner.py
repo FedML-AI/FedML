@@ -24,7 +24,6 @@ from ..scheduler_core.general_constants import GeneralConstants
 from ..master.base_master_job_runner import FedMLBaseMasterJobRunner
 from .device_replica_controller import FedMLDeviceReplicaController
 from .job_runner_msg_sender import FedMLDeployJobRunnerMsgSender
-from .device_model_inference import set_logging_args
 
 
 class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerMsgSender, ABC):
@@ -65,11 +64,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     # Override
     def _generate_extend_queue_list(self):
         return [self.deployment_result_queue]
-
-    @staticmethod
-    def start_inference_gateway_server(inference_gw_cmd, port, args):
-        set_logging_args(args)
-        uvicorn.run(inference_gw_cmd, host="0.0.0.0", port=port, log_level="info")
 
     # Override
     def run_impl(
@@ -493,8 +487,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
-                # cur_dir = os.path.dirname(__file__)
-                # fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                cur_dir = os.path.dirname(__file__)
+                fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
                 # connect_str = "@FEDML@"
                 # ext_info = sys_utils.random1(
                 #     agent_config["mqtt_config"]["BROKER_HOST"] + connect_str +
@@ -503,10 +497,19 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 #     agent_config["mqtt_config"]["MQTT_PWD"] + connect_str +
                 #     str(agent_config["mqtt_config"]["MQTT_KEEPALIVE"]), "FEDML@9999GREAT")
                 # python_program = get_python_program()
-                inference_gateway_process = multiprocessing.Process(
-                    target=FedMLDeployMasterJobRunner.start_inference_gateway_server, args=(inference_gw_cmd,
-                                                                                            inference_port, args)
-                )
+                # inference_gateway_process = multiprocessing.Process(
+                #     target=FedMLDeployMasterJobRunner.start_inference_gateway_server, args=(inference_gw_cmd,
+                #                                                                             inference_port, args)
+                # )
+                inference_gateway_process = ServerConstants.exec_console_with_script(f"{python_program} "
+                                                                                     f"-m uvicorn {inference_gw_cmd} "
+                                                                                     f"--host 0.0.0.0 "
+                                                                                     f"--port {str(inference_port)} "
+                                                                                     f"--reload --reload-delay 3 "
+                                                                                     f"--reload-dir {fedml_base_dir} "
+                                                                                     f"--log-level critical",
+                                                                                     should_capture_stdout=False,
+                                                                                     should_capture_stderr=False)
                 # inference_gateway_process = ServerConstants.exec_console_with_script(
                 #     "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 #     "END_POINT_NAME=\"{}\" "
@@ -518,9 +521,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 #         "", "", "", fedml.get_env_version(), use_mqtt_inference,
                 #         use_worker_gateway, ext_info, python_program, inference_gw_cmd, str(inference_port),
                 #         fedml_base_dir),
-                #     should_capture_stdout=False, should_capture_stderr=False)
-                inference_gateway_process.daemon = True
-                inference_gateway_process.start()
+                #     )
+                # inference_gateway_process.daemon = True
+                # inference_gateway_process.start()
 
                 return inference_gateway_process
             else:

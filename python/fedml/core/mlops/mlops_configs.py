@@ -154,6 +154,10 @@ class MLOpsConfigs(object):
                 fetched_configs[Configs.ML_OPS_CONFIG],
                 fetched_configs[Configs.DOCKER_CONFIG])
 
+    @staticmethod
+    def fetch_mqtt_config():
+        return MLOpsConfigs._fetch_configs({Configs.MQTT_CONFIG})
+
 
 if __name__ == "__main__":
     fedml.set_env_version("release")
