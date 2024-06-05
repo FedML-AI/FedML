@@ -205,7 +205,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         # Check if the package is already downloaded
         unzip_package_path = ""
         if os.path.exists(os.path.join(models_root_dir, parent_fd)):
-            unzip_package_path = self.find_previous_downloaded_pkg(os.path.join(models_root_dir, parent_fd))
+            unzip_package_path = self.find_previous_downloaded_pkg(os.path.join(models_root_dir, parent_fd), model_name)
 
         # Download the package if not found
         if unzip_package_path == "":
@@ -510,7 +510,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         pass
 
     @staticmethod
-    def find_previous_downloaded_pkg(parent_dir) -> str:
+    def find_previous_downloaded_pkg(parent_dir: str, model_name: str) -> str:
         unzip_fd = ""
         res = ""
 
@@ -519,8 +519,20 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                 unzip_fd = os.path.join(parent_dir, folder)
                 break
 
+        exact_matched = False
+
+        if unzip_fd == "":
+            return res
+
         for folder in os.listdir(unzip_fd):
-            if os.path.isdir(os.path.join(unzip_fd, folder)):
+            if folder == model_name:
+                res = os.path.join(unzip_fd, folder)
+                exact_matched = True
+                break
+
+        if not exact_matched:
+            # Use the first folder found
+            for folder in os.listdir(unzip_fd):
                 res = os.path.join(unzip_fd, folder)
                 break
 
