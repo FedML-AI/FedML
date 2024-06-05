@@ -66,3 +66,4 @@ six~=1.15.0
 botocore~=1.27.32
 setproctitle~=1.2.3
 wheel~=0.37.1
+requests-toolbelt~=1.0.0

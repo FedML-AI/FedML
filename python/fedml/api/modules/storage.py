@@ -1,15 +1,10 @@
 import concurrent.futures
-import json
 import logging
 import os
 import shutil
 import sys
-
 import tqdm
-from tqdm.asyncio import tqdm as async_tqdm
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-
 import requests
 import math
 from fedml.api.modules.utils import authenticate
@@ -17,6 +12,7 @@ from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.api.fedml_response import FedMLResponse, ResponseCode
+import requests_toolbelt
 
 
 class StorageMetadata(object):
@@ -28,6 +24,7 @@ class StorageMetadata(object):
         self.updatedAt = data.get("updateTime", None)
         self.size = _get_size(data.get("fileSize", None))
         self.tag_list = data.get("tags", None)
+        self.download_url = data.get("fileUrl", None)
 
 
 # Todo (alaydshah): Store service name in metadata
@@ -55,17 +52,18 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
     #dest_path = os.path.join(user_id, file_name)
     file_size = os.path.getsize(archive_path)
 
-    size_in_mb = file_size / (1024 * 1024)
+    size_in_mb = file_size / (1024 * 1024 * 1024)
     #print("Size in MB ",size_in_mb)
 
-    if size_in_mb < 10:
-        print("As a single upload! ")
-        file_uploaded_url, message = _upload_as_single_file(api_key, file_name, archive_path, show_progress, out_progress_to_err,
-                                                            progress_desc, metadata)
+    if size_in_mb < 1:
+        file_uploaded_url, message = _upload_as_single_file(api_key, file_name, archive_path, show_progress,
+                                                            out_progress_to_err,
+                                                            progress_desc, metadata,file_size = file_size)
     else:
         #num_chunks = _get_num_chunks(file_size)
-        file_uploaded_url, message = _upload_multipart(api_key, file_name, archive_path, show_progress, out_progress_to_err,
-                                                   progress_desc, metadata)
+        file_uploaded_url, message = _upload_multipart(api_key, file_name, archive_path, show_progress,
+                                                       out_progress_to_err,
+                                                       progress_desc, metadata)
 
     # file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
     #                                                     show_progress=show_progress,
@@ -102,24 +100,36 @@ def download(data_name, api_key, service, dest_path, show_progress=True) -> FedM
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    store = _get_storage_service(service)
-    zip_file_name = data_name + ".zip"
-    key = os.path.join(user_id, zip_file_name)
-    path_local = os.path.abspath(zip_file_name)
-    dest_path = os.path.abspath(dest_path) if dest_path else data_name
-    if store.download_file_with_progress(path_s3=key, path_local=path_local, show_progress=show_progress):
-        try:
-            shutil.unpack_archive(path_local, dest_path)
-            os.remove(path_local)
-            abs_dest_path = os.path.abspath(dest_path)
-            return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
-                                                                    f"{abs_dest_path}", data=abs_dest_path)
-        except Exception as e:
-            error_message = f"Failed to unpack archive: {e}"
+    metadata_response = get_metadata(data_name, api_key)
+    if metadata_response.code == ResponseCode.SUCCESS:
+        metadata = metadata_response.data
+        if not metadata or not isinstance(metadata, StorageMetadata):
+            error_message = f"Unable to get the download URL"
             logging.error(error_message)
             return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+        download_url = metadata.download_url
+        zip_file_name = data_name + ".zip"
+        path_local = os.path.abspath(zip_file_name)
+        dest_path = os.path.abspath(dest_path) if dest_path else data_name
+        if _download_using_presigned_url(download_url, zip_file_name, show_progress=show_progress):
+            try:
+                shutil.unpack_archive(path_local, dest_path)
+                os.remove(path_local)
+                abs_dest_path = os.path.abspath(dest_path)
+                return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
+                                                                        f"{abs_dest_path}", data=abs_dest_path)
+            except Exception as e:
+                error_message = f"Failed to unpack archive: {e}"
+                logging.error(error_message)
+                return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+
+        else:
+            error_message = f"Failed to download data from source"
+            logging.error(error_message)
+            return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+
     else:
-        error_message = f"Failed to download data: {data_name}"
+        error_message = f"Unable to get the download URL"
         logging.error(error_message)
         return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
 
@@ -218,10 +228,13 @@ def delete(data_name, service, api_key=None) -> FedMLResponse:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message, data=False)
 
 
+# TODO: bhargav191098 - how to make the progress bar for this based on the bytes transferred.
 def _upload_as_single_file(api_key: str, file_key: str, archive_path, show_progress, out_progress_to_err,
-                           progress_desc_text, metadata):
+                           progress_desc_text, metadata,file_size):
+    #print("single")
     single_presigned_request_url = ServerConstants.get_presigned_single_part_url()
-    presigned_url_response = _get_presigned_url(api_key=api_key,request_url=single_presigned_request_url, file_name=file_key)
+    presigned_url_response = _get_presigned_url(api_key=api_key, request_url=single_presigned_request_url,
+                                                file_name=file_key)
 
     if presigned_url_response.status_code != 200:
         message = (f"Failed to get presigned URL with status code = {presigned_url_response.status_code}, "
@@ -241,26 +254,8 @@ def _upload_as_single_file(api_key: str, file_key: str, archive_path, show_progr
 
     upload_url = data.get("uploadUrl")
     download_url = data.get("downloadUrl")
-
-    with open(archive_path, "rb") as f:
-        old_file_position = f.tell()
-        f.seek(0, os.SEEK_END)
-        file_size = f.tell()
-        f.seek(old_file_position, os.SEEK_SET)
-        data = f.read()
-        if not data:
-            return
-        if show_progress:
-            with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
-                           file=sys.stderr if out_progress_to_err else sys.stdout,
-                           desc=progress_desc_text) as pbar:
-                response = _upload_file(upload_url, f)
-
-                pbar.update(file_size)
-                return _process_put_response_placeholder(response, download_url)
-        else:
-            response = _upload_file(upload_url, f)
-            return _process_put_response_placeholder(response, download_url)
+    response = _upload_file(upload_url, archive_path)
+    return _process_put_response_placeholder(response, download_url)
 
 
 def get_chunks(file_path, chunk_size):
@@ -271,7 +266,8 @@ def get_chunks(file_path, chunk_size):
                 break
             yield chunk
 
-def upload_chunk(presigned_url, chunk,part, pbar, max_retries = 3):
+
+def upload_chunk(presigned_url, chunk, part, pbar =None, max_retries=5):
     for retry_attempt in range(max_retries):
         cert_path = MLOpsConfigs.get_cert_path_with_version()
         if cert_path is None:
@@ -288,7 +284,7 @@ def upload_chunk(presigned_url, chunk,part, pbar, max_retries = 3):
             return {'etag': response.headers['ETag'], 'partNumber': part}
         else:
             try:
-                response = _upload_part(presigned_url,chunk)
+                response = _upload_part(presigned_url, chunk)
             except Exception as e:
                 if retry_attempt < max_retries:
                     continue
@@ -296,22 +292,22 @@ def upload_chunk(presigned_url, chunk,part, pbar, max_retries = 3):
                     # Ran out of retries
                     raise requests.exceptions.RequestException
             response.raise_for_status()
-            pbar.update(chunk.__sizeof__())
+            if pbar is not None:
+                pbar.update(chunk.__sizeof__())
             return {'etag': response.headers['ETag'], 'partNumber': part}
 
     raise requests.exceptions.RequestException
 
 
-
 def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_progress_to_err,
-                           progress_desc_text, metadata):
+                      progress_desc_text, metadata):
     request_url = ServerConstants.get_presigned_multi_part_url()
 
     file_size = os.path.getsize(archive_path)
 
-    max_chunk_size = 8 * 1024 * 1024
+    max_chunk_size = 50 * 1024 * 1024
 
-    num_chunks = _get_num_chunks(file_size,max_chunk_size)
+    num_chunks = _get_num_chunks(file_size, max_chunk_size)
 
     presigned_url_response = _get_presigned_url(api_key, request_url, file_key, num_chunks)
 
@@ -330,30 +326,37 @@ def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_p
             message = (f"Failed getting presigned URL with following message: {message}, "
                        f"response.content: {presigned_url_response.content}")
             return None, message
-        
+
         upload_id = data['uploadId']
         presigned_urls = data['urls']
 
         parts = []
-        chunks = get_chunks(archive_path,max_chunk_size)
+        chunks = get_chunks(archive_path, max_chunk_size)
         part_info = []
         chunk_count = 0
         successful_chunks = 0
 
         with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
-                           file=sys.stderr if out_progress_to_err else sys.stdout,
-                           desc=progress_desc_text) as pbar:
+                       file=sys.stderr if out_progress_to_err else sys.stdout,
+                       desc=progress_desc_text, leave=False) as pbar:
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures = []
-                for part,chunk in enumerate(chunks,start=1):
-                    presigned_url = presigned_urls[part-1]
+                for part, chunk in enumerate(chunks, start=1):
+                    presigned_url = presigned_urls[part - 1]
                     chunk_count += 1
                     # Upload chunk to presigned_url in a separate thread from the thread pool of 10 workers.
-                    future = executor.submit(upload_chunk,presigned_url=presigned_url,chunk=chunk,part=part,pbar=pbar)
-                    futures.append(future)
+                    if show_progress:
+                        future = executor.submit(upload_chunk, presigned_url=presigned_url, chunk=chunk, part=part,
+                                             pbar=pbar)
+                        futures.append(future)
+                    else:
+                        pbar.close()
+                        future = executor.submit(upload_chunk, presigned_url=presigned_url, chunk=chunk, part=part)
+                        futures.append(future)
+
 
                 # Wait for all uploads to complete
-                done,not_done = concurrent.futures.wait(futures)
+                done, not_done = concurrent.futures.wait(futures)
                 for future in done:
                     try:
                         part_info.append(future.result())
@@ -363,12 +366,12 @@ def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_p
 
         #print("Number of parts succeeded : ",successful_chunks)
         if successful_chunks == chunk_count:
-            return _complete_multipart_upload(api_key,file_key,part_info,upload_id)
+            return _complete_multipart_upload(api_key, file_key, part_info, upload_id)
         else:
             return None, "Unsuccessful!"
 
 
-def _complete_multipart_upload(api_key,file_key,part_info,upload_id):
+def _complete_multipart_upload(api_key, file_key, part_info, upload_id):
     complete_multipart_url = ServerConstants.get_complete_multipart_upload_url()
     body_dict = {"fileKey": file_key, 'partETags': part_info, 'uploadId': upload_id}
 
@@ -378,12 +381,15 @@ def _complete_multipart_upload(api_key,file_key,part_info,upload_id):
     if cert_path is None:
         try:
             requests.session().verify = cert_path
-            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict,verify=True,headers=headers)
+            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                        headers=headers)
         except requests.exceptions.SSLError as err:
             MLOpsConfigs.install_root_ca_file()
-            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,headers=headers)
+            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                        headers=headers)
     else:
-        complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True, headers =headers)
+        complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                    headers=headers)
 
     return _process_post_response(complete_multipart_response)
 
@@ -427,8 +433,38 @@ def _upload_part(url, part_data):
     response = requests.put(url, data=part_data)
     return response
 
-def _upload_file(presigned_url, file_data):
-    response = requests.put(presigned_url, files=file_data)
+
+def _upload_file(presigned_url, archive_path):
+    class ProgressBar(tqdm.tqdm):
+        def update_to(self, n: int) -> None:
+            self.update(n - self.n)
+
+    with open(archive_path,'rb') as f:
+        data_to_send = []
+        session = requests.session()
+
+        data_to_send.append(
+            ("files", (archive_path, f))
+        )
+
+        encoder = requests_toolbelt.MultipartEncoder(data_to_send)
+        with ProgressBar(
+                total=encoder.len,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                miniters=1,
+                file=sys.stdout,
+        ) as bar:
+            monitor = requests_toolbelt.MultipartEncoderMonitor(
+                encoder, lambda monitor: bar.update_to(monitor.bytes_read)
+            )
+
+            response = session.put(
+                presigned_url,
+                data=monitor,
+                headers={"Content-Type": monitor.content_type},
+            )
     return response
 
 
@@ -449,6 +485,30 @@ def _get_presigned_url(api_key, request_url, file_name, part_number=None):
     else:
         response = requests.get(request_url, verify=True, headers=headers, params=params_dict)
     return response
+
+
+def _download_using_presigned_url(url, fname, chunk_size=1024 * 1024, show_progress=True):
+    download_response = requests.get(url, verify=True, stream=True)
+    if (download_response.status_code == 200):
+        print("Success!")
+        total = int(download_response.headers.get('content-length', 0))
+        if (show_progress):
+            with open(fname, 'wb') as file, tqdm.tqdm(
+                    desc=fname,
+                    total=total,
+                    unit='B',
+                    unit_scale=True,
+                    unit_divisor=1024,
+            ) as bar:
+                for data in download_response.iter_content(chunk_size=chunk_size):
+                    size = file.write(data)
+                    bar.update(size)
+        else:
+            with open(fname, "wb") as file:
+                for data in download_response.iter_content(chunk_size=chunk_size):
+                    size = file.write(data)
+        return True
+    return False
 
 
 def _get_user_id_from_api_key(api_key: str) -> (str, str):
