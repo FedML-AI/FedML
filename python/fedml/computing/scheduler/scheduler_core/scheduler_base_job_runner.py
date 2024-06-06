@@ -140,7 +140,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
     def unzip_file(zip_file, unzip_file_path) -> str:
         unzipped_file_name = ""
         if zipfile.is_zipfile(zip_file):
-            with (zipfile.ZipFile(zip_file, "r") as zipf):
+            with zipfile.ZipFile(zip_file, "r") as zipf:
                 zipf.extractall(unzip_file_path)
                 # Make sure the unzipped file is a directory.
                 if zipf.namelist()[0].endswith("/"):
