@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 from os.path import expanduser
+from pathlib import Path
 
 import psutil
 import yaml
@@ -330,8 +331,22 @@ class ServerConstants(object):
             info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS)
 
     @staticmethod
+    def get_runner_infos():
+        local_pkg_data_dir = ServerConstants.get_data_dir()
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
+
+        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                        "runner_infos.yaml")
+        runner_info = {}
+        try:
+            runner_info = yaml.safe_load(Path(runner_info_file).read_text())
+        except Exception as e:
+            logging.error(f"Failed to parse runner info: {e}")
+        return runner_info
+
+    @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
-        home_dir = expanduser("~")
         local_pkg_data_dir = ServerConstants.get_data_dir()
         os.makedirs(local_pkg_data_dir, exist_ok=True)
         os.makedirs(os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)

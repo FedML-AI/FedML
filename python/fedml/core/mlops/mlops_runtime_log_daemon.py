@@ -223,23 +223,17 @@ class MLOpsRuntimeLogProcessor:
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
                 response = requests.post(
                     self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
                 )
-                # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
 
             except requests.exceptions.SSLError as err:
                 MLOpsConfigs.install_root_ca_file()
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
                 response = requests.post(
                     self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
                 )
-                # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
         else:
-            # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
             response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-            # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
         if response.status_code != 200:
             logging.error(f"Failed to upload log to server. run_id {self.run_id}, device_id {self.device_id}. "
                           f"response.status_code: {response.status_code}")
@@ -404,9 +398,9 @@ class MLOpsRuntimeLogDaemon:
     def __init__(self, in_args):
         self.args = in_args
         self.edge_id = MLOpsLoggingUtils.get_edge_id_from_args(self.args)
+        url = fedml._get_backend_service()
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
-                url = fedml._get_backend_service()
                 self.log_server_url = f"{url}/fedmlLogsServer/logs/update"
             else:
                 self.log_server_url = self.args.log_server_url
