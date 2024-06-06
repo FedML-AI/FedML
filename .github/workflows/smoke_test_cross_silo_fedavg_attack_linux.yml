@@ -29,8 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest]
-        arch: [X64]
+        os: [ macOS ]
+        arch: [ ARM64 ]
         python-version: ['3.8']
         client-index: ['0', '1', '2', '3', '4']
 #        exclude:
@@ -38,7 +38,7 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [ self-hosted, Linux ]
+    runs-on: [ self-hosted ]
     timeout-minutes: 15
     steps:
       - name: Extract branch name
