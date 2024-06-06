@@ -7,6 +7,7 @@ from prettytable import PrettyTable
 import fedml
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.master.server_constants import ServerConstants
 from fedml.computing.scheduler.master.server_login import logout as server_logout
@@ -23,11 +24,6 @@ def bind(
     device_id = "0"
     os_name = ""
     docker = None
-    docker_rank = 1
-    infer_host = "127.0.0.1"
-    redis_addr = "local"
-    redis_port = "6379"
-    redis_password = "fedml_default"
     role = ""
     is_client = computing
     is_server = server
@@ -47,26 +43,22 @@ def bind(
     _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank, infer_host,
-        redis_addr, redis_port, redis_password
-    )
+        docker)
 
 
 def _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank, infer_host,
-        redis_addr, redis_port, redis_password
-):
+        docker):
     fedml.load_env()
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
-        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_HOST, infer_host)
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_HOST, SchedulerConstants.REDIS_INFER_HOST)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR) is None:
-        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, redis_addr)
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, SchedulerConstants.REDIS_ADDR)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT) is None:
-        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, redis_port)
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
-        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, redis_password)
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_ADDR)
 
     url = fedml._get_backend_service()
     platform_name = platform.system()
