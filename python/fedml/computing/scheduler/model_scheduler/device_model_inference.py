@@ -55,10 +55,10 @@ async def auth_middleware(request: Request, call_next):
                 {"error": True, "message": "Invalid JSON."},
                 status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Get total pending requests.
-        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter()
+        # Get endpoint's total pending requests.
+        end_point_id = request_json.get("end_point_id", None)
+        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
         if pending_requests_num:
-            end_point_id = request_json.get("end_point_id", None)
             # Fetch metrics of the past k=3 requests.
             pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
                 end_point_id=end_point_id,
@@ -173,7 +173,7 @@ async def _predict(
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     # Always increase the pending requests counter on a new incoming request.
-    FEDML_MODEL_CACHE.update_pending_requests_counter(increase=True)
+    FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
     inference_response = {}
 
     try:
@@ -205,14 +205,14 @@ async def _predict(
             if not is_endpoint_activated(in_end_point_id):
                 inference_response = {"error": True, "message": "endpoint is not activated."}
                 logging_inference_request(input_json, inference_response)
-                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
                 return inference_response
 
             # Found idle inference device
             idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
                 found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
             if idle_device is None or idle_device == "":
-                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
                 return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                         "message": "can not found active inference worker for this endpoint."}
 
@@ -252,18 +252,18 @@ async def _predict(
                 pass
 
             logging_inference_request(input_json, inference_response)
-            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+            FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
             return inference_response
         else:
             inference_response = {"error": True, "message": "token is not valid."}
             logging_inference_request(input_json, inference_response)
-            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+            FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
             return inference_response
 
     except Exception as e:
         logging.error("Inference Exception: {}".format(traceback.format_exc()))
         # Need to reduce the pending requests counter in whatever exception that may be raised.
-        FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+        FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
 
 
 def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_name=None,
