@@ -37,9 +37,10 @@ class Settings:
 
 api = FastAPI()
 
-FEDML_MODEL_CACHE = FedMLModelCache.get_instance().set_redis_params(redis_addr=Settings.redis_addr,
-                                                                    redis_port=Settings.redis_port,
-                                                                    redis_password=Settings.redis_password)
+FEDML_MODEL_CACHE = FedMLModelCache.get_instance()
+FEDML_MODEL_CACHE.set_redis_params(redis_addr=Settings.redis_addr,
+                                   redis_port=Settings.redis_port,
+                                   redis_password=Settings.redis_password)
 
 
 @api.middleware("http")
