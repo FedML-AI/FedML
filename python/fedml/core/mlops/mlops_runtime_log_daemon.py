@@ -223,32 +223,17 @@ class MLOpsRuntimeLogProcessor:
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
-                logging.info(f"FedMLDebug POST log to server. log_headers: {log_headers}, "
-                             f"log_upload_request: {log_upload_request}, url: {self.log_server_url}")
-
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
                 response = requests.post(
                     self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
                 )
-                logging.info(f"FedMLDebug POST log to server. response: {response}")
-                # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
 
             except requests.exceptions.SSLError as err:
                 MLOpsConfigs.install_root_ca_file()
-                # logging.info(f"FedMLDebug POST log to server. run_id {run_id}, device_id {device_id}")
-                logging.info(f"FedMLDebug POST log to server. log_headers: {log_headers}, "
-                             f"log_upload_request: {log_upload_request}, url: {self.log_server_url}")
-
                 response = requests.post(
                     self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
                 )
-                logging.info(f"FedMLDebug POST log to server. response: {response}")
-                # logging.info(f"FedMLDebug POST log to server run_id {run_id}, device_id {device_id}. response.status_code: {response.status_code}")
         else:
-            logging.info(f"FedMLDebug POST log to server. log_headers: {log_headers}, "
-                         f"log_upload_request: {log_upload_request}, url: {self.log_server_url}")
             response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-            logging.info(f"FedMLDebug POST log to server. response: {response}")
         if response.status_code != 200:
             logging.error(f"Failed to upload log to server. run_id {self.run_id}, device_id {self.device_id}. "
                           f"response.status_code: {response.status_code}")
