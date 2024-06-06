@@ -138,10 +138,13 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
     @staticmethod
     def unzip_file(zip_file, unzip_file_path) -> str:
+        unzipped_file_name = ""
         if zipfile.is_zipfile(zip_file):
-            with zipfile.ZipFile(zip_file, "r") as zipf:
+            with (zipfile.ZipFile(zip_file, "r") as zipf):
                 zipf.extractall(unzip_file_path)
-                unzipped_file_name = zipf.namelist()[0]
+                # Make sure the unzipped file is a directory.
+                if zipf.namelist()[0].endswith("/"):
+                    unzipped_file_name = zipf.namelist()[0]
         else:
             raise Exception("Invalid zip file {}".format(zip_file))
 
@@ -156,7 +159,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         progress_int = int(progress)
         downloaded_kb = format(downloaded / 1024, '.2f')
 
-        # since this hook funtion is stateless, we need a state to avoid print progress repeatly
+        # Since this hook function is stateless, we need a state to avoid print progress repeatedly.
         if count == 0:
             self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
