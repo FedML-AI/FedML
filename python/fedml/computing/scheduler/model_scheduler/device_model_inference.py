@@ -25,6 +25,7 @@ from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 
 
 class Settings:
+    server_name = "DEVICE_INFERENCE_GATEWAY"
     fedml.load_env()
     redis_addr = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR)
     redis_port = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT)
@@ -425,7 +426,7 @@ def configure_logging():
     args = parser.parse_args([])
 
     setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
-    setattr(args, "run_id", "inference_gateway")
+    setattr(args, "run_id", -1)
     setattr(args, "role", "server")
     setattr(args, "using_mlops", True)
     setattr(args, "config_version", fedml.get_env_version())
@@ -433,10 +434,12 @@ def configure_logging():
     runner_info = ServerConstants.get_runner_infos()
     if not (runner_info and "edge_id" in runner_info):
         raise Exception("Inference gateway couldn't be started as edge_id couldn't be parsed from runner_infos.yaml")
-    setattr(args, "edge_id", runner_info.get("edge_id"))
+    setattr(args, "edge_id", int(runner_info.get("edge_id")))
 
     MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
-    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(args.run_id, args.edge_id)
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(log_run_id=args.run_id, log_device_id=args.edge_id,
+                                                                 log_source=Settings.server_name,
+                                                                 log_file_prefix=Settings.server_name)
     logging.info("start the log processor for inference gateway")
 
 
@@ -444,5 +447,4 @@ if __name__ == "__main__":
     import uvicorn
     port = 2203
     logging.basicConfig(level=logging.INFO)
-    configure_logging()
     uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")
