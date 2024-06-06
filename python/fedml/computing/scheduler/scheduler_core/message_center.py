@@ -11,6 +11,7 @@ import queue
 from os.path import expanduser
 
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from ..slave.client_constants import ClientConstants
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from operator import methodcaller
 from .message_common import FedMLMessageEntity, FedMLMessageRecord
@@ -466,7 +467,8 @@ class MessageCenterStoppedException(Exception):
 
 class FedMLMessageCenterConstants:
     def __init__(self):
+        global_services_dir = ClientConstants.get_global_services_dir()
         self.home_dir = expanduser("~")
-        self.message_center_dir = os.path.join(self.home_dir, ".fedml", "global_services", "message_center")
+        self.message_center_dir = os.path.join(global_services_dir, "message_center")
         self.message_log_dir = os.path.join(self.message_center_dir, "logs")
         os.makedirs(self.message_log_dir, exist_ok=True)

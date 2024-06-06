@@ -339,7 +339,7 @@ class Autoscaler(metaclass=Singleton):
 
         # Fetch all metrics record from the database.
         metrics = self.fedml_model_cache.get_endpoint_metrics(
-            endpoint_id=endpoint_id)
+            end_point_id=endpoint_id)
 
         # Default to nothing.
         scale_op = ScaleOp.NO_OP

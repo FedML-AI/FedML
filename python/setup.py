@@ -66,6 +66,7 @@ requirements = [
     'wget',
     # Need to pin this version due to breaking change released in python docker sdk
     'requests<2.32',
+    'python-dotenv',
 ]
 
 requirements_extra_mpi = [
