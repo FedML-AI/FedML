@@ -10,6 +10,7 @@ from abc import ABC
 import yaml
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.core.mlops import MLOpsRuntimeLog
+from fedml.computing.scheduler.comm_utils import file_utils
 from .device_client_constants import ClientConstants
 from .device_model_cache import FedMLModelCache
 from ..scheduler_core.general_constants import GeneralConstants
@@ -205,7 +206,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         # Check if the package is already downloaded
         unzip_package_path = ""
         if os.path.exists(os.path.join(models_root_dir, parent_fd)):
-            unzip_package_path = self.find_previous_downloaded_pkg(os.path.join(models_root_dir, parent_fd), model_name)
+            unzip_package_path = self.find_previous_downloaded_pkg(os.path.join(models_root_dir, parent_fd))
 
         # Download the package if not found
         if unzip_package_path == "":
@@ -510,30 +511,13 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         pass
 
     @staticmethod
-    def find_previous_downloaded_pkg(parent_dir: str, model_name: str) -> str:
-        unzip_fd = ""
-        res = ""
-
-        for folder in os.listdir(parent_dir):
-            if folder.startswith("unzip_fedml_run"):
-                unzip_fd = os.path.join(parent_dir, folder)
-                break
-
-        exact_matched = False
-
-        if unzip_fd == "":
-            return res
-
-        for folder in os.listdir(unzip_fd):
-            if folder == model_name:
-                res = os.path.join(unzip_fd, folder)
-                exact_matched = True
-                break
-
-        if not exact_matched:
-            # Use the first folder found
-            for folder in os.listdir(unzip_fd):
-                res = os.path.join(unzip_fd, folder)
-                break
-
-        return res
+    def find_previous_downloaded_pkg(parent_dir: str) -> str:
+        """
+        Find a folder inside parent_dir that contains the fedml_model_config.yaml file.
+        """
+        res = file_utils.find_file_inside_folder(parent_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+        if res is not None:
+            # return the parent folder of res
+            return os.path.dirname(res)
+        else:
+            return ""
