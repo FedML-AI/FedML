@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 
 import fedml
 from fedml.api.modules.constants import ModuleConstants
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -27,10 +28,10 @@ from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 class Settings:
     server_name = "DEVICE_INFERENCE_GATEWAY"
     fedml.load_env()
-    redis_addr = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR)
-    redis_port = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT)
-    redis_password = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD)
-    model_infer_host = os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST)
+    redis_addr = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, SchedulerConstants.REDIS_ADDR)
+    redis_port = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
+    redis_password = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_PASSWORD)
+    model_infer_host = os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST, SchedulerConstants.REDIS_INFER_HOST)
     version = fedml.get_env_version()
     mqtt_config = MLOpsConfigs.fetch_mqtt_config()
 
