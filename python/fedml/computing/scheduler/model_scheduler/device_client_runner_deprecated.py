@@ -1176,15 +1176,15 @@ class FedMLClientRunner:
         return device_id
 
     def get_ip_address(self, request_json):
-        # OPTION 1: Use local ip
-        ip = ClientConstants.get_local_ip()
+        # OPTION 1: Use local ip [Deprecated]
+        # ip = ClientConstants.get_local_ip()
 
         # OPTION 2: Auto detect public ip
-        if "parameters" in request_json and \
-                ClientConstants.AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
-                request_json["parameters"][ClientConstants.AUTO_DETECT_PUBLIC_IP]:
-            ip = ClientConstants.get_public_ip()
-            logging.info("Auto detect public ip for worker: " + ip)
+        # if "parameters" in request_json and \
+        #         ClientConstants.AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
+        #         request_json["parameters"][ClientConstants.AUTO_DETECT_PUBLIC_IP]:
+        ip = ClientConstants.get_public_ip()
+        logging.info("Auto detect public ip for worker: " + ip)
 
         # OPTION 3: Use user indicated ip
         if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
