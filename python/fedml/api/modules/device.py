@@ -58,7 +58,7 @@ def _bind(
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT) is None:
         fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
-        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_ADDR)
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_PASSWORD)
 
     url = fedml._get_backend_service()
     platform_name = platform.system()
