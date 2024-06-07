@@ -27,7 +27,7 @@ class HardwareUtil(metaclass=Singleton):
             except Exception as e:
                 pass
 
-        logging.error("No GPU card detected")
+        # logging.error("No GPU card detected")
         return None
 
     @staticmethod
