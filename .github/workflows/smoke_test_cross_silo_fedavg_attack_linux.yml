@@ -58,7 +58,7 @@ jobs:
             echo "dir=$path" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
-            path=/home/actions-runner/FedML
+            path=/home/fedml/FedML
             cd $path
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
