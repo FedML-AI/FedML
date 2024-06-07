@@ -256,6 +256,20 @@ class ServerConstants(object):
         return create_dataset_url
 
     @staticmethod
+    def get_presigned_multi_part_url():
+        get_presigned_multi_part_url = "{}/system/api/v1/cli/oss/multipart/presigned-url".format(
+            ServerConstants.get_mlops_url()
+        )
+        return get_presigned_multi_part_url
+
+    @staticmethod
+    def get_complete_multipart_upload_url():
+        complete_multipart_upload_url = "{}/system/api/v1/cli/oss/multipart/upload/complete".format(
+            ServerConstants.get_mlops_url()
+        )
+        return complete_multipart_upload_url
+
+    @staticmethod
     def list_dataset_url():
         list_dataset_url = "{}/fedmlOpsServer/api/v1/cli/dataset/list".format(
             ServerConstants.get_mlops_url())
