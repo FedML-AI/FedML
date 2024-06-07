@@ -8,8 +8,6 @@ import math
 import requests.exceptions
 import tqdm
 import sys
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
 from fedml.api.modules.utils import authenticate
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
@@ -31,7 +29,7 @@ class StorageMetadata(object):
 
 # Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
-
+# Todo (bhargav) : Discuss and remove the service variable. Maybe needed sometime later.
 def upload(data_path, api_key, name, description, tag_list, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
     api_key = authenticate(api_key)
@@ -118,8 +116,7 @@ def download(data_name, api_key, service, dest_path, show_progress=True) -> FedM
             return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
 
     else:
-        error_message = "Unable to get the download URL"
-        logging.error(error_message)
+        error_message = metadata_response.message
         return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
 
 
@@ -288,6 +285,7 @@ def _process_post_response(response):
 
         return data_url, "Successfully uploaded the data! "
 
+
 def _complete_multipart_upload(api_key, file_key, part_info, upload_id):
     complete_multipart_url = ServerConstants.get_complete_multipart_upload_url()
     body_dict = {"fileKey": file_key, 'partETags': part_info, 'uploadId': upload_id}
@@ -309,6 +307,7 @@ def _complete_multipart_upload(api_key, file_key, part_info, upload_id):
                                                     headers=headers)
 
     return _process_post_response(complete_multipart_response)
+
 
 def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_progress_to_err,
                       progress_desc_text, metadata):
@@ -349,7 +348,7 @@ def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_p
     part_info = []
     chunk_count = 0
     successful_chunks = 0
-
+    #TODO: (bhargav191098) Using Thread pool and confirming openssl issue
     atomic_session = requests.session()
     atomic_session.verify = MLOpsConfigs.get_cert_path_with_version()
     with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
@@ -358,7 +357,6 @@ def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_p
         for part, chunk in enumerate(chunks, start=1):
             presigned_url = presigned_urls[part - 1]
             chunk_count += 1
-            # Upload chunk to presigned_url in a separate thread from the thread pool of 10 workers.
             if show_progress:
                 try:
                     part_data = _upload_chunk(presigned_url=presigned_url, chunk=chunk, part=part,
