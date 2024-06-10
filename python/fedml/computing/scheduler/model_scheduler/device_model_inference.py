@@ -66,7 +66,7 @@ async def auth_middleware(request: Request, call_next):
 
             # Get the request timeout from the endpoint settings.
             request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
-                .get("request_timeout_s", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
+                .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
 
             # Only proceed if the past k metrics collection is not empty.
             if pask_k_metrics:
@@ -76,7 +76,8 @@ async def auth_middleware(request: Request, call_next):
                 mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
 
                 # If timeout threshold is exceeded then cancel and return time out error.
-                if (mean_latency * pending_requests_num) > request_timeout_s:
+                should_block = (mean_latency * pending_requests_num) > request_timeout_s
+                if should_block:
                     return JSONResponse(
                         {"error": True, "message": "Request timed out."},
                         status_code=status.HTTP_504_GATEWAY_TIMEOUT)

@@ -104,6 +104,9 @@ class ServerConstants(object):
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
     MODEL_INFERENCE_DEFAULT_PORT = 2203
     MODEL_CACHE_KEY_EXPIRE_TIME = 1 * 10
+
+    INFERENCE_REQUEST_TIMEOUT_KEY = "request_timeout_sec"
+    INFERENCE_REQUEST_TIMEOUT_DEFAULT = 30
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}

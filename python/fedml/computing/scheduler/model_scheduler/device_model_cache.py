@@ -139,7 +139,7 @@ class FedMLModelCache(Singleton):
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
             "scale_down_delay_seconds": scale_down_delay_seconds,
-            "request_timeout_sec": timeout_s
+            ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY: timeout_s
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
