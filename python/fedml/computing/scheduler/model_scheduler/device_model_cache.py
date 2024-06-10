@@ -139,7 +139,7 @@ class FedMLModelCache(Singleton):
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
             "scale_down_delay_seconds": scale_down_delay_seconds,
-            "request_timeout_sec": timeout_s
+            ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY: timeout_s
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -974,20 +974,21 @@ class FedMLModelCache(Singleton):
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
 
-    def get_pending_requests_counter(self) -> int:
-        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
-            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
-        return int(self.redis_connection.get(self.FEDML_PENDING_REQUESTS_COUNTER))
+    def get_pending_requests_counter(self, end_point_id) -> int:
+        # If the endpoint does not exist inside the Hash collection, set its counter to 0.
+        if self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+            return int(self.redis_connection.hget(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id))
+        return 0
 
-    def update_pending_requests_counter(self, increase=False, decrease=False) -> int:
-        if not self.redis_connection.exists(self.FEDML_PENDING_REQUESTS_COUNTER):
-            self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
+    def update_pending_requests_counter(self, end_point_id, increase=False, decrease=False) -> int:
+        if not self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+            self.redis_connection.hset(self.FEDML_PENDING_REQUESTS_COUNTER, mapping={end_point_id: 0})
         if increase:
-            self.redis_connection.incr(self.FEDML_PENDING_REQUESTS_COUNTER)
+            self.redis_connection.hincrby(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id, 1)
         if decrease:
+            # Careful on the negative, there is no native function for hash decreases.
+            self.redis_connection.hincrby(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id, -1)
             # Making sure the counter never becomes negative!
-            if self.get_pending_requests_counter() < 0:
-                self.redis_connection.set(self.FEDML_PENDING_REQUESTS_COUNTER, 0)
-            else:
-                self.redis_connection.decr(self.FEDML_PENDING_REQUESTS_COUNTER)
-        return self.get_pending_requests_counter()
+            if self.get_pending_requests_counter(end_point_id) < 0:
+                self.redis_connection.hset(self.FEDML_PENDING_REQUESTS_COUNTER, mapping={end_point_id: 0})
+        return self.get_pending_requests_counter(end_point_id)
