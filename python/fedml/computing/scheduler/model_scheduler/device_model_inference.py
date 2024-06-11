@@ -313,16 +313,17 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
     payload, idle_device = FEDML_MODEL_CACHE. \
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
-    if payload is not None:
-        deployment_result = payload
-        model_name = deployment_result["model_name"]
-        model_version = deployment_result["model_version"]
-        model_id = deployment_result["model_id"]
-        end_point_id = deployment_result["end_point_id"]
-        inference_output_url = deployment_result["model_url"]
+    if payload:
+        model_name = payload["model_name"]
+        model_version = payload["model_version"]
+        model_id = payload["model_id"]
+        end_point_id = payload["end_point_id"]
+        inference_output_url = payload["model_url"]
+        connectivity_type = \
+            payload.get("connectivity_type",
+                        ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT)
         url_parsed = urlparse(inference_output_url)
         inference_host = url_parsed.hostname
-        connectivity_type = deployment_result.get("connectivity_type", ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP)
     else:
         logging.info("not found idle deployment result")
 
@@ -335,7 +336,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
                                  inference_type="default",
-                                 connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP):
+                                 connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
     request_timeout_sec = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
         .get("request_timeout_sec", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
 

@@ -446,7 +446,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                      model_id, model_name, model_inference_url,
                                      model_version, inference_port, inference_engine,
                                      model_metadata, model_config, replica_no=1,
-                                     connectivity=ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP):
+                                     connectivity=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
@@ -481,7 +481,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config, replica_no=1,
-                                connectivity=ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP):
+                                connectivity=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
         deployment_results_topic = "model_device/model_device/return_deployment_result/{}/{}".format(
             self.run_id, device_id)
 
