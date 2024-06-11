@@ -294,9 +294,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                         json.dumps(result_payload), replica_no=rank + 1)
 
                     logging.info(f"Deploy replica {rank + 1} / {prev_rank + 1 + op_num} successfully.")
-                    time.sleep(5)
 
-            time.sleep(1)
             self.status_reporter.run_id = self.run_id
             self.status_reporter.report_client_id_status(
                 self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
@@ -348,7 +346,8 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
 
                 # TODO (Raphael) check if this will allow another job to seize the gpu during high concurrency:
                 try:
-                    JobRunnerUtils.get_instance().release_partial_job_gpu(run_id, self.edge_id, replica_occupied_gpu_ids)
+                    JobRunnerUtils.get_instance().release_partial_job_gpu(
+                        run_id, self.edge_id, replica_occupied_gpu_ids)
                 except Exception as e:
                     if op == "rollback":
                         pass
@@ -395,7 +394,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                         JobRunnerUtils.get_instance().release_partial_job_gpu(
                             run_id, self.edge_id, replica_occupied_gpu_ids)
 
-                    result_payload = self.send_deployment_results(
+                    self.send_deployment_results(
                         end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                         model_id, model_name, inference_output_url, inference_model_version, inference_port,
                         inference_engine, model_metadata, model_config)
@@ -495,15 +494,6 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                                                                       deployment_results_payload))
         self.message_center.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         return deployment_results_payload
-
-    def send_deployment_status(self, end_point_name, device_id,
-                               model_id, model_name, model_version,
-                               model_inference_url, model_status,
-                               inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                               replica_no=1,     # start from 1
-                               ):
-        # Deprecated
-        pass
 
     def reset_devices_status(self, edge_id, status):
         self.status_reporter.run_id = self.run_id

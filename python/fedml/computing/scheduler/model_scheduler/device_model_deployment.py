@@ -1,12 +1,13 @@
+import fedml
+
 import logging
 import os
-import pickle
-import platform
 import shutil
 import time
 import traceback
 import yaml
 import datetime
+import docker
 
 import requests
 import torch
@@ -15,27 +16,18 @@ import tritonclient.http as http_client
 
 import collections.abc
 
-import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
-from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+from ..scheduler_core.compute_utils import ComputeUtils
+from ..comm_utils.container_utils import ContainerUtils
+from .device_http_inference_protocol import FedMLHttpInference
 
 for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
-
-from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
-import io
-
-import docker
-from ..scheduler_core.compute_cache_manager import ComputeCacheManager
-from ..scheduler_core.compute_utils import ComputeUtils
-from ..comm_utils.container_utils import ContainerUtils
-
-from .device_http_inference_protocol import FedMLHttpInference
-
-from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 
 no_real_gpu_allocation = None
 
@@ -432,8 +424,6 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
     if cmd_type == ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER:
         # TODO: Exited Quickly if the container is Exited or Removed
         # If the container has exited, return True, means we should exit the logs
-        # container_name = "{}".format(ClientConstants.FEDML_DEFAULT_SERVER_CONTAINER_NAME_PREFIX) + "__" + \
-        #                             security_utils.get_content_hash(model_name)
         try:
             inference_output_url, model_version, model_metadata, model_config = \
                 get_model_info(model_name, inference_engine, inference_port, infer_host,
@@ -554,8 +544,6 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
 def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
                                         inference_type="default", model_version="", request_input_example=None):
-    # logging.info(f"Inference type: {inference_type}, infer_url_host {infer_url_host}, \
-    #               inference_http_port: {inference_http_port}, local_infer_url {local_infer_url}")
 
     if inference_type == "default":
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
@@ -631,211 +619,5 @@ def run_http_inference_with_curl_request(inference_url, inference_input_list, in
         inference_type=inference_type, engine_type=engine_type, timeout=timeout)
 
 
-def convert_model_to_onnx(
-        torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True
-) -> None:
-    from collections import OrderedDict
-    import torch
-    from torch.onnx import TrainingMode
-
-    torch.onnx.export(torch_model,  # model being run
-                      dummy_input_list if input_is_tensor else tuple(dummy_input_list),
-                      # model input (or a tuple for multiple inputs)
-                      f=output_path,  # where to save the model (can be a file or file-like object)
-                      export_params=True,  # store the trained parameter weights inside the model file
-                      opset_version=11,  # the ONNX version to export the model to
-                      do_constant_folding=False,  # whether to execute constant folding for optimization
-                      input_names=["input1", "input2"],
-                      # the model's input names
-                      output_names=['output'],  # the model's output names
-                      training=TrainingMode.EVAL,
-                      verbose=True,
-                      dynamic_axes={"input1": {0: "batch_size"},
-                                    "input2": {0: "batch_size"},
-                                    "output": {0: "batch_size"}}
-                      )
-
-
-def test_start_triton_server(model_serving_dir):
-    sudo_prefix = "sudo "
-    sys_name = platform.system()
-    if sys_name == "Darwin":
-        sudo_prefix = ""
-        gpu_attach_cmd = ""
-
-    triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
-    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                        "-p{}:8001 -p{}:8002 " \
-                        "--shm-size {} " \
-                        "-v {}:/models {} " \
-                        "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
-                        "--model-control-mode=poll --repository-poll-secs={} " \
-                        "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
-                                                               sudo_prefix, triton_server_container_name,
-                                                               sudo_prefix, triton_server_container_name,
-                                                               gpu_attach_cmd,
-                                                               ClientConstants.INFERENCE_HTTP_PORT,
-                                                               ClientConstants.INFERENCE_GRPC_PORT,
-                                                               8002,
-                                                               "4096m",
-                                                               model_serving_dir,
-                                                               ClientConstants.INFERENCE_SERVER_IMAGE,
-                                                               ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
-    logging.info("Run triton inference server: {}".format(triton_server_cmd))
-    triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                     should_capture_stdout=False,
-                                                                     should_capture_stderr=False,
-                                                                     no_sys_out_err=True)
-
-
-def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_name, model_in_params):
-    torch_model = torch.jit.load(model_net_file)
-    with open(model_bin_file, 'rb') as model_pkl_file:
-        model_state_dict = pickle.load(model_pkl_file)
-        torch_model.load_state_dict(model_state_dict)
-        torch_model.eval()
-
-    input_size = model_in_params["input_size"]
-    input_types = model_in_params["input_types"]
-
-    dummy_input_list = []
-    for index, input_i in enumerate(input_size):
-        if input_types[index] == "int":
-            this_input = torch.tensor(torch.randint(0, 1, input_i))
-        else:
-            this_input = torch.tensor(torch.zeros(input_i))
-        dummy_input_list.append(this_input)
-
-    onnx_model_dir = os.path.join(ClientConstants.get_model_cache_dir(),
-                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                  model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-    if not os.path.exists(onnx_model_dir):
-        os.makedirs(onnx_model_dir, exist_ok=True)
-    onnx_model_path = os.path.join(onnx_model_dir, "model.onnx")
-
-    convert_model_to_onnx(torch_model, onnx_model_path, dummy_input_list, input_size,
-                          input_is_tensor=True)
-
-    model_serving_dir = os.path.join(ClientConstants.get_model_cache_dir(),
-                                     ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-    return model_serving_dir
-
-
-def start_gpu_model_load_process():
-    from multiprocessing import Process
-    import time
-    process = Process(target=load_gpu_model_to_cpu_device)
-    process.start()
-    while True:
-        time.sleep(1)
-
-
-def load_gpu_model_to_cpu_device():
-    import pickle
-    import io
-    import torch
-
-    class CPU_Unpickler(pickle.Unpickler):
-        def find_class(self, module, name):
-            if module == 'torch.storage' and name == '_load_from_bytes':
-                return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
-            else:
-                return super().find_class(module, name)
-
-    model_file = "/home/fedml/.fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
-    with open(model_file, "rb") as model_pkl_file:
-        if not torch.cuda.is_available():
-            model = CPU_Unpickler(model_pkl_file).load()
-            if model is None:
-                print("Failed to load gpu model to cpu device")
-            else:
-                print("Succeeded to load gpu model to cpu device")
-
-
 if __name__ == "__main__":
-    start_gpu_model_load_process()
-
-    model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-open-training-model-net",
-                                                           "./sample-open-training-model",
-                                                           "rec-model",
-                                                           {"input_size": [[1, 24], [1, 2]],
-                                                            "input_types": ["int", "float"]})
-
-    test_start_triton_server(model_serving_dir)
-
-    # input_data = {"model_version": "v0-Sun Feb 05 12:17:16 GMT 2023",
-    #               "model_name": "model_414_45_open-model-test_v0-Sun-Feb-05-12-17-16-GMT-2023",
-    #               # "data": "file:///Users/alexliang/fedml_data/mnist-image.png",
-    #               "data": "https://raw.githubusercontent.com/niyazed/triton-mnist-example/master/images/sample_image.png",
-    #               "end_point_id": 414, "model_id": 45, "token": "a09a18a14c4c4d89a8d5f9515704c073"}
-    #
-    # data_list = list()
-    # data_list.append(input_data["data"])
-    # run_http_inference_with_lib_http_api_with_image_data(input_data["model_name"],
-    #                                                      5001, 1, data_list, "")
-    #
-    #
-    # class LogisticRegression(torch.nn.Module):
-    #     def __init__(self, input_dim, output_dim):
-    #         super(LogisticRegression, self).__init__()
-    #         self.linear = torch.nn.Linear(input_dim, output_dim)
-    #
-    #     def forward(self, x):
-    #         outputs = torch.sigmoid(self.linear(x))
-    #         return outputs
-    #
-    #
-    # model = LogisticRegression(28 * 28, 10)
-    # checkpoint = {'model': model}
-    # model_net_file = "/Users/alexliang/fedml-client/fedml/models/open-model-test/model-net.pt"
-    # torch.save(checkpoint, model_net_file)
-    #
-    # with open("/Users/alexliang/fedml-client/fedml/models/open-model-test/open-model-test", 'rb') as model_pkl_file:
-    #     model_params = pickle.load(model_pkl_file)
-    #     # torch.save(model_params, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
-    #     # model = torch.load("/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
-    #     loaded_checkpoint = torch.load(model_net_file)
-    #     loaded_model = loaded_checkpoint["model"]
-    #     loaded_model.load_state_dict(model_params)
-    #     for parameter in loaded_model.parameters():
-    #         parameter.requires_grad = False
-    #     loaded_model.eval()
-    #     input_names = {"x": 0}
-    #     convert_model_to_onnx(loaded_model, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.onnx",
-    #                           input_names, 28 * 28)
-
-    # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # parser.add_argument("--cf", "-c", help="config file")
-    # parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    # parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
-    #                     help="model storage local path")
-    # parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
-    #                     help="inference model name")
-    # parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
-    # parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
-    # parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
-    # parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
-    # parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
-    # parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
-    # parser.add_argument("--inference_convertor_image", "-convertor", type=str,
-    #                     default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
-    # parser.add_argument("--inference_server_image", "-server", type=str,
-    #                     default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
-    # args = parser.parse_args()
-    # args.user = args.user
-    #
-    # pip_source_dir = os.path.dirname(__file__)
-    # __running_model_name, __inference_output_url, __model_version, __model_metadata, __model_config = \
-    #     start_deployment(
-    #         args.model_storage_local_path,
-    #         args.inference_model_name,
-    #         args.inference_engine,
-    #         args.inference_http_port,
-    #         args.inference_grpc_port,
-    #         args.inference_metric_port,
-    #         args.inference_use_gpu,
-    #         args.inference_memory_size,
-    #         args.inference_convertor_image,
-    #         args.inference_server_image)
-    # print("Model deployment results, running model name: {}, url: {}, model metadata: {}, model config: {}".format(
-    #     __running_model_name, __inference_output_url, __model_metadata, __model_config))
+    pass
