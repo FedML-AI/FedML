@@ -1,9 +1,9 @@
 import logging
+import platform
 import time
 
 from enum import Enum, unique
 import multiprocessing
-from multiprocessing import Process, Queue
 import queue
 
 import fedml
@@ -108,7 +108,7 @@ class FedMLStatusCenter(object):
 
     def start_status_center(self, sender_message_center_queue=None,
                             listener_message_center_queue=None, is_slave_agent=False):
-        self.status_queue = Queue()
+        self.status_queue = multiprocessing.Manager().Queue(-1)
         self.status_event = multiprocessing.Event()
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
@@ -116,12 +116,20 @@ class FedMLStatusCenter(object):
         self.status_runner = self.get_status_runner()
         target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
             self.status_runner.run_status_dispatcher_in_slave
-        self.status_center_process = fedml.get_multiprocessing_context().Process(
-            target=target_func, args=(
-                self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                self.status_listener_message_center_queue
+        if platform.system() == "Windows":
+            self.status_center_process = multiprocessing.Process(
+                target=target_func, args=(
+                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
+                    self.status_listener_message_center_queue
+                )
             )
-        )
+        else:
+            self.status_center_process = fedml.get_process(
+                target=target_func, args=(
+                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
+                    self.status_listener_message_center_queue
+                )
+            )
 
         self.status_center_process.start()
 

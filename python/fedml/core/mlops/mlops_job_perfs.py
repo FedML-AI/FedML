@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import time
 import traceback
 import uuid
@@ -139,9 +140,12 @@ class MLOpsJobPerfStats(object):
         self.job_stats_event.clear()
         perf_stats.job_stats_event = self.job_stats_event
         perf_stats.job_process_id_map = self.job_process_id_map
-
-        self.job_stats_process = fedml.get_multiprocessing_context().Process(
-            target=perf_stats.report_job_stats_entry, args=(self.job_stats_event,))
+        if platform.system() == "Windows":
+            self.job_stats_process = multiprocessing.Process(
+                target=perf_stats.report_job_stats_entry, args=(self.job_stats_event,))
+        else:
+            self.job_stats_process = fedml.get_process(
+                target=perf_stats.report_job_stats_entry, args=(self.job_stats_event,))
         self.job_stats_process.start()
 
     def report_job_stats(self, sys_args):

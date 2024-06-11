@@ -260,9 +260,17 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         client_runner.server_id = request_json.get("server_id", "0")
         self.run_extend_queue_list = self._generate_extend_queue_list()
         logging.info("start the runner process.")
-        self.run_process = fedml.get_multiprocessing_context().Process(target=client_runner.run, args=(
-            self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
-            sender_message_queue, listener_message_queue, status_center_queue
-        ))
+
+        if platform.system() == "Windows":
+            self.run_process = multiprocessing.Process(
+                target=client_runner.run, args=(
+                    self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
+                    sender_message_queue, listener_message_queue, status_center_queue
+                ))
+        else:
+            self.run_process = fedml.get_process(target=client_runner.run, args=(
+                self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
+                sender_message_queue, listener_message_queue, status_center_queue
+            ))
         self.run_process.start()
         return self.run_process
