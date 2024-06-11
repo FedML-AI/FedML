@@ -68,6 +68,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     num_gpus = gpu_per_replica
     gpu_ids, gpu_attach_cmd = None, ""
 
+    # Concatenate the model name
     running_model_name = ClientConstants.get_running_model_name(
         end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
 
@@ -77,6 +78,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         config = yaml.safe_load(file)
 
         # Resource related
+        inference_type = "default"
         use_gpu = config.get('use_gpu', True)
         num_gpus_frm_yml = config.get('num_gpus', None)
         if not use_gpu:
@@ -85,9 +87,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if num_gpus_frm_yml is not None:
                 num_gpus = int(num_gpus_frm_yml)
         usr_indicated_wait_time = config.get('deploy_timeout', 900)
-        usr_indicated_worker_port = config.get('worker_port', "")
-        if usr_indicated_worker_port == "":
-            usr_indicated_worker_port = os.environ.get("FEDML_WORKER_PORT", "")
+        usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
         shm_size = config.get('shm_size', None)
         storage_opt = config.get('storage_opt', None)
         tmpfs = config.get('tmpfs', None)
@@ -96,17 +96,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             cpus = int(cpus)
         memory = config.get('memory', None)
 
-        if usr_indicated_worker_port == "":
-            usr_indicated_worker_port = None
-        else:
-            usr_indicated_worker_port = int(usr_indicated_worker_port)
-
-        worker_port_env = os.environ.get("FEDML_WORKER_PORT", "")
-        worker_port_from_config = config.get('worker_port', "")
-        logging.info(f"usr_indicated_worker_port {usr_indicated_worker_port}, worker port env {worker_port_env}, "
-              f"worker port from config {worker_port_from_config}")
-
-        usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
         inference_image_name = config.get('inference_image_name',
                                           ClientConstants.INFERENCE_SERVER_CUSTOME_IMAGE)
         image_pull_policy = config.get('image_pull_policy', SchedulerConstants.IMAGE_PULL_POLICY_IF_NOT_PRESENT)
@@ -144,6 +133,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         # If using customized image, then bootstrap + job will be the entry point
         enable_custom_image = config.get("enable_custom_image", False)
+        # inference_type = "custom"
         customized_image_entry_cmd = \
             "/bin/bash /home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
 
@@ -151,18 +141,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         docker_registry_user_password = config.get("docker_registry_user_password", "")
         docker_registry = config.get("docker_registry", "")
 
-        port_inside_container = int(config.get("port_inside_container", 2345))
-        use_triton = config.get("use_triton", False)
-        if use_triton:
-            inference_type = "triton"
-        else:
-            inference_type = "default"
-
-    # Config check
-    if src_code_dir == "":
-        raise Exception("Please indicate source_code_dir in the fedml_model_config.yaml")
-    if relative_entry == "":
-        logging.warning("You missed main_entry in the fedml_model_config.yaml")
+        port_inside_container = int(config.get("port", 2345))
 
     # Request the GPU ids for the deployment
     if num_gpus > 0:
@@ -175,22 +154,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             end_point_id, end_point_name, inference_model_name, edge_id, replica_rank+1, gpu_ids)
     logging.info("GPU ids allocated: {}".format(gpu_ids))
 
+    # Create the model serving dir if not exists
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir, exist_ok=True)
-    converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-    if os.path.exists(converted_model_path):
-        model_file_list = os.listdir(converted_model_path)
-        for model_file in model_file_list:
-            src_model_file = os.path.join(converted_model_path, model_file)
-            dst_model_file = os.path.join(model_serving_dir, model_file)
-            if os.path.isdir(src_model_file):
-                if not os.path.exists(dst_model_file):
-                    shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
-                                    ignore_dangling_symlinks=True)
-            else:
-                if not os.path.exists(dst_model_file):
-                    shutil.copyfile(src_model_file, dst_model_file)
 
     if inference_engine != ClientConstants.INFERENCE_ENGINE_TYPE_INT_DEFAULT:
         raise Exception(f"inference engine {inference_engine} is not supported")
@@ -228,13 +195,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     logging.info(f"Start pulling the inference image {inference_image_name}... with policy {image_pull_policy}")
     ContainerUtils.get_instance().pull_image_with_policy(image_pull_policy, inference_image_name)
 
-    volumns = []
+    volumes = []
     binds = {}
     environment = {}
 
     # data_cache_dir mounting
-    assert type(data_cache_dir_input) == dict or type(data_cache_dir_input) == str
-    if type(data_cache_dir_input) == str:
+    if isinstance(data_cache_dir_input, str):
         # In this case, we mount to the same folder, if it has ~, we replace it with /home/fedml
         src_data_cache_dir, dst_data_cache_dir = "", ""
         if data_cache_dir_input != "":
@@ -253,28 +219,30 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if type(src_data_cache_dir) == str and src_data_cache_dir != "":
                 logging.info("Start copying the data cache to the container...")
                 if os.path.exists(src_data_cache_dir):
-                    volumns.append(src_data_cache_dir)
+                    volumes.append(src_data_cache_dir)
                     binds[src_data_cache_dir] = {
                         "bind": dst_data_cache_dir,
                         "mode": "rw"
                     }
                     environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
-    else:
+    elif isinstance(data_cache_dir_input, dict):
         for k, v in data_cache_dir_input.items():
             if os.path.exists(k):
-                volumns.append(v)
+                volumes.append(v)
                 binds[k] = {
                     "bind": v,
                     "mode": "rw"
                 }
             else:
                 logging.warning(f"{k} does not exist, skip mounting it to the container")
-        logging.info(f"Data cache mount: {volumns}, {binds}")
+        logging.info(f"Data cache mount: {volumes}, {binds}")
+    else:
+        logging.warning("data_cache_dir_input is not a string or a dictionary, skip mounting it to the container")
 
     # Default mounting
     if not enable_custom_image or (enable_custom_image and relative_entry != ""):
         logging.info("Start copying the source code to the container...")
-        volumns.append(src_code_dir)
+        volumes.append(src_code_dir)
         binds[src_code_dir] = {
             "bind": dst_model_serving_dir,
             "mode": "rw"
@@ -284,7 +252,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     host_config_dict = {
         "binds": binds,
         "port_bindings": {
-            port_inside_container: usr_indicated_worker_port
+            port_inside_container: None
         },
         "shm_size": shm_size,
         "storage_opt": storage_opt,
@@ -312,7 +280,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     if not enable_custom_image:
         # For some image, the default user is root. Unified to fedml.
         environment["HOME"] = "/home/fedml"
-
     environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
     environment["FEDML_CURRENT_RUN_ID"] = end_point_id
     environment["FEDML_CURRENT_EDGE_ID"] = edge_id
@@ -326,12 +293,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         for key in extra_envs:
             environment[key] = extra_envs[key]
 
+    # Create the container
     try:
         host_config = client.api.create_host_config(**host_config_dict)
         new_container = client.api.create_container(
             image=inference_image_name,
             name=default_server_container_name,
-            volumes=volumns,
+            volumes=volumes,
             ports=[port_inside_container],  # port open inside the container
             environment=environment,
             host_config=host_config,
@@ -349,22 +317,18 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     while True:
         cnt += 1
         try:
-            if usr_indicated_worker_port is not None:
-                inference_http_port = usr_indicated_worker_port
-                break
-            else:
-                # Find the random port
-                port_info = client.api.port(new_container.get("Id"), port_inside_container)
-                inference_http_port = port_info[0]["HostPort"]
-                logging.info("inference_http_port: {}".format(inference_http_port))
-                break
+            # Find the random port
+            port_info = client.api.port(new_container.get("Id"), port_inside_container)
+            inference_http_port = port_info[0]["HostPort"]
+            logging.info("host port allocated: {}".format(inference_http_port))
+            break
         except:
             if cnt >= 5:
                 raise Exception("Failed to get the port allocation")
             time.sleep(3)
 
     # Logging the info from the container when starting
-    log_deployment_result(end_point_id, model_id, default_server_container_name,
+    log_deployment_output(end_point_id, model_id, default_server_container_name,
                           ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                           inference_model_name, inference_engine, inference_http_port, inference_type,
                           retry_interval=10, deploy_attempt_threshold=usr_indicated_retry_cnt,
@@ -373,9 +337,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
     # Return the running model name and the inference output url
     inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-        get_model_info(inference_model_name, inference_engine, inference_http_port,
-                       infer_host, False, inference_type, request_input_example=request_input_example,
-                       enable_custom_image=enable_custom_image)
+        check_container_readiness(inference_http_port=inference_http_port, infer_host=infer_host,
+                                  request_input_example=request_input_example)
 
     if inference_output_url == "":
         return running_model_name, "", None, None, None
@@ -426,9 +389,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         # If the container has exited, return True, means we should exit the logs
         try:
             inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(model_name, inference_engine, inference_port, infer_host,
-                               inference_type=inference_type, request_input_example=request_input_example,
-                               enable_custom_image=enable_custom_image)
+                check_container_readiness(inference_http_port=inference_port, infer_host=infer_host,
+                                          request_input_example=request_input_example)
             if inference_output_url != "":
                 logging.info("Log test for deploying model successfully, inference url: {}, "
                              "model metadata: {}, model config: {}".
@@ -443,7 +405,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_eng
         return False
 
 
-def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
+def log_deployment_output(end_point_id, model_id, cmd_container_name, cmd_type,
                           inference_model_name, inference_engine,
                           inference_http_port, inference_type="default",
                           retry_interval=10, deploy_attempt_threshold=10,
@@ -542,10 +504,10 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
         time.sleep(retry_interval)
 
 
-def is_client_inference_container_ready(infer_url_host, inference_http_port, inference_model_name, local_infer_url,
-                                        inference_type="default", model_version="", request_input_example=None):
+def is_client_inference_container_ready(infer_url_host, inference_http_port, readiness_check_type="default",
+                                        readiness_check_cmd=None, request_input_example=None):
 
-    if inference_type == "default":
+    if readiness_check_type == "default":
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
         try:
@@ -555,7 +517,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
         if not response or response.status_code != 200:
             return "", "", {}, {}
 
-        # Report the deployed model info
+        # Construct the model metadata (input and output)
         model_metadata = {}
         if request_input_example is not None and len(request_input_example) > 0:
             model_metadata["inputs"] = request_input_example
@@ -563,51 +525,19 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port, inf
             model_metadata["inputs"] = {"text": "What is a good cure for hiccups?"}
         model_metadata["outputs"] = []
         model_metadata["type"] = "default"
+
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
     else:
-        triton_server_url = "{}:{}".format(infer_url_host, inference_http_port)
-        if model_version == "" or model_version is None:
-            model_version = ClientConstants.INFERENCE_MODEL_VERSION
-        logging.info(
-            f"triton_server_url: {triton_server_url} model_version: {model_version} model_name: {inference_model_name}")
-        triton_client = http_client.InferenceServerClient(url=triton_server_url, verbose=False)
-        if not triton_client.is_model_ready(
-            model_name=inference_model_name, model_version=model_version
-        ):
-            return "", model_version, {}, {}
-        logging.info(f"Model {inference_model_name} is ready, start to get model metadata...")
-        model_metadata = triton_client.get_model_metadata(model_name=inference_model_name, model_version=model_version)
-        model_config = triton_client.get_model_config(model_name=inference_model_name, model_version=model_version)
-        version_list = model_metadata.get("versions", None)
-        if version_list is not None and len(version_list) > 0:
-            model_version = version_list[0]
-        else:
-            model_version = ClientConstants.INFERENCE_MODEL_VERSION
-
-        inference_output_url = "http://{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
-                                                                                    inference_http_port,
-                                                                                    ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
-                                                                                    inference_model_name,
-                                                                                    model_version)
-
-        return inference_output_url, model_version, model_metadata, model_config
-
-
-def get_model_info(model_name, inference_engine, inference_http_port, infer_host="127.0.0.1", is_hg_model=False,
-                   inference_type="default", request_input_example=None, enable_custom_image=False):
-    if model_name is None:
+        # TODO(Raphael): Support arbitrary readiness check command
+        logging.error(f"Unknown readiness check type: {readiness_check_type}")
         return "", "", {}, {}
 
-    local_infer_url = "{}:{}".format(infer_host, inference_http_port)
 
-    if is_hg_model:
-        inference_model_name = "{}_{}_inference".format(model_name, str(inference_engine))
-    else:
-        inference_model_name = model_name
-
+def check_container_readiness(inference_http_port, infer_host="127.0.0.1", request_input_example=None,
+                              readiness_check_type="default", readiness_check_cmd=None):
     response_from_client_container = is_client_inference_container_ready(
-        infer_host, inference_http_port, inference_model_name, local_infer_url,
-        inference_type, model_version="", request_input_example=request_input_example)
+        infer_host, inference_http_port, readiness_check_type, readiness_check_cmd,
+        request_input_example=request_input_example)
 
     return response_from_client_container
 
