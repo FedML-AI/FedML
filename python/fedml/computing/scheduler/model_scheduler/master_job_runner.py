@@ -250,14 +250,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         logging.info(f"Endpoint {end_point_id}; Device {device_id}; replica {replica_no}; "
                      f"run_operation {run_operation} model status {model_status}.")
 
-        # OPTIONAL DEBUG PARAMS
-        # this_run_controller = self.model_runner_mapping[run_id_str].replica_controller
-        # logging.info(f"The current replica controller state is "
-        #              f"Total version diff num {this_run_controller.total_replica_version_diff_num}")
-        # logging.info(f"self.request_json now {self.request_json}")    # request_json will be deprecated
-        # this_run_request_json = self.request_json
-        # logging.info(f"self.request_json now {this_run_request_json}")
-
         # Set redis + sqlite deployment result
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
 
