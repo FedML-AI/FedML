@@ -344,9 +344,13 @@ class FedMLModelCache(Singleton):
             result_payload = result_item_json["result"]
         return device_id, replica_no, result_payload
 
-    def get_idle_device(self, end_point_id, end_point_name,
-                        model_name, model_version,
-                        check_end_point_status=True, limit_specific_model_version=False):
+    def get_idle_device(self,
+                        end_point_id,
+                        end_point_name,
+                        model_name,
+                        model_version,
+                        check_end_point_status=True,
+                        limit_specific_model_version=False):
         # Deprecated the model status logic, query directly from the deployment result list
         idle_device_list = list()
 
