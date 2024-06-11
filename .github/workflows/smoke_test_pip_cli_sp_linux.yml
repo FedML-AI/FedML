@@ -61,9 +61,9 @@ jobs:
             echo "running on dev"
             root_path=/home/fedml
             cd $root_path
-            git clone https://github.com/Qigemingziba/FedML.git
+            git clone -b dev/v0.7.0 --single-branch https://github.com/Qigemingziba/FedML.git
             cd FedML
-            git checkout dev/v0.7.0
+            path=/home/fedml/FedML
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
       - name: sync git repo to local pip
