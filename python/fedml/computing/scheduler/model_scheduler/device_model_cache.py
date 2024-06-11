@@ -369,7 +369,7 @@ class FedMLModelCache(Singleton):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
 
-        logging.info(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
+        logging.debug(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
 
         if len(idle_device_list) <= 0:
             return None, None
@@ -398,7 +398,7 @@ class FedMLModelCache(Singleton):
             logging.info("Inference Device selection Failed:")
             logging.info(e)
 
-        logging.info(f"Using Round Robin, the device index is {selected_device_index}")
+        logging.debug(f"Using Round Robin, the device index is {selected_device_index}")
         idle_device_dict = idle_device_list[selected_device_index]
 
         # Note that within the same endpoint_id, there could be one device with multiple same models
@@ -411,7 +411,7 @@ class FedMLModelCache(Singleton):
         # Find deployment result from the target idle device.
         try:
             for result_item in result_list:
-                logging.info("enter the for loop")
+                logging.debug("enter the for loop")
                 device_id, _, result_payload = self.get_result_item_info(result_item)
                 found_end_point_id = result_payload["end_point_id"]
                 found_end_point_name = result_payload["end_point_name"]
@@ -425,7 +425,7 @@ class FedMLModelCache(Singleton):
                     if same_model_device_rank > 0:
                         same_model_device_rank -= 1
                         continue
-                    logging.info(f"The chosen device is {device_id}")
+                    logging.debug(f"The chosen device is {device_id}")
                     return result_payload, device_id
         except Exception as e:
             logging.info(str(e))
