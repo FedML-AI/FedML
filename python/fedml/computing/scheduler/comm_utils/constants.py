@@ -78,8 +78,6 @@ class SchedulerConstants:
     ENDPOINT_INFERENCE_READY_TIMEOUT = 15
     ENDPOINT_STATUS_CHECK_TIMEOUT = 60 * 3
 
-    MQTT_INFERENCE_TIMEOUT = 60 * 6
-
     TRAIN_PROVISIONING_TIMEOUT = 60 * 25
     TRAIN_STARTING_TIMEOUT = 60 * 15
     TRAIN_STOPPING_TIMEOUT = 60 * 5
@@ -110,6 +108,12 @@ class SchedulerConstants:
     IMAGE_PULL_POLICY_ALWAYS = "Always"
     IMAGE_PULL_POLICY_IF_NOT_PRESENT = "IfNotPresent"
     IMAGE_PULL_POLICY_NEVER = "Never"
+
+    REDIS_INFER_HOST = "127.0.0.1"
+    REDIS_ADDR = "local"
+    REDIS_PORT = "6379"
+    REDIS_PASSWORD = "fedml_default"
+
 
     @staticmethod
     def get_log_source(run_json):

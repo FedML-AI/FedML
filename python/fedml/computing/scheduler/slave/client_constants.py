@@ -154,6 +154,13 @@ class ClientConstants(object):
         return database_dir
 
     @staticmethod
+    def get_global_services_dir():
+        home_dir = expanduser("~")
+        global_services_dir = os.path.join(home_dir, ".fedml", "global_services")
+        os.makedirs(global_services_dir, exist_ok=True)
+        return global_services_dir
+
+    @staticmethod
     def cleanup_run_process(run_id):
         RunProcessUtils.cleanup_run_process(
             run_id, ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
@@ -453,7 +460,6 @@ class ClientConstants(object):
             logging.error(f"Failed to remove fedml parent pid {ppid_file} file with Exception: {e}, "
                           f"Traceback: {traceback.format_exc()}")
             pass
-
 
 if __name__ == "__main__":
     ignore = "*test*,abc*"

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import time
 
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -261,7 +262,10 @@ class FedMLModelDatabase(Singleton):
             self.db_base_dir = ServerConstants.get_database_dir()
 
         job_db_path = os.path.join(self.db_base_dir, FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
-        self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
+        if platform.system() == "Windows":
+            self.db_engine = create_engine('sqlite:///{}'.format(job_db_path), echo=False)
+        else:
+            self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)
         self.db_connection = db_session_class()

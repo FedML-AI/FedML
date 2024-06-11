@@ -46,9 +46,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         self.status_reporter = None
         self.user_name = args.user_name
 
-        if multiprocessing.get_start_method() != "fork":
-            # force all platforms (Windows/Linux/macOS) to use the same way (fork) for multiprocessing
-            multiprocessing.set_start_method("fork", force=True)
+        fedml._init_multiprocessing()
 
     def generate_topics(self):
         # generate the subscribed topics.

@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import time
 
 from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
@@ -25,7 +26,10 @@ class FedMLBaseDb:
         if self.db_connection is not None:
             return
 
-        self.db_engine = create_engine('sqlite:////{}'.format(self.db_path), echo=False)
+        if platform.system() == "Windows":
+            self.db_engine = create_engine('sqlite:///{}'.format(self.db_path), echo=False)
+        else:
+            self.db_engine = create_engine('sqlite:////{}'.format(self.db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)
         self.db_connection = db_session_class()

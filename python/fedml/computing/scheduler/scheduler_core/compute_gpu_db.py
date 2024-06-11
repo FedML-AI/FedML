@@ -8,6 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from fedml.core.common.singleton import Singleton
 from .base_db import FedMLBaseDb
 from .compute_utils import ComputeUtils
+from ..master.server_constants import ServerConstants
 
 Base = declarative_base()
 

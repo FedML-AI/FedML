@@ -66,6 +66,10 @@ requirements = [
     'wget',
     # Need to pin this version due to breaking change released in python docker sdk
     'requests<2.32',
+    'python-dotenv',
+    'protobuf>=3.20.2,<4.0dev',
+    'typer<0.10.0,>=0.3.0',
+    'fastapi-cli==0.0.1'
 ]
 
 requirements_extra_mpi = [
@@ -122,7 +126,7 @@ requirements_extra_nlp = [
 
 setup(
     name="fedml",
-    version="0.8.31",
+    version="0.9.0",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
