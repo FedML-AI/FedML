@@ -68,7 +68,7 @@ jobs:
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
           cd $homepath
-          bash ./devops/scripts/sync-fedml-pip.sh
+          # bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: server - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
