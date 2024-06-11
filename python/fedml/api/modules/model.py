@@ -21,6 +21,9 @@ def create(name: str, model: str = None, model_config: str = None) -> bool:
                 return True
             else:
                 return False
+        elif model.startswith("tutorial:quick_start"):
+            # ../../../python/examples/deploy/quick_start
+            return False
         else:
             # TODO: Support arbitrary model creation from GitHub / Nexus AI Job Store
             click.echo("Model {} is not supported yet.".format(model))

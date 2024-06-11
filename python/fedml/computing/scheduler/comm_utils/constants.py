@@ -109,6 +109,12 @@ class SchedulerConstants:
     IMAGE_PULL_POLICY_IF_NOT_PRESENT = "IfNotPresent"
     IMAGE_PULL_POLICY_NEVER = "Never"
 
+    REDIS_INFER_HOST = "127.0.0.1"
+    REDIS_ADDR = "local"
+    REDIS_PORT = "6379"
+    REDIS_PASSWORD = "fedml_default"
+
+
     @staticmethod
     def get_log_source(run_json):
         run_config = run_json.get("run_config", {})

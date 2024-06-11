@@ -192,14 +192,14 @@ class GeneralConstants:
     @staticmethod
     def get_ip_address(request_json, infer_host=None):
         # OPTION 1: Use local ip
-        ip = GeneralConstants.get_local_ip()
-
-        # OPTION 2: Auto detect public ip
-        if "parameters" in request_json and \
-                GeneralConstants.CONFIG_KEY_AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
-                request_json["parameters"][GeneralConstants.CONFIG_KEY_AUTO_DETECT_PUBLIC_IP]:
-            ip = GeneralConstants.get_public_ip()
-            logging.info("Auto detect public ip for master: " + ip)
+        # ip = GeneralConstants.get_local_ip()
+        #
+        # # OPTION 2: Auto detect public ip
+        # if "parameters" in request_json and \
+        #         GeneralConstants.CONFIG_KEY_AUTO_DETECT_PUBLIC_IP in request_json["parameters"] and \
+        #         request_json["parameters"][GeneralConstants.CONFIG_KEY_AUTO_DETECT_PUBLIC_IP]:
+        ip = GeneralConstants.get_public_ip()
+        logging.info("Auto detect public ip for master: " + ip)
 
         # OPTION 3: Use user indicated ip
         if infer_host is not None and infer_host != "127.0.0.1" and infer_host != "localhost":

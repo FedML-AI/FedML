@@ -10,7 +10,6 @@ import uuid
 
 import asyncio
 
-from ..comm_utils.constants import SchedulerConstants
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from .device_http_inference_protocol import FedMLHttpInference
 
