@@ -23,7 +23,8 @@ class FedMLBaseMasterAgent(ABC):
 
     def login(
             self, user_id, api_key=None, device_id=None,
-            os_name=None, role=None, runner_cmd=None
+            os_name=None, role=None, runner_cmd=None,
+            communication_manager=None, sender_message_queue=None, status_center_queue=None
     ):
         # Login account
         login_result = FedMLAccountManager.get_instance().login(
@@ -48,14 +49,18 @@ class FedMLBaseMasterAgent(ABC):
         # Initialize the protocol manager
         # noinspection PyBoardException
         try:
-            self._initialize_protocol_manager()
+            self._initialize_protocol_manager(
+                communication_manager=communication_manager,
+                sender_message_queue=sender_message_queue,
+                status_center_queue=status_center_queue)
         except Exception as e:
             FedMLAccountManager.write_login_failed_file(is_client=False)
             self.protocol_mgr.stop()
             raise e
 
         # Start the protocol manager to process the messages from MLOps and slave agents.
-        self.protocol_mgr.start()
+        if communication_manager is None:
+            self.protocol_mgr.start()
 
     @staticmethod
     def logout():
@@ -69,7 +74,11 @@ class FedMLBaseMasterAgent(ABC):
             login_result, agent_config=login_result.agent_config)
         self.protocol_mgr.run_as_edge_server_and_agent = True \
             if role == FedMLAccountManager.ROLE_EDGE_SERVER else False
-        self.protocol_mgr.run_as_cloud_agent = True if role == FedMLAccountManager.ROLE_CLOUD_AGENT else False
+        self.protocol_mgr.run_as_cloud_agent = True \
+            if role == FedMLAccountManager.ROLE_CLOUD_AGENT or role == FedMLAccountManager.ROLE_GPU_MASTER_SERVER \
+            else False
+        self.use_local_process_as_cloud_server = True \
+            if role == FedMLAccountManager.ROLE_GPU_MASTER_SERVER else self.use_local_process_as_cloud_server
         self.protocol_mgr.run_as_cloud_server = True if role == FedMLAccountManager.ROLE_CLOUD_SERVER else False
         self.protocol_mgr.args = login_result
         self.protocol_mgr.edge_id = login_result.edge_id
@@ -79,12 +88,17 @@ class FedMLBaseMasterAgent(ABC):
         self.protocol_mgr.enable_simulation_cloud_agent = self.enable_simulation_cloud_agent
         self.protocol_mgr.use_local_process_as_cloud_server = self.use_local_process_as_cloud_server
 
-    def _initialize_protocol_manager(self):
+    def _initialize_protocol_manager(
+            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+    ):
         # Init local database
         self._init_database()
 
         # Initialize the master protocol
-        self.protocol_mgr.initialize()
+        self.protocol_mgr.initialize(
+            communication_manager=communication_manager,
+            sender_message_queue=sender_message_queue,
+            status_center_queue=status_center_queue)
 
         # Report the IDLE status to MLOps
         self.mlops_metrics.report_server_training_status(

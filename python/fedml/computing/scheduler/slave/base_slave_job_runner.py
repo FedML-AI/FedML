@@ -7,6 +7,7 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 
+import fedml
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from .client_data_interface import FedMLClientDataInterface
@@ -259,7 +260,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         client_runner.server_id = request_json.get("server_id", "0")
         self.run_extend_queue_list = self._generate_extend_queue_list()
         logging.info("start the runner process.")
-        self.run_process = Process(target=client_runner.run, args=(
+        self.run_process = fedml.get_multiprocessing_context().Process(target=client_runner.run, args=(
             self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
             sender_message_queue, listener_message_queue, status_center_queue
         ))

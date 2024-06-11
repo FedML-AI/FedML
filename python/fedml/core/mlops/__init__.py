@@ -1453,12 +1453,14 @@ def release_resources(run_id, device_id):
         MLOpsConstants.MSG_TOPIC_LAUNCH_RELEASE_GPU_IDS, json.dumps(payload))
 
 
-def sync_deploy_id(device_id, master_deploy_id, worker_deploy_id_list):
-    fedml_args = get_fedml_args()
-
-    setup_log_mqtt_mgr()
-
+def sync_deploy_id(device_id, master_deploy_id, worker_deploy_id_list, message_center=None):
     payload = {"device_id": device_id, "master_deploy_id": master_deploy_id, "worker_deploy_ids": worker_deploy_id_list}
-    MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
-        MLOpsConstants.MSG_TOPIC_LAUNCH_SYNC_DEPLOY_IDS, json.dumps(payload))
+    if message_center is None:
+        fedml_args = get_fedml_args()
+        setup_log_mqtt_mgr()
+        MLOpsStore.mlops_log_mqtt_mgr.send_message_json(
+            MLOpsConstants.MSG_TOPIC_LAUNCH_SYNC_DEPLOY_IDS, json.dumps(payload))
+    else:
+        message_center.send_message( MLOpsConstants.MSG_TOPIC_LAUNCH_SYNC_DEPLOY_IDS, json.dumps(payload))
+
 

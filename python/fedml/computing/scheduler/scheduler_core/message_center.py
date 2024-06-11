@@ -10,6 +10,7 @@ from multiprocessing import Process, Queue
 import queue
 from os.path import expanduser
 
+import fedml
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ..slave.client_constants import ClientConstants
 from ....core.mlops.mlops_metrics import MLOpsMetrics
@@ -20,6 +21,7 @@ from .message_common import FedMLMessageEntity, FedMLMessageRecord
 class FedMLMessageCenter(object):
     FUNC_SETUP_MESSAGE_CENTER = "setup_message_center"
     FUNC_REBUILD_MESSAGE_CENTER = "rebuild_message_center"
+    FUNC_PROCESS_EXTRA_QUEUES = "process_extra_queues"
     ENABLE_SAVE_MESSAGE_TO_FILE = True
     PUBLISH_MESSAGE_RETRY_TIMEOUT = 60 * 1000.0
     PUBLISH_MESSAGE_RETRY_COUNT = 3
@@ -136,7 +138,7 @@ class FedMLMessageCenter(object):
         self.message_event.clear()
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
                                             sender_message_queue=self.sender_message_queue)
-        self.message_center_process = Process(
+        self.message_center_process = fedml.get_multiprocessing_context().Process(
             target=message_center.run_sender, args=(
                 self.message_event, self.sender_message_queue,
                 message_center_name
@@ -296,7 +298,10 @@ class FedMLMessageCenter(object):
     def setup_listener_message_queue(self):
         self.listener_message_queue = Queue()
 
-    def start_listener(self, sender_message_queue=None, listener_message_queue=None, agent_config=None, message_center_name=None):
+    def start_listener(
+            self, sender_message_queue=None, listener_message_queue=None,
+            agent_config=None, message_center_name=None, extra_queues=None
+    ):
         if self.listener_message_center_process is not None:
             return
 
@@ -310,11 +315,11 @@ class FedMLMessageCenter(object):
         self.listener_agent_config = agent_config
         message_runner = self.get_message_runner()
         message_runner.listener_agent_config = agent_config
-        self.listener_message_center_process = Process(
+        self.listener_message_center_process = fedml.get_multiprocessing_context().Process(
             target=message_runner.run_listener_dispatcher, args=(
                 self.listener_message_event, self.listener_message_queue,
                 self.listener_handler_funcs, sender_message_queue,
-                message_center_name
+                message_center_name, extra_queues
             )
         )
         self.listener_message_center_process.start()
@@ -350,7 +355,7 @@ class FedMLMessageCenter(object):
 
     def run_listener_dispatcher(
             self, message_event, message_queue, listener_funcs, sender_message_queue,
-            message_center_name
+            message_center_name, extra_queues
     ):
         self.listener_message_event = message_event
         self.listener_message_queue = message_queue
@@ -363,6 +368,9 @@ class FedMLMessageCenter(object):
             methodcaller(FedMLMessageCenter.FUNC_SETUP_MESSAGE_CENTER)(self)
         else:
             methodcaller(FedMLMessageCenter.FUNC_REBUILD_MESSAGE_CENTER, sender_message_queue)(self)
+
+        if extra_queues is not None:
+            methodcaller(FedMLMessageCenter.FUNC_PROCESS_EXTRA_QUEUES, extra_queues)(self)
 
         while True:
             message_entity = None

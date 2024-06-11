@@ -58,38 +58,51 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         # self.add_message_listener(self.topic_start_train, self.callback_start_train)
         pass
 
-    def initialize(self):
+    def initialize(
+            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+    ):
         # Generate the message topics
         self.generate_topics()
 
         # Setup MQTT connection
-        self.communication_mgr = MqttManager(
-            self.agent_config["mqtt_config"]["BROKER_HOST"],
-            self.agent_config["mqtt_config"]["BROKER_PORT"],
-            self.agent_config["mqtt_config"]["MQTT_USER"],
-            self.agent_config["mqtt_config"]["MQTT_PWD"],
-            self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            f"FedML_Agent_Daemon_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
-            self.topic_last_will,
-            json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
-        )
+        if communication_manager is None:
+            self.communication_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                f"FedML_Agent_Daemon_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
+                self.topic_last_will,
+                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
+            )
+        else:
+            self.communication_mgr = communication_manager
 
         # Add the message listeners for all topics
         self.add_protocol_handler()
 
         # Start the message center to process edge related messages.
-        self.setup_message_center()
+        if sender_message_queue is None:
+            self.setup_message_center()
+        else:
+            self.rebuild_message_center(sender_message_queue)
 
         # Setup the message listener queue
         self.setup_listener_message_queue()
 
         # Start the status center to process edge related status.
-        self.start_status_listener_center()
+        if status_center_queue is None:
+            self.start_status_listener_center()
+        else:
+            self.set_status_queue(status_center_queue)
+            self.rebuild_status_center(status_center_queue)
 
         # Start the message center for listener
         self.start_listener(sender_message_queue=self.message_center.get_sender_message_queue(),
                             agent_config=self.agent_config,
-                            message_center_name=self.message_center_name)
+                            message_center_name=self.message_center_name,
+                            extra_queues=[self.get_status_queue()])
 
         # Init extra items, e.g. database, recovery, etc.
         self._init_extra_items()
@@ -97,11 +110,11 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         # Setup MQTT connected listener
         self.communication_mgr.add_connected_listener(self.on_agent_communication_connected)
         self.communication_mgr.add_disconnected_listener(self.on_agent_communication_disconnected)
-        self.communication_mgr.connect()
 
     def start(self):
         # Start MQTT message loop
         try:
+            self.communication_mgr.connect()
             self.communication_mgr.loop_forever()
         except Exception as e:
             if str(e) == "Restarting after upgraded...":
@@ -231,6 +244,9 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         self.status_reporter.edge_id = self.edge_id
         self.status_reporter.server_agent_id = self.server_agent_id
 
+    def process_extra_queues(self, extra_queues):
+        pass
+
     def generate_status_report(self, run_id, edge_id, server_agent_id=None):
         status_reporter = MLOpsMetrics()
         status_reporter.set_messenger(self, send_message_func=self.send_status_message)
@@ -265,6 +281,15 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
             return self.message_status_runner
 
         return None
+
+    def get_get_protocol_communication_manager(self):
+        return self.communication_mgr
+
+    def get_protocol_sender_message_queue(self):
+        return self.message_center.get_sender_message_queue()
+
+    def get_get_protocol_status_center_queue(self):
+        return self.get_status_queue()
 
     def send_agent_active_msg(self, edge_id):
         active_msg = {"ID": edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_IDLE}

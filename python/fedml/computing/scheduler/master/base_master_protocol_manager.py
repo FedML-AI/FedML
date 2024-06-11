@@ -197,7 +197,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.run_edge_ids[run_id_str] = edge_id_list
 
         # report server running status to master agent
-        if not self.run_as_cloud_server:
+        if not self.run_as_cloud_server and not self.run_as_cloud_agent:
             self.mlops_metrics.report_server_id_status(
                 run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_STARTING, edge_id=self.edge_id,
                 server_id=self.edge_id, server_agent_id=self.edge_id, running_json=payload)
@@ -390,6 +390,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def callback_request_device_status_in_job(self, topic, payload):
         self.response_device_status_in_job(topic, payload)
 
+    def process_extra_queues(self, extra_queues):
+        self.rebuild_status_center(extra_queues[0])
+
     def generate_protocol_manager(self):
         message_status_runner = self._generate_protocol_manager_instance(
             self.args, agent_config=self.agent_config
@@ -476,6 +479,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.setup_listener_for_run_logs(run_id)
 
     def setup_listeners_for_edge_status(self, run_id, edge_ids, server_id):
+        if self.run_as_cloud_agent:
+            return
         edge_status_topic = "fl_client/flclient_agent_" + str(server_id) + "/status"
         payload = {"run_id": run_id, "init_all_edge_id_list": edge_ids, "init_server_id": server_id}
         self.callback_edge_status(edge_status_topic, json.dumps(payload))
@@ -486,6 +491,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             self.subscribe_msg(edge_status_topic)
 
     def remove_listeners_for_edge_status(self, edge_ids=None):
+        if self.run_as_cloud_agent:
+            return
+
         if edge_ids is None:
             edge_ids = self.request_json["edgeids"]
 

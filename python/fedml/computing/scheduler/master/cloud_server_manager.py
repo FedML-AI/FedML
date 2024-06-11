@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import platform
 import traceback
 
 import fedml
@@ -32,6 +33,9 @@ class FedMLCloudServerManager:
 
     @staticmethod
     def start_local_cloud_server(user, version, cloud_device_id, runner_cmd_encoded):
+        if platform.system() != "Windows":
+            os.setsid()
+
         print(f"start cloud server, device id {cloud_device_id}, runner cmd {runner_cmd_encoded}")
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_login.py")

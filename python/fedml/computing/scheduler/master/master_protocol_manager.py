@@ -40,4 +40,5 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager, ABC):
         # Complete the job runner
         self._get_job_runner_manager().complete_job_runner(
             run_id, args=self.args, server_id=server_id, request_json=complete_payload,
-            run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server)
+            run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server,
+            use_local_process_as_cloud_server=self.use_local_process_as_cloud_server)
