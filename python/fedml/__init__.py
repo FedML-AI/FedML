@@ -467,6 +467,13 @@ def get_multiprocessing_context():
         return multiprocessing.get_context("fork")
 
 
+def get_process(target=None, args=None):
+    if platform.system() == "Windows":
+        return multiprocessing.Process(target=target, args=args)
+    else:
+        return multiprocessing.get_context("fork").Process(target=target, args=args)
+
+
 def set_env_version(version):
     set_env_kv("FEDML_ENV_VERSION", version)
     load_env()

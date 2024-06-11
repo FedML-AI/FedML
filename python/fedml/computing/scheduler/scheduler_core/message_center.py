@@ -1,12 +1,12 @@
 import json
 import logging
 import os
+import platform
 import threading
 import time
 import traceback
 import uuid
 import multiprocessing
-from multiprocessing import Process, Queue
 import queue
 from os.path import expanduser
 
@@ -133,17 +133,25 @@ class FedMLMessageCenter(object):
         return self.sender_message_queue
 
     def start_sender(self, message_center_name=None):
-        self.sender_message_queue = Queue()
+        self.sender_message_queue = multiprocessing.Manager().Queue(-1)
         self.message_event = multiprocessing.Event()
         self.message_event.clear()
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
                                             sender_message_queue=self.sender_message_queue)
-        self.message_center_process = fedml.get_multiprocessing_context().Process(
-            target=message_center.run_sender, args=(
-                self.message_event, self.sender_message_queue,
-                message_center_name
+        if platform.system() == "Windows":
+            self.message_center_process = multiprocessing.Process(
+                target=message_center.run_sender, args=(
+                    self.message_event, self.sender_message_queue,
+                    message_center_name
+                )
             )
-        )
+        else:
+            self.message_center_process = fedml.get_process(
+                target=message_center.run_sender, args=(
+                    self.message_event, self.sender_message_queue,
+                    message_center_name
+                )
+            )
         self.message_center_process.start()
 
     def stop(self):
@@ -296,7 +304,7 @@ class FedMLMessageCenter(object):
         return self.listener_message_queue
 
     def setup_listener_message_queue(self):
-        self.listener_message_queue = Queue()
+        self.listener_message_queue = multiprocessing.Manager().Queue(-1)
 
     def start_listener(
             self, sender_message_queue=None, listener_message_queue=None,
@@ -307,7 +315,7 @@ class FedMLMessageCenter(object):
 
         if listener_message_queue is None:
             if self.listener_message_queue is None:
-                self.listener_message_queue = Queue()
+                self.listener_message_queue = multiprocessing.Manager().Queue(-1)
         else:
             self.listener_message_queue = listener_message_queue
         self.listener_message_event = multiprocessing.Event()
@@ -315,13 +323,22 @@ class FedMLMessageCenter(object):
         self.listener_agent_config = agent_config
         message_runner = self.get_message_runner()
         message_runner.listener_agent_config = agent_config
-        self.listener_message_center_process = fedml.get_multiprocessing_context().Process(
-            target=message_runner.run_listener_dispatcher, args=(
-                self.listener_message_event, self.listener_message_queue,
-                self.listener_handler_funcs, sender_message_queue,
-                message_center_name, extra_queues
+        if platform.system() == "Windows":
+            self.listener_message_center_process = multiprocessing.Process(
+                target=message_runner.run_listener_dispatcher, args=(
+                    self.listener_message_event, self.listener_message_queue,
+                    self.listener_handler_funcs, sender_message_queue,
+                    message_center_name, extra_queues
+                )
             )
-        )
+        else:
+            self.listener_message_center_process = fedml.get_process(
+                target=message_runner.run_listener_dispatcher, args=(
+                    self.listener_message_event, self.listener_message_queue,
+                    self.listener_handler_funcs, sender_message_queue,
+                    message_center_name, extra_queues
+                )
+            )
         self.listener_message_center_process.start()
 
     def check_listener_message_stop_event(self):

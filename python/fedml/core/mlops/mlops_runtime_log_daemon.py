@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import platform
 import shutil
 import threading
 import time
@@ -431,8 +432,12 @@ class MLOpsRuntimeLogDaemon:
             self.log_process_event_map[event_map_id] = multiprocessing.Event()
         self.log_process_event_map[event_map_id].clear()
         log_processor.log_process_event = self.log_process_event_map[event_map_id]
-        log_child_process = fedml.get_multiprocessing_context().Process(
-            target=log_processor.log_process, args=(self.log_process_event_map[event_map_id],))
+        if platform.system() == "Windows":
+            log_child_process = multiprocessing.Process(
+                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id],))
+        else:
+            log_child_process = fedml.get_process(
+                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id],))
         # process = threading.Thread(target=log_processor.log_process)
         # process.start()
         if log_child_process is not None:
