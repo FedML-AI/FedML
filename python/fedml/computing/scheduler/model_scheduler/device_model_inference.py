@@ -230,7 +230,7 @@ async def _predict(
             model_metrics.set_start_time(start_time)
 
             # Send inference request to idle device
-            logging.info("inference url {}.".format(inference_output_url))
+            logging.debug("inference url {}.".format(inference_output_url))
             if inference_output_url != "":
                 input_list = input_json.get("inputs", input_json)
                 stream_flag = input_json.get("stream", False)
@@ -329,7 +329,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
     res = (idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url,
            connectivity_type)
-    logging.info(f"found idle device with metrics: {res}")
+    logging.debug(f"found idle device with metrics: {res}")
 
     return res
 
@@ -352,7 +352,7 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
                     output_list,
                     inference_type=inference_type,
                     timeout=request_timeout_sec)
-                logging.info(f"Use http inference. return {response_ok}")
+                logging.debug(f"Use http inference. return {response_ok}")
                 return inference_response
         elif connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP_PROXY:
             logging.warning("Use http proxy inference.")

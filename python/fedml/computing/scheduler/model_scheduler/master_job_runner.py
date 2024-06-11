@@ -453,7 +453,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             time.sleep(3)
             self.trigger_completed_event()
 
-
     def cleanup_runner_process(self, run_id):
         ServerConstants.cleanup_run_process(run_id, not_kill_subprocess=True)
 
