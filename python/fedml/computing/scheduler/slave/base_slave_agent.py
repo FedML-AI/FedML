@@ -24,7 +24,8 @@ class FedMLBaseSlaveAgent(ABC):
 
     def login(
             self, userid, api_key=None, device_id=None,
-            os_name=None, need_to_check_gpu=False, role=None
+            os_name=None, need_to_check_gpu=False, role=None,
+            communication_manager=None, sender_message_queue=None, status_center_queue=None
     ):
         # Preprocess the login args
         if need_to_check_gpu:
@@ -57,16 +58,20 @@ class FedMLBaseSlaveAgent(ABC):
         # Initialize the protocol manager
         # noinspection PyBoardException
         try:
-            self._initialize_protocol_manager()
+            self._initialize_protocol_manager(
+                communication_manager=communication_manager,
+                sender_message_queue=sender_message_queue,
+                status_center_queue=status_center_queue)
         except Exception as e:
             FedMLAccountManager.write_login_failed_file(is_client=True)
             self.protocol_mgr.stop()
             raise e
 
+        return login_result
+
+    def start(self):
         # Start the protocol manager to process the messages from MLOps and slave agents.
         self.protocol_mgr.start()
-
-        return login_result
 
     @staticmethod
     def logout():
@@ -84,12 +89,17 @@ class FedMLBaseSlaveAgent(ABC):
         self.protocol_mgr.user_name = login_result.user_name
         self.protocol_mgr.agent_config = login_result.agent_config
 
-    def _initialize_protocol_manager(self):
+    def _initialize_protocol_manager(
+            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+    ):
         # Init local database
         self._init_database()
 
         # Initialize the master protocol
-        self.protocol_mgr.initialize()
+        self.protocol_mgr.initialize(
+            communication_manager=communication_manager,
+            sender_message_queue=sender_message_queue,
+            status_center_queue=status_center_queue)
 
         # Start the client API process
         self._start_slave_api()
@@ -121,6 +131,9 @@ class FedMLBaseSlaveAgent(ABC):
                 should_capture_stdout=False,
                 should_capture_stderr=False
             )
+
+    def get_protocol_manager(self):
+        return self.protocol_mgr
 
     @abstractmethod
     def _get_log_file_dir(self):

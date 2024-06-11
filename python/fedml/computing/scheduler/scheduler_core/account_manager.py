@@ -25,6 +25,7 @@ class FedMLAccountManager(Singleton):
     ROLE_CLOUD_SERVER = "cloud_server"
     ROLE_EDGE_DEVICE = "client"
     ROLE_GPU_PROVIDER = "gpu_supplier"
+    ROLE_GPU_MASTER_SERVER = "gpu_master_server"
     ROLE_DEPLOY_MASTER_ON_PREM = "md.on_premise_device.master"
     ROLE_DEPLOY_WORKER_ON_PREM = "md.on_premise_device"
 
@@ -33,6 +34,7 @@ class FedMLAccountManager(Singleton):
     DEVICE_ID_SUFFIX_CLOUD_SERVER = ".Public.Server"
     DEVICE_ID_SUFFIX_EDGE_DEVICE = ".Edge.Device"
     DEVICE_ID_SUFFIX_GPU_PROVIDER = ".Edge.GPU.Supplier"
+    DEVICE_ID_SUFFIX_GPU_MASTER_SERVER = ".Edge.GPU.MasterServer"
     DEVICE_ID_SUFFIX_DEPLOY = "MDA"
     DEVICE_ID_SUFFIX_DEPLOY_MASTER_ON_PREM = ".OnPremise.Master.Device"
     DEVICE_ID_SUFFIX_DEPLOY_WORKER_ON_PREM = ".OnPremise.Device"
@@ -144,6 +146,9 @@ class FedMLAccountManager(Singleton):
             device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_EDGE_DEVICE
         elif role == FedMLAccountManager.ROLE_GPU_PROVIDER:
             device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_GPU_PROVIDER
+        elif role == FedMLAccountManager.ROLE_GPU_MASTER_SERVER:
+            device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_GPU_MASTER_SERVER
+            is_master = True
         elif role == FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM:
             device_id_suffix = FedMLAccountManager.DEVICE_ID_SUFFIX_DEPLOY_MASTER_ON_PREM
             is_master = True

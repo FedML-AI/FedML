@@ -142,6 +142,9 @@ class FedMLStatusCenter(object):
     def get_status_queue(self):
         return self.status_queue
 
+    def set_status_queue(self, status_queue):
+        self.status_queue = status_queue
+
     def status_center_process_master_status(self, topic, payload):
         pass
 

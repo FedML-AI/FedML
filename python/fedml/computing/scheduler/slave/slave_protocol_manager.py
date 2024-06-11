@@ -1,7 +1,5 @@
 import copy
-import json
 import os
-import fedml
 from ..comm_utils.job_cleanup import JobCleanup
 from .base_slave_protocol_manager import FedMLBaseSlaveProtocolManager
 from .launch_job_runner_manager import FedMLLaunchJobRunnerManager
@@ -34,7 +32,8 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
     def _process_connection_ready(self):
         from fedml.core.mlops import sync_deploy_id
         sync_deploy_id(
-            self.edge_id, self.model_device_server.edge_id, self.model_device_client_edge_id_list)
+            self.edge_id, self.model_device_server_id, self.model_device_client_edge_id_list,
+            message_center=self.message_center)
 
     # Override
     def _process_connection_lost(self):
@@ -73,9 +72,8 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
                     model_device_client.redis_port = infer_redis_port
                 if infer_redis_password is not None:
                     model_device_client.redis_password = infer_redis_password
-                model_device_client.start()
                 self.model_device_client_list.append(model_device_client)
-                self.model_device_client_edge_id_list.append(model_device_client.get_edge_id())
+                self.model_device_client_edge_id_list.append(model_device_client.bind_device())
 
         self.args = copy.deepcopy(in_args)
         if self.model_device_server is None:
@@ -91,8 +89,7 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
             if infer_redis_password is not None:
                 self.model_device_server.redis_password = infer_redis_password
 
-            self.model_device_server.start()
-            self.model_device_server_id = self.model_device_server.get_edge_id()
+            self.model_device_server_id = self.model_device_server.bind_device()
 
         # Save the deployed master and worker id list to the environment variable.
         os.environ["FEDML_DEPLOY_MASTER_ID"] = str(self.model_device_server_id)

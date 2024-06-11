@@ -1,10 +1,12 @@
 import base64
 import json
 import logging
+import os
 import time
 from abc import ABC
 from multiprocessing import Process
 from .cloud_server_manager import FedMLCloudServerManager
+from ..comm_utils.run_process_utils import RunProcessUtils
 from ..scheduler_core.scheduler_base_job_runner_manager import FedMLSchedulerBaseJobRunnerManager
 
 
@@ -38,25 +40,37 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
 
     def stop_job_runner(
             self, run_id, args=None, server_id=None, request_json=None,
-            run_as_cloud_agent=False, run_as_cloud_server=False
+            run_as_cloud_agent=False, run_as_cloud_server=False,
+            use_local_process_as_cloud_server=False
     ):
         super().stop_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
             stopping_process = Process(
-                target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
+                target=FedMLCloudServerManager.stop_cloud_server,
+                args=(run_id, server_id, args.agent_config))
             stopping_process.start()
+
+            if run_as_cloud_server:
+                time.sleep(1)
+                RunProcessUtils.kill_process(os.getpid())
 
     def complete_job_runner(
             self, run_id, args=None, server_id=None, request_json=None,
-            run_as_cloud_agent=False, run_as_cloud_server=False
+            run_as_cloud_agent=False, run_as_cloud_server=False,
+            use_local_process_as_cloud_server=False
     ):
         super().complete_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
             stopping_process = Process(
-                target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
+                target=FedMLCloudServerManager.stop_cloud_server,
+                args=(run_id, server_id, args.agent_config))
             stopping_process.start()
+
+            if run_as_cloud_server:
+                time.sleep(1)
+                RunProcessUtils.kill_process(os.getpid())
 
     def _start_cloud_server(
             self, args, run_id, request_json, edge_id=None,
