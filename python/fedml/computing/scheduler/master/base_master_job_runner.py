@@ -425,7 +425,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         server_runner.edge_id_status_queue = self.run_edge_id_status_queue
         server_runner.edge_device_info_queue = self.run_edge_device_info_queue
         self.run_extend_queue_list = self._generate_extend_queue_list()
-        self.run_process = Process(
+        self.run_process = fedml.get_multiprocessing_context().Process(
             target=server_runner.run if not is_server_job else server_runner.run_server_job, args=(
                 self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                 self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,

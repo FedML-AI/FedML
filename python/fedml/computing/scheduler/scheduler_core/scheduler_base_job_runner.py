@@ -9,6 +9,8 @@ import time
 import traceback
 import zipfile
 import queue
+
+import fedml
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
@@ -209,7 +211,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         from multiprocessing import Process
         completed_event = multiprocessing.Event()
         info_queue = multiprocessing.Queue()
-        download_process = Process(target=self.download_package_proc,
+        download_process = fedml.get_multiprocessing_context().Process(target=self.download_package_proc,
                                    args=(package_url, local_package_file, completed_event, info_queue))
         download_process.start()
         allowed_block_download_time = 60

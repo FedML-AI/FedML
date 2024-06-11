@@ -9,6 +9,7 @@ from os.path import expanduser
 import multiprocessing
 import psutil
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 from .mlops_utils import MLOpsUtils
@@ -76,52 +77,52 @@ class MLOpsDevicePerfStats(object):
         self.device_realtime_stats_event.clear()
         perf_stats.device_realtime_stats_event = self.device_realtime_stats_event
 
-        self.device_realtime_stats_process = multiprocessing.Process(
+        self.device_realtime_stats_process = fedml.get_multiprocessing_context().Process(
             target=perf_stats.report_device_realtime_stats_entry,
             args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client))
         self.device_realtime_stats_process.start()
 
         if self.enable_job_total_monitor:
-            self.job_total_monitor_process = multiprocessing.Process(
+            self.job_total_monitor_process = fedml.get_multiprocessing_context().Process(
                 target=perf_stats.report_device_realtime_stats_entry,
                 args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_TOTAL_MONITOR, self.is_client))
             self.job_total_monitor_process.start()
         else:
             if self.is_client:
-                self.monitor_endpoint_master_process = multiprocessing.Process(
+                self.monitor_endpoint_master_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER))
                 self.monitor_endpoint_master_process.start()
 
-                self.monitor_run_slave_process = multiprocessing.Process(
+                self.monitor_run_slave_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
                 self.monitor_run_slave_process.start()
 
-                self.monitor_endpoint_logs_process = multiprocessing.Process(
+                self.monitor_endpoint_logs_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
                 self.monitor_endpoint_logs_process.start()
 
                 # Register auto-scaler process
-                self.monitor_auto_scaler_process = multiprocessing.Process(
+                self.monitor_auto_scaler_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER))
                 self.monitor_auto_scaler_process.start()
 
                 # Register replica number report channel
-                self.monitor_replica_num_process = multiprocessing.Process(
+                self.monitor_replica_num_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM))
                 self.monitor_replica_num_process.start()
 
                 # Register replica performance report channel
-                self.monitor_replica_perf_process = multiprocessing.Process(
+                self.monitor_replica_perf_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF))
                 self.monitor_replica_perf_process.start()
             else:
-                self.monitor_run_master_process = multiprocessing.Process(
+                self.monitor_run_master_process = fedml.get_multiprocessing_context().Process(
                     target=perf_stats.report_device_realtime_stats_entry,
                     args=(self.device_realtime_stats_event, ROLE_RUN_MASTER))
                 self.monitor_run_master_process.start()

@@ -5,6 +5,8 @@ from enum import Enum, unique
 import multiprocessing
 from multiprocessing import Process, Queue
 import queue
+
+import fedml
 from .message_common import FedMLMessageEntity, FedMLStatusEntity
 from .message_center import FedMLMessageCenter
 import traceback
@@ -114,7 +116,7 @@ class FedMLStatusCenter(object):
         self.status_runner = self.get_status_runner()
         target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
             self.status_runner.run_status_dispatcher_in_slave
-        self.status_center_process = Process(
+        self.status_center_process = fedml.get_multiprocessing_context().Process(
             target=target_func, args=(
                 self.status_event, self.status_queue, self.status_sender_message_center_queue,
                 self.status_listener_message_center_queue

@@ -10,6 +10,7 @@ from multiprocessing import Process, Queue
 import queue
 from os.path import expanduser
 
+import fedml
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ..slave.client_constants import ClientConstants
 from ....core.mlops.mlops_metrics import MLOpsMetrics
@@ -137,7 +138,7 @@ class FedMLMessageCenter(object):
         self.message_event.clear()
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
                                             sender_message_queue=self.sender_message_queue)
-        self.message_center_process = Process(
+        self.message_center_process = fedml.get_multiprocessing_context().Process(
             target=message_center.run_sender, args=(
                 self.message_event, self.sender_message_queue,
                 message_center_name
@@ -314,7 +315,7 @@ class FedMLMessageCenter(object):
         self.listener_agent_config = agent_config
         message_runner = self.get_message_runner()
         message_runner.listener_agent_config = agent_config
-        self.listener_message_center_process = Process(
+        self.listener_message_center_process = fedml.get_multiprocessing_context().Process(
             target=message_runner.run_listener_dispatcher, args=(
                 self.listener_message_event, self.listener_message_queue,
                 self.listener_handler_funcs, sender_message_queue,
