@@ -16,7 +16,7 @@
 #  --help                     Show this message and exit.
 
 # build client package
-cd ../../../examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+cd ../../../examples/federate/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 echo "$PWD"
 
 SOURCE=client
