@@ -30,8 +30,6 @@ if __name__ == "__main__":
     if args.api_key == "":
         args.api_key = args.user
 
-    fedml.set_env_version("test")
-
     if args.local_on_premise_platform_host != "127.0.0.1":
         fedml.set_local_on_premise_platform_host(args.local_on_premise_platform_host)
     if args.local_on_premise_platform_port != 80:

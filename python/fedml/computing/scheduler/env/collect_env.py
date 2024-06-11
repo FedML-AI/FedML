@@ -128,6 +128,7 @@ def load_env():
 
 
 def set_env_kv(key, value):
+    os.environ[key] = value
     env_config_file = get_env_file()
     dotenv.set_key(env_config_file, key, value)
     load_env()

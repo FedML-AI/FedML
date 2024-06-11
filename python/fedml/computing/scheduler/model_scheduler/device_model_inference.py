@@ -1,15 +1,19 @@
+import argparse
 import json
 import logging
 import time
 import traceback
 import os
 
-from urllib.parse import urlparse
 from typing import Any, Mapping, MutableMapping, Union
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import StreamingResponse, JSONResponse
 
+import fedml
+from fedml.api.modules.constants import ModuleConstants
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol import FedMLHttpInference
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -17,44 +21,31 @@ from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedML
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
-from fedml.computing.scheduler.comm_utils import sys_utils
-
-try:
-    from pydantic import BaseSettings
-except Exception as e:
-    pass
-try:
-    from pydantic_settings import BaseSettings
-except Exception as e:
-    pass
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 
 
 class Settings:
-    redis_addr = "127.0.0.1"
-    redis_port = 6379
-    redis_password = "fedml_default"
-    end_point_name = ""
-    model_name = ""
-    model_version = ""
-    model_infer_url = "127.0.0.1"
-    version = "dev"
-    use_mqtt_inference = False
-    use_worker_gateway = False
-    ext_info = "2b34303961245c4f175f2236282d7a272c040b0904747579087f6a760112030109010c215d54505707140005190a051c347f365c4a430c020a7d39120e26032a78730f797f7c031f0901657e75"
+    server_name = "DEVICE_INFERENCE_GATEWAY"
+    fedml.load_env()
+    redis_addr = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, SchedulerConstants.REDIS_ADDR)
+    redis_port = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
+    redis_password = os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_PASSWORD)
+    model_infer_host = os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST, SchedulerConstants.REDIS_INFER_HOST)
+    version = fedml.get_env_version()
+    mqtt_config = MLOpsConfigs.fetch_mqtt_config()
 
 
 api = FastAPI()
 
 FEDML_MODEL_CACHE = FedMLModelCache.get_instance()
-FEDML_MODEL_CACHE.set_redis_params(
-    redis_addr=Settings.redis_addr,
-    redis_port=Settings.redis_port,
-    redis_password=Settings.redis_password)
+FEDML_MODEL_CACHE.set_redis_params(redis_addr=Settings.redis_addr,
+                                   redis_port=Settings.redis_port,
+                                   redis_password=Settings.redis_password)
 
 
 @api.middleware("http")
 async def auth_middleware(request: Request, call_next):
-
     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
         try:
             # Attempt to parse the JSON body.
@@ -64,10 +55,10 @@ async def auth_middleware(request: Request, call_next):
                 {"error": True, "message": "Invalid JSON."},
                 status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Get total pending requests.
-        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter()
+        # Get endpoint's total pending requests.
+        end_point_id = request_json.get("end_point_id", None)
+        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
         if pending_requests_num:
-            end_point_id = request_json.get("end_point_id", None)
             # Fetch metrics of the past k=3 requests.
             pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
                 end_point_id=end_point_id,
@@ -75,7 +66,7 @@ async def auth_middleware(request: Request, call_next):
 
             # Get the request timeout from the endpoint settings.
             request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
-                .get("request_timeout_s", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
+                .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
 
             # Only proceed if the past k metrics collection is not empty.
             if pask_k_metrics:
@@ -85,13 +76,19 @@ async def auth_middleware(request: Request, call_next):
                 mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
 
                 # If timeout threshold is exceeded then cancel and return time out error.
-                if (mean_latency * pending_requests_num) > request_timeout_s:
+                should_block = (mean_latency * pending_requests_num) > request_timeout_s
+                if should_block:
                     return JSONResponse(
                         {"error": True, "message": "Request timed out."},
                         status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
     response = await call_next(request)
     return response
+
+
+@api.on_event("startup")
+async def startup_event():
+    configure_logging()
 
 
 @api.get('/')
@@ -140,7 +137,7 @@ async def predict_openai(end_point_id, request: Request):
     try:
         response = await _predict(end_point_id, input_json, header)
     except Exception as e:
-        response = {"error": True, "message": f"{traceback.format_exc()}"}
+        response = {"error": True, "message": f"{traceback.format_exc()}, exception {e}"}
 
     return response
 
@@ -176,9 +173,8 @@ async def _predict(
         input_json,
         header=None
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
-
     # Always increase the pending requests counter on a new incoming request.
-    FEDML_MODEL_CACHE.update_pending_requests_counter(increase=True)
+    FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
     inference_response = {}
 
     try:
@@ -210,21 +206,21 @@ async def _predict(
             if not is_endpoint_activated(in_end_point_id):
                 inference_response = {"error": True, "message": "endpoint is not activated."}
                 logging_inference_request(input_json, inference_response)
-                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
                 return inference_response
 
             # Found idle inference device
             idle_device, end_point_id, model_id, model_name, model_version, inference_host, inference_output_url = \
                 found_idle_inference_device(in_end_point_id, in_end_point_name, in_model_name, in_model_version)
             if idle_device is None or idle_device == "":
-                FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+                FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
                 return {"error": True, "error_code": status.HTTP_404_NOT_FOUND,
                         "message": "can not found active inference worker for this endpoint."}
 
             # Start timing for model metrics
             model_metrics = FedMLModelMetrics(end_point_id, in_end_point_name,
                                               model_id, in_model_name, model_version,
-                                              Settings.model_infer_url,
+                                              Settings.model_infer_host,
                                               Settings.redis_addr,
                                               Settings.redis_port,
                                               Settings.redis_password,
@@ -257,18 +253,18 @@ async def _predict(
                 pass
 
             logging_inference_request(input_json, inference_response)
-            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+            FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
             return inference_response
         else:
             inference_response = {"error": True, "message": "token is not valid."}
             logging_inference_request(input_json, inference_response)
-            FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+            FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
             return inference_response
 
     except Exception as e:
         logging.error("Inference Exception: {}".format(traceback.format_exc()))
         # Need to reduce the pending requests counter in whatever exception that may be raised.
-        FEDML_MODEL_CACHE.update_pending_requests_counter(decrease=True)
+        FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, decrease=True)
 
 
 def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_name=None,
@@ -283,7 +279,8 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
         model_name = ""
         if in_end_point_name is not None:
             end_point_name = in_end_point_name
-            model_name = redis_key[len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
+            model_name = redis_key[
+                         len(f"{FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG}-{end_point_id}-{in_end_point_name}-"):]
         else:
             # e.g. FEDML_MODEL_DEPLOYMENT_STATUS--1234-dummy_endpoint_name-dummy_model_name
             try:
@@ -308,7 +305,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     inference_output_url = ""
     model_version = ""
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    payload, idle_device = FEDML_MODEL_CACHE.\
+    payload, idle_device = FEDML_MODEL_CACHE. \
         get_idle_device(end_point_id, end_point_name, in_model_name, in_model_version)
     if payload is not None:
         logging.info("found idle deployment result {}".format(payload))
@@ -328,7 +325,6 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
                                  inference_type="default", has_public_ip=True):
-
     request_timeout_sec = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
         .get("request_timeout_sec", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
 
@@ -367,16 +363,7 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
             return inference_response
 
         if not has_public_ip:
-            connect_str = "@FEDML@"
-            random_out = sys_utils.random2(Settings.ext_info, "FEDML@9999GREAT")
-            config_list = random_out.split(connect_str)
-            agent_config = dict()
-            agent_config["mqtt_config"] = dict()
-            agent_config["mqtt_config"]["BROKER_HOST"] = config_list[0]
-            agent_config["mqtt_config"]["BROKER_PORT"] = int(config_list[1])
-            agent_config["mqtt_config"]["MQTT_USER"] = config_list[2]
-            agent_config["mqtt_config"]["MQTT_PWD"] = config_list[3]
-            agent_config["mqtt_config"]["MQTT_KEEPALIVE"] = int(config_list[4])
+            agent_config = {"mqtt_config": Settings.mqtt_config}
             mqtt_inference = FedMLMqttInference(
                 agent_config=agent_config,
                 run_id=end_point_id)
@@ -410,18 +397,16 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
 def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
-
-    cached_token = FEDML_MODEL_CACHE.\
+    cached_token = FEDML_MODEL_CACHE. \
         get_end_point_token(end_point_id, end_point_name, model_name)
     if cached_token is not None and str(cached_token) == str(token):
         return True
-
     return False
+
 
 def is_endpoint_activated(end_point_id):
     if end_point_id is None:
         return False
-
     activated = FEDML_MODEL_CACHE.get_end_point_activation(end_point_id)
     return activated
 
@@ -432,13 +417,33 @@ def logging_inference_request(request, response):
 
     try:
         log_dir = ServerConstants.get_log_file_dir()
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
         inference_log_file = os.path.join(log_dir, "inference.log")
         with open(inference_log_file, "a") as f:
             f.writelines([f"request: {request}, response: {response}\n"])
     except Exception as ex:
-        logging.info("failed to log inference request and response to file.")
+        logging.info(f"failed to log inference request and response to file with exception {ex}")
+
+
+def configure_logging():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    args = parser.parse_args([])
+
+    setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
+    setattr(args, "run_id", -1)
+    setattr(args, "role", "server")
+    setattr(args, "using_mlops", True)
+    setattr(args, "config_version", fedml.get_env_version())
+
+    runner_info = ServerConstants.get_runner_infos()
+    if not (runner_info and "edge_id" in runner_info):
+        raise Exception("Inference gateway couldn't be started as edge_id couldn't be parsed from runner_infos.yaml")
+    setattr(args, "edge_id", int(runner_info.get("edge_id")))
+
+    MLOpsRuntimeLog.get_instance(args).init_logs(log_level=logging.INFO)
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(log_run_id=args.run_id, log_device_id=args.edge_id,
+                                                                 log_source=Settings.server_name,
+                                                                 log_file_prefix=Settings.server_name)
+    logging.info("start the log processor for inference gateway")
 
 
 if __name__ == "__main__":
