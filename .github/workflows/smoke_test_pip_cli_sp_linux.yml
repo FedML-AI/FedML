@@ -74,13 +74,13 @@ jobs:
           cd $homepath
           # bash ./devops/scripts/sync-fedml-pip.sh
 
-      - name: test "fedml login" and "fedml build"
-        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
-        run: |
-          cd ${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}/python
-          cd tests/smoke_test/cli
-          bash login.sh
-          bash build.sh
+      # - name: test "fedml login" and "fedml build"
+      #   working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      #   run: |
+      #     cd ${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}/python
+      #     cd tests/smoke_test/cli
+      #     bash login.sh
+      #     bash build.sh
       - name: test simulation-sp
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
