@@ -144,7 +144,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 # No device is added, updated or removed
                 logging.info("No device is added, updated or removed. No action needed for reconciliation.")
                 ip = GeneralConstants.get_ip_address(self.request_json)
-                master_port = os.getenv("FEDML_MASTER_PORT", None)
+                master_port = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                 if master_port is not None:
                     inference_port = int(master_port)
                 model_inference_port = inference_port
@@ -299,9 +300,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 else:
                     # This is the last worker that failed, so we should continue to "ABORTED" status
                     model_config_parameters = self.request_json["parameters"]
-                    inference_port = model_config_parameters.get("server_internal_port",
-                                                                 ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
-                    inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+                    inference_port_external = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                                             ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
                     ip = GeneralConstants.get_ip_address(self.request_json)
                     if ip.startswith("http://") or ip.startswith("https://"):
                         model_inference_url = "{}/inference/{}".format(ip, end_point_id)
@@ -753,9 +753,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = model_config_parameters.get("server_internal_port",  # Internal port is for the gateway
-                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
-        inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+        inference_port = int(os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                        ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
 
         return run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
