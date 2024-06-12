@@ -80,6 +80,6 @@ jobs:
       - name: test simulation-sp
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
-          cd quick_start/parrot
+          cd examples/federate/quick_start/parrot
           python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml

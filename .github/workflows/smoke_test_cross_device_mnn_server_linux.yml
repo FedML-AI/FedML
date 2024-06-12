@@ -82,6 +82,6 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          cd quick_start/beehive
+          cd examples/federate/quick_start/beehive
           timeout 60 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
           
