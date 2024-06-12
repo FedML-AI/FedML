@@ -54,21 +54,16 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             echo "running on master"
-            path=/home/actions-runner/fedml-master
+            path=/home/fedml/FedML
             cd $path
+            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
-            root_path=/home/fedml
-            cd $root_path
-            # 检查目标目录是否存在
-            if [ -d "FedML" ]; then
-                git pull
-                git checkout dev/v0.7.0
-            fi
-            git clone -b dev/v0.7.0 --single-branch https://github.com/Qigemingziba/FedML.git
-            cd FedML
             path=/home/fedml/FedML
+            cd $path
+            git pull
+            git checkout ${{ steps.extract_branch.outputs.branch }}
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
       - name: sync git repo to local pip

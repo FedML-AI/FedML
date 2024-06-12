@@ -35,7 +35,6 @@ RUN git clone https://github.com/Qigemingziba/FedML.git
 #USER docker
 # RUN cd FedML/python && pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -e ./ --use-deprecated=legacy-resolver  
 
-ENV REPO=Qigemingziba/FedML ACCESS_TOKEN=AGMK3P54EHEPHNRPWRQ3IJLGNARAS
+ENV REPO=Qigemingziba/FedML ACCESS_TOKEN=AGMK3P6YMJOZV4VKATVVRWDGNETGW
 # set the entrypoint to the start.sh script
 CMD ./start.sh ${REPO} ${ACCESS_TOKEN} 
-
