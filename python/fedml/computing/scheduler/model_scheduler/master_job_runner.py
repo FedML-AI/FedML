@@ -369,12 +369,8 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             """
             When all the devices have finished the add / delete / update operation
             """
-            # Generate one unified inference api
-            # Note that here we use the gateway port instead of the inference port that is used by the slave device
-            model_config_parameters = request_json["parameters"]
-            inference_port = model_config_parameters.get("server_internal_port",
-                                                         ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
-            inference_port_external = model_config_parameters.get("server_external_port", inference_port)
+            inference_port_external = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
             ip = GeneralConstants.get_ip_address(request_json)
 
             if ip.startswith("http://") or ip.startswith("https://"):
