@@ -1,3 +1,3 @@
-docker build -t fedml/github-action-runner:latest -f ./Dockerfile .
 docker login
-docker push fedml/github-action-runner:latest
+docker build -t fedml/github-action-runner-torch:wx_test -f ./Dockerfile .
+docker push fedml/github-action-runner-torch:wx_test
