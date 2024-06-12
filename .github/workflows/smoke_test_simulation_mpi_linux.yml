@@ -40,8 +40,8 @@ jobs:
         - os: ubuntu-latest
           mpi: mpich
           install-mpi: |
-              sudo apt-get update
-              sudo apt install -y mpich libmpich-dev
+              apt-get update
+              apt install -y mpich libmpich-dev
 #        - os: ubuntu-latest
 #          mpi: openmpi
 #          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
