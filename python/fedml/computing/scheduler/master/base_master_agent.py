@@ -123,6 +123,9 @@ class FedMLBaseMasterAgent(ABC):
         in_args.server_agent_id = edge_id
         MLOpsRuntimeLog.get_instance(in_args).init_logs()
 
+    def get_protocol_manager(self):
+        return self.protocol_mgr
+
     @abstractmethod
     def _get_log_file_dir(self):
         pass

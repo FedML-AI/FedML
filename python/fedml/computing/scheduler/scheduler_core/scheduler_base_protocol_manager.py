@@ -288,7 +288,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
     def get_protocol_sender_message_queue(self):
         return self.message_center.get_sender_message_queue()
 
-    def get_get_protocol_status_center_queue(self):
+    def get_protocol_status_center_queue(self):
         return self.get_status_queue()
 
     def send_agent_active_msg(self, edge_id):
