@@ -459,6 +459,14 @@ class ClientConstants(object):
         return ip
 
     @staticmethod
+    def get_inference_worker_proxy_port() -> int:
+        # Use dotenv to load the environment variables
+        fedml.load_env()
+        worker_proxy_port = int(os.getenv(ClientConstants.ENV_CLIENT_PROXY_PORT_KEY,
+                                      default=ClientConstants.LOCAL_CLIENT_API_PORT))
+        return worker_proxy_port
+
+    @staticmethod
     def check_process_is_running(process_id):
         for proc in psutil.process_iter():
             try:

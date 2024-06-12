@@ -80,8 +80,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         client_api_cmd = "fedml.computing.scheduler.model_scheduler.device_client_api:api"
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
 
-        worker_proxy_port = ClientConstants.LOCAL_CLIENT_API_PORT
-        worker_proxy_port_frm_env = os.environ.get(ClientConstants.ENV_CLIENT_PROXY_PORT_KEY, None)
+        worker_proxy_port = ClientConstants.get_inference_worker_proxy_port()
         if worker_proxy_port_frm_env is not None:
             worker_proxy_port = int(worker_proxy_port_frm_env)
 

@@ -115,7 +115,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             message_center=self.message_center)
 
         # start unified inference gateway process if not started
-        FedMLDeployMasterJobRunner.start_device_inference_gateway(inference_port=inference_port)
+        FedMLDeployMasterJobRunner.start_device_inference_gateway()
 
         # start inference monitor process
         FedMLDeployMasterJobRunner.stop_device_inference_monitor(
@@ -144,8 +144,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 # No device is added, updated or removed
                 logging.info("No device is added, updated or removed. No action needed for reconciliation.")
                 ip = GeneralConstants.get_ip_address(self.request_json)
-                master_port = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                master_port = ServerConstants.get_inference_master_gateway_port()
                 if master_port is not None:
                     inference_port = int(master_port)
                 model_inference_port = inference_port
@@ -300,8 +299,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 else:
                     # This is the last worker that failed, so we should continue to "ABORTED" status
                     model_config_parameters = self.request_json["parameters"]
-                    inference_port_external = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                                             ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+                    inference_port_external = ServerConstants.get_inference_master_gateway_port()
                     ip = GeneralConstants.get_ip_address(self.request_json)
                     if ip.startswith("http://") or ip.startswith("https://"):
                         model_inference_url = "{}/inference/{}".format(ip, end_point_id)
@@ -369,8 +367,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             """
             When all the devices have finished the add / delete / update operation
             """
-            inference_port_external = os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                                     ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)
+            inference_port_external = ServerConstants.get_inference_master_gateway_port()
             ip = GeneralConstants.get_ip_address(request_json)
 
             if ip.startswith("http://") or ip.startswith("https://"):
@@ -453,12 +450,10 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         ServerConstants.cleanup_run_process(run_id, not_kill_subprocess=True)
 
     @staticmethod
-    def start_device_inference_gateway(inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
+    def start_device_inference_gateway():
         # start unified inference server
         python_program = get_python_program()
-        master_port_frm_env = os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY, None)
-        if master_port_frm_env is not None:
-            inference_port = int(master_port_frm_env)
+        inference_port = ServerConstants.get_inference_master_gateway_port()
         if not ServerConstants.is_running_on_k8s():
             logging.info(f"start the model inference gateway...")
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
@@ -539,7 +534,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 if not is_activated:
                     continue
 
-                FedMLDeployMasterJobRunner.start_device_inference_gateway(inference_port=inference_port)
+                FedMLDeployMasterJobRunner.start_device_inference_gateway()
 
                 FedMLDeployMasterJobRunner.stop_device_inference_monitor(
                     run_id, end_point_name, model_id, model_name, model_version)
@@ -753,8 +748,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         model_version = model_config["model_version"]
         model_config_parameters = running_json.get("parameters", {})
 
-        inference_port = int(os.environ.get(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                        ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
+        inference_port = ServerConstants.get_inference_master_gateway_port()
 
         return run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \

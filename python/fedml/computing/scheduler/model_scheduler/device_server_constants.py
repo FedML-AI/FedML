@@ -350,6 +350,15 @@ class ServerConstants(object):
         return runner_info
 
     @staticmethod
+    def get_inference_master_gateway_port():
+        # Use dotenv to load the environment variables
+        fedml.load_env()
+        master_inference_port = int(os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                            default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
+        return master_inference_port
+
+
+    @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
         local_pkg_data_dir = ServerConstants.get_data_dir()
         os.makedirs(local_pkg_data_dir, exist_ok=True)
