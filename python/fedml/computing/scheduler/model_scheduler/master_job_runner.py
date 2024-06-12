@@ -460,7 +460,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     def start_device_inference_gateway(inference_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
         # start unified inference server
         python_program = get_python_program()
-        master_port_frm_env = os.getenv(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT, None)
+        master_port_frm_env = os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY, None)
         if master_port_frm_env is not None:
             inference_port = int(master_port_frm_env)
         if not ServerConstants.is_running_on_k8s():
