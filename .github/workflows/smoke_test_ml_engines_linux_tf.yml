@@ -78,7 +78,7 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
+          cd examples/federate/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_server.sh $run_id
@@ -88,7 +88,7 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
+          cd examples/federate/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_client.sh 1 $run_id
@@ -98,7 +98,7 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
+          cd examples/federate/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_client.sh 2 $run_id
