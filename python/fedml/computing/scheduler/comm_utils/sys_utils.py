@@ -114,6 +114,8 @@ def get_sys_runner_info():
     except:
         pass
 
+    enable_simulation_gpu, simulation_gpu_count = get_simulation_gpu_env()
+
     if enable_simulation_gpu:
         gpu_count = simulation_gpu_count
         gpu_total_mem = "80G"
@@ -128,9 +130,26 @@ def get_sys_runner_info():
         gpu_count, gpu_vendor, cpu_count, gpu_device_name
 
 
+def get_simulation_gpu_env():
+    _enable_simulation_gpu = enable_simulation_gpu
+    _simulation_gpu_count = simulation_gpu_count
+
+    env_enable_simulation_gpu = os.getenv("FEDML_ENABLE_SIMULATION_GPU", None)
+    if env_enable_simulation_gpu is not None:
+        _enable_simulation_gpu = True if env_enable_simulation_gpu == "1" or env_enable_simulation_gpu == 1 else False
+
+    env_simulation_gpu_count = os.getenv("FEDML_SIMULATION_GPU_COUNT", None)
+    if env_simulation_gpu_count is not None:
+        _simulation_gpu_count = int(env_simulation_gpu_count)
+
+    return _enable_simulation_gpu, _simulation_gpu_count
+
+
 # GPU list: [GPU(ID, uuid, load, memoryTotal, memoryUsed, memoryFree, driver,
 # gpu_name, serial, display_mode, display_active, temperature)]
 def get_gpu_list():
+    enable_simulation_gpu, simulation_gpu_count = get_simulation_gpu_env()
+
     if enable_simulation_gpu:
         ret_gpu_list = [
             {'ID': 0, 'uuid': 'GPU-dab987f0-be09-294a-96d6-f9afeef49877', 'load': 1.0,
@@ -184,6 +203,8 @@ def get_gpu_list():
 
 
 def get_available_gpu_id_list(limit=1) -> List[int]:
+    enable_simulation_gpu, simulation_gpu_count = get_simulation_gpu_env()
+
     if enable_simulation_gpu:
         available_gpu_ids = [0, 1, 2, 3, 4, 5, 6, 7]
         if simulation_gpu_count > 8:
