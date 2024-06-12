@@ -63,8 +63,8 @@ jobs:
             cd $root_path
             # 检查目标目录是否存在
             if [ -d "FedML" ]; then
-                echo "Directory 'FedML' already exists. Removing it."
-                rm -rf FedML
+                git pull
+                git checkout dev/v0.7.0
             fi
             git clone -b dev/v0.7.0 --single-branch https://github.com/Qigemingziba/FedML.git
             cd FedML

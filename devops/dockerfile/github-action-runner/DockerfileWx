@@ -1,0 +1,41 @@
+# base
+# FROM fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
+FROM fedml/fedml:light
+# set the github runner version
+# ARG RUNNER_VERSION="2.317.0"
+
+# update the base packages and add a non-sudo user
+#RUN apt-get update -y && apt-get upgrade -y && useradd -m docker
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y git
+
+# cd into the user directory, download and unzip the github actions runner
+WORKDIR /home/fedml
+
+RUN  mkdir actions-runner && cd actions-runner \
+    && curl -o actions-runner-linux-arm64-2.317.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-linux-arm64-2.317.0.tar.gz \
+    && tar xzf ./actions-runner-linux-arm64-2.317.0.tar.gz
+
+# RUN  mkdir actions-runner && cd actions-runner \
+#     && curl -o actions-runner-linux-x64-2.317.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-linux-x64-2.317.0.tar.gz \
+#     && tar xzf ./actions-runner-linux-x64-2.317.0.tar.gz
+
+# install some additional dependencies
+#RUN chown -R docker ~docker && /home/docker/actions-runner/bin/installdependencies.sh
+# copy over the start.sh script
+COPY start.sh start.sh
+
+# make the script executable
+RUN chmod +x start.sh
+
+RUN git clone https://github.com/Qigemingziba/FedML.git 
+# RUN cp -f /usr/bin/python /usr/bin/python-backup && ln -s /usr/bin/python3 python
+# COPY FedML FedML
+# since the config and run script for actions are not allowed to be run by root,
+# set the user to "docker" so all subsequent commands are run as the docker user
+#USER docker
+# RUN cd FedML/python && pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -e ./ --use-deprecated=legacy-resolver  
+
+ENV REPO=Qigemingziba/FedML ACCESS_TOKEN=AGMK3P54EHEPHNRPWRQ3IJLGNARAS
+# set the entrypoint to the start.sh script
+CMD ./start.sh ${REPO} ${ACCESS_TOKEN} 
+
