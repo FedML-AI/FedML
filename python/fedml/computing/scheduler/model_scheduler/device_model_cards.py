@@ -14,7 +14,6 @@ from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
-from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList, FedMLEndpointDetail
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
