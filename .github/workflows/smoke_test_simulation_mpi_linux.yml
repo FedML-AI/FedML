@@ -50,6 +50,12 @@ jobs:
       shell: bash
       run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
       id: extract_branch
+    - name: Install MPI
+      if: matrix.mpi == 'mpich'
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y mpich libmpich-dev
+          
     - id: fedml_source_code_home
       name: cd to master or dev branch and git pull
       shell: bash
