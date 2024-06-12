@@ -81,8 +81,6 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
 
         worker_proxy_port = ClientConstants.get_inference_worker_proxy_port()
-        if worker_proxy_port_frm_env is not None:
-            worker_proxy_port = int(worker_proxy_port_frm_env)
 
         if client_api_pids is None or len(client_api_pids) <= 0:
             # Start local API services
