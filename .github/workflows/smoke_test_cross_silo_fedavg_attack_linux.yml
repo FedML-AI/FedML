@@ -29,8 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macOS ]
-        arch: [ ARM64 ]
+        os: [ ubuntu-latest]
+        arch: [ X64 ]
         python-version: ['3.8']
         client-index: ['0', '1', '2', '3', '4']
 #        exclude:
