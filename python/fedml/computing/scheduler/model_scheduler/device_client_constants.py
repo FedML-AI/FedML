@@ -74,6 +74,7 @@ class ClientConstants(object):
     K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
 
     LOCAL_CLIENT_API_PORT = 22030
+    ENV_CLIENT_PROXY_PORT_KEY = "FEDML_WORKER_INFERENCE_PROXY_PORT"
 
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
@@ -456,6 +457,14 @@ class ClientConstants(object):
         except Exception as e:
             logging.info("Failed to get public ip: {}".format(e))
         return ip
+
+    @staticmethod
+    def get_inference_worker_proxy_port() -> int:
+        # Use dotenv to load the environment variables
+        fedml.load_env()
+        worker_proxy_port = int(os.getenv(ClientConstants.ENV_CLIENT_PROXY_PORT_KEY,
+                                      default=ClientConstants.LOCAL_CLIENT_API_PORT))
+        return worker_proxy_port
 
     @staticmethod
     def check_process_is_running(process_id):

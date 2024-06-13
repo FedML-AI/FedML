@@ -103,6 +103,7 @@ class ServerConstants(object):
 
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
     MODEL_INFERENCE_DEFAULT_PORT = 2203
+    ENV_MASTER_INFERENCE_PORT_KEY = "FEDML_MASTER_INFERENCE_GATEWAY_PORT"
     MODEL_CACHE_KEY_EXPIRE_TIME = 1 * 10
 
     INFERENCE_REQUEST_TIMEOUT_KEY = "request_timeout_sec"
@@ -347,6 +348,15 @@ class ServerConstants(object):
         except Exception as e:
             logging.error(f"Failed to parse runner info: {e}")
         return runner_info
+
+    @staticmethod
+    def get_inference_master_gateway_port():
+        # Use dotenv to load the environment variables
+        fedml.load_env()
+        master_inference_port = int(os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
+                                            default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
+        return master_inference_port
+
 
     @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
