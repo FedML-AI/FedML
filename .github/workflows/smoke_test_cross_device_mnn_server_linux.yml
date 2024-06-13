@@ -70,6 +70,8 @@ jobs:
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
           cd $homepath
+          cd python
+          pip install -e ./
           # bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: Install MNN

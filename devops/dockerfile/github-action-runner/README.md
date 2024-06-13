@@ -25,4 +25,4 @@ Use the following commands to run 30 runners in the FedML-AI/FedML repo and run 
 ./runner-start.sh FedML-AI/Front-End-Auto-Test webtest-runner 6 AXRYPL57ZD35ZGDWZKRKFHLEMGLTK /home/chaoyanghe/sourcecode/FedML4GitHubAction-Dev /home/chaoyanghe/sourcecode/FedML4GitHubAction /home/chaoyanghe/fedml_data
 
 
-./runner-start.sh Qigemingziba/FedML fedml-runner 6 AGMK3P4W5EM5PXNYTZXXIMTGNF4MW  ./local_data
+bash runner-start.sh Qigemingziba/FedML fedml-runner 6 AGMK3P4W5EM5PXNYTZXXIMTGNF4MW  ./local_data
