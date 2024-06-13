@@ -71,7 +71,9 @@ jobs:
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
           cd $homepath
-          bash ./devops/srcipts/install-fedml.sh
+          cd python
+          pip install -e ./
+          # bash ./devops/srcipts/install-fedml.sh
           # bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: server - cross-silo - attack
