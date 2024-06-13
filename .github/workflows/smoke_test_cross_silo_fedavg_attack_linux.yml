@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest]
+        os: [ ubuntu-latest ]
         arch: [ X64 ]
         python-version: ['3.8']
         client-index: ['0', '1', '2', '3', '4']
@@ -71,6 +71,7 @@ jobs:
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
           cd $homepath
+          bash ./devops/srcipts/install-fedml.sh
           # bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: server - cross-silo - attack
