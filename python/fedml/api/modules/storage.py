@@ -110,13 +110,26 @@ def download(data_name, api_key, service, dest_path, show_progress=True) -> FedM
             logging.error(error_message)
             return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
         download_url = metadata.download_url
-        zip_file_name = data_name + ".zip"
-        path_local = os.path.abspath(zip_file_name)
+        given_extension = os.path.splitext(data_name)[1]
+        is_file = True
+        if(given_extension is None or given_extension ==""):
+            is_file = False
+
+        if not is_file:
+            download_file_name = data_name + ".zip"
+        else:
+            download_file_name = data_name
+        path_local = os.path.abspath(download_file_name)
         dest_path = os.path.abspath(dest_path) if dest_path else data_name
-        if _download_using_presigned_url(download_url, zip_file_name, show_progress=show_progress):
+        if _download_using_presigned_url(download_url, download_file_name, show_progress=show_progress):
             try:
-                shutil.unpack_archive(path_local, dest_path)
-                os.remove(path_local)
+                if not is_file:
+                    shutil.unpack_archive(path_local, dest_path)
+                    os.remove(path_local)
+                else:
+                    if not os.path.exists(dest_path):
+                        os.makedirs(dest_path)
+                    shutil.move(path_local,dest_path)
                 abs_dest_path = os.path.abspath(dest_path)
                 return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
                                                                         f"{abs_dest_path}", data=abs_dest_path)

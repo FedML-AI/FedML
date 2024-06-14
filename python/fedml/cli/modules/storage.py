@@ -47,7 +47,7 @@ def validate_argument(ctx, param, value):
 @click.help_option("--help", "-h")
 @click.argument("data_path", nargs=1, callback=validate_argument)
 @click.option("--name", "-n", type=str, help="Name your data to store. If not provided, the name will be the same as "
-                                             "the data file or directory name.")
+                                             "the data file or directory name. For files, extension need not be mentioned!")
 @click.option("--description", "-d", type=str, help="Add description to your data to store. If not provided, "
                                                     "the description will be empty.")
 @click.option("--user_metadata", "-um", type=str, help="User-defined metadata in the form of a dictionary, for instance, "
