@@ -435,32 +435,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         logging.info("process status in the broadcast job status callback.")
         self.process_status(run_id, job_status, self.edge_id)
 
-    def generate_protocol_manager(self):
-        message_status_runner = self._generate_protocol_manager_instance(
-            self.args, agent_config=self.agent_config
-        )
-        message_status_runner.request_json = self.request_json
-        message_status_runner.disable_client_login = self.disable_client_login
-        message_status_runner.message_center_name = self.message_center_name
-        message_status_runner.run_id = self.run_id
-        message_status_runner.edge_id = self.edge_id
-        message_status_runner.edge_user_name = self.edge_user_name
-        message_status_runner.edge_extra_url = self.edge_extra_url
-        message_status_runner.server_agent_id = self.server_agent_id
-        message_status_runner.current_device_id = self.current_device_id
-        message_status_runner.unique_device_id = self.unique_device_id
-        message_status_runner.subscribed_topics = self.subscribed_topics
-        message_status_runner.running_request_json = self.running_request_json
-        message_status_runner.request_json = self.start_request_json
-        message_status_runner.user_name = self.user_name
-        message_status_runner.general_edge_id = self.general_edge_id
-        message_status_runner.server_id = self.server_id
-        message_status_runner.model_device_server_id = self.model_device_server_id
-        message_status_runner.model_device_client_edge_id_list = self.model_device_client_edge_id_list
-        message_status_runner.status_queue = self.get_status_queue()
-
-        return message_status_runner
-
     def process_status(self, run_id, status, edge_id, master_id=None):
         run_id_str = str(run_id)
 
