@@ -38,27 +38,42 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
 
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+
+    data_type = _get_data_type(data_path)
     
-    if(not _check_data_path(data_path)):
+    if(data_type == "invalid"):
         return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
-    archive_path, message = _archive_data(data_path)
-    if not archive_path:
+    if(data_type == "dir"):
+        to_upload_path, message = _archive_data(data_path)
+        name = os.path.splitext(os.path.basename(to_upload_path))[0] if name is None else name
+        file_name = name + ".zip"
+    else:
+        to_upload_path = data_path
+        base_name = os.path.basename(to_upload_path)
+        given_extension = os.path.splitext(name)[1]
+        if given_extension is None or given_extension == "":
+            given_extension = os.path.splitext(base_name)[1]
+        name = base_name if name is None else name + given_extension
+        file_name = name
+
+    if not to_upload_path:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
-    file_name = name + ".zip"
-    dest_path = os.path.join(user_id, file_name)
-    file_size = os.path.getsize(archive_path)
 
-    file_uploaded_url, message = _upload_multipart(api_key, file_name, archive_path, show_progress,
+    dest_path = os.path.join(user_id, file_name)
+    file_size = os.path.getsize(to_upload_path)
+
+    file_uploaded_url, message = _upload_multipart(api_key, file_name, to_upload_path, show_progress,
                                                        out_progress_to_err,
                                                        progress_desc, metadata)
 
-
-    os.remove(archive_path)
+    if(data_type == "dir"):
+        os.remove(to_upload_path)
     if not file_uploaded_url:
-        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {archive_path}")
+        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {to_upload_path}")
+
+    print("url: ",file_uploaded_url)
 
     json_data = {
         "datasetName": name,
@@ -438,10 +453,12 @@ def _get_storage_service(service):
     else:
         raise NotImplementedError(f"Service {service} not implemented")
 
-def _check_data_path(data_path):
-    if os.path.isdir(data_path) or os.path.isfile(data_path):
-        return True
-    return False
+def _get_data_type(data_path):
+    if os.path.isdir(data_path):
+        return "dir"
+    elif os.path.isfile(data_path):
+        return "file"
+    return "invalid"
 
 
 def _archive_data(data_path: str) -> (str, str):
