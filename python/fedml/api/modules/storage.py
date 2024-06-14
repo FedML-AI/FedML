@@ -51,10 +51,15 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
     else:
         to_upload_path = data_path
         base_name = os.path.basename(to_upload_path)
-        given_extension = os.path.splitext(name)[1]
-        if given_extension is None or given_extension == "":
-            given_extension = os.path.splitext(base_name)[1]
-        name = base_name if name is None else name + given_extension
+        file_extension = os.path.splitext(base_name)[1]
+        given_extension = None
+        if name is not None:
+            given_extension = os.path.splitext(name)[1]
+            if given_extension is None or given_extension == "":
+                name = name + file_extension
+        else:
+            name = base_name
+
         file_name = name
 
     if not to_upload_path:
