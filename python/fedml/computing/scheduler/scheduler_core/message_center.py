@@ -297,9 +297,6 @@ class FedMLMessageCenter(object):
             self.listener_topics.remove(topic)
             self.listener_handler_funcs.pop(topic)
 
-    def get_message_runner(self):
-        return None
-
     def get_listener_message_queue(self):
         return self.listener_message_queue
 
@@ -321,11 +318,9 @@ class FedMLMessageCenter(object):
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config
-        message_runner = self.get_message_runner()
-        message_runner.listener_agent_config = agent_config
         if platform.system() == "Windows":
             self.listener_message_center_process = multiprocessing.Process(
-                target=message_runner.run_listener_dispatcher, args=(
+                target=self.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
                     message_center_name, extra_queues
@@ -333,7 +328,7 @@ class FedMLMessageCenter(object):
             )
         else:
             self.listener_message_center_process = fedml.get_process(
-                target=message_runner.run_listener_dispatcher, args=(
+                target=self.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
                     message_center_name, extra_queues

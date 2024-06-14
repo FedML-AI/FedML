@@ -256,32 +256,6 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
             status_reporter.server_agent_id = server_agent_id
         return status_reporter
 
-    @abstractmethod
-    def generate_protocol_manager(self):
-        # Generate the protocol manager instance and set the attribute values.
-        return None
-
-    def get_message_runner(self):
-        if self.message_status_runner is not None:
-            return self.message_status_runner
-
-        self.message_status_runner = self.generate_protocol_manager()
-        self.message_status_runner.status_queue = self.get_status_queue()
-
-        return self.message_status_runner
-
-    def get_status_runner(self):
-        if self.message_status_runner is None:
-            self.get_message_runner()
-            if self.message_status_runner is not None:
-                self.message_status_runner.sender_message_queue = self.message_center.get_sender_message_queue()
-
-        if self.message_status_runner is not None:
-            self.message_status_runner.sender_message_queue = self.message_center.get_sender_message_queue()
-            return self.message_status_runner
-
-        return None
-
     def get_get_protocol_communication_manager(self):
         return self.communication_mgr
 

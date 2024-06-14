@@ -93,7 +93,6 @@ class FedMLStatusCenter(object):
         self.status_listener_message_center_queue = None
         self.status_message_center = None
         self.status_manager_instance = None
-        self.status_runner = None
         self.is_deployment_status_center = False
 
     def __repr__(self):
@@ -103,9 +102,6 @@ class FedMLStatusCenter(object):
             attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
         )
 
-    def get_status_runner(self):
-        return None
-
     def start_status_center(self, sender_message_center_queue=None,
                             listener_message_center_queue=None, is_slave_agent=False):
         self.status_queue = multiprocessing.Manager().Queue(-1)
@@ -113,9 +109,8 @@ class FedMLStatusCenter(object):
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
         self.status_listener_message_center_queue = listener_message_center_queue
-        self.status_runner = self.get_status_runner()
-        target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
-            self.status_runner.run_status_dispatcher_in_slave
+        target_func = self.run_status_dispatcher if not is_slave_agent else \
+            self.run_status_dispatcher_in_slave
         if platform.system() == "Windows":
             self.status_center_process = multiprocessing.Process(
                 target=target_func, args=(
