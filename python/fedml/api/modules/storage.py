@@ -73,8 +73,6 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
     if not file_uploaded_url:
         return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {to_upload_path}")
 
-    print("url: ",file_uploaded_url)
-
     json_data = {
         "datasetName": name,
         "description": description,
