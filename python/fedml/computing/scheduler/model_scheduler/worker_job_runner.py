@@ -460,22 +460,6 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                       }
         return deployment_results_payload
 
-    def construct_deployment_status(self, end_point_name, device_id,
-                                    model_id, model_name, model_version,
-                                    model_inference_url, model_status,
-                                    inference_port=ClientConstants.MODEL_INFERENCE_DEFAULT_PORT,
-                                    replica_no=1,     # start from 1
-                                    ):
-        deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
-                                     "device_id": device_id,
-                                     "model_id": model_id, "model_name": model_name,
-                                     "model_version": model_version,
-                                     "model_url": model_inference_url, "model_status": model_status,
-                                     "inference_port": inference_port,
-                                     "replica_no": replica_no,
-                                     }
-        return deployment_status_payload
-
     def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,

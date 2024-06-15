@@ -342,56 +342,40 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
 
     try:
         if connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP:
-            response_ok = await FedMLHttpInference.is_inference_ready(
+            response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
                 inference_url,
+                input_list,
+                output_list,
+                inference_type=inference_type,
                 timeout=request_timeout_sec)
-            if response_ok:
-                response_ok, inference_response = await FedMLHttpInference.run_http_inference_with_curl_request(
-                    inference_url,
-                    input_list,
-                    output_list,
-                    inference_type=inference_type,
-                    timeout=request_timeout_sec)
-                logging.debug(f"Use http inference. return {response_ok}")
-                return inference_response
+            logging.debug(f"Use http inference. return {response_ok}")
+            return inference_response
         elif connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP_PROXY:
-            logging.warning("Use http proxy inference.")
-            response_ok = await FedMLHttpProxyInference.is_inference_ready(
+            logging.debug("Use http proxy inference.")
+            response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
+                end_point_id,
                 inference_url,
+                input_list,
+                output_list,
+                inference_type=inference_type,
                 timeout=request_timeout_sec)
-            if response_ok:
-                response_ok, inference_response = await FedMLHttpProxyInference.run_http_proxy_inference_with_request(
-                    end_point_id,
-                    inference_url,
-                    input_list,
-                    output_list,
-                    inference_type=inference_type,
-                    timeout=request_timeout_sec)
-                logging.info(f"Use http proxy inference. return {response_ok}")
-                return inference_response
+            logging.debug(f"Use http proxy inference. return {response_ok}")
+            return inference_response
         elif connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_MQTT:
-            logging.warning("Use mqtt inference.")
+            logging.debug("Use mqtt inference.")
             agent_config = {"mqtt_config": Settings.mqtt_config}
             mqtt_inference = FedMLMqttInference(
                 agent_config=agent_config,
                 run_id=end_point_id)
-            response_ok = mqtt_inference.run_mqtt_health_check_with_request(
+            response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
                 idle_device,
                 end_point_id,
                 inference_url,
+                input_list,
+                output_list,
+                inference_type=inference_type,
                 timeout=request_timeout_sec)
-            inference_response = {"error": True, "message": "Failed to use http, http-proxy and mqtt for inference."}
-            if response_ok:
-                response_ok, inference_response = mqtt_inference.run_mqtt_inference_with_request(
-                    idle_device,
-                    end_point_id,
-                    inference_url,
-                    input_list,
-                    output_list,
-                    inference_type=inference_type,
-                    timeout=request_timeout_sec)
-
-            logging.info(f"Use mqtt inference. return {response_ok}.")
+            logging.debug(f"Use mqtt inference. return {response_ok}.")
             return inference_response
         else:
             return {"error": True, "message": "Failed to use http, http-proxy for inference, no response from replica."}
