@@ -4,6 +4,7 @@ import shutil
 
 import requests
 import math
+from enum import Enum, unique
 
 import requests.exceptions
 import tqdm
@@ -26,6 +27,10 @@ class StorageMetadata(object):
         self.tag_list = data.get("tags", None)
         self.download_url = data.get("fileUrl", None)
 
+class DataType(Enum):
+    FILE = "file"
+    DIRECTORY = "directory"
+    INVALID = "invalid"
 
 # Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
@@ -41,10 +46,10 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
 
     data_type = _get_data_type(data_path)
     
-    if(data_type == "invalid"):
+    if(data_type == DataType.INVALID):
         return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
-    if(data_type == "dir"):
+    if(data_type == DataType.DIRECTORY):
         to_upload_path, message = _archive_data(data_path)
         name = os.path.splitext(os.path.basename(to_upload_path))[0] if name is None else name
         file_name = name + ".zip"
@@ -471,10 +476,10 @@ def _get_storage_service(service):
 
 def _get_data_type(data_path):
     if os.path.isdir(data_path):
-        return "dir"
+        return DataType.DIRECTORY
     elif os.path.isfile(data_path):
-        return "file"
-    return "invalid"
+        return DataType.FILE
+    return DataType.INVALID
 
 
 def _archive_data(data_path: str) -> (str, str):
