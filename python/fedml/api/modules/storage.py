@@ -70,11 +70,11 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
     if not to_upload_path:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-
+    #TODO(bhargav191098) - Better done on the backend. Remove and pass file_name once completed on backend.
     dest_path = os.path.join(user_id, file_name)
     file_size = os.path.getsize(to_upload_path)
 
-    file_uploaded_url, message = _upload_multipart(api_key, file_name, to_upload_path, show_progress,
+    file_uploaded_url, message = _upload_multipart(api_key, dest_path, to_upload_path, show_progress,
                                                        out_progress_to_err,
                                                        progress_desc, metadata)
 
