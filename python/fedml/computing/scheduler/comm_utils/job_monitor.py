@@ -40,6 +40,7 @@ from fedml.computing.scheduler.model_scheduler.device_http_inference_protocol im
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.core.mlops.mlops_utils import MLOpsLoggingUtils
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
 from ..model_scheduler.device_server_constants import ServerConstants
@@ -758,9 +759,8 @@ class JobMonitor(Singleton):
                 except Exception as e:
                     pass
 
-    def _lenient_check_replica_ready(
-            self, deployment_result
-    ):
+    @staticmethod
+    def _lenient_check_replica_ready(deployment_result):
         """
         Double-check the replica's liveness using /ready api:
             if 200 -> return True
@@ -769,8 +769,27 @@ class JobMonitor(Singleton):
         """
         result_json = deployment_result
         inference_url = result_json.get("model_url", None)
+        liveliness_check = result_json.get("model_metadata", {}).get("liveliness_check", None)
+        readiness_check = result_json.get("model_metadata", {}).get("readiness_check", None)
 
-        # Make a curl get to inference_url with timeout 5s
+        if liveliness_check is not None:
+            if liveliness_check == ClientConstants.LIVENESS_PROBE_DEFAULT:
+                liveliness_check = readiness_check  # Follow the readiness check pattern
+            if not isinstance(liveliness_check, dict):
+                logging.warning(f"Healthiness check is not a dict. {liveliness_check}")
+                return True
+            if "path" not in liveliness_check:
+                logging.warning(f"Healthiness check does not have path. {liveliness_check}")
+                return True
+            response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(
+                inference_url, timeout=SchedulerConstants.ENDPOINT_INFERENCE_READY_TIMEOUT,
+                path=liveliness_check["path"]))
+            if response_ok is None:
+                # This means the server return 202
+                return False
+            return True
+
+        # Make a curl get to inference_url/ready with timeout 5s
         # TODO(Raphael): Also support PROXY and MQTT to check the readiness
         response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=5))
         if response_ok is None:

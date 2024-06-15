@@ -14,14 +14,14 @@ class FedMLHttpInference:
         pass
 
     @staticmethod    
-    async def is_inference_ready(inference_url, timeout=None):
-        '''
+    async def is_inference_ready(inference_url, path="ready", timeout=None):
+        """
         True: inference is ready
         False: cannot be reached, will try other protocols
         None: can be reached, but not ready
-        '''
+        """
         url_parsed = urlparse(inference_url)
-        ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/ready"
+        ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/{path}"
         response_ok = False
         try:
             async with httpx.AsyncClient() as client:
