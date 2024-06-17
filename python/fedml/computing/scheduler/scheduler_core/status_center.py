@@ -120,20 +120,12 @@ class FedMLStatusCenter(object):
         self.status_runner = self
         target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
             self.status_runner.run_status_dispatcher_in_slave
-        if platform.system() == "Windows":
-            self.status_center_process = multiprocessing.Process(
-                target=target_func, args=(
-                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue, sender_message_event
-                )
+        self.status_center_process = fedml.get_process(
+            target=target_func, args=(
+                self.status_event, self.status_queue, self.status_sender_message_center_queue,
+                self.status_listener_message_center_queue
             )
-        else:
-            self.status_center_process = fedml.get_process(
-                target=target_func, args=(
-                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue, sender_message_event
-                )
-            )
+        )
 
         self.status_center_process.start()
 
@@ -163,9 +155,11 @@ class FedMLStatusCenter(object):
     def set_status_queue(self, status_queue):
         self.status_queue = status_queue
 
+    # TODO (alaydshah): Remove this method if not needed
     def status_center_process_master_status(self, topic, payload):
         pass
 
+    # TODO (alaydshah): Remove this method if not needed
     def status_center_process_slave_status(self, topic, payload):
         pass
 

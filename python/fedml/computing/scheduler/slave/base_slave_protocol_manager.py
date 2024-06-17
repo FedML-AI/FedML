@@ -20,6 +20,7 @@ from ..scheduler_core.ota_upgrade import FedMLOtaUpgrade
 from .client_data_interface import FedMLClientDataInterface
 from ..scheduler_core.scheduler_base_protocol_manager import FedMLSchedulerBaseProtocolManager
 from ..scheduler_core.general_constants import GeneralConstants
+from ..scheduler_core.message_center import FedMLMessageCenter
 
 
 class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
@@ -31,7 +32,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.disable_client_login = None
         self.args = args
         self.message_status_runner = None
-        self.message_center = None
         self.status_center = None
         self.run_id = None
         self.edge_id = args.edge_id
@@ -122,20 +122,32 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         # Add the message listeners for all topics, the following is an example.
         # self.add_message_listener(self.topic_start_train, self.callback_start_train)
         # Add the message listeners for all topics
-        self.add_message_listener(self.topic_start_train, self.callback_start_train)
-        self.add_message_listener(self.topic_ota_msg, FedMLBaseSlaveProtocolManager.callback_client_ota_msg)
-        self.add_message_listener(self.topic_report_status, self.callback_report_current_status)
-        self.add_message_listener(self.topic_request_device_info, self.callback_report_device_info)
-        self.add_message_listener(self.topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
-        self.add_message_listener(self.topic_client_logout, self.callback_client_logout)
-        self.add_message_listener(self.topic_response_job_status, self.callback_response_job_status)
-        self.add_message_listener(self.topic_report_device_status_in_job, self.callback_response_device_status_in_job)
-        self.add_message_listener(self.fl_topic_start_train, self.callback_start_train)
-        self.add_message_listener(self.fl_topic_request_device_info, self.callback_report_device_info)
+        self.message_center.register_listener(self.topic_start_train, self.callback_start_train)
+        self.message_center.register_listener(self.topic_ota_msg, FedMLBaseSlaveProtocolManager.callback_client_ota_msg)
+        self.message_center.register_listener(self.topic_report_status, self.callback_report_current_status)
+        self.message_center.register_listener(self.topic_request_device_info, self.callback_report_device_info)
+        self.message_center.register_listener(self.topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
+        self.message_center.register_listener(self.topic_client_logout, self.callback_client_logout)
+        self.message_center.register_listener(self.topic_response_job_status, self.callback_response_job_status)
+        self.message_center.register_listener(self.topic_report_device_status_in_job, self.callback_response_device_status_in_job)
+        self.message_center.register_listener(self.fl_topic_start_train, self.callback_start_train)
+        self.message_center.register_listener(self.fl_topic_request_device_info, self.callback_report_device_info)
+
+    @abstractmethod
+    def _generate_protocol_manager_instance(self, args, agent_config=None):
+        return None
 
     @abstractmethod
     def _get_job_runner_manager(self):
         return None
+
+    @abstractmethod
+    def _process_connection_ready(self):
+        pass
+
+    @abstractmethod
+    def _process_connection_lost(self):
+        pass
 
     @abstractmethod
     def _init_extra_items(self):
@@ -146,6 +158,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def add_subscribe_topic(self, topic):
         self.subscribed_topics.append(topic)
 
+    # TODO(alaydshah): This should potentially be handled in deploy worker and slave agents.
     def stop(self):
         if self.model_device_server is not None:
             self.model_device_server = None
@@ -163,20 +176,12 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         payload = {"model_master_device_id": self.model_device_server_id,
                    "model_slave_device_id_list": self.model_device_client_edge_id_list}
-        self.receive_message(self.topic_request_device_info, json.dumps(payload))
+        self.message_center.receive_message(self.topic_request_device_info, json.dumps(payload))
 
     def on_agent_communication_disconnected(self, mqtt_client_object):
         super().on_agent_communication_disconnected(mqtt_client_object)
 
         self._process_connection_lost()
-
-    @abstractmethod
-    def _process_connection_ready(self):
-        pass
-
-    @abstractmethod
-    def _process_connection_lost(self):
-        pass
 
     def print_connected_info(self):
         print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
@@ -276,7 +281,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self._get_job_runner_manager().start_job_runner(
             run_id, request_json, args=self.args, edge_id=edge_id,
             sender_message_queue=self.message_center.get_sender_message_queue(),
-            listener_message_queue=self.get_listener_message_queue(),
+            listener_message_queue=self.message_center.get_listener_message_queue(),
             status_center_queue=self.get_status_queue(),
             cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str,
         )
@@ -523,7 +528,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def setup_listener_job_status(self, run_id):
         # Setup MQTT message listener to receive the job status from master agent;
         topic_job_status_from_master = f"master_agent/slave_agent/job_status/{run_id}"
-        self.add_message_listener(topic_job_status_from_master, self.callback_broadcasted_job_status)
+        self.message_center.register_listener(topic_job_status_from_master, self, self.callback_broadcasted_job_status)
         self.subscribe_msg(topic_job_status_from_master)
 
     def remove_listener_job_status(self, run_id):
@@ -543,13 +548,10 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         return run_process_dict
 
+    # TODO(alaydshah): This method can be potentially removed.
     def stop_job(self, run_id):
         self._get_job_runner_manager().stop_job_runner(run_id)
 
     @staticmethod
     def get_start_train_topic_with_edge_id(edge_id):
         return "flserver_agent/" + str(edge_id) + "/start_train"
-
-    @abstractmethod
-    def _generate_protocol_manager_instance(self, args, agent_config=None):
-        return None

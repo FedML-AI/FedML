@@ -29,31 +29,31 @@ class FedMLMessageCenter(object):
     MESSAGE_SENT_SUCCESS_RECORDS_FILE = "message-sent-success-records.log"
     MESSAGE_RECEIVED_RECORDS_FILE = "message-received-records.log"
 
-    def __init__(self, agent_config=None, sender_message_queue=None,
-                 listener_message_queue=None, sender_message_event=None):
-        self.sender_agent_config = agent_config
-        self.listener_agent_config = agent_config
-        self.sender_message_queue = sender_message_queue
-        self.message_event = sender_message_event
+    def __init__(self, agent_config=None, max_workers=16):
+        self.agent_config = agent_config
+        self.manager = multiprocessing.Manager()
+        self.lock = self.manager.Lock()
+        self.mqtt_lock = threading.Lock()
+        self.pool = multiprocessing.Pool(max_workers)
+        self.listener_topics = self.manager.set()
+        self.listener_handler_funcs = self.manager.dict()
+        self.sender_message_list = self.manager.list()
+        self.receiver_message_list = self.manager.list()
+        self.published_message_ids = self.manager.list()
+        self.retry_sending_count_map = self.manager.dict()
+        self.constants = FedMLMessageCenterConstants()
+        self.sender_message_queue = None
+        self.listener_message_queue = None
+        self.message_event = None
         self.message_center_process = None
-        self.sender_mqtt_mgr = None
+        self.mqtt_mgr = None
         self.sender_mlops_metrics = None
-        self.sender_mqtt_lock = None
-        self.sender_mqtt_is_connected = False
-        self.listener_mqtt_mgr = None
-        self.listener_topics = list()
-        self.listener_payloads = dict()
-        self.listener_handler_funcs = dict()
-        self.listener_handler_object = None
-        self.listener_message_queue = listener_message_queue
+        self.mqtt_is_connected = False
         self.listener_message_event = None
         self.listener_message_center_process = None
-        self.sender_message_list = list()
-        self.receiver_message_list = list()
-        self.published_message_ids = list()
-        self.retry_sending_count_map = dict()
-        self.constants = FedMLMessageCenterConstants()
         self.message_center_name = None
+        self.start_sender()
+        self.start_listener()
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -63,12 +63,12 @@ class FedMLMessageCenter(object):
         )
 
     def on_sender_mqtt_disconnected(self, mqtt_client_object):
-        if self.sender_mqtt_lock is None:
-            self.sender_mqtt_lock = threading.Lock()
+        if self.mqtt_lock is None:
+            self.mqtt_lock = threading.Lock()
 
-        self.sender_mqtt_lock.acquire()
-        self.sender_mqtt_is_connected = False
-        self.sender_mqtt_lock.release()
+        self.mqtt_lock.acquire()
+        self.mqtt_is_connected = False
+        self.mqtt_lock.release()
 
     def on_sender_mqtt_connected(self, mqtt_client_object):
         if self.sender_mlops_metrics is None:
@@ -76,55 +76,55 @@ class FedMLMessageCenter(object):
 
         self.sender_mlops_metrics.set_messenger(self)
 
-        if self.sender_mqtt_lock is None:
-            self.sender_mqtt_lock = threading.Lock()
+        if self.mqtt_lock is None:
+            self.mqtt_lock = threading.Lock()
 
-        self.sender_mqtt_lock.acquire()
-        self.sender_mqtt_is_connected = True
-        self.sender_mqtt_lock.release()
+        self.mqtt_lock.acquire()
+        self.mqtt_is_connected = True
+        self.mqtt_lock.release()
 
     def on_sender_mqtt_published(self, mqtt_client_object, obj, mid):
         self.published_message_ids.append({"message_id": mid, "timestamp": time.time_ns()/100.0/1000.0})
         self.save_published_message_record(mid)
 
-    def setup_sender_mqtt_mgr(self):
-        if self.sender_mqtt_mgr is not None:
+    def setup_mqtt_mgr(self):
+        if self.mqtt_mgr is not None:
             return
 
-        if self.sender_mqtt_lock is None:
-            self.sender_mqtt_lock = threading.Lock()
+        if self.mqtt_lock is None:
+            self.mqtt_lock = threading.Lock()
 
-        self.sender_mqtt_mgr = MqttManager(
-            self.sender_agent_config["mqtt_config"]["BROKER_HOST"],
-            self.sender_agent_config["mqtt_config"]["BROKER_PORT"],
-            self.sender_agent_config["mqtt_config"]["MQTT_USER"],
-            self.sender_agent_config["mqtt_config"]["MQTT_PWD"],
-            self.sender_agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+        self.mqtt_mgr = MqttManager(
+            self.agent_config["mqtt_config"]["BROKER_HOST"],
+            self.agent_config["mqtt_config"]["BROKER_PORT"],
+            self.agent_config["mqtt_config"]["MQTT_USER"],
+            self.agent_config["mqtt_config"]["MQTT_PWD"],
+            self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_MessageCenter_@{}@{}".format(str(os.getpid()), str(uuid.uuid4()))
         )
 
-        self.sender_mqtt_mgr.add_connected_listener(self.on_sender_mqtt_connected)
-        self.sender_mqtt_mgr.add_disconnected_listener(self.on_sender_mqtt_disconnected)
-        self.sender_mqtt_mgr.add_published_listener(self.on_sender_mqtt_published)
-        self.sender_mqtt_mgr.connect()
-        self.sender_mqtt_mgr.loop_start()
+        self.mqtt_mgr.add_connected_listener(self.on_sender_mqtt_connected)
+        self.mqtt_mgr.add_disconnected_listener(self.on_sender_mqtt_disconnected)
+        self.mqtt_mgr.add_published_listener(self.on_sender_mqtt_published)
+        self.mqtt_mgr.connect()
+        self.mqtt_mgr.loop_start()
 
         if self.sender_mlops_metrics is None:
             self.sender_mlops_metrics = MLOpsMetrics()
         self.sender_mlops_metrics.set_messenger(self)
 
-    def release_sender_mqtt_mgr(self):
+    def release_mqtt_mgr(self):
         # noinspection PyBroadException
         try:
-            if self.sender_mqtt_mgr is not None:
-                self.sender_mqtt_mgr.loop_stop()
-                self.sender_mqtt_mgr.disconnect()
+            if self.mqtt_mgr is not None:
+                self.mqtt_mgr.loop_stop()
+                self.mqtt_mgr.disconnect()
 
-            self.sender_mqtt_lock.acquire()
-            if self.sender_mqtt_mgr is not None:
-                self.sender_mqtt_is_connected = False
-                self.sender_mqtt_mgr = None
-            self.sender_mqtt_lock.release()
+            self.mqtt_lock.acquire()
+            if self.mqtt_mgr is not None:
+                self.mqtt_is_connected = False
+                self.mqtt_mgr = None
+            self.mqtt_lock.release()
         except Exception as e:
             logging.error(
                 f"Failed to release sender mqtt manager with Exception {e}. Traceback: {traceback.format_exc()}")
@@ -138,24 +138,14 @@ class FedMLMessageCenter(object):
 
     def start_sender(self, message_center_name=None):
         self.sender_message_queue = multiprocessing.Manager().Queue()
-        self.message_event = multiprocessing.Event()
+        self.message_event = self.manager.Event()
         self.message_event.clear()
-        message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
-                                            sender_message_queue=self.sender_message_queue)
-        if platform.system() == "Windows":
-            self.message_center_process = multiprocessing.Process(
-                target=message_center.run_sender, args=(
-                    self.message_event, self.sender_message_queue,
-                    message_center_name
-                )
+        self.message_center_process = fedml.get_process(
+            target=self.run_sender, args=(
+                self.message_event, self.sender_message_queue,
+                message_center_name
             )
-        else:
-            self.message_center_process = fedml.get_process(
-                target=message_center.run_sender, args=(
-                    self.message_event, self.sender_message_queue,
-                    message_center_name
-                )
-            )
+        )
         self.message_center_process.start()
 
     def stop_message_center(self):
@@ -201,7 +191,7 @@ class FedMLMessageCenter(object):
                     FedMLMessageCenter.PUBLISH_MESSAGE_RETRY_COUNT:
                 # Send the message
                 message_entity = FedMLMessageEntity(message_body=message_record.message_body)
-                message_id = self.sender_mqtt_mgr.send_message_json(message_entity.topic, message_entity.payload)
+                message_id = self.mqtt_mgr.send_message_json(message_entity.topic, message_entity.payload)
                 self.retry_sending_count_map[message_record.message_id] += 1
 
                 # Generate the new message record.
@@ -209,7 +199,7 @@ class FedMLMessageCenter(object):
                                                          message_body=message_record.message_body)
 
                 # Save the message
-                self.save_message_record(message_entity.run_id, message_entity.device_id, sent_message_record)
+                self.save_message_record(sent_message_record)
 
     def run_sender(self, message_event, message_queue, message_center_name):
         if platform.system() != "Windows":
@@ -218,7 +208,7 @@ class FedMLMessageCenter(object):
         self.message_event = message_event
         self.sender_message_queue = message_queue
         self.message_center_name = message_center_name
-        self.setup_sender_mqtt_mgr()
+        self.setup_mqtt_mgr()
 
         while True:
             message_entity = None
@@ -231,7 +221,7 @@ class FedMLMessageCenter(object):
             # noinspection PyBroadException
             try:
                 # Setup the mqtt connection
-                self.setup_sender_mqtt_mgr()
+                self.setup_mqtt_mgr()
 
                 # Get the message from the queue
                 try:
@@ -247,7 +237,7 @@ class FedMLMessageCenter(object):
                 message_entity = FedMLMessageEntity(message_body=message_body)
 
                 # Send the message to mqtt server
-                message_id = self.sender_mqtt_mgr.send_message_json(message_entity.topic, message_entity.payload)
+                message_id = self.mqtt_mgr.send_message_json(message_entity.topic, message_entity.payload)
 
                 # Generate the message record.
                 message_record = FedMLMessageRecord(message_id=message_id, message_body=message_body)
@@ -256,7 +246,7 @@ class FedMLMessageCenter(object):
                 self.cache_message_record(message_record, is_sender=True)
 
                 # Save the message
-                self.save_message_record(message_entity.run_id, message_entity.device_id, message_record)
+                self.save_message_record(message_record)
 
             except Exception as e:
                 if message_entity is not None:
@@ -267,10 +257,7 @@ class FedMLMessageCenter(object):
                 else:
                     logging.info(f"Failed to send the message with body {message_body}, {traceback.format_exc()}")
 
-        self.release_sender_mqtt_mgr()
-
-    def get_protocol_communication_manager(self):
-        return None
+        self.release_mqtt_mgr()
 
     def setup_listener_mqtt_mgr(self):
         if self.listener_mqtt_mgr is not None:
@@ -308,21 +295,20 @@ class FedMLMessageCenter(object):
             )
             pass
 
-    def add_message_listener(self, topic, listener_func):
-        if topic not in self.listener_topics:
-            self.listener_topics.append(topic)
-            self.listener_handler_funcs[topic] = listener_func.__name__
-
-    def remove_message_listener(self, topic):
-        if topic in self.listener_topics:
-            self.listener_topics.remove(topic)
-            self.listener_handler_funcs.pop(topic)
-
     def get_listener_handler(self, topic):
         return self.listener_handler_funcs.get(topic)
 
-    def get_message_runner(self):
-        return None
+    def register_listener(self, agent, topic, listener_func):
+        with self.lock:
+            if topic not in self.listener_topics:
+                self.listener_topics.append(topic)
+                self.listener_handler_funcs[topic] = (agent, listener_func.__name__)
+
+    def unregister_listener(self, topic):
+        with self.lock:
+            if topic in self.listener_topics:
+                self.listener_topics.remove(topic)
+                self.listener_handler_funcs.pop(topic)
 
     def get_listener_message_queue(self):
         return self.listener_message_queue
@@ -344,26 +330,14 @@ class FedMLMessageCenter(object):
             self.listener_message_queue = listener_message_queue
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
-        self.listener_agent_config = agent_config
-        # message_runner = self.get_message_runner()
-        message_runner = self
-        message_runner.listener_agent_config = agent_config
-        if platform.system() == "Windows":
-            self.listener_message_center_process = multiprocessing.Process(
-                target=message_runner.run_listener_dispatcher, args=(
-                    self.listener_message_event, self.listener_message_queue,
-                    self.listener_handler_funcs, sender_message_queue,
-                    sender_message_event, message_center_name, extra_queues
-                )
+        self.agent_config = agent_config
+        self.listener_message_center_process = fedml.get_process(
+            target=self.run_listener_dispatcher, args=(
+                self.listener_message_event, self.listener_message_queue,
+                self.listener_handler_funcs, sender_message_queue,
+                message_center_name, extra_queues
             )
-        else:
-            self.listener_message_center_process = fedml.get_process(
-                target=message_runner.run_listener_dispatcher, args=(
-                    self.listener_message_event, self.listener_message_queue,
-                    self.listener_handler_funcs, sender_message_queue,
-                    sender_message_event, message_center_name, extra_queues
-                )
-            )
+        )
         self.listener_message_center_process.start()
 
     def check_listener_message_stop_event(self):
@@ -388,12 +362,12 @@ class FedMLMessageCenter(object):
         self.receive_message(topic, payload)
 
     def subscribe_msg(self, topic):
-        self.listener_mqtt_mgr.add_message_listener(topic, self.listener_message_dispatch_center)
-        self.listener_mqtt_mgr.subscribe_msg(topic)
+        self.mqtt_mgr.add_message_listener(topic, self.listener_message_dispatch_center)
+        self.mqtt_mgr.subscribe_msg(topic)
 
     def unsubscribe_msg(self, topic):
-        self.listener_mqtt_mgr.remove_message_listener(topic)
-        self.listener_mqtt_mgr.unsubscribe_msg(topic)
+        self.mqtt_mgr.remove_message_listener(topic)
+        self.mqtt_mgr.unsubscribe_msg(topic)
 
     def run_listener_dispatcher(
             self, listener_message_event, listener_message_queue,
@@ -410,12 +384,12 @@ class FedMLMessageCenter(object):
         self.sender_message_queue = sender_message_queue
         self.message_event = sender_message_event
 
-        self.setup_listener_mqtt_mgr()
+        self.setup_mqtt_mgr()
 
-        if sender_message_queue is None:
-            methodcaller(FedMLMessageCenter.FUNC_SETUP_MESSAGE_CENTER)(self)
-        else:
-            methodcaller(FedMLMessageCenter.FUNC_REBUILD_MESSAGE_CENTER, sender_message_queue)(self)
+        # if sender_message_queue is None:
+        #     methodcaller(FedMLMessageCenter.FUNC_SETUP_MESSAGE_CENTER)(self)
+        # else:
+        #     methodcaller(FedMLMessageCenter.FUNC_REBUILD_MESSAGE_CENTER, sender_message_queue)(self)
 
         if extra_queues is not None:
             methodcaller(FedMLMessageCenter.FUNC_PROCESS_EXTRA_QUEUES, extra_queues)(self)
@@ -430,7 +404,7 @@ class FedMLMessageCenter(object):
             # noinspection PyBroadException
             try:
                 # Setup the mqtt connection
-                self.setup_listener_mqtt_mgr()
+                self.setup_mqtt_mgr()
 
                 # Get the message from the queue
                 try:
@@ -451,18 +425,13 @@ class FedMLMessageCenter(object):
                 self.cache_message_record(message_record, is_sender=False)
 
                 # Save the message
-                self.save_message_record(message_entity.run_id, message_entity.device_id,
-                                         message_record, is_sender=False)
+                self.save_message_record(message_record, is_sender=False)
 
                 # Dispatch the message to corresponding handler
-                message_handler_func_name = self.listener_handler_funcs.get(message_entity.topic, None)
+                agent, message_handler_func_name = self.listener_handler_funcs.get(message_entity.topic, (None, None))
+
                 if message_handler_func_name is not None:
-                    methodcaller(message_handler_func_name, message_entity.topic, message_entity.payload)(self)
-                else:
-                    if hasattr(self, "callback_proxy_unknown_messages") and \
-                            self.callback_proxy_unknown_messages is not None:
-                        self.callback_proxy_unknown_messages(
-                            message_entity.run_id, message_entity.topic, message_entity.payload)
+                    self.pool.apply_async(self._call_method, args=(self, agent, message_handler_func_name, message_entity))
             except Exception as e:
                 if message_entity is not None:
                     logging.info(
@@ -470,7 +439,11 @@ class FedMLMessageCenter(object):
                         f"payload {message_entity.payload}, {traceback.format_exc()}")
                 else:
                     logging.info(f"Failed to dispatch messages:  {traceback.format_exc()}")
-        self.release_listener_mqtt_mgr()
+        self.release_mqtt_mgr()
+
+    @staticmethod
+    def _call_method(agent, message_handler_func_name, message_entity):
+        methodcaller(message_handler_func_name, message_entity.topic, message_entity.payload)(agent)
 
     def cache_message_record(self, message_record, is_sender=True):
         # Save the message to the cached list.
@@ -479,7 +452,7 @@ class FedMLMessageCenter(object):
         else:
             self.receiver_message_list.append(message_record.get_json_record())
 
-    def save_message_record(self, run_id, device_id, message_record, is_sender=True):
+    def save_message_record(self, message_record, is_sender=True):
         # Check if we enable to log messages to file
         if not FedMLMessageCenter.ENABLE_SAVE_MESSAGE_TO_FILE:
             return
@@ -514,11 +487,11 @@ class FedMLMessageCenter(object):
         with open(published_msg_record_file, "a+") as f:
             f.writelines([json.dumps(message_record) + "\n"])
 
-    @staticmethod
-    def rebuild_message_center_from_queue(sender_message_queue, listener_message_queue=None):
-        message_center = FedMLMessageCenter(sender_message_queue=sender_message_queue,
-                                            listener_message_queue=listener_message_queue)
-        return message_center
+    # @staticmethod
+    # def rebuild_message_center_from_queue(sender_message_queue, listener_message_queue=None):
+    #     message_center = FedMLMessageCenter(sender_message_queue=sender_message_queue,
+    #                                         listener_message_queue=listener_message_queue)
+    #     return message_center
 
 
 class MessageCenterStoppedException(Exception):

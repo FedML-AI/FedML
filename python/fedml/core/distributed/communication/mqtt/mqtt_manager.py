@@ -8,13 +8,15 @@ import paho.mqtt.client as mqtt
 import paho.mqtt.publish as mqtt_publish
 import time
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from concurrent.futures import ThreadPoolExecutor
 
 import fedml
+
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
                  client_id, last_will_topic=None, last_will_msg=None,
-                 clean_session=True, retain_msg=True):
+                 clean_session=True, retain_msg=True, max_workers=16):
         self._client = None
         self.mqtt_connection_id = None
         self._host = host
@@ -35,6 +37,9 @@ class MqttManager(object):
         self.user = user
         self.pwd = pwd
         self.init_connect()
+
+        # Create a fixed thread pool
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def __del__(self):
         self._client.loop_stop()
@@ -94,25 +99,26 @@ class MqttManager(object):
     def loop_forever(self):
         self._client.loop_forever(retry_first_connection=True)
 
-    def send_message(self, topic, message, publish_single_message=False):
-        # logging.info(
-        #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
-        # )
-        self.check_connection()
-
-        mqtt_send_start_time = time.time()
-        if publish_single_message:
-            connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
-                                                             str(mqtt.base62(uuid.uuid4().int, padding=22)))
-            mqtt_publish.single(topic, payload=message, qos=2,
-                                hostname=self._host, port=self._port,
-                                client_id=connection_id, retain=self.retain_msg,
-                                auth={'username': self.user, 'password': self.pwd})
-        else:
-            ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
-            return ret_info.mid
-        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
-        return 0
+    # def send_message(self, topic, message, publish_single_message=False):
+    #     # logging.info(
+    #     #     f"FedMLDebug - Send: topic ({topic}), message ({message})"
+    #     # )
+    #     self.check_connection()
+    #
+    #     mqtt_send_start_time = time.time()
+    #     if publish_single_message:
+    #         connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
+    #                                                          str(mqtt.base62(uuid.uuid4().int, padding=22)))
+    #         func_args = {"topic": topic, "payload": message, "qos": 2, "hostname": self._host, "port": self._port,
+    #                      "client_id": connection_id, "retain": self.retain_msg,
+    #                      "auth": {'username': self.user, 'password': self.pwd}}
+    #         self.executor.submit(mqtt_publish.single, topic, **func_args)
+    #     else:
+    #         func_args = {"topic": topic, "payload": message, "qos": 2, "retain": self.retain_msg}
+    #         ret_info = self.executor.submit(self._client._publish, **func_args).result()
+    #         return ret_info.mid
+    #     MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
+    #     return 0
 
     def send_message_json(self, topic, message, publish_single_message=False):
         # logging.info(
@@ -123,12 +129,13 @@ class MqttManager(object):
         if publish_single_message:
             connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
-            mqtt_publish.single(topic, payload=message, qos=2,
-                                hostname=self._host, port=self._port,
-                                client_id=connection_id, retain=self.retain_msg,
-                                auth={'username': self.user, 'password': self.pwd})
+            func_args = {"topic": topic, "payload": message, "qos": 2, "hostname": self._host, "port": self._port,
+                         "client_id": connection_id, "retain": self.retain_msg,
+                         "auth": {'username': self.user, 'password': self.pwd}}
+            self.executor.submit(mqtt_publish.single, topic, **func_args)
         else:
-            ret_info = self._client.publish(topic, payload=message, qos=2, retain=self.retain_msg)
+            func_args = {"topic": topic, "payload": message, "qos": 2, "retain": self.retain_msg}
+            ret_info = self.executor.submit(self._client.publish, **func_args).result()
             return ret_info.mid
         return 0
 
@@ -187,27 +194,27 @@ class MqttManager(object):
         message_handler_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"MessageReceiveTime": message_handler_start_time})
         for passthrough_listener in self._passthrough_listeners:
-            passthrough_listener(msg)
+            self.executor.submit(passthrough_listener, msg)
 
         _listener = self._listeners.get(msg.topic, None)
         if _listener is not None and callable(_listener):
             payload_obj = json.loads(msg.payload)
             payload_obj["is_retain"] = msg.retain
             payload = json.dumps(payload_obj)
-            _listener(msg.topic, payload)
+            self.executor.submit(_listener, msg.topic, payload)
 
         MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
-        self.callback_published_listener(client, obj, mid)
+        self.executor.submit(self.callback_published_listener, client, obj, mid)
 
     def on_disconnect(self, client, userdata, rc):
         client.connected_flag = False
         client.bad_conn_flag = True
-        self.callback_disconnected_listener(client)
+        self.executor.submit(self.callback_disconnected_listener, client)
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
-        self.callback_subscribed_listener(client)
+        self.executor.submit(self.callback_subscribed_listener, client)
 
     def _on_log(self, client, userdata, level, buf):
         logging.info("mqtt log {}, client id {}.".format(buf, self.mqtt_connection_id))
@@ -243,7 +250,7 @@ class MqttManager(object):
     def callback_connected_listener(self, client):
         for listener in self._connected_listeners:
             if listener is not None and callable(listener):
-                listener(client)
+                self.executor.submit(listener, client)
 
     def add_disconnected_listener(self, listener):
         self._disconnected_listeners.append(listener)
@@ -257,7 +264,7 @@ class MqttManager(object):
     def callback_disconnected_listener(self, client):
         for listener in self._disconnected_listeners:
             if listener is not None and callable(listener):
-                listener(client)
+                self.executor.submit(listener, client)
 
     def add_subscribed_listener(self, listener):
         self._subscribed_listeners.append(listener)
@@ -271,7 +278,7 @@ class MqttManager(object):
     def callback_subscribed_listener(self, client):
         for listener in self._subscribed_listeners:
             if listener is not None and callable(listener):
-                listener(client)
+                self.executor.submit(listener, client)
 
     def add_published_listener(self, listener):
         self._published_listeners.append(listener)
@@ -285,7 +292,7 @@ class MqttManager(object):
     def callback_published_listener(self, client, obj, mid):
         for listener in self._published_listeners:
             if listener is not None and callable(listener):
-                listener(client, obj, mid)
+                self.executor.submit(listener, client, obj, mid)
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
@@ -326,19 +333,14 @@ def test_last_will_callback(topic, payload):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--client_id", "-i", type=str, help="client id for mqtt.")
-    parser.add_argument("--action", "-a", default="send", help="action, options: send or receive")
     parser.add_argument("--num", "-n", type=int, default=10, help="running number for sending or receiving")
     args = parser.parse_args()
 
-    if args.action != "send" and args.action != "receive":
-        logging.info("action must be the following options: send, receive.")
-        exit(1)
-
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.DEBUG)
 
     last_will_topic = "fedml/mqtt-test/lastwill"
     last_will_msg = {"ID": 1, "status": "OFFLINE"}
-    mqtt_url = fedml._get_mqtt_service("release")
+    mqtt_url = fedml._get_mqtt_service()
     mqtt_manager = MqttManager(mqtt_url, 1883, "admin", "test",
                                30, args.client_id,
                                last_will_topic=last_will_topic,
@@ -347,19 +349,20 @@ if __name__ == "__main__":
     mqtt_manager.loop_start()
 
     topic = "/fedml/mqtt-test/connect"
-    if args.action == "receive":
-        mqtt_manager.add_message_listener(topic, test_msg_callback)
-        mqtt_manager.add_message_listener(last_will_topic, test_last_will_callback)
-        mqtt_manager.add_message_listener("#", test_msg_callback)
-        mqtt_manager.subscribe_msg(topic)
-        mqtt_manager.subscribe_msg(last_will_topic)
-        mqtt_manager.subscribe_msg("#")
-    elif args.action == "send":
-        for i in range(1, args.num):
-            logging.info("send message {}, index {}.".format(topic, i))
-            mqtt_manager.send_message(topic, "index {}".format(i))
-            time.sleep(0.1)
+    mqtt_manager.add_message_listener(topic, test_msg_callback)
+    mqtt_manager.add_message_listener(last_will_topic, test_last_will_callback)
+    mqtt_manager.add_message_listener("#", test_msg_callback)
+    mqtt_manager.subscribe_msg(topic)
+    mqtt_manager.subscribe_msg(last_will_topic)
+    mqtt_manager.subscribe_msg("#")
 
-    time.sleep(40000)
+    for i in range(1, args.num):
+        payload_json = dict()
+        payload_json["index"] = str(i)
+        logging.info("send message {}, index {}.".format(topic, i))
+        mqtt_manager.send_message_json(topic, json.dumps(payload_json))
+        time.sleep(0.1)
+
+    time.sleep(60)
     mqtt_manager.loop_stop()
     mqtt_manager.disconnect()

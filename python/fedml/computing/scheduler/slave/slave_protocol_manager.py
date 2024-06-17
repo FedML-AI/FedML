@@ -12,10 +12,12 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
     def __init__(self, args, agent_config=None):
         FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
 
+    # TODO(alaydshah): This method can be potentially removed.
     # Override
     def generate_topics(self):
         super().generate_topics()
 
+    # TODO(alaydshah): This method can be potentially removed.
     # Override
     def add_protocol_handler(self):
         super().add_protocol_handler()
@@ -35,10 +37,12 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
             self.edge_id, self.model_device_server_id, self.model_device_client_edge_id_list,
             message_center=self.message_center)
 
+    # TODO(alaydshah): This method can be potentially removed.
     # Override
     def _process_connection_lost(self):
         pass
 
+    # TODO(alaydshah): Double initialization of deploy master and worker agents. This can be potentially removed.
     # Override
     def _init_extra_items(self):
         super()._init_extra_items()
