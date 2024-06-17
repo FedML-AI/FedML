@@ -17,10 +17,6 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   federate:
-    # defaults:
-    #   run:
-    #     shell: bash
-    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -31,41 +27,15 @@ jobs:
     runs-on: ${{ matrix.python-version }}
     timeout-minutes: 5
     steps:
-      - name: Extract branch name
-        shell: bash
-        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
-        id: extract_branch
-      - id: fedml_source_code_home
-        name: cd to master or dev branch and git pull
-        shell: bash
+      - name: Checkout fedml
+        uses: actions/checkout@v3
+        
+      - name: pip_install
         run: |
-          ls
-          echo ${{ steps.extract_branch.outputs.branch }}
-          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
-            echo "running on master"
-            path=/home/fedml/FedML
-            cd $path
-            git pull
-            echo "dir=$path" >> $GITHUB_OUTPUT
-          else
-            echo "running on dev"
-            path=/home/fedml/FedML
-            cd $path
-            git pull
-            git checkout ${{ steps.extract_branch.outputs.branch }}
-            echo "dir=$path" >> $GITHUB_OUTPUT
-          fi
-      - name: sync git repo to local pip
-        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
-        run: |
-          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
-          echo $Homepath
-          cd $homepath
           cd python
           pip install -e ./
 
       - name: federate_job_in_test_env 
-        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           echo "Federate example has been tested successfully!"          
