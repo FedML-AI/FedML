@@ -13,7 +13,7 @@ fi
 # List of Docker container names
 # containers=("fedml/action_runner_3.8_$ARCH:0.1.0" "fedml/action_runner_3.9_$ARCH:0.1.0" "fedml/action_runner_3.10_$ARCH:0.1.0" "fedml/action_runner_3.11_$ARCH:0.1.0")
 containers=("action_runner_3.8_$ARCH" "action_runner_3.9_$ARCH" "action_runner_3.10_$ARCH" "action_runner_3.11_$ARCH")
-python_versions=(3.8 3.9 3.10 3.11)
+python_versions=("python3.8" "python3.9" "python3.10" "python3.11")
 
 
 # Iterate through each container
