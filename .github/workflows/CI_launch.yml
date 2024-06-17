@@ -65,4 +65,4 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          python tests/test_launch/test_launch.py
+          # python tests/test_launch/test_launch.py

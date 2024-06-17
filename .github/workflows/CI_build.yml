@@ -79,5 +79,5 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          pip install mnn==1.1.6
+          # pip install mnn==1.1.6
 

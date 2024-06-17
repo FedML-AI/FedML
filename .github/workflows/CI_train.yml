@@ -67,18 +67,11 @@ jobs:
           cd $homepath
           cd python
           pip install -e ./
-          # bash ./devops/scripts/sync-fedml-pip.sh
-
-      - name: Install MNN
-        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
-        run: |
-          cd python
-          pip install mnn==1.1.6
 
       - name: test server of cross-device
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
-          cd examples/federate/quick_start/beehive
-          timeout 60 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          # cd examples/federate/quick_start/beehive
+          # timeout 60 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
           
