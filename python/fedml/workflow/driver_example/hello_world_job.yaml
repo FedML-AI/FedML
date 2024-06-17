@@ -10,7 +10,7 @@ workspace: hello_world
 # It should be the full name of the image with tag.
 # If you want to use the default image, it can be empty.
 #docker:
-#  image: fedml/fedml-default-launch:cu12.1-u22.04
+#  image: fedml/fedml-launch-job:cu12.1-u22.04
 
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.

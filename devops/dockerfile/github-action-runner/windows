@@ -1,0 +1,13 @@
+# 使用 Windows Server Core 作为基础镜像
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# 设置 PowerShell 作为默认 shell
+SHELL ["powershell", "-Command"]
+
+# 示例：下载并安装 Python 3.11
+RUN Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe -OutFile python-3.11.0-amd64.exe; \
+    Start-Process python-3.11.0-amd64.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -NoNewWindow -Wait; \
+    Remove-Item -Force python-3.11.0-amd64.exe
+
+# 设置默认命令
+CMD ["python"]

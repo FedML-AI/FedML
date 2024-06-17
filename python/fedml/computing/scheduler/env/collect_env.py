@@ -1,10 +1,11 @@
 import os
 import traceback
 
-import GPUtil
-
 import fedml
+import dotenv
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.slave.client_diagnosis import ClientDiagnosis
+from ..slave.client_constants import ClientConstants
 
 
 def collect_env():
@@ -12,7 +13,7 @@ def collect_env():
     print("FedML version: " + str(fedml.__version__))
     env_version = fedml.get_env_version()
     print("FedML ENV version: " + str(env_version))
-    
+
     print("Execution path:" + str(os.path.abspath(fedml.__file__)))
 
     print("\n======== Running Environment ========")
@@ -59,30 +60,28 @@ def collect_env():
 
     try:
         print("\n======== GPU Configuration ========")
-        import GPUtil
-        gpus = GPUtil.getGPUs()
+        gpus = HardwareUtil.get_gpus()
         memory_total = 0.0
         memory_free = 0.0
         gpu_name = ""
+        vendor = ""
         for gpu in gpus:
             memory_total += gpu.memoryTotal
             memory_free += gpu.memoryFree
             gpu_name = gpu.name
+            vendor = gpu.vendor
 
-        print("NVIDIA GPU Info: " + gpu_name)
+        print(f"{vendor} GPU Info: " + gpu_name)
         print("Available GPU memory: {:.1f} G / {:.1f}G".format(
             memory_free / 1024.0, memory_total / 1024.0))
+
+        device_count = len(gpus)
+        print("device_count = {}".format(device_count))
 
         import torch
 
         torch_is_available = torch.cuda.is_available()
         print("torch_is_available = {}".format(torch_is_available))
-
-        device_count = torch.cuda.device_count()
-        print("device_count = {}".format(device_count))
-
-        device_name = torch.cuda.get_device_name(0)
-        print("device_name = {}".format(device_name))
 
     except:
         print("No GPU devices")
@@ -111,3 +110,25 @@ def collect_env():
     except Exception as e:
         print(f"The connection exception: {traceback.format_exc()}")
         pass
+
+
+def get_env_file():
+    global_services_dir = ClientConstants.get_global_services_dir()
+    env_config_file = os.path.join(global_services_dir, ".env")
+    # Create file if not exists
+    if not os.path.exists(env_config_file):
+        with open(env_config_file, 'w') as f:
+            f.write("")
+    return env_config_file
+
+
+def load_env():
+    env_config_file = get_env_file()
+    dotenv.load_dotenv(dotenv_path=env_config_file, override=True)
+
+
+def set_env_kv(key, value):
+    os.environ[key] = value
+    env_config_file = get_env_file()
+    dotenv.set_key(env_config_file, key, value)
+    load_env()

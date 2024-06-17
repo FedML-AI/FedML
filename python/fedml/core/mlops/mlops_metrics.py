@@ -7,7 +7,8 @@ import time
 import requests
 
 import fedml
-from . import MLOpsConfigs
+from .mlops_utils import MLOpsUtils
+from .mlops_configs import MLOpsConfigs
 from .mlops_device_perfs import MLOpsDevicePerfStats
 from .mlops_job_perfs import MLOpsJobPerfStats
 from ...computing.scheduler.master.server_constants import ServerConstants
@@ -16,18 +17,12 @@ from ...core.mlops.mlops_status import MLOpsStatus
 
 
 class MLOpsMetrics(object):
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, "_instance"):
-            orig = super(MLOpsMetrics, cls)
-            cls._instance = orig.__new__(cls, *args, **kw)
-            cls._instance.init()
-        return cls._instance
-
     def __init__(self):
-        pass
+        self.init()
 
     def init(self):
         self.messenger = None
+        self.send_message_func = None
         self.args = None
         self.run_id = None
         self.edge_id = None
@@ -38,8 +33,9 @@ class MLOpsMetrics(object):
         self.job_perfs = MLOpsJobPerfStats()
         self.device_perfs = MLOpsDevicePerfStats()
 
-    def set_messenger(self, msg_messenger, args=None):
+    def set_messenger(self, msg_messenger, args=None, send_message_func=None):
         self.messenger = msg_messenger
+        self.send_message_func = send_message_func
         if args is not None:
             self.args = args
             self.run_id = args.run_id
@@ -72,15 +68,17 @@ class MLOpsMetrics(object):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False, run_id=0):
+    def report_client_training_status(self, edge_id, status, running_json=None,
+                                      is_from_model=False, run_id=0, update_db=True):
         self.common_report_client_training_status(edge_id, status, run_id=run_id)
 
-        if is_from_model:
-            from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
-            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
-        else:
-            from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
-            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_client_data_interface import FedMLClientDataInterface
+                FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.slave.client_data_interface import FedMLClientDataInterface
+                FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def report_client_device_status_to_web_ui(self, edge_id, status, run_id=0):
         """
@@ -94,7 +92,7 @@ class MLOpsMetrics(object):
         message_json = json.dumps(msg)
         logging.info("report_client_device_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def common_report_client_training_status(self, edge_id, status, run_id=0):
         # if not self.comm_sanity_check():
@@ -109,7 +107,7 @@ class MLOpsMetrics(object):
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def broadcast_client_training_status(self, edge_id, status, is_from_model=False, run_id=0):
         # if not self.comm_sanity_check():
@@ -137,14 +135,14 @@ class MLOpsMetrics(object):
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("broadcast_client_training_status. message_json = %s" % message_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def client_send_exit_train_msg(self, run_id, edge_id, status, msg=None):
         topic_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "msg": msg if msg is not None else ""}
         message_json = json.dumps(msg)
         logging.info("client_send_exit_train_msg.")
-        self.messenger.send_message_json(topic_exit_train_with_exception, message_json)
+        self.send_message(topic_exit_train_with_exception, message_json)
 
     def report_client_id_status(self, edge_id, status, running_json=None,
                                 is_from_model=False, server_id="0", run_id=0, msg=""):
@@ -172,19 +170,30 @@ class MLOpsMetrics(object):
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "server_id": server_id, "msg": msg}
         message_json = json.dumps(msg)
         # logging.info("report_client_id_status. message_json = %s" % message_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status, edge_id=0, role=None, running_json=None, is_from_model=False):
+    def report_server_training_status(self, run_id, status, edge_id=0, role=None,
+                                      running_json=None, is_from_model=False, update_db=True):
         # if not self.comm_sanity_check():
         #     return
         self.common_report_server_training_status(run_id, status, role=role, edge_id=edge_id)
 
-        if is_from_model:
-            from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
-        else:
-            from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
-            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+
+    def report_job_status(self, run_id, status, master_id=None):
+        topic_name = f"master_agent/slave_agent/job_status/{run_id}"
+        payload = {"run_id": run_id, "status": status, "fedml_version": fedml.__version__}
+        if master_id is not None:
+            payload["master_agent"] = master_id
+
+        message_json = json.dumps(payload)
+        self.send_message(topic_name, message_json)
 
     def report_server_device_status_to_web_ui(self, run_id, status, edge_id=0, role=None):
         """
@@ -206,7 +215,7 @@ class MLOpsMetrics(object):
         # logging.info("report_server_device_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def common_report_server_training_status(self, run_id, status, role=None, edge_id=0):
         # if not self.comm_sanity_check():
@@ -215,6 +224,7 @@ class MLOpsMetrics(object):
         if role is None:
             role = "normal"
         msg = {
+            "timestamp": MLOpsUtils.get_ntp_time(),
             "run_id": run_id,
             "edge_id": edge_id,
             "status": status,
@@ -223,7 +233,7 @@ class MLOpsMetrics(object):
         # logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False, edge_id=None):
         if self.messenger is None:
@@ -239,7 +249,7 @@ class MLOpsMetrics(object):
         }
         logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
         if is_from_model:
             from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
@@ -248,19 +258,30 @@ class MLOpsMetrics(object):
             from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
             FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
-    def report_server_id_status(self, run_id, status, edge_id=None, server_id=None, server_agent_id=None):
+    def report_server_id_status(self, run_id, status, edge_id=None, server_id=None, server_agent_id=None,
+                                is_from_model=False, running_json=None, update_db=True):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id if server_agent_id is not None else
                                                        self.server_agent_id) + "/status"
-        msg = {"run_id": run_id, "edge_id": edge_id if edge_id is not None else self.edge_id, "status": status}
+        in_edge_id = edge_id if edge_id is not None else self.edge_id
+        msg = {"run_id": run_id, "edge_id": in_edge_id,
+               "status": status, "is_from_model": is_from_model}
         if server_id is not None:
             msg["server_id"] = server_id
         message_json = json.dumps(msg)
         logging.info(f"report_server_id_status; topic_name: {topic_name}, msg: {msg}")
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
         # logging.info("report_server_id_status. message_json = %s" % message_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
+
+        if update_db:
+            if is_from_model:
+                from ...computing.scheduler.model_scheduler.device_server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
+            else:
+                from ...computing.scheduler.master.server_data_interface import FedMLServerDataInterface
+                FedMLServerDataInterface.get_instance().save_job(run_id, in_edge_id, status, running_json)
 
     def report_client_training_metric(self, metric_json):
         # if not self.comm_sanity_check():
@@ -268,7 +289,7 @@ class MLOpsMetrics(object):
         topic_name = "fl_client/mlops/training_metrics"
         logging.info("report_client_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_server_training_metric(self, metric_json, payload=None):
         # if not self.comm_sanity_check():
@@ -279,7 +300,7 @@ class MLOpsMetrics(object):
         else:
             message_json = json.dumps(metric_json)
         # logging.info("report_server_training_metric. message_json = %s" % metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_endpoint_metric(self, metric_json, payload=None):
         # if not self.comm_sanity_check():
@@ -290,7 +311,7 @@ class MLOpsMetrics(object):
         else:
             message_json = json.dumps(metric_json)
         # logging.info("report_endpoint_metric. message_json = %s" % metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_fedml_train_metric(self, metric_json, run_id=0, is_endpoint=False):
         # if not self.comm_sanity_check():
@@ -299,42 +320,42 @@ class MLOpsMetrics(object):
         logging.info("report_fedml_train_metric. message_json = %s" % metric_json)
         metric_json["is_endpoint"] = is_endpoint
         message_json = json.dumps(metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_fedml_run_logs(self, logs_json, run_id=0):
         # if not self.comm_sanity_check():
         #     return
         topic_name = f"fedml_slave/fedml_master/logs/{run_id}"
         message_json = json.dumps(logs_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/training_roundx"
         message_json = json.dumps(round_info)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_client_model_info(self, model_info_json):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/client_model"
         message_json = json.dumps(model_info_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_aggregated_model_info(self, model_info_json):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/global_aggregated_model"
         message_json = json.dumps(model_info_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_training_model_net_info(self, model_net_info_json):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/training_model_net"
         message_json = json.dumps(model_net_info_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_llm_record(self, metric_json):
         # if not self.comm_sanity_check():
@@ -342,7 +363,7 @@ class MLOpsMetrics(object):
         topic_name = "model_serving/mlops/llm_input_output_record"
         logging.info("report_llm_record. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_edge_job_computing_cost(self, job_id, edge_id,
                                        computing_started_time, computing_ended_time,
@@ -359,7 +380,7 @@ class MLOpsMetrics(object):
                "computing_ended_time": computing_ended_time,
                "duration": duration, "user_id": user_id, "api_key": api_key}
         message_json = json.dumps(msg)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
         # logging.info("report_job_computing_cost. message_json = %s" % message_json)
 
     def report_logs_updated(self, run_id):
@@ -369,7 +390,7 @@ class MLOpsMetrics(object):
         msg = {"time": time.time()}
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_artifact_info(self, job_id, edge_id, artifact_name, artifact_type,
                              artifact_local_path, artifact_url,
@@ -388,7 +409,7 @@ class MLOpsMetrics(object):
             "timestamp": timestamp
         }
         message_json = json.dumps(artifact_info_json)
-        self.messenger.send_message_json(topic_name, message_json)
+        self.send_message(topic_name, message_json)
 
     def report_endpoint_status(self, end_point_id, model_status, timestamp=None,
                                end_point_name="", model_name="", model_inference_url=""):
@@ -401,8 +422,8 @@ class MLOpsMetrics(object):
                                      "model_status": model_status,
                                      "timestamp": int(format(time_param, '.0f'))}
 
-        self.messenger.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
-        self.messenger.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
+        self.send_message(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.send_message(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
 
     def report_run_log(
             self, run_id, device_id, log_list, log_source=None, use_mqtt=False
@@ -480,4 +501,10 @@ class MLOpsMetrics(object):
         self.device_perfs.stop_device_realtime_stats()
 
     def report_json_message(self, topic, payload):
-        self.messenger.send_message_json(topic, payload)
+        self.send_message(topic, payload)
+
+    def send_message(self, topic, payload):
+        if self.send_message_func is not None:
+            self.send_message_func(topic, payload)
+        elif self.messenger is not None:
+            self.messenger.send_message_json(topic, payload)

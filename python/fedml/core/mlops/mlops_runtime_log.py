@@ -5,6 +5,7 @@ import os
 import sys
 import threading
 import time
+import shutil
 from logging.handlers import TimedRotatingFileHandler
 
 from fedml import mlops
@@ -12,19 +13,19 @@ from fedml.core.mlops.mlops_utils import MLOpsUtils, MLOpsLoggingUtils, LogFile
 
 LOG_LEVEL = logging.INFO
 ROTATION_FREQUENCY = 'D'
+# when rollover is done, no more than backupCount files are kept - the oldest ones are deleted.
 BACKUP_COUNT = 100
 
 
 class MLOpsFileHandler(TimedRotatingFileHandler):
 
     def __init__(self, run_id, edge_id, log_config_file, filepath):
-        super(MLOpsFileHandler, self).__init__(filename=filepath, when=ROTATION_FREQUENCY, backupCount=BACKUP_COUNT,
-                                               encoding='utf-8')
+        super().__init__(filename=filepath, when=ROTATION_FREQUENCY,
+                         backupCount=BACKUP_COUNT,encoding='utf-8')
         self.run_id = run_id
         self.edge_id = edge_id
         self.file_path = filepath
         self.rotate_count = 0
-        self.backupCount = BACKUP_COUNT
         self.rotator: callable = self.update_config_and_rotate
         self.log_config_file = log_config_file
         self.__initialize_config()
@@ -32,17 +33,26 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
     def update_config_and_rotate(self, source, dest):
         # source = current log file name
         # dest = log file name (dated)
-        if os.path.exists(source):
-            os.rename(source, dest)
         MLOpsLoggingUtils.acquire_lock()
-        config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id, self.log_config_file)
+
+        # Check if the source and destination files exist. If it does, return
+        if os.path.exists(source):
+            # Copy the contents of the source file to the destination file
+            shutil.copy(source, dest)
+            # Clear everything in the source file
+            with open(source, 'w') as src_file:
+                src_file.truncate(0)
+            src_file.close()
+
+        config_data = MLOpsLoggingUtils.load_log_config(self.run_id, self.edge_id,
+                                                        self.log_config_file)
 
         # Update file name of current log file
         config_data[self.rotate_count].file_path = dest
         self.rotate_count += 1
 
         # Store the rotate count, and corresponding log file name in the config file
-        rotated_log_file = LogFile(file_path=source, uploaded_file_index=self.backupCount)
+        rotated_log_file = LogFile(file_path=source)
         config_data[self.rotate_count] = rotated_log_file
         MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.edge_id,
                                           log_config_file=self.log_config_file,
@@ -133,6 +143,8 @@ class MLOpsRuntimeLog:
             self.should_write_log_file = args.using_mlops
         else:
             self.should_write_log_file = False
+        if not hasattr(args, "log_file_dir"):
+            setattr(args, "log_file_dir", "./logs")
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id

@@ -95,6 +95,13 @@ class ClientConstants(object):
     INFERENCE_ENGINE_TYPE_INT_DEFAULT = 2
     INFERENCE_MODEL_VERSION = "1"
     INFERENCE_INFERENCE_SERVER_VERSION = "v2"
+    INFERENCE_REQUEST_TIMEOUT = 30
+
+    ENV_CONNECTION_TYPE_KEY = "FEDML_CONNECTION_TYPE"
+    WORKER_CONNECTIVITY_TYPE_HTTP = "http"
+    WORKER_CONNECTIVITY_TYPE_HTTP_PROXY = "http_proxy"
+    WORKER_CONNECTIVITY_TYPE_MQTT = "mqtt"
+    WORKER_CONNECTIVITY_TYPE_DEFAULT = WORKER_CONNECTIVITY_TYPE_HTTP
 
     MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING = "INITIALIZING"
     MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING = "DEPLOYING"
@@ -270,6 +277,13 @@ class ClientConstants(object):
     @staticmethod
     def get_model_serving_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir, exist_ok=True)
+        return model_file_dir
+
+    @staticmethod
+    def get_deploy_failed_log_dir():
+        model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs", "failed_logs")
         if not os.path.exists(model_file_dir):
             os.makedirs(model_file_dir, exist_ok=True)
         return model_file_dir

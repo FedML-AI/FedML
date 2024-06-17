@@ -1,5 +1,5 @@
 import logging
-from copy import deepcopy
+import platform
 
 import multiprocess as multiprocessing
 import os
@@ -9,7 +9,10 @@ import numpy as np
 import torch
 
 import fedml
+import dotenv
+
 from .computing.scheduler.env.collect_env import collect_env
+from fedml.computing.scheduler.env import set_env_kv, load_env
 from .constants import (
     FEDML_BACKEND_SERVICE_URL_DEV,
     FEDML_BACKEND_SERVICE_URL_LOCAL,
@@ -34,7 +37,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.30"
+__version__ = "0.9.0"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -90,9 +93,7 @@ def init(args=None, check_env=True, should_init_logs=True):
     # Windows/Linux/MacOS compatability issues on multi-processing
     # https://github.com/pytorch/pytorch/issues/3492
     """
-    if multiprocessing.get_start_method() != "spawn":
-        # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
-        multiprocessing.set_start_method("spawn", force=True)
+    _init_multiprocessing()
 
     """
     # https://stackoverflow.com/questions/53014306/error-15-initializing-libiomp5-dylib-but-found-libiomp5-dylib-already-initial
@@ -444,12 +445,33 @@ def _run_distributed():
     pass
 
 
+def _init_multiprocessing():
+    """
+    # Windows/Linux/MacOS compatability issues on multi-processing
+    # https://github.com/pytorch/pytorch/issues/3492
+    """
+    if platform.system() == "Windows":
+        if multiprocessing.get_start_method() != "spawn":
+            # force all platforms (Windows/Linux/macOS) to use the same way (spawn) for multiprocessing
+            multiprocessing.set_start_method("spawn", force=True)
+    else:
+        if multiprocessing.get_start_method() != "fork":
+            # force all platforms (Windows/Linux/macOS) to use the same way (fork) for multiprocessing
+            multiprocessing.set_start_method("fork", force=True)
+
+
 def set_env_version(version):
-    os.environ['FEDML_ENV_VERSION'] = version
+    set_env_kv("FEDML_ENV_VERSION", version)
+    load_env()
 
 
 def get_env_version():
-    return "release" if os.environ.get('FEDML_ENV_VERSION') is None else os.environ['FEDML_ENV_VERSION']
+    load_env()
+    version = os.getenv("FEDML_ENV_VERSION")
+    if version is None:
+        version = "release"
+        set_env_version(version)
+    return version
 
 
 def _get_backend_service():
@@ -506,7 +528,7 @@ def get_local_on_premise_platform_port():
 
 def _get_local_s3_like_service_url():
     return FEDML_S3_DOMAIN_LOCAL
-    
+
 
 from fedml import device
 from fedml import data

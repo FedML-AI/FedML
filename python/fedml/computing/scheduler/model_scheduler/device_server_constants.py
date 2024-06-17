@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 from os.path import expanduser
+from pathlib import Path
 
 import psutil
 import yaml
@@ -103,6 +104,9 @@ class ServerConstants(object):
     AUTO_DETECT_PUBLIC_IP = "auto_detect_public_ip"
     MODEL_INFERENCE_DEFAULT_PORT = 2203
     MODEL_CACHE_KEY_EXPIRE_TIME = 1 * 10
+
+    INFERENCE_REQUEST_TIMEOUT_KEY = "request_timeout_sec"
+    INFERENCE_REQUEST_TIMEOUT_DEFAULT = 30
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
@@ -295,9 +299,10 @@ class ServerConstants(object):
         return ip
 
     @staticmethod
-    def cleanup_run_process(run_id):
+    def cleanup_run_process(run_id, not_kill_subprocess=False):
         RunProcessUtils.cleanup_run_process(
-            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+            run_id, ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            not_kill_subprocess=not_kill_subprocess)
 
     @staticmethod
     def save_run_process(run_id, process_id):
@@ -329,8 +334,22 @@ class ServerConstants(object):
             info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_BOOTSTRAP_PROCESS)
 
     @staticmethod
+    def get_runner_infos():
+        local_pkg_data_dir = ServerConstants.get_data_dir()
+        os.makedirs(local_pkg_data_dir, exist_ok=True)
+        os.makedirs(os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)
+
+        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                        "runner_infos.yaml")
+        runner_info = {}
+        try:
+            runner_info = yaml.safe_load(Path(runner_info_file).read_text())
+        except Exception as e:
+            logging.error(f"Failed to parse runner info: {e}")
+        return runner_info
+
+    @staticmethod
     def save_runner_infos(unique_device_id, edge_id, run_id=None):
-        home_dir = expanduser("~")
         local_pkg_data_dir = ServerConstants.get_data_dir()
         os.makedirs(local_pkg_data_dir, exist_ok=True)
         os.makedirs(os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME), exist_ok=True)

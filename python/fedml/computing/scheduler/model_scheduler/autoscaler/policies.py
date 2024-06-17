@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, NonNegativeInt, NonNegativeFloat
+from pydantic import BaseModel, NonNegativeInt, NonNegativeFloat, validator
 
 
 class AutoscalingPolicy(BaseModel):
@@ -22,7 +22,7 @@ class AutoscalingPolicy(BaseModel):
     min_replicas: NonNegativeInt
     max_replicas: NonNegativeInt
     previous_triggering_value: float = None
-    release_replica_after_idle_secs: NonNegativeInt = 300  # default is after 5 minutes
+    release_replica_after_idle_secs: NonNegativeInt = None
     scaledown_delay_secs: NonNegativeInt = 60  # default is 1 minute
     scaleup_cost_secs: NonNegativeInt = 300  # default is 5 minutes
 
@@ -70,9 +70,10 @@ class EWMPolicy(AutoscalingPolicy):
     ub_threshold: NonNegativeFloat  # recommended value: 0.5
     lb_threshold: NonNegativeFloat  # recommended value: 0.5
 
-    @field_validator("metric")
-    def validate_option(cls, v):
-        assert v in ["ewm_latency", "ewm_qps"]
+    @validator("metric")
+    def metric_match(cls, v) -> str:
+        if v not in ["ewm_latency", "ewm_qps"]:
+            raise ValueError("Wrong metric name.")
         return v
 
 

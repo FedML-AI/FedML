@@ -128,15 +128,17 @@ class MLOpsLoggingUtils:
     @staticmethod
     def get_edge_id_from_args(args):
         if args.role == "server":
-            if hasattr(args, "server_id"):
+            # Considering that 0 is a valid value, we need to ensure it is not None rather than solely checking
+            # for truthiness
+            if getattr(args, "server_id", None) is not None:
                 edge_id = args.server_id
             else:
-                if hasattr(args, "edge_id"):
+                if getattr(args, "edge_id", None) is not None:
                     edge_id = args.edge_id
                 else:
                     edge_id = 0
         else:
-            if hasattr(args, "client_id"):
+            if getattr(args, "client_id", None) is not None:
                 edge_id = args.client_id
             elif hasattr(args, "client_id_list"):
                 if args.client_id_list is None:
@@ -148,10 +150,11 @@ class MLOpsLoggingUtils:
                     else:
                         edge_id = 0
             else:
-                if hasattr(args, "edge_id"):
+                if getattr(args, "edge_id", None) is not None:
                     edge_id = args.edge_id
                 else:
                     edge_id = 0
+
         return edge_id
 
     @staticmethod

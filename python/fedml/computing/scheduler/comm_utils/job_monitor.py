@@ -48,6 +48,7 @@ from ..model_scheduler.device_server_constants import ServerConstants
 class JobMonitor(Singleton):
     ENDPOINT_CONTAINER_LOG_PREFIX = "endpoint"
     TIME_INTERVAL_FOR_INFERENCE_ON_GATEWAY = 60 * 10
+    ENDPOINT_CONTAINER_LOG_SUBDIR = "monitor_endpoint_logs"
 
     def __init__(self):
         if not hasattr(self, "endpoint_unavailable_counter"):
@@ -104,91 +105,95 @@ class JobMonitor(Singleton):
         for endpoint_settings in endpoints_settings_list:
             endpoint_state = endpoint_settings["state"]
             if endpoint_state == "DEPLOYED" and endpoint_settings["enable_auto_scaling"]:
-                logging.info(f"After interval, check the autoscaler for async future list."
-                             f"{self.endpoints_autoscale_predict_future}")
-                # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
-                # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
-                # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
-                autoscaling_policy_config = \
-                    {
-                        "current_replicas": int(endpoint_settings["replica_num"]),
-                        "min_replicas": int(endpoint_settings["scale_min"]),
-                        "max_replicas": int(endpoint_settings["scale_max"]),
-                        "queries_per_replica": int(endpoint_settings["target_queries_per_replica"]),
-                        "window_size_secs": int(endpoint_settings["aggregation_window_size_seconds"]),
-                        "scaledown_delay_secs": int(endpoint_settings["scale_down_delay_seconds"]),
-                    }
-                autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
+                try:    # Should not let one endpoint affect the others
+                    logging.info(f"After interval, check the autoscaler for async future list."
+                                 f"{self.endpoints_autoscale_predict_future}")
+                    # TODO(fedml-dimitris): The policy can be set dynamically or be user specific.
+                    # Set the policy, here we use latency, but other metrics are possible as well, such as qps.
+                    # For more advanced use cases look for the testing scripts under the autoscaler/test directory.
+                    autoscaling_policy_config = \
+                        {
+                            "current_replicas": int(endpoint_settings["replica_num"]),
+                            "min_replicas": int(endpoint_settings["scale_min"]),
+                            "max_replicas": int(endpoint_settings["scale_max"]),
+                            "queries_per_replica": int(endpoint_settings["target_queries_per_replica"]),
+                            "window_size_secs": int(endpoint_settings["aggregation_window_size_seconds"]),
+                            "scaledown_delay_secs": int(endpoint_settings["scale_down_delay_seconds"]),
+                        }
+                    autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
 
-                e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \
-                                              endpoint_settings["model_name"]
+                    e_id, e_name, model_name = endpoint_settings["endpoint_id"], endpoint_settings["endpoint_name"], \
+                                                  endpoint_settings["model_name"]
 
-                logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
+                    logging.info(f"Querying the autoscaler for endpoint {e_id} with user settings {endpoint_settings}.")
 
-                # For every endpoint we just update the policy configuration.
-                autoscaling_policy.min_replicas = endpoint_settings["scale_min"]
-                autoscaling_policy.max_replicas = endpoint_settings["scale_max"]
-                # We retrieve a list of replicas for every endpoint. The number
-                # of running replicas is the length of that list.
-                current_replicas = len(fedml_model_cache.get_endpoint_replicas_results(e_id))
-                autoscaling_policy.current_replicas = current_replicas
-                logging.info(f"Endpoint {e_id} autoscaling policy: {autoscaling_policy}.")
+                    # For every endpoint we just update the policy configuration.
+                    autoscaling_policy.min_replicas = endpoint_settings["scale_min"]
+                    autoscaling_policy.max_replicas = endpoint_settings["scale_max"]
+                    # We retrieve a list of replicas for every endpoint. The number
+                    # of running replicas is the length of that list.
+                    current_replicas = len(fedml_model_cache.get_endpoint_replicas_results(e_id))
+                    autoscaling_policy.current_replicas = current_replicas
+                    logging.info(f"Endpoint {e_id} autoscaling policy: {autoscaling_policy}.")
 
-                scale_op = autoscaler.scale_operation_endpoint(
-                    autoscaling_policy,
-                    str(e_id))
+                    scale_op = autoscaler.scale_operation_endpoint(
+                        autoscaling_policy,
+                        str(e_id))
 
-                new_replicas = current_replicas + scale_op.value
+                    new_replicas = current_replicas + scale_op.value
 
-                logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
-                logging.info(f"New Replicas {new_replicas} for endpoint {e_id} .")
-                logging.info(f"Current Replicas {current_replicas} for endpoint {e_id} .")
-                if current_replicas == new_replicas:
-                    # Basically the autoscaler decided that no scaling operation should take place.
-                    logging.info(f"No scaling operation for endpoint {e_id}.")
-                    return
+                    logging.info(f"Scaling operation {scale_op.value} for endpoint {e_id} .")
+                    logging.info(f"New Replicas {new_replicas} for endpoint {e_id} .")
+                    logging.info(f"Current Replicas {current_replicas} for endpoint {e_id} .")
+                    if current_replicas == new_replicas:
+                        # Basically the autoscaler decided that no scaling operation should take place.
+                        logging.info(f"No scaling operation for endpoint {e_id}.")
+                        return
 
-                # Should scale in / out
-                curr_version = fedml.get_env_version()
+                    # Should scale in / out
+                    curr_version = fedml.get_env_version()
 
-                if curr_version == "release":
-                    mlops_prefix = "https://open.fedml.ai/"
-                elif curr_version == "test":
-                    mlops_prefix = "https://open-test.fedml.ai/"
-                else:
-                    logging.error(f"Do not support the version {curr_version}.")
-                    return
-                autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
-                url = f"{mlops_prefix}{autoscale_url_path}"
-
-                # Get cached token for authorization of autoscale request
-                cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
-                if cached_token is None:
-                    logging.error(f"Failed to get the cached token for endpoint {e_id}.")
-                    return
-
-                req_header = {
-                    "Authorization": f"Bearer {cached_token}"
-                }
-                req_body = {
-                    "endpointId": int(e_id),
-                    "replicasDesired": int(new_replicas)
-                }
-
-                try:
-                    logging.info(f"Sending the autoscale request to MLOps platform. url {url}, "
-                                 f"body {req_body}., header {req_header}")
-                    response = requests.post(
-                        url,
-                        headers=req_header,
-                        json=req_body
-                    )
-                    if response.status_code != 200:
-                        logging.error(f"Failed to send the autoscale request to MLOps platform.")
+                    if curr_version == "release":
+                        mlops_prefix = "https://open.fedml.ai/"
+                    elif curr_version == "test":
+                        mlops_prefix = "https://open-test.fedml.ai/"
                     else:
-                        logging.info(f"Successfully sent the autoscale request to MLOps platform.")
+                        logging.error(f"Do not support the version {curr_version}.")
+                        return
+                    autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
+                    url = f"{mlops_prefix}{autoscale_url_path}"
+
+                    # Get cached token for authorization of autoscale request
+                    cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
+                    if cached_token is None:
+                        logging.error(f"Failed to get the cached token for endpoint {e_id}.")
+                        return
+
+                    req_header = {
+                        "Authorization": f"Bearer {cached_token}"
+                    }
+                    req_body = {
+                        "endpointId": int(e_id),
+                        "replicasDesired": int(new_replicas)
+                    }
+
+                    try:
+                        logging.info(f"Sending the autoscale request to MLOps platform. url {url}, "
+                                     f"body {req_body}., header {req_header}")
+                        response = requests.post(
+                            url,
+                            headers=req_header,
+                            json=req_body
+                        )
+                        if response.status_code != 200:
+                            logging.error(f"Failed to send the autoscale request to MLOps platform.")
+                        else:
+                            logging.info(f"Successfully sent the autoscale request to MLOps platform.")
+                    except Exception as e:
+                        logging.error(f"Failed to send the autoscale request to MLOps platform. {e}")
                 except Exception as e:
-                    logging.error(f"Failed to send the autoscale request to MLOps platform. {e}")
+                    logging.error(f"Error in autoscaler reconcile after interval. {e}")
+                    pass
         return
 
     @staticmethod
@@ -204,6 +209,8 @@ class JobMonitor(Singleton):
             endpoint_replicas_details = {}
             if isinstance(endpoint_detail, str):
                 endpoint_replicas_details = json.loads(endpoint_detail)
+                if isinstance(endpoint_replicas_details, str):
+                    endpoint_replicas_details = json.loads(endpoint_replicas_details)
 
             if "result" in endpoint_replicas_details:
                 endpoint_replica_details = {}
@@ -216,14 +223,8 @@ class JobMonitor(Singleton):
         for endpoint_id, num_replica in res_to_mlops.items():
             curr_version = fedml.get_env_version()
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
-            if curr_version == "release":
-                mlops_prefix = "https://open.fedml.ai/"
-            elif curr_version == "test":
-                mlops_prefix = "https://open-test.fedml.ai/"
-            else:
-                logging.error(f"Do not support the version {curr_version}.")
-                return
-            url = f"{mlops_prefix}{num_replica_url_path}"
+            mlops_prefix = fedml._get_backend_service()
+            url = f"{mlops_prefix}/{num_replica_url_path}"
 
             cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
             if cached_token is None:
@@ -344,7 +345,7 @@ class JobMonitor(Singleton):
                     break
 
                 # Calc the timeout
-                started_time = int(float(job.started_time))
+                started_time = JobMonitor.get_started_time(job)
                 timeout = time.time() - started_time
 
                 job_type = JobRunnerUtils.parse_job_type(job.running_json)
@@ -352,15 +353,17 @@ class JobMonitor(Singleton):
                     continue
 
                 # Check if all processes of the specific run are exited
-                run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
-                all_run_processes_exited = True if len(run_process_list) <= 0 else False
-                if all_run_processes_exited:
-                    if not self.released_runs.get(str(job.job_id), False):
-                        self.released_runs[str(job.job_id)] = True
-                        # Release the gpu ids
-                        print(
-                            f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
-                        JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
+                # FIXME: Proactively release the gpu ids when the run processes have not even started yet as the docker
+                #  image is being pulled
+                # run_process_list = client_constants.ClientConstants.get_learning_process_list(job.job_id)
+                # all_run_processes_exited = True if len(run_process_list) <= 0 else False
+                # if all_run_processes_exited:
+                #     if not self.released_runs.get(str(job.job_id), False):
+                #         self.released_runs[str(job.job_id)] = True
+                #         # Release the gpu ids
+                #         print(
+                #             f"[run/device][{job.job_id}/{job.edge_id}] Release gpu resource when run processes has exited on monioring slave runs periodically.")
+                #         JobRunnerUtils.get_instance().release_gpu_ids(job.job_id, job.edge_id)
 
                 # Get the timeout threshold
                 timeout_threshold = None
@@ -379,8 +382,9 @@ class JobMonitor(Singleton):
 
                 # If the run processes have exited but run status is not completed and
                 # timeout is out of the range, then release gpu ids and report failed status to the master agent.
-                if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
-                        timeout_threshold is not None and timeout > timeout_threshold:
+                # if all_run_processes_exited and not SchedulerConstants.is_run_completed(job.status) and \
+                #         timeout_threshold is not None and timeout > timeout_threshold:
+                if timeout_threshold is not None and timeout > timeout_threshold:
                     # Report failed status to the master agent
                     mlops.log_training_failed_status(
                         run_id=job.job_id, edge_id=job.edge_id, enable_broadcast=True)
@@ -430,6 +434,15 @@ class JobMonitor(Singleton):
             logging.error(f"Exception when monitoring endpoint process on the slave agent.{traceback.format_exc()}")
             pass
 
+    @staticmethod
+    def get_started_time(job):
+        started_time = int(float(job.started_time))
+        if started_time <= 0:
+            started_time = int(float(job.updated_time))
+            if started_time <= 0:
+                started_time = time.time()
+        return started_time
+
     def monitor_master_run_process_status(self, server_id, device_info_reporter=None):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
@@ -441,7 +454,7 @@ class JobMonitor(Singleton):
                     break
 
                 # Calc the timeout
-                started_time = int(float(job.started_time))
+                started_time = JobMonitor.get_started_time(job)
                 timeout = time.time() - started_time
 
                 # Get the timeout threshold
@@ -574,6 +587,15 @@ class JobMonitor(Singleton):
                             is_endpoint_ready = self._check_and_reset_endpoint_status(
                                 job.job_id, job.edge_id, deployment_result, only_check_inference_ready_status=True)
 
+                            # [Hotfix] Under high-concurrency situation, the ready endpoint might not be available
+                            # But the container is in health state
+                            # In this case, we need to have an exact 503 code, instead of timeout to decide to restart
+                            # TODO(Raphael): Split the /ready endpoint and predict endpoint traffic
+                            if not self._lenient_check_replica_ready(deployment_result):
+                                is_endpoint_ready = False
+                            else:
+                                is_endpoint_ready = True
+
                             # Get endpoint container name prefix, prepare for restart
                             endpoint_container_name_prefix = \
                                 (device_client_constants.ClientConstants.get_endpoint_container_name(
@@ -689,7 +711,7 @@ class JobMonitor(Singleton):
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
 
-                        started_time = int(float(job.started_time))
+                        started_time = JobMonitor.get_started_time(job)
                         timeout = time.time() - started_time
                         if timeout > SchedulerConstants.ENDPOINT_DEPLOYMENT_DEPLOYING_TIMEOUT:
                             print(f"[Worker][{job.job_id}:{job.edge_id}] Due to timeout, "
@@ -736,6 +758,28 @@ class JobMonitor(Singleton):
                 except Exception as e:
                     pass
 
+    def _lenient_check_replica_ready(
+            self, deployment_result
+    ):
+        """
+        Double-check the replica's liveness using /ready api:
+            if 200 -> return True
+            [Critical] if timeout -> Could be under high pressure -> return True
+            if HTTP_202_ACCEPTED -> unhealthy -> return False
+        """
+        result_json = deployment_result
+        inference_url = result_json.get("model_url", None)
+
+        # Make a curl get to inference_url with timeout 5s
+        # TODO(Raphael): Also support PROXY and MQTT to check the readiness
+        response_ok = asyncio.run(FedMLHttpInference.is_inference_ready(inference_url, timeout=5))
+        if response_ok is None:
+            # This means the server return 202
+            return False
+
+        # 200 or Timeout
+        return True
+
     def _check_and_reset_endpoint_status(
             self, endpoint_id, device_id, deployment_result, only_check_inference_ready_status=False,
             should_release_gpu_ids=False
@@ -761,6 +805,7 @@ class JobMonitor(Singleton):
 
             if self.endpoint_unavailable_counter.get(str(endpoint_id)) is None:
                 self.endpoint_unavailable_counter[str(endpoint_id)] = 0
+
             if not response_ok:
                 self.endpoint_unavailable_counter[str(endpoint_id)] += 1
             else:
@@ -1011,8 +1056,11 @@ class JobMonitor(Singleton):
                 model_version = model_config.get("model_version", None)
                 endpoint_name = endpoint_json.get("end_point_name", None)
 
+                log_file_dir = os.path.join(
+                    device_client_constants.ClientConstants.get_log_file_dir(),
+                    JobMonitor.ENDPOINT_CONTAINER_LOG_SUBDIR)
                 log_file_path, program_prefix = MLOpsLoggingUtils.build_log_file_path_with_run_params(
-                    job.job_id, int(job.edge_id), device_server_constants.ServerConstants.get_log_file_dir(), is_server=True,
+                    job.job_id, int(job.edge_id), log_file_dir, is_server=False,
                     log_file_prefix=JobMonitor.ENDPOINT_CONTAINER_LOG_PREFIX,
                 )
 
@@ -1086,8 +1134,9 @@ class JobMonitor(Singleton):
                                 nano_second_str = container_time.split(".")[1][:9]
                                 t_datetime_obj = isoparse(container_time)
 
-                                if t_sec_offset is not None:
-                                    t_datetime_obj = t_datetime_obj + datetime.timedelta(seconds=t_sec_offset)
+                                # ISSUE: this will cause the timestamp is not correct.
+                                #if t_sec_offset is not None:
+                                #    t_datetime_obj = t_datetime_obj + datetime.timedelta(seconds=t_sec_offset)
                             except Exception as e:
                                 logging.error(f"Exception when parsing the container log time {e}")
                                 t_datetime_obj = datetime.datetime.now()

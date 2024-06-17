@@ -54,13 +54,16 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             echo "running on master"
-            path=/home/actions-runner/fedml-master
+            path=/home/fedml/FedML
             cd $path
+            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
-            path=/home/actions-runner/fedml-dev
+            path=/home/fedml/FedML
             cd $path
+            git pull
+            git checkout ${{ steps.extract_branch.outputs.branch }}
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
       - name: sync git repo to local pip
@@ -69,7 +72,7 @@ jobs:
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
           cd $homepath
-          bash ./devops/scripts/sync-fedml-pip.sh
+          # bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: attack tests
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}

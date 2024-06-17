@@ -10,6 +10,7 @@ import chardet
 import psutil
 import yaml
 
+from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
 import json
 from urllib import request
@@ -18,7 +19,6 @@ import fedml
 from packaging import version
 import sys
 import subprocess
-import GPUtil
 
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
@@ -95,7 +95,7 @@ def get_sys_runner_info():
         pass
 
     try:
-        gpus = GPUtil.getGPUs()
+        gpus = HardwareUtil.get_gpus()
         memory_total = 0.0
         memory_free = 0.0
         for gpu in gpus:
@@ -105,9 +105,11 @@ def get_sys_runner_info():
         gpu_available_mem = "{:.1f} G".format(memory_free / 1024.0)
         gpu_total_mem = "{:.1f}G".format(memory_total / 1024.0)
         gpu_count = len(gpus)
-        gpu_vendor = "nvidia"
+        if gpu_count:
+            gpu_vendor = gpus[0].vendor
+            gpu_device_name = gpus[0].name
 
-        gpu_device_name = torch.cuda.get_device_name(0)
+        # gpu_device_name = torch.cuda.get_device_name(0)
         gpu_info = gpu_device_name
     except:
         pass
@@ -168,7 +170,7 @@ def get_gpu_list():
 
         return ret_gpu_list[0:simulation_gpu_count]
 
-    gpu_list = GPUtil.getGPUs()
+    gpu_list = HardwareUtil.get_gpus()
     ret_gpu_list = list()
     for gpu in gpu_list:
         ret_gpu_item = {"ID": gpu.id, "uuid": gpu.uuid, "load": gpu.load,
@@ -189,7 +191,8 @@ def get_available_gpu_id_list(limit=1) -> List[int]:
                 available_gpu_ids.append(count)
         return available_gpu_ids[0:simulation_gpu_count]
 
-    gpu_available_list = GPUtil.getAvailable(order='memory', limit=limit, maxLoad=0.01, maxMemory=0.01)
+    gpu_available_list = HardwareUtil.get_available_gpu_ids(order='memory', limit=limit, max_load=0.01,
+                                                            max_memory=0.01)
     return gpu_available_list
 
 
@@ -219,9 +222,10 @@ def get_gpu_count_vendor():
     gpu_count = 0
     gpu_vendor = ""
     try:
-        gpus = GPUtil.getGPUs()
+        gpus = HardwareUtil.get_gpus()
         gpu_count = len(gpus)
-        gpu_vendor = "nvidia"
+        if gpu_count:
+            gpu_vendor = gpus[0].vendor
     except:
         pass
 
