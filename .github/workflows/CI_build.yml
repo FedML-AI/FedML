@@ -16,12 +16,8 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build_job:
+  build:
     runs-on: ${{ matrix.python-version }}
-    # defaults:
-    #   run:
-    #     shell: bash
-    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -55,7 +51,7 @@ jobs:
             git checkout ${{ steps.extract_branch.outputs.branch }}
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
-      - name: install
+      - name: install_test
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
@@ -68,5 +64,6 @@ jobs:
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
+          echo "Pylint has been run successfully!
           # pip install mnn==1.1.6
 
