@@ -7,6 +7,7 @@ import traceback
 
 import fedml
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
+from fedml.computing.scheduler.scheduler_core.account_manager import FedMLAccountManager
 
 
 class FedMLCloudServerManager:
@@ -32,7 +33,7 @@ class FedMLCloudServerManager:
         self.cloud_server_name = None
 
     @staticmethod
-    def start_local_cloud_server(user, version, cloud_device_id, runner_cmd_encoded):
+    def start_local_cloud_server(user, api_key, os_name, version, cloud_device_id, runner_cmd_encoded):
         if platform.system() != "Windows":
             os.setsid()
 
@@ -40,8 +41,21 @@ class FedMLCloudServerManager:
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_login.py")
         run_cmd = f"{get_python_program()} -W ignore {login_cmd} -t login -r cloud_server -u {str(user)} " \
-                  f"-v {version} -id {cloud_device_id} -rc {runner_cmd_encoded}"
+                  f"-k {api_key} -v {version} -id {cloud_device_id} -rc {runner_cmd_encoded}"
         os.system(run_cmd)
+
+    def start_local_master_server(
+            self, user, api_key, os_name, version, cloud_device_id, run_id, payload,
+            communication_manager=None, sender_message_queue=None, status_center_queue=None,
+            master_agent_instance=None
+    ):
+        if platform.system() != "Windows":
+            os.setsid()
+
+        master_agent_instance.login(
+            user, api_key=api_key, device_id=cloud_device_id, os_name=os_name,
+            role=FedMLAccountManager.ROLE_CLOUD_SERVER, runner_cmd=payload,
+            communication_manager=None, sender_message_queue=None, status_center_queue=None)
 
     def start_cloud_server_process_entry(self):
         try:

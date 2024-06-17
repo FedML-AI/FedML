@@ -96,6 +96,7 @@ class FedMLBaseSlaveAgent(ABC):
         self._init_database()
 
         # Initialize the master protocol
+        self.protocol_mgr.set_parent_agent(self)
         self.protocol_mgr.initialize(
             communication_manager=communication_manager,
             sender_message_queue=sender_message_queue,

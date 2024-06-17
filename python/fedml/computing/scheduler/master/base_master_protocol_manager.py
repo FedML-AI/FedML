@@ -2,6 +2,8 @@
 import base64
 import json
 import logging
+import time
+
 import fedml
 from ..comm_utils.constants import SchedulerConstants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
@@ -212,7 +214,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 run_id, request_json, args=self.args, edge_id=self.edge_id,
                 sender_message_queue=self.message_center.get_sender_message_queue(),
                 listener_message_queue=self.get_listener_message_queue(),
-                status_center_queue=self.get_status_queue()
+                status_center_queue=self.get_status_queue(),
+                communication_manager=self.get_listener_communication_manager()
             )
 
             process = self._get_job_runner_manager().get_runner_process(run_id)
@@ -227,16 +230,22 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 run_id, request_json, args=self.args, edge_id=self.edge_id,
                 sender_message_queue=self.message_center.get_sender_message_queue(),
                 listener_message_queue=self.get_listener_message_queue(),
-                status_center_queue=self.get_status_queue(), should_start_cloud_server=True,
+                status_center_queue=self.get_status_queue(),
+                communication_manager=self.get_listener_communication_manager(),
+                master_agent_instance=self.generate_agent_instance(),
+                should_start_cloud_server=True,
                 use_local_process_as_cloud_server=self.use_local_process_as_cloud_server
             )
 
             process = self._get_job_runner_manager().get_runner_process(run_id, is_cloud_server=True)
             if process is not None:
                 GeneralConstants.save_run_process(run_id, process.pid, is_master=True)
+
+            self.send_status_msg_to_edges(edge_id_list, run_id, request_json.get("server_id"))
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(request_json)
+            server_id = request_json.get("server_id", self.edge_id)
             run_id = request_json["runId"]
             run_id_str = str(run_id)
 
@@ -248,10 +257,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 run_id, request_json, args=self.args, edge_id=self.edge_id,
                 sender_message_queue=self.message_center.get_sender_message_queue(),
                 listener_message_queue=self.get_listener_message_queue(),
-                status_center_queue=self.get_status_queue()
+                status_center_queue=self.get_status_queue(),
+                communication_manager=self.get_listener_communication_manager()
             )
-
-            self.send_status_msg_to_edges(edge_id_list, run_id, self.edge_id)
 
     def callback_stop_train(self, topic, payload, use_payload=None):
         # Print the payload
@@ -389,6 +397,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
     def callback_request_device_status_in_job(self, topic, payload):
         self.response_device_status_in_job(topic, payload)
+
+    def callback_proxy_unknown_messages(self, run_id, topic, payload):
+        self._get_job_runner_manager().callback_proxy_unknown_messages(run_id, topic, payload)
 
     def process_extra_queues(self, extra_queues):
         self.rebuild_status_center(extra_queues[0])
@@ -550,7 +561,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def send_status_msg_to_edges(self, edge_id_list, run_id, server_id, context=None):
         # Send status message to all edges
         for edge_id in edge_id_list:
-            self.send_status_check_msg(run_id, edge_id, self.edge_id, context=context)
+            self.send_status_check_msg(run_id, edge_id, server_id, context=context)
 
     def report_exception_status(self, run_id):
         self.mlops_metrics.report_job_status(run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION)
@@ -562,3 +573,9 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     @abstractmethod
     def _generate_protocol_manager_instance(self, args, agent_config=None):
         return None
+
+    def start_master_server_instance(self, payload):
+        super().on_agent_communication_connected(None)
+
+        self.receive_message_json(self.topic_start_train, payload)
+

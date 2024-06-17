@@ -45,6 +45,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         self.mlops_metrics = None
         self.status_reporter = None
         self.user_name = args.user_name
+        self.parent_agent = None
 
         fedml._init_multiprocessing()
 
@@ -282,7 +283,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
 
         return None
 
-    def get_get_protocol_communication_manager(self):
+    def get_protocol_communication_manager(self):
         return self.communication_mgr
 
     def get_protocol_sender_message_queue(self):
@@ -291,6 +292,12 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
     def get_protocol_status_center_queue(self):
         return self.get_status_queue()
 
+    def get_subscribed_topics(self):
+        return self.subscribed_topics
+
     def send_agent_active_msg(self, edge_id):
         active_msg = {"ID": edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_IDLE}
         self.message_center.send_message_json(self.topic_active, json.dumps(active_msg))
+
+    def set_parent_agent(self, parent_agent):
+        self.parent_agent = parent_agent

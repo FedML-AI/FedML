@@ -133,7 +133,7 @@ class FedMLMessageCenter(object):
         return self.sender_message_queue
 
     def start_sender(self, message_center_name=None):
-        self.sender_message_queue = multiprocessing.Manager().Queue(-1)
+        self.sender_message_queue = multiprocessing.Queue()
         self.message_event = multiprocessing.Event()
         self.message_event.clear()
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
@@ -258,9 +258,15 @@ class FedMLMessageCenter(object):
 
         self.release_sender_mqtt_mgr()
 
+    def get_protocol_communication_manager(self):
+        return None
+
     def setup_listener_mqtt_mgr(self):
         if self.listener_mqtt_mgr is not None:
             return
+
+        # self.listener_mqtt_mgr = self.get_protocol_communication_manager()
+        # return
 
         self.listener_mqtt_mgr = MqttManager(
             self.listener_agent_config["mqtt_config"]["BROKER_HOST"],
@@ -274,7 +280,11 @@ class FedMLMessageCenter(object):
         self.listener_mqtt_mgr.connect()
         self.listener_mqtt_mgr.loop_start()
 
+    def get_listener_communication_manager(self):
+        return self.listener_mqtt_mgr
+
     def release_listener_mqtt_mgr(self):
+        #return
         try:
             if self.listener_mqtt_mgr is not None:
                 self.listener_mqtt_mgr.loop_stop()
@@ -297,6 +307,9 @@ class FedMLMessageCenter(object):
             self.listener_topics.remove(topic)
             self.listener_handler_funcs.pop(topic)
 
+    def get_listener_handler(self, topic):
+        return self.listener_handler_funcs.get(topic)
+
     def get_message_runner(self):
         return None
 
@@ -304,7 +317,7 @@ class FedMLMessageCenter(object):
         return self.listener_message_queue
 
     def setup_listener_message_queue(self):
-        self.listener_message_queue = multiprocessing.Manager().Queue(-1)
+        self.listener_message_queue = multiprocessing.Queue()
 
     def start_listener(
             self, sender_message_queue=None, listener_message_queue=None,
@@ -315,13 +328,14 @@ class FedMLMessageCenter(object):
 
         if listener_message_queue is None:
             if self.listener_message_queue is None:
-                self.listener_message_queue = multiprocessing.Manager().Queue(-1)
+                self.listener_message_queue = multiprocessing.Queue()
         else:
             self.listener_message_queue = listener_message_queue
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config
-        message_runner = self.get_message_runner()
+        # message_runner = self.get_message_runner()
+        message_runner = self
         message_runner.listener_agent_config = agent_config
         if platform.system() == "Windows":
             self.listener_message_center_process = multiprocessing.Process(
@@ -427,6 +441,11 @@ class FedMLMessageCenter(object):
                 message_handler_func_name = self.listener_handler_funcs.get(message_entity.topic, None)
                 if message_handler_func_name is not None:
                     methodcaller(message_handler_func_name, message_entity.topic, message_entity.payload)(self)
+                else:
+                    if hasattr(self, "callback_proxy_unknown_messages") and \
+                            self.callback_proxy_unknown_messages is not None:
+                        self.callback_proxy_unknown_messages(
+                            message_entity.run_id, message_entity.topic, message_entity.payload)
             except Exception as e:
                 if message_entity is not None:
                     logging.info(
