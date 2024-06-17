@@ -1,12 +1,12 @@
 REPO=$1
 ACCESS_TOKEN=$2
-ARCH=$3
 DOCKER_PULL=false
+ARCH=linux64
 TAG="0.1.0"
 
-if [ $# != 3 ]; then
+if [ $# != 2 ]; then
   echo "Please provide five arguments."
-  echo "./runner-start.sh [YourGitRepo][YourGitHubRunnerToken][YourArch]"
+  echo "./runner-start.sh [YourGitRepo][YourGitHubRunnerToken]"
   exit -1
 fi
 
