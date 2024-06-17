@@ -34,7 +34,6 @@ jobs:
             else
               echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
           fi
-          id: extract_branch
         id: extract_branch
       - id: fedml_source_code_home
         name: cd to master or dev branch and git pull
