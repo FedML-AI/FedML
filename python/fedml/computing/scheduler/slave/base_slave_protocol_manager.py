@@ -148,12 +148,9 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
     def stop(self):
         if self.model_device_server is not None:
-            self.model_device_server.stop()
             self.model_device_server = None
 
         if self.model_device_client_list is not None:
-            for model_client in self.model_device_client_list:
-                model_client.stop()
             self.model_device_client_list.clear()
             self.model_device_client_list = None
 

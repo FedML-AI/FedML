@@ -33,6 +33,7 @@ class FedMLUnitedAgent(Singleton):
         # Get the communication manager, sender message queue
         shared_communication_mgr = launch_slave_agent.get_protocol_manager().get_protocol_communication_manager()
         shared_slave_sender_message_queue = launch_slave_agent.get_protocol_manager().get_protocol_sender_message_queue()
+        shared_slave_sender_message_event = launch_slave_agent.get_protocol_manager().get_protocol_sender_message_event()
 
         # Login with the launch master role based on
         # the shared communication manager, sender message center
@@ -48,6 +49,7 @@ class FedMLUnitedAgent(Singleton):
         shared_slave_status_center_queue = launch_slave_agent.get_protocol_manager().get_protocol_status_center_queue()
         shared_master_status_center_queue = launch_master_agent.get_protocol_manager().get_protocol_status_center_queue()
         shared_master_sender_message_queue = launch_master_agent.get_protocol_manager().get_protocol_sender_message_queue()
+        shared_master_sender_message_event = launch_master_agent.get_protocol_manager().get_protocol_sender_message_event()
 
         # Login with the deployment master role based on
         # the shared communication manager, sender message center, status center
@@ -56,7 +58,8 @@ class FedMLUnitedAgent(Singleton):
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM,
             communication_manager=shared_communication_mgr,
             sender_message_queue=shared_master_sender_message_queue,
-            status_center_queue=shared_master_status_center_queue
+            status_center_queue=shared_master_status_center_queue,
+            sender_message_event=shared_master_sender_message_event
         )
 
         # Login with the deployment slave role based on
@@ -66,7 +69,8 @@ class FedMLUnitedAgent(Singleton):
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_WORKER_ON_PREM,
             communication_manager=shared_communication_mgr,
             sender_message_queue=shared_slave_sender_message_queue,
-            status_center_queue=shared_slave_status_center_queue
+            status_center_queue=shared_slave_status_center_queue,
+            sender_message_event=shared_slave_sender_message_event
         )
 
         # Start the slave agent to connect to servers and loop forever.

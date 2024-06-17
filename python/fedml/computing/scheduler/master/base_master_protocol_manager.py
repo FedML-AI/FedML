@@ -2,7 +2,6 @@
 import base64
 import json
 import logging
-import time
 
 import fedml
 from ..comm_utils.constants import SchedulerConstants
@@ -240,8 +239,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             process = self._get_job_runner_manager().get_runner_process(run_id, is_cloud_server=True)
             if process is not None:
                 GeneralConstants.save_run_process(run_id, process.pid, is_master=True)
-
-            self.send_status_msg_to_edges(edge_id_list, run_id, request_json.get("server_id"))
         elif self.run_as_cloud_server:
             self.server_agent_id = request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(request_json)
@@ -260,6 +257,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 status_center_queue=self.get_status_queue(),
                 communication_manager=self.get_listener_communication_manager()
             )
+
+            self.send_status_msg_to_edges(edge_id_list, run_id, server_id)
 
     def callback_stop_train(self, topic, payload, use_payload=None):
         # Print the payload

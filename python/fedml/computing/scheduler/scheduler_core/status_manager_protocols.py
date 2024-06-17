@@ -143,6 +143,9 @@ class FedMLStatusManager(object):
         if self.status_center.is_deployment_status_center and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
             self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
 
+        self.message_center.stop_message_center()
+        self.status_center.stop_status_center()
+
     def process_job_exception_status(self, master_id, status):
         # Report exception job status
         self.report_exception_status(status)

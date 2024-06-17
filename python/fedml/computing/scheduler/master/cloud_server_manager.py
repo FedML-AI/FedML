@@ -49,13 +49,17 @@ class FedMLCloudServerManager:
             communication_manager=None, sender_message_queue=None, status_center_queue=None,
             master_agent_instance=None
     ):
+        logging.info(f"Local master server pid: {os.getpid()}")
         if platform.system() != "Windows":
             os.setsid()
 
         master_agent_instance.login(
             user, api_key=api_key, device_id=cloud_device_id, os_name=os_name,
             role=FedMLAccountManager.ROLE_CLOUD_SERVER, runner_cmd=payload,
-            communication_manager=None, sender_message_queue=None, status_center_queue=None)
+            communication_manager=None, sender_message_queue=None,
+            status_center_queue=None)
+
+        master_agent_instance.stop()
 
     def start_cloud_server_process_entry(self):
         try:

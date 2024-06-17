@@ -25,7 +25,8 @@ class FedMLBaseSlaveAgent(ABC):
     def login(
             self, userid, api_key=None, device_id=None,
             os_name=None, need_to_check_gpu=False, role=None,
-            communication_manager=None, sender_message_queue=None, status_center_queue=None
+            communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Preprocess the login args
         if need_to_check_gpu:
@@ -61,7 +62,8 @@ class FedMLBaseSlaveAgent(ABC):
             self._initialize_protocol_manager(
                 communication_manager=communication_manager,
                 sender_message_queue=sender_message_queue,
-                status_center_queue=status_center_queue)
+                status_center_queue=status_center_queue,
+                sender_message_event=sender_message_event)
         except Exception as e:
             FedMLAccountManager.write_login_failed_file(is_client=True)
             self.protocol_mgr.stop()
@@ -90,7 +92,8 @@ class FedMLBaseSlaveAgent(ABC):
         self.protocol_mgr.agent_config = login_result.agent_config
 
     def _initialize_protocol_manager(
-            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+            self, communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Init local database
         self._init_database()
@@ -100,7 +103,8 @@ class FedMLBaseSlaveAgent(ABC):
         self.protocol_mgr.initialize(
             communication_manager=communication_manager,
             sender_message_queue=sender_message_queue,
-            status_center_queue=status_center_queue)
+            status_center_queue=status_center_queue,
+            sender_message_event=sender_message_event)
 
         # Start the client API process
         self._start_slave_api()

@@ -29,11 +29,12 @@ class FedMLMessageCenter(object):
     MESSAGE_SENT_SUCCESS_RECORDS_FILE = "message-sent-success-records.log"
     MESSAGE_RECEIVED_RECORDS_FILE = "message-received-records.log"
 
-    def __init__(self, agent_config=None, sender_message_queue=None, listener_message_queue=None):
+    def __init__(self, agent_config=None, sender_message_queue=None,
+                 listener_message_queue=None, sender_message_event=None):
         self.sender_agent_config = agent_config
         self.listener_agent_config = agent_config
         self.sender_message_queue = sender_message_queue
-        self.message_event = None
+        self.message_event = sender_message_event
         self.message_center_process = None
         self.sender_mqtt_mgr = None
         self.sender_mlops_metrics = None
@@ -132,6 +133,9 @@ class FedMLMessageCenter(object):
     def get_sender_message_queue(self):
         return self.sender_message_queue
 
+    def get_sender_message_event(self):
+        return self.message_event
+
     def start_sender(self, message_center_name=None):
         self.sender_message_queue = multiprocessing.Queue()
         self.message_event = multiprocessing.Event()
@@ -154,7 +158,7 @@ class FedMLMessageCenter(object):
             )
         self.message_center_process.start()
 
-    def stop(self):
+    def stop_message_center(self):
         if self.message_event is not None:
             self.message_event.set()
 
@@ -165,6 +169,10 @@ class FedMLMessageCenter(object):
         if self.message_event is not None and self.message_event.is_set():
             logging.info("Received message center stopping event.")
             raise MessageCenterStoppedException("Message center stopped (for sender)")
+
+        if self.listener_message_event is not None and self.listener_message_event.is_set():
+            logging.info("Received message center stopping event.")
+            raise MessageCenterStoppedException("Message center stopped (for listener)")
 
     def send_message(self, topic, payload, run_id=None):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload, run_id=run_id)
@@ -204,6 +212,9 @@ class FedMLMessageCenter(object):
                 self.save_message_record(message_entity.run_id, message_entity.device_id, sent_message_record)
 
     def run_sender(self, message_event, message_queue, message_center_name):
+        if platform.system() != "Windows":
+            os.setsid()
+
         self.message_event = message_event
         self.sender_message_queue = message_queue
         self.message_center_name = message_center_name
@@ -321,7 +332,7 @@ class FedMLMessageCenter(object):
 
     def start_listener(
             self, sender_message_queue=None, listener_message_queue=None,
-            agent_config=None, message_center_name=None, extra_queues=None
+            sender_message_event=None, agent_config=None, message_center_name=None, extra_queues=None
     ):
         if self.listener_message_center_process is not None:
             return
@@ -342,7 +353,7 @@ class FedMLMessageCenter(object):
                 target=message_runner.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
-                    message_center_name, extra_queues
+                    sender_message_event, message_center_name, extra_queues
                 )
             )
         else:
@@ -350,7 +361,7 @@ class FedMLMessageCenter(object):
                 target=message_runner.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
-                    message_center_name, extra_queues
+                    sender_message_event, message_center_name, extra_queues
                 )
             )
         self.listener_message_center_process.start()
@@ -385,13 +396,19 @@ class FedMLMessageCenter(object):
         self.listener_mqtt_mgr.unsubscribe_msg(topic)
 
     def run_listener_dispatcher(
-            self, message_event, message_queue, listener_funcs, sender_message_queue,
+            self, listener_message_event, listener_message_queue,
+            listener_funcs, sender_message_queue, sender_message_event,
             message_center_name, extra_queues
     ):
-        self.listener_message_event = message_event
-        self.listener_message_queue = message_queue
+        if platform.system() != "Windows":
+            os.setsid()
+
+        self.listener_message_event = listener_message_event
+        self.listener_message_queue = listener_message_queue
         self.listener_handler_funcs = listener_funcs
         self.message_center_name = message_center_name
+        self.sender_message_queue = sender_message_queue
+        self.message_event = sender_message_event
 
         self.setup_listener_mqtt_mgr()
 
@@ -417,7 +434,7 @@ class FedMLMessageCenter(object):
 
                 # Get the message from the queue
                 try:
-                    message_body = message_queue.get(block=False, timeout=0.1)
+                    message_body = listener_message_queue.get(block=False, timeout=0.1)
                 except queue.Empty as e:  # If queue is empty, then break loop
                     message_body = None
                 if message_body is None:
