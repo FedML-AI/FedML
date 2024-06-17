@@ -17,6 +17,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build_job:
+    runs-on: ${{ matrix.python-version }}
     # defaults:
     #   run:
     #     shell: bash
@@ -27,8 +28,7 @@ jobs:
         os: [ Linux ]
         arch: [X64]
         python-version: ['python3.8', 'python3.9', 'python3.10', 'python3.11']
-
-    runs-on: [ self-hosted,  ${{ matrix.os }}, ${{ matrix.python-version }} ]
+    
     timeout-minutes: 5
     steps:
       - name: Extract branch name
