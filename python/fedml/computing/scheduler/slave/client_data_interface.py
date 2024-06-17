@@ -343,6 +343,15 @@ class FedMLClientDataInterface(Singleton):
 
         self.close_job_db()
 
+    def check_if_table_exist(self, current_db_cursor):
+        results = current_db_cursor.execute("select * from sqlite_master where type='table' and name='jobs';")
+        if results is None:
+            return False
+        result_len = 0
+        for row in results:
+            result_len += 1
+        return False if result_len == 0 else True
+
     def get_agent_status(self, edge_id=0):
         self.open_job_db()
         enabled = 1

@@ -42,3 +42,7 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager, ABC):
             run_id, args=self.args, server_id=server_id, request_json=complete_payload,
             run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server,
             use_local_process_as_cloud_server=self.use_local_process_as_cloud_server)
+
+    def generate_agent_instance(self):
+        from .master_agent import FedMLLaunchMasterAgent
+        return FedMLLaunchMasterAgent()

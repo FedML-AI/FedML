@@ -210,7 +210,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
         from multiprocessing import Process
         completed_event = multiprocessing.Event()
-        info_queue = multiprocessing.Manager().Queue(-1)
+        info_queue = multiprocessing.Queue()
         if platform.system() == "Windows":
             download_process = multiprocessing.Process(
                 target=self.download_package_proc,

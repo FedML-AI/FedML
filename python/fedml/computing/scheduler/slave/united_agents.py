@@ -31,8 +31,8 @@ class FedMLUnitedAgent(Singleton):
         )
 
         # Get the communication manager, sender message queue
-        shared_communication_mgr = launch_slave_agent.get_protocol_manager().get_get_protocol_communication_manager()
-        shared_sender_message_queue = launch_slave_agent.get_protocol_manager().get_protocol_sender_message_queue()
+        shared_communication_mgr = launch_slave_agent.get_protocol_manager().get_protocol_communication_manager()
+        shared_slave_sender_message_queue = launch_slave_agent.get_protocol_manager().get_protocol_sender_message_queue()
 
         # Login with the launch master role based on
         # the shared communication manager, sender message center
@@ -41,12 +41,13 @@ class FedMLUnitedAgent(Singleton):
             os_name=os_name, runner_cmd=runner_cmd,
             role=FedMLAccountManager.ROLE_GPU_MASTER_SERVER,
             communication_manager=shared_communication_mgr,
-            sender_message_queue=shared_sender_message_queue
+            sender_message_queue=None
         )
 
         # Get the status center queue
         shared_slave_status_center_queue = launch_slave_agent.get_protocol_manager().get_protocol_status_center_queue()
         shared_master_status_center_queue = launch_master_agent.get_protocol_manager().get_protocol_status_center_queue()
+        shared_master_sender_message_queue = launch_master_agent.get_protocol_manager().get_protocol_sender_message_queue()
 
         # Login with the deployment master role based on
         # the shared communication manager, sender message center, status center
@@ -54,7 +55,7 @@ class FedMLUnitedAgent(Singleton):
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM,
             communication_manager=shared_communication_mgr,
-            sender_message_queue=shared_sender_message_queue,
+            sender_message_queue=shared_master_sender_message_queue,
             status_center_queue=shared_master_status_center_queue
         )
 
@@ -64,7 +65,7 @@ class FedMLUnitedAgent(Singleton):
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_WORKER_ON_PREM,
             communication_manager=shared_communication_mgr,
-            sender_message_queue=shared_sender_message_queue,
+            sender_message_queue=shared_slave_sender_message_queue,
             status_center_queue=shared_slave_status_center_queue
         )
 

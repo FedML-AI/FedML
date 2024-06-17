@@ -95,6 +95,7 @@ class FedMLBaseMasterAgent(ABC):
         self._init_database()
 
         # Initialize the master protocol
+        self.protocol_mgr.set_parent_agent(self)
         self.protocol_mgr.initialize(
             communication_manager=communication_manager,
             sender_message_queue=sender_message_queue,
@@ -141,3 +142,15 @@ class FedMLBaseMasterAgent(ABC):
     @abstractmethod
     def _generate_protocol_manager_instance(self, args, agent_config=None):
         return None
+
+    def start_master_server_instance(self, payload):
+        self.protocol_mgr.start_master_server_instance(payload)
+
+    def generate_agent_instance(self):
+        return FedMLBaseMasterAgent()
+
+    def process_job_complete_status(self, run_id, topic, payload):
+        if topic in self.protocol_mgr.get_subscribed_topics():
+            message_handler = self.protocol_mgr.get_listener_handler(topic)
+            if message_handler is not None:
+                message_handler(topic, payload)
