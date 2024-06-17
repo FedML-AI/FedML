@@ -30,7 +30,13 @@ jobs:
     steps:
       - name: Extract branch name
         shell: bash
-        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV
+            else
+              echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          fi
+          id: extract_branch
         id: extract_branch
       - id: fedml_source_code_home
         name: cd to master or dev branch and git pull
@@ -52,7 +58,7 @@ jobs:
             git checkout ${{ steps.extract_branch.outputs.branch }}
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
-      - name: install
+      - name: pip_install
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
