@@ -2,11 +2,13 @@
 import json
 import logging
 import multiprocessing
+import os
 import sys
 import time
 import traceback
 import uuid
 import fedml
+from ..comm_utils.run_process_utils import RunProcessUtils
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ....core.mlops.mlops_metrics import MLOpsMetrics
@@ -60,7 +62,8 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         pass
 
     def initialize(
-            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+            self, communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Generate the message topics
         self.generate_topics()
@@ -86,6 +89,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
         # Start the message center to process edge related messages.
         if sender_message_queue is None:
             self.setup_message_center()
+            sender_message_event = self.message_center.get_sender_message_event()
         else:
             self.rebuild_message_center(sender_message_queue)
 
@@ -94,13 +98,14 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
 
         # Start the status center to process edge related status.
         if status_center_queue is None:
-            self.start_status_listener_center()
+            self.start_status_listener_center(sender_message_event=sender_message_event)
         else:
             self.set_status_queue(status_center_queue)
             self.rebuild_status_center(status_center_queue)
 
         # Start the message center for listener
         self.start_listener(sender_message_queue=self.message_center.get_sender_message_queue(),
+                            sender_message_event=sender_message_event,
                             agent_config=self.agent_config,
                             message_center_name=self.message_center_name,
                             extra_queues=[self.get_status_queue()])
@@ -124,6 +129,8 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
                 logging.info("Server tracing: {}".format(traceback.format_exc()))
 
         finally:
+            logging.info(f"Protocol manager is about to exit, pid: {os.getpid()}")
+
             FedMLAccountManager.write_login_failed_file(is_client=not self.is_master_agent)
 
             self.stop()
@@ -134,7 +141,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
                 clean_process_group=False)
             sys.exit(1)
 
-    def stop(self):
+    def stop(self, kill_process=False):
         if self.communication_mgr is not None:
             # noinspection PyBroadException
             try:
@@ -146,7 +153,9 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
             self.communication_mgr.loop_stop()
             self.communication_mgr.disconnect()
 
-        self.release_message_center()
+        if kill_process:
+            self.release_message_center()
+            RunProcessUtils.kill_process(os.getppid(), exclude_current_pid=True)
 
     @abstractmethod
     def _init_extra_items(self):
@@ -210,20 +219,37 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
 
     def release_message_center(self):
         try:
+            self.stop_message_center()
+
             if self.message_center is not None:
-                self.message_center.stop()
+                self.message_center.stop_message_center()
                 self.message_center = None
 
         except Exception as e:
             logging.error(
-                f"Failed to release slave communication manager with Exception {e}. "
+                f"Failed to release the message center with Exception {e}. "
                 f"Traceback: {traceback.format_exc()}")
             pass
 
-    def start_status_listener_center(self):
+    def release_status_center(self):
+        try:
+            self.stop_status_center()
+
+            if self.status_center is not None:
+                self.status_center.stop_status_center()
+                self.status_center = None
+
+        except Exception as e:
+            logging.error(
+                f"Failed to release the status center with Exception {e}. "
+                f"Traceback: {traceback.format_exc()}")
+            pass
+
+    def start_status_listener_center(self, sender_message_event=None):
         self.start_status_center(
             sender_message_center_queue=self.message_center.get_sender_message_queue(),
             listener_message_center_queue=self.get_listener_message_queue(),
+            sender_message_event=sender_message_event,
             is_slave_agent=not self.is_master_agent
         )
 
@@ -288,6 +314,9 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
 
     def get_protocol_sender_message_queue(self):
         return self.message_center.get_sender_message_queue()
+
+    def get_protocol_sender_message_event(self):
+        return self.message_center.get_sender_message_event()
 
     def get_protocol_status_center_queue(self):
         return self.get_status_queue()

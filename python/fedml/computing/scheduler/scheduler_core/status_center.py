@@ -1,4 +1,5 @@
 import logging
+import os
 import platform
 import time
 
@@ -107,7 +108,9 @@ class FedMLStatusCenter(object):
         return None
 
     def start_status_center(self, sender_message_center_queue=None,
-                            listener_message_center_queue=None, is_slave_agent=False):
+                            listener_message_center_queue=None,
+                            sender_message_event=None,
+                            is_slave_agent=False):
         self.status_queue = multiprocessing.Queue()
         self.status_event = multiprocessing.Event()
         self.status_event.clear()
@@ -121,20 +124,24 @@ class FedMLStatusCenter(object):
             self.status_center_process = multiprocessing.Process(
                 target=target_func, args=(
                     self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue
+                    self.status_listener_message_center_queue, sender_message_event
                 )
             )
         else:
             self.status_center_process = fedml.get_process(
                 target=target_func, args=(
                     self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue
+                    self.status_listener_message_center_queue, sender_message_event
                 )
             )
 
         self.status_center_process.start()
 
-    def check_message_stop_event(self):
+    def stop_status_center(self):
+        if self.status_event is not None:
+            self.status_event.set()
+
+    def check_status_stop_event(self):
         if self.status_event is not None and self.status_event.is_set():
             logging.info("Received status center stopping event.")
             raise StatusCenterStoppedException("Status center stopped (for sender)")
@@ -170,7 +177,11 @@ class FedMLStatusCenter(object):
 
     def run_status_dispatcher(self, status_event, status_queue,
                               sender_message_center_queue,
-                              listener_message_center_queue):
+                              listener_message_center_queue,
+                              sender_message_event):
+        if platform.system() != "Windows":
+            os.setsid()
+
         # Save the parameters
         self.status_event = status_event
         self.status_queue = status_queue
@@ -183,10 +194,11 @@ class FedMLStatusCenter(object):
             self.rebuild_message_center(sender_message_center_queue)
             message_center = FedMLMessageCenter(
                 sender_message_queue=sender_message_center_queue,
-                listener_message_queue=listener_message_center_queue
+                listener_message_queue=listener_message_center_queue,
+                sender_message_event=sender_message_event
             )
 
-        if sender_message_center_queue is not None:
+        if status_queue is not None:
             self.rebuild_status_center(status_queue)
 
         # Init status manager instances
@@ -197,7 +209,7 @@ class FedMLStatusCenter(object):
 
             # Check if we should stop status dispatcher
             try:
-                self.check_message_stop_event()
+                self.check_status_stop_event()
             except StatusCenterStoppedException as e:
                 break
 
@@ -266,7 +278,11 @@ class FedMLStatusCenter(object):
 
     def run_status_dispatcher_in_slave(self, status_event, status_queue,
                                        sender_message_center_queue,
-                                       listener_message_center_queue):
+                                       listener_message_center_queue,
+                                       sender_message_event):
+        if platform.system() != "Windows":
+            os.setsid()
+
         # Save the parameters
         self.status_event = status_event
         self.status_queue = status_queue
@@ -279,10 +295,11 @@ class FedMLStatusCenter(object):
             self.rebuild_message_center(sender_message_center_queue)
             message_center = FedMLMessageCenter(
                 sender_message_queue=sender_message_center_queue,
-                listener_message_queue=listener_message_center_queue
+                listener_message_queue=listener_message_center_queue,
+                sender_message_event=sender_message_event
             )
 
-        if sender_message_center_queue is not None:
+        if status_queue is not None:
             self.rebuild_status_center(status_queue)
 
         # Init status manager instances
@@ -294,7 +311,7 @@ class FedMLStatusCenter(object):
 
             # Check if we should stop status dispatcher
             try:
-                self.check_message_stop_event()
+                self.check_status_stop_event()
             except StatusCenterStoppedException as e:
                 break
 

@@ -24,7 +24,8 @@ class FedMLBaseMasterAgent(ABC):
     def login(
             self, user_id, api_key=None, device_id=None,
             os_name=None, role=None, runner_cmd=None,
-            communication_manager=None, sender_message_queue=None, status_center_queue=None
+            communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Login account
         login_result = FedMLAccountManager.get_instance().login(
@@ -52,7 +53,8 @@ class FedMLBaseMasterAgent(ABC):
             self._initialize_protocol_manager(
                 communication_manager=communication_manager,
                 sender_message_queue=sender_message_queue,
-                status_center_queue=status_center_queue)
+                status_center_queue=status_center_queue,
+                sender_message_event=sender_message_event)
         except Exception as e:
             FedMLAccountManager.write_login_failed_file(is_client=False)
             self.protocol_mgr.stop()
@@ -66,6 +68,9 @@ class FedMLBaseMasterAgent(ABC):
     def logout():
         GeneralConstants.cleanup_run_process(None, is_master=True)
         sys_utils.cleanup_all_fedml_server_api_processes()
+
+    def stop(self, kill_process=False):
+        self.protocol_mgr.stop(kill_process=kill_process)
 
     def _create_protocol_manager(self, role, login_result):
         if self.protocol_mgr is not None:
@@ -89,7 +94,8 @@ class FedMLBaseMasterAgent(ABC):
         self.protocol_mgr.use_local_process_as_cloud_server = self.use_local_process_as_cloud_server
 
     def _initialize_protocol_manager(
-            self, communication_manager=None, sender_message_queue=None, status_center_queue=None
+            self, communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Init local database
         self._init_database()
@@ -99,7 +105,8 @@ class FedMLBaseMasterAgent(ABC):
         self.protocol_mgr.initialize(
             communication_manager=communication_manager,
             sender_message_queue=sender_message_queue,
-            status_center_queue=status_center_queue)
+            status_center_queue=status_center_queue,
+            sender_message_event=sender_message_event)
 
         # Report the IDLE status to MLOps
         self.mlops_metrics.report_server_training_status(
@@ -150,6 +157,8 @@ class FedMLBaseMasterAgent(ABC):
         return FedMLBaseMasterAgent()
 
     def process_job_complete_status(self, run_id, topic, payload):
+        if self.protocol_mgr is None:
+            return
         if topic in self.protocol_mgr.get_subscribed_topics():
             message_handler = self.protocol_mgr.get_listener_handler(topic)
             if message_handler is not None:

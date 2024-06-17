@@ -57,13 +57,15 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
         super().stop_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
-            stopping_process = Process(
-                target=FedMLCloudServerManager.stop_cloud_server,
-                args=(run_id, server_id, args.agent_config))
-            stopping_process.start()
+            if not use_local_process_as_cloud_server:
+                stopping_process = Process(
+                    target=FedMLCloudServerManager.stop_cloud_server,
+                    args=(run_id, server_id, args.agent_config))
+                stopping_process.start()
 
             run_id_str = str(run_id)
             if self.master_agent_instance_map.get(run_id_str, None) is not None:
+                self.master_agent_instance_map.get(run_id_str).stop()
                 self.master_agent_instance_map.pop(run_id_str)
 
             if run_as_cloud_server:
@@ -78,18 +80,16 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
         super().complete_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
-            stopping_process = Process(
-                target=FedMLCloudServerManager.stop_cloud_server,
-                args=(run_id, server_id, args.agent_config))
-            stopping_process.start()
+            if not use_local_process_as_cloud_server:
+                stopping_process = Process(
+                    target=FedMLCloudServerManager.stop_cloud_server,
+                    args=(run_id, server_id, args.agent_config))
+                stopping_process.start()
 
             run_id_str = str(run_id)
             if self.master_agent_instance_map.get(run_id_str, None) is not None:
+                self.master_agent_instance_map.get(run_id_str).stop(kill_process=True)
                 self.master_agent_instance_map.pop(run_id_str)
-
-            if run_as_cloud_server:
-                time.sleep(1)
-                RunProcessUtils.kill_process(self.cloud_run_process_map[run_id_str].pid)
 
     def _start_cloud_server(
             self, args, run_id, request_json, edge_id=None,
@@ -111,6 +111,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             message_bytes = json.dumps(request_json).encode("ascii")
             base64_bytes = base64.b64encode(message_bytes)
             payload = base64_bytes.decode("ascii")
+            self.master_agent_instance_map[str(run_id)] = master_agent_instance
 
             logging.info("start the master server: {}".format(payload))
 
