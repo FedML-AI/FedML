@@ -69,7 +69,6 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             if run_as_cloud_server:
                 time.sleep(1)
                 RunProcessUtils.kill_process(self.cloud_run_process_map[run_id_str].pid)
-                #RunProcessUtils.kill_process(os.getpid())
 
     def complete_job_runner(
             self, run_id, args=None, server_id=None, request_json=None,
@@ -90,7 +89,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
 
             if run_as_cloud_server:
                 time.sleep(1)
-                RunProcessUtils.kill_process(os.getpid())
+                RunProcessUtils.kill_process(self.cloud_run_process_map[run_id_str].pid)
 
     def _start_cloud_server(
             self, args, run_id, request_json, edge_id=None,
