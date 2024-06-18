@@ -1,5 +1,9 @@
 
 from multiprocessing import Process
+from typing import Optional
+
+from fedml.computing.scheduler.scheduler_core.scheduler_base_protocol_manager import FedMLSchedulerBaseProtocolManager
+
 from ..comm_utils import sys_utils
 from ..comm_utils.job_cleanup import JobCleanup
 from ....core.mlops import MLOpsRuntimeLog, MLOpsMetrics
@@ -19,7 +23,7 @@ class FedMLBaseMasterAgent(ABC):
         self.status_reporter = None
         self.enable_simulation_cloud_agent = False
         self.use_local_process_as_cloud_server = False
-        self.protocol_mgr = None
+        self.protocol_mgr: Optional[FedMLSchedulerBaseProtocolManager] = None
 
     def login(
             self, user_id, api_key=None, device_id=None,

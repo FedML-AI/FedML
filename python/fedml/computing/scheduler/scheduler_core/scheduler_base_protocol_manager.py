@@ -1,4 +1,3 @@
-
 import json
 import logging
 import multiprocessing
@@ -16,7 +15,6 @@ from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from ..comm_utils import sys_utils
 from ..scheduler_core.message_center import FedMLMessageCenter
-from ..scheduler_core.status_center import FedMLStatusCenter
 from .account_manager import FedMLAccountManager
 from .general_constants import GeneralConstants
 from abc import ABC, abstractmethod
@@ -115,7 +113,6 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         self.communication_mgr.add_connected_listener(self.on_agent_communication_connected)
         self.communication_mgr.add_disconnected_listener(self.on_agent_communication_disconnected)
 
-
         # # Setup the message listener queue
         # self.message_center.setup_listener_message_queue()
 
@@ -132,7 +129,6 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         #                     agent_config=self.agent_config,
         #                     message_center_name=self.message_center_name,
         #                     extra_queues=[self.get_status_queue()])
-
 
     def start(self):
         # Start MQTT message loop
