@@ -118,6 +118,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         # Storage related
         src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
+        # TODO(Raphael): In the future, the data_cache_dir should not be controlled by the user. It only
+        #  used for internal avoiding checkpoint re-download. e.g. ~/.cache/huggingface/hub/
         data_cache_dir_input = config.get('data_cache_dir', "")
 
         # Others
@@ -225,15 +227,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     else:
         logging.warning("data_cache_dir_input is not a string or a dictionary, skip mounting it to the container")
 
-    # FedML format main entry filename, e.g., main.py
-    if relative_entry_fedml_format != "":
-        logging.info("Start copying the source code to the container...")
-        volumes.append(src_code_dir)
-        binds[src_code_dir] = {
-            "bind": dst_model_serving_dir,
-            "mode": "rw"
-        }
-        environment["MAIN_ENTRY"] = relative_entry_fedml_format
+    # Inject the source code
+    logging.info("Start copying the source code to the container...")
+    volumes.append(src_code_dir)
+    binds[src_code_dir] = {
+        "bind": dst_model_serving_dir,
+        "mode": "rw"
+    }
+    environment["MAIN_ENTRY"] = relative_entry_fedml_format
 
     # Host config
     host_config_dict = {

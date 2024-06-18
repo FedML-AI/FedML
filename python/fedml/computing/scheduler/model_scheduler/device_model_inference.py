@@ -21,6 +21,7 @@ from fedml.computing.scheduler.model_scheduler.device_model_monitor import FedML
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.device_mqtt_inference_protocol import FedMLMqttInference
 from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_protocol import FedMLHttpProxyInference
+from fedml.computing.scheduler.comm_utils.network_util import replace_url_with_path
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 
@@ -168,10 +169,27 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     return inference_response
 
 
+@api.post('/custom_inference/{end_point_id}/{path:path}')
+async def custom_inference(end_point_id, path: str, request: Request):
+    # Get json data
+    input_json = await request.json()
+
+    # Get header
+    header = request.headers
+
+    try:
+        inference_response = await _predict(end_point_id, input_json, header, path)
+    except Exception as e:
+        inference_response = {"error": True, "message": f"{traceback.format_exc()}"}
+
+    return inference_response
+
+
 async def _predict(
         end_point_id,
         input_json,
-        header=None
+        header=None,
+        path=None,
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     # Always increase the pending requests counter on a new incoming request.
     FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
@@ -245,7 +263,8 @@ async def _predict(
                     input_list,
                     output_list,
                     inference_type=in_return_type,
-                    connectivity_type=connectivity_type)
+                    connectivity_type=connectivity_type,
+                    path=path)
 
             # Calculate model metrics
             try:
@@ -336,9 +355,12 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 
 async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
                                  inference_type="default",
-                                 connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
+                                 connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
+                                 path=None):
     request_timeout_sec = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
         .get("request_timeout_sec", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
+
+    inference_url = replace_url_with_path(inference_url, path)
 
     try:
         if connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP:
