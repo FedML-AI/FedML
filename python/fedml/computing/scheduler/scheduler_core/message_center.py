@@ -137,6 +137,15 @@ class FedMLMessageCenter(object):
         return self.message_event
 
     def start_sender(self, message_center_name=None):
+        if self.listener_message_center_process is not None:
+            return
+
+        if listener_message_queue is None:
+            if self.listener_message_queue is None:
+                self.listener_message_queue = multiprocessing.Manager().Queue(-1)
+        else:
+            self.listener_message_queue = listener_message_queue
+
         self.sender_message_queue = multiprocessing.Manager().Queue()
         self.message_event = self.manager.Event()
         self.message_event.clear()
@@ -325,7 +334,7 @@ class FedMLMessageCenter(object):
 
         if listener_message_queue is None:
             if self.listener_message_queue is None:
-                self.listener_message_queue = multiprocessing.Manager().Queue()
+                self.listener_message_queue = multiprocessing.Manager().Queue(-1)
         else:
             self.listener_message_queue = listener_message_queue
         self.listener_message_event = multiprocessing.Event()

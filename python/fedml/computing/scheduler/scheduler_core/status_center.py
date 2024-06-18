@@ -89,6 +89,7 @@ class FedMLStatusCenter(ABC):
         self.status_sender_message_center_queue = None
         self.status_listener_message_center_queue = None
         self.status_runner = None
+        self.start_status_center()
 
     @abstractmethod
     def run_status_dispatcher(self):
