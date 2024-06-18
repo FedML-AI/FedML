@@ -56,7 +56,7 @@ computing:
   maximum_cost_per_hour: $3000   # max cost per hour for your job per gpu card
   #allow_cross_cloud_resources: true # true, false
   #device_type: CPU              # options: GPU, CPU, hybrid
-  resource_type: RTX-4090       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
+  resource_type: A100-80GB-SXM       # e.g., A100-80G, please check the resource type list by "fedml show-resource-type" or visiting URL: https://open.fedml.ai/accelerator_resource_type
 
 data_args:
   dataset_name: mnist

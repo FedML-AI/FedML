@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 WORKSPACE=$(pwd)
-PROJECT_HOME=$WORKSPACE/../../
-cd $PROJECT_HOME
+# PROJECT_HOME=$WORKSPACE/../../
+# cd $PROJECT_HOME
 
-cd examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custom_data_and_model
+cd examples/federate/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custom_data_and_model
 
 # run client(s)
 RUN_ID="$(python -c "import uuid; print(uuid.uuid4().hex)")"

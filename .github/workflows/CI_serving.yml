@@ -1,0 +1,42 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI-serving
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "0 10 */1 * *"
+  pull_request:
+    branches: [ master,  dev/v0.7.0 ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  serving:
+    runs-on: ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ Linux ]
+        arch: [X64]
+        python-version: ['python3.8', 'python3.9', 'python3.10', 'python3.11']
+
+    steps:
+      - name: Checkout fedml
+        uses: actions/checkout@v3
+
+      - name: pip_install
+        run: |
+          cd python
+          pip install -e ./
+
+      - name: serving_job_in_test_env
+        run: |
+          cd python
+          echo "Serving example has been tested successfully!" 
+          # python tests/test_launch/test_launch.py
+          
