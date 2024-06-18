@@ -111,7 +111,7 @@ class FedMLStatusCenter(object):
                             listener_message_center_queue=None,
                             sender_message_event=None,
                             is_slave_agent=False):
-        self.status_queue = multiprocessing.Queue()
+        self.status_queue = multiprocessing.Manager().Queue()
         self.status_event = multiprocessing.Event()
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
