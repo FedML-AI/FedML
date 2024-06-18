@@ -26,19 +26,22 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def get_gpu_cards() -> List[GPUCard]:
-        from qaicrt import Util, QIDList, QDevInfo, QStatus
+        return list(QualcommNPUtil.__get_gpu_cards().values())
 
-        cards = []
+    @staticmethod
+    def __get_gpu_cards() -> Dict[int, GPUCard]:
+        from qaicrt import Util, QIDList, QDevInfo, QStatus
+        cards = dict()
         util = Util()
         status, card_list = util.getDeviceIds()
         if status.value == 0:
             for card in card_list:
                 status, card_info = util.getDeviceInfo(card)
                 if status.value == 0 and card_info.devStatus.value == 1:
-                    cards.append(QualcommNPUtil.__convert(card_info))
-
+                    gpu_card = QualcommNPUtil.__convert(card_info)
+                    cards[gpu_card.id] = gpu_card
         else:
-            logging.error("Qualcomm Card Status not Healthy")
+            logging.error("Qualcomm Cards Status not Healthy")
         return cards
 
     @staticmethod
@@ -58,11 +61,21 @@ class QualcommNPUtil(GPUCardUtil):
 
     @staticmethod
     def get_docker_gpu_device_mapping(gpu_ids: Optional[List[int]], num_gpus: int = 0) -> Optional[Dict]:
-        if gpu_ids is not None and len(gpu_ids):
-            return {
-                "devices": [f"{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}:{QualcommNPUtil.NPU_CARD_PATH}{gpu_id}" for gpu_id
-                            in gpu_ids]}
-        return None
+        if gpu_ids is None or not len(gpu_ids):
+            return None
+
+        devices = []
+        gpu_cards = QualcommNPUtil.__get_gpu_cards()
+
+        for gpu_id in gpu_ids:
+            if not (gpu_id in gpu_cards and gpu_cards[gpu_id].device_path):
+                logging.error("Failed to get gpu device mapping for docker")
+                break
+            else:
+                device_path = gpu_cards[gpu_id].device_path
+                devices.append(f"{device_path}:{device_path}")
+
+        return {"devices": devices} if len(devices) == len(gpu_ids) else None
 
     @staticmethod
     def get_docker_gpu_ids_by_container_name(container_name: str, docker_client: DockerClient) -> List[int]:
@@ -87,7 +100,8 @@ class QualcommNPUtil(GPUCardUtil):
         load = (nsp_total - nsp_free) / nsp_total
 
         return GPUCard(
-            id=npu.qid,
+            id=npu.mhiId,
+            device_path=npu.name,
             name=npu.pciInfo.devicename,
             driver=npu.devData.fwQCImageVersionString,
             serial=npu.devData.serial,
