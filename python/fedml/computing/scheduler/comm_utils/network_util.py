@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 
 
@@ -16,3 +17,13 @@ def return_this_device_connectivity_type() -> str:
         return env_conn_type
     else:
         return ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT
+
+
+def replace_url_with_path(url: str, path: str) -> str:
+    """
+    Replace the path of the URL with the given path.
+    """
+    if path is None:
+        return url
+    url_parsed = urlparse(url)
+    return f"{url_parsed.scheme}://{url_parsed.netloc}/{path}"
