@@ -452,26 +452,12 @@ def _init_multiprocessing():
     """
     if platform.system() == "Windows":
         if multiprocessing.get_start_method() != "spawn":
-            # force all platforms (Windows) to use the same way (spawn) for multiprocessing
+            # force all platforms (Windows/Linux/macOS) to use the same way (spawn) for multiprocessing
             multiprocessing.set_start_method("spawn", force=True)
     else:
         if multiprocessing.get_start_method() != "fork":
-            # force all platforms (Linux/macOS) to use the same way (fork) for multiprocessing
+            # force all platforms (Windows/Linux/macOS) to use the same way (fork) for multiprocessing
             multiprocessing.set_start_method("fork", force=True)
-
-
-def get_multiprocessing_context():
-    if platform.system() == "Windows":
-        return multiprocessing.get_context("spawn")
-    else:
-        return multiprocessing.get_context("fork")
-
-
-def get_process(target=None, args=None):
-    if platform.system() == "Windows":
-        return multiprocessing.Process(target=target, args=args)
-    else:
-        return multiprocessing.get_context("fork").Process(target=target, args=args)
 
 
 def set_env_version(version):

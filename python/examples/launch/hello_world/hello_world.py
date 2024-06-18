@@ -1,6 +1,5 @@
 import os
 import time
-
 import fedml
 
 if __name__ == "__main__":
