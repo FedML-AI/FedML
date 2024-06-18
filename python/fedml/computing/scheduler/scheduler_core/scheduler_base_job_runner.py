@@ -75,6 +75,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         self.user_name = None
         self.general_edge_id = None
         self.message_center = None
+        self.status_center = None
         self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES = {
             "${FEDSYS.RUN_ID}": "",
             "${FEDSYS.PRIVATE_LOCAL_DATA}": "",
@@ -210,7 +211,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
         # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
         from multiprocessing import Process
         completed_event = multiprocessing.Event()
-        info_queue = multiprocessing.Queue()
+        info_queue = multiprocessing.Manager().Queue()
         if platform.system() == "Windows":
             download_process = multiprocessing.Process(
                 target=self.download_package_proc,
@@ -648,8 +649,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
         self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
 
-        status_center = FedMLStatusCenter.rebuild_status_center_from_queue(status_queue)
+        self.status_center = FedMLStatusCenter.rebuild_status_center_from_queue(status_queue)
         if self.status_reporter is None:
             self.status_reporter = MLOpsMetrics()
-        self.status_reporter.set_messenger(status_center)
+        self.status_reporter.set_messenger(self.status_center)
         self.status_reporter.run_id = self.run_id

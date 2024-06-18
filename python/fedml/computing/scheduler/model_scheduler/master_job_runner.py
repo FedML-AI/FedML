@@ -50,7 +50,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.replica_controller = None
         self.deployed_replica_payload = None
         self.slave_deployment_results_map = dict()
-        self.deployment_result_queue = multiprocessing.Queue()
+        self.deployment_result_queue = multiprocessing.Manager().Queue()
         self.is_fresh_endpoint = True
 
     # Override
