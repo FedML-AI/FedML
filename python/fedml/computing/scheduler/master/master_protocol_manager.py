@@ -1,20 +1,30 @@
-from abc import ABC
+import json
+import uuid
+
+from fedml.computing.scheduler.scheduler_core.general_constants import GeneralConstants
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 from .base_master_protocol_manager import FedMLBaseMasterProtocolManager
 from .launch_job_runner_manager import FedMLLaunchJobRunnerManager
 
 
-class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager, ABC):
+class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager):
+
     def __init__(self, args, agent_config=None):
         FedMLBaseMasterProtocolManager.__init__(self, args, agent_config=agent_config)
 
-    # Override
-    def generate_topics(self):
-        super().generate_topics()
-
-    # Override
-    def add_protocol_handler(self):
-        super().add_protocol_handler()
+    def generate_communication_manager(self):
+        if self.communication_mgr is None:
+            self.communication_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                f"FedML_Launch_Master_Agent_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
+                self.topic_last_will,
+                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
+            )
 
     # Override
     def _generate_protocol_manager_instance(self, args, agent_config=None):
@@ -30,10 +40,6 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager, ABC):
         self.mlops_metrics.stop_device_realtime_perf()
         self.mlops_metrics.report_device_realtime_perf(
             self.args, self.args.agent_config["mqtt_config"], is_client=False)
-
-    # Override
-    def print_connected_info(self):
-        super().print_connected_info()
 
     # Override
     def _process_job_complete_status(self, run_id, server_id, complete_payload):

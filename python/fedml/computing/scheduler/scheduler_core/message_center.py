@@ -52,8 +52,9 @@ class FedMLMessageCenter(object):
         self.listener_message_event = None
         self.listener_message_center_process = None
         self.message_center_name = None
-        self.start_sender()
-        self.start_listener()
+        self.setup_mqtt_mgr()
+        # self.start_sender()
+        # self.start_listener()
 
     def __repr__(self):
         return "<{klass} @{id:x} {attrs}>".format(
@@ -217,7 +218,6 @@ class FedMLMessageCenter(object):
         self.message_event = message_event
         self.sender_message_queue = message_queue
         self.message_center_name = message_center_name
-        self.setup_mqtt_mgr()
 
         while True:
             message_entity = None
@@ -307,13 +307,13 @@ class FedMLMessageCenter(object):
     def get_listener_handler(self, topic):
         return self.listener_handler_funcs.get(topic)
 
-    def register_listener(self, agent, topic, listener_func):
+    def add_message_listener(self, agent, topic, listener_func):
         with self.lock:
             if topic not in self.listener_topics:
                 self.listener_topics.append(topic)
                 self.listener_handler_funcs[topic] = (agent, listener_func.__name__)
 
-    def unregister_listener(self, topic):
+    def remove_message_listener(self, topic):
         with self.lock:
             if topic in self.listener_topics:
                 self.listener_topics.remove(topic)
@@ -440,7 +440,7 @@ class FedMLMessageCenter(object):
                 agent, message_handler_func_name = self.listener_handler_funcs.get(message_entity.topic, (None, None))
 
                 if message_handler_func_name is not None:
-                    self.pool.apply_async(self._call_method, args=(self, agent, message_handler_func_name, message_entity))
+                    self.pool.apply_async(self.__callback_method, args=(self, agent, message_handler_func_name, message_entity))
             except Exception as e:
                 if message_entity is not None:
                     logging.info(
@@ -451,7 +451,7 @@ class FedMLMessageCenter(object):
         self.release_mqtt_mgr()
 
     @staticmethod
-    def _call_method(agent, message_handler_func_name, message_entity):
+    def __callback_method(agent, message_handler_func_name, message_entity):
         methodcaller(message_handler_func_name, message_entity.topic, message_entity.payload)(agent)
 
     def cache_message_record(self, message_record, is_sender=True):

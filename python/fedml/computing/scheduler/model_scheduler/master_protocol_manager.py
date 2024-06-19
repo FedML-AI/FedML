@@ -1,6 +1,9 @@
 
 import json
 import logging
+import uuid
+
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.core.mlops import MLOpsConfigs, MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 from .device_model_cache import FedMLModelCache
 from .device_model_db import FedMLModelDatabase
@@ -15,6 +18,7 @@ from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 
 
 class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
+
     def __init__(self, args, agent_config=None):
         FedMLBaseMasterProtocolManager.__init__(self, args, agent_config=agent_config)
 
@@ -52,21 +56,28 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # The topic for deleting endpoint
         self.topic_delete_deployment = "model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
 
-        # Subscribe topics for endpoints
-        self.add_subscribe_topic(self.topic_start_deployment)
-        self.add_subscribe_topic(self.topic_activate_endpoint)
-        self.add_subscribe_topic(self.topic_deactivate_deployment)
-        self.add_subscribe_topic(self.topic_delete_deployment)
+    def generate_communication_manager(self):
+        if self.communication_mgr is None:
+            self.communication_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                f"FedML_Deploy_Master_Agent_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
+                self.topic_last_will,
+                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
+            )
 
     # Override
-    def add_protocol_handler(self):
-        super().add_protocol_handler()
+    def register_handlers(self):
+        super().register_handlers()
 
         # Add the message listeners for endpoint related topics
-        self.add_message_listener(self.topic_start_deployment, self.callback_start_deployment)
-        self.add_message_listener(self.topic_activate_endpoint, self.callback_activate_deployment)
-        self.add_message_listener(self.topic_deactivate_deployment, self.callback_deactivate_deployment)
-        self.add_message_listener(self.topic_delete_deployment, self.callback_delete_deployment)
+        self.register(self.topic_start_deployment, self.callback_start_deployment)
+        self.register(self.topic_activate_endpoint, self.callback_activate_deployment)
+        self.register(self.topic_deactivate_deployment, self.callback_deactivate_deployment)
+        self.register(self.topic_delete_deployment, self.callback_delete_deployment)
 
     # Override
     def _get_job_runner_manager(self):
@@ -344,9 +355,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             # subscribe deployment result message for each model device
             deployment_results_topic = "model_device/model_device/return_deployment_result/{}/{}".format(
                 run_id, edge_id)
-            self.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
-            self.subscribe_msg(deployment_results_topic)
-
+            self.register(deployment_results_topic, self.callback_deployment_result_message)
             logging.info("subscribe device messages {}".format(deployment_results_topic))
 
         self.setup_listeners_for_edge_status(run_id, edge_id_list, self.edge_id)
@@ -359,5 +368,4 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         deployment_results_topic = "model_device/model_device/return_deployment_result/{}/{}".format(
             run_id, device_id)
 
-        self.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
-        self.subscribe_msg(deployment_results_topic)
+        self.register(deployment_results_topic, self.callback_deployment_result_message)

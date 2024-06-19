@@ -1,5 +1,11 @@
 import copy
+import json
 import os
+import uuid
+
+from fedml.computing.scheduler.scheduler_core.general_constants import GeneralConstants
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+
 from ..comm_utils.job_cleanup import JobCleanup
 from .base_slave_protocol_manager import FedMLBaseSlaveProtocolManager
 from .launch_job_runner_manager import FedMLLaunchJobRunnerManager
@@ -8,6 +14,19 @@ from ..model_scheduler.model_device_client import FedMLModelDeviceClientRunner
 
 
 class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
+
+    def generate_communication_manager(self):
+        if self.communication_mgr is None:
+            self.communication_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                f"FedML_Launch_Slave_Agent_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
+                self.topic_last_will,
+                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
+            )
 
     def __init__(self, args, agent_config=None):
         FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
@@ -19,8 +38,8 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
 
     # TODO(alaydshah): This method can be potentially removed.
     # Override
-    def add_protocol_handler(self):
-        super().add_protocol_handler()
+    def register_handlers(self):
+        super().register_handlers()
 
     # Override
     def _generate_protocol_manager_instance(self, args, agent_config=None):

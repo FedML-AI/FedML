@@ -1,12 +1,14 @@
-
 import json
 import logging
 import os
 import traceback
+import uuid
 
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
+from fedml.computing.scheduler.scheduler_core.general_constants import GeneralConstants
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.core.mlops import MLOpsConfigs, MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 from .device_model_db import FedMLModelDatabase
 from .device_model_msg_object import FedMLModelMsgObject
@@ -20,6 +22,7 @@ from .device_model_cache import FedMLModelCache
 
 
 class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
+
     def __init__(self, args, agent_config=None):
         FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
 
@@ -52,16 +55,21 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         self.topic_delete_deployment = "model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
 
         # Subscribe topics for endpoints
-        self.add_subscribe_topic(self.topic_start_deployment)
-        self.add_subscribe_topic(self.topic_delete_deployment)
+        self.register(self.topic_start_deployment)
+        self.register(self.topic_delete_deployment)
 
-    # Override
-    def add_protocol_handler(self):
-        super().add_protocol_handler()
-
-        # Add the message listeners for endpoint related topics
-        self.add_message_listener(self.topic_start_deployment, self.callback_start_deployment)
-        self.add_message_listener(self.topic_delete_deployment, self.callback_delete_deployment)
+    def generate_communication_manager(self):
+        if self.communication_mgr is None:
+            self.communication_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                f"FedML_Deploy_Worker_Agent_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
+                self.topic_last_will,
+                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
+            )
 
     # Override
     def _get_job_runner_manager(self):

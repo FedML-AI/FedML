@@ -6,12 +6,13 @@ import sys
 import time
 import traceback
 import uuid
+from typing import Optional
+
 import fedml
 from fedml.computing.scheduler.scheduler_core.slave_status_center import FedMLSlaveStatusCenter
 
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
-from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from ..comm_utils import sys_utils
 from ..scheduler_core.message_center import FedMLMessageCenter
@@ -28,7 +29,7 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         self.args = args
         self.is_master_agent = is_master
         self.message_status_runner = None
-        self.message_center: FedMLMessageCenter = None
+        self.message_center: Optional[FedMLMessageCenter] = None
         self.status_center = None
         self.message_center_name = "master_agent" if is_master else "slave_agent"
         self.run_id = None
@@ -41,7 +42,7 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         self.topic_active = None
         self.topic_last_will = None
         self.communication_mgr = None
-        self.subscribed_topics = list()
+        self.subscribed_topics = set()
         self.mlops_metrics = None
         self.status_reporter = None
         self.user_name = args.user_name
@@ -56,16 +57,19 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         # self.subscribed_topics.append(self.topic_start_train)
 
     @abstractmethod
-    def add_protocol_handler(self):
+    def register_handlers(self):
         # Add the message listeners for all topics, the following is an example.
         # self.add_message_listener(self.topic_start_train, self.callback_start_train)
         pass
+
+    def unregister_handlers(self):
+        for topic in self.subscribed_topics:
+            self.unregister(topic)
 
     @abstractmethod
     def _init_extra_items(self):
         pass
 
-    @abstractmethod
     def print_connected_info(self):
         print("\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
         print(
@@ -78,29 +82,21 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         # Generate the protocol manager instance and set the attribute values.
         return None
 
+    @abstractmethod
+    def generate_communication_manager(self):
+        # Generate the communication manager instance and set the attribute values.
+        pass
+
     def initialize(
             self, communication_manager=None, message_center=None, status_center_queue=None
     ):
-        # Generate the message topics
-        self.generate_topics()
 
-        # Setup MQTT connection
-        if communication_manager is None:
-            self.communication_mgr = MqttManager(
-                self.agent_config["mqtt_config"]["BROKER_HOST"],
-                self.agent_config["mqtt_config"]["BROKER_PORT"],
-                self.agent_config["mqtt_config"]["MQTT_USER"],
-                self.agent_config["mqtt_config"]["MQTT_PWD"],
-                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-                f"FedML_Agent_Daemon_@{self.user_name}@_@{self.current_device_id}@_@{str(uuid.uuid4())}@",
-                self.topic_last_will,
-                json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
-            )
-        else:
-            self.communication_mgr = communication_manager
+        # Generate the message topics and communication manager.
+        self.generate_topics()
+        self.generate_communication_manager()
 
         # Set up protocol handler, message center, status center, status reporter, MLOps metrics, etc.
-        self.add_protocol_handler()
+        self.register_handlers()
         self.setup_message_center()
         self.setup_status_center()
         self.setup_status_reporter()
@@ -155,16 +151,7 @@ class FedMLSchedulerBaseProtocolManager(ABC):
             sys.exit(1)
 
     def stop(self, kill_process=False):
-        if self.communication_mgr is not None:
-            # noinspection PyBroadException
-            try:
-                for topic in self.subscribed_topics:
-                    self.communication_mgr.unsubscribe_msg(topic)
-            except Exception:
-                pass
-
-            self.communication_mgr.loop_stop()
-            self.communication_mgr.disconnect()
+        self.unregister_handlers()
 
         if kill_process:
             self.release_message_center()
@@ -174,10 +161,6 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         # Setup MQTT message passthrough listener for all messages
         self.communication_mgr.add_message_passthrough_listener(self.message_center.
                                                                 listener_message_passthrough_dispatch_center)
-
-        # Subscribe topics for starting train, stopping train and fetching client status.
-        for topic in self.subscribed_topics:
-            self.communication_mgr.subscribe_msg(topic)
 
         # Broadcast the first active message.
         self.send_agent_active_msg(self.edge_id)
@@ -248,27 +231,28 @@ class FedMLSchedulerBaseProtocolManager(ABC):
                 f"Traceback: {traceback.format_exc()}")
             pass
 
-    def start_status_listener_center(self, sender_message_event=None):
-        self.start_status_center(
-            sender_message_center_queue=self.message_center.get_sender_message_queue(),
-            listener_message_center_queue=self.get_listener_message_queue(),
-            sender_message_event=sender_message_event,
-            is_slave_agent=not self.is_master_agent
-        )
-
-        if self.status_reporter is None:
-            self.status_reporter = MLOpsMetrics()
-        self.status_reporter.set_messenger(self, send_message_func=self.status_reporter.send_status_message)
-        self.status_reporter.run_id = self.run_id
-        self.status_reporter.edge_id = self.edge_id
-        self.status_reporter.server_agent_id = self.server_agent_id
+    # def start_status_listener_center(self, sender_message_event=None):
+    #     self.start_status_center(
+    #         sender_message_center_queue=self.message_center.get_sender_message_queue(),
+    #         listener_message_center_queue=self.get_listener_message_queue(),
+    #         sender_message_event=sender_message_event,
+    #         is_slave_agent=not self.is_master_agent
+    #     )
+    #
+    #     if self.status_reporter is None:
+    #         self.status_reporter = MLOpsMetrics()
+    #     self.status_reporter.set_messenger(self, send_message_func=self.status_reporter.send_status_message)
+    #     self.status_reporter.run_id = self.run_id
+    #     self.status_reporter.edge_id = self.edge_id
+    #     self.status_reporter.server_agent_id = self.server_agent_id
 
     def process_extra_queues(self, extra_queues):
         pass
 
+    # TODO(alaydshah): Revisit this to understand how to generate status reporter for individual run_ids
     def generate_status_report(self, run_id, edge_id, server_agent_id=None):
         status_reporter = MLOpsMetrics()
-        status_reporter.set_messenger(self, send_message_func=self.send_status_message)
+        status_reporter.set_messenger(self, send_message_func=self.status_center.send_status_message)
         status_reporter.run_id = run_id
         status_reporter.edge_id = edge_id
         if server_agent_id is not None:
@@ -314,6 +298,16 @@ class FedMLSchedulerBaseProtocolManager(ABC):
     def send_agent_active_msg(self, edge_id):
         active_msg = {"ID": edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_IDLE}
         self.message_center.send_message_json(self.topic_active, json.dumps(active_msg))
+
+    def register(self, topic: str, callback: callable):
+        self.subscribed_topics.add(topic)
+        self.communication_mgr.subscribe_msg(topic)
+        self.message_center.add_message_listener(self, topic, callback)
+
+    def unregister(self, topic: str):
+        self.subscribed_topics.remove(topic)
+        self.communication_mgr.unsubscribe_msg(topic)
+        self.message_center.remove_message_listener(topic)
 
     def set_parent_agent(self, parent_agent):
         self.parent_agent = parent_agent
