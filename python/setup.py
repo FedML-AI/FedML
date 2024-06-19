@@ -20,7 +20,7 @@ except ImportError:
 
 requirements = [
     'GPUtil',
-    'PyYAML',
+    'PyYAML==5.3.1',
     'aiohttp>=3.8.1',
     'attrdict',
     'attrs',
@@ -40,7 +40,7 @@ requirements = [
     'multiprocess',
     'networkx<3.0',
     'ntplib',
-    'numpy>=1.21',
+    'numpy>=1.21,<2.0',
     'onnx',
     'paho-mqtt<2.0.0',
     'pandas',
@@ -126,7 +126,7 @@ requirements_extra_nlp = [
 
 setup(
     name="fedml",
-    version="0.9.0",
+    version="0.8.31b23",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
