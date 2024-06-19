@@ -1,3 +1,4 @@
+import multiprocessing
 
 from fedml.computing.scheduler.scheduler_core.account_manager import FedMLAccountManager
 from fedml.computing.scheduler.slave.slave_agent import FedMLLaunchSlaveAgent
@@ -57,9 +58,7 @@ class FedMLUnitedAgent(Singleton):
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM,
             communication_manager=shared_communication_mgr,
-            sender_message_queue=shared_master_sender_message_queue,
-            status_center_queue=shared_master_status_center_queue,
-            sender_message_event=shared_master_sender_message_event
+            status_center_queue=shared_master_status_center_queue
         )
 
         # Login with the deployment slave role based on
