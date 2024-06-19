@@ -136,15 +136,17 @@ class FedMLStatusManager(object):
         # self.stop_cloud_server()
         # self.remove_listener_for_run_metrics(self.run_id)
         # self.remove_listener_for_run_logs(self.run_id)
-        self.message_center.receive_message(
-            GeneralConstants.get_topic_complete_job(master_id),
-            json.dumps(GeneralConstants.get_payload_complete_job(self.run_id, master_id)))
 
-        if self.status_center.is_deployment_status_center and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
-            self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+        if self.status_center.is_deployment_status_center:
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+                self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+        else:
+            self.message_center.receive_message(
+                GeneralConstants.get_topic_complete_job(master_id),
+                json.dumps(GeneralConstants.get_payload_complete_job(self.run_id, master_id)))
 
-        self.message_center.stop_message_center()
-        self.status_center.stop_status_center()
+            self.message_center.stop_message_center()
+            self.status_center.stop_status_center()
 
     def process_job_exception_status(self, master_id, status):
         # Report exception job status
