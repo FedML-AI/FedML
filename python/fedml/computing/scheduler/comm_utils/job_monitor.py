@@ -148,7 +148,7 @@ class JobMonitor(Singleton):
                     if current_replicas == new_replicas:
                         # Basically the autoscaler decided that no scaling operation should take place.
                         logging.info(f"No scaling operation for endpoint {e_id}.")
-                        return
+                        continue
 
                     # Should scale in / out
                     curr_version = fedml.get_env_version()
@@ -159,7 +159,7 @@ class JobMonitor(Singleton):
                         mlops_prefix = "https://open-test.fedml.ai/"
                     else:
                         logging.error(f"Do not support the version {curr_version}.")
-                        return
+                        continue
                     autoscale_url_path = "fedmlModelServer/api/v1/endpoint/auto-scale"
                     url = f"{mlops_prefix}{autoscale_url_path}"
 
@@ -167,7 +167,7 @@ class JobMonitor(Singleton):
                     cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
                     if cached_token is None:
                         logging.error(f"Failed to get the cached token for endpoint {e_id}.")
-                        return
+                        continue
 
                     req_header = {
                         "Authorization": f"Bearer {cached_token}"
