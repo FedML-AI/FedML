@@ -40,7 +40,8 @@ if __name__ == "__main__":
     }
     autoscaling_policy = ConcurrentQueryPolicy(**autoscaling_policy_config)
 
-    e_id = 1821952311
+    # Please replace the `e_id` below with a proper e_id value.
+    e_id = 1111
     scale_op = autoscaler.scale_operation_endpoint(
         autoscaling_policy,
         str(e_id))
