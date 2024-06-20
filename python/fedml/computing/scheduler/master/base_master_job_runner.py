@@ -7,6 +7,9 @@ import queue
 import os
 import time
 import traceback
+
+import setproctitle
+
 from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ..master.server_constants import ServerConstants
@@ -67,9 +70,12 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             edge_device_info_queue=None, run_metrics_queue=None, run_event_queue=None,
             run_artifacts_queue=None, run_logs_queue=None, edge_device_info_global_queue=None,
             run_extend_queue_list=None, sender_message_center_queue=None, listener_message_queue=None,
-            status_center_queue=None
+            status_center_queue=None, process_name=None
     ):
-        print(f"Master job runner process id {os.getpid()}, run id {self.run_id}")
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        print(f"Master job runner process id {os.getpid()}, name {process_name}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -168,7 +174,8 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             run_id, self.request_json, edge_id=self.edge_id, is_server_job=True,
             sender_message_queue=sender_message_queue,
             listener_message_queue=listener_message_queue,
-            status_center_queue=status_center_queue
+            status_center_queue=status_center_queue,
+            process_name=GeneralConstants.get_launch_master_user_process_name(run_id, self.edge_id)
         )
 
         # Check if the run status is normal
@@ -230,9 +237,12 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             edge_device_info_queue=None, run_metrics_queue=None, run_event_queue=None,
             run_artifacts_queue=None, run_logs_queue=None, edge_device_info_global_queue=None,
             run_extend_queue_list=None, sender_message_center_queue=None, listener_message_queue=None,
-            status_center_queue=None
+            status_center_queue=None, process_name=None
     ):
-        print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        print(f"Server runner process id {os.getpid()}, name {process_name}. run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -406,7 +416,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
     def start_runner_process(
         self, run_id, request_json, edge_id=None, is_server_job=False,
         sender_message_queue=None, listener_message_queue=None,
-        status_center_queue=None,
+        status_center_queue=None, process_name=None
     ):
         server_runner = self._generate_job_runner_instance(
             self.args, run_id=run_id, request_json=request_json,
@@ -430,7 +440,8 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                     self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                     self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
                     self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
-                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue,
+                    process_name,
                 )
             )
         else:
@@ -439,7 +450,8 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                     self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                     self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
                     self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
-                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue,
+                    process_name,
                 )
             )
         self.run_process.start()

@@ -263,7 +263,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             run_id, request_json, args=self.args, edge_id=self.edge_id,
             sender_message_queue=self.message_center.get_sender_message_queue(),
             listener_message_queue=self.get_listener_message_queue(),
-            status_center_queue=self.get_status_queue()
+            status_center_queue=self.get_status_queue(),
+            process_name=GeneralConstants.get_deploy_master_job_process_name(run_id, self.edge_id)
         )
         process = self._get_job_runner_manager().get_runner_process(run_id)
         if process is not None:

@@ -615,7 +615,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
     def start_runner_process(
             self, run_id, edge_id, request_json,  cuda_visible_gpu_ids_str=None,
-            sender_message_queue=None, status_center_queue=None
+            sender_message_queue=None, status_center_queue=None, process_name=None
     ):
         return None
 

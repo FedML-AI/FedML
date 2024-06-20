@@ -262,6 +262,8 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             # Report the run status with finished status and return
             self.generate_status_report(run_id, edge_id, server_agent_id=server_agent_id).report_client_id_status(
                 edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id=run_id)
+
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
             return
         logging.info(
             f"Run started, available gpu ids: {JobRunnerUtils.get_instance().get_available_gpu_id_list(edge_id)}")
@@ -279,6 +281,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             listener_message_queue=self.get_listener_message_queue(),
             status_center_queue=self.get_status_queue(),
             cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str,
+            process_name=GeneralConstants.get_launch_slave_job_process_name(run_id, edge_id)
         )
         run_process = self._get_job_runner_manager().get_runner_process(run_id)
         if run_process is not None:

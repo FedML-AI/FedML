@@ -10,8 +10,11 @@ import multiprocessing
 import queue
 from os.path import expanduser
 
+import setproctitle
+
 import fedml
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from .general_constants import GeneralConstants
 from ..slave.client_constants import ClientConstants
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from operator import methodcaller
@@ -140,20 +143,21 @@ class FedMLMessageCenter(object):
         self.sender_message_queue = multiprocessing.Manager().Queue()
         self.message_event = multiprocessing.Event()
         self.message_event.clear()
+        process_name = GeneralConstants.get_message_center_sender_process_name(message_center_name)
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
                                             sender_message_queue=self.sender_message_queue)
         if platform.system() == "Windows":
             self.message_center_process = multiprocessing.Process(
                 target=message_center.run_sender, args=(
                     self.message_event, self.sender_message_queue,
-                    message_center_name
+                    message_center_name, process_name
                 )
             )
         else:
             self.message_center_process = fedml.get_process(
                 target=message_center.run_sender, args=(
                     self.message_event, self.sender_message_queue,
-                    message_center_name
+                    message_center_name, process_name
                 )
             )
         self.message_center_process.start()
@@ -211,7 +215,10 @@ class FedMLMessageCenter(object):
                 # Save the message
                 self.save_message_record(message_entity.run_id, message_entity.device_id, sent_message_record)
 
-    def run_sender(self, message_event, message_queue, message_center_name):
+    def run_sender(self, message_event, message_queue, message_center_name, process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         if platform.system() != "Windows":
             os.setsid()
 
@@ -345,15 +352,16 @@ class FedMLMessageCenter(object):
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config
-        # message_runner = self.get_message_runner()
-        message_runner = self
+        message_runner = self.get_message_runner()
+        # message_runner = self
         message_runner.listener_agent_config = agent_config
+        process_name = GeneralConstants.get_message_center_listener_process_name(message_center_name)
         if platform.system() == "Windows":
             self.listener_message_center_process = multiprocessing.Process(
                 target=message_runner.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
-                    sender_message_event, message_center_name, extra_queues
+                    sender_message_event, message_center_name, extra_queues, process_name
                 )
             )
         else:
@@ -361,7 +369,7 @@ class FedMLMessageCenter(object):
                 target=message_runner.run_listener_dispatcher, args=(
                     self.listener_message_event, self.listener_message_queue,
                     self.listener_handler_funcs, sender_message_queue,
-                    sender_message_event, message_center_name, extra_queues
+                    sender_message_event, message_center_name, extra_queues, process_name
                 )
             )
         self.listener_message_center_process.start()
@@ -398,8 +406,11 @@ class FedMLMessageCenter(object):
     def run_listener_dispatcher(
             self, listener_message_event, listener_message_queue,
             listener_funcs, sender_message_queue, sender_message_event,
-            message_center_name, extra_queues
+            message_center_name, extra_queues, process_name=None
     ):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         if platform.system() != "Windows":
             os.setsid()
 
