@@ -42,9 +42,16 @@ class FedMLDeployJobRunnerManager(FedMLBaseMasterJobRunnerManager, Singleton):
                 message_center=message_center
             )
 
-    def send_deployment_delete_request_to_edges(self, end_point_id, payload, model_msg_object, message_center=None):
+    def send_deployment_delete_request_to_edges(self, end_point_id, payload, model_msg_object, message_center=None,
+                                                args=None):
         run_id_str = str(end_point_id)
         if self.job_runners.get(run_id_str, None) is not None:
+            self.job_runners[run_id_str].send_deployment_delete_request_to_edges(
+                payload, model_msg_object, message_center=message_center)
+        else:
+            # Hotfix: re-instantiate the job runner
+            # TODO(Alay, Raphael): Try to dig into whether re-instantiate the job runner is necessary
+            self.job_runners[run_id_str] = self._generate_job_runner_instance(args)
             self.job_runners[run_id_str].send_deployment_delete_request_to_edges(
                 payload, model_msg_object, message_center=message_center)
 

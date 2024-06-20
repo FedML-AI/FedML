@@ -132,7 +132,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Send delete deployment request to the edge devices
         FedMLDeployJobRunnerManager.get_instance().send_deployment_delete_request_to_edges(
-            model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center)
+            model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center, args=self.args)
 
         # Stop processes on master
         FedMLDeployJobRunnerManager.get_instance().stop_job_runner(model_msg_object.run_id)
