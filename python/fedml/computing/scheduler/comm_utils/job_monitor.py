@@ -772,7 +772,7 @@ class JobMonitor(Singleton):
         liveliness_check = result_json.get("model_metadata", {}).get("liveliness_check", None)
         readiness_check = result_json.get("model_metadata", {}).get("readiness_check", None)
 
-        if liveliness_check is not None:
+        if liveliness_check:
             if liveliness_check == ClientConstants.LIVENESS_PROBE_DEFAULT:
                 liveliness_check = readiness_check  # Follow the readiness check pattern
             if not isinstance(liveliness_check, dict):

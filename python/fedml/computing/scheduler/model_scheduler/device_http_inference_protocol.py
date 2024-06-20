@@ -25,6 +25,8 @@ class FedMLHttpInference:
         url_parsed = urlparse(inference_url)
         ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/{path}"
         response_ok = False
+
+        # TODO (Raphael): Support more methods and return codes rules.
         try:
             async with httpx.AsyncClient() as client:
                 ready_response = await client.get(url=ready_url, timeout=timeout)
@@ -109,11 +111,10 @@ async def redirect_non_stream_req_to_worker(inference_type, inference_url, model
     
     if response.status_code == 200:
         try:
-            if inference_type == "default":
-                model_inference_result = response.json()
-            elif inference_type == "image/png":
+            if inference_type == "image/png":
+                # wrapped media type for image
                 binary_content: bytes = response.content
-                model_inference_result = Response(content=binary_content, media_type="image/png")
+                model_inference_result = Response(content=binary_content, media_type=inference_type)
             else:
                 model_inference_result = response.json()
         except Exception as e:

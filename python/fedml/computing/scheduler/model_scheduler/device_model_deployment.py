@@ -2,7 +2,6 @@ import fedml
 
 import logging
 import os
-import shutil
 import time
 import traceback
 import yaml
@@ -12,7 +11,6 @@ import docker
 import requests
 import torch
 import torch.nn
-import tritonclient.http as http_client
 
 import collections.abc
 

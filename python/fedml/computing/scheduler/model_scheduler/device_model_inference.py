@@ -170,7 +170,6 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     return inference_response
 
 
-# @api.post('/custom_inference/{end_point_id}/{path:path}')
 @router.api_route("/custom_inference/{end_point_id}/{path:path}", methods=["POST", "GET"])
 async def custom_inference(end_point_id, path: str, request: Request):
     # Get json data

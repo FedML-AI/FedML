@@ -360,7 +360,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             """
             When all the devices have finished the add / delete / update operation
             """
-            model_inference_url, inference_port_external = self.construct_final_gateway_url(end_point_id)
+            model_inference_url = self.construct_final_gateway_url(end_point_id)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             self.send_deployment_stages(end_point_id, model_name, model_id,
@@ -375,7 +375,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                 payload_json = self.deployed_replica_payload
                 model_slave_url = payload_json["model_url"]
                 payload_json["model_url"] = model_inference_url
-                payload_json["port"] = inference_port_external
+                payload_json["port"] = ServerConstants.get_inference_master_gateway_port()
                 token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_end_point_token(
                     end_point_id, end_point_name, model_name)
 
@@ -767,10 +767,6 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             if enable_custom_path:
                 identifier = "custom_inference"
 
-        if ip.startswith("http://") or ip.startswith("https://"):
-            model_inference_url = "{}/{}/{}".format(ip, identifier, end_point_id)
-        else:
-            model_inference_url = "http://{}:{}/{}/{}".format(ip, inference_port_external, identifier,
-                                                              end_point_id)
-        return model_inference_url, inference_port_external
+        model_inference_url = "http://{}:{}/{}/{}".format(ip, inference_port_external, identifier, end_point_id)
+        return model_inference_url
 

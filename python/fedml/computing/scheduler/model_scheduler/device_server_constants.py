@@ -358,7 +358,7 @@ class ServerConstants(object):
         # Use dotenv to load the environment variables
         fedml.load_env()
         master_inference_port = int(os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                            default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
+                                              default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
         return master_inference_port
 
 
