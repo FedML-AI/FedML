@@ -1,5 +1,6 @@
 
 import json
+import logging
 from fedml.core.common.singleton import Singleton
 from ..master.base_master_job_runner_manager import FedMLBaseMasterJobRunnerManager
 from .master_job_runner import FedMLDeployMasterJobRunner
@@ -44,9 +45,13 @@ class FedMLDeployJobRunnerManager(FedMLBaseMasterJobRunnerManager, Singleton):
 
     def send_deployment_delete_request_to_edges(self, end_point_id, payload, model_msg_object, message_center=None):
         run_id_str = str(end_point_id)
+
+        # TODO(Alay, Raphael): When user do fedml logout, this will be None
         if self.job_runners.get(run_id_str, None) is not None:
             self.job_runners[run_id_str].send_deployment_delete_request_to_edges(
                 payload, model_msg_object, message_center=message_center)
+        else:
+            logging.warning(f"Cannot find job runner for end_point_id {end_point_id}")
 
     def stop_device_inference_monitor(self, run_id, end_point_name, model_id, model_name, model_version):
         run_id_str = str(run_id)

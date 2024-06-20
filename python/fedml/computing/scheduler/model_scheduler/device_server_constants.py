@@ -147,6 +147,10 @@ class ServerConstants(object):
     DEVICE_DIFF_ADD_OPERATION = "op: add"
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
+
+    # Worker comfig yaml related
+    ENABLE_SERVERLESS_CONTAINER_KEY = "enable_serverless_container"
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")

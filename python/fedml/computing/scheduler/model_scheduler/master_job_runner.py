@@ -298,14 +298,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     return
                 else:
                     # This is the last worker that failed, so we should continue to "ABORTED" status
-                    model_config_parameters = self.request_json["parameters"]
-                    inference_port_external = ServerConstants.get_inference_master_gateway_port()
-                    ip = GeneralConstants.get_ip_address(self.request_json)
-                    if ip.startswith("http://") or ip.startswith("https://"):
-                        model_inference_url = "{}/inference/{}".format(ip, end_point_id)
-                    else:
-                        model_inference_url = "http://{}:{}/inference/{}".format(ip, inference_port_external,
-                                                                                 end_point_id)
+                    model_inference_url = self.construct_final_gateway_url(end_point_id)
 
                     self.send_deployment_status(
                         end_point_id, end_point_name, payload_json["model_name"], model_inference_url,
@@ -367,13 +360,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             """
             When all the devices have finished the add / delete / update operation
             """
-            inference_port_external = ServerConstants.get_inference_master_gateway_port()
-            ip = GeneralConstants.get_ip_address(request_json)
-
-            if ip.startswith("http://") or ip.startswith("https://"):
-                model_inference_url = "{}/inference/{}".format(ip, end_point_id)
-            else:
-                model_inference_url = "http://{}:{}/inference/{}".format(ip, inference_port_external, end_point_id)
+            model_inference_url, inference_port_external = self.construct_final_gateway_url(end_point_id)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             self.send_deployment_stages(end_point_id, model_name, model_id,
@@ -394,7 +381,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
                 model_metadata = payload_json["model_metadata"]
                 model_inputs = model_metadata["inputs"]
-                ret_inputs = list()
+
                 if "type" in model_metadata and model_metadata["type"] == "default":
                     payload_json["input_json"] = {"end_point_name": end_point_name,
                                                   "model_name": model_name,
@@ -767,4 +754,23 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
     # Override
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
+
+    def construct_final_gateway_url(self, end_point_id):
+        inference_port_external = ServerConstants.get_inference_master_gateway_port()
+        ip = GeneralConstants.get_ip_address(self.request_json)
+
+        identifier = "inference"
+        if self.deployed_replica_payload is not None:
+            payload_json = self.deployed_replica_payload
+            enable_custom_path = payload_json["model_metadata"].get(
+                ServerConstants.ENABLE_SERVERLESS_CONTAINER_KEY, False)
+            if enable_custom_path:
+                identifier = "custom_inference"
+
+        if ip.startswith("http://") or ip.startswith("https://"):
+            model_inference_url = "{}/{}/{}".format(ip, identifier, end_point_id)
+        else:
+            model_inference_url = "http://{}:{}/{}/{}".format(ip, inference_port_external, identifier,
+                                                              end_point_id)
+        return model_inference_url, inference_port_external
 

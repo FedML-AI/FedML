@@ -112,19 +112,20 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         relative_entry_fedml_format = config.get('entry_point', "")
 
         # User indicate either fedml format python main entry filename or entry command
-        customized_image_entry_cmd = config.get('container_run_command', None)
+        enable_serverless_container = config.get(ClientConstants.ENABLE_SERVERLESS_CONTAINER_KEY, False)
+        customized_image_entry_cmd = config.get('container_run_command', None)  # Could be str or list
         customized_readiness_check = config.get('readiness_probe', ClientConstants.READINESS_PROBE_DEFAULT)
         customized_liveliness_check = config.get('liveness_probe', ClientConstants.LIVENESS_PROBE_DEFAULT)
 
         # Storage related
         src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
-        # TODO(Raphael): In the future, the data_cache_dir should not be controlled by the user. It only
-        #  used for internal avoiding checkpoint re-download. e.g. ~/.cache/huggingface/hub/
         data_cache_dir_input = config.get('data_cache_dir', "")
+        usr_customized_mount_rule = config.get(ClientConstants.CUSTOMIZED_VOLUMES_MOUNT_KEY, None)
 
         # Others
         extra_envs = config.get('environment_variables', None)
-        usr_indicated_wait_time = config.get('deploy_timeout', 900)
+        usr_indicated_wait_time = config.get(ClientConstants.DEPLOY_TIMEOUT_SEC_KEY,
+                                             config.get("deploy_timeout", ClientConstants.DEPLOY_TIMEOUT_SEC_DEFAULT))
         usr_indicated_retry_cnt = max(int(usr_indicated_wait_time) // 10, 1)
         request_input_example = config.get('request_input_example', None)
 
@@ -189,52 +190,12 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     binds = {}
     environment = {}
 
-    if isinstance(data_cache_dir_input, str):
-        # In this case, we mount to the same folder, if it has ~, we replace it with /home/fedml
-        if data_cache_dir_input != "":
-            if data_cache_dir_input[0] == "~":
-                src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
-                dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
-            else:
-                # check if the data_cache_dir is a relative path
-                if data_cache_dir_input[0] != "/":
-                    raise "data_cache_dir_input has to be an absolute path or start with ~"
-                else:
-                    src_data_cache_dir = data_cache_dir_input
-                    dst_data_cache_dir = data_cache_dir_input
-            logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+    # Handle the union volume mount
+    _handle_union_volume_mount(binds, volumes, environment, data_cache_dir_input)
 
-            if type(src_data_cache_dir) == str and src_data_cache_dir != "":
-                logging.info("Start copying the data cache to the container...")
-                if os.path.exists(src_data_cache_dir):
-                    volumes.append(src_data_cache_dir)
-                    binds[src_data_cache_dir] = {
-                        "bind": dst_data_cache_dir,
-                        "mode": "rw"
-                    }
-                    environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
-    elif isinstance(data_cache_dir_input, dict):
-        for k, v in data_cache_dir_input.items():
-            if os.path.exists(k):
-                volumes.append(v)
-                binds[k] = {
-                    "bind": v,
-                    "mode": "rw"
-                }
-            else:
-                logging.warning(f"{k} does not exist, skip mounting it to the container")
-        logging.info(f"Data cache mount: {volumes}, {binds}")
-    else:
-        logging.warning("data_cache_dir_input is not a string or a dictionary, skip mounting it to the container")
-
-    # Inject the source code
-    logging.info("Start copying the source code to the container...")
-    volumes.append(src_code_dir)
-    binds[src_code_dir] = {
-        "bind": dst_model_serving_dir,
-        "mode": "rw"
-    }
-    environment["MAIN_ENTRY"] = relative_entry_fedml_format
+    # Handle the default volume mount
+    handle_volume_mount(volumes, binds, environment, relative_entry_fedml_format, src_code_dir,
+                        dst_model_serving_dir, usr_customized_mount_rule, host_workspace_root=model_storage_local_path)
 
     # Host config
     host_config_dict = {
@@ -331,6 +292,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     model_metadata = ret_model_metadata
     model_metadata["liveliness_check"] = customized_liveliness_check
     model_metadata["readiness_check"] = customized_readiness_check
+    model_metadata[ClientConstants.ENABLE_SERVERLESS_CONTAINER_KEY] = enable_serverless_container
     logging.info(f"[Worker][Replica{replica_rank}] Model deployment is successful with inference_output_url: "
                  f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
 
@@ -527,24 +489,129 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
             logging.error(f"Unknown readiness check type: {readiness_check}")
             return "", "", {}, {}
 
-        if "path" in readiness_check:
-            readiness_check_url = f"http://{infer_url_host}:{inference_http_port}/{readiness_check['path']}"
-            response = None
-            try:
-                response = requests.get(readiness_check_url)
-            except:
-                pass
-            if not response or response.status_code != 200:
-                return "", "", {}, {}
+        if "httpGet" in readiness_check:
+            if "path" in readiness_check["httpGet"]:
+                check_path = readiness_check["httpGet"]["path"]
+                if not isinstance(check_path, str):
+                    logging.error(f"Invalid path type: {check_path}, expected str")
+                    return "", "", {}, {}
+                else:
+                    if not check_path.startswith("/"):
+                        check_path = "/" + check_path
+                readiness_check_url = f"http://{infer_url_host}:{inference_http_port}{check_path}"
 
-            return "http://{}:{}/".format(infer_url_host, inference_http_port), None, model_metadata, None
-        elif "command" in readiness_check:
+                response = None
+                try:
+                    response = requests.get(readiness_check_url)
+                except:
+                    pass
+                if not response or response.status_code != 200:
+                    return "", "", {}, {}
+
+                return readiness_check_url, None, model_metadata, None
+            else:
+                logging.error("'path' is not specified in httpGet readiness check")
+                return "", "", {}, {}
+        elif "exec" in readiness_check:
             # TODO(raphael): Support arbitrary readiness check command by using
             #  container id and docker exec
             return "http://{}:{}/".format(infer_url_host, inference_http_port), None, model_metadata, None
         else:
-            logging.error(f"Unknown readiness check type: {readiness_check}")
-            return "", "", {}, {}
+            # Ref K8S, if no readiness check, we assume the container is ready immediately
+            return "http://{}:{}/".format(infer_url_host, inference_http_port), None, model_metadata, None
+
+
+def _handle_union_volume_mount(binds, volumes, environment, data_cache_dir_input=None):
+    """
+    Private: data_cache_dir is the union folder on host machine, which will be shard across different containers,
+    the control of this folder should be handled by the platform.
+    """
+    if isinstance(data_cache_dir_input, str):
+        # In this case, we mount to the same folder, if it has ~, we replace it with /home/fedml
+        if data_cache_dir_input != "":
+            if data_cache_dir_input[0] == "~":
+                src_data_cache_dir = os.path.expanduser(data_cache_dir_input)
+                dst_data_cache_dir = data_cache_dir_input.replace("~", "/home/fedml")
+            else:
+                # check if the data_cache_dir is a relative path
+                if data_cache_dir_input[0] != "/":
+                    raise "data_cache_dir_input has to be an absolute path or start with ~"
+                else:
+                    src_data_cache_dir = data_cache_dir_input
+                    dst_data_cache_dir = data_cache_dir_input
+            logging.info(f"src_data_cache_dir: {src_data_cache_dir}, dst_data_cache_dir: {dst_data_cache_dir}")
+
+            if isinstance(src_data_cache_dir, str) and src_data_cache_dir != "":
+                logging.info("Start copying the data cache to the container...")
+                if os.path.exists(src_data_cache_dir):
+                    volumes.append(src_data_cache_dir)
+                    binds[src_data_cache_dir] = {
+                        "bind": dst_data_cache_dir,
+                        "mode": "rw"
+                    }
+                    environment["DATA_CACHE_FOLDER"] = dst_data_cache_dir
+    elif isinstance(data_cache_dir_input, dict):
+        for k, v in data_cache_dir_input.items():
+            if os.path.exists(k):
+                volumes.append(v)
+                binds[k] = {
+                    "bind": v,
+                    "mode": "rw"
+                }
+            else:
+                logging.warning(f"{k} does not exist, skip mounting it to the container")
+        logging.info(f"Data cache mount: {volumes}, {binds}")
+    else:
+        logging.info("data_cache_dir_input is not a string or a dictionary, skip mounting it to the container")
+
+
+def handle_volume_mount(volumes, binds, environment, relative_entry_fedml_format="", src_code_dir="",
+                        dst_model_serving_dir="", customized_volumes_mount_rule=None, host_workspace_root=""):
+    # If fedml format entry point is specified, inject the source code, e.g., main.py (FedMLPredictor inside)
+    if relative_entry_fedml_format != "":
+        logging.info("Using FedML format entry point, mounting the source code...")
+        volumes.append(src_code_dir)
+        binds[src_code_dir] = {
+            "bind": dst_model_serving_dir,
+            "mode": "rw"
+        }
+        environment["MAIN_ENTRY"] = relative_entry_fedml_format
+        return  # The reason we return here is that we don't need to mount the source code again
+
+    # If customized volume mount rule is specified, just follow the mount rule
+    """
+    e.g.,
+    volumes:
+      - workspace_path: "./model_repository"
+        mount_path: "/repo_inside_container"
+    """
+    mount_list = []
+    if not isinstance(customized_volumes_mount_rule, list):
+        if not isinstance(customized_volumes_mount_rule, dict):
+            logging.warning("customized_volumes_mount_rule is not a list or a dictionary, "
+                            "skip mounting it to the container")
+            return
+
+        # transform the dict to list
+        for k, v in customized_volumes_mount_rule.items():
+            mount_list.append({ClientConstants.CUSTOMIZED_VOLUMES_PATH_FROM_WORKSPACE_KEY: k,
+                               ClientConstants.CUSTOMIZED_VOLUMES_PATH_FROM_CONTAINER_KEY: v})
+    else:
+        mount_list = customized_volumes_mount_rule if customized_volumes_mount_rule is not None else []
+
+    for mount in mount_list:
+        workspace_relative_path = mount[ClientConstants.CUSTOMIZED_VOLUMES_PATH_FROM_WORKSPACE_KEY]
+        mount_path = mount[ClientConstants.CUSTOMIZED_VOLUMES_PATH_FROM_CONTAINER_KEY]
+
+        workspace_path = os.path.join(host_workspace_root, workspace_relative_path)
+        if os.path.exists(workspace_path):
+            volumes.append(workspace_path)
+            binds[workspace_path] = {
+                "bind": mount_path,
+                "mode": "rw"
+            }
+        else:
+            logging.warning(f"{workspace_path} does not exist, skip mounting it to the container")
 
 
 def check_container_readiness(inference_http_port, infer_host="127.0.0.1", request_input_example=None,
