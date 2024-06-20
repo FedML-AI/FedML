@@ -8,7 +8,7 @@ import os
 from typing import Any, Mapping, MutableMapping, Union
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, Response, status, APIRouter
 from fastapi.responses import StreamingResponse, JSONResponse
 
 import fedml
@@ -38,6 +38,7 @@ class Settings:
 
 
 api = FastAPI()
+router = APIRouter()
 
 FEDML_MODEL_CACHE = FedMLModelCache.get_instance()
 FEDML_MODEL_CACHE.set_redis_params(redis_addr=Settings.redis_addr,
@@ -169,7 +170,8 @@ async def predict_with_end_point_id(end_point_id, request: Request, response: Re
     return inference_response
 
 
-@api.post('/custom_inference/{end_point_id}/{path:path}')
+# @api.post('/custom_inference/{end_point_id}/{path:path}')
+@router.api_route("/custom_inference/{end_point_id}/{path:path}", methods=["POST", "GET"])
 async def custom_inference(end_point_id, path: str, request: Request):
     # Get json data
     input_json = await request.json()
@@ -178,11 +180,13 @@ async def custom_inference(end_point_id, path: str, request: Request):
     header = request.headers
 
     try:
-        inference_response = await _predict(end_point_id, input_json, header, path)
+        inference_response = await _predict(end_point_id, input_json, header, path, request.method)
     except Exception as e:
         inference_response = {"error": True, "message": f"{traceback.format_exc()}"}
 
     return inference_response
+
+api.include_router(router)
 
 
 async def _predict(
@@ -190,6 +194,7 @@ async def _predict(
         input_json,
         header=None,
         path=None,
+        request_method="POST"
 ) -> Union[MutableMapping[str, Any], Response, StreamingResponse]:
     # Always increase the pending requests counter on a new incoming request.
     FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
@@ -264,7 +269,7 @@ async def _predict(
                     output_list,
                     inference_type=in_return_type,
                     connectivity_type=connectivity_type,
-                    path=path)
+                    path=path, request_method=request_method)
 
             # Calculate model metrics
             try:
@@ -356,7 +361,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
 async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
                                  inference_type="default",
                                  connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
-                                 path=None):
+                                 path=None, request_method="POST"):
     request_timeout_sec = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
         .get("request_timeout_sec", ClientConstants.INFERENCE_REQUEST_TIMEOUT)
 
@@ -369,7 +374,8 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
                 input_list,
                 output_list,
                 inference_type=inference_type,
-                timeout=request_timeout_sec)
+                timeout=request_timeout_sec,
+                method=request_method)
             logging.debug(f"Use http inference. return {response_ok}")
             return inference_response
         elif connectivity_type == ClientConstants.WORKER_CONNECTIVITY_TYPE_HTTP_PROXY:

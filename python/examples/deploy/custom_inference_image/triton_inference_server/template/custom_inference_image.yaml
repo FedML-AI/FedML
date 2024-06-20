@@ -1,16 +1,20 @@
 workspace: "./"
 
+enable_serverless_container: true
 inference_image_name: "nvcr.io/nvidia/tritonserver:24.05-py3"
 
-# If you put the model repository in $workspace/model_repository, it will be mounted to /home/fedml/models_serving/model_repository
-container_run_command: "tritonserver --model-repository=/home/fedml/models_serving/model_repository"
+volumes:
+  - workspace_path: "./model_repository"
+    mount_path: "/repo_inside_container"
 
-# If your image has the repository inside it, say in /my_models_dir/model_repository, you can do:
-#container_run_command: "tritonserver --model-repository=/my_models_dir/model_repository"
+container_run_command: "tritonserver --model-repository=/repo_inside_container"
 
 readiness_probe:
-  path: "v2/health/ready"
+  httpGet:
+    path: "/v2/health/ready"
 
 port: 8000
 
-deploy_timeout: 1600
+deploy_timeout_sec: 1600
+
+request_input_example: {"text_input": "Hello"}
