@@ -26,7 +26,7 @@ For info on `trpc_master_config_path` refer to `python/examples/cross_silo/cuda_
 
 Example is provided at:
 
-`python/examples/cross_silo/cuda_rpc_fedavg_mnist_lr_example/one_line`
+`python/examples/federate/cross_silo/cuda_rpc_fedavg_mnist_lr_example/one_line`
 ### Training Script
 
 At the client side, the client ID (a.k.a rank) starts from 1.

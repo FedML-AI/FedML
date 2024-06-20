@@ -1,9 +1,10 @@
 # base
-FROM fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
+ARG BASE_IMAGE=python:3.11
+
+FROM ${BASE_IMAGE}
 
 # set the github runner version
-ARG RUNNER_VERSION="2.304.0"
-
+ARG RUNNER_VERSION="2.317.0"
 # update the base packages and add a non-sudo user
 #RUN apt-get update -y && apt-get upgrade -y && useradd -m docker
 
@@ -24,18 +25,15 @@ COPY start.sh start.sh
 
 # make the script executable
 RUN chmod +x start.sh
-
-RUN cp -f /usr/bin/python /usr/bin/python-backup && ln -s /usr/bin/python3 python
-
-RUN pip install scikit-learn
-
-RUN pip install tensorflow && pip install tensorflow_datasets && pip install jax[cpu] && pip install dm-haiku && pip install optax && pip install jaxlib
-
 # since the config and run script for actions are not allowed to be run by root,
 # set the user to "docker" so all subsequent commands are run as the docker user
 #USER docker
 
-ENV REPO=FedML-AI/FedML ACCESS_TOKEN=1
+RUN git clone https://github.com/Qigemingziba/FedML.git
+RUN cd FedML && git pull && git checkout dev/v0.7.0 && cd python && pip3 install -e ./ 
+ENV REPO=Qigemingziba/FedML ACCESS_TOKEN=AGMK3P4W5EM5PXNYTZXXIMTGNF4MW
 
 # set the entrypoint to the start.sh script
-CMD ./start.sh ${REPO} ${ACCESS_TOKEN}
+CMD ./start.sh ${REPO} ${ACCESS_TOKEN} 
+
+

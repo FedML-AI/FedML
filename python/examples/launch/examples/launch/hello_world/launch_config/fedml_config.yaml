@@ -1,0 +1,14 @@
+containerize: false
+data_args:
+  dataset_name: mnist
+  dataset_path: ./dataset
+  dataset_type: csv
+environment_args:
+  bootstrap: fedml_bootstrap_generated.sh
+model_args:
+  input_dim: '784'
+  model_cache_path: /Users/alexliang/fedml_models
+  model_name: lr
+  output_dim: '10'
+training_params:
+  learning_rate: 0.004
