@@ -1,0 +1,17 @@
+workspace: "./"
+
+enable_serverless_container: true
+inference_image_name: "fedml/llama3-8b-tensorrtllm"
+
+# If you put the model repository in $workspace/model_repository, it will be mounted to /home/fedml/models_serving/model_repository
+container_run_command: ["sh", "-c", "cd / && huggingface-cli login --token $your_hf_token && pip install sentencepiece protobuf && python3 tensorrtllm_backend/scripts/launch_triton_server.py --model_repo tensorrtllm_backend/all_models/inflight_batcher_llm --world_size 1 && tail -f /dev/null"]
+
+readiness_probe:
+  httpGet:
+    path: "/v2/health/ready"
+
+port: 8000
+
+deploy_timeout_sec: 1600
+
+

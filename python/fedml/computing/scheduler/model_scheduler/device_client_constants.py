@@ -143,6 +143,9 @@ class ClientConstants(object):
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
 
+    READINESS_PROBE_DEFAULT = "DEFAULT"
+    LIVENESS_PROBE_DEFAULT = "DEFAULT"
+
     LOGIN_MODE_ON_PREMISE_INDEX = 0
     LOGIN_MODE_FEDML_CLOUD_INDEX = 1
     LOGIN_MODE_PUBLIC_CLOUD_INDEX = 2
@@ -151,20 +154,16 @@ class ClientConstants(object):
     MODEL_DATA_TYPE_INT = "int"
     MODEL_DATA_TYPE_FLOAT = "float"
     MODEL_DATA_TYPE_STR = "str"
-    MODEL_DATA_TYPE_MAPPING = {"TYPE_BOOL": MODEL_DATA_TYPE_INT, "TYPE_UINT8": MODEL_DATA_TYPE_INT,
-                               "TYPE_UINT16": MODEL_DATA_TYPE_INT, "TYPE_UINT32": MODEL_DATA_TYPE_INT,
-                               "TYPE_UINT64": MODEL_DATA_TYPE_INT, "TYPE_INT8": MODEL_DATA_TYPE_INT,
-                               "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
-                               "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
-                               "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
-                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT,
-                               "BOOL": MODEL_DATA_TYPE_INT, "UINT8": MODEL_DATA_TYPE_INT,
-                               "UINT16": MODEL_DATA_TYPE_INT, "UINT32": MODEL_DATA_TYPE_INT,
-                               "UINT64": MODEL_DATA_TYPE_INT, "INT8": MODEL_DATA_TYPE_INT,
-                               "INT16": MODEL_DATA_TYPE_INT, "INT32": MODEL_DATA_TYPE_INT,
-                               "INT64": MODEL_DATA_TYPE_INT, "FP16": MODEL_DATA_TYPE_FLOAT,
-                               "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
-                               "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
+
+    # Model config yaml related
+    DEPLOY_TIMEOUT_SEC_KEY = "deploy_timeout_sec"
+    DEPLOY_TIMEOUT_SEC_DEFAULT = 600
+
+    ENABLE_SERVERLESS_CONTAINER_KEY = "enable_serverless_container"
+
+    CUSTOMIZED_VOLUMES_MOUNT_KEY = "volumes"
+    CUSTOMIZED_VOLUMES_PATH_FROM_WORKSPACE_KEY = "workspace_path"
+    CUSTOMIZED_VOLUMES_PATH_FROM_CONTAINER_KEY = "mount_path"
 
     @staticmethod
     def get_fedml_home_dir():

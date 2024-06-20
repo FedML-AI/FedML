@@ -147,6 +147,10 @@ class ServerConstants(object):
     DEVICE_DIFF_ADD_OPERATION = "op: add"
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
+
+    # Worker comfig yaml related
+    ENABLE_SERVERLESS_CONTAINER_KEY = "enable_serverless_container"
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -354,7 +358,7 @@ class ServerConstants(object):
         # Use dotenv to load the environment variables
         fedml.load_env()
         master_inference_port = int(os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
-                                            default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
+                                              default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT))
         return master_inference_port
 
 
