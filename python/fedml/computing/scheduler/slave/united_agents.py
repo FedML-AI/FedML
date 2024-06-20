@@ -57,8 +57,7 @@ class FedMLUnitedAgent(Singleton):
         deploy_master_agent.login(
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM,
-            communication_manager=shared_communication_mgr,
-            status_center_queue=shared_master_status_center_queue
+            communication_manager=shared_communication_mgr
         )
 
         # Login with the deployment slave role based on
@@ -66,10 +65,7 @@ class FedMLUnitedAgent(Singleton):
         deploy_slave_agent.login(
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_WORKER_ON_PREM,
-            communication_manager=shared_communication_mgr,
-            sender_message_queue=shared_slave_sender_message_queue,
-            status_center_queue=shared_slave_status_center_queue,
-            sender_message_event=shared_slave_sender_message_event
+            communication_manager=shared_communication_mgr
         )
 
         # Start the slave agent to connect to servers and loop forever.

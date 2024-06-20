@@ -7,7 +7,10 @@ from enum import Enum, unique
 import multiprocessing
 import queue
 
+import setproctitle
+
 import fedml
+from .general_constants import GeneralConstants
 from .message_common import FedMLMessageEntity, FedMLStatusEntity
 from .message_center import FedMLMessageCenter
 import traceback
@@ -84,6 +87,7 @@ class FedMLStatusCenter(object):
     TOPIC_SLAVE_JOB_LAUNCH_SUFFIX = "/start_train"
     TOPIC_SLAVE_JOB_STOP_PREFIX = "flserver_agent/"
     TOPIC_SLAVE_JOB_STOP_SUFFIX = "/stop_train"
+    TOPIC_STATUS_CENTER_STOP_PREFIX = GeneralConstants.FEDML_TOPIC_STATUS_CENTER_STOP
     ALLOWED_MAX_JOB_STATUS_CACHE_NUM = 1000
 
     def __init__(self, message_queue=None):
@@ -116,22 +120,25 @@ class FedMLStatusCenter(object):
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
         self.status_listener_message_center_queue = listener_message_center_queue
-        #self.status_runner = self.get_status_runner()
-        self.status_runner = self
+        self.status_runner = self.get_status_runner()
+        #self.status_runner = self
+        process_name = GeneralConstants.get_status_center_process_name(
+            f'{"deploy" if self.is_deployment_status_center else "launch"}_'
+            f'{"slave" if is_slave_agent else "master"}_agent')
         target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
             self.status_runner.run_status_dispatcher_in_slave
         if platform.system() == "Windows":
             self.status_center_process = multiprocessing.Process(
                 target=target_func, args=(
                     self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue, sender_message_event
+                    self.status_listener_message_center_queue, sender_message_event, process_name
                 )
             )
         else:
             self.status_center_process = fedml.get_process(
                 target=target_func, args=(
                     self.status_event, self.status_queue, self.status_sender_message_center_queue,
-                    self.status_listener_message_center_queue, sender_message_event
+                    self.status_listener_message_center_queue, sender_message_event, process_name
                 )
             )
 
@@ -178,7 +185,10 @@ class FedMLStatusCenter(object):
     def run_status_dispatcher(self, status_event, status_queue,
                               sender_message_center_queue,
                               listener_message_center_queue,
-                              sender_message_event):
+                              sender_message_event, process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         if platform.system() != "Windows":
             os.setsid()
 
@@ -228,6 +238,12 @@ class FedMLStatusCenter(object):
                 # Build message and status entity
                 message_entity = FedMLMessageEntity(message_body=message_body)
                 status_entity = FedMLStatusEntity(status_msg_body=message_body)
+
+                if message_entity.topic.startswith(FedMLStatusCenter.TOPIC_STATUS_CENTER_STOP_PREFIX):
+                    # Process the stop message for message center and status center
+                    message_center.stop_message_center()
+                    self.stop_status_center()
+                    continue
 
                 # Generate status manager instance
                 run_id_str = str(status_entity.run_id)
@@ -279,7 +295,10 @@ class FedMLStatusCenter(object):
     def run_status_dispatcher_in_slave(self, status_event, status_queue,
                                        sender_message_center_queue,
                                        listener_message_center_queue,
-                                       sender_message_event):
+                                       sender_message_event, process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         if platform.system() != "Windows":
             os.setsid()
 

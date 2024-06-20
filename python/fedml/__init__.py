@@ -1,6 +1,7 @@
 import logging
 import platform
 
+import multiprocess
 import multiprocess as multiprocessing
 import os
 import random
@@ -37,7 +38,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.9.0"
+__version__ = "0.8.51b1"
 
 
 # This is the deployment environment used for different roles (RD/PM/BD/Public Developers). Potential VALUE: local, dev, test, release
@@ -471,7 +472,13 @@ def get_process(target=None, args=None):
     if platform.system() == "Windows":
         return multiprocessing.Process(target=target, args=args)
     else:
-        return multiprocessing.get_context("fork").Process(target=target, args=args)
+        #return multiprocessing.Process(target=target, args=args)
+        #multiprocessing.set_start_method("spawn", force=True)
+        #return multiprocess.context.SpawnContext.Process(target=target, args=args)
+        #multiprocessing.Manager().current_process().authkey = str.encode("abc")
+        new_process = multiprocessing.get_context("fork").Process(target=target, args=args)
+        #new_process.authkey = str.encode("abc")
+        return new_process
 
 
 def set_env_version(version):

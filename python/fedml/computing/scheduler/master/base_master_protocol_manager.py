@@ -214,7 +214,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 sender_message_queue=self.message_center.get_sender_message_queue(),
                 listener_message_queue=self.get_listener_message_queue(),
                 status_center_queue=self.get_status_queue(),
-                communication_manager=self.get_listener_communication_manager()
+                communication_manager=self.get_listener_communication_manager(),
+                process_name=GeneralConstants.get_launch_master_job_process_name(run_id, self.edge_id)
             )
 
             process = self._get_job_runner_manager().get_runner_process(run_id)
@@ -225,6 +226,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         elif self.run_as_cloud_agent:
             self.init_job_task(request_json)
 
+            server_id = request_json.get("server_id", self.edge_id)
             self._get_job_runner_manager().start_job_runner(
                 run_id, request_json, args=self.args, edge_id=self.edge_id,
                 sender_message_queue=self.message_center.get_sender_message_queue(),
@@ -233,7 +235,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 communication_manager=self.get_listener_communication_manager(),
                 master_agent_instance=self.generate_agent_instance(),
                 should_start_cloud_server=True,
-                use_local_process_as_cloud_server=self.use_local_process_as_cloud_server
+                use_local_process_as_cloud_server=self.use_local_process_as_cloud_server,
+                process_name=GeneralConstants.get_launch_master_job_process_name(run_id, server_id)
             )
 
             process = self._get_job_runner_manager().get_runner_process(run_id, is_cloud_server=True)
@@ -255,7 +258,8 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
                 sender_message_queue=self.message_center.get_sender_message_queue(),
                 listener_message_queue=self.get_listener_message_queue(),
                 status_center_queue=self.get_status_queue(),
-                communication_manager=self.get_listener_communication_manager()
+                communication_manager=self.get_listener_communication_manager(),
+                process_name=GeneralConstants.get_launch_master_job_process_name(run_id, server_id)
             )
 
             self.send_status_msg_to_edges(edge_id_list, run_id, server_id)
@@ -311,7 +315,11 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self._process_job_complete_status(run_id, server_id, request_json)
 
     def _process_job_complete_status(self, run_id, server_id, complete_payload):
-        pass
+        # Complete the job runner
+        self._get_job_runner_manager().complete_job_runner(
+            run_id, args=self.args, server_id=server_id, request_json=complete_payload,
+            run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server,
+            use_local_process_as_cloud_server=self.use_local_process_as_cloud_server)
 
     def callback_run_logs(self, topic, payload):
         run_id = str(topic).split('/')[-1]

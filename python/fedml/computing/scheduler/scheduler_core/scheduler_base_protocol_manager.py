@@ -154,6 +154,7 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
             self.communication_mgr.disconnect()
 
         if kill_process:
+            self.post_status_center_stopping_message()
             self.release_message_center()
             RunProcessUtils.kill_process(os.getppid(), exclude_current_pid=True)
 
@@ -327,6 +328,11 @@ class FedMLSchedulerBaseProtocolManager(FedMLMessageCenter, FedMLStatusCenter, A
     def send_agent_active_msg(self, edge_id):
         active_msg = {"ID": edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_IDLE}
         self.message_center.send_message_json(self.topic_active, json.dumps(active_msg))
+
+    def post_status_center_stopping_message(self, run_id=None):
+        topic_status_center_stopping = GeneralConstants.FEDML_TOPIC_STATUS_CENTER_STOP
+        payload = {"run_id": run_id}
+        self.status_reporter.send_message(topic_status_center_stopping, json.dumps(payload))
 
     def set_parent_agent(self, parent_agent):
         self.parent_agent = parent_agent
