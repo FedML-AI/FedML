@@ -152,8 +152,8 @@ class JobRunnerUtils(Singleton):
                 return cuda_visible_gpu_ids_str
 
         except Exception as e:
-            logging.error(f"Error {e} Exception {traceback.format_exc()}")
-            return None
+            raise Exception(f"Error occurred while occupying gpu ids: {e} \n"
+                            f"Exception {traceback.format_exc()}")
 
     @staticmethod
     def search_and_refresh_available_gpu_ids(available_gpu_ids):

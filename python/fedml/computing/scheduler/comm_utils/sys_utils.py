@@ -791,7 +791,7 @@ def daemon_ota_upgrade(in_args):
         fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_args.version)
         should_upgrade = False if fedml_is_latest_version else True
     except Exception as e:
-        return
+        raise Exception("Failed to check the latest version with error {}.".format(str(e)))
 
     if not should_upgrade:
         return
@@ -807,7 +807,7 @@ def daemon_ota_upgrade_with_version(in_version="release"):
         fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_version)
         should_upgrade = False if fedml_is_latest_version else True
     except Exception as e:
-        return
+        raise Exception("Failed to check the latest version with error {}.".format(str(e)))
 
     if not should_upgrade:
         return
@@ -833,8 +833,6 @@ def run_cmd(command, show_local_console=False):
                     print(out_str)
 
         log_return_info(command, 0)
-
-        is_cmd_run_ok = True
     else:
         if err is not None:
             try:
@@ -848,10 +846,8 @@ def run_cmd(command, show_local_console=False):
                     print(err_str)
 
         log_return_info(command, ret_code)
-
-        is_cmd_run_ok = False
-
-    return is_cmd_run_ok
+        raise Exception("Run command '{}' failed with return code {}.".format(command, ret_code))
+    return True
 
 
 def get_local_fedml_version(fedml_init_file):
