@@ -69,7 +69,8 @@ requirements = [
     'python-dotenv',
     'protobuf>=3.20.2,<4.0dev',
     'typer<0.10.0,>=0.3.0',
-    'fastapi-cli==0.0.1'
+    'fastapi-cli==0.0.1',
+    'setproctitle'
 ]
 
 requirements_extra_mpi = [
