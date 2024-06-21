@@ -352,8 +352,7 @@ class FedMLMessageCenter(object):
         self.listener_message_event = multiprocessing.Event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config
-        message_runner = self.get_message_runner()
-        # message_runner = self
+        message_runner = self
         message_runner.listener_agent_config = agent_config
         process_name = GeneralConstants.get_message_center_listener_process_name(message_center_name)
         if platform.system() == "Windows":

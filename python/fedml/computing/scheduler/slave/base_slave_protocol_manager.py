@@ -62,8 +62,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.server_id = args.server_id
         self.model_device_server_id = None
         self.model_device_client_edge_id_list = None
-        self.model_device_server = None
-        self.model_device_client_list = None
 
     @abstractmethod
     def generate_topics(self):
@@ -147,12 +145,9 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.subscribed_topics.append(topic)
 
     def stop(self):
-        if self.model_device_server is not None:
-            self.model_device_server = None
-
-        if self.model_device_client_list is not None:
-            self.model_device_client_list.clear()
-            self.model_device_client_list = None
+        if self.model_device_client_edge_id_list is not None:
+            self.model_device_client_edge_id_list.clear()
+            self.model_device_client_edge_id_list = None
 
         super().stop()
 

@@ -120,8 +120,7 @@ class FedMLStatusCenter(object):
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
         self.status_listener_message_center_queue = listener_message_center_queue
-        self.status_runner = self.get_status_runner()
-        #self.status_runner = self
+        self.status_runner = self
         process_name = GeneralConstants.get_status_center_process_name(
             f'{"deploy" if self.is_deployment_status_center else "launch"}_'
             f'{"slave" if is_slave_agent else "master"}_agent')
