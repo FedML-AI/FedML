@@ -10,7 +10,7 @@ The CI tests need to be comprehensive, covering typical scenarios only, achievab
 
 ## 2.1 Linux Runners
 
-Step1: Build linux images
+### Step1: Build linux images
 
 Build all the linux images for Self-Host Runners.
 ```
@@ -18,7 +18,7 @@ cd registry-runners
 bash build_linux_runners.sh
 ```
 
-Step2: Specify the token and key.
+### Step2: Specify the token and key.
 Find your GitHub runner token and your test-account apikey.
 
 For the argument YourGitHubRunnerToken, Navigate the path `Settings -> Actions -> Runners -> New self-hosted runner` to get.
@@ -26,7 +26,7 @@ For the argument YourGitHubRunnerToken, Navigate the path `Settings -> Actions -
 In the Configure section, you will find the similar line:
 ./config.sh --url https://github.com/FedML-AI/FedML --token AXRYPL6G2VHVGDFDQQS5XA3ELYI6M to get YourGitHubRunnerToken to value of --token
 
-Step3: Registry all the runners.
+### Step3: Registry all the runners.
 Registry by run `run_linux_runners.sh` script
 ```
 bash run_linux_runners.sh [YourGitRepo] [YourGitHubRunnerToken] [YourTestAccountApiKey]
@@ -35,33 +35,33 @@ for example
 ```
 bash run_linux_runners.sh FedML-AI/FedML AXRYPLZLZN6XVJB3BAIXSP3EMFC7U 11215dkevvdkegged
 ```
-Step4 Verify Success
+### Step4: Verify Success
 
 Check if all the runners are registered successfully. Navigate the following path. `Settings -> Actions -> Runners` to check that all your runners are active.
 
 ## 2.2 Windows Runners
 
-step1: Install Anaconda packages
+### Step1: Install Anaconda packages
 Install Anaconda or Miniconda on a Windows machine. Anaconda and Miniconda can manage your Python environments.
 
-step2: Create python enviroments
+### Step2: Create python enviroments
 Create 4 python environments named `python38`、`python39`、`python310` and `python311` for different runners.
 Specify the python version to install.
 For example 
 ```
 conda create -n python38 python==3.8
 ```
-step3: Create directories 
+### Step3: Create directories 
 Create 4 directories named `actions-runner-python38`、`actions-runner-python39`、`actions-runner-python310` and `actions-runner-python311` for different runners.
 
-step4: Install the latest runner package. 
+### Step4: Install the latest runner package. 
 Follow the insturction from navigating this path `Settings -> Actions -> Runners -> New self-hosted runner` to add a new Windows runner. Note that you only need to download、extract the files into the directories created in Step 3. Configuration and running will be done through a script later.
 
-step5: Registry all the runners.
+### Step5: Registry all the runners.
 Run the script from `./registry-runners/windows.ps1` to registry all the runners to your github. Replace the variables `$REPO`、`$ACCESS_TOKEN` and `$WORKPLACE` with actual values. Note that you can get your $ACCESS_TOKEN from the following path `Settings -> Actions -> Runners -> New self-hosted runner.`.
 In the Configure section, you will find the similar line: `./config.sh --url https://github.com/FedML-AI/FedML --token AXRYPL6G2VHVGDFDQQS5XA3ELYI6M` to get your `$ACCESS_TOKEN`.
 
-step6: Verify Success
+### Step6: Verify Success
 Check if the runners are registered successfully by navigate to `Settings -> Actions -> Runners`. Make sure that all your runners are active. 
 
 ## 2.3 Mac Runners
