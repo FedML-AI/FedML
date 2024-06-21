@@ -1,0 +1,3 @@
+containerize: false
+environment_args:
+  bootstrap: fedml_bootstrap_generated.sh

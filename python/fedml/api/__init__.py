@@ -270,6 +270,9 @@ def model_deploy(name, endpoint_name, endpoint_id, local, master_ids, worker_ids
 def model_run(endpoint_id, json_string):
     model_module.run(endpoint_id, json_string)
 
+def get_endpoint(endpoint_id):
+    return model_module.get_endpoint(endpoint_id)
+
 
 def endpoint_delete(endpoint_id):
     model_module.delete_endpoint(endpoint_id)

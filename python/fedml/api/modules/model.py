@@ -320,6 +320,19 @@ def run(endpoint_id: str, json_string: str) -> bool:
         click.echo("Failed to run model.")
         return False
 
+def get_endpoint(endpoint_id: str):
+    api_key = get_api_key()
+    if api_key == "":
+        click.echo('''
+                Please use one of the ways below to login first:
+                (1) CLI: `fedml login $api_key`
+                (2) API: fedml.api.fedml_login(api_key=$api_key)
+                ''')
+        return False
+    
+    endpoint_detail_result = FedMLModelCards.get_instance().query_endpoint_detail_api(user_api_key=api_key, 
+                                                                endpoint_id=endpoint_id)
+    return endpoint_detail_result
 
 def delete_endpoint(endpoint_id: str) -> bool:
     api_key = get_api_key()
