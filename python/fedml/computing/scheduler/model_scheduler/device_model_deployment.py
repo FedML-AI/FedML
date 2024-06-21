@@ -19,6 +19,7 @@ from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from ..scheduler_core.compute_utils import ComputeUtils
 from ..comm_utils.container_utils import ContainerUtils
@@ -59,7 +60,9 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, inference_model_name, inference_engine,
                      infer_host, master_ip, edge_id, master_device_id=None, replica_rank=0,
-                     gpu_per_replica=1):
+                     gpu_per_replica=1, request_json=None):
+    if request_json is None:
+        request_json = dict()
     logging.info("[Worker] Model deployment is starting...")
 
     # Real gpu per replica (container-level)
@@ -219,22 +222,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     if device_mapping:
         host_config_dict.update(device_mapping)
 
-    # Environment variables
-    enable_custom_image = False if relative_entry_fedml_format != "" else True
-    if not enable_custom_image:
-        # For some image, the default user is root. Unified to fedml.
-        environment["HOME"] = "/home/fedml"
-    environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
-    environment["FEDML_CURRENT_RUN_ID"] = end_point_id
-    environment["FEDML_CURRENT_EDGE_ID"] = edge_id
-    environment["FEDML_REPLICA_RANK"] = replica_rank
-    environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
-    environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
-    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
-    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
-    if extra_envs is not None:
-        for key in extra_envs:
-            environment[key] = extra_envs[key]
+    # Handle the environment variables
+    handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir,
+                    end_point_id, edge_id, replica_rank, request_json)
 
     # Create the container
     try:
@@ -610,6 +600,29 @@ def handle_volume_mount(volumes, binds, environment, relative_entry_fedml_format
             }
         else:
             logging.warning(f"{workspace_path} does not exist, skip mounting it to the container")
+
+
+def handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir, end_point_id, edge_id,
+                    replica_rank, request_json):
+    enable_custom_image = False if relative_entry_fedml_format != "" else True
+    if not enable_custom_image:
+        # For some image, the default user is root. Unified to fedml.
+        environment["HOME"] = "/home/fedml"
+
+    if request_json and ServerConstants.USER_ENCRYPTED_API_KEY in request_json:
+        environment[ClientConstants.ENV_USER_ENCRYPTED_API_KEY] = request_json[ServerConstants.USER_ENCRYPTED_API_KEY]
+
+    environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
+    environment["FEDML_CURRENT_RUN_ID"] = end_point_id
+    environment["FEDML_CURRENT_EDGE_ID"] = edge_id
+    environment["FEDML_REPLICA_RANK"] = replica_rank
+    environment["FEDML_CURRENT_VERSION"] = fedml.get_env_version()
+    environment["FEDML_ENV_VERSION"] = fedml.get_env_version()
+    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_HOST"] = fedml.get_local_on_premise_platform_host()
+    environment["FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT"] = fedml.get_local_on_premise_platform_port()
+    if extra_envs is not None:
+        for key in extra_envs:
+            environment[key] = extra_envs[key]
 
 
 def check_container_readiness(inference_http_port, infer_host="127.0.0.1", request_input_example=None,

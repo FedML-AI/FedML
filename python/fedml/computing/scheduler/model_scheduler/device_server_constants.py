@@ -108,6 +108,8 @@ class ServerConstants(object):
 
     INFERENCE_REQUEST_TIMEOUT_KEY = "request_timeout_sec"
     INFERENCE_REQUEST_TIMEOUT_DEFAULT = 30
+
+    USER_ENCRYPTED_API_KEY = "encrypted_api_key"
     # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}

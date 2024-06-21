@@ -165,6 +165,8 @@ class ClientConstants(object):
     CUSTOMIZED_VOLUMES_PATH_FROM_WORKSPACE_KEY = "workspace_path"
     CUSTOMIZED_VOLUMES_PATH_FROM_CONTAINER_KEY = "mount_path"
 
+    ENV_USER_ENCRYPTED_API_KEY = "FEDML_USER_ENCRYPTED_API_KEY"
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")

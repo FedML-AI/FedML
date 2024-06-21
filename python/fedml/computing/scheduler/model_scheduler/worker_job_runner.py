@@ -250,7 +250,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                             inference_model_name=model_name, inference_engine=inference_engine,
                             infer_host=worker_ip, master_ip=master_ip, edge_id=self.edge_id,
                             master_device_id=device_ids[0], replica_rank=rank,
-                            gpu_per_replica=int(self.replica_handler.gpu_per_replica)
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json
                         )
                 except Exception as e:
                     inference_output_url = ""
@@ -373,7 +373,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                             inference_model_name=model_name, inference_engine=inference_engine,
                             infer_host=worker_ip, master_ip=master_ip, edge_id=self.edge_id,
                             master_device_id=device_ids[0], replica_rank=rank,
-                            gpu_per_replica=int(self.replica_handler.gpu_per_replica)
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json
                         )
                 except Exception as e:
                     inference_output_url = ""
