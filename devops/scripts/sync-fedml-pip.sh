@@ -24,7 +24,7 @@ else
   fi
 fi
 
-mkdir -p /home/fedml/fedml_data
-cp -Rf /home/fedml/fedml_data_host/* /home/fedml/fedml_data
+mkdir -p ./fedml/fedml_data
+cp -Rf ./fedml/fedml_data_host/* ./fedml/fedml_data
 
 exit 0

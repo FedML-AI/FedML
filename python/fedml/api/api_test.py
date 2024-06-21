@@ -19,7 +19,7 @@ yaml_file = os.path.join(python_dir, "examples", "launch", "hello_job.yaml")
 
 # Launch job
 launch_result_list = list()
-for i in range(0, 1):
+for i in range(0, 10):
     launch_result = fedml.api.launch_job(yaml_file)
     launch_result_list.append(launch_result)
     # launch_result = fedml.api.launch_job_on_cluster(yaml_file, "alex-cluster")
