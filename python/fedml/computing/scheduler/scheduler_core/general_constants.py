@@ -65,6 +65,19 @@ class GeneralConstants:
     FEDML_OTA_CMD_RESTART = "restart"
 
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+    FEDML_PROCESS_NAME_PREFIX = "fedml-process-"
+    FEDML_LAUNCH_MASTER_JOB_RUNNER_TAG = "launch-master-job-runner"
+    FEDML_LAUNCH_SLAVE_JOB_RUNNER_TAG = "launch-slave-job-runner"
+    FEDML_LAUNCH_MASTER_USER_JOB_TAG = "launch-master-user-job"
+    FEDML_DEPLOY_MASTER_JOB_RUNNER_TAG = "deploy-master-job-runner"
+    FEDML_DEPLOY_SLAVE_JOB_RUNNER_TAG = "deploy-slave-job-runner"
+    FEDML_DEPLOY_MASTER_USER_JOB_TAG = "deploy-master-user-job"
+    FEDML_MESSAGE_CENTER_LISTENER_TAG = "message-center-listener"
+    FEDML_MESSAGE_CENTER_SENDER_TAG = "message-center-sender"
+    FEDML_STATUS_CENTER_TAG = "status-center"
+    FEDML_LOG_PROCESS_TAG = "log"
+
+    FEDML_TOPIC_STATUS_CENTER_STOP = "anywhere/status_center/stop"
 
     @staticmethod
     def get_package_unzip_dir(package_download_dir):
@@ -216,3 +229,60 @@ class GeneralConstants:
     def get_payload_complete_job(run_id, server_id):
         payload_complete_job = {"runId": run_id, "serverId": server_id}
         return payload_complete_job
+
+    @staticmethod
+    def get_process_name(process_tag, run_id=None, edge_id=None):
+        return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{process_tag}-run-{run_id}-edge-{edge_id}"
+
+    @staticmethod
+    def get_process_name_with_prefix(process_prefix, run_id=None, edge_id=None):
+        return f"{process_prefix}-run-{run_id}-edge-{edge_id}"
+
+    @staticmethod
+    def get_launch_master_job_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_LAUNCH_MASTER_JOB_RUNNER_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_launch_slave_job_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_LAUNCH_SLAVE_JOB_RUNNER_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_launch_master_user_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_LAUNCH_MASTER_USER_JOB_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_deploy_master_job_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_DEPLOY_MASTER_JOB_RUNNER_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_deploy_slave_job_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_DEPLOY_SLAVE_JOB_RUNNER_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_deploy_master_user_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_DEPLOY_MASTER_USER_JOB_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_log_process_name(run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            GeneralConstants.FEDML_LOG_PROCESS_TAG, run_id, edge_id)
+
+    @staticmethod
+    def get_message_center_listener_process_name(message_center_name):
+        return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{GeneralConstants.FEDML_MESSAGE_CENTER_LISTENER_TAG}-{message_center_name}"
+
+    @staticmethod
+    def get_message_center_sender_process_name(message_center_name):
+        return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{GeneralConstants.FEDML_MESSAGE_CENTER_SENDER_TAG}-{message_center_name}"
+
+    @staticmethod
+    def get_status_center_process_name(status_center_tag):
+        return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{GeneralConstants.FEDML_STATUS_CENTER_TAG}-{status_center_tag}"
+
+

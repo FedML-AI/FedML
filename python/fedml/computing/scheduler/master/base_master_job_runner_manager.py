@@ -11,6 +11,7 @@ from multiprocessing import Process
 import fedml
 from .cloud_server_manager import FedMLCloudServerManager
 from ..comm_utils.run_process_utils import RunProcessUtils
+from ..scheduler_core.general_constants import GeneralConstants
 from ..scheduler_core.scheduler_base_job_runner_manager import FedMLSchedulerBaseJobRunnerManager
 from ..scheduler_core.account_manager import FedMLAccountManager
 
@@ -26,7 +27,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             self, run_id, request_json, args=None, edge_id=None, is_server_job=False,
             sender_message_queue=None, listener_message_queue=None, status_center_queue=None,
             communication_manager=None, master_agent_instance=None, should_start_cloud_server=False,
-            use_local_process_as_cloud_server=False, cuda_visible_gpu_ids_str=None
+            use_local_process_as_cloud_server=False, cuda_visible_gpu_ids_str=None, process_name=None
     ):
         if should_start_cloud_server:
             self._start_cloud_server(
@@ -34,7 +35,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
                 use_local_process_as_cloud_server=use_local_process_as_cloud_server,
                 sender_message_queue=sender_message_queue, listener_message_queue=listener_message_queue,
                 status_center_queue=status_center_queue, communication_manager=communication_manager,
-                master_agent_instance=master_agent_instance)
+                master_agent_instance=master_agent_instance, process_name=process_name)
             return
 
         run_id_str = str(run_id)
@@ -46,7 +47,8 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             run_id, request_json, edge_id=edge_id, is_server_job=is_server_job,
             sender_message_queue=sender_message_queue,
             listener_message_queue=listener_message_queue,
-            status_center_queue=status_center_queue
+            status_center_queue=status_center_queue,
+            process_name=process_name
         )
 
     def stop_job_runner(
@@ -96,7 +98,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             use_local_process_as_cloud_server=False,
             sender_message_queue=None, listener_message_queue=None,
             status_center_queue=None, communication_manager=None,
-            master_agent_instance=None
+            master_agent_instance=None, process_name=None
     ):
         run_id_str = str(run_id)
         cloud_server_mgr = FedMLCloudServerManager(
@@ -108,6 +110,7 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             self.cloud_run_process_map[run_id_str].start()
         else:
             cloud_device_id = request_json.get("cloudServerDeviceId", "0")
+            server_id = request_json.get("server_id", 0)
             message_bytes = json.dumps(request_json).encode("ascii")
             base64_bytes = base64.b64encode(message_bytes)
             payload = base64_bytes.decode("ascii")
@@ -121,14 +124,14 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
                     args=(args.account_id, args.api_key, args.os_name, args.version,
                           cloud_device_id, run_id, payload,
                           communication_manager, sender_message_queue,
-                          status_center_queue, master_agent_instance))
+                          status_center_queue, master_agent_instance, process_name))
             else:
                 self.cloud_run_process_map[run_id_str] = fedml.get_process(
                     target=cloud_server_mgr.start_local_master_server,
                     args=(args.account_id, args.api_key, args.os_name, args.version,
                           cloud_device_id, run_id, payload,
                           communication_manager, sender_message_queue,
-                          status_center_queue, master_agent_instance))
+                          status_center_queue, master_agent_instance, process_name))
 
             self.cloud_run_process_map[run_id_str].start()
             time.sleep(1)

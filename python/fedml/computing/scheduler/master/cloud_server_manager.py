@@ -5,6 +5,8 @@ import os
 import platform
 import traceback
 
+import setproctitle
+
 import fedml
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.computing.scheduler.scheduler_core.account_manager import FedMLAccountManager
@@ -47,8 +49,11 @@ class FedMLCloudServerManager:
     def start_local_master_server(
             self, user, api_key, os_name, version, cloud_device_id, run_id, payload,
             communication_manager=None, sender_message_queue=None, status_center_queue=None,
-            master_agent_instance=None
+            master_agent_instance=None, process_name=None
     ):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         logging.info(f"Local master server pid: {os.getpid()}")
         if platform.system() != "Windows":
             os.setsid()
