@@ -17,11 +17,11 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
-    runs-on: ${{ matrix.python-version }}
+    runs-on: ["${{ matrix.python-version }}","${{ matrix.os }}"]
     strategy:
       fail-fast: false
       matrix:
-        os: [ Linux ]
+        os: [ Linux, Windows ]
         arch: [X64]
         python-version: ['python3.8', 'python3.9', 'python3.10', 'python3.11']
     

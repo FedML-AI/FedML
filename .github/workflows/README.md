@@ -45,6 +45,28 @@ to check that your runners are all active.
 
 ## 2.2 Windows Runners
 
+step1: Install Anaconda packages
+Install Anaconda or Miniconda in a windows machine. the Anaconda and Miniconda can manage your python environments.
+
+step2: Create python enviroments
+Create 4 python environments named python38、python39、python310、python311, you also need to specific `python==3.8` to install specific python version.
+For example 
+```
+conda create -n python38 python==3.8
+```
+step3: Create directories 
+Create 4 directories named actions-runner-python38、actions-runner-python39、actions-runner-python310、actions-runner-python311 used for different runners.
+
+step4: Install the latest runner package. 
+Follow the insturction from navigating this path `Settings -> Actions -> Runners -> New self-hosted runner` to add a new windows runner. Note that You just do the download、extract steps in the directories which we have created, we don't need to configure it and run it. We can run a script to registry all the runners. 
+
+step5: Registry all the runners.
+Run the script from ./registry-runners/windows.ps1 to registry all the runners to your github. you need to replace the variables $REPO、$ACCESS_TOKEN、$WORKPLACE with the actual value. Note that you can get your $ACCESS_TOKEN from the following path `Settings -> Actions -> Runners -> New self-hosted runner.`.
+In the Configure section, you can find the similar line: `./config.sh --url https://github.com/FedML-AI/FedML --token AXRYPL6G2VHVGDFDQQS5XA3ELYI6M` to get your $ACCESS_TOKEN.
+
+step6: Make sure the success.
+Check if the runners are registered successfully. Navigate the following path.`Settings -> Actions -> Runners` to check that your runners are all active. 
+
 ## 2.3 Mac Runners
 
 # 3. bind Test Machines
@@ -70,5 +92,5 @@ If you need to add a new CI test that is different from the current business, yo
 
 # 6. TODO
 
-Implement the Windows runners and the Mac runners.
+Implement the Mac runners.
 
