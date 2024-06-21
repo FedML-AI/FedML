@@ -64,6 +64,8 @@ class FedMLBaseMasterAgent(ABC):
         if communication_manager is None:
             self.protocol_mgr.start()
 
+        return login_result
+
     @staticmethod
     def logout():
         GeneralConstants.cleanup_run_process(None, is_master=True)

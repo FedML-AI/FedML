@@ -35,7 +35,7 @@ class FedMLBaseSlaveAgent(ABC):
                 print("We can't find any gpu device on your machine. \n"
                       "With the gpu_supplier(-g) option, you need to check if your machine "
                       "has nvidia GPUs and installs CUDA related drivers.")
-                return
+                return None
 
         # Login account
         login_result = FedMLAccountManager.get_instance().login(
@@ -155,3 +155,8 @@ class FedMLBaseSlaveAgent(ABC):
     @abstractmethod
     def _generate_protocol_manager_instance(self, args, agent_config=None):
         return None
+
+    def save_deploy_ids(self, deploy_master_edge_id=None, deploy_slave_edge_id=None):
+        self.protocol_mgr.save_deploy_ids(
+            deploy_master_edge_id=deploy_master_edge_id, deploy_slave_edge_id=deploy_slave_edge_id)
+
