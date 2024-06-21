@@ -164,7 +164,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
         aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
         scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
-        user_encrypted_api_key = request_json.get("encrypted_api_key", "")
+        user_encrypted_api_key = request_json.get(ServerConstants.USER_ENCRYPTED_API_KEY, "")
 
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
