@@ -12,6 +12,7 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
     def __init__(self, args, agent_config=None):
         FedMLBaseMasterProtocolManager.__init__(self, args, agent_config=agent_config)
+        self.message_center_name = "launch_master_agent"
 
     def generate_communication_manager(self):
         if self.communication_mgr is None:
@@ -25,7 +26,6 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager):
                 self.topic_last_will,
                 json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
             )
-
     # Override
     def _generate_protocol_manager_instance(self, args, agent_config=None):
         return FedMLLaunchMasterProtocolManager(args, agent_config=agent_config)

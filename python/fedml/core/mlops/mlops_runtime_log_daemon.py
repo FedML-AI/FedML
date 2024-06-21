@@ -8,10 +8,12 @@ import time
 
 import multiprocess as multiprocessing
 import requests
+import setproctitle
 import yaml
 
 import fedml
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+from fedml.computing.scheduler.scheduler_core.general_constants import GeneralConstants
 from fedml.core.mlops.mlops_utils import MLOpsLoggingUtils
 from ...core.mlops.mlops_configs import MLOpsConfigs
 
@@ -256,8 +258,11 @@ class MLOpsRuntimeLogProcessor:
 
         return False
 
-    def log_process(self, process_event):
-        logging.info(f"Log uploading process id {os.getpid()}, run id {self.run_id}, edge id {self.device_id}")
+    def log_process(self, process_event, process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        logging.info(f"Log uploading process id {os.getpid()}, run id {self.run_id}, name {process_name}, edge id {self.device_id}")
         self.log_process_event = process_event
 
         only_push_artifact = False
@@ -419,6 +424,8 @@ class MLOpsRuntimeLogDaemon:
         self.log_source = source
 
     def start_log_processor(self, log_run_id, log_device_id, log_source=None, log_file_prefix=None):
+        if log_run_id == "-1" or int(log_run_id) <= 0:
+            return
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
@@ -432,12 +439,13 @@ class MLOpsRuntimeLogDaemon:
             self.log_process_event_map[event_map_id] = multiprocessing.Event()
         self.log_process_event_map[event_map_id].clear()
         log_processor.log_process_event = self.log_process_event_map[event_map_id]
+        process_name = GeneralConstants.get_log_process_name(log_run_id, log_device_id)
         if platform.system() == "Windows":
             log_child_process = multiprocessing.Process(
-                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id],))
+                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id], process_name))
         else:
             log_child_process = fedml.get_process(
-                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id],))
+                target=log_processor.log_process, args=(self.log_process_event_map[event_map_id], process_name))
         # process = threading.Thread(target=log_processor.log_process)
         # process.start()
         if log_child_process is not None:

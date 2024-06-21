@@ -30,6 +30,7 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
 
     def __init__(self, args, agent_config=None):
         FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
+        self.message_center_name = "launch_slave_agent"
 
     # TODO(alaydshah): This method can be potentially removed.
     # Override

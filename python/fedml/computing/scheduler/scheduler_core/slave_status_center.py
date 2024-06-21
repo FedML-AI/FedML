@@ -25,7 +25,10 @@ class FedMLSlaveStatusCenter(FedMLStatusCenter):
         super().__init__(message_queue=self._status_queue, message_center=message_center,
                          is_deployment_status_center=is_deployment_status_center)
 
-    def run_status_dispatcher(self):
+    def run_status_dispatcher(self, process_name=None):
+
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
 
         if platform.system() != "Windows":
             os.setsid()

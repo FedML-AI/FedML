@@ -20,7 +20,7 @@ class FedMLSchedulerBaseJobRunnerManager(ABC):
             self, run_id, request_json, args=None, edge_id=None, is_server_job=False,
             sender_message_queue=None, listener_message_queue=None, status_center_queue=None,
             should_start_cloud_server=False, use_local_process_as_cloud_server=False,
-            cuda_visible_gpu_ids_str=None
+            cuda_visible_gpu_ids_str=None, process_name=None
     ):
         run_id_str = str(run_id)
         self.job_runners[run_id_str] = self._generate_job_runner_instance(
@@ -31,7 +31,8 @@ class FedMLSchedulerBaseJobRunnerManager(ABC):
             run_id, request_json, edge_id=edge_id,
             sender_message_queue=sender_message_queue,
             listener_message_queue=listener_message_queue,
-            status_center_queue=status_center_queue
+            status_center_queue=status_center_queue,
+            process_name=process_name
         )
 
     def stop_job_runner(self, run_id):

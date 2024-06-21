@@ -2,9 +2,15 @@ import logging
 from enum import Enum, unique
 import multiprocessing
 
+import setproctitle
+
 import fedml
 from abc import ABC, abstractmethod
 from .message_common import FedMLMessageEntity
+from .general_constants import GeneralConstants
+from .message_common import FedMLMessageEntity, FedMLStatusEntity
+import traceback
+from .status_manager_protocols import FedMLStatusManager
 
 
 @unique
@@ -77,6 +83,7 @@ class FedMLStatusCenter(ABC):
     TOPIC_SLAVE_JOB_LAUNCH_SUFFIX = "/start_train"
     TOPIC_SLAVE_JOB_STOP_PREFIX = "flserver_agent/"
     TOPIC_SLAVE_JOB_STOP_SUFFIX = "/stop_train"
+    TOPIC_STATUS_CENTER_STOP_PREFIX = GeneralConstants.FEDML_TOPIC_STATUS_CENTER_STOP
     ALLOWED_MAX_JOB_STATUS_CACHE_NUM = 1000
 
     def __init__(self, message_queue, message_center, is_deployment_status_center):
@@ -92,7 +99,7 @@ class FedMLStatusCenter(ABC):
         self.start_status_center()
 
     @abstractmethod
-    def run_status_dispatcher(self):
+    def run_status_dispatcher(self, process_name=None):
         pass
 
     def __repr__(self):
@@ -108,7 +115,8 @@ class FedMLStatusCenter(ABC):
             self.status_center_process = fedml.get_process(
                 target=self.run_status_dispatcher)
 
-            self.status_center_process.start()
+    def get_status_runner(self):
+        return None
 
     def stop_status_center(self):
         if self.status_event is not None:

@@ -154,6 +154,7 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         self.unregister_handlers()
 
         if kill_process:
+            self.post_status_center_stopping_message()
             self.release_message_center()
             RunProcessUtils.kill_process(os.getppid(), exclude_current_pid=True)
 
@@ -308,6 +309,11 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         self.subscribed_topics.remove(topic)
         self.communication_mgr.unsubscribe_msg(topic)
         self.message_center.remove_message_listener(topic)
+
+    def post_status_center_stopping_message(self, run_id=None):
+        topic_status_center_stopping = GeneralConstants.FEDML_TOPIC_STATUS_CENTER_STOP
+        payload = {"run_id": run_id}
+        self.status_reporter.send_message(topic_status_center_stopping, json.dumps(payload))
 
     def set_parent_agent(self, parent_agent):
         self.parent_agent = parent_agent

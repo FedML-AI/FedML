@@ -24,6 +24,10 @@ class FedMLMasterStatusCenter(FedMLStatusCenter):
                          is_deployment_status_center=is_deployment_status_center)
 
     def run_status_dispatcher(self):
+
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
         if platform.system() != "Windows":
             os.setsid()
 

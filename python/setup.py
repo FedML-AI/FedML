@@ -69,7 +69,8 @@ requirements = [
     'python-dotenv',
     'protobuf>=3.20.2,<4.0dev',
     'typer<0.10.0,>=0.3.0',
-    'fastapi-cli==0.0.1'
+    'fastapi-cli==0.0.1',
+    'setproctitle'
 ]
 
 requirements_extra_mpi = [
@@ -126,7 +127,7 @@ requirements_extra_nlp = [
 
 setup(
     name="fedml",
-    version="0.8.31b23",
+    version="0.8.51b1",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
