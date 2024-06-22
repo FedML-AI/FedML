@@ -132,8 +132,8 @@ def download(data_name, api_key, service, dest_path, show_progress=True, encrypt
         return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
 
 
-def get_user_metadata(data_name, api_key=None) -> FedMLResponse:
-    api_key = authenticate(api_key)
+def get_user_metadata(data_name, api_key=None, encrypted_api_key_flag=False) -> FedMLResponse:
+    api_key = authenticate(api_key, encrypted_api_key_flag=encrypted_api_key_flag)
     user_id, message = _get_user_id_from_api_key(api_key)
 
     if user_id is None:
@@ -195,8 +195,8 @@ def list_objects(api_key=None, encrypted_api_key_flag=False) -> FedMLResponse:
 
 
 # Todo(alaydshah): Query service from object metadata. Make the transaction atomic or rollback if partially failed
-def delete(data_name, service, api_key=None) -> FedMLResponse:
-    api_key = authenticate(api_key)
+def delete(data_name, service, api_key=None, encrypted_api_key_flag=False) -> FedMLResponse:
+    api_key = authenticate(api_key, encrypted_api_key_flag=encrypted_api_key_flag)
     user_id, message = _get_user_id_from_api_key(api_key)
 
     if user_id is None:
@@ -209,7 +209,8 @@ def delete(data_name, service, api_key=None) -> FedMLResponse:
     if result:
         logging.info(f"Successfully deleted object from storage service.")
         try:
-            response = _delete_dataset(api_key=api_key, data_name=data_name)
+            response = _delete_dataset(api_key=api_key, data_name=data_name,
+                                       encrypted_api_key_flag=encrypted_api_key_flag)
             code, message, data = _get_data_from_response(message="Failed to delete data", response=response)
         except Exception as e:
             message = (f"Deleted object from storage service but failed to delete object metadata from Nexus Backend "
@@ -622,11 +623,12 @@ def _get_dataset_metadata(api_key: str, data_name: str, encrypted_api_key_flag=F
     return response
 
 
-def _delete_dataset(api_key: str, data_name: str) -> requests.Response:
+def _delete_dataset(api_key: str, data_name: str, encrypted_api_key_flag=False) -> requests.Response:
     dataset_url = ServerConstants.get_dataset_url()
     cert_path = MLOpsConfigs.get_cert_path_with_version()
     headers = ServerConstants.API_HEADERS
     headers["Authorization"] = f"Bearer {api_key}"
+    headers["Encrypted"] = str(encrypted_api_key_flag)
     if cert_path is not None:
         try:
             requests.session().verify = cert_path
