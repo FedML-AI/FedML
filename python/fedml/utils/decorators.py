@@ -38,15 +38,17 @@ def debug(_func: Callable = None, *, output_file="output.txt"):
 
     return decorator(_func)
 
+
 def timeit(func: Callable):
     """Print the runtime of the decorated function"""
     functools.wraps(func)
 
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
-        func(*args, **kwargs)
+        value = func(*args, **kwargs)
         end = time.perf_counter()
         run_time = end - start
         print(f"Finished {func.__name__!r} in {run_time:.4f} seconds")
+        return value
 
     return wrapper
