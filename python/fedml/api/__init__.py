@@ -13,6 +13,7 @@ Usages:
             print(f"run status {run_log_result.run_status}, total log nums {log_result.total_log_lines}, "
                   f"total log pages {log_result.total_log_pages}, log list {log_result.log_line_list}")
 """
+from io import BytesIO
 from typing import List, Tuple
 
 from fedml.api.constants import RunStatus
@@ -183,10 +184,11 @@ def cluster_killall(api_key=None) -> bool:
 
 
 def upload(data_path, api_key=None, tag_list=[], service="R2", name=None, description=None, metadata=None, show_progress=False,
-           out_progress_to_err=True, progress_desc=None) -> FedMLResponse:
+           out_progress_to_err=True, progress_desc=None, byte_data: BytesIO = None, encrypted_api_key_flag=False) -> FedMLResponse:
     return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description, tag_list =tag_list,
                           service=service, progress_desc=progress_desc, show_progress=show_progress,
-                          out_progress_to_err=out_progress_to_err, metadata=metadata)
+                          out_progress_to_err=out_progress_to_err, metadata=metadata, byte_data=byte_data,
+                          encrypted_api_key_flag=encrypted_api_key_flag)
 
 def get_storage_user_defined_metadata(data_name, api_key=None) -> FedMLResponse:
     return storage.get_user_metadata(data_name=data_name, api_key=api_key)

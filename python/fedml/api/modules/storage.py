@@ -68,7 +68,6 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
 
     try:
         response = _create_dataset(api_key=api_key, json_data=json_data, encrypted_api_key_flag=encrypted_api_key_flag)
-        print("create dataset ", response)
         code, message, data = _get_data_from_response(message="Failed to upload data", response=response)
     except Exception as e:
         return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to create dataset: {e}")
@@ -96,7 +95,7 @@ def download(data_name, api_key, service, dest_path, show_progress=True, encrypt
         download_url = metadata.download_url
         given_extension = os.path.splitext(data_name)[1]
         is_file = True
-        if (given_extension is None or given_extension == ""):
+        if not given_extension:
             is_file = False
 
         if not is_file:
@@ -411,7 +410,7 @@ def _upload_bytes(api_key, user_id, file_name,
 
     dest_path = os.path.join(user_id, file_name)
     max_chunk_size = 20 * 1024 * 1024
-
+    byte_data.seek(0)
     file_size = sum(len(chunk) for chunk in get_chunks_from_byte_data(byte_data, max_chunk_size))
 
     byte_data.seek(0)
