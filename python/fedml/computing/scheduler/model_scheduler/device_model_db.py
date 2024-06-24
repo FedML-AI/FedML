@@ -60,7 +60,7 @@ class FedMLModelDatabase(Singleton):
 
     def get_all_deployment_results_list(self) -> List[Dict]:
         """
-        Similar to get_all_deployment_results_info,
+        Similar to _get_all_deployment_results_info,
         but return a list of json string, so that redis can store it.
 
         return a list of dict, for each item:
@@ -74,7 +74,7 @@ class FedMLModelDatabase(Singleton):
         ]
         value in the dict is a string that contains the deployment result.
         """
-        flat_ep_list = self.get_all_deployment_results_info()
+        flat_ep_list = self._get_all_deployment_results_info()
         ret_result_list = list()
         for result in flat_ep_list:
             result_dict = {
@@ -84,7 +84,7 @@ class FedMLModelDatabase(Singleton):
                 "replica_info": json.dumps(
                     {
                         "cache_device_id": result.device_id,
-                        "cache_replica_no": result.replica_no,
+                        "cache_replica_no": int(result.replica_no),
                         "result": result.deployment_result
                     }
                 )
@@ -358,7 +358,7 @@ class FedMLModelDatabase(Singleton):
                             FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).all()
         return result_info
 
-    def get_all_deployment_results_info(self):
+    def _get_all_deployment_results_info(self):
         self.open_job_db()
         result_info = self.db_connection.query(FedMLDeploymentResultInfoModel).all()
         return result_info
