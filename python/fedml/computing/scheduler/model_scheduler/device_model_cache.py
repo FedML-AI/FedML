@@ -321,6 +321,9 @@ class FedMLModelCache(Singleton):
                     logging.error(e)
                     pass
 
+            for result in db_result_list:
+                result_list.append(result["replica_info"])
+
         return result_list
 
     def get_deployment_result_list_size(self, end_point_id, end_point_name, model_name):
