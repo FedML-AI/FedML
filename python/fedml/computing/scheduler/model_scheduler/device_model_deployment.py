@@ -245,7 +245,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
         check_container_readiness(inference_http_port=inference_http_port, infer_host=infer_host,
                                   readiness_check=customized_readiness_check,
-                                  request_input_example=request_input_example)
+                                  request_input_example=request_input_example,
+                                  customized_uri=customized_uri)
 
     if inference_output_url == "":
         return running_model_name, "", None, None, None
