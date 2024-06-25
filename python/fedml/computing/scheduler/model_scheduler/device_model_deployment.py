@@ -233,7 +233,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 raise Exception("Failed to get the port allocation")
             time.sleep(3)
 
-    # Logging the info from the container when starting
+    # Logging the info from the container when initializing
     log_deployment_output(end_point_id, model_id, default_server_container_name,
                           ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                           inference_model_name, inference_engine, inference_http_port, inference_type,
