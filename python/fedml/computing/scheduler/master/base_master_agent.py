@@ -72,7 +72,8 @@ class FedMLBaseMasterAgent(ABC):
         sys_utils.cleanup_all_fedml_server_api_processes()
 
     def stop(self, kill_process=False):
-        self.protocol_mgr.stop(kill_process=kill_process)
+        if self.protocol_mgr is not None:
+            self.protocol_mgr.stop(kill_process=kill_process)
 
     def _create_protocol_manager(self, role, login_result):
         if self.protocol_mgr is not None:
