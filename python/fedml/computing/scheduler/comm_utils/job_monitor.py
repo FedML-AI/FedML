@@ -210,6 +210,7 @@ class JobMonitor(Singleton):
             endpoint_replicas_details = {}
             if isinstance(endpoint_detail, str):
                 endpoint_replicas_details = json.loads(endpoint_detail)
+                # TODO: Check out this nested json
                 if isinstance(endpoint_replicas_details, str):
                     endpoint_replicas_details = json.loads(endpoint_replicas_details)
 
@@ -222,7 +223,6 @@ class JobMonitor(Singleton):
                     endpoint_replica_details["end_point_id"], 0) + 1
 
         for endpoint_id, num_replica in res_to_mlops.items():
-            curr_version = fedml.get_env_version()
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
             mlops_prefix = fedml._get_backend_service()
             url = f"{mlops_prefix}/{num_replica_url_path}"

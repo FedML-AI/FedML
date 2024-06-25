@@ -302,7 +302,27 @@ class FedMLModelCache(Singleton):
                 result_list.extend(self.redis_connection.lrange(key, 0, -1))
         except Exception as e:
             logging.error(e)
-        # TODO(Raphael): Use Sqlite for the replica backup
+
+        # Get cached results from the persist sqlite database
+        if len(result_list) <= 0:
+            db_result_list = list()
+            try:
+                db_result_list = self.model_deployment_db.get_all_deployment_results_list()
+            except Exception as e:
+                logging.error(f"Failed to get all deployment results from the database due to {e}")
+                pass
+
+            for result in db_result_list:
+                try:
+                    self.redis_connection.rpush(self.get_deployment_result_key(
+                        result["end_point_id"], result["end_point_name"], result["model_name"]),
+                        json.dumps(result["replica_info"]))
+                except Exception as e:
+                    logging.error(e)
+                    pass
+
+            for result in db_result_list:
+                result_list.append(result["replica_info"])
 
         return result_list
 
@@ -330,7 +350,8 @@ class FedMLModelCache(Singleton):
         status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)
         return len(status_list)
 
-    def get_status_item_info(self, status_item):
+    @staticmethod
+    def get_status_item_info(status_item):
         status_item_json = json.loads(status_item)
         if isinstance(status_item_json, str):
             status_item_json = json.loads(status_item_json)
@@ -341,7 +362,8 @@ class FedMLModelCache(Singleton):
             status_payload = status_item_json["status"]
         return device_id, status_payload
 
-    def get_result_item_info(self, result_item):
+    @staticmethod
+    def get_result_item_info(result_item):
         result_item_json = json.loads(result_item)
         if isinstance(result_item_json, str):
             result_item_json = json.loads(result_item_json)
@@ -386,7 +408,7 @@ class FedMLModelCache(Singleton):
             return None, None
 
         # # Randomly shuffle
-        # shuffle the list of deployed devices and get the first one as the target idle device.
+        #  the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
         #     return None, None
         # shuffle(idle_device_list)
