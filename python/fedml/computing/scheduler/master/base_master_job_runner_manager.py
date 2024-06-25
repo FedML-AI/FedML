@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import multiprocessing
-import os
 import platform
 import time
 from abc import ABC
@@ -11,7 +10,6 @@ from multiprocessing import Process
 import fedml
 from .cloud_server_manager import FedMLCloudServerManager
 from ..comm_utils.run_process_utils import RunProcessUtils
-from ..scheduler_core.general_constants import GeneralConstants
 from ..scheduler_core.scheduler_base_job_runner_manager import FedMLSchedulerBaseJobRunnerManager
 from ..scheduler_core.account_manager import FedMLAccountManager
 
@@ -67,10 +65,10 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
 
             run_id_str = str(run_id)
             if self.master_agent_instance_map.get(run_id_str, None) is not None:
-                self.master_agent_instance_map.get(run_id_str).stop()
+                self.master_agent_instance_map.get(run_id_str).stop(kill_process=True)
                 self.master_agent_instance_map.pop(run_id_str)
 
-            if run_as_cloud_server:
+            if use_local_process_as_cloud_server:
                 time.sleep(1)
                 RunProcessUtils.kill_process(self.cloud_run_process_map[run_id_str].pid)
 

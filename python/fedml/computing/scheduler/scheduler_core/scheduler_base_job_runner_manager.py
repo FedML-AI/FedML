@@ -29,6 +29,7 @@ class FedMLSchedulerBaseJobRunnerManager(ABC):
         )
         self.job_runners[run_id_str].start_runner_process(
             run_id, request_json, edge_id=edge_id,
+            cuda_visible_gpu_ids_str=cuda_visible_gpu_ids_str,
             sender_message_queue=sender_message_queue,
             listener_message_queue=listener_message_queue,
             status_center_queue=status_center_queue,
