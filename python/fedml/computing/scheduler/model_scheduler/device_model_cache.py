@@ -1011,9 +1011,9 @@ class FedMLModelCache(Singleton):
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
 
-    def get_pending_requests_counter(self, end_point_id) -> int:
+    def get_pending_requests_counter(self, end_point_id=None) -> int:
         # If the endpoint does not exist inside the Hash collection, set its counter to 0.
-        if self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+        if end_point_id and self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
             return int(self.redis_connection.hget(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id))
         return 0
 
