@@ -213,16 +213,20 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
 
 def login(api_key, computing, server, supplier,
           master_inference_gateway_port: int = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
-          worker_inference_proxy_port: int = ClientConstants.LOCAL_CLIENT_API_PORT):
-    device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port)
+          worker_inference_proxy_port: int = ClientConstants.LOCAL_CLIENT_API_PORT,
+          worker_connection_type: str = ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
+    device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type)
 
 
 def logout(computing, server):
     device_unbind(computing, server)
 
 
-def device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port):
-    device.bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port)
+def device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type):
+    device.bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type)
 
 
 def device_unbind(computing, server):
