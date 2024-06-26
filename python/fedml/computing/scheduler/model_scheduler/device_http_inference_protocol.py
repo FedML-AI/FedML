@@ -10,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from urllib.parse import urlparse
 from typing import Mapping
 
+from fedml.utils.decorators import async_timeit
+
 
 class FedMLHttpInference:
     def __init__(self):
@@ -96,6 +98,7 @@ async def stream_generator(inference_url, input_json, method="POST"):
                 yield f"{chunk}\n"
 
 
+@async_timeit
 async def redirect_non_stream_req_to_worker(inference_type, inference_url, model_api_headers, model_inference_json,
                                             timeout=None, method="POST"):
     response_ok = True
