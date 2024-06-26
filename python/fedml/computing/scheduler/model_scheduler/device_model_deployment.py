@@ -87,36 +87,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         inference_image_name, image_pull_policy, registry_name, registry_provider, \
             registry_user_name, registry_user_password = parse_image_registry_related_config(config)
 
-        # Bootstrap, job and entrypoint related
-        dst_model_serving_dir = "/home/fedml/models_serving"
-        bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
-        job_cmds_str_frm_yaml = config.get('job', "")
-
-        if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
-            auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
-            src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
-            with open(src_bootstrap_file_path, 'w') as f:
-                f.write("cd /home/fedml/models_serving/\n")
-                f.write(bootstrap_cmds_str_frm_yaml)
-                f.write("\n")
-                f.write("cd /home/fedml/models_serving/\n")
-                f.write(job_cmds_str_frm_yaml)
-        else:
-            src_bootstrap_file_path = ""
-
-        if src_bootstrap_file_path != "":
-            dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
-        else:
-            dst_bootstrap_dir = ""
-
-        # If the entry point is in fedml format (e.g., "main.py")
-        relative_entry_fedml_format = config.get('entry_point', "")
-
-        # User indicate either fedml format python main entry filename or entry command
-        enable_serverless_container = config.get(ClientConstants.ENABLE_SERVERLESS_CONTAINER_KEY, False)
-        customized_image_entry_cmd = config.get('container_run_command', None)  # Could be str or list
-        customized_readiness_check = config.get('readiness_probe', ClientConstants.READINESS_PROBE_DEFAULT)
-        customized_liveliness_check = config.get('liveness_probe', ClientConstants.LIVENESS_PROBE_DEFAULT)
+        # Service app related
+        dst_bootstrap_dir, dst_model_serving_dir, relative_entry_fedml_format, enable_serverless_container, \
+            customized_image_entry_cmd, customized_readiness_check, customized_liveliness_check, customized_uri = \
+            handle_container_service_app(config, model_storage_local_path)
 
         # Storage related
         src_code_dir = os.path.join(model_storage_local_path, config.get('source_code_dir', ""))
@@ -259,7 +233,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 raise Exception("Failed to get the port allocation")
             time.sleep(3)
 
-    # Logging the info from the container when starting
+    # Logging the info from the container when initializing
     log_deployment_output(end_point_id, model_id, default_server_container_name,
                           ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                           inference_model_name, inference_engine, inference_http_port, inference_type,
@@ -271,7 +245,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
         check_container_readiness(inference_http_port=inference_http_port, infer_host=infer_host,
                                   readiness_check=customized_readiness_check,
-                                  request_input_example=request_input_example)
+                                  request_input_example=request_input_example,
+                                  customized_uri=customized_uri)
 
     if inference_output_url == "":
         return running_model_name, "", None, None, None
@@ -451,7 +426,7 @@ def parse_image_registry_related_config(config):
 
 def is_client_inference_container_ready(infer_url_host, inference_http_port,
                                         readiness_check=ClientConstants.READINESS_PROBE_DEFAULT,
-                                        request_input_example=None, container_id=None):
+                                        request_input_example=None, container_id=None, customized_uri=None):
     # Construct the model metadata (input and output)
     model_metadata = {}
     if request_input_example is not None and len(request_input_example) > 0:
@@ -461,6 +436,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
     model_metadata["outputs"] = []
     model_metadata["type"] = "default"
 
+    # Check the readiness of the container
     if readiness_check == ClientConstants.READINESS_PROBE_DEFAULT:
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
@@ -486,27 +462,38 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
                 else:
                     if not check_path.startswith("/"):
                         check_path = "/" + check_path
-                readiness_check_url = f"http://{infer_url_host}:{inference_http_port}{check_path}"
-
                 response = None
                 try:
-                    response = requests.get(readiness_check_url)
+                    response = requests.get(f"http://{infer_url_host}:{inference_http_port}{check_path}")
                 except:
                     pass
                 if not response or response.status_code != 200:
                     return "", "", {}, {}
-
-                return readiness_check_url, None, model_metadata, None
             else:
                 logging.error("'path' is not specified in httpGet readiness check")
                 return "", "", {}, {}
         elif "exec" in readiness_check:
-            # TODO(raphael): Support arbitrary readiness check command by using
-            #  container id and docker exec
-            return "http://{}:{}/".format(infer_url_host, inference_http_port), None, model_metadata, None
+            # TODO(raphael): Support arbitrary readiness check command by using container id and docker exec
+            pass
         else:
             # Ref K8S, if no readiness check, we assume the container is ready immediately
-            return "http://{}:{}/".format(infer_url_host, inference_http_port), None, model_metadata, None
+            pass
+
+        # Construct the customized URI
+        path = ""
+        if customized_uri is not None:
+            if "httpPost" in customized_uri and "path" in customized_uri["httpPost"]:
+                path = customized_uri["httpPost"]["path"]
+                if not isinstance(path, str):
+                    logging.error(f"Invalid path type: {path}, expected str")
+                    return "", "", {}, {}
+                else:
+                    if not path.startswith("/"):
+                        path = "/" + path
+            # TODO(raphael): Finalized more customized URI types
+        readiness_check_url = f"http://{infer_url_host}:{inference_http_port}{path}"
+
+        return readiness_check_url, None, model_metadata, None
 
 
 def _handle_union_volume_mount(binds, volumes, environment, data_cache_dir_input=None):
@@ -602,6 +589,43 @@ def handle_volume_mount(volumes, binds, environment, relative_entry_fedml_format
             logging.warning(f"{workspace_path} does not exist, skip mounting it to the container")
 
 
+def handle_container_service_app(config, model_storage_local_path):
+    # Bootstrap, job and entrypoint related
+    dst_model_serving_dir = "/home/fedml/models_serving"
+    bootstrap_cmds_str_frm_yaml = config.get('bootstrap', "")
+    job_cmds_str_frm_yaml = config.get('job', "")
+
+    auto_gen_bootstrap_file_name = "fedml-deploy-bootstrap-entry-auto-gen.sh"
+    if bootstrap_cmds_str_frm_yaml != "" or job_cmds_str_frm_yaml != "":
+        src_bootstrap_file_path = os.path.join(model_storage_local_path, auto_gen_bootstrap_file_name)
+        with open(src_bootstrap_file_path, 'w') as f:
+            f.write("cd /home/fedml/models_serving/\n")
+            f.write(bootstrap_cmds_str_frm_yaml)
+            f.write("\n")
+            f.write("cd /home/fedml/models_serving/\n")
+            f.write(job_cmds_str_frm_yaml)
+    else:
+        src_bootstrap_file_path = ""
+
+    if src_bootstrap_file_path != "":
+        dst_bootstrap_dir = os.path.join(dst_model_serving_dir, auto_gen_bootstrap_file_name)
+    else:
+        dst_bootstrap_dir = ""
+
+    # If the entry point is in fedml format (e.g., "main.py")
+    relative_entry_fedml_format = config.get('entry_point', "")
+
+    # User indicate either fedml format python main entry filename or entry command
+    enable_serverless_container = config.get(ClientConstants.ENABLE_SERVERLESS_CONTAINER_KEY, False)
+    customized_image_entry_cmd = config.get('container_run_command', None)  # Could be str or list
+    customized_readiness_check = config.get('readiness_probe', ClientConstants.READINESS_PROBE_DEFAULT)
+    customized_liveliness_check = config.get('liveness_probe', ClientConstants.LIVENESS_PROBE_DEFAULT)
+    customized_uri = config.get(ClientConstants.CUSTOMIZED_SERVICE_KEY, "")
+
+    return (dst_bootstrap_dir, dst_model_serving_dir, relative_entry_fedml_format, enable_serverless_container,
+            customized_image_entry_cmd, customized_readiness_check, customized_liveliness_check, customized_uri)
+
+
 def handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir, end_point_id, edge_id,
                     replica_rank, request_json):
     enable_custom_image = False if relative_entry_fedml_format != "" else True
@@ -626,10 +650,11 @@ def handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bo
 
 
 def check_container_readiness(inference_http_port, infer_host="127.0.0.1", request_input_example=None,
-                              readiness_check=ClientConstants.READINESS_PROBE_DEFAULT):
+                              readiness_check=ClientConstants.READINESS_PROBE_DEFAULT,
+                              customized_uri=None):
     response_from_client_container = is_client_inference_container_ready(
         infer_host, inference_http_port, readiness_check=readiness_check,
-        request_input_example=request_input_example)
+        request_input_example=request_input_example, customized_uri=customized_uri)
 
     return response_from_client_container
 
