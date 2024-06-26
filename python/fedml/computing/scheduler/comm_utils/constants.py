@@ -114,7 +114,6 @@ class SchedulerConstants:
     REDIS_PORT = "6379"
     REDIS_PASSWORD = "fedml_default"
 
-
     @staticmethod
     def get_log_source(run_json):
         run_config = run_json.get("run_config", {})

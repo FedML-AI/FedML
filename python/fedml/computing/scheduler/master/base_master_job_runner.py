@@ -1,4 +1,3 @@
-
 import json
 import logging
 import multiprocessing
@@ -414,9 +413,9 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         return None
 
     def start_runner_process(
-        self, run_id, request_json, edge_id=None, is_server_job=False,
-        sender_message_queue=None, listener_message_queue=None,
-        status_center_queue=None, process_name=None
+            self, run_id, request_json, edge_id=None, is_server_job=False,
+            sender_message_queue=None, listener_message_queue=None,
+            status_center_queue=None, process_name=None
     ):
         server_runner = self._generate_job_runner_instance(
             self.args, run_id=run_id, request_json=request_json,
@@ -440,7 +439,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                     self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                     self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
                     self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
-                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue,
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue, status_center_queue,
                     process_name,
                 )
             )
@@ -450,7 +449,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                     self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                     self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
                     self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
-                    self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue,
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue, status_center_queue,
                     process_name,
                 )
             )
@@ -731,6 +730,3 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
     def get_client_id_list(self, server_edge_id_list):
         return server_edge_id_list
-
-
-

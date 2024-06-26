@@ -76,6 +76,7 @@ class GeneralConstants:
     FEDML_MESSAGE_CENTER_SENDER_TAG = "message-center-sender"
     FEDML_STATUS_CENTER_TAG = "status-center"
     FEDML_LOG_PROCESS_TAG = "log"
+    FEDML_MONITOR_PROCESS_TAG = "monitor"
 
     FEDML_TOPIC_STATUS_CENTER_STOP = "anywhere/status_center/stop"
 
@@ -232,7 +233,9 @@ class GeneralConstants:
 
     @staticmethod
     def get_process_name(process_tag, run_id=None, edge_id=None):
-        return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{process_tag}-run-{run_id}-edge-{edge_id}"
+        return f'{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{process_tag}'\
+               f'{"-run-" + str(run_id) if run_id is not None and int(run_id) != 0 else ""}'\
+               f'{"-edge-" + str(edge_id) if edge_id is not None else ""}'
 
     @staticmethod
     def get_process_name_with_prefix(process_prefix, run_id=None, edge_id=None):
@@ -285,4 +288,7 @@ class GeneralConstants:
     def get_status_center_process_name(status_center_tag):
         return f"{GeneralConstants.FEDML_PROCESS_NAME_PREFIX}{GeneralConstants.FEDML_STATUS_CENTER_TAG}-{status_center_tag}"
 
-
+    @staticmethod
+    def get_monitor_process_name(monitor_tag, run_id, edge_id):
+        return GeneralConstants.get_process_name(
+            f"{GeneralConstants.FEDML_MONITOR_PROCESS_TAG}-{monitor_tag}", run_id, edge_id)

@@ -60,5 +60,7 @@ class HardwareUtil(metaclass=Singleton):
 if __name__ == "__main__":
     gpus = HardwareUtil.get_gpus()
     get_available_gpu_cards = HardwareUtil.get_available_gpu_ids(limit=len(gpus))
+    device_mapping = HardwareUtil.get_docker_gpu_device_mapping(get_available_gpu_cards, len(get_available_gpu_cards))
     print(gpus)
     print(get_available_gpu_cards)
+    print(device_mapping)

@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import time
 
 import fedml
 from ..comm_utils.constants import SchedulerConstants
@@ -124,6 +125,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def callback_start_train(self, topic=None, payload=None):
         # Fetch config from MLOps
         # noinspection PyBroadException
+
         try:
             MLOpsConfigs.fetch_all_configs()
         except Exception:
@@ -272,6 +274,16 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             server_agent_id = self.edge_id
             topic_stop_train_to_cloud_server = f"mlops/flserver_agent_{server_id}/stop_train"
             self.message_center.send_message(topic_stop_train_to_cloud_server, payload)
+
+            time.sleep(2)
+            MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, server_id)
+            self._get_job_runner_manager().stop_job_runner(
+                run_id, args=self.args, server_id=server_id, request_json=None,
+                run_as_cloud_agent=self.run_as_cloud_agent, run_as_cloud_server=self.run_as_cloud_server,
+                use_local_process_as_cloud_server=self.use_local_process_as_cloud_server)
+            self.generate_status_report(run_id, server_id, server_agent_id=server_agent_id). \
+                report_server_id_status(run_id, GeneralConstants.MSG_MLOPS_SERVER_STATUS_KILLED,
+                                        edge_id=server_id, server_id=server_id)
             return
 
         # Reset all edge status and server status

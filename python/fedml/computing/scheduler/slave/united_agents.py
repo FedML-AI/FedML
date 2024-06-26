@@ -1,10 +1,8 @@
-import multiprocessing
-
+from fedml.computing.scheduler.model_scheduler.master_agent import FedMLDeployMasterAgent
+from fedml.computing.scheduler.model_scheduler.worker_agent import FedMLDeployWorkerAgent
 from fedml.computing.scheduler.scheduler_core.account_manager import FedMLAccountManager
 from fedml.computing.scheduler.slave.slave_agent import FedMLLaunchSlaveAgent
 from fedml.computing.scheduler.master.master_agent import FedMLLaunchMasterAgent
-from fedml.computing.scheduler.model_scheduler.model_device_server import FedMLDeployMasterAgent
-from fedml.computing.scheduler.model_scheduler.model_device_client import FedMLDeployWorkerAgent
 from fedml.core.common.singleton import Singleton
 
 
@@ -54,7 +52,7 @@ class FedMLUnitedAgent(Singleton):
 
         # Login with the deployment master role based on
         # the shared communication manager, sender message center, status center
-        deploy_master_agent.login(
+        deploy_master_login_result = deploy_master_agent.login(
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_MASTER_ON_PREM,
             communication_manager=shared_communication_mgr,
@@ -63,11 +61,16 @@ class FedMLUnitedAgent(Singleton):
 
         # Login with the deployment slave role based on
         # the shared communication manager, sender message center, status center
-        deploy_slave_agent.login(
+        deploy_slave_login_result = deploy_slave_agent.login(
             userid, api_key=api_key, device_id=login_result.device_id,
             os_name=os_name, role=FedMLAccountManager.ROLE_DEPLOY_WORKER_ON_PREM,
             communication_manager=shared_communication_mgr
         )
+
+        # Set the deployment ids to launch agent so that we can report the related device info to MLOps.
+        launch_slave_agent.save_deploy_ids(
+            deploy_master_edge_id=deploy_master_login_result.edge_id,
+            deploy_slave_edge_id=deploy_slave_login_result.edge_id)
 
         # Start the slave agent to connect to servers and loop forever.
         launch_slave_agent.start()

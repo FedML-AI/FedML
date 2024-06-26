@@ -1,0 +1,20 @@
+workspace: "./"
+
+enable_serverless_container: true
+inference_image_name: "nvcr.io/nvidia/tritonserver:24.05-py3"
+
+volumes:
+  - workspace_path: "./model_repository"
+    mount_path: "/repo_inside_container"
+
+container_run_command: "tritonserver --model-repository=/repo_inside_container"
+
+readiness_probe:
+  httpGet:
+    path: "/v2/health/ready"
+
+port: 8000
+
+deploy_timeout_sec: 1600
+
+request_input_example: {"text_input": "Hello"}

@@ -40,7 +40,7 @@ requirements = [
     'multiprocess',
     'networkx<3.0',
     'ntplib',
-    'numpy>=1.21,<2.0',
+    'numpy<2.0.0',
     'onnx',
     'paho-mqtt<2.0.0',
     'pandas',

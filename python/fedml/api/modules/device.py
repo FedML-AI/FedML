@@ -10,14 +10,19 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.master.server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants as DeviceServerConstants
 from fedml.computing.scheduler.master.server_login import logout as server_logout
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants as DeviceClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
 
 
 def bind(
-        api_key, computing, server, supplier
+        api_key, computing, server, supplier,
+        master_inference_gateway_port=DeviceServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+        worker_inference_proxy_port=DeviceClientConstants.LOCAL_CLIENT_API_PORT,
+        worker_connection_type=DeviceClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT
 ):
     userid = api_key
     runner_cmd = "{}"
@@ -43,13 +48,13 @@ def bind(
     _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker)
+        docker, master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type)
 
 
 def _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker):
+        docker, master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type):
     fedml.load_env()
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
         fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_HOST, SchedulerConstants.REDIS_INFER_HOST)
@@ -59,6 +64,10 @@ def _bind(
         fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
         fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_PASSWORD)
+
+    fedml.set_env_kv(DeviceServerConstants.ENV_MASTER_INFERENCE_PORT_KEY, str(master_inference_gateway_port))
+    fedml.set_env_kv(DeviceClientConstants.ENV_CLIENT_PROXY_PORT_KEY, str(worker_inference_proxy_port))
+    fedml.set_env_kv(DeviceClientConstants.ENV_CONNECTION_TYPE_KEY, worker_connection_type)
 
     url = fedml._get_backend_service()
     platform_name = platform.system()

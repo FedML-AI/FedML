@@ -1,4 +1,5 @@
 import logging
+import platform
 from enum import Enum, unique
 import multiprocessing
 
@@ -117,6 +118,38 @@ class FedMLStatusCenter(ABC):
 
     def get_status_runner(self):
         return None
+
+    def start_status_center(self, sender_message_center_queue=None,
+                            listener_message_center_queue=None,
+                            sender_message_event=None,
+                            is_slave_agent=False):
+        self.status_queue = multiprocessing.Manager().Queue()
+        self.status_event = multiprocessing.Event()
+        self.status_event.clear()
+        self.status_sender_message_center_queue = sender_message_center_queue
+        self.status_listener_message_center_queue = listener_message_center_queue
+        self.status_runner = self
+        process_name = GeneralConstants.get_status_center_process_name(
+            f'{"deploy" if self.is_deployment_status_center else "launch"}_'
+            f'{"slave" if is_slave_agent else "master"}_agent')
+        target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
+            self.status_runner.run_status_dispatcher_in_slave
+        if platform.system() == "Windows":
+            self.status_center_process = multiprocessing.Process(
+                target=target_func, args=(
+                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
+                    self.status_listener_message_center_queue, sender_message_event, process_name
+                )
+            )
+        else:
+            self.status_center_process = fedml.get_process(
+                target=target_func, args=(
+                    self.status_event, self.status_queue, self.status_sender_message_center_queue,
+                    self.status_listener_message_center_queue, sender_message_event, process_name
+                )
+            )
+
+        self.status_center_process.start()
 
     def stop_status_center(self):
         if self.status_event is not None:

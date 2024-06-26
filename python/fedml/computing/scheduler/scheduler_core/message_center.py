@@ -144,11 +144,8 @@ class FedMLMessageCenter(object):
         if self.listener_message_center_process is not None:
             return
 
-        if listener_message_queue is None:
-            if self.listener_message_queue is None:
-                self.listener_message_queue = multiprocessing.Manager().Queue(-1)
-        else:
-            self.listener_message_queue = listener_message_queue
+        if self.listener_message_queue is None:
+            self.listener_message_queue = multiprocessing.Manager().Queue(-1)
 
         self.sender_message_queue = multiprocessing.Manager().Queue()
         self.message_event = self.manager.Event()
