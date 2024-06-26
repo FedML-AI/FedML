@@ -990,6 +990,8 @@ class FedMLModelCache(Singleton):
             end_point_id))
 
     def get_pending_requests_counter(self, end_point_id) -> int:
+        if not end_point_id:
+            return 0
         # If the endpoint does not exist inside the Hash collection, set its counter to 0.
         if self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
             return int(self.redis_connection.hget(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id))
