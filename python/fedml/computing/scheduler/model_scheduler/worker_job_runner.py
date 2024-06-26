@@ -22,7 +22,7 @@ from .device_model_db import FedMLModelDatabase
 from .device_replica_handler import FedMLDeviceReplicaHandler
 
 
-class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
+class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner):
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0,
                  cuda_visible_gpu_ids_str=None):
@@ -47,10 +47,6 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         return FedMLDeployWorkerJobRunner(
             args, run_id=run_id, request_json=request_json, agent_config=self.agent_config, edge_id=edge_id
         )
-
-    # Override
-    def _generate_extend_queue_list(self):
-        return None
 
     def retrieve_binary_model_file(self, package_name, package_url):
         local_package_path = ClientConstants.get_model_package_dir()
@@ -124,8 +120,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         return unzip_package_path
 
     # Override
-    def run_impl(self, run_extend_queue_list, sender_message_center,
-                 listener_message_queue, status_center_queue):
+    def run_impl(self):
         # Get deployment params
         run_id = self.request_json["end_point_id"]
         end_point_name = self.request_json["end_point_name"]

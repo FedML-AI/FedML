@@ -468,15 +468,15 @@ def get_multiprocessing_context():
         return multiprocessing.get_context("fork")
 
 
-def get_process(target=None, args=None):
+def get_process(target=None, args=None, kwargs=None):
     if platform.system() == "Windows":
-        return multiprocessing.Process(target=target, args=args)
+        return multiprocessing.Process(target=target, args=args, kwargs=kwargs)
     else:
         #return multiprocessing.Process(target=target, args=args)
         #multiprocessing.set_start_method("spawn", force=True)
         #return multiprocess.context.SpawnContext.Process(target=target, args=args)
         #multiprocessing.Manager().current_process().authkey = str.encode("abc")
-        new_process = multiprocessing.get_context("fork").Process(target=target, args=args)
+        new_process = multiprocessing.get_context("fork").Process(target=target, args=args, kwargs=kwargs)
         #new_process.authkey = str.encode("abc")
         return new_process
 

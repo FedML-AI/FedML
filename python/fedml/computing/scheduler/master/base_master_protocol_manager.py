@@ -32,16 +32,10 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.current_device_id = args.current_device_id
         self.unique_device_id = args.unique_device_id
         self.agent_config = agent_config
-        self.topic_start_train = None
-        self.topic_stop_train = None
-        self.topic_complete_job = None
-        self.topic_report_status = None
-        self.topic_ota_msg = None
-        self.topic_response_device_info = None
-        self.topic_request_device_info_from_mlops = None
-        self.topic_requesst_job_status = None
-        self.topic_requesst_device_status_in_job = None
-        self.topic_send_training_request_to_edges = None
+        # The topic for reporting online status
+        self.topic_active = "flserver_agent/active"
+        # The topic for last-will messages.
+        self.topic_last_will = "flserver_agent/last_will_msg"
         self.run_as_cloud_agent = False
         self.run_as_cloud_server = False
         self.run_as_edge_server_and_agent = False
@@ -53,56 +47,45 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.start_request_json = None
         self.deploy_job_launcher = FedMLDeployJobLauncher()
 
-    def generate_topics(self):
+    def generate_topics_and_register(self):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
+        # TODO(alaydshah): Double check if this belongs here or should be moved to launch master protocol manager.
         # The topic for stopping training
-        self.topic_start_train = "mlops/flserver_agent_" + str(self.edge_id) + "/start_train"
+        topic_start_train = self.get_start_train_topic_with_edge_id(self.edge_id)
+        self.register(topic_start_train, self.callback_start_train)
 
         # The topi for stopping training
-        self.topic_stop_train = "mlops/flserver_agent_" + str(self.edge_id) + "/stop_train"
+        topic_stop_train = "mlops/flserver_agent_" + str(self.edge_id) + "/stop_train"
+        self.register(topic_stop_train, self.callback_stop_train)
 
         # The topic for completing job
-        self.topic_complete_job = GeneralConstants.get_topic_complete_job(self.edge_id)
+        topic_complete_job = GeneralConstants.get_topic_complete_job(self.edge_id)
+        self.register(topic_complete_job, self.callback_complete_job)
 
         # The topic for reporting current device status.
-        self.topic_report_status = "mlops/report_device_status"
+        topic_report_status = "mlops/report_device_status"
+        self.register(topic_report_status, self.callback_report_current_status)
 
         # The topic for OTA messages from the MLOps.
-        self.topic_ota_msg = "mlops/flserver_agent_" + str(self.edge_id) + "/ota"
+        topic_ota_msg = "mlops/flserver_agent_" + str(self.edge_id) + "/ota"
+        self.register(topic_ota_msg, self.callback_server_ota_msg)
 
         # The topic for requesting device info from the client.
-        self.topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
+        topic_response_device_info = "client/server/response_device_info/" + str(self.edge_id)
+        self.register(topic_response_device_info, self.callback_response_device_info)
 
         # The topic for requesting device info from mlops.
-        self.topic_request_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.edge_id}"
+        topic_request_device_info_from_mlops = f"deploy/mlops/master_agent/request_device_info/{self.edge_id}"
+        self.register(topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
 
         # The topic for getting job status from the status center.
-        self.topic_requesst_job_status = f"anywhere/master_agent/request_job_status/{self.edge_id}"
+        topic_requesst_job_status = f"anywhere/master_agent/request_job_status/{self.edge_id}"
+        self.register(topic_requesst_job_status, self.callback_request_job_status)
 
         # The topic for getting device status of job from the status center.
-        self.topic_requesst_device_status_in_job = f"anywhere/master_agent/request_device_status_in_job/{self.edge_id}"
-
-        # The topic for reporting online status
-        self.topic_active = "flserver_agent/active"
-
-        # The topic for last-will messages.
-        self.topic_last_will = "flserver_agent/last_will_msg"
-
-    def register_handlers(self):
-        # Add the message listeners for all topics, the following is an example.
-        # self.add_message_listener(self.topic_start_train, self.callback_start_train)
-        # Add the message listeners for all topics
-        self.register(self.topic_start_train, self.callback_start_train)
-        self.register(self.topic_stop_train, self.callback_stop_train)
-        self.register(self.topic_complete_job, self.callback_complete_job)
-        self.register(self.topic_ota_msg, FedMLBaseMasterProtocolManager.callback_server_ota_msg)
-        self.register(self.topic_report_status, self.callback_report_current_status)
-        self.register(self.topic_response_device_info, self.callback_response_device_info)
-        self.register(self.topic_request_device_info_from_mlops,
-                      self.callback_request_device_info_from_mlops)
-        self.register(self.topic_requesst_job_status, self.callback_request_job_status)
-        self.register(self.topic_requesst_device_status_in_job, self.callback_request_device_status_in_job)
+        topic_request_device_status_in_job = f"anywhere/master_agent/request_device_status_in_job/{self.edge_id}"
+        self.register(topic_request_device_status_in_job, self.callback_request_device_status_in_job)
 
     @abstractmethod
     def _get_job_runner_manager(self):
@@ -120,7 +103,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             message_bytes = self.args.runner_cmd.encode("ascii")
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
-            self.message_center.receive_message_json(self.topic_start_train, payload)
+            self.message_center.receive_message_json(self.get_start_train_topic_with_edge_id(self.edge_id), payload)
 
     def callback_start_train(self, topic=None, payload=None):
         # Fetch config from MLOps
@@ -405,35 +388,6 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def process_extra_queues(self, extra_queues):
         self.rebuild_status_center(extra_queues[0])
 
-    def generate_protocol_manager(self):
-        message_status_runner = self._generate_protocol_manager_instance(
-            self.args, agent_config=self.agent_config
-        )
-        message_status_runner.async_check_timeout = self.async_check_timeout
-        message_status_runner.enable_async_cluster = self.enable_async_cluster
-        message_status_runner.request_json = self.request_json
-        message_status_runner.run_edge_ids = self.run_edge_ids
-        message_status_runner.version = self.version
-        message_status_runner.message_center_name = self.message_center_name
-        message_status_runner.run_id = self.run_id
-        message_status_runner.edge_id = self.edge_id
-        message_status_runner.server_agent_id = self.server_agent_id
-        message_status_runner.current_device_id = self.current_device_id
-        message_status_runner.unique_device_id = self.unique_device_id
-        message_status_runner.subscribed_topics = self.subscribed_topics
-        message_status_runner.run_as_cloud_agent = self.run_as_cloud_agent
-        message_status_runner.run_as_cloud_server = self.run_as_cloud_server
-        message_status_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-        message_status_runner.run_as_cloud_server_and_agent = self.run_as_cloud_server_and_agent
-        message_status_runner.enable_simulation_cloud_agent = self.enable_simulation_cloud_agent
-        message_status_runner.use_local_process_as_cloud_server = self.use_local_process_as_cloud_server
-        message_status_runner.running_request_json = self.running_request_json
-        message_status_runner.start_request_json = self.start_request_json
-        message_status_runner.user_name = self.user_name
-        message_status_runner.status_queue = self.get_status_queue()
-
-        return message_status_runner
-
     def response_job_status(self, topic, payload):
         payload_json = json.loads(payload)
         if self.mlops_metrics is not None:
@@ -568,11 +522,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def get_start_train_topic_with_edge_id(edge_id):
         return "mlops/flserver_agent_" + str(edge_id) + "/start_train"
 
-    @abstractmethod
-    def _generate_protocol_manager_instance(self, args, agent_config=None):
-        return None
-
     def start_master_server_instance(self, payload):
         super().on_agent_communication_connected(None)
 
-        self.message_center.receive_message_json(self.topic_start_train, payload)
+        self.message_center.receive_message_json(self.get_start_train_topic_with_edge_id(self.edge_id), payload)

@@ -51,16 +51,10 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         fedml._init_multiprocessing()
 
     @abstractmethod
-    def generate_topics(self):
+    def generate_topics_and_register(self):
         # generate the subscribed topics.
         self.subscribed_topics.clear()
         # self.subscribed_topics.append(self.topic_start_train)
-
-    @abstractmethod
-    def register_handlers(self):
-        # Add the message listeners for all topics, the following is an example.
-        # self.add_message_listener(self.topic_start_train, self.callback_start_train)
-        pass
 
     def unregister_handlers(self):
         for topic in self.subscribed_topics:
@@ -78,11 +72,6 @@ class FedMLSchedulerBaseProtocolManager(ABC):
         )
 
     @abstractmethod
-    def generate_protocol_manager(self):
-        # Generate the protocol manager instance and set the attribute values.
-        return None
-
-    @abstractmethod
     def generate_communication_manager(self):
         # Generate the communication manager instance and set the attribute values.
         pass
@@ -92,11 +81,10 @@ class FedMLSchedulerBaseProtocolManager(ABC):
     ):
 
         # Generate the message topics and communication manager.
-        self.generate_topics()
         self.generate_communication_manager()
+        self.generate_topics_and_register()
 
         # Set up protocol handler, message center, status center, status reporter, MLOps metrics, etc.
-        self.register_handlers()
         self.setup_message_center()
         self.setup_status_center()
         self.setup_status_reporter()

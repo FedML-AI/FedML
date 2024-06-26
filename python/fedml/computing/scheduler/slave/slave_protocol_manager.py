@@ -14,6 +14,10 @@ from .launch_job_runner_manager import FedMLLaunchJobRunnerManager
 
 class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
 
+    def __init__(self, args, agent_config=None):
+        FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
+        self.message_center_name = "launch_slave_agent"
+
     def generate_communication_manager(self):
         if self.communication_mgr is None:
             self.communication_mgr = MqttManager(
@@ -27,24 +31,6 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
                 json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
             )
 
-    def __init__(self, args, agent_config=None):
-        FedMLBaseSlaveProtocolManager.__init__(self, args, agent_config=agent_config)
-        self.message_center_name = "launch_slave_agent"
-
-    # TODO(alaydshah): This method can be potentially removed.
-    # Override
-    def generate_topics(self):
-        super().generate_topics()
-
-    # TODO(alaydshah): This method can be potentially removed.
-    # Override
-    def register_handlers(self):
-        super().register_handlers()
-
-    # Override
-    def _generate_protocol_manager_instance(self, args, agent_config=None):
-        return FedMLLaunchSlaveProtocolManager(args, agent_config=agent_config)
-
     # Override
     def _get_job_runner_manager(self):
         return FedMLLaunchJobRunnerManager.get_instance()
@@ -56,8 +42,6 @@ class FedMLLaunchSlaveProtocolManager(FedMLBaseSlaveProtocolManager):
             self.edge_id, self.model_device_server_id, self.model_device_client_edge_id_list,
             message_center=self.message_center)
 
-    # TODO(alaydshah): This method can be potentially removed.
-    # Override
     def _process_connection_lost(self):
         pass
 

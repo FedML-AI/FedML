@@ -24,12 +24,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         self.message_center_name = "deploy_master_agent"
         self.is_deployment_status_center = True
-
-        self.topic_start_deployment = None
-        self.topic_activate_endpoint = None
-        self.topic_deactivate_deployment = None
-        self.topic_delete_deployment = None
-
         self.infer_host = "127.0.0.1"
         self.redis_addr = "local"
         self.redis_port = "6379"
@@ -41,20 +35,24 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         return FedMLDeployMasterProtocolManager(args, agent_config=agent_config)
 
     # Override
-    def generate_topics(self):
-        super().generate_topics()
+    def generate_topics_and_register(self):
+        super().generate_topics_and_register()
 
         # The topic for start deployment
-        self.topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
+        topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
+        self.register(topic_start_deployment, self.callback_start_deployment)
 
         # The topic for activating endpoint
-        self.topic_activate_endpoint = "model_ops/model_device/activate_deployment/{}".format(str(self.edge_id))
+        topic_activate_endpoint = "model_ops/model_device/activate_deployment/{}".format(str(self.edge_id))
+        self.register(topic_activate_endpoint, self.callback_activate_deployment)
 
         # The topic for activating endpoint
-        self.topic_deactivate_deployment = "model_ops/model_device/deactivate_deployment/{}".format(str(self.edge_id))
+        topic_deactivate_deployment = "model_ops/model_device/deactivate_deployment/{}".format(str(self.edge_id))
+        self.register(topic_deactivate_deployment, self.callback_deactivate_deployment)
 
         # The topic for deleting endpoint
-        self.topic_delete_deployment = "model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
+        topic_delete_deployment = "model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
+        self.register(topic_delete_deployment, self.callback_delete_deployment)
 
     def generate_communication_manager(self):
         if self.communication_mgr is None:
@@ -68,16 +66,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
                 self.topic_last_will,
                 json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
             )
-
-    # Override
-    def register_handlers(self):
-        super().register_handlers()
-
-        # Add the message listeners for endpoint related topics
-        self.register(self.topic_start_deployment, self.callback_start_deployment)
-        self.register(self.topic_activate_endpoint, self.callback_activate_deployment)
-        self.register(self.topic_deactivate_deployment, self.callback_deactivate_deployment)
-        self.register(self.topic_delete_deployment, self.callback_delete_deployment)
 
     # Override
     def _get_job_runner_manager(self):
@@ -111,7 +99,8 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
     def print_connected_info(self):
         pass
 
-    def callback_deployment_result_message(self, topic=None, payload=None):
+    @staticmethod
+    def callback_deployment_result_message(topic=None, payload=None):
         logging.info(f"Received deployment result")
         FedMLDeployJobRunnerManager.get_instance().save_deployment_result(topic, payload)
 
@@ -273,9 +262,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Start the job runner to deploy models
         self._get_job_runner_manager().start_job_runner(
             run_id, request_json, args=self.args, edge_id=self.edge_id,
-            sender_message_queue=self.message_center.get_sender_message_queue(),
-            listener_message_queue=self.get_listener_message_queue(),
-            status_center_queue=self.get_status_queue(),
+            message_center=self.message_center, status_center=self.status_center,
             process_name=GeneralConstants.get_deploy_master_job_process_name(run_id, self.edge_id)
         )
         process = self._get_job_runner_manager().get_runner_process(run_id)

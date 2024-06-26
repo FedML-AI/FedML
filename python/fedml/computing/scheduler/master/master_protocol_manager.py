@@ -26,9 +26,6 @@ class FedMLLaunchMasterProtocolManager(FedMLBaseMasterProtocolManager):
                 self.topic_last_will,
                 json.dumps({"ID": self.edge_id, "status": GeneralConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
             )
-    # Override
-    def _generate_protocol_manager_instance(self, args, agent_config=None):
-        return FedMLLaunchMasterProtocolManager(args, agent_config=agent_config)
 
     # Override
     def _get_job_runner_manager(self):

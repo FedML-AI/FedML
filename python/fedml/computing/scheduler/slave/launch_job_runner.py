@@ -4,7 +4,7 @@ from .base_slave_job_runner import FedMLBaseSlaveJobRunner
 from .client_constants import ClientConstants
 
 
-class FedMLLaunchSlaveJobRunner(FedMLBaseSlaveJobRunner, ABC):
+class FedMLLaunchSlaveJobRunner(FedMLBaseSlaveJobRunner):
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0,
                  cuda_visible_gpu_ids_str=None):
@@ -23,19 +23,8 @@ class FedMLLaunchSlaveJobRunner(FedMLBaseSlaveJobRunner, ABC):
         )
 
     # Override
-    def _generate_extend_queue_list(self):
-        return None
-
-    # Override
     def get_download_package_info(self, packages_config=None):
         return super().get_download_package_info(packages_config)
 
-    # Override
-    def run_impl(
-            self, run_extend_queue_list, sender_message_center,
-            listener_message_queue, status_center_queue
-    ):
-        super().run_impl(
-            run_extend_queue_list, sender_message_center,
-            listener_message_queue, status_center_queue)
-
+    def run_impl(self):
+        super().run_impl()

@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -41,16 +40,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.current_device_id = args.current_device_id
         self.unique_device_id = args.unique_device_id
         self.agent_config = agent_config
-        self.topic_start_train = None
-        self.topic_report_status = None
-        self.topic_ota_msg = None
         self.topic_request_device_info = None
-        self.topic_request_device_info_from_mlops = None
-        self.topic_client_logout = None
-        self.topic_response_job_status = None
-        self.topic_report_device_status_in_job = None
-        self.fl_topic_start_train = None
-        self.fl_topic_request_device_info = None
         self.ota_upgrade = FedMLOtaUpgrade(edge_id=args.edge_id)
         self.running_request_json = dict()
         self.start_request_json = None
@@ -60,33 +50,42 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.model_device_server_id = None
         self.model_device_client_edge_id_list = None
 
-
-    def generate_topics(self):
+    def generate_topics_and_register(self):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
+        self.unregister_handlers()
 
+        # TODO(alaydshah): Double check if this belongs here or should be moved to launch slave protocol manager.
         # The topic for stopping training
-        self.topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
+        topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
+        self.register(topic_start_train, self.callback_start_train)
 
         # The topic for reporting current device status.
-        self.topic_report_status = "mlops/report_device_status"
+        topic_report_status = "mlops/report_device_status"
+        self.register(topic_report_status, self.callback_report_current_status)
 
         # The topic for OTA messages from the MLOps.
-        self.topic_ota_msg = "mlops/flclient_agent_" + str(self.edge_id) + "/ota"
+        topic_ota_msg = "mlops/flclient_agent_" + str(self.edge_id) + "/ota"
+        self.register(topic_ota_msg, self.callback_client_ota_msg)
 
         # The topic for requesting device info from the client.
         self.topic_request_device_info = "server/client/request_device_info/" + str(self.edge_id)
+        self.register(self.topic_request_device_info, self.callback_report_device_info)
 
         # The topic for requesting device info from mlops.
-        self.topic_request_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+        topic_request_device_info_from_mlops = f"deploy/mlops/slave_agent/request_device_info/{self.edge_id}"
+        self.register(topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
 
         # The topic for requesting device info from MLOps.
-        self.topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
+        topic_client_logout = "mlops/client/logout/" + str(self.edge_id)
+        self.register(topic_client_logout, self.callback_client_logout)
 
         # The topic for getting job status from the status center.
-        self.topic_response_job_status = f"master_agent/somewhere/response_job_status/{self.edge_id}"
+        topic_response_job_status = f"master_agent/somewhere/response_job_status/{self.edge_id}"
+        self.register(topic_response_job_status, self.callback_response_job_status)
 
         # The topic for getting device status of job from the status center.
-        self.topic_report_device_status_in_job = f"slave_job/slave_agent/report_device_status_in_job"
+        topic_report_device_status_in_job = f"slave_job/slave_agent/report_device_status_in_job"
+        self.register(topic_report_device_status_in_job, self.callback_response_device_status_in_job)
 
         # The topic for reporting online status
         self.topic_active = "flclient_agent/active"
@@ -95,28 +94,11 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         self.topic_last_will = "flclient_agent/last_will_msg"
 
         if self.general_edge_id is not None:
-            self.fl_topic_start_train = "flserver_agent/" + str(self.general_edge_id) + "/start_train"
-            self.fl_topic_request_device_info = "server/client/request_device_info/" + str(self.general_edge_id)
+            fl_topic_start_train = "flserver_agent/" + str(self.general_edge_id) + "/start_train"
+            self.register(fl_topic_start_train, self.callback_start_train)
 
-    def register_handlers(self):
-        # Clear protocol handler to avoid duplicate subscriptions
-        self.unregister_handlers()
-        # Subscribe, and add the message listeners for all topics
-        self.register(self.topic_start_train, self.callback_start_train)
-        self.register(self.topic_ota_msg, FedMLBaseSlaveProtocolManager.callback_client_ota_msg)
-        self.register(self.topic_report_status, self.callback_report_current_status)
-        self.register(self.topic_request_device_info, self.callback_report_device_info)
-        self.register(self.topic_request_device_info_from_mlops, self.callback_request_device_info_from_mlops)
-        self.register(self.topic_client_logout, self.callback_client_logout)
-        self.register(self.topic_response_job_status, self.callback_response_job_status)
-        self.register(self.topic_report_device_status_in_job, self.callback_response_device_status_in_job)
-        if self.general_edge_id is not None:
-            self.register(self.fl_topic_start_train, self.callback_start_train)
-            self.register(self.fl_topic_request_device_info, self.callback_report_device_info)
-
-    @abstractmethod
-    def _generate_protocol_manager_instance(self, args, agent_config=None):
-        return None
+            fl_topic_request_device_info = "server/client/request_device_info/" + str(self.general_edge_id)
+            self.register(fl_topic_request_device_info, self.callback_report_device_info)
 
     @abstractmethod
     def _get_job_runner_manager(self):
@@ -135,9 +117,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         os.environ["FEDML_CURRENT_EDGE_ID"] = str(self.edge_id)
         if not ComputeCacheManager.get_instance().set_redis_params():
             os.environ["FEDML_DISABLE_REDIS_CONNECTION"] = "1"
-
-    def add_subscribe_topic(self, topic):
-        self.subscribed_topics.append(topic)
 
     # TODO(alaydshah): This should potentially be handled in deploy worker and slave agents.
     def stop(self):
@@ -419,32 +398,6 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
         logging.info("process status in the broadcast job status callback.")
         self.process_status(run_id, job_status, self.edge_id)
 
-    def generate_protocol_manager(self):
-        message_status_runner = self._generate_protocol_manager_instance(
-            self.args, agent_config=self.agent_config
-        )
-        message_status_runner.request_json = self.request_json
-        message_status_runner.disable_client_login = self.disable_client_login
-        message_status_runner.message_center_name = self.message_center_name
-        message_status_runner.run_id = self.run_id
-        message_status_runner.edge_id = self.edge_id
-        message_status_runner.edge_user_name = self.edge_user_name
-        message_status_runner.edge_extra_url = self.edge_extra_url
-        message_status_runner.server_agent_id = self.server_agent_id
-        message_status_runner.current_device_id = self.current_device_id
-        message_status_runner.unique_device_id = self.unique_device_id
-        message_status_runner.subscribed_topics = self.subscribed_topics
-        message_status_runner.running_request_json = self.running_request_json
-        message_status_runner.request_json = self.start_request_json
-        message_status_runner.user_name = self.user_name
-        message_status_runner.general_edge_id = self.general_edge_id
-        message_status_runner.server_id = self.server_id
-        message_status_runner.model_device_server_id = self.model_device_server_id
-        message_status_runner.model_device_client_edge_id_list = self.model_device_client_edge_id_list
-        message_status_runner.status_queue = self.get_status_queue()
-
-        return message_status_runner
-
     def process_status(self, run_id, status, edge_id, master_id=None):
         run_id_str = str(run_id)
 
@@ -510,7 +463,8 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
     def setup_listener_job_status(self, run_id):
         # Setup MQTT message listener to receive the job status from master agent;
         topic_job_status_from_master = f"master_agent/slave_agent/job_status/{run_id}"
-        self.message_center.add_message_listener(topic_job_status_from_master, self, self.callback_broadcasted_job_status)
+        self.message_center.add_message_listener(topic_job_status_from_master, self,
+                                                 self.callback_broadcasted_job_status)
         self.subscribe_msg(topic_job_status_from_master)
 
     def remove_listener_job_status(self, run_id):

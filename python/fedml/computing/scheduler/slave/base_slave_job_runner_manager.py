@@ -8,5 +8,6 @@ class FedMLBaseSlaveJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
     def __init__(self):
         FedMLSchedulerBaseJobRunnerManager.__init__(self)
 
-    def cleanup_containers_and_release_gpus(self, run_id, edge_id, job_type):
+    @staticmethod
+    def cleanup_containers_and_release_gpus(run_id, edge_id, job_type):
         FedMLSchedulerBaseJobRunner.cleanup_containers_and_release_gpus(run_id, edge_id, job_type)

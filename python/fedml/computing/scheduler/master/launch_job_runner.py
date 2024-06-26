@@ -31,14 +31,5 @@ class FedMLLaunchMasterJobRunner(FedMLBaseMasterJobRunner):
         return super().get_download_package_info(packages_config)
 
     # Override
-    def run_impl(
-            self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
-            run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
-            status_center_queue=None
-    ):
-        super().run_impl(
-            edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
-            run_extend_queue_list=run_extend_queue_list, sender_message_queue=sender_message_queue,
-            listener_message_queue=listener_message_queue, status_center_queue=status_center_queue)
+    def run_impl(self):
+        super().run_impl()

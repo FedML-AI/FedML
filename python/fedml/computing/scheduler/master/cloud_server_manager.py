@@ -48,7 +48,7 @@ class FedMLCloudServerManager:
 
     def start_local_master_server(
             self, user, api_key, os_name, version, cloud_device_id, run_id, payload,
-            communication_manager=None, sender_message_queue=None, status_center_queue=None,
+            communication_manager=None, message_center=None, status_center=None,
             master_agent_instance=None, process_name=None
     ):
         if process_name is not None:

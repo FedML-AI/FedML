@@ -64,12 +64,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         return [self.deployment_result_queue]
 
     # Override
-    def run_impl(
-            self, edge_id_status_queue, edge_device_info_queue, run_metrics_queue,
-            run_event_queue, run_artifacts_queue, run_logs_queue, edge_device_info_global_queue,
-            run_extend_queue_list=None, sender_message_queue=None, listener_message_queue=None,
-            status_center_queue=None
-    ):
+    def run_impl(self):
         # Parse the model parameters.
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
@@ -174,7 +169,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
         logging.info("Start waiting for result callback from workers ...")
 
-        self.deployment_result_queue = run_extend_queue_list[0]
+        self.deployment_result_queue = self.run_extend_queue_list[0]
         while True:
             self.check_runner_stop_event()
 

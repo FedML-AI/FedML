@@ -615,9 +615,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
     def start_runner_process(
             self, run_id, edge_id, request_json,  cuda_visible_gpu_ids_str=None,
-            sender_message_queue=None, listener_message_queue=None,
-            status_center_queue=None, process_name=None
-    ):
+            message_center=None, status_center=None, process_name=None):
         return None
 
     @staticmethod
@@ -642,15 +640,14 @@ class FedMLSchedulerBaseJobRunner(ABC):
             # Send mqtt message reporting the new gpu availability to the backend
             MLOpsDevicePerfStats.report_gpu_device_info(edge_id)
 
-    def rebuild_message_status_center(self, sender_message_queue, listener_message_queue, status_queue):
-        self.message_center = FedMLMessageCenter.rebuild_message_center_from_queue(
-            sender_message_queue, listener_message_queue=listener_message_queue)
+    def setup_reporters(self, message_center, status_center):
+        self.message_center = message_center
+        self.status_center = status_center
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.message_center)
         self.mlops_metrics.run_id = self.run_id
 
-        self.status_center = FedMLStatusCenter.rebuild_status_center_from_queue(status_queue)
         if self.status_reporter is None:
             self.status_reporter = MLOpsMetrics()
         self.status_reporter.set_messenger(self.status_center)

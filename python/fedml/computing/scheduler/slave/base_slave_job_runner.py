@@ -15,13 +15,12 @@ from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from .client_data_interface import FedMLClientDataInterface
 from ..comm_utils import sys_utils
 from ....core.mlops.mlops_utils import MLOpsUtils
-from multiprocessing import Process
 from ..scheduler_core.scheduler_base_job_runner import FedMLSchedulerBaseJobRunner, RunnerError, RunnerCompletedError
 from ..scheduler_core.general_constants import GeneralConstants
 from ..comm_utils.job_utils import JobRunnerUtils
 
 
-class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
+class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner):
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0,
                  cuda_visible_gpu_ids_str=None,
@@ -39,7 +38,6 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         self.fedml_data_local_package_dir = os.path.join("/", "fedml", "fedml-package", "fedml", "data")
         self.fedml_data_dir = self.fedml_data_base_package_dir
         self.fedml_config_dir = os.path.join("/", "fedml", "conf")
-        self.run_extend_queue_list = None
         self.computing_started_time = 0
 
     def __repr__(self):
@@ -49,9 +47,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
         )
 
-    def run(self, process_event, completed_event,  run_extend_queue_list,
-            sender_message_center, listener_message_queue, status_center_queue,
-            process_name=None):
+    def run(self, process_name=None):
         if process_name is not None:
             setproctitle.setproctitle(process_name)
 
@@ -63,12 +59,9 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
-        self.run_process_event = process_event
-        self.run_process_completed_event = completed_event
         try:
             MLOpsUtils.set_ntp_offset(self.ntp_offset)
-            self.rebuild_message_status_center(sender_message_center, listener_message_queue, status_center_queue)
-            self.run_impl(run_extend_queue_list, sender_message_center, listener_message_queue, status_center_queue)
+            self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
@@ -96,8 +89,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             GeneralConstants.cleanup_run_process(self.run_id)
 
     @abstractmethod
-    def run_impl(self, run_extend_queue_list, sender_message_center,
-                 listener_message_queue, status_center_queue):
+    def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
         data_config = run_config.get("data_config", {})
@@ -234,14 +226,6 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
                 self.edge_id, GeneralConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
                 is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=run_id)
 
-    @abstractmethod
-    def _generate_job_runner_instance(self, args, run_id=None, request_json=None, agent_config=None, edge_id=None):
-        return None
-
-    @abstractmethod
-    def _generate_extend_queue_list(self):
-        return list()
-
     def reset_devices_status(self, edge_id, status):
         self.status_reporter.run_id = self.run_id
         self.status_reporter.edge_id = edge_id
@@ -249,34 +233,19 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             edge_id, status, is_from_model=self.is_deployment_runner, server_id=self.server_id, run_id=self.run_id)
 
     def start_runner_process(
-            self, run_id, request_json, edge_id=None,
-            sender_message_queue=None, listener_message_queue=None,
-            status_center_queue=None, cuda_visible_gpu_ids_str=None, process_name=None
+            self, run_id, request_json, edge_id=None, message_center=None, status_center=None,
+            cuda_visible_gpu_ids_str=None, process_name=None
     ):
-        client_runner = self._generate_job_runner_instance(
-            self.args, run_id=run_id, request_json=request_json,
-            agent_config=None, edge_id=edge_id
-        )
-        client_runner.start_request_json = request_json
-        run_id_str = str(run_id)
+        self.edge_id = edge_id
+        self.run_id = run_id
         self.run_process_event = multiprocessing.Event()
-        client_runner.run_process_event = self.run_process_event
         self.run_process_completed_event = multiprocessing.Event()
-        client_runner.run_process_completed_event = self.run_process_completed_event
-        client_runner.server_id = request_json.get("server_id", "0")
-        self.run_extend_queue_list = self._generate_extend_queue_list()
+        self.request_json = request_json
+        self.server_id = request_json.get("server_id", "0")
+        self.setup_reporters(message_center, status_center)
         logging.info("start the runner process.")
 
-        if platform.system() == "Windows":
-            self.run_process = multiprocessing.Process(
-                target=client_runner.run, args=(
-                    self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
-                    sender_message_queue, listener_message_queue, status_center_queue, process_name
-                ))
-        else:
-            self.run_process = fedml.get_process(target=client_runner.run, args=(
-                self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
-                sender_message_queue, listener_message_queue, status_center_queue, process_name
-            ))
+        self.run_process = fedml.get_process(target=self.run,
+                                             kwargs={"process_name": process_name})
         self.run_process.start()
         return self.run_process
