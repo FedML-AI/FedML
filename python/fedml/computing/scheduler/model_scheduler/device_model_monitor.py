@@ -8,7 +8,7 @@ import uuid
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
-
+from fedml.utils.decorators import timeit
 
 class FedMLModelMetrics:
     def __init__(self, end_point_id, end_point_name, model_id, model_name, model_version,
@@ -34,6 +34,7 @@ class FedMLModelMetrics:
         else:
             self.start_time = start_time
 
+    @timeit
     def calc_metrics(self, end_point_id, end_point_name,
                      model_id, model_name, model_version,
                      inference_output_url, device_id):

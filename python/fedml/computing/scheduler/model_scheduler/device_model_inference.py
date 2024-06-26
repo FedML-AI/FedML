@@ -436,6 +436,7 @@ def is_endpoint_activated(end_point_id):
     return activated
 
 
+@timeit
 def logging_inference_request(request, response):
     if os.getenv("ENABLE_FEDML_INFERENCE_LOG", "False") in ["False", "false", "0", ""]:
         return
