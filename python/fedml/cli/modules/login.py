@@ -67,10 +67,17 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
     default=ClientConstants.LOCAL_CLIENT_API_PORT,
     help="The port for worker inference proxy.",
 )
+@click.option(
+    "--worker_connection_type",
+    "-wct",
+    type=str,
+    default=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
+    help="The connection type for worker inference proxy.",
+)
 def fedml_login(
         api_key, version, compute_node, server, provider, deploy_worker_num,
         local_on_premise_platform, local_on_premise_platform_port,
-        master_inference_gateway_port, worker_inference_proxy_port
+        master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type
 ):
     fedml.set_env_version(version)
     fedml.set_local_on_premise_platform_host(local_on_premise_platform)
@@ -84,4 +91,5 @@ def fedml_login(
         print(f"Maybe you are using account id to login, we will try to login with account {api_key}.")
         pass
     os.environ["FEDML_MODEL_WORKER_NUM"] = str(deploy_worker_num)
-    fedml.api.login(api_key, compute_node, server, provider, master_inference_gateway_port, worker_inference_proxy_port)
+    fedml.api.login(api_key, compute_node, server, provider, master_inference_gateway_port,
+                    worker_inference_proxy_port, worker_connection_type)
