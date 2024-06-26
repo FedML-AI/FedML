@@ -4,6 +4,7 @@ import shutil
 
 import requests
 import math
+from enum import Enum, unique
 
 import requests.exceptions
 import tqdm
@@ -26,6 +27,10 @@ class StorageMetadata(object):
         self.tag_list = data.get("tags", None)
         self.download_url = data.get("fileUrl", None)
 
+class DataType(Enum):
+    FILE = "file"
+    DIRECTORY = "directory"
+    INVALID = "invalid"
 
 # Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
@@ -38,27 +43,45 @@ def upload(data_path, api_key, name, description, tag_list, service, show_progre
 
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+
+    data_type = _get_data_type(data_path)
     
-    if(not _check_data_path(data_path)):
+    if(data_type == DataType.INVALID):
         return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
-    archive_path, message = _archive_data(data_path)
-    if not archive_path:
+    if(data_type == DataType.DIRECTORY):
+        to_upload_path, message = _archive_data(data_path)
+        name = os.path.splitext(os.path.basename(to_upload_path))[0] if name is None else name
+        file_name = name + ".zip"
+    else:
+        to_upload_path = data_path
+        base_name = os.path.basename(to_upload_path)
+        file_extension = os.path.splitext(base_name)[1]
+        given_extension = None
+        if name is not None:
+            given_extension = os.path.splitext(name)[1]
+            if given_extension is None or given_extension == "":
+                name = name + file_extension
+        else:
+            name = base_name
+
+        file_name = name
+
+    if not to_upload_path:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
-    file_name = name + ".zip"
+    #TODO(bhargav191098) - Better done on the backend. Remove and pass file_name once completed on backend.
     dest_path = os.path.join(user_id, file_name)
-    file_size = os.path.getsize(archive_path)
+    file_size = os.path.getsize(to_upload_path)
 
-    file_uploaded_url, message = _upload_multipart(api_key, file_name, archive_path, show_progress,
+    file_uploaded_url, message = _upload_multipart(api_key, dest_path, to_upload_path, show_progress,
                                                        out_progress_to_err,
                                                        progress_desc, metadata)
 
-
-    os.remove(archive_path)
+    if(data_type == "dir"):
+        os.remove(to_upload_path)
     if not file_uploaded_url:
-        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {archive_path}")
+        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {to_upload_path}")
 
     json_data = {
         "datasetName": name,
@@ -95,13 +118,26 @@ def download(data_name, api_key, service, dest_path, show_progress=True) -> FedM
             logging.error(error_message)
             return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
         download_url = metadata.download_url
-        zip_file_name = data_name + ".zip"
-        path_local = os.path.abspath(zip_file_name)
+        given_extension = os.path.splitext(data_name)[1]
+        is_file = True
+        if(given_extension is None or given_extension ==""):
+            is_file = False
+
+        if not is_file:
+            download_file_name = data_name + ".zip"
+        else:
+            download_file_name = data_name
+        path_local = os.path.abspath(download_file_name)
         dest_path = os.path.abspath(dest_path) if dest_path else data_name
-        if _download_using_presigned_url(download_url, zip_file_name, show_progress=show_progress):
+        if _download_using_presigned_url(download_url, download_file_name, show_progress=show_progress):
             try:
-                shutil.unpack_archive(path_local, dest_path)
-                os.remove(path_local)
+                if not is_file:
+                    shutil.unpack_archive(path_local, dest_path)
+                    os.remove(path_local)
+                else:
+                    if not os.path.exists(dest_path):
+                        os.makedirs(dest_path)
+                    shutil.move(path_local,dest_path)
                 abs_dest_path = os.path.abspath(dest_path)
                 return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
                                                                         f"{abs_dest_path}", data=abs_dest_path)
@@ -438,10 +474,12 @@ def _get_storage_service(service):
     else:
         raise NotImplementedError(f"Service {service} not implemented")
 
-def _check_data_path(data_path):
-    if os.path.isdir(data_path) or os.path.isfile(data_path):
-        return True
-    return False
+def _get_data_type(data_path):
+    if os.path.isdir(data_path):
+        return DataType.DIRECTORY
+    elif os.path.isfile(data_path):
+        return DataType.FILE
+    return DataType.INVALID
 
 
 def _archive_data(data_path: str) -> (str, str):

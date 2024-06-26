@@ -272,7 +272,7 @@ class FedMLAccountManager(Singleton):
                     if not use_machine_id:
                         device_id = hex(uuid.getnode())
                     else:
-                        device_id = device_id = FedMLAccountManager.get_gpu_machine_id()
+                        device_id = FedMLAccountManager.get_gpu_machine_id()
             else:
                 device_id = sys_utils.run_subprocess_open(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()

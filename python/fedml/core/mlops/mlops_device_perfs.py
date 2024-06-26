@@ -57,7 +57,7 @@ class MLOpsDevicePerfStats(object):
         self.monitor_replica_num_process = None
         self.monitor_replica_perf_process = None
         self.job_total_monitor_process = None
-        self.enable_job_total_monitor = False
+        self.enable_job_total_monitor = False   # TODO(Raphael): Enable the healthiness check by this job total monitor
         self.args = None
         self.device_id = None
         self.run_id = None

@@ -132,7 +132,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Send delete deployment request to the edge devices
         FedMLDeployJobRunnerManager.get_instance().send_deployment_delete_request_to_edges(
-            model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center)
+            model_msg_object.run_id, payload, model_msg_object, message_center=self.message_center, args=self.args)
 
         # Stop processes on master
         FedMLDeployJobRunnerManager.get_instance().stop_job_runner(model_msg_object.run_id)
@@ -158,25 +158,20 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         run_id = request_json["end_point_id"]
         end_point_name = request_json["end_point_name"]
         token = request_json["token"]
-        user_id = request_json["user_id"]
-        user_name = request_json["user_name"]
-        device_ids = request_json["device_ids"]
         device_objs = request_json["device_objs"]
+        enable_auto_scaling = request_json.get("enable_auto_scaling", False)
+        desired_replica_num = request_json.get("desired_replica_num", 1)
+        target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
+        aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
+        scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
+        user_encrypted_api_key = request_json.get(ServerConstants.USER_ENCRYPTED_API_KEY, "")
 
         model_config = request_json["model_config"]
         model_name = model_config["model_name"]
         model_version = model_config["model_version"]
         model_id = model_config["model_id"]
-        model_storage_url = model_config["model_storage_url"]
         scale_min = model_config.get("instance_scale_min", 0)
         scale_max = model_config.get("instance_scale_max", 0)
-        inference_engine = model_config.get("inference_engine", 0)
-        enable_auto_scaling = request_json.get("enable_auto_scaling", False)
-        desired_replica_num = request_json.get("desired_replica_num", 1)
-
-        target_queries_per_replica = request_json.get("target_queries_per_replica", 10)
-        aggregation_window_size_seconds = request_json.get("aggregation_window_size_seconds", 60)
-        scale_down_delay_seconds = request_json.get("scale_down_delay_seconds", 120)
 
         model_config_parameters = request_json.get("parameters", {})
         timeout_s = model_config_parameters.get("request_timeout_sec", 30)
@@ -193,6 +188,12 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             request_json["end_point_id"])
         request_json["is_fresh_endpoint"] = True if endpoint_device_info is None else False
 
+        if user_encrypted_api_key == "":
+            user_encrypted_api_key = (FedMLModelCache.get_instance(self.redis_addr, self.redis_port).
+                                      get_user_encrypted_api_key(run_id))
+            if user_encrypted_api_key != "":    # Pass the cached key to the workers
+                request_json[ServerConstants.USER_ENCRYPTED_API_KEY] = user_encrypted_api_key
+
         # Save the user setting (about replica number) of this run to Redis, if existed, update it
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_user_setting_replica_num(
             end_point_id=run_id, end_point_name=end_point_name, model_name=model_name, model_version=model_version,
@@ -201,7 +202,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             aggregation_window_size_seconds=aggregation_window_size_seconds,
             target_queries_per_replica=target_queries_per_replica,
             scale_down_delay_seconds=int(scale_down_delay_seconds),
-            timeout_s=timeout_s
+            timeout_s=timeout_s, user_encrypted_api_key=user_encrypted_api_key
         )
 
         # Start log processor for current run

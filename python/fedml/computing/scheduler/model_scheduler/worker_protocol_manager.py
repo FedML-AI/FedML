@@ -80,6 +80,9 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
 
         client_api_cmd = "fedml.computing.scheduler.model_scheduler.device_client_api:api"
         client_api_pids = RunProcessUtils.get_pid_from_cmd_line(client_api_cmd)
+
+        worker_proxy_port = ClientConstants.get_inference_worker_proxy_port()
+
         if client_api_pids is None or len(client_api_pids) <= 0:
             # Start local API services
             cur_dir = os.path.dirname(__file__)
@@ -89,7 +92,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                 "--log-level critical".format(
                     python_program, client_api_cmd,
-                    ClientConstants.LOCAL_CLIENT_API_PORT, fedml_base_dir
+                    worker_proxy_port, fedml_base_dir
                 ),
                 should_capture_stdout=False,
                 should_capture_stderr=False

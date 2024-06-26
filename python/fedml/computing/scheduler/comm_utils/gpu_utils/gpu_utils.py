@@ -27,6 +27,7 @@ class GPUCard:
     memoryUsed: float
     memoryUtil: float
     load: Optional[float] = 0.0
+    device_path: Optional[str] = ""
     uuid: Optional[str] = ""
     display_mode: Optional[str] = ""
     display_active: Optional[str] = ""

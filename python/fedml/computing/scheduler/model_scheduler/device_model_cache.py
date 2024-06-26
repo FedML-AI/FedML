@@ -112,7 +112,8 @@ class FedMLModelCache(Singleton):
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
                                      target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
-                                     scale_down_delay_seconds: int = 120, timeout_s: int = 30
+                                     scale_down_delay_seconds: int = 120, timeout_s: int = 30,
+                                     user_encrypted_api_key: str = ""
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -139,7 +140,8 @@ class FedMLModelCache(Singleton):
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
             "scale_down_delay_seconds": scale_down_delay_seconds,
-            ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY: timeout_s
+            ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY: timeout_s,
+            ServerConstants.USER_ENCRYPTED_API_KEY: user_encrypted_api_key
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -168,6 +170,15 @@ class FedMLModelCache(Singleton):
             logging.error(e)
             return False
         return True
+
+    def get_user_encrypted_api_key(self, end_point_id: str) -> str:
+        try:
+            replica_num_dict = self.redis_connection.get(self.get_user_setting_replica_num_key(end_point_id))
+            replica_num_dict = json.loads(replica_num_dict)
+            return replica_num_dict.get(ServerConstants.USER_ENCRYPTED_API_KEY, "")
+        except Exception as e:
+            logging.error(e)
+            return ""
 
     def get_all_endpoints_user_setting(self) -> List[dict]:
         """
@@ -291,7 +302,27 @@ class FedMLModelCache(Singleton):
                 result_list.extend(self.redis_connection.lrange(key, 0, -1))
         except Exception as e:
             logging.error(e)
-        # TODO(Raphael): Use Sqlite for the replica backup
+
+        # Get cached results from the persist sqlite database
+        if len(result_list) <= 0:
+            db_result_list = list()
+            try:
+                db_result_list = self.model_deployment_db.get_all_deployment_results_list()
+            except Exception as e:
+                logging.error(f"Failed to get all deployment results from the database due to {e}")
+                pass
+
+            for result in db_result_list:
+                try:
+                    self.redis_connection.rpush(self.get_deployment_result_key(
+                        result["end_point_id"], result["end_point_name"], result["model_name"]),
+                        json.dumps(result["replica_info"]))
+                except Exception as e:
+                    logging.error(e)
+                    pass
+
+            for result in db_result_list:
+                result_list.append(result["replica_info"])
 
         return result_list
 
@@ -319,7 +350,8 @@ class FedMLModelCache(Singleton):
         status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)
         return len(status_list)
 
-    def get_status_item_info(self, status_item):
+    @staticmethod
+    def get_status_item_info(status_item):
         status_item_json = json.loads(status_item)
         if isinstance(status_item_json, str):
             status_item_json = json.loads(status_item_json)
@@ -330,7 +362,8 @@ class FedMLModelCache(Singleton):
             status_payload = status_item_json["status"]
         return device_id, status_payload
 
-    def get_result_item_info(self, result_item):
+    @staticmethod
+    def get_result_item_info(result_item):
         result_item_json = json.loads(result_item)
         if isinstance(result_item_json, str):
             result_item_json = json.loads(result_item_json)
@@ -344,9 +377,13 @@ class FedMLModelCache(Singleton):
             result_payload = result_item_json["result"]
         return device_id, replica_no, result_payload
 
-    def get_idle_device(self, end_point_id, end_point_name,
-                        model_name, model_version,
-                        check_end_point_status=True, limit_specific_model_version=False):
+    def get_idle_device(self,
+                        end_point_id,
+                        end_point_name,
+                        model_name,
+                        model_version,
+                        check_end_point_status=True,
+                        limit_specific_model_version=False):
         # Deprecated the model status logic, query directly from the deployment result list
         idle_device_list = list()
 
@@ -365,13 +402,13 @@ class FedMLModelCache(Singleton):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
 
-        logging.info(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
+        logging.debug(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
 
         if len(idle_device_list) <= 0:
             return None, None
 
         # # Randomly shuffle
-        # shuffle the list of deployed devices and get the first one as the target idle device.
+        #  the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
         #     return None, None
         # shuffle(idle_device_list)
@@ -394,7 +431,7 @@ class FedMLModelCache(Singleton):
             logging.info("Inference Device selection Failed:")
             logging.info(e)
 
-        logging.info(f"Using Round Robin, the device index is {selected_device_index}")
+        logging.debug(f"Using Round Robin, the device index is {selected_device_index}")
         idle_device_dict = idle_device_list[selected_device_index]
 
         # Note that within the same endpoint_id, there could be one device with multiple same models
@@ -407,7 +444,7 @@ class FedMLModelCache(Singleton):
         # Find deployment result from the target idle device.
         try:
             for result_item in result_list:
-                logging.info("enter the for loop")
+                logging.debug("enter the for loop")
                 device_id, _, result_payload = self.get_result_item_info(result_item)
                 found_end_point_id = result_payload["end_point_id"]
                 found_end_point_name = result_payload["end_point_name"]
@@ -421,7 +458,7 @@ class FedMLModelCache(Singleton):
                     if same_model_device_rank > 0:
                         same_model_device_rank -= 1
                         continue
-                    logging.info(f"The chosen device is {device_id}")
+                    logging.debug(f"The chosen device is {device_id}")
                     return result_payload, device_id
         except Exception as e:
             logging.info(str(e))
@@ -974,9 +1011,9 @@ class FedMLModelCache(Singleton):
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
 
-    def get_pending_requests_counter(self, end_point_id) -> int:
+    def get_pending_requests_counter(self, end_point_id=None) -> int:
         # If the endpoint does not exist inside the Hash collection, set its counter to 0.
-        if self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+        if end_point_id and self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
             return int(self.redis_connection.hget(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id))
         return 0
 

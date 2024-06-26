@@ -24,6 +24,8 @@ from fedml.api.modules.storage import StorageMetadata
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FedMLGpuDevices, \
     FedMLRunModelList, FeatureEntryPoint
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 
 
 def fedml_login(api_key: str = None):
@@ -209,16 +211,22 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 
 
-def login(api_key, computing, server, supplier):
-    device_bind(api_key, computing, server, supplier)
+def login(api_key, computing, server, supplier,
+          master_inference_gateway_port: int = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+          worker_inference_proxy_port: int = ClientConstants.LOCAL_CLIENT_API_PORT,
+          worker_connection_type: str = ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
+    device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type)
 
 
 def logout(computing, server):
     device_unbind(computing, server)
 
 
-def device_bind(api_key, computing, server, supplier):
-    device.bind(api_key, computing, server, supplier)
+def device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type):
+    device.bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type)
 
 
 def device_unbind(computing, server):
