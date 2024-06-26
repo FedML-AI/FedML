@@ -24,6 +24,7 @@ from fedml.computing.scheduler.model_scheduler.device_http_proxy_inference_proto
 from fedml.computing.scheduler.comm_utils.network_util import replace_url_with_path
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
+from fedml.utils.decorators import async_timeit, timeit
 
 
 class Settings:
@@ -188,6 +189,7 @@ async def custom_inference(end_point_id, path: str, request: Request):
 api.include_router(router)
 
 
+@async_timeit
 async def _predict(
         end_point_id,
         input_json,
@@ -324,6 +326,7 @@ def retrieve_info_by_endpoint_id(end_point_id, in_end_point_name=None, in_model_
     return end_point_name, model_name
 
 
+@timeit
 def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_model_version):
     idle_device = ""
     model_name = ""
@@ -357,6 +360,7 @@ def found_idle_inference_device(end_point_id, end_point_name, in_model_name, in_
     return res
 
 
+@async_timeit
 async def send_inference_request(idle_device, end_point_id, inference_url, input_list, output_list,
                                  inference_type="default",
                                  connectivity_type=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
@@ -414,6 +418,7 @@ async def send_inference_request(idle_device, end_point_id, inference_url, input
         return inference_response
 
 
+@timeit
 def auth_request_token(end_point_id, end_point_name, model_name, token):
     if token is None:
         return False
