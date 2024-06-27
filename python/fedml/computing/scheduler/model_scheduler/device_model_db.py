@@ -5,6 +5,7 @@ import platform
 import time
 
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.worker_job_runner import DeployJobConfig
 from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -33,8 +34,14 @@ class FedMLModelDatabase(Singleton):
     def set_database_base_dir(self, database_base_dir):
         self.db_base_dir = database_base_dir
 
-    def set_deployment_result(self, end_point_id, end_point_name, model_name, model_version,
-                              device_id, deployment_result, replica_no):
+    def set_deployment_result(self, job_conf: DeployJobConfig, deployment_result):
+        end_point_id = job_conf.run_id
+        end_point_name = job_conf.end_point_name
+        model_name = job_conf.model_name
+        model_version = job_conf.model_version
+        device_id = job_conf.edge_id
+        replica_no = job_conf.replica_rank + 1      # no is id-like, while rank is index-like
+
         self.set_deployment_results_info(end_point_id, end_point_name, model_name, model_version,
                                          device_id, deployment_result=deployment_result, replica_no=replica_no)
 

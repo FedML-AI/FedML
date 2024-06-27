@@ -16,6 +16,7 @@ from ..comm_utils.yaml_utils import load_yaml_config
 
 import fedml
 
+
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
@@ -142,9 +143,6 @@ class ServerConstants(object):
                                "INT64": MODEL_DATA_TYPE_INT, "FP16": MODEL_DATA_TYPE_FLOAT,
                                "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
                                "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
-    
-    USER_INPUT_WORKER_SCALE_OPERATION = "scale"
-    USER_INPUT_WORKER_UPATE_OPERATION = "update"
 
     DEVICE_DIFF_ADD_OPERATION = "op: add"
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"

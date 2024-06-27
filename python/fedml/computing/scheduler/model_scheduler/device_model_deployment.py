@@ -21,6 +21,7 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
+from fedml.computing.scheduler.model_scheduler.worker_job_runner import DeployJobConfig, DeployJobResult
 from ..scheduler_core.compute_utils import ComputeUtils
 from ..comm_utils.container_utils import ContainerUtils
 from .device_http_inference_protocol import FedMLHttpInference
@@ -57,16 +58,13 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
     return gpu_ids, gpu_attach_cmd
 
 
-def start_deployment(end_point_id, end_point_name, model_id, model_version,
-                     model_storage_local_path, inference_model_name, inference_engine,
-                     infer_host, master_ip, edge_id, master_device_id=None, replica_rank=0,
-                     gpu_per_replica=1, request_json=None):
-    if request_json is None:
-        request_json = dict()
-    logging.info("[Worker] Model deployment is starting...")
+def start_deployment(job_conf: DeployJobConfig, deploy_result: DeployJobResult) -> None:
+    # unzip the job config
+    end_point_id, end_point_name, model_id, model_version, model_storage_local_path, \
+        inference_model_name, inference_engine, infer_host, master_ip, edge_id, master_device_id, \
+        replica_rank, gpu_per_replica, api_key = unzip_job_config(job_conf)
 
-    # Real gpu per replica (container-level)
-    num_gpus = gpu_per_replica
+    logging.info("[Worker] Model deployment is starting...")
     gpu_ids, gpu_attach_cmd = None, ""
 
     # Concatenate the full model name
@@ -139,7 +137,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     except Exception:
         logging.error("Failed to connect to the docker daemon, please ensure that you have "
                       "installed Docker Desktop or Docker Engine, and the docker is running")
-        return "", "", None, None, None
+        return
 
     # Pull the inference image
     logging.info(f"Start pulling the inference image {inference_image_name}... with policy {image_pull_policy}")
@@ -198,7 +196,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
     # Handle the environment variables
     handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir,
-                    end_point_id, edge_id, replica_rank, request_json)
+                    end_point_id, edge_id, replica_rank, api_key)
 
     # Create the container
     try:
@@ -216,7 +214,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         client.api.start(container=new_container.get("Id"))
     except Exception as e:
         logging.error(f"Failed to create the container with exception {e}, traceback : {traceback.format_exc()}")
-        return "", "", None, None, None
+        return
 
     # Get the port allocation
     cnt = 0
@@ -249,7 +247,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                   customized_uri=customized_uri)
 
     if inference_output_url == "":
-        return running_model_name, "", None, None, None
+        return
 
     # Successfully get the result from the container
     model_metadata = ret_model_metadata
@@ -259,7 +257,11 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     logging.info(f"[Worker][Replica{replica_rank}] Model deployment is successful with inference_output_url: "
                  f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
 
-    return running_model_name, inference_output_url, model_version, model_metadata, ret_model_config
+    deploy_result.deployment_result = ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED
+    deploy_result.inference_output_url = inference_output_url
+    deploy_result.model_metadata = model_metadata
+    deploy_result.model_config = ret_model_config
+    return
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
@@ -496,6 +498,26 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
         return readiness_check_url, None, model_metadata, None
 
 
+def unzip_job_config(job_conf):
+    end_point_id = job_conf.run_id
+    end_point_name = job_conf.end_point_name
+    model_id = job_conf.model_id
+    model_version = job_conf.model_version
+    model_storage_local_path = job_conf.model_storage_local_path
+    inference_model_name = job_conf.model_name
+    inference_engine = job_conf.inference_engine
+    infer_host = job_conf.worker_ip
+    master_ip = job_conf.master_ip
+    edge_id = job_conf.edge_id
+    master_device_id = job_conf.master_id
+    replica_rank = job_conf.replica_rank
+    gpu_per_replica = int(job_conf.gpu_per_replica)
+    api_key = job_conf.encrypted_api_key
+
+    return end_point_id, end_point_name, model_id, model_version, model_storage_local_path, \
+             inference_model_name, inference_engine, infer_host, master_ip, edge_id, master_device_id, \
+                replica_rank, gpu_per_replica, api_key
+
 def _handle_union_volume_mount(binds, volumes, environment, data_cache_dir_input=None):
     """
     Private: data_cache_dir is the union folder on host machine, which will be shard across different containers,
@@ -627,14 +649,14 @@ def handle_container_service_app(config, model_storage_local_path):
 
 
 def handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir, end_point_id, edge_id,
-                    replica_rank, request_json):
+                    replica_rank, api_key=None):
     enable_custom_image = False if relative_entry_fedml_format != "" else True
     if not enable_custom_image:
         # For some image, the default user is root. Unified to fedml.
         environment["HOME"] = "/home/fedml"
 
-    if request_json and ServerConstants.USER_ENCRYPTED_API_KEY in request_json:
-        environment[ClientConstants.ENV_USER_ENCRYPTED_API_KEY] = request_json[ServerConstants.USER_ENCRYPTED_API_KEY]
+    if api_key and api_key != "":
+        environment[ClientConstants.ENV_USER_ENCRYPTED_API_KEY] = api_key
 
     environment["BOOTSTRAP_DIR"] = dst_bootstrap_dir
     environment["FEDML_CURRENT_RUN_ID"] = end_point_id
