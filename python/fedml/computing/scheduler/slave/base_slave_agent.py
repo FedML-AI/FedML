@@ -24,7 +24,9 @@ class FedMLBaseSlaveAgent(ABC):
 
     def login(
             self, userid, api_key=None, device_id=None,
-            os_name=None, need_to_check_gpu=False, role=None
+            os_name=None, need_to_check_gpu=False, role=None,
+            communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
     ):
         # Preprocess the login args
         if need_to_check_gpu:
@@ -33,7 +35,7 @@ class FedMLBaseSlaveAgent(ABC):
                 print("We can't find any gpu device on your machine. \n"
                       "With the gpu_supplier(-g) option, you need to check if your machine "
                       "has nvidia GPUs and installs CUDA related drivers.")
-                return
+                return None
 
         # Login account
         login_result = FedMLAccountManager.get_instance().login(
@@ -57,16 +59,21 @@ class FedMLBaseSlaveAgent(ABC):
         # Initialize the protocol manager
         # noinspection PyBoardException
         try:
-            self._initialize_protocol_manager()
+            self._initialize_protocol_manager(
+                communication_manager=communication_manager,
+                sender_message_queue=sender_message_queue,
+                status_center_queue=status_center_queue,
+                sender_message_event=sender_message_event)
         except Exception as e:
             FedMLAccountManager.write_login_failed_file(is_client=True)
             self.protocol_mgr.stop()
             raise e
 
+        return login_result
+
+    def start(self):
         # Start the protocol manager to process the messages from MLOps and slave agents.
         self.protocol_mgr.start()
-
-        return login_result
 
     @staticmethod
     def logout():
@@ -84,12 +91,20 @@ class FedMLBaseSlaveAgent(ABC):
         self.protocol_mgr.user_name = login_result.user_name
         self.protocol_mgr.agent_config = login_result.agent_config
 
-    def _initialize_protocol_manager(self):
+    def _initialize_protocol_manager(
+            self, communication_manager=None, sender_message_queue=None,
+            status_center_queue=None, sender_message_event=None
+    ):
         # Init local database
         self._init_database()
 
         # Initialize the master protocol
-        self.protocol_mgr.initialize()
+        self.protocol_mgr.set_parent_agent(self)
+        self.protocol_mgr.initialize(
+            communication_manager=communication_manager,
+            sender_message_queue=sender_message_queue,
+            status_center_queue=status_center_queue,
+            sender_message_event=sender_message_event)
 
         # Start the client API process
         self._start_slave_api()
@@ -122,6 +137,9 @@ class FedMLBaseSlaveAgent(ABC):
                 should_capture_stderr=False
             )
 
+    def get_protocol_manager(self):
+        return self.protocol_mgr
+
     @abstractmethod
     def _get_log_file_dir(self):
         pass
@@ -137,3 +155,8 @@ class FedMLBaseSlaveAgent(ABC):
     @abstractmethod
     def _generate_protocol_manager_instance(self, args, agent_config=None):
         return None
+
+    def save_deploy_ids(self, deploy_master_edge_id=None, deploy_slave_edge_id=None):
+        self.protocol_mgr.save_deploy_ids(
+            deploy_master_edge_id=deploy_master_edge_id, deploy_slave_edge_id=deploy_slave_edge_id)
+

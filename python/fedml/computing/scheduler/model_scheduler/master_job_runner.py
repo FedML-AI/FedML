@@ -1,12 +1,12 @@
 import copy
 import json
 import logging
+import multiprocessing
 import os
 import time
 import queue
 import traceback
 from abc import ABC
-from multiprocessing import Queue
 
 import fedml
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsConfigs
@@ -50,7 +50,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.replica_controller = None
         self.deployed_replica_payload = None
         self.slave_deployment_results_map = dict()
-        self.deployment_result_queue = Queue()
+        self.deployment_result_queue = multiprocessing.Manager().Queue()
         self.is_fresh_endpoint = True
 
     # Override

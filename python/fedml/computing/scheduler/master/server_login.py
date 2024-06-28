@@ -41,4 +41,5 @@ if __name__ == "__main__":
         master_agent.login(args.api_key, api_key=args.api_key, device_id=args.device_id,
                            os_name=args.os_name, role=args.role, runner_cmd=args.runner_cmd)
     else:
+        master_agent.stop()
         master_agent.logout()

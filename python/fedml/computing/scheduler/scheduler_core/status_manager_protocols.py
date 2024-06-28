@@ -136,12 +136,14 @@ class FedMLStatusManager(object):
         # self.stop_cloud_server()
         # self.remove_listener_for_run_metrics(self.run_id)
         # self.remove_listener_for_run_logs(self.run_id)
+
         self.message_center.receive_message(
             GeneralConstants.get_topic_complete_job(master_id),
             json.dumps(GeneralConstants.get_payload_complete_job(self.run_id, master_id)))
 
-        if self.status_center.is_deployment_status_center and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
-            self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+        if self.status_center.is_deployment_status_center:
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+                self.report_deployment_status(self.run_id, GeneralConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
 
     def process_job_exception_status(self, master_id, status):
         # Report exception job status
@@ -187,16 +189,17 @@ class FedMLStatusManager(object):
         status = self.get_entire_job_status()
 
         # Set the device status based on the job status
-        for edge_id_item, edge_status_item in self.edge_status_dict.items():
-            if edge_id_item == "server":
-                continue
+        if self.edge_status_dict is not None:
+            for edge_id_item, edge_status_item in self.edge_status_dict.items():
+                if edge_id_item == "server":
+                    continue
 
-            # Calc the device status based on the job status
-            consensus_device_status = FedMLStatusManager.get_device_consensus_status_in_job(
-                status, edge_status_item)
-            if consensus_device_status is not None:
-                self.message_reporter.report_client_training_status(
-                    edge_id_item, consensus_device_status, run_id=run_id, update_db=False)
+                # Calc the device status based on the job status
+                consensus_device_status = FedMLStatusManager.get_device_consensus_status_in_job(
+                    status, edge_status_item)
+                if consensus_device_status is not None:
+                    self.message_reporter.report_client_training_status(
+                        edge_id_item, consensus_device_status, run_id=run_id, update_db=False)
 
         # Save the job status to local storage
         FedMLServerDataInterface.get_instance().save_job_status(run_id, master_id, status, status)

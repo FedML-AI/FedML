@@ -1,19 +1,25 @@
 import json
 import logging
 import os
+import platform
 import time
 import traceback
 import uuid
 
 import multiprocess as multiprocessing
 import psutil
+import setproctitle
 
+import fedml
 from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
+from ...computing.scheduler.scheduler_core.general_constants import GeneralConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class MLOpsJobPerfStats(object):
+    JOB_PERF_PROCESS_TAG = "job_perf"
+
     def __init__(self):
         self.job_stats_process = None
         self.job_stats_event = None
@@ -138,16 +144,26 @@ class MLOpsJobPerfStats(object):
         self.job_stats_event.clear()
         perf_stats.job_stats_event = self.job_stats_event
         perf_stats.job_process_id_map = self.job_process_id_map
-
-        self.job_stats_process = multiprocessing.Process(target=perf_stats.report_job_stats_entry,
-                                                         args=(self.job_stats_event,))
+        if platform.system() == "Windows":
+            self.job_stats_process = multiprocessing.Process(
+                target=perf_stats.report_job_stats_entry,
+                args=(self.job_stats_event, GeneralConstants.get_monitor_process_name(
+                    MLOpsJobPerfStats.JOB_PERF_PROCESS_TAG, perf_stats.run_id, perf_stats.edge_id)))
+        else:
+            self.job_stats_process = fedml.get_process(
+                target=perf_stats.report_job_stats_entry,
+                args=(self.job_stats_event, GeneralConstants.get_monitor_process_name(
+                    MLOpsJobPerfStats.JOB_PERF_PROCESS_TAG, perf_stats.run_id, perf_stats.edge_id)))
         self.job_stats_process.start()
 
     def report_job_stats(self, sys_args):
         self.setup_job_stats_process(sys_args)
 
-    def report_job_stats_entry(self, sys_event):
-        # print(f"Report job realtime stats, process id {os.getpid()}")
+    def report_job_stats_entry(self, sys_event, process_name):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        # print(f"Report job realtime stats, process id {os.getpid()}, name {process_name}")
 
         self.job_stats_event = sys_event
         mqtt_mgr = MqttManager(

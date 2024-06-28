@@ -167,7 +167,7 @@ class JobMonitor(Singleton):
                     # Get cached token for authorization of autoscale request
                     cached_token = fedml_model_cache.get_end_point_token(e_id, e_name, model_name)
                     if cached_token is None:
-                        logging.error(f"Failed to get the cached token for endpoint {e_id}.")
+                        # logging.error(f"Failed to get the cached token for endpoint {e_id}.")
                         continue
 
                     req_header = {
@@ -229,7 +229,7 @@ class JobMonitor(Singleton):
 
             cached_token = FedMLModelCache.get_instance().get_end_point_token_with_eid(endpoint_id)
             if cached_token is None:
-                logging.error(f"Failed to get the cached token for endpoint {endpoint_id}.")
+                # logging.error(f"Failed to get the cached token for endpoint {endpoint_id}.")
                 return
 
             req_header = {
@@ -339,6 +339,10 @@ class JobMonitor(Singleton):
     def monitor_slave_run_process_status(self):
         try:
             count = 0
+            try:
+                client_data_interface.FedMLClientDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
             job_list = client_data_interface.FedMLClientDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1
@@ -448,6 +452,10 @@ class JobMonitor(Singleton):
         try:
             ComputeCacheManager.get_instance().set_redis_params()
             count = 0
+            try:
+                server_data_interface.FedMLServerDataInterface.get_instance().create_job_table()
+            except Exception as e:
+                pass
             job_list = server_data_interface.FedMLServerDataInterface.get_instance().get_jobs_from_db()
             for job in job_list.job_list:
                 count += 1

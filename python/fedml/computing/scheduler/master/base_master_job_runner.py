@@ -1,4 +1,3 @@
-
 import json
 import logging
 import multiprocessing
@@ -7,6 +6,9 @@ import queue
 import os
 import time
 import traceback
+
+import setproctitle
+
 from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ..master.server_constants import ServerConstants
@@ -19,7 +21,6 @@ from ..scheduler_core.metrics_manager import MetricsManager
 from fedml.utils.debugging import debug
 from ..scheduler_core.status_center import JobStatus
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
-from multiprocessing import Process, Queue
 from ..scheduler_core.general_constants import GeneralConstants
 from ..scheduler_core.scheduler_base_job_runner import FedMLSchedulerBaseJobRunner, RunnerError, RunnerCompletedError
 from abc import ABC, abstractmethod
@@ -43,13 +44,13 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             is_master_runner=True
         )
 
-        self.run_edge_id_status_queue = Queue()
-        self.run_metrics_queue = Queue()
-        self.run_events_queue = Queue()
-        self.run_artifacts_queue = Queue()
-        self.run_logs_queue = Queue()
-        self.run_edge_device_info_queue = Queue()
-        self.run_edge_device_info_global_queue = Queue()
+        self.run_edge_id_status_queue = multiprocessing.Manager().Queue()
+        self.run_metrics_queue = multiprocessing.Manager().Queue()
+        self.run_events_queue = multiprocessing.Manager().Queue()
+        self.run_artifacts_queue = multiprocessing.Manager().Queue()
+        self.run_logs_queue = multiprocessing.Manager().Queue()
+        self.run_edge_device_info_queue = multiprocessing.Manager().Queue()
+        self.run_edge_device_info_global_queue = multiprocessing.Manager().Queue()
         self.run_extend_queue_list = None
         self.async_check_timeout = 0
         self.enable_async_cluster = False
@@ -68,9 +69,12 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             edge_device_info_queue=None, run_metrics_queue=None, run_event_queue=None,
             run_artifacts_queue=None, run_logs_queue=None, edge_device_info_global_queue=None,
             run_extend_queue_list=None, sender_message_center_queue=None, listener_message_queue=None,
-            status_center_queue=None
+            status_center_queue=None, process_name=None
     ):
-        print(f"Master job runner process id {os.getpid()}, run id {self.run_id}")
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        print(f"Master job runner process id {os.getpid()}, name {process_name}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -169,7 +173,8 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             run_id, self.request_json, edge_id=self.edge_id, is_server_job=True,
             sender_message_queue=sender_message_queue,
             listener_message_queue=listener_message_queue,
-            status_center_queue=status_center_queue
+            status_center_queue=status_center_queue,
+            process_name=GeneralConstants.get_launch_master_user_process_name(run_id, self.edge_id)
         )
 
         # Check if the run status is normal
@@ -231,9 +236,12 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             edge_device_info_queue=None, run_metrics_queue=None, run_event_queue=None,
             run_artifacts_queue=None, run_logs_queue=None, edge_device_info_global_queue=None,
             run_extend_queue_list=None, sender_message_center_queue=None, listener_message_queue=None,
-            status_center_queue=None
+            status_center_queue=None, process_name=None
     ):
-        print(f"Server runner process id {os.getpid()}, run id {self.run_id}")
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        print(f"Server runner process id {os.getpid()}, name {process_name}. run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -405,9 +413,9 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         return None
 
     def start_runner_process(
-        self, run_id, request_json, edge_id=None, is_server_job=False,
-        sender_message_queue=None, listener_message_queue=None,
-        status_center_queue=None,
+            self, run_id, request_json, edge_id=None, is_server_job=False,
+            sender_message_queue=None, listener_message_queue=None,
+            status_center_queue=None, process_name=None
     ):
         server_runner = self._generate_job_runner_instance(
             self.args, run_id=run_id, request_json=request_json,
@@ -425,14 +433,26 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         server_runner.edge_id_status_queue = self.run_edge_id_status_queue
         server_runner.edge_device_info_queue = self.run_edge_device_info_queue
         self.run_extend_queue_list = self._generate_extend_queue_list()
-        self.run_process = Process(
-            target=server_runner.run if not is_server_job else server_runner.run_server_job, args=(
-                self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
-                self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
-                self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
-                self.run_extend_queue_list, sender_message_queue, listener_message_queue,  status_center_queue
+        if platform.system() == "Windows":
+            self.run_process = multiprocessing.Process(
+                target=server_runner.run if not is_server_job else server_runner.run_server_job, args=(
+                    self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
+                    self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
+                    self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue, status_center_queue,
+                    process_name,
+                )
             )
-        )
+        else:
+            self.run_process = fedml.get_process(
+                target=server_runner.run if not is_server_job else server_runner.run_server_job, args=(
+                    self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
+                    self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
+                    self.run_artifacts_queue, self.run_logs_queue, self.run_edge_device_info_global_queue,
+                    self.run_extend_queue_list, sender_message_queue, listener_message_queue, status_center_queue,
+                    process_name,
+                )
+            )
         self.run_process.start()
         ServerConstants.save_run_process(run_id, self.run_process.pid)
         return self.run_process
@@ -444,7 +464,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         if int(edge_id) in edge_ids or str(edge_id) in edge_ids:
             run_id_str = str(run_id)
             if self.run_edge_device_info_queue is None:
-                self.run_edge_device_info_queue = Queue()
+                self.run_edge_device_info_queue = multiprocessing.Manager().Queue()
             self.run_edge_device_info_queue.put(device_info)
 
     def should_continue_run_job(self, run_id):
@@ -572,7 +592,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         run_id = str(topic).split('/')[-1]
         run_id_str = str(run_id)
         if self.run_logs_queue is None:
-            self.run_logs_queue = Queue()
+            self.run_logs_queue = multiprocessing.Manager().Queue()
         self.run_logs_queue.put(payload)
 
     def callback_run_metrics(self, topic, payload):
@@ -580,7 +600,7 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         run_id = str(topic).split('/')[-1]
         run_id_str = str(run_id)
         if self.run_metrics_queue is None:
-            self.run_metrics_queue = Queue()
+            self.run_metrics_queue = multiprocessing.Manager().Queue()
         self.run_metrics_queue.put(payload)
 
     # def send_training_request_to_edges(self, active_edge_info_dict):
@@ -710,6 +730,3 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
 
     def get_client_id_list(self, server_edge_id_list):
         return server_edge_id_list
-
-
-

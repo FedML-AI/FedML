@@ -1,0 +1,57 @@
+name: Pylint - FedML
+
+on:
+  pull_request:
+    branches: [ master, test/v0.7.0, dev/0.7.0 ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux]
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        arch: [ X64 ]
+        python-version: ["3.8"]
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
+        shell: bash
+        run: |
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/fedml/FedML
+            cd $path
+            git pull
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          else
+            echo "running on dev"
+            path=/home/fedml/FedML
+            cd $path
+            git pull
+            git checkout ${{ steps.extract_branch.outputs.branch }}
+            echo "dir=$path" >> $GITHUB_OUTPUT
+          fi
+      - name: Analysing the code with pylint
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pylint
+          pip install "fedml[gRPC]"
+          pip install "fedml[tensorflow]"
+          pip install "fedml[jax]"
+          pip install "fedml[mxnet]"
+          pip install tensorflow_federated
+          pip install mxnet
+          pip install jax
+          pip install ptflops
+          cd python
+          pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W,I ./

@@ -7,6 +7,9 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 
+import setproctitle
+
+import fedml
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from .client_data_interface import FedMLClientDataInterface
@@ -47,8 +50,12 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         )
 
     def run(self, process_event, completed_event,  run_extend_queue_list,
-            sender_message_center, listener_message_queue, status_center_queue):
-        print(f"Client runner process id {os.getpid()}, run id {self.run_id}")
+            sender_message_center, listener_message_queue, status_center_queue,
+            process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        print(f"Client runner process id {os.getpid()}, name {process_name}, run id {self.run_id}")
 
         if platform.system() != "Windows":
             os.setsid()
@@ -244,7 +251,7 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
     def start_runner_process(
             self, run_id, request_json, edge_id=None,
             sender_message_queue=None, listener_message_queue=None,
-            status_center_queue=None, cuda_visible_gpu_ids_str=None
+            status_center_queue=None, cuda_visible_gpu_ids_str=None, process_name=None
     ):
         client_runner = self._generate_job_runner_instance(
             self.args, run_id=run_id, request_json=request_json,
@@ -259,9 +266,17 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         client_runner.server_id = request_json.get("server_id", "0")
         self.run_extend_queue_list = self._generate_extend_queue_list()
         logging.info("start the runner process.")
-        self.run_process = Process(target=client_runner.run, args=(
-            self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
-            sender_message_queue, listener_message_queue, status_center_queue
-        ))
+
+        if platform.system() == "Windows":
+            self.run_process = multiprocessing.Process(
+                target=client_runner.run, args=(
+                    self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
+                    sender_message_queue, listener_message_queue, status_center_queue, process_name
+                ))
+        else:
+            self.run_process = fedml.get_process(target=client_runner.run, args=(
+                self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
+                sender_message_queue, listener_message_queue, status_center_queue, process_name
+            ))
         self.run_process.start()
         return self.run_process

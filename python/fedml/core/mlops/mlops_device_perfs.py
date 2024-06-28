@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import time
 import traceback
 import uuid
@@ -8,12 +9,15 @@ from os.path import expanduser
 
 import multiprocessing
 import psutil
+import setproctitle
 
+import fedml
 from fedml.computing.scheduler.comm_utils import sys_utils
 from .device_info_report_protocol import FedMLDeviceInfoReportProtocol
 from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
 from ...computing.scheduler.comm_utils.job_monitor import JobMonitor
+from ...computing.scheduler.scheduler_core.general_constants import GeneralConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
@@ -27,6 +31,17 @@ ROLE_ENDPOINT_LOGS = 6
 ROLE_AUTO_SCALER = 7
 ROLE_ENDPOINT_REPLICA_NUM = 8
 ROLE_ENDPOINT_REPLICA_PERF = 9
+
+ROLE_DEVICE_JOB_TOTAL_MONITOR_STR = "device_job_total"
+ROLE_DEVICE_INFO_REPORTER_STR = "device_info"
+ROLE_ENDPOINT_MASTER_STR = "endpoint_master"
+ROLE_ENDPOINT_SLAVE_STR = "endpoint_slave"
+ROLE_RUN_MASTER_STR = "run_master"
+ROLE_RUN_SLAVE_STR = "run_slave"
+ROLE_ENDPOINT_LOGS_STR = "endpoint_logs"
+ROLE_AUTO_SCALER_STR = "autoscaler"
+ROLE_ENDPOINT_REPLICA_NUM_STR = "endpoint_replica_num"
+ROLE_ENDPOINT_REPLICA_PERF_STR = "endpoint_replica_perf"
 
 
 class MLOpsDevicePerfStats(object):
@@ -76,58 +91,161 @@ class MLOpsDevicePerfStats(object):
         self.device_realtime_stats_event.clear()
         perf_stats.device_realtime_stats_event = self.device_realtime_stats_event
 
-        self.device_realtime_stats_process = multiprocessing.Process(
-            target=perf_stats.report_device_realtime_stats_entry,
-            args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client))
+        if platform.system() == "Windows":
+            self.device_realtime_stats_process = multiprocessing.Process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client,
+                      GeneralConstants.get_monitor_process_name(
+                          ROLE_DEVICE_INFO_REPORTER_STR, perf_stats.run_id, perf_stats.edge_id)))
+        else:
+            self.device_realtime_stats_process = fedml.get_process(
+                target=perf_stats.report_device_realtime_stats_entry,
+                args=(self.device_realtime_stats_event, ROLE_DEVICE_INFO_REPORTER, self.is_client,
+                      GeneralConstants.get_monitor_process_name(
+                          ROLE_DEVICE_INFO_REPORTER_STR, perf_stats.run_id, perf_stats.edge_id)))
         self.device_realtime_stats_process.start()
 
         if self.enable_job_total_monitor:
-            self.job_total_monitor_process = multiprocessing.Process(
-                target=perf_stats.report_device_realtime_stats_entry,
-                args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_TOTAL_MONITOR, self.is_client))
+            if platform.system() == "Windows":
+                self.job_total_monitor_process = multiprocessing.Process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_TOTAL_MONITOR, self.is_client,
+                          GeneralConstants.get_monitor_process_name(
+                              ROLE_DEVICE_JOB_TOTAL_MONITOR_STR, perf_stats.run_id, perf_stats.edge_id)))
+            else:
+                self.job_total_monitor_process = fedml.get_process(
+                    target=perf_stats.report_device_realtime_stats_entry,
+                    args=(self.device_realtime_stats_event, ROLE_DEVICE_JOB_TOTAL_MONITOR, self.is_client,
+                          GeneralConstants.get_monitor_process_name(
+                              ROLE_DEVICE_JOB_TOTAL_MONITOR_STR, perf_stats.run_id, perf_stats.edge_id)))
             self.job_total_monitor_process.start()
         else:
             if self.is_client:
-                self.monitor_endpoint_master_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER))
+                # Register endpoint master process
+                if platform.system() == "Windows":
+                    self.monitor_endpoint_master_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_MASTER_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_endpoint_master_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_MASTER, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_MASTER_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_endpoint_master_process.start()
 
-                self.monitor_run_slave_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE))
+                # Register endpoint slave process
+                if platform.system() == "Windows":
+                    self.monitor_endpoint_slave_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_SLAVE, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_SLAVE_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_endpoint_slave_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_SLAVE, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_SLAVE_STR, perf_stats.run_id, perf_stats.edge_id)))
+                self.monitor_endpoint_slave_process.start()
+
+                # Register run slave process
+                if platform.system() == "Windows":
+                    self.monitor_run_slave_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_RUN_SLAVE_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_run_slave_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_RUN_SLAVE, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_RUN_SLAVE_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_run_slave_process.start()
 
-                self.monitor_endpoint_logs_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS))
+                # Register endpoint logs process
+                if platform.system() == "Windows":
+                    self.monitor_endpoint_logs_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_LOGS_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_endpoint_logs_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_LOGS, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_LOGS_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_endpoint_logs_process.start()
 
                 # Register auto-scaler process
-                self.monitor_auto_scaler_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER))
+                if platform.system() == "Windows":
+                    self.monitor_auto_scaler_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_AUTO_SCALER_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_auto_scaler_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_AUTO_SCALER, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_AUTO_SCALER_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_auto_scaler_process.start()
 
                 # Register replica number report channel
-                self.monitor_replica_num_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM))
+                if platform.system() == "Windows":
+                    self.monitor_replica_num_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_REPLICA_NUM_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_replica_num_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_NUM, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_REPLICA_NUM_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_replica_num_process.start()
 
                 # Register replica performance report channel
-                self.monitor_replica_perf_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF))
+                if platform.system() == "Windows":
+                    self.monitor_replica_perf_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_REPLICA_PERF_STR, perf_stats.run_id, perf_stats.edge_id)))
+
+                else:
+                    self.monitor_replica_perf_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_ENDPOINT_REPLICA_PERF, True,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_ENDPOINT_REPLICA_PERF_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_replica_perf_process.start()
             else:
-                self.monitor_run_master_process = multiprocessing.Process(
-                    target=perf_stats.report_device_realtime_stats_entry,
-                    args=(self.device_realtime_stats_event, ROLE_RUN_MASTER))
+                if platform.system() == "Windows":
+                    self.monitor_run_master_process = multiprocessing.Process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_RUN_MASTER, False,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_RUN_MASTER_STR, perf_stats.run_id, perf_stats.edge_id)))
+                else:
+                    self.monitor_run_master_process = fedml.get_process(
+                        target=perf_stats.report_device_realtime_stats_entry,
+                        args=(self.device_realtime_stats_event, ROLE_RUN_MASTER, False,
+                              GeneralConstants.get_monitor_process_name(
+                                  ROLE_RUN_MASTER_STR, perf_stats.run_id, perf_stats.edge_id)))
                 self.monitor_run_master_process.start()
 
-    def report_device_realtime_stats_entry(self, sys_event, role, is_client=False):
-        # print(f"Report device realtime stats, process id {os.getpid()}")
+    def report_device_realtime_stats_entry(self, sys_event, role, is_client=False, process_name=None):
+        if process_name is not None:
+            setproctitle.setproctitle(process_name)
+
+        # print(f"Report device realtime stats, process id {os.getpid()}, name {process_name}")
 
         self.device_realtime_stats_event = sys_event
         mqtt_mgr = MqttManager(

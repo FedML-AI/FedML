@@ -1,0 +1,128 @@
+# This is a basic workflow to help you get started with Actions
+
+name: MPI - On Linux
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
+  pull_request:
+    branches: [ master,  test/v0.7.0 ]
+
+  workflow_run:
+    workflows: [ CROSS-DEVICE-MNN-Linux ]
+    types:
+      - completed
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
+jobs:
+  # https://github.com/mpi4py/mpi4py/actions/runs/34979774/workflow
+  mpi_run:
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 15
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
+    strategy:
+      matrix:
+        python-version: [3.8]
+        mpi: [mpich]
+#        mpi: [mpich, openmpi]
+        os: [ ubuntu-latest ]
+        include:
+        - os: ubuntu-latest
+          mpi: mpich
+          install-mpi: |
+              apt-get update
+              apt install -y mpich libmpich-dev
+#        - os: ubuntu-latest
+#          mpi: openmpi
+#          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
+    steps:
+    - name: Extract branch name
+      shell: bash
+      run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+      id: extract_branch
+    - name: Install MPI
+      if: matrix.mpi == 'mpich'
+      run: |
+          apt-get update
+          apt-get install -y mpich libmpich-dev
+
+    - id: fedml_source_code_home
+      name: cd to master or dev branch and git pull
+      shell: bash
+      run: |
+        ls
+        echo ${{ steps.extract_branch.outputs.branch }}
+        if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            path=/home/fedml/FedML
+            cd $path
+            git pull
+            echo "dir=$path" >> $GITHUB_OUTPUT
+        else
+            echo "running on dev"
+            path=/home/fedml/FedML
+            cd $path
+            git pull
+            git checkout ${{ steps.extract_branch.outputs.branch }}
+            echo "dir=$path" >> $GITHUB_OUTPUT
+        fi
+    - name: sync git repo to local pip
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+        echo $Homepath
+        cd $homepath
+        # bash ./devops/scripts/sync-fedml-pip.sh
+
+    - name: Test package - FedAvg
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        pwd
+        cd python
+        cd examples/federate/simulation/mpi_torch_fedavg_mnist_lr_example
+        sh run_custom_data_and_model_example.sh 4
+
+    - name: Test package - Base
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        cd python
+        cd examples/federate/simulation/mpi_base_framework_example
+        sh run.sh 4
+
+    - name: Test package - Decentralized
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        cd python
+        cd examples/federate/simulation/mpi_decentralized_fl_example
+        sh run.sh 4
+
+    - name: Test package - FedOPT
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        cd python
+        cd examples/federate/simulation/mpi_fedopt_datasets_and_models_example
+        sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
+
+    - name: Test package - FedProx
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        cd python
+        cd examples/federate/simulation/mpi_fedprox_datasets_and_models_example
+        sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
+
+    - name: Test package - FedGAN
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+      run: |
+        cd python
+        cd examples/federate/simulation/mpi_torch_fedgan_mnist_gan_example
+        sh run_step_by_step_example.sh 4
