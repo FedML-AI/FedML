@@ -18,7 +18,7 @@ from .server_data_interface import FedMLServerDataInterface
 from ....core.mlops.mlops_utils import MLOpsUtils
 from ..scheduler_core.log_manager import LogsManager
 from ..scheduler_core.metrics_manager import MetricsManager
-from fedml.utils.debugging import debug
+from fedml.utils.decorators import debug
 from ..scheduler_core.status_center import JobStatus
 from ..scheduler_core.compute_cache_manager import ComputeCacheManager
 from ..scheduler_core.general_constants import GeneralConstants

@@ -251,7 +251,7 @@ class ServerConstants(object):
 
     @staticmethod
     def get_dataset_url():
-        create_dataset_url = "{}/fedmlOpsServer/api/v1/cli/dataset".format(
+        create_dataset_url = "{}/system/api/v1/cli/storage".format(
             ServerConstants.get_mlops_url())
         return create_dataset_url
 
@@ -271,13 +271,13 @@ class ServerConstants(object):
 
     @staticmethod
     def list_dataset_url():
-        list_dataset_url = "{}/fedmlOpsServer/api/v1/cli/dataset/list".format(
+        list_dataset_url = "{}/system/api/v1/cli/storage/list".format(
             ServerConstants.get_mlops_url())
         return list_dataset_url
 
     @staticmethod
     def get_dataset_metadata_url():
-        get_dataset_metadata_url = "{}/fedmlOpsServer/api/v1/cli/dataset/meta".format(
+        get_dataset_metadata_url = "{}/system/api/v1/cli/storage/meta".format(
             ServerConstants.get_mlops_url())
         return get_dataset_metadata_url
 

@@ -15,9 +15,10 @@ class FedMLResourceManager(Singleton):
     def get_instance():
         return FedMLResourceManager()
 
-    def check_heartbeat(self, api_key):
+    def check_heartbeat(self, api_key, encrypted_api_key_flag=False):
         heartbeat_url = ServerConstants.get_heartbeat_url()
-        heartbeat_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        heartbeat_api_headers = {'Content-Type': 'application/json', 'Connection': 'close',
+                                 'Encrypted': str(encrypted_api_key_flag)}
         heartbeat_json = {
             "apiKey": api_key
         }
