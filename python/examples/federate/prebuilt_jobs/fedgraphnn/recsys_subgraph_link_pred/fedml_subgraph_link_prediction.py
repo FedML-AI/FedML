@@ -1,5 +1,5 @@
 import fedml
-from app.fedgraphnn.recsys_subgraph_link_pred.trainer.fed_subgraph_lp_aggregator import FedSubgraphLPAggregator
+from trainer.fed_subgraph_lp_aggregator import FedSubgraphLPAggregator
 from data.data_loader import *
 from fedml import FedMLRunner
 from model.gcn_link import GCNLinkPred
