@@ -22,8 +22,8 @@ from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
-from ..comm_utils.yaml_utils import load_yaml_config
-from ..comm_utils import security_utils
+from fedml.computing.scheduler.comm_utils.yaml_utils import load_yaml_config
+from fedml.computing.scheduler.comm_utils import security_utils
 
 class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE"
@@ -72,6 +72,8 @@ class ClientConstants(object):
     K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
     K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
     K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
+
+    PORT_INSIDE_CONTAINER_DEFAULT = 2345
 
     LOCAL_CLIENT_API_PORT = 22030
     ENV_CLIENT_PROXY_PORT_KEY = "FEDML_WORKER_INFERENCE_PROXY_PORT"

@@ -1,9 +1,9 @@
 import logging
-from ..scheduler_core.compute_cache_manager import ComputeCacheManager
-from ..comm_utils.container_utils import ContainerUtils
-from ..comm_utils import security_utils
-from .device_client_constants import ClientConstants
-from .device_model_msg_object import FedMLModelMsgObject
+from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
+from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
+from fedml.computing.scheduler.comm_utils import security_utils
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_model_msg_object import FedMLModelMsgObject
 
 
 class FedMLDeviceReplicaHandler:

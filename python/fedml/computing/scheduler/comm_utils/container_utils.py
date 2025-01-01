@@ -14,6 +14,8 @@ from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 
 
 class ContainerUtils(Singleton):
@@ -51,6 +53,16 @@ class ContainerUtils(Singleton):
         return container_obj
 
     def get_container_logs(self, container_name, timestamps=False):
+        if SchedulerUtils.is_using_k8s():
+            from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id(container_name)
+            if container_id:
+                logs = cri_client.get_logs(container_id, since=None, follow=False, timestamps=timestamps)
+                if logs:
+                    return logs
+            return None
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return None
@@ -63,6 +75,16 @@ class ContainerUtils(Singleton):
         return logs_content
 
     def get_container_logs_since(self, container_name, since_time: int, timestamps=False):
+        if SchedulerUtils.is_using_k8s():
+            from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id(container_name)
+            if container_id:
+                logs = cri_client.get_logs(container_id, since=since_time, follow=False, timestamps=timestamps)
+                if logs:
+                    return logs
+            return None
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return None
@@ -76,6 +98,10 @@ class ContainerUtils(Singleton):
         return logs_content
 
     def remove_container(self, container_name):
+        if SchedulerUtils.is_using_k8s():
+            # no need to remove container in k8s scheduler
+            return True
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return False
@@ -91,7 +117,12 @@ class ContainerUtils(Singleton):
 
         return True
 
-    def restart_container(self, container_name, container_port=2345):
+    def restart_container(self, container_name, container_port=ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+        if SchedulerUtils.is_using_k8s():
+            # no need to restart container in k8s scheduler
+            # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access
+            return True, container_port
+
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -111,6 +142,10 @@ class ContainerUtils(Singleton):
         return False, 0
 
     def stop_container(self, container_name):
+        if SchedulerUtils.is_using_k8s():
+            # no need to remove container in k8s scheduler
+            return True
+        
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -128,7 +163,12 @@ class ContainerUtils(Singleton):
 
         return False
 
-    def start_container(self, container_name, container_port=2345):
+    def start_container(self, container_name, container_port=ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+        if SchedulerUtils.is_using_k8s():
+            # no need to restart container in k8s scheduler
+            # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access
+            return True, container_port
+        
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -175,6 +215,10 @@ class ContainerUtils(Singleton):
 
     @staticmethod
     def get_container_rank_same_model(prefix: str):
+        if SchedulerUtils.is_using_k8s():
+            # only one deployment (rank 0) in k8s scheduler, so the rank size is 1
+            return 1
+
         """
         Rank (from 0) for the container that run the same model, i.e.
         running_model_name = hash("model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}")
@@ -257,6 +301,15 @@ class ContainerUtils(Singleton):
         shared by multiple containers
         (TODO: get the GPU stats inside the container)
         """
+
+        if SchedulerUtils.is_using_k8s():
+            from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id(c_name)
+            if container_id:
+                return cri_client.get_container_perf(container_id)
+
+
         client = self.get_docker_client()
         container = client.containers.get(c_name)
 

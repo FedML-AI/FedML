@@ -22,17 +22,55 @@ spec:
         #     nvidia.com/gpu: 1
         command: ["/bin/sh", "-c"]
         args:
-          - while true; do
+          - |
+            echo "[$(date)] App container starting - waiting for ready signal..."
+            attempt=1
+            while [ ! -f /shared-data/ready ]; do
+              echo "[$(date)] Check attempt $attempt: Ready signal not found, waiting..."
+              attempt=$((attempt + 1))
+              sleep 1
+            done
+            echo "[$(date)] ✓ Ready signal received after $((attempt - 1)) attempts!"
+            
+            echo "[$(date)] Shared directory content:"
+            ls -R /shared-data/
+            
+            echo "[$(date)] Content of demo.txt:"
+            cat /shared-data/demo/demo.txt
+            
+            # 继续原有的日志输出
+            while true; do
               echo "[$(date)] Application log message";
               sleep 1;
             done
+        volumeMounts:
+        - name: shared-data
+          mountPath: /shared-data
 
       - name: log-collector
         image: fedml/crictl-ubuntu:v2
         command: ["/bin/bash", "-c"]
         args:
           - |
-            echo "Starting log collector..."
+            echo "[$(date)] Setting up shared directory structure..."
+            # 创建demo目录
+            mkdir -p /shared-data/demo
+            echo "[$(date)] Created demo directory"
+            
+            # 创建示例文件
+            echo "This is a demo file created by log-collector at $(date)" > /shared-data/demo/demo.txt
+            echo "[$(date)] Created demo.txt file"
+            
+            # 延迟10秒创建ready标志
+            echo "[$(date)] Waiting 10 seconds before creating ready signal..."
+            sleep 10
+            
+            # 创建ready标志文件
+            touch /shared-data/ready
+            echo "[$(date)] ✓ Ready signal file created"
+            
+            # 继续原有的日志收集逻辑
+            echo "[$(date)] Starting log collector..."
             
             # 配置 crictl
             cat > /etc/crictl.yaml <<EOF
@@ -96,6 +134,8 @@ spec:
           mountPath: /var/log/pods
         - name: container-logs
           mountPath: /var/log/containers
+        - name: shared-data
+          mountPath: /shared-data
       volumes:
       - name: containerd-sock
         hostPath:
@@ -109,3 +149,5 @@ spec:
         hostPath:
           path: /var/log/containers
           type: Directory
+      - name: shared-data
+        emptyDir: {}

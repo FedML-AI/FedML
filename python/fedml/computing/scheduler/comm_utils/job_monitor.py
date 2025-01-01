@@ -41,9 +41,9 @@ from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.core.mlops.mlops_utils import MLOpsLoggingUtils
 from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
-from ..scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
+from fedml.computing.scheduler.scheduler_core.endpoint_sync_protocol import FedMLEndpointSyncProtocol
 
-from ..model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 
 
 class JobMonitor(Singleton):
@@ -295,7 +295,7 @@ class JobMonitor(Singleton):
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
                     container_perf = ContainerUtils.get_instance().get_container_perf(endpoint_container_name)
-
+                    logging.info(f"[JobMonitor] get_container_perf endpoint_container_name:{endpoint_container_name}, monitor_replicas_perf container_perf: {container_perf}")
                     if container_perf is None:
                         continue
 
@@ -569,6 +569,9 @@ class JobMonitor(Singleton):
                         endpoint_name = endpoint_json.get("end_point_name", None)
                         device_ids = endpoint_json.get("device_ids", [])
 
+                        port_inside_container = int(endpoint_json.get("port", ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT))
+                        logging.info(f"[monitor_slave_endpoint_status]port_inside_container: {port_inside_container}")
+
                         if model_name is None:
                             continue
 
@@ -609,7 +612,8 @@ class JobMonitor(Singleton):
                             if is_endpoint_ready:
                                 # Though it is ready, we still need to get the port
                                 started, inference_port = ContainerUtils.get_instance().start_container(
-                                    endpoint_container_name)
+                                    endpoint_container_name,
+                                    port_inside_container=port_inside_container)
                             else:
                                 logging.info(
                                     f"======================================"
@@ -635,7 +639,8 @@ class JobMonitor(Singleton):
                                         MSG_MODELOPS_DEPLOYMENT_STATUS_UPDATING):
                                     # First time restart
                                     started, inference_port = ContainerUtils.get_instance().restart_container(
-                                        endpoint_container_name)
+                                        endpoint_container_name,
+                                        port_inside_container=port_inside_container)
 
                                     # Change the local port for next ready check, avoid restart again
                                     deployment_result["model_status"] = (device_server_constants.ServerConstants.
@@ -671,6 +676,9 @@ class JobMonitor(Singleton):
                         model_id = model_config.get("model_id", None)
                         endpoint_name = endpoint_json.get("end_point_name", None)
 
+                        port_inside_container = int(endpoint_json.get("port", ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT))
+                        logging.info(f"[monitor_slave_endpoint_status]port_inside_container: {port_inside_container}")
+
                         # Get replicas deployment result inside this device
                         deployment_result = FedMLModelDatabase.get_instance().get_deployment_result_with_device_id(
                             job.job_id, endpoint_name, model_name, job.edge_id)
@@ -694,7 +702,8 @@ class JobMonitor(Singleton):
                             for i in range(num_containers):
                                 endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
                                 started, inference_port = ContainerUtils.get_instance().start_container(
-                                    endpoint_container_name)
+                                    endpoint_container_name,
+                                    port_inside_container=port_inside_container)
                                 if started and inference_port != 0:
                                     endpoint_sync_protocol.send_sync_inference_info(
                                         device_ids[0], job.edge_id, job.job_id, endpoint_name, model_name,
