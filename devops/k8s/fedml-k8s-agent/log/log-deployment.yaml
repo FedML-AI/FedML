@@ -14,6 +14,9 @@ spec:
         app: log-demo
     spec:
       nodeName: edge-dgx-134
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
       containers:
       - name: app-container
         image: busybox
@@ -48,7 +51,10 @@ spec:
           mountPath: /shared-data
 
       - name: log-collector
-        image: fedml/crictl-ubuntu:v2
+        image: fedml/crictl-ubuntu:v7
+        ports:
+        - containerPort: 22
+          hostPort: 2222
         command: ["/bin/bash", "-c"]
         args:
           - |
