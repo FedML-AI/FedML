@@ -7,8 +7,8 @@ from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil
 from fedml.computing.scheduler.comm_utils.gpu_utils.nvidia_utils import NvidiaGPUtil
 from fedml.computing.scheduler.comm_utils.gpu_utils.qualcomm_utils import QualcommNPUtil
 from fedml.computing.scheduler.comm_utils.gpu_utils.k8s_gpu_utils import K8sGPUtil
-from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+from fedml.computing.scheduler.comm_utils.singleton import Singleton
 
 GPU_CARD_UTILS = [NvidiaGPUtil, QualcommNPUtil]
 

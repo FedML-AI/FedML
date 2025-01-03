@@ -9,6 +9,10 @@ class SchedulerConstants:
     ERR_MSG_BINDING_EXIT_RETRYING = "If you don't want to retry logging into MLOps, open another terminal and "\
                                     "run `fedml logout` to logout."
     
+    LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-model-client'
+
+    PORT_INSIDE_CONTAINER_DEFAULT = 2345
+
     # use to identify the scheduler type
     SCHEDULER_TYPE_PARAM_NAME = "SCHEDULER_TYPE"
     SCHEDULER_TYPE_K8S = "K8S"

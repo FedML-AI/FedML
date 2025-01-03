@@ -7,7 +7,6 @@ import os
 from typing import List, Optional, Tuple
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
-from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
 class CriClient:
 

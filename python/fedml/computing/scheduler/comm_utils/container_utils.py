@@ -13,7 +13,6 @@ from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
-from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
@@ -122,7 +121,7 @@ class ContainerUtils(Singleton):
 
         return True
 
-    def restart_container(self, container_name, container_port=ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+    def restart_container(self, container_name, container_port=SchedulerConstants.PORT_INSIDE_CONTAINER_DEFAULT):
         if SchedulerUtils.is_using_k8s():
             # no need to restart container in k8s scheduler
             # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access
@@ -168,7 +167,7 @@ class ContainerUtils(Singleton):
 
         return False
 
-    def start_container(self, container_name, container_port=ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+    def start_container(self, container_name, container_port=SchedulerConstants.PORT_INSIDE_CONTAINER_DEFAULT):
         if SchedulerUtils.is_using_k8s():
             # no need to restart container in k8s scheduler
             # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access

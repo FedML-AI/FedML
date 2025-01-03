@@ -6,9 +6,7 @@ import os
 from docker import DockerClient
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
-from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
-from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
 
 class K8sGPUtil(GPUCardUtil):

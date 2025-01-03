@@ -1,6 +1,6 @@
 import os
+from os.path import expanduser
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 
 
 class SchedulerUtils:
@@ -16,7 +16,7 @@ class SchedulerUtils:
     
     @staticmethod
     def get_current_model_dir() -> str:
-        return os.path.join(ClientConstants.get_model_package_dir(), SchedulerConstants.CURRENT_MODEL_DIR)
+        return os.path.join(SchedulerUtils.get_model_package_dir(), SchedulerConstants.CURRENT_MODEL_DIR)
 
     @staticmethod
     def get_current_model_ready_file() -> str:
@@ -29,3 +29,18 @@ class SchedulerUtils:
         current_model_dir = SchedulerUtils.get_current_model_dir()
         pod_name_file = os.path.join(current_model_dir, SchedulerConstants.K8S_POD_NAME_FILE)
         return pod_name_file
+    
+    @staticmethod
+    def get_model_package_dir():
+        model_packages_dir = os.path.join(SchedulerUtils.get_fedml_home_dir(), "fedml", "model_packages")
+        if not os.path.exists(model_packages_dir):
+            os.makedirs(model_packages_dir, exist_ok=True)
+        return model_packages_dir
+    
+    @staticmethod
+    def get_fedml_home_dir():
+        home_dir = expanduser("~")
+        fedml_home_dir = os.path.join(home_dir, ".fedml", SchedulerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        if not os.path.exists(fedml_home_dir):
+            os.makedirs(fedml_home_dir, exist_ok=True)
+        return fedml_home_dir
