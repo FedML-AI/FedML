@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional, Dict
 
+import json
+import os
 from docker import DockerClient
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
@@ -21,18 +23,27 @@ class K8sGPUtil(GPUCardUtil):
     @staticmethod
     def get_gpu_cards() -> List[GPUCard]:
         try:
-            import json
-            import os
-
-            # Path to GPU info file as defined in the k8s deployment
             current_model_dir = SchedulerUtils.get_current_model_dir()
             gpu_info_path = os.path.join(current_model_dir, SchedulerConstants.K8S_POD_GPU_INFO_FILE)
+            
             if not os.path.exists(gpu_info_path):
                 logging.warning(f"[K8sGPUtil] GPU info file not found at {gpu_info_path}")
                 return []
 
-            with open(gpu_info_path, 'r') as f:
-                gpu_data = json.load(f)
+            try:
+                with open(gpu_info_path, 'r') as f:
+                    gpu_data = json.load(f)
+            except json.JSONDecodeError as e:
+                logging.error(f"[K8sGPUtil] Invalid JSON in GPU info file: {str(e)}")
+                return []
+            except Exception as e:
+                logging.error(f"[K8sGPUtil] Error reading GPU info file: {str(e)}")
+                return []
+
+            # 验证 gpu_data 是列表
+            if not isinstance(gpu_data, list):
+                logging.error("[K8sGPUtil] GPU info file contains invalid data format")
+                return []
 
             gpu_cards = []
             for gpu_info in gpu_data:

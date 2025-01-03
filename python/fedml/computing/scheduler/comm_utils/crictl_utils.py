@@ -4,10 +4,8 @@ import json
 import yaml
 import logging
 import os
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
-from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
-from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
@@ -21,13 +19,23 @@ class CriClient:
         # self.runtime_endpoint = "unix:///run/containerd/containerd.sock"
         pass
     
-    def _run_command(self, cmd):
+    def _run_command(self, cmd) -> Optional[str]:
+        """Execute a command and return its output.
+        Args:
+            cmd: Command to execute (list or string)
+        """
         try:
+            if isinstance(cmd, str):
+                cmd = cmd.split()
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
-            logging.error(f"[CriClient] _run_command Error executing command: {e}")
+            logging.error(f"[CriClient] Command failed with exit code {e.returncode}: {e.cmd}")
+            logging.error(f"Error output: {e.stderr}")
             return None
+        except Exception as e:
+            logging.error(f"[CriClient] Unexpected error executing command: {str(e)}")
+            raise RuntimeError(f"Command execution failed: {str(e)}")
     
     def get_container_name(self) -> str:
         # get container name from file and save it to class variable
@@ -92,9 +100,42 @@ class CriClient:
             return json.loads(output)
         return None
     
-    def get_network_stats(self, pid: int) -> Tuple[float, float]:
+    def get_container_stats(self, container_id: str) -> dict:
+        """Get container stats using crictl"""
+        cmd = f"crictl stats --id {container_id} --output json"
+        result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
+        stats_data = json.loads(result.stdout)
+        
+        if not stats_data or 'stats' not in stats_data or not stats_data['stats']:
+            return None
+            
+        stats = stats_data['stats'][0]
+        
+        # Calculate CPU usage
+        cpu_nano_cores = float(stats['cpu']['usageNanoCores']['value'])
+        cpu_percent = round(cpu_nano_cores / 1e7, 2)  # Convert to percentage
+        
+        # Memory calculations
+        mem_used_bytes = int(stats['memory']['usageBytes']['value'])
+        mem_avail_bytes = int(stats['memory']['availableBytes']['value'])
+        mem_used_mb = round(mem_used_bytes / (1024 * 1024), 1)
+        mem_avail_mb = round(mem_avail_bytes / (1024 * 1024), 1)
+        
+        # Convert timestamp from nanoseconds to readable format
+        timestamp_ns = int(stats['cpu']['timestamp'])
+        timestamp = datetime.fromtimestamp(timestamp_ns / 1e9).isoformat()
+        
+        return {
+            'cpu_percent': cpu_percent,
+            'mem_used_mb': mem_used_mb,
+            'mem_avail_mb': mem_avail_mb,
+            'timestamp': timestamp
+        }
+
+    def get_network_stats(self, container_id: str) -> Tuple[float, float]:
         """Get network statistics from container's network namespace"""
         try:
+            pid = self.get_container_pid(container_id)
             # Read network statistics from the container's network namespace
             cmd = f"nsenter -t {pid} -n cat /proc/net/dev"
             result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
@@ -161,120 +202,6 @@ class CriClient:
         except Exception as e:
             logging.error(f"Failed to get block I/O stats: {e}")
             return 0.0, 0.0
-
-    def get_container_perf(self, container_id: str) -> ContainerUtils.ContainerMetrics:
-        """
-        Get container performance metrics using crictl stats
-        
-        Args:
-            container_id: ID of the container to monitor
-            
-        Returns:
-            ContainerMetrics object containing the performance data
-            
-        Raises:
-            Exception: If unable to execute crictl or container not found
-        """
-        try:
-            # Get container PID for network stats
-            pid = self.get_container_pid(container_id)
-            
-            # Get basic stats from crictl
-            cmd = f"crictl stats --id {container_id} --output json"
-            result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
-            stats_data = json.loads(result.stdout)
-            
-            if not stats_data or 'stats' not in stats_data or not stats_data['stats']:
-                raise Exception("No stats data returned from crictl")
-            
-            stats = stats_data['stats'][0]
-            
-            # Calculate CPU usage
-            cpu_nano_cores = float(stats['cpu']['usageNanoCores']['value'])
-            cpu_percent = round(cpu_nano_cores / 1e7, 2)  # Convert to percentage
-            
-            # Memory calculations
-            mem_used_bytes = int(stats['memory']['usageBytes']['value'])
-            mem_avail_bytes = int(stats['memory']['availableBytes']['value'])
-            mem_used_mb = round(mem_used_bytes / (1024 * 1024), 1)
-            mem_avail_mb = round(mem_avail_bytes / (1024 * 1024), 1)
-            
-            # # Storage calculations
-            # storage_used_bytes = int(stats['writableLayer']['usedBytes']['value'])
-            # storage_used_mb = round(storage_used_bytes / (1024 * 1024), 1)
-            
-            # # Inode usage
-            # inodes_used = int(stats['writableLayer']['inodesUsed']['value'])
-            
-            # Get network stats
-            network_recv_mb, network_sent_mb = self.get_network_stats(pid)
-            
-            # Get block I/O stats
-            blk_read_mb, blk_write_mb = self.get_blkio_stats(container_id)
-            
-            # Convert timestamp from nanoseconds to readable format
-            timestamp_ns = int(stats['cpu']['timestamp'])
-            timestamp = datetime.fromtimestamp(timestamp_ns / 1e9).isoformat()
-
-            # Calculate the gpu usage
-            gpus_stat = self.generate_container_gpu_stats(container_name=container_id)
-
-            # logging all stats
-            logging.info(
-                f"[CriClient] get_container_perf container_id: {container_id}, "
-                f"cpu_percent: {cpu_percent}, mem_used_mb: {mem_used_mb}, "
-                f"mem_avail_mb: {mem_avail_mb}, network_recv_mb: {network_recv_mb}, "
-                f"network_sent_mb: {network_sent_mb}, blk_read_mb: {blk_read_mb}, "
-                f"blk_write_mb: {blk_write_mb}, timestamp: {timestamp}, "
-                f"gpus_stat: {gpus_stat}"
-            )
-            
-            return ContainerUtils.ContainerMetrics(
-                cpu_percent=cpu_percent,
-                mem_used_megabytes=mem_used_mb,
-                mem_avail_megabytes=mem_avail_mb,
-                network_recv_megabytes=network_recv_mb,
-                network_sent_megabytes=network_sent_mb,
-                blk_read_megabytes=blk_read_mb,
-                blk_write_megabytes=blk_write_mb,
-                timestamp=timestamp,
-                gpus_stat=gpus_stat
-            )
-            
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to execute crictl command: {e}")
-            raise
-        except Exception as e:
-            logging.error(f"Error processing container stats: {e}")
-            raise
-    
-    def generate_container_gpu_stats(self, container_name):
-        gpu_ids = HardwareUtil.get_docker_gpu_ids_by_container_name(
-            container_name=container_name,
-            docker_client=None
-        )
-        gpu_stats = self.gpu_stats(gpu_ids)
-        return gpu_stats
-
-    @staticmethod
-    def gpu_stats(gpu_ids: List[int]):
-        utilz, memory, temp = None, None, None
-        gpu_stats_map = {}  # gpu_id: int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}
-        gpu_ids = set(gpu_ids)
-        try:
-            for gpu in HardwareUtil.get_gpus():
-                if gpu.id in gpu_ids:
-                    gpu_stats_map[gpu.id] = {
-                        "gpu_utilization": gpu.load * 100,
-                        "gpu_memory_allocated": gpu.memoryUsed / gpu.memoryTotal * 100,
-                        "gpu_temp": gpu.temperature,
-                        # "gpu_power_usage": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000,   # in watts
-                        # "gpu_time_spent_accessing_memory": utilz.memory   # in ms
-                    }
-        except Exception as e:
-            logging.error(f"Failed to get GPU stats: {e}")
-
-        return gpu_stats_map
 
 # example usage
 if __name__ == "__main__":

@@ -312,10 +312,7 @@ class ContainerUtils(Singleton):
         shared by multiple containers
         """
         if SchedulerUtils.is_using_k8s():
-            cri_client = CriClient()
-            container_id = cri_client.get_container_id()
-            if container_id:
-                return cri_client.get_container_perf(container_id)
+            return self.get_container_perf_in_k8s(c_name)
 
         client = self.get_docker_client()
         container = client.containers.get(c_name)
@@ -389,6 +386,48 @@ class ContainerUtils(Singleton):
         return ContainerUtils.ContainerMetrics(cpu_percent, mem_gb_used, mem_gb_avail, recv_megabytes, sent_megabytes,
                                                blk_read_bytes, blk_write_bytes, timestamp, gpus_stat)
 
+    def get_container_perf_in_k8s(self, c_name: str) -> ContainerMetrics:
+        """
+        Get container performance metrics in k8s environment.
+        """
+        try:
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id()
+            
+            if not container_id:
+                logging.error("Failed to get container ID")
+                return None
+            
+            stats = cri_client.get_container_stats(container_id)
+            if not stats:
+                logging.error("No stats data returned from crictl")
+                return None
+            
+            # Get network stats using container PID
+            network_recv_mb, network_sent_mb = cri_client.get_network_stats(container_id)
+            
+            # Get block I/O stats
+            blk_read_mb, blk_write_mb = cri_client.get_blkio_stats(container_id)
+            
+            # Calculate the gpu usage
+            gpus_stat = self.generate_container_gpu_stats(c_name)
+
+            return ContainerUtils.ContainerMetrics(
+                cpu_percent=stats['cpu_percent'],
+                mem_used_megabytes=stats['mem_used_mb'],
+                mem_avail_megabytes=stats['mem_avail_mb'],
+                network_recv_megabytes=network_recv_mb,
+                network_sent_megabytes=network_sent_mb,
+                blk_read_megabytes=blk_read_mb,
+                blk_write_megabytes=blk_write_mb,
+                timestamp=stats['timestamp'],
+                gpus_stat=gpus_stat
+            )
+            
+        except Exception as e:
+            logging.error(f"Error getting container performance metrics: {str(e)}")
+            return None
+
     def generate_container_gpu_stats(self, container_name):
         client = self.get_docker_client()
         gpu_ids = HardwareUtil.get_docker_gpu_ids_by_container_name(container_name=container_name, docker_client=client)
@@ -420,6 +459,9 @@ class ContainerUtils(Singleton):
         """
         Diff between the host machine's time and the container's time, in seconds
         """
+        if SchedulerUtils.is_using_k8s():
+            return 0
+        
         time_diff = 0
         try:
             client = docker.from_env()

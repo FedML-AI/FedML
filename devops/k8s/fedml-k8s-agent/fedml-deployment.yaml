@@ -32,16 +32,16 @@ spec:
           value: "false"
         - name: FEDML_DEVICE_ID
           value: "edge-dgx-134-000001"
-        # - name: NVIDIA_VISIBLE_DEVICES
-        #   value: "none"
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "none"
         resources:
           requests:
-            # nvidia.com/gpu: 1
-            cpu: "4"
+            nvidia.com/gpu: 0
+            cpu: "2"
             memory: "16Gi"
           limits:
-            # nvidia.com/gpu: 1
-            cpu: "4"
+            nvidia.com/gpu: 0
+            cpu: "2"
             memory: "16Gi"
         volumeMounts:
           - name: shared-model-dir
