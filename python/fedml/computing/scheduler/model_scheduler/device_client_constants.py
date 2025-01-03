@@ -275,6 +275,10 @@ class ClientConstants(object):
 
     @staticmethod
     def is_running_on_k8s():
+        """
+        Check if the current process is running on k8s.
+        This method is not for the k8s scheduler version, but for the legacy AWS k8s solution.
+        """
         running_source = os.getenv(ClientConstants.FEDML_RUNNING_SOURCE_ENV_NAME, default=None)
         if running_source is not None and running_source == ClientConstants.FEDML_RUNNING_SOURCE_ENV_VALUE_K8S:
             return True

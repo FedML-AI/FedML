@@ -9,6 +9,7 @@ from abc import ABC
 from multiprocessing import Queue
 
 import fedml
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsConfigs
 from fedml.core.mlops.mlops_runtime_log import MLOpsFormatter
 from .device_client_constants import ClientConstants
@@ -271,6 +272,15 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         else:
             if model_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                 logging.error(f"Unsupported model status {model_status}.")
+
+            # use k8s scheduler, no need to do rollback if worker deploy failed
+            if SchedulerUtils.is_using_k8s():
+                logging.info(f"using k8s scheduler, no need to do rollback if worker deploy failed")
+                self.send_deployment_status(
+                    end_point_id, end_point_name, payload_json["model_name"], "",
+                    ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                    message_center=self.message_center)
+                return
 
             # Avoid endless loop, if the rollback also failed, we should report the failure to the MLOps
             if self.replica_controller.under_rollback or self.is_fresh_endpoint:

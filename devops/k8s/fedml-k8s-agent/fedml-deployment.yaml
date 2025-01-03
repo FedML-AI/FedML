@@ -1,22 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fedml-agent
+  name: fedml-agent-endpoint-1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fedml-agent
+      app: fedml-agent-endpoint-1
   template:
     metadata:
       labels:
-        app: fedml-agent
+        app: fedml-agent-endpoint-1
     spec:
       nodeName: edge-dgx-134
       dnsConfig:
         nameservers:
           - 8.8.8.8
       containers:
+      # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
         image: fedml/fedml-k8s-agent:202412282240
         imagePullPolicy: IfNotPresent
@@ -35,35 +36,40 @@ spec:
         #   value: "none"
         resources:
           requests:
-            nvidia.com/gpu: 1
+            # nvidia.com/gpu: 1
             cpu: "4"
             memory: "16Gi"
           limits:
-            nvidia.com/gpu: 1
+            # nvidia.com/gpu: 1
             cpu: "4"
             memory: "16Gi"
         volumeMounts:
           - name: shared-model-dir
             mountPath: /root/.fedml/fedml-model-client/fedml/model_packages/current_model
-          - name: source-model-dir
-            mountPath: /root/charlie
-        lifecycle:
-          postStart:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - |
-                echo "[$(date)] Waiting 5 seconds before copying files..." >> /proc/1/fd/1
-                sleep 5
-                echo "[$(date)] Copying files from source directory..." >> /proc/1/fd/1
-                cp -r /root/charlie/2024-11-30-Meta-Llama-3-8B-Instruct1129_model_server/* /root/.fedml/fedml-model-client/fedml/model_packages/current_model/
-                echo "[$(date)] Files copied successfully" >> /proc/1/fd/1
+          # - name: source-model-dir
+          #   mountPath: /root/charlie
+        # lifecycle:
+        #   postStart:
+        #     exec:
+        #       command:
+        #       - /bin/sh
+        #       - -c
+        #       - |
+        #         echo "[$(date)] Waiting 5 seconds before copying files..." >> /proc/1/fd/1
+        #         sleep 5
+        #         echo "[$(date)] Copying files from source directory..." >> /proc/1/fd/1
+        #         cp -r /root/charlie/2024-11-30-Meta-Llama-3-8B-Instruct1129_model_server/* /root/.fedml/fedml-model-client/fedml/model_packages/current_model/
+        #         echo "[$(date)] Files copied successfully" >> /proc/1/fd/1
+      
+        # container-task is fix container name that runs the task(training or inference)
       - name: container-task
         image: fedml/fedml-inference-cuda-12-1-base:v20241129
         # image: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
         ports:
         - containerPort: 2345
+        # Scenario 1: use third party docker image(like openai vllm, only need to provide args)
+        # args: ["$CONTAINER_RUN_COMMAND"]
+        # Scenario 2: use fedml prebuilt docker image
         command: ["/bin/bash", "-c"]
         args:
           - |
@@ -76,13 +82,29 @@ spec:
             done
             echo "[$(date)] ✓ Ready signal received after $((attempt - 1)) attempts!"
             
-            # if bootstrap dir is not empty, then use source command to run the bootstrap script
-            source ${BOOTSTRAP_DIR}
-            echo "[$(date)] Bootstrap script executed, starting the main entry..."
-            python3 ${MAIN_ENTRY}
+            # check if bootstrap dir is not empty
+            if [ ! -z "${BOOTSTRAP_DIR}" ]; then
+              echo "[$(date)] Executing bootstrap script from ${BOOTSTRAP_DIR}"
+              source "${BOOTSTRAP_DIR}"
+            fi
+            
+            # check if container_run_command or main_entry is not empty
+            if [ ! -z "${CONTAINER_RUN_COMMAND}" ]; then
+              echo "[$(date)] Executing CONTAINER_RUN_COMMAND: ${CONTAINER_RUN_COMMAND}"
+              eval "${CONTAINER_RUN_COMMAND}"
+            elif [ ! -z "${MAIN_ENTRY}" ]; then
+              echo "[$(date)] Executing python3 ${MAIN_ENTRY}"
+              python3 "${MAIN_ENTRY}"
+            else
+              echo "[$(date)] ERROR: Neither CONTAINER_RUN_COMMAND nor MAIN_ENTRY is provided!"
+              exit 1
+            fi
         env:
+        # envs below is from fedml library
         - name: FEDML_USER_ENCRYPTED_API_KEY
           value: "818e7a4104d5d72c57c9be4b5af4f112f7d6f55c8ecba16f83d3a9f1a1a14f4d05741c93a72c59e2a8420811b140b983"
+        - name: CONTAINER_RUN_COMMAND
+          value: "ls -l"
         - name: MAIN_ENTRY
           value: "main_openai_vllm.py"
         - name: HOME
@@ -90,9 +112,9 @@ spec:
         - name: BOOTSTRAP_DIR
           value: "/home/fedml/models_serving/fedml-deploy-bootstrap-entry-auto-gen.sh"
         - name: FEDML_CURRENT_EDGE_ID
-          value: "7212"
+          value: "0"
         - name: FEDML_CURRENT_RUN_ID
-          value: "3833"
+          value: "0"
         - name: FEDML_REPLICA_RANK
           value: "0"
         - name: FEDML_CURRENT_VERSION
@@ -103,6 +125,7 @@ spec:
           value: "127.0.0.1"
         - name: FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT
           value: "80"
+        # envs below is from fedml_model_config.yaml(environment_variables)
         - name: HF_HOME
           value: "/home/fedml/fedml_serving/model_and_config"
         - name: HF_TOKEN
@@ -114,21 +137,112 @@ spec:
             mountPath: /home/fedml/models_serving
         resources:
           limits:
-            nvidia.com/gpu: "1"
+            nvidia.com/gpu: "2"
             cpu: "8"
             memory: "32Gi"
           requests:
-            nvidia.com/gpu: "1"
+            nvidia.com/gpu: "2"
             cpu: "8"
             memory: "32Gi"
-
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - |
+                # Find available Python command
+                if command -v python3 >/dev/null 2>&1; then
+                    PYTHON_CMD=python3
+                elif command -v python >/dev/null 2>&1; then
+                    PYTHON_CMD=python
+                else
+                    echo "[ERROR] Python not found in the system"
+                    exit 0
+                fi
+                
+                # Install GPUtil if needed
+                $PYTHON_CMD -m pip install gputil >/dev/null 2>&1 || echo "[WARN] Failed to install GPUtil"
+                
+                # Create a Python script for periodic GPU monitoring
+                MODELS_SERVING_DIR="/home/fedml/models_serving"
+                cat > "${MODELS_SERVING_DIR}/init_container.py" << 'EOF'
+                import GPUtil
+                import json
+                import os
+                import time
+                import sys
+                from datetime import datetime
+                
+                def get_gpu_info():
+                    try:
+                        gpus = GPUtil.getGPUs()
+                        return [{
+                            "id": gpu.id,
+                            "name": gpu.name,
+                            "driver": gpu.driver,
+                            "serial": gpu.serial,
+                            "vendor": "NVIDIA",
+                            "memoryTotal": gpu.memoryTotal,
+                            "memoryFree": gpu.memoryFree,
+                            "memoryUsed": gpu.memoryUsed,
+                            "memoryUtil": gpu.memoryUtil,
+                            "load": gpu.load,
+                            "uuid": gpu.uuid,
+                            "display_mode": gpu.display_mode,
+                            "display_active": gpu.display_active,
+                            "temperature": gpu.temperature
+                        } for gpu in gpus]
+                    except Exception as e:
+                        print(f"[ERROR] Failed to get GPU info: {str(e)}", file=sys.stderr)
+                        return None
+                
+                def write_gpu_info(info, filepath):
+                    if info is not None:
+                        try:
+                            # Write to temporary file first
+                            temp_file = f"{filepath}.tmp"
+                            with open(temp_file, 'w') as f:
+                                json.dump(info, f)
+                            # Atomic rename
+                            os.rename(temp_file, filepath)
+                            print(f"[INFO] GPU information updated at {datetime.now().isoformat()}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to write GPU info: {str(e)}", file=sys.stderr)
+                
+                def main():
+                    # 1. save container name to file
+                    try:
+                        with open('/etc/hostname', 'r') as f:
+                            container_name = f.read().strip()
+                        container_info_file = "/home/fedml/models_serving/current_pod_name"
+                        with open(container_info_file, 'w') as f:
+                            f.write(container_name)
+                        print(f"[INFO] Created container info file: {container_info_file}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to create container info file: {str(e)}", file=sys.stderr)
+                    
+                    # 2. save gpu info to file
+                    gpu_info_output_file = "/home/fedml/models_serving/gpu_info.json"
+                    while True:
+                        gpu_info = get_gpu_info()
+                        write_gpu_info(gpu_info, gpu_info_output_file)
+                        time.sleep(15)  # Update every 15 seconds
+                
+                if __name__ == "__main__":
+                    main()
+                EOF
+                
+                # Start the monitoring script in background
+                nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py > $MODELS_SERVING_DIR/init_container.log 2>&1 &
+                echo $! > $MODELS_SERVING_DIR/init_container.pid
       volumes:
       - name: shared-model-dir
         emptyDir: {}
-      - name: source-model-dir
-        hostPath:
-          path: /root/charlie
-          type: Directory
+      # - name: source-model-dir
+      #   hostPath:
+      #     path: /root/charlie
+      #     type: Directory
       
       
       # Required for NVIDIA GPU support

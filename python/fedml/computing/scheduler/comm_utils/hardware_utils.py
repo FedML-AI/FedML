@@ -43,7 +43,9 @@ class HardwareUtil(metaclass=Singleton):
         if cls.__gpu_util is not None:
             return cls.__gpu_util
         
+        # use k8s scheduler, return K8sGPUtil
         if SchedulerUtils.is_using_k8s():
+            logging.info(f"using k8s scheduler, return K8sGPUtil")
             cls.__gpu_util = K8sGPUtil()
             return cls.__gpu_util
 

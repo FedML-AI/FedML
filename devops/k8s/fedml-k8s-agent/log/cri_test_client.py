@@ -2,7 +2,7 @@ import subprocess
 from datetime import datetime, timezone, timedelta
 import json
 
-class CriClient:
+class CriTestClient:
     def __init__(self):
         # self.runtime_endpoint = "unix:///run/containerd/containerd.sock"
         pass
@@ -64,7 +64,7 @@ class CriClient:
 
 # 使用示例
 if __name__ == "__main__":
-    client = CriClient()
+    client = CriTestClient()
     
     # 获取容器ID
     container_id = client.get_container_id("app-container")

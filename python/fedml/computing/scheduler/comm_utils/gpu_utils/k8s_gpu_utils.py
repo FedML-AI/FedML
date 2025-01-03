@@ -2,8 +2,11 @@ import logging
 from typing import List, Optional, Dict
 
 from docker import DockerClient
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCard, GPUCardUtil, GPUCardType
 from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
 
 class K8sGPUtil(GPUCardUtil):
@@ -18,45 +21,43 @@ class K8sGPUtil(GPUCardUtil):
     @staticmethod
     def get_gpu_cards() -> List[GPUCard]:
         try:
-            cri_client = CriClient()
-            # Get container IDs for containers with name containing "container-task"
-            container_ids = cri_client._run_command(
-                ["crictl", "ps", "-q", "--name", "container-task"]
-            ).strip().split('\n')
-            
-            gpu_cards = set()  # Use set to avoid duplicates
-            gpu_index = 0  # Initialize counter for auto-incrementing GPU IDs
+            import json
+            import os
 
-            for container_id in container_ids:
-                if not container_id:  # Skip empty strings
-                    continue
-                    
-                gpu_info = cri_client.get_gpu_info(container_id)
-                if gpu_info and gpu_info['gpu_ids']:
-                    for gpu_id in gpu_info['gpu_ids']:
-                        gpu_cards.add(GPUCard(
-                            id=gpu_index,
-                            name=str(gpu_id),
-                            driver="",
-                            serial="",
-                            vendor="",
-                            memoryTotal=0,
-                            memoryFree=0,
-                            memoryUsed=0,
-                            memoryUtil=0,
-                            load=0,
-                            device_path="",
-                            uuid=str(gpu_id),
-                            display_mode="",
-                            display_active="",
-                            temperature=0
-                        ))
-                        gpu_index += 1
-            print(f"[K8sGPUtil] get_gpu_cards Detected {len(gpu_cards)} GPU cards, gpu_cards: {gpu_cards}")
-            return list(gpu_cards)
-            
+            # Path to GPU info file as defined in the k8s deployment
+            current_model_dir = SchedulerUtils.get_current_model_dir()
+            gpu_info_path = os.path.join(current_model_dir, SchedulerConstants.K8S_POD_GPU_INFO_FILE)
+            if not os.path.exists(gpu_info_path):
+                logging.warning(f"[K8sGPUtil] GPU info file not found at {gpu_info_path}")
+                return []
+
+            with open(gpu_info_path, 'r') as f:
+                gpu_data = json.load(f)
+
+            gpu_cards = []
+            for gpu_info in gpu_data:
+                card = GPUCard(
+                    id=gpu_info["id"],
+                    name=gpu_info["name"],
+                    driver=gpu_info["driver"],
+                    serial=gpu_info["serial"],
+                    vendor=gpu_info["vendor"],
+                    memoryTotal=gpu_info["memoryTotal"],
+                    memoryFree=gpu_info["memoryFree"],
+                    memoryUsed=gpu_info["memoryUsed"],
+                    memoryUtil=gpu_info["memoryUtil"],
+                    load=gpu_info["load"],
+                    uuid=gpu_info["uuid"],
+                    display_mode=gpu_info["display_mode"],
+                    display_active=gpu_info["display_active"],
+                    temperature=gpu_info["temperature"]
+                )
+                gpu_cards.append(card)
+            logging.info(f"[K8sGPUtil] get_gpu_cards gpu_cards: {gpu_cards}")
+            return gpu_cards
+
         except Exception as e:
-            logging.error(f"[K8sGPUtil] get_gpu_cards Failed to get GPU cards: {e}")
+            logging.error(f"[K8sGPUtil] Error reading GPU information: {str(e)}")
             return []
 
     @staticmethod

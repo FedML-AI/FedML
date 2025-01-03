@@ -3,33 +3,54 @@ from datetime import datetime, timezone, timedelta
 import json
 import yaml
 import logging
+import os
 from typing import List, Tuple
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.container_utils import ContainerUtils
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+from fedml.computing.scheduler.slave.client_constants import ClientConstants
 
 class CriClient:
+
+    # all instances share the same container name
+    shared_container_name = None
+    shared_container_id = None
+
     def __init__(self):
         # self.runtime_endpoint = "unix:///run/containerd/containerd.sock"
         pass
     
     def _run_command(self, cmd):
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            stdout = result.stdout.strip()
-            logging.info(f"[CriClient] _run_command cmd: {cmd}, result: {stdout}")
-            return stdout
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return result.stdout.strip()
         except subprocess.CalledProcessError as e:
             logging.error(f"[CriClient] _run_command Error executing command: {e}")
             return None
     
-    def get_container_id(self, name):
-        cmd = ["crictl", "ps", "-q", "--name", name]
-        return self._run_command(cmd).strip()
+    def get_container_name(self) -> str:
+        # get container name from file and save it to class variable
+        if CriClient.shared_container_name is None:
+            current_model_dir = SchedulerUtils.get_current_model_dir()
+            pod_name_file = os.path.join(current_model_dir, SchedulerConstants.K8S_POD_NAME_FILE)
+            cmd = ["cat", pod_name_file]
+            CriClient.shared_container_name = self._run_command(cmd).strip()
+            logging.info(f"[CriClient] get_container_name: {CriClient.shared_container_name}")
+        return CriClient.shared_container_name 
+    
+    def get_container_id(self):
+        # use fixed shared container name because one pod only has one container-task
+        if CriClient.shared_container_id is None:
+            pod_name = self.get_container_name()
+            # First get pod ID
+            cmd = ["crictl", "pods", "--name", pod_name, "-q"]
+            pod_id = self._run_command(cmd).strip()
+            if pod_id:
+                cmd = ["crictl", "ps", "-q", "--pod", pod_id, "--name", SchedulerConstants.K8S_POD_CONTAINER_TASK_NAME]
+                CriClient.shared_container_id = self._run_command(cmd).strip()
+                logging.info(f"[CriClient] get_container_id: {CriClient.shared_container_id}")
+        return CriClient.shared_container_id
     
     def get_container_pid(self, container_id: str) -> int:
         """Get container PID using crictl inspect"""
@@ -43,7 +64,7 @@ class CriClient:
             raise
     
     def get_logs(self, container_id, since=None, follow=False, timestamps=False):
-        """获取容器日志
+        """get container logs using crictl
         Args:
             container_id: container id
             since: show logs since a specific time
@@ -69,27 +90,6 @@ class CriClient:
         output = self._run_command(cmd)
         if output:
             return json.loads(output)
-        return None
-    
-    def get_gpu_info(self, container_id):
-        """获取容器的GPU信息"""
-        info = self.inspect_container(container_id)
-        if not info:
-            return None
-        
-        try:
-            envs = info['info']['config']['envs']
-            for env in envs:
-                if env.get('key') == 'NVIDIA_VISIBLE_DEVICES':
-                    gpu_list = env['value'].split(',')
-                    gpu_info = {
-                        'gpu_ids': gpu_list,
-                        'count': len(gpu_list)
-                    }
-                    logging.info(f"[CriClient] get_gpu_info container_id: {container_id}, gpu_info: {gpu_info}")
-                    return gpu_info
-        except (KeyError, TypeError):
-            logging.error(f"[CriClient] get_gpu_info Failed to get GPU info for container {container_id}")
         return None
     
     def get_network_stats(self, pid: int) -> Tuple[float, float]:
@@ -276,16 +276,16 @@ class CriClient:
 
         return gpu_stats_map
 
-# 使用示例
+# example usage
 if __name__ == "__main__":
     client = CriClient()
     
     # 获取容器ID
-    container_id = client.get_container_id("app-container")
+    container_id = client.get_container_id()
     if container_id:
         print(f"Container ID: {container_id}")
         
-        # 获取并打印GPU信息
+        # get and print gpu info
         gpu_info = client.get_gpu_info(container_id)
         if gpu_info:
             print(f"GPU Count: {gpu_info['count']}")
@@ -293,12 +293,12 @@ if __name__ == "__main__":
         else:
             print("No GPU information found")
         
-        # # 获取容器信息
+        # # get container info
         # info = client.inspect_container(container_id)
         # if info:
         #     print("Container info:", json.dumps(info, indent=2))
         
-        # 获取最近1分钟的日志
+        # get recent 1 minute logs
         one_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         logs = client.get_logs(container_id, since=one_min_ago)
         print("Recent logs:", logs)
