@@ -5,8 +5,21 @@ FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH=/root/miniconda3/bin:$PATH
 
+# Set default environment variables (these can be overridden in K8s deployment)
+ENV FEDML_API_KEY=""
+ENV FEDML_ENV="production"
+ENV FEDML_PROVIDER="false"
+ENV FEDML_DEVICE_ID=""
+ENV INFERENCE_GATEWAY_PORT=""
+ENV INFERENCE_PROXY_PORT=""
+ENV FEDML_CONNECTION_TYPE=""
+
+# Add build argument to bypass cache
+ARG CACHEBUST=1
+
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
     wget \
     curl \
     iproute2 \
@@ -23,23 +36,18 @@ RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyri
     | tee /etc/apt/sources.list.d/redis.list \
     && apt-get update \
     && apt-get install -y redis \
-    && rm -rf /var/lib/apt/lists/* \
-    # Install crictl
-    && wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.31.1/crictl-v1.31.1-linux-amd64.tar.gz \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install crictl
+RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.31.1/crictl-v1.31.1-linux-amd64.tar.gz \
     && tar -zxvf crictl-v1.31.1-linux-amd64.tar.gz \
     && mv crictl /usr/local/bin/ \
-    && rm crictl-v1.31.1-linux-amd64.tar.gz \
-    # Install Miniconda
-    && wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+    && rm crictl-v1.31.1-linux-amd64.tar.gz
+
+# Install Miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
     && bash /tmp/miniconda.sh -b -p /root/miniconda3 \
-    && rm /tmp/miniconda.sh \
-    # Initialize conda and install FedML
-    && conda init bash \
-    && . /root/.bashrc \
-    && conda create -y -n fedml python=3.10 \
-    && conda activate fedml \
-    && pip install --upgrade gevent multiprocess \
-    && pip install "git+https://github.com/FedML-AI/FedML.git@k8s/dev/v0.7.0#egg=fedml&subdirectory=python"
+    && rm /tmp/miniconda.sh
 
 # Setup crictl configuration
 RUN echo 'runtime-endpoint: unix:///run/containerd/containerd.sock\n\
@@ -51,13 +59,13 @@ debug: false' > /etc/crictl.yaml
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Set default environment variables (these can be overridden in K8s deployment)
-ENV FEDML_API_KEY=""
-ENV FEDML_ENV="production"
-ENV FEDML_PROVIDER="false"
-ENV FEDML_DEVICE_ID=""
-ENV INFERENCE_GATEWAY_PORT=""
-ENV INFERENCE_PROXY_PORT=""
-ENV FEDML_CONNECTION_TYPE=""
+# Activate conda and install FedML
+RUN echo "Cache bust: $CACHEBUST" \
+    && conda init bash \
+    && . ~/.bashrc \
+    && conda create -y -n fedml python=3.10 \
+    && conda activate fedml \
+    && pip install --upgrade gevent multiprocess \
+    && pip install "git+https://github.com/FedML-AI/FedML.git@k8s/dev/v0.7.0#egg=fedml&subdirectory=python"
 
 ENTRYPOINT ["/entrypoint.sh"]

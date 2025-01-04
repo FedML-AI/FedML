@@ -11,6 +11,9 @@ class SchedulerConstants:
     
     LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-model-client'
 
+    ENV_MODEL_INFERENCE_PORT_IN_K8S = "MODEL_INFERENCE_PORT_IN_K8S"
+    MODEL_INFERENCE_DEFAULT_PORT_IN_K8S = 2204
+
     PORT_INSIDE_CONTAINER_DEFAULT = 2345
 
     # use to identify the scheduler type

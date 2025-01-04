@@ -17,6 +17,7 @@ import requests
 
 from fedml import mlops
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.scheduler_core.compute_cache_manager import ComputeCacheManager
 from fedml.computing.scheduler.slave import client_data_interface
 from fedml.computing.scheduler.master import server_data_interface
@@ -943,6 +944,10 @@ class JobMonitor(Singleton):
 
     def _check_all_slave_endpoint_status(self, endpoint_id, endpoint_name, model_name,
                                          server_internal_port=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT):
+        # If using k8s, use the port in k8s deployment env setting
+        if SchedulerUtils.is_using_k8s():
+            server_internal_port = SchedulerUtils.get_model_inference_gateway_port_in_k8s()
+
         # Get model deployment result
         is_endpoint_offline = True
         gateway_device_id = None

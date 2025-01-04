@@ -11,6 +11,11 @@ class SchedulerUtils:
         return scheduler_env == SchedulerConstants.SCHEDULER_TYPE_K8S
     
     @staticmethod
+    def get_model_inference_gateway_port_in_k8s() -> int:
+        return os.getenv(SchedulerConstants.ENV_MODEL_INFERENCE_PORT_IN_K8S, 
+                         SchedulerConstants.MODEL_INFERENCE_DEFAULT_PORT_IN_K8S)
+    
+    @staticmethod
     def get_replicate_num_per_pod() -> int:
         return SchedulerConstants.REPLICATE_NUM_PER_POD
     

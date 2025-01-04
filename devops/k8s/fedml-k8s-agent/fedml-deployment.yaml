@@ -19,9 +19,14 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501041800
+        image: fedml/fedml-k8s-agent:202501042245
         imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 2204
+          hostPort: 2204
         env:
+        - name: MODEL_INFERENCE_PORT_IN_K8S
+          value: "2204"
         - name: SCHEDULER_TYPE
           value: "K8S"
         - name: FEDML_API_KEY
