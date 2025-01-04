@@ -295,10 +295,10 @@ class JobMonitor(Singleton):
                 for i in range(num_containers):
                     endpoint_container_name = endpoint_container_name_prefix + f"__{i}"
                     container_perf = ContainerUtils.get_instance().get_container_perf(endpoint_container_name)
-                    logging.info(f"[JobMonitor] get_container_perf endpoint_container_name:{endpoint_container_name}, monitor_replicas_perf container_perf: {container_perf}")
                     if container_perf is None:
                         continue
-
+                    
+                    logging.info(f"[JobMonitor] get_container_perf endpoint_container_name:{endpoint_container_name}, monitor_replicas_perf container_perf: {container_perf.show()}")
                     metrics_of_all_gpus = []
                     for gpu_id, gpu_perf in container_perf.gpus_stat.items():
                         # gpu_id:int -> {"gpu_utilization", "gpu_memory_allocated", "gpu_temp"}

@@ -294,15 +294,27 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
     # Check container readiness
     deploy_attempt = 0
     retry_interval = 10
+    last_log_time = datetime.datetime.now()
+
     while True:
         logging.info(f"Attempt: {deploy_attempt} / {usr_indicated_retry_cnt} ...")
         try:
+            # Check container logs
+            container_logs = ContainerUtils.get_instance().get_container_logs_since(
+                None, since_time=last_log_time, timestamps=True)
+            if container_logs:
+                logging.info(f"{format(container_logs)}")
+
+            # Update last log time
+            last_log_time = datetime.datetime.now()
+
             # in k8s scheduler, inference_http_port is the port inside the container, use 127.0.0.1:port to access it
             inference_output_url, model_version, ret_model_metadata, ret_model_config = \
                 check_container_readiness(inference_http_port=port_inside_container, infer_host=infer_host,
                                           readiness_check=customized_readiness_check,
                                           request_input_example=request_input_example,
                                           customized_uri=customized_uri)
+            logging.info(f"check_container_readiness inference_output_url: {inference_output_url}")
             if inference_output_url != "":
                 logging.info("Log test for deploying model successfully, inference url: {}, "
                              "model metadata: {}, model config: {}".
@@ -552,7 +564,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
             pass
         if not response or response.status_code != 200:
             return "", "", {}, {}
-
+        logging.info(f"check container readiness success, infer host: {infer_url_host}, port: {inference_http_port}")
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
     else:
         if not isinstance(readiness_check, dict):
@@ -601,7 +613,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
                         path = "/" + path
             # TODO(raphael): Finalized more customized URI types
         readiness_check_url = f"http://{infer_url_host}:{inference_http_port}{path}"
-
+        logging.info(f"check container readiness success, readiness_check_url: {readiness_check_url}")
         return readiness_check_url, None, model_metadata, None
 
 

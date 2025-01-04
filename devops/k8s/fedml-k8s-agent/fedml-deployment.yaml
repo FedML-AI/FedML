@@ -19,7 +19,7 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501041530
+        image: fedml/fedml-k8s-agent:202501041800
         imagePullPolicy: IfNotPresent
         env:
         - name: SCHEDULER_TYPE
@@ -44,6 +44,8 @@ spec:
             cpu: "2"
             memory: "16Gi"
         volumeMounts:
+          - name: containerd-sock
+            mountPath: /run/containerd/containerd.sock
           - name: shared-model-dir
             mountPath: /root/.fedml/fedml-model-client/fedml/model_packages/current_model
           # - name: source-model-dir
@@ -55,11 +57,8 @@ spec:
         #       - /bin/sh
         #       - -c
         #       - |
-        #         echo "[$(date)] Waiting 5 seconds before copying files..." >> /proc/1/fd/1
-        #         sleep 5
-        #         echo "[$(date)] Copying files from source directory..." >> /proc/1/fd/1
-        #         cp -r /root/charlie/2024-11-30-Meta-Llama-3-8B-Instruct1129_model_server/* /root/.fedml/fedml-model-client/fedml/model_packages/current_model/
-        #         echo "[$(date)] Files copied successfully" >> /proc/1/fd/1
+        #         # check if crictl is configured
+        #         ls -l /etc/crictl.yaml
       
         # container-task is fix container name that runs the task(training or inference)
       - name: container-task
@@ -103,8 +102,8 @@ spec:
         # envs below is from fedml library
         - name: FEDML_USER_ENCRYPTED_API_KEY
           value: "818e7a4104d5d72c57c9be4b5af4f112f7d6f55c8ecba16f83d3a9f1a1a14f4d05741c93a72c59e2a8420811b140b983"
-        - name: CONTAINER_RUN_COMMAND
-          value: "ls -l"
+        # - name: CONTAINER_RUN_COMMAND
+        #   value: "ls -l"
         - name: MAIN_ENTRY
           value: "main_openai_vllm.py"
         - name: HOME
@@ -133,8 +132,6 @@ spec:
         - name: INFERENCE_CONFIG
           value: "config/inference/meta-llama--Meta-Llama-3-8B-Instruct.yaml"
         volumeMounts:
-          - name: containerd-sock
-            mountPath: /run/containerd/containerd.sock
           - name: shared-model-dir
             mountPath: /home/fedml/models_serving
         resources:
@@ -153,14 +150,6 @@ spec:
               - /bin/sh
               - -c
               - |
-                # Setting up crictl configuration
-                cat > /etc/crictl.yaml <<EOF
-                runtime-endpoint: unix:///run/containerd/containerd.sock
-                image-endpoint: unix:///run/containerd/containerd.sock
-                timeout: 30
-                debug: false
-                EOF
-
                 # Find available Python command
                 if command -v python3 >/dev/null 2>&1; then
                     PYTHON_CMD=python3

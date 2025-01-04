@@ -1,5 +1,4 @@
-# nerdctl build -t fedml/fedml-k8s-agent:202412271540 -f /root/fedml-k8s-agent/Dockerfile .
-# Use ubuntu 22.04 as base image
+# docker build -t fedml/fedml-k8s-agent:202412271540 -f /root/fedml-k8s-agent/Dockerfile .
 FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 
 # Set environment variables
@@ -24,25 +23,29 @@ RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyri
     | tee /etc/apt/sources.list.d/redis.list \
     && apt-get update \
     && apt-get install -y redis \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install crictl
-RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.31.1/crictl-v1.31.1-linux-amd64.tar.gz \
+    && rm -rf /var/lib/apt/lists/* \
+    # Install crictl
+    && wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.31.1/crictl-v1.31.1-linux-amd64.tar.gz \
     && tar -zxvf crictl-v1.31.1-linux-amd64.tar.gz \
     && mv crictl /usr/local/bin/ \
-    && rm crictl-v1.31.1-linux-amd64.tar.gz
-
-# Install Miniconda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+    && rm crictl-v1.31.1-linux-amd64.tar.gz \
+    # Install Miniconda
+    && wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
     && bash /tmp/miniconda.sh -b -p /root/miniconda3 \
-    && rm /tmp/miniconda.sh
-
-# Initialize conda and install FedML
-RUN conda init bash \
+    && rm /tmp/miniconda.sh \
+    # Initialize conda and install FedML
+    && conda init bash \
     && . /root/.bashrc \
     && conda create -y -n fedml python=3.10 \
+    && conda activate fedml \
     && pip install --upgrade gevent multiprocess \
     && pip install "git+https://github.com/FedML-AI/FedML.git@k8s/dev/v0.7.0#egg=fedml&subdirectory=python"
+
+# Setup crictl configuration
+RUN echo 'runtime-endpoint: unix:///run/containerd/containerd.sock\n\
+image-endpoint: unix:///run/containerd/containerd.sock\n\
+timeout: 30\n\
+debug: false' > /etc/crictl.yaml
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
