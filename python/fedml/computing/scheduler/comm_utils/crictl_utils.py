@@ -27,22 +27,27 @@ class CriClient:
             if isinstance(cmd, str):
                 cmd = cmd.split()
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return result.stdout.strip()
+            if result and result.stdout:
+                return result.stdout.strip()
+            return None
         except subprocess.CalledProcessError as e:
             logging.error(f"[CriClient] Command failed with exit code {e.returncode}: {e.cmd}")
             logging.error(f"Error output: {e.stderr}")
             return None
         except Exception as e:
             logging.error(f"[CriClient] Unexpected error executing command: {str(e)}")
-            raise RuntimeError(f"Command execution failed: {str(e)}")
+            return None
     
     def get_container_name(self) -> str:
         # get container name from file and save it to class variable
         if CriClient.shared_container_name is None:
             current_model_dir = SchedulerUtils.get_current_model_dir()
             pod_name_file = os.path.join(current_model_dir, SchedulerConstants.K8S_POD_NAME_FILE)
+            if not os.path.exists(pod_name_file):
+                logging.error(f"[CriClient] Pod name file not found: {pod_name_file}")
+                return None
             cmd = ["cat", pod_name_file]
-            CriClient.shared_container_name = self._run_command(cmd).strip()
+            CriClient.shared_container_name = self._run_command(cmd)
             logging.info(f"[CriClient] get_container_name: {CriClient.shared_container_name}")
         return CriClient.shared_container_name 
     
@@ -50,13 +55,22 @@ class CriClient:
         # use fixed shared container name because one pod only has one container-task
         if CriClient.shared_container_id is None:
             pod_name = self.get_container_name()
+            if not pod_name:
+                logging.error("[CriClient] Failed to get container name")
+                return None
             # First get pod ID
             cmd = ["crictl", "pods", "--name", pod_name, "-q"]
-            pod_id = self._run_command(cmd).strip()
-            if pod_id:
-                cmd = ["crictl", "ps", "-q", "--pod", pod_id, "--name", SchedulerConstants.K8S_POD_CONTAINER_TASK_NAME]
-                CriClient.shared_container_id = self._run_command(cmd).strip()
-                logging.info(f"[CriClient] get_container_id: {CriClient.shared_container_id}")
+            pod_id = self._run_command(cmd)
+            if not pod_id:
+                logging.error("[CriClient] Failed to get pod ID")
+                return None
+            cmd = ["crictl", "ps", "-q", "--pod", pod_id, "--name", SchedulerConstants.K8S_POD_CONTAINER_TASK_NAME]
+            container_id = self._run_command(cmd)
+            if not container_id:
+                logging.error("[CriClient] Failed to get container ID")
+                return None
+            CriClient.shared_container_id = container_id
+            logging.info(f"[CriClient] get_container_id: {CriClient.shared_container_id}")
         return CriClient.shared_container_id
     
     def get_container_pid(self, container_id: str) -> int:
@@ -64,12 +78,13 @@ class CriClient:
         try:
             container_info = self.inspect_container(container_id)
             if not container_info:
-                raise Exception("Failed to inspect container")
+                logging.error("[CriClient] Failed to inspect container")
+                return None
             return container_info['info']['pid']
         except Exception as e:
             logging.error(f"Failed to get container PID: {e}")
-            raise
-    
+            return None
+        
     def get_logs(self, container_id, since=None, follow=False, timestamps=False):
         """get container logs using crictl
         Args:
@@ -135,6 +150,9 @@ class CriClient:
         """Get network statistics from container's network namespace"""
         try:
             pid = self.get_container_pid(container_id)
+            if not pid:
+                logging.error("[CriClient] Failed to get container PID")
+                return 0.0, 0.0
             # Read network statistics from the container's network namespace
             cmd = f"nsenter -t {pid} -n cat /proc/net/dev"
             result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
@@ -165,7 +183,8 @@ class CriClient:
             # First try to find the cgroup path
             container_info = self.inspect_container(container_id)
             if not container_info:
-                raise Exception("Failed to inspect container")
+                logging.error("Failed to inspect container")
+                return 0.0, 0.0
             
             # Get cgroup path from container info
             cgroup_path = container_info['info']['runtimeSpec']['linux']['cgroupsPath']

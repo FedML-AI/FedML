@@ -26,6 +26,12 @@ RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyri
     && apt-get install -y redis \
     && rm -rf /var/lib/apt/lists/*
 
+# Install crictl
+RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.31.1/crictl-v1.31.1-linux-amd64.tar.gz \
+    && tar -zxvf crictl-v1.31.1-linux-amd64.tar.gz \
+    && mv crictl /usr/local/bin/ \
+    && rm crictl-v1.31.1-linux-amd64.tar.gz
+
 # Install Miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
     && bash /tmp/miniconda.sh -b -p /root/miniconda3 \
@@ -35,7 +41,6 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -
 RUN conda init bash \
     && . /root/.bashrc \
     && conda create -y -n fedml python=3.10 \
-    && conda activate fedml \
     && pip install --upgrade gevent multiprocess \
     && pip install "git+https://github.com/FedML-AI/FedML.git@k8s/dev/v0.7.0#egg=fedml&subdirectory=python"
 

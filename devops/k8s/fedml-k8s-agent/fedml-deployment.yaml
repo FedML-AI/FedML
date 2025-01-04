@@ -133,6 +133,8 @@ spec:
         - name: INFERENCE_CONFIG
           value: "config/inference/meta-llama--Meta-Llama-3-8B-Instruct.yaml"
         volumeMounts:
+          - name: containerd-sock
+            mountPath: /run/containerd/containerd.sock
           - name: shared-model-dir
             mountPath: /home/fedml/models_serving
         resources:
@@ -151,6 +153,14 @@ spec:
               - /bin/sh
               - -c
               - |
+                # Setting up crictl configuration
+                cat > /etc/crictl.yaml <<EOF
+                runtime-endpoint: unix:///run/containerd/containerd.sock
+                image-endpoint: unix:///run/containerd/containerd.sock
+                timeout: 30
+                debug: false
+                EOF
+
                 # Find available Python command
                 if command -v python3 >/dev/null 2>&1; then
                     PYTHON_CMD=python3
@@ -237,6 +247,10 @@ spec:
                 nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py > $MODELS_SERVING_DIR/init_container.log 2>&1 &
                 echo $! > $MODELS_SERVING_DIR/init_container.pid
       volumes:
+      - name: containerd-sock
+        hostPath:
+          path: /run/containerd/containerd.sock
+          type: Socket
       - name: shared-model-dir
         emptyDir: {}
       # - name: source-model-dir
