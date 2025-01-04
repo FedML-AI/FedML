@@ -44,6 +44,10 @@ spec:
             cpu: "2"
             memory: "16Gi"
         volumeMounts:
+          - name: pod-logs
+            mountPath: /var/log/pods
+          - name: container-logs
+            mountPath: /var/log/containers
           - name: containerd-sock
             mountPath: /run/containerd/containerd.sock
           - name: shared-model-dir
@@ -236,6 +240,14 @@ spec:
                 nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py > $MODELS_SERVING_DIR/init_container.log 2>&1 &
                 echo $! > $MODELS_SERVING_DIR/init_container.pid
       volumes:
+      - name: pod-logs
+        hostPath:
+          path: /var/log/pods
+          type: Directory
+      - name: container-logs
+        hostPath:
+          path: /var/log/containers
+          type: Directory
       - name: containerd-sock
         hostPath:
           path: /run/containerd/containerd.sock

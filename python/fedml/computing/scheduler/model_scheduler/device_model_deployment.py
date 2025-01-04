@@ -303,7 +303,7 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
             container_logs = ContainerUtils.get_instance().get_container_logs_since(
                 None, since_time=last_log_time, timestamps=True)
             if container_logs:
-                logging.info(f"{format(container_logs)}")
+                logging.info(f"container_logs: {container_logs}")
 
             # Update last log time
             last_log_time = datetime.datetime.now()
@@ -318,7 +318,7 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
             if inference_output_url != "":
                 logging.info("Log test for deploying model successfully, inference url: {}, "
                              "model metadata: {}, model config: {}".
-                             format(inference_output_url, model_metadata, ret_model_config))
+                             format(inference_output_url, ret_model_metadata, ret_model_config))
                 # Successfully get the result from the container
                 model_metadata = ret_model_metadata
                 model_metadata["liveliness_check"] = customized_liveliness_check
