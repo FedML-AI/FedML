@@ -73,7 +73,7 @@ class K8sGPUtil(GPUCardUtil):
     def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
         gpu_cards = K8sGPUtil.get_gpu_cards()
         gpu_ids = [card.id for card in gpu_cards]
-        logging.info(f"[K8sGPUtil] get_available_gpu_card_ids gpu_ids: {gpu_ids}")
+        # logging.info(f"[K8sGPUtil] get_available_gpu_card_ids gpu_ids: {gpu_ids}")
         return gpu_ids
 
     @staticmethod
