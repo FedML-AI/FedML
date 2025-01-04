@@ -74,7 +74,7 @@ spec:
           - |
             echo "[$(date)] container-task starting - waiting for starting signal..."
             attempt=1
-            while [ ! -f /home/fedml/models_serving/ready ]; do
+            while [ ! -f /home/fedml/models_serving/.ready ]; do
               echo "[$(date)] Check attempt $attempt: Ready signal not found, waiting..."
               attempt=$((attempt + 1))
               sleep 5
@@ -214,7 +214,7 @@ spec:
                     try:
                         with open('/etc/hostname', 'r') as f:
                             container_name = f.read().strip()
-                        container_info_file = "/home/fedml/models_serving/current_pod_name"
+                        container_info_file = "/home/fedml/models_serving/.current_pod_name"
                         with open(container_info_file, 'w') as f:
                             f.write(container_name)
                         print(f"[INFO] Created container info file: {container_info_file}")
@@ -222,7 +222,7 @@ spec:
                         print(f"[ERROR] Failed to create container info file: {str(e)}", file=sys.stderr)
                     
                     # 2. save gpu info to file
-                    gpu_info_output_file = "/home/fedml/models_serving/gpu_info.json"
+                    gpu_info_output_file = "/home/fedml/models_serving/.gpu_info.json"
                     while True:
                         gpu_info = get_gpu_info()
                         write_gpu_info(gpu_info, gpu_info_output_file)

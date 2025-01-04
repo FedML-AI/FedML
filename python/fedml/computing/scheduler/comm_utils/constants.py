@@ -24,9 +24,9 @@ class SchedulerConstants:
 
     # k8s pod file name
     CURRENT_MODEL_DIR = "current_model"
-    K8S_POD_NAME_FILE = "current_pod_name"
-    K8S_POD_GPU_INFO_FILE = "gpu_info.json"
-    K8S_POD_READY_FILE = "ready"
+    K8S_POD_NAME_FILE = ".current_pod_name"
+    K8S_POD_GPU_INFO_FILE = ".gpu_info.json"
+    K8S_POD_READY_FILE = ".ready"
 
     PLATFORM_TYPE_FALCON = "falcon"
     PLATFORM_TYPE_OCTOPUS = "octopus"
