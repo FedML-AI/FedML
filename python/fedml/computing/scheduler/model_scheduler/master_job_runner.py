@@ -458,6 +458,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                print(f"uvicorn run port: {inference_port} in master_job_runner")
                 inference_gateway_process = ServerConstants.exec_console_with_script(f"{python_program} "
                                                                                      f"-m uvicorn {inference_gw_cmd} "
                                                                                      f"--host 0.0.0.0 "

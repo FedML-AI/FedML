@@ -87,6 +87,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
             cur_dir = os.path.dirname(__file__)
             fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             python_program = get_python_program()
+            print(f"uvicorn run port: {worker_proxy_port} in worker_protocol_manager")
             self.local_api_process = ClientConstants.exec_console_with_script(
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                 "--log-level critical".format(

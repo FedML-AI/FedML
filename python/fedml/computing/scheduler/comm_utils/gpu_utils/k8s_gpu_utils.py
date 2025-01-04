@@ -62,7 +62,7 @@ class K8sGPUtil(GPUCardUtil):
                     temperature=gpu_info["temperature"]
                 )
                 gpu_cards.append(card)
-            logging.info(f"[K8sGPUtil] get_gpu_cards gpu_cards: {gpu_cards}")
+            # logging.info(f"[K8sGPUtil] get_gpu_cards gpu_cards: {gpu_cards}")
             return gpu_cards
 
         except Exception as e:

@@ -10,6 +10,7 @@ ENV PATH=/root/miniconda3/bin:$PATH
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
+    iproute2 \
     ca-certificates \
     gnupg \
     sudo \

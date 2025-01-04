@@ -42,6 +42,7 @@ if __name__ == "__main__":
     --host 0.0.0.0 --port 2203 --log-level info --reload --reload-delay 3 --reload-dir /Users/alexliang/opt/anaconda3/envs/fedml-pip-38/lib/python3.8/site-packages/fedml
     '''
     python_program = get_python_program()
+    print(f"uvicorn run port: {args.infer_port} in device_model_inference_entry")
     process = ServerConstants.exec_console_with_script(
         "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
         "END_POINT_NAME=\"{}\" "

@@ -45,4 +45,5 @@ class FedMLInferenceRunner(ABC):
                 return Response(status_code=status.HTTP_202_ACCEPTED)
 
         import uvicorn
+        print(f"uvicorn run port: {self.port} in fedml_inference_runner")
         uvicorn.run(api, host=self.host, port=self.port)
