@@ -62,7 +62,8 @@ requirements = [
     'typing_extensions',
     'tzlocal',
     'uvicorn',
-    'wandb==0.13.2',
+    # 'wandb==0.13.2',
+    'wandb',
     'wget',
     # Need to pin this version due to breaking change released in python docker sdk
     'requests<2.32',
