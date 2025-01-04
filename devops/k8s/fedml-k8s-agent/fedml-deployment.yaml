@@ -19,7 +19,7 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501032020
+        image: fedml/fedml-k8s-agent:202501041530
         imagePullPolicy: IfNotPresent
         env:
         - name: SCHEDULER_TYPE

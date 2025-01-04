@@ -340,14 +340,9 @@ def create_current_model_ready_file(model_storage_local_path):
     # Define symlink path
     current_model_dir = SchedulerUtils.get_current_model_dir()
     # Remove existing symlink(current_model_dir) if it exists
-    if os.path.exists(current_model_dir):
-        if os.path.islink(current_model_dir):
-            os.unlink(current_model_dir)
-        else:
-            shutil.rmtree(current_model_dir)
-            
-    # Create parent directories if they don't exist
-    os.makedirs(os.path.dirname(current_model_dir), exist_ok=True)
+    if not os.path.exists(current_model_dir):
+        # current_model_dir is mounted from the k8s agent in the pod, so it should always exist
+        raise Exception(f"current_model_dir: {current_model_dir} does not exist")
     
     # Create symlink(current_model_dir)
     os.symlink(model_storage_local_path, current_model_dir)
