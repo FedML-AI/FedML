@@ -288,8 +288,8 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
     """
 
     # use k8s scheduler, one pod only has one replica and one model
-    # Create a symbolic link(model_packages/current_model) to the real model dir and create a ready file
-    create_current_model_ready_file(model_storage_local_path)
+    # Copy all files from model storage directory to the mounted directory and create a ready file
+    copy_to_current_model_dir_and_create_ready_file(model_storage_local_path)
 
     # Check container readiness
     deploy_attempt = 0
@@ -329,29 +329,38 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
         logging.info(f"Model {inference_model_name} not yet ready, retry in {retry_interval} seconds...")
         time.sleep(retry_interval)
 
-def create_current_model_ready_file(model_storage_local_path):
+def copy_to_current_model_dir_and_create_ready_file(model_storage_local_path):
     """
-    Create a symbolic link to the model storage directory and list its contents and create a ready file.
+    Copy all files from model storage directory to the mounted directory and create a ready file.
     Args:
         model_storage_local_path: Full path to the model storage directory
     Returns:
         None
     """
-    # Define symlink path
+    # Get the mounted directory path
     current_model_dir = SchedulerUtils.get_current_model_dir()
-    # Remove existing symlink(current_model_dir) if it exists
+    
+    # Verify the mount point exists
     if not os.path.exists(current_model_dir):
-        # current_model_dir is mounted from the k8s agent in the pod, so it should always exist
         raise Exception(f"current_model_dir: {current_model_dir} does not exist")
     
-    # Create symlink(current_model_dir)
-    os.symlink(model_storage_local_path, current_model_dir)
+    # Copy all contents from model_storage_local_path to current_model_dir
+    for item in os.listdir(model_storage_local_path):
+        src = os.path.join(model_storage_local_path, item)
+        dst = os.path.join(current_model_dir, item)
+        
+        if os.path.isdir(src):
+            # Copy directory and its contents
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            # Copy single file
+            shutil.copy2(src, dst)
     
-    # create a ready empty file(current_model_dir/ready)
+    # Create a ready empty file
     ready_file = SchedulerUtils.get_current_model_ready_file()
     with open(ready_file, "w") as f:
         f.write("")
-    
+
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
                      inference_type="default", request_input_example=None, infer_host="127.0.0.1",
