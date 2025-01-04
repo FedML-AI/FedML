@@ -89,7 +89,8 @@ class CriClient:
         """get container logs using crictl
         Args:
             container_id: container id
-            since: show logs since a specific time
+            since: show logs since timestamp (e.g. '2013-01-02T13:23:37') 
+                   or relative time (e.g. '42m' for 42 minutes)
             follow: whether to follow the logs
             timestamps: whether to show timestamps
         """
@@ -99,6 +100,8 @@ class CriClient:
             cmd.append("-f")
         
         if since:
+            if isinstance(since, datetime):
+                since = since.strftime("%Y-%m-%dT%H:%M:%SZ")
             cmd.extend(["--since", since])
             
         if timestamps:
