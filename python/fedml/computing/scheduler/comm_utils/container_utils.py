@@ -281,11 +281,11 @@ class ContainerUtils(Singleton):
             raise Exception(f"Unsupported image pull policy: {image_pull_policy}")
 
     class ContainerMetrics:
-        def __init__(self, cpu_percent, mem_used_megabytes, mem_avail_megabytes, network_recv_megabytes,
+        def __init__(self, cpu_percent, mem_used_gb, mem_avail_gb, network_recv_megabytes,
                      network_sent_megabytes, blk_read_megabytes, blk_write_megabytes, timestamp, gpus_stat):
             self.cpu_percent = cpu_percent
-            self.mem_used_megabytes = mem_used_megabytes
-            self.mem_avail_megabytes = mem_avail_megabytes
+            self.mem_used_gb = mem_used_gb
+            self.mem_avail_gb = mem_avail_gb
             self.network_recv_megabytes = network_recv_megabytes
             self.network_sent_megabytes = network_sent_megabytes
             self.blk_read_megabytes = blk_read_megabytes
@@ -295,7 +295,7 @@ class ContainerUtils(Singleton):
 
         def show(self):
             logging.info(f"CPU: {self.cpu_percent}%")
-            logging.info(f"Memory: {self.mem_used_megabytes}GB / {self.mem_avail_megabytes}GB")
+            logging.info(f"Memory: {self.mem_used_gb}GB / {self.mem_avail_gb}GB")
             logging.info(f"Network: {self.network_recv_megabytes}MB / {self.network_sent_megabytes}MB")
             logging.info(f"Disk I/O: {self.blk_read_megabytes}MB / {self.blk_write_megabytes}MB")
             logging.info(f"Timestamp: {self.timestamp}")
@@ -402,19 +402,20 @@ class ContainerUtils(Singleton):
                 logging.error("No stats data returned from crictl")
                 return None
             
-            # Get network stats using container PID
-            network_recv_mb, network_sent_mb = cri_client.get_network_stats(container_id)
+            # # Get network stats using container PID
+            # network_recv_mb, network_sent_mb = cri_client.get_network_stats(container_id)
+            network_recv_mb, network_sent_mb = 0, 0
             
-            # Get block I/O stats
-            blk_read_mb, blk_write_mb = cri_client.get_blkio_stats(container_id)
-            
+            # # Get block I/O stats
+            # blk_read_mb, blk_write_mb = cri_client.get_blkio_stats(container_id)
+            blk_read_mb, blk_write_mb = 0, 0
             # Calculate the gpu usage
             gpus_stat = self.generate_container_gpu_stats(c_name)
 
             return ContainerUtils.ContainerMetrics(
                 cpu_percent=stats['cpu_percent'],
-                mem_used_megabytes=stats['mem_used_mb'],
-                mem_avail_megabytes=stats['mem_avail_mb'],
+                mem_used_gb=stats['mem_used_gb'],
+                mem_avail_gb=stats['mem_avail_gb'],
                 network_recv_megabytes=network_recv_mb,
                 network_sent_megabytes=network_sent_mb,
                 blk_read_megabytes=blk_read_mb,

@@ -19,7 +19,7 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501042245
+        image: fedml/fedml-k8s-agent:202501042350
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 2204
@@ -51,10 +51,13 @@ spec:
         volumeMounts:
           - name: pod-logs
             mountPath: /var/log/pods
+            readOnly: true
           - name: container-logs
             mountPath: /var/log/containers
+            readOnly: true
           - name: containerd-sock
             mountPath: /run/containerd/containerd.sock
+            readOnly: true
           - name: shared-model-dir
             mountPath: /root/.fedml/fedml-model-client/fedml/model_packages/current_model
           # - name: source-model-dir

@@ -127,16 +127,32 @@ class CriClient:
             return None
             
         stats = stats_data['stats'][0]
+
+        # Query container info for resource limits
+        container_info = self.inspect_container(container_id)
+        if not container_info:
+            logging.error("[CriClient] Failed to inspect container")
+            return None
         
-        # Calculate CPU usage
+        # Get CPU cores from container info
+        cpu_period = float(container_info['status']['resources']['linux']['cpuPeriod'])
+        cpu_quota = float(container_info['status']['resources']['linux']['cpuQuota'])
+        cpu_cores = cpu_quota / cpu_period
+        
+        # Get memory limit from container info
+        mem_limit_bytes = float(container_info['status']['resources']['linux']['memoryLimitInBytes'])
+        mem_limit_gb = round(mem_limit_bytes / (1024 * 1024 * 1024), 1)
+        
+        # Calculate CPU usage with respect to total available cores
         cpu_nano_cores = float(stats['cpu']['usageNanoCores']['value'])
-        cpu_percent = round(cpu_nano_cores / 1e7, 2)  # Convert to percentage
+        cpu_percent = round(cpu_nano_cores / (1e7 * cpu_cores), 2)  # Convert to percentage per core
         
-        # Memory calculations
-        mem_used_bytes = int(stats['memory']['usageBytes']['value'])
+        # Memory calculations with percentage
+        mem_used_bytes = int(stats['memory']['workingSetBytes']['value'])
         mem_avail_bytes = int(stats['memory']['availableBytes']['value'])
-        mem_used_mb = round(mem_used_bytes / (1024 * 1024), 1)
-        mem_avail_mb = round(mem_avail_bytes / (1024 * 1024), 1)
+        mem_used_gb = round(mem_used_bytes / (1024 * 1024 * 1024), 1)
+        mem_avail_gb = round(mem_avail_bytes / (1024 * 1024 * 1024), 1)
+        mem_percent = round((mem_used_bytes / mem_limit_bytes) * 100, 2)
         
         # Convert timestamp from nanoseconds to readable format
         timestamp_ns = int(stats['cpu']['timestamp'])
@@ -144,40 +160,64 @@ class CriClient:
         
         return {
             'cpu_percent': cpu_percent,
-            'mem_used_mb': mem_used_mb,
-            'mem_avail_mb': mem_avail_mb,
-            'timestamp': timestamp
+            'mem_used_gb': mem_used_gb,
+            'mem_avail_gb': mem_avail_gb,
+            'mem_limit_gb': mem_limit_gb,
+            'mem_percent': mem_percent,
+            'timestamp': timestamp,
+            'cpu_cores': cpu_cores
         }
 
     def get_network_stats(self, container_id: str) -> Tuple[float, float]:
-        """Get network statistics from container's network namespace"""
+        """Get network statistics for specific container
+        Returns:
+            Tuple[float, float]: (received_MB, transmitted_MB)
+        """
         try:
-            pid = self.get_container_pid(container_id)
+            # Get container info to find pid
+            container_info = self.inspect_container(container_id)
+            if not container_info or 'info' not in container_info:
+                logging.error("[CriClient] Failed to get container info")
+                return 0.0, 0.0
+            
+            pid = container_info['info']['pid']
             if not pid:
                 logging.error("[CriClient] Failed to get container PID")
                 return 0.0, 0.0
-            # Read network statistics from the container's network namespace
-            cmd = f"nsenter -t {pid} -n cat /proc/net/dev"
-            result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
-            
+
             recv_bytes = 0
             sent_bytes = 0
             
-            # Parse network interface statistics
-            for line in result.stdout.split('\n')[2:]:  # Skip header lines
-                if not line.strip():
-                    continue
-                parts = line.split()
-                if len(parts) >= 10 and not parts[0].startswith('lo:'):  # Skip loopback
-                    recv_bytes += int(parts[1])  # Received bytes
-                    sent_bytes += int(parts[9])  # Transmitted bytes
+            # Read network statistics from container's network namespace
+            cmd = f"cat /proc/{pid}/net/dev"
+            net_dev = self._run_command(cmd)
+            if net_dev:
+                # Skip first two lines (headers)
+                for line in net_dev.split('\n')[2:]:
+                    if not line.strip():
+                        continue
+                    
+                    # Split line and remove empty strings
+                    parts = [x for x in line.split(' ') if x]
+                    if not parts:
+                        continue
+                    
+                    interface = parts[0].rstrip(':')
+                    if interface == 'lo':  # Skip loopback
+                        continue
+                    
+                    # Format for /proc/net/dev:
+                    # Interface rx_bytes rx_packets rx_errs rx_drop rx_fifo rx_frame rx_compressed rx_multicast 
+                    #           tx_bytes tx_packets tx_errs tx_drop tx_fifo tx_colls tx_carrier tx_compressed
+                    recv_bytes += int(parts[1])  # rx_bytes
+                    sent_bytes += int(parts[9])  # tx_bytes
             
             return (
                 round(recv_bytes / (1024 * 1024), 1),  # Convert to MB
                 round(sent_bytes / (1024 * 1024), 1)
             )
         except Exception as e:
-            logging.error(f"Failed to get network stats: {e}")
+            logging.error(f"[CriClient] Failed to get network stats: {str(e)}")
             return 0.0, 0.0
 
     def get_blkio_stats(self, container_id: str) -> Tuple[float, float]:
@@ -250,3 +290,11 @@ if __name__ == "__main__":
         one_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         logs = client.get_logs(container_id, since=one_min_ago)
         print("Recent logs:", logs)
+
+        # get container stats
+        stats = client.get_container_stats(container_id)
+        print("Container stats:", stats)
+        network_recv_mb, network_sent_mb = client.get_network_stats(container_id)
+        print("Network stats:", network_recv_mb, network_sent_mb)
+        blk_read_mb, blk_write_mb = client.get_blkio_stats(container_id)
+        print("Block I/O stats:", blk_read_mb, blk_write_mb)

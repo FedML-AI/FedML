@@ -303,7 +303,7 @@ def start_deployment_in_k8s(model_version, model_storage_local_path, inference_m
             container_logs = ContainerUtils.get_instance().get_container_logs_since(
                 None, since_time=last_log_time, timestamps=True)
             if container_logs:
-                logging.info(f"container_logs: {container_logs}")
+                logging.info(f"[container_logs]: {container_logs}")
 
             # Update last log time
             last_log_time = datetime.datetime.now()

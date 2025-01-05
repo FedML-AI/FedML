@@ -86,16 +86,14 @@ class JobRunnerUtils(Singleton):
                     # Get the available GPU list, FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG-${device_id}
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
-                    logging.info(f"Available GPU Ids fetched from cache: {available_gpu_ids}")
-
-                    logging.info(f"Check worker({device_id})'s realtime gpu availability in DB"
-                                 f" for run {run_id}: {available_gpu_ids}")
+                    logging.info(f"Available GPU Ids fetched from cache: {available_gpu_ids}, device_id: {device_id}")
                     
                      # Get realtime GPU availability list from the system
                     realtime_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
-                    logging.info(f"Cache not set yet, fetching realtime available GPU Ids: {realtime_available_gpu_ids}")
+                    logging.info(f"Fetching realtime available GPU Ids: {realtime_available_gpu_ids}")
 
                     # If the available GPU list is not in the cache, set it to the current system available GPU list
+                    # if the available GPU list is None, it means the cache is not set yet, not empty list []
                     if available_gpu_ids is None:
                         # Get realtime GPU availability list from the system
                         available_gpu_ids = realtime_available_gpu_ids

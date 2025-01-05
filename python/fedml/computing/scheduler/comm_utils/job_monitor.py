@@ -318,10 +318,10 @@ class JobMonitor(Singleton):
                         "run_id": job.job_id,
                         "edge_id": job.edge_id,
                         "cpu_utilization": round(container_perf.cpu_percent, 4),
-                        "process_memory_in_use": round(container_perf.mem_used_megabytes, 4),
-                        "process_memory_available": round(container_perf.mem_avail_megabytes, 4),
+                        "process_memory_in_use": round(container_perf.mem_used_gb, 4),
+                        "process_memory_available": round(container_perf.mem_avail_gb, 4),
                         "process_memory_in_use_size": round(
-                            (container_perf.mem_used_megabytes / container_perf.mem_avail_megabytes), 4),
+                            (container_perf.mem_used_gb / container_perf.mem_avail_gb), 4),
                         "disk_utilization": round(container_perf.blk_write_megabytes, 4),
                         "network_traffic": round(container_perf.network_sent_megabytes, 4),
                         "metrics_of_all_gpus": metrics_of_all_gpus,
