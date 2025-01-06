@@ -29,6 +29,8 @@ spec:
           value: "2204"
         - name: SCHEDULER_TYPE
           value: "K8S"
+        - name: SCHEDULER_TASK_TYPE
+          value: "DEPLOY"
         - name: FEDML_API_KEY
           value: "de6aa755c9114534a9805dce8c702355"
         - name: FEDML_ENV

@@ -6,9 +6,17 @@ from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 class SchedulerUtils:
     @staticmethod
     def is_using_k8s() -> bool:
-        """Check if using k8s scheduler for model deploy"""
+        """Check if using k8s scheduler for fedml"""
         scheduler_env = os.getenv(SchedulerConstants.SCHEDULER_TYPE_PARAM_NAME, "").upper()
         return scheduler_env == SchedulerConstants.SCHEDULER_TYPE_K8S
+    
+    @staticmethod
+    def is_using_k8s_for_deploy() -> bool:
+        """Check if using k8s scheduler and is deploy task"""
+        scheduler_env = os.getenv(SchedulerConstants.SCHEDULER_TYPE_PARAM_NAME, "").upper()
+        scheduler_task_env = os.getenv(SchedulerConstants.SCHEDULER_TASK_TYPE_PARAM_NAME, "").upper()
+        return (scheduler_env == SchedulerConstants.SCHEDULER_TYPE_K8S and
+                scheduler_task_env == SchedulerConstants.SCHEDULER_TASK_TYPE_DEPLOY)
     
     @staticmethod
     def get_model_inference_gateway_port_in_k8s() -> int:

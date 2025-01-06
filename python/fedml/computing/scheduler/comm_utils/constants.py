@@ -19,6 +19,11 @@ class SchedulerConstants:
     # use to identify the scheduler type
     SCHEDULER_TYPE_PARAM_NAME = "SCHEDULER_TYPE"
     SCHEDULER_TYPE_K8S = "K8S"
+
+    SCHEDULER_TASK_TYPE_PARAM_NAME = "SCHEDULER_TASK_TYPE"
+    SCHEDULER_TASK_TYPE_DEPLOY = "DEPLOY"
+
+    # k8s scheduler
     REPLICATE_NUM_PER_POD = 1
 
     # k8s pod name
