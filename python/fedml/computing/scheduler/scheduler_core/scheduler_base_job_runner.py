@@ -9,6 +9,8 @@ import time
 import traceback
 import zipfile
 import queue
+
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
@@ -508,7 +510,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
                                                                             bootstrap_script_file=bootstrap_script_file)
             logging.info(f"Generated following Bootstrap commands: {bootstrap_cmd_list}")
 
-        if not containerize:
+        # in k8s scheduler, we don't use containerize
+        if not containerize or SchedulerUtils.is_using_k8s():
             if len(bootstrap_cmd_list) and not (job_type == Constants.JOB_TASK_TYPE_DEPLOY or
                                                 job_type == Constants.JOB_TASK_TYPE_SERVE):
                 bootstrapping_successful = self.run_bootstrap_script(bootstrap_cmd_list=bootstrap_cmd_list,
@@ -561,7 +564,8 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 job_api_key, client_rank, scheduler_match_info=scheduler_match_info,
                 cuda_visible_gpu_ids_str=self.cuda_visible_gpu_ids_str)
 
-            if containerize is not None and containerize is True:
+            # in k8s scheduler, we don't use containerize
+            if containerize is not None and containerize is True and not SchedulerUtils.is_using_k8s():
                 docker_args = fedml_config_object.get("docker", {})
                 docker_args = JobRunnerUtils.create_instance_from_dict(DockerArgs, docker_args)
                 try:
