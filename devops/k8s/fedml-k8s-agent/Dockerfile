@@ -13,6 +13,7 @@ ENV FEDML_DEVICE_ID=""
 ENV INFERENCE_GATEWAY_PORT=""
 ENV INFERENCE_PROXY_PORT=""
 ENV FEDML_CONNECTION_TYPE=""
+ENV SSH_PUBLIC_KEY=""
 
 # Add build argument to bypass cache
 ARG CACHEBUST=1
@@ -20,6 +21,9 @@ ARG CACHEBUST=1
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y \
+    vim \
+    openssh-server \
+    net-tools \
     wget \
     curl \
     iproute2 \
@@ -29,6 +33,24 @@ RUN apt-get update \
     lsb-release \
     git \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure SSH base setup
+RUN mkdir -p /var/run/sshd \
+    && mkdir -p /root/.ssh \
+    && chmod 700 /root/.ssh \
+    && echo 'Port 22\n\
+PermitRootLogin prohibit-password\n\
+PubkeyAuthentication yes\n\
+AuthorizedKeysFile .ssh/authorized_keys\n\
+PasswordAuthentication no\n\
+ChallengeResponseAuthentication no\n\
+UsePAM yes\n\
+X11Forwarding yes\n\
+PrintMotd no\n\
+AcceptEnv LANG LC_*\n\
+Subsystem sftp /usr/lib/openssh/sftp-server\n\
+LogLevel INFO' > /etc/ssh/sshd_config \
+    && chmod 600 /etc/ssh/sshd_config
 
 # Install Redis
 RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \

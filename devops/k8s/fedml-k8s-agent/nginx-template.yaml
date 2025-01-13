@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: [(${deploymentName})]
+spec:
+  replicas: [(${replicas})]
+  selector:
+    matchLabels:
+      app: [(${appName})]
+  template:
+    metadata:
+      labels:
+        app: [(${appName})]
+    spec:
+      nodeName: [(${nodeName})]
+      containers:
+        - name: [(${containerName})]
+          image: [(${image})]
+          ports:
+            - containerPort: [(${containerPort})]
+          resources:
+            requests:
+              nvidia.com/gpu: [(${gpuCount})]
+              cpu: [(${cpuCount})]
+              memory: [(${memorySize})]
+            limits:
+              nvidia.com/gpu: [(${gpuCount})]
+              cpu: [(${cpuCount})]
+              memory: [(${memorySize})]

@@ -19,9 +19,14 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501061430
+        image: fedml/fedml-k8s-agent:202501101230
         imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 22
+          hostPort: 38022
         env:
+        - name: SSH_PUBLIC_KEY
+          value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITAoK1DEXdsyB2UNZvZ5gPc0EJpn2V+gFLQTj18HsOz fedml@tensoropera.ai"
         - name: SCHEDULER_TYPE
           value: "K8S"
         - name: FEDML_API_KEY
@@ -34,10 +39,10 @@ spec:
           value: "edge-dgx-134-000002"
         resources:
           requests:
-            nvidia.com/gpu: 2
+            nvidia.com/gpu: "2"
             cpu: "8"
             memory: "32Gi"
           limits:
-            nvidia.com/gpu: 2
+            nvidia.com/gpu: "2"
             cpu: "8"
             memory: "32Gi"

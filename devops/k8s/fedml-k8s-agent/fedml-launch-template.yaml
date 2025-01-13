@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: [(${deploymentName})]
+spec:
+  replicas: [(${replicas})]
+  selector:
+    matchLabels:
+      app: [(${appName})]
+  template:
+    metadata:
+      labels:
+        app: [(${appName})]
+    spec:
+      nodeName: [(${nodeName})]
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+      containers:
+      - name: [(${fedmlContainerName})]
+        image: [(${fedmlImage})]
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: [(${sshContainerPort})]
+          hostPort: [(${sshHostPort})]
+        env:
+        - name: SSH_PUBLIC_KEY
+          value: "[(${sshPublicKey})]"
+        - name: SCHEDULER_TYPE
+          value: "[(${schedulerType})]"
+        - name: FEDML_API_KEY
+          value: "[(${fedmlApiKey})]"
+        - name: FEDML_ENV
+          value: "[(${fedmlEnv})]"
+        - name: FEDML_PROVIDER
+          value: "[(${fedmlProvider})]"
+        - name: FEDML_DEVICE_ID
+          value: "[(${fedmlDeviceId})]"
+        resources:
+          requests:
+            nvidia.com/gpu: "[(${gpuCountOfFedML})]"
+            cpu: "[(${cpuCountOfFedML})]"
+            memory: "[(${memorySizeOfFedML})]Gi"
+          limits:
+            nvidia.com/gpu: "[(${gpuCountOfFedML})]"
+            cpu: "[(${cpuCountOfFedML})]"
+            memory: "[(${memorySizeOfFedML})]Gi"
+

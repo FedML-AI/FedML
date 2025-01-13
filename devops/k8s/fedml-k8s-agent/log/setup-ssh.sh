@@ -18,14 +18,14 @@ mkdir -p /var/run/sshd
 
 # 配置SSH
 mkdir -p /root/.ssh
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4JoJM7/x0zP4S3D85cTb9bdEl6u02W0QPHSmSZ0bbs yangliu@yanglius-MacBook-Pro.local" > /root/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITAoK1DEXdsyB2UNZvZ5gPc0EJpn2V+gFLQTj18HsOz fedml@tensoropera.ai" > /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
 chmod 700 /root/.ssh
 
 # 配置SSH服务器
 cat > /etc/ssh/sshd_config <<EOF
 Port 22
-PermitRootLogin yes
+PermitRootLogin prohibit-password
 PubkeyAuthentication yes
 AuthorizedKeysFile .ssh/authorized_keys
 PasswordAuthentication no
@@ -35,10 +35,10 @@ X11Forwarding yes
 PrintMotd no
 AcceptEnv LANG LC_*
 Subsystem sftp /usr/lib/openssh/sftp-server
-LogLevel DEBUG
+LogLevel INFO
 EOF
 
-chmod 644 /etc/ssh/sshd_config
+chmod 600 /etc/ssh/sshd_config
 # service ssh start || /usr/sbin/sshd
 
 echo "[$(date)] SSH installation completed" 

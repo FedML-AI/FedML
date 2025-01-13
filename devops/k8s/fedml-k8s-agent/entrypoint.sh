@@ -33,14 +33,25 @@ echo "==========================="
 # Create devices.id file if FEDML_DEVICE_ID is provided
 if [ -n "$FEDML_DEVICE_ID" ]; then
     mkdir -p "/root/.fedml/fedml-client/fedml/data/runner_infos"
-    echo "$FEDML_DEVICE_ID" > "/root/.fedml/fedml-client/fedml/data/runner_infos/devices.id"
+    echo -n "$FEDML_DEVICE_ID" > "/root/.fedml/fedml-client/fedml/data/runner_infos/devices.id"
 fi
+
+# Setup SSH key if provided
+if [ -n "$SSH_PUBLIC_KEY" ]; then
+    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+fi
+
+# Start SSH server
+systemctl start ssh || service ssh start || /usr/sbin/sshd
 
 # Start Redis server
 redis-server --daemonize yes
 
 # Login to FedML
 fedml_login
+
+
 
 # Keep container running
 tail -f /dev/null
