@@ -37,14 +37,19 @@ if [ -n "$FEDML_DEVICE_ID" ]; then
 fi
 
 # Setup SSH key if provided
+sshDir="/root/.ssh"
+mkdir -p $sshDir
 if [ -n "$SSH_PUBLIC_KEY_SYSTEM" ]; then
-    echo "$SSH_PUBLIC_KEY_SYSTEM" > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
+    if ! grep -qF "$SSH_PUBLIC_KEY_SYSTEM" $sshDir/authorized_keys 2>/dev/null; then
+        echo "$SSH_PUBLIC_KEY_SYSTEM" >> $sshDir/authorized_keys
+        chmod 600 $sshDir/authorized_keys
+    fi
 fi
-
 if [ -n "$SSH_PUBLIC_KEY_USER" ]; then
-    echo "$SSH_PUBLIC_KEY_USER" > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
+    if ! grep -qF "$SSH_PUBLIC_KEY_USER" $sshDir/authorized_keys 2>/dev/null; then
+        echo "$SSH_PUBLIC_KEY_USER" >> $sshDir/authorized_keys
+        chmod 600 $sshDir/authorized_keys
+    fi
 fi
 
 # Start SSH server
