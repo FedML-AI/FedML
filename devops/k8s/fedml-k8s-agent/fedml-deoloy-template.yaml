@@ -27,8 +27,10 @@ spec:
         - containerPort: [(${inferenceGatewayPort})]
           hostPort: [(${inferenceGatewayPort})]
         env:
-        - name: SSH_PUBLIC_KEY
-          value: "[(${sshPublicKey})]"
+        - name: SSH_PUBLIC_KEY_SYSTEM
+          value: "[(${sshPublicKeySystem})]"
+        - name: SSH_PUBLIC_KEY_USER
+          value: "[(${sshPublicKeyUser})]"
         - name: MODEL_INFERENCE_PORT_IN_K8S
           value: "[(${inferenceGatewayPort})]"
         - name: SCHEDULER_TYPE

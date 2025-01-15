@@ -37,8 +37,13 @@ if [ -n "$FEDML_DEVICE_ID" ]; then
 fi
 
 # Setup SSH key if provided
-if [ -n "$SSH_PUBLIC_KEY" ]; then
-    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys
+if [ -n "$SSH_PUBLIC_KEY_SYSTEM" ]; then
+    echo "$SSH_PUBLIC_KEY_SYSTEM" > /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+fi
+
+if [ -n "$SSH_PUBLIC_KEY_USER" ]; then
+    echo "$SSH_PUBLIC_KEY_USER" > /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
 fi
 

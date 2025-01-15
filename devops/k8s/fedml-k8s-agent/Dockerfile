@@ -7,7 +7,7 @@ ENV PATH=/root/miniconda3/bin:$PATH
 
 # Set default environment variables (these can be overridden in K8s deployment)
 ENV FEDML_API_KEY=""
-ENV FEDML_ENV="production"
+ENV FEDML_ENV="release"
 ENV FEDML_PROVIDER="false"
 ENV FEDML_DEVICE_ID=""
 ENV INFERENCE_GATEWAY_PORT=""

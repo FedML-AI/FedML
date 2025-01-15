@@ -24,8 +24,10 @@ spec:
         - containerPort: [(${sshContainerPort})]
           hostPort: [(${sshHostPort})]
         env:
-        - name: SSH_PUBLIC_KEY
-          value: "[(${sshPublicKey})]"
+        - name: SSH_PUBLIC_KEY_SYSTEM
+          value: "[(${sshPublicKeySystem})]"
+        - name: SSH_PUBLIC_KEY_USER
+          value: "[(${sshPublicKeyUser})]"
         - name: SCHEDULER_TYPE
           value: "[(${schedulerType})]"
         - name: FEDML_API_KEY
@@ -45,4 +47,3 @@ spec:
             nvidia.com/gpu: "[(${gpuCountOfFedML})]"
             cpu: "[(${cpuCountOfFedML})]"
             memory: "[(${memorySizeOfFedML})]Gi"
-

@@ -19,7 +19,7 @@ spec:
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501101230
+        image: fedml/fedml-k8s-agent:202501151600
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 22
@@ -27,8 +27,10 @@ spec:
         - containerPort: 32203
           hostPort: 32203
         env:
-        - name: SSH_PUBLIC_KEY
+         - name: SSH_PUBLIC_KEY_SYSTEM
           value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITAoK1DEXdsyB2UNZvZ5gPc0EJpn2V+gFLQTj18HsOz fedml@tensoropera.ai"
+        - name: SSH_PUBLIC_KEY_USER
+          value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4JoJM7/x0zP4S3D85cTb9bdEl6u02W0QPHSmSZ0bbs yangliu@yanglius-MacBook-Pro.local"
         - name: MODEL_INFERENCE_PORT_IN_K8S
           value: "2204"
         - name: SCHEDULER_TYPE
