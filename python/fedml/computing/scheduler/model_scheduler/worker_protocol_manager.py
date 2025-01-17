@@ -46,6 +46,12 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
     def generate_topics(self):
         super().generate_topics()
 
+        if SchedulerUtils.is_using_k8s() and not SchedulerUtils.is_using_k8s_for_deploy():
+            # the deploy job is only running in the deploy task pod, so no-deploy pod do not need to register deploy related topics
+            # the reason is: if non-deploy pod had consumed the topic, then the deploy pod will not be able to consume it
+            logging.info("no need to register deploy related topics")
+            return
+
         # The topic for start deployment
         self.topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
 
@@ -59,6 +65,10 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
     # Override
     def add_protocol_handler(self):
         super().add_protocol_handler()
+
+        if SchedulerUtils.is_using_k8s() and not SchedulerUtils.is_using_k8s_for_deploy():
+            logging.info("no need to register deploy related topics")
+            return
 
         # Add the message listeners for endpoint related topics
         self.add_message_listener(self.topic_start_deployment, self.callback_start_deployment)
