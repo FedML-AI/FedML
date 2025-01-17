@@ -151,7 +151,7 @@ spec:
           limits:
             nvidia.com/gpu: "[(${gpuCountOfTask})]"
             cpu: "[(${cpuCountOfTask})]"
-              memory: "[(${memorySizeOfTask})]Gi"
+            memory: "[(${memorySizeOfTask})]Gi"
         lifecycle:
           postStart:
             exec:
