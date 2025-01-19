@@ -205,6 +205,16 @@ class FedMLSchedulerBaseJobRunner(ABC):
             os.remove(local_package_file)
         ssl._create_default_https_context = ssl._create_unverified_context
 
+        # HOT FIX:
+        print("HOT FIX: package_url: ", package_url)
+
+        # we detect a substring called: "?X-Amz-Algorithm="
+        # we remove this substring and everything after it
+        if "?X-Amz-Algorithm=" in package_url:
+            package_url = package_url.split("?X-Amz-Algorithm=")[0]
+
+        print("AFTER HOT FIX: package_url: ", package_url)
+
         # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
         from multiprocessing import Process
         completed_event = multiprocessing.Event()

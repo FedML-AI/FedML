@@ -56,6 +56,13 @@ from fedml.computing.scheduler.scheduler_core.general_constants import Marketpla
     help="The port for local on-premise Nexus AI Platform.",
 )
 @click.option(
+    "--node_ip",
+    "-nip",
+    type=str,
+    default="",
+    help="The IP address for the node.",
+)
+@click.option(
     "--master_inference_gateway_port",
     "-mgp",
     type=int,
@@ -107,7 +114,7 @@ def fedml_login(
         api_key, version, compute_node, server, provider, deploy_worker_num,
         local_on_premise_platform, local_on_premise_platform_port,
         master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type, marketplace_type,
-        price_per_hour, name
+        price_per_hour, name, node_ip
 ):
     fedml.set_env_version(version)
     fedml.set_local_on_premise_platform_host(local_on_premise_platform)
@@ -129,7 +136,8 @@ def fedml_login(
         pass
     os.environ["FEDML_MODEL_WORKER_NUM"] = str(deploy_worker_num)
     fedml.api.login(api_key, compute_node, server, provider, master_inference_gateway_port,
-                    worker_inference_proxy_port, worker_connection_type, marketplace_type, price_per_hour, name)
+                    worker_inference_proxy_port, worker_connection_type, marketplace_type, price_per_hour, name,
+                    node_ip)
 
 
 def __validate_mpt_pph(marketplace_type, price_per_hour):

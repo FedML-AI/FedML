@@ -225,6 +225,22 @@ class GeneralConstants:
         return ip
 
     @staticmethod
+    def get_ingress_address():
+        # This only for virtual ip if it is different from the result from https://checkip.amazonaws.com
+        # Priority 1: Auto detect public ip
+        logging.info("Checking public ip for master")
+        ip = GeneralConstants.get_public_ip()
+
+        # Priority 2: Use user indicated ip, it should be from the environment variable
+        infer_host = os.getenv(device_server_constants.ServerConstants.ENV_NODE_PUBLIC_IP_KEY, "")
+        if (infer_host is not None and infer_host != "" and
+                infer_host != "127.0.0.1" and infer_host != "localhost"):
+            logging.info("Use user indicated (Env Var) ip for master: " + infer_host)
+            ip = infer_host
+
+        return ip
+
+    @staticmethod
     def get_topic_complete_job(server_id):
         topic_complete_job = f"status_center/master_agent_{server_id}/complete_job"
         return topic_complete_job

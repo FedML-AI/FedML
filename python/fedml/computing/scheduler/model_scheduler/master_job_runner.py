@@ -757,7 +757,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
     def construct_final_gateway_url(self, end_point_id):
         inference_port_external = ServerConstants.get_inference_master_gateway_port()
-        ip = GeneralConstants.get_ip_address(self.request_json)
+
+        # TODO(Raphael): Check whether get_ingress_address can replace get_ip_address
+        ip = GeneralConstants.get_ingress_address()
 
         identifier = "inference"
         if self.deployed_replica_payload is not None:

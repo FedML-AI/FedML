@@ -215,9 +215,9 @@ def login(api_key, computing, server, supplier,
           master_inference_gateway_port: int = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
           worker_inference_proxy_port: int = ClientConstants.LOCAL_CLIENT_API_PORT,
           worker_connection_type: str = ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
-          marketplace_type: str = MarketplaceType.SECURE.name, price_per_hour: float = 0.0, name=""):
+          marketplace_type: str = MarketplaceType.SECURE.name, price_per_hour: float = 0.0, name="", node_ip=""):
     device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
-                worker_connection_type, marketplace_type, price_per_hour, name)
+                worker_connection_type, marketplace_type, price_per_hour, name, node_ip)
 
 
 def logout(computing, server):
@@ -225,11 +225,11 @@ def logout(computing, server):
 
 
 def device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
-                worker_connection_type, marketplace_type, price_per_hour, name):
+                worker_connection_type, marketplace_type, price_per_hour, name, node_ip):
     device.bind(api_key=api_key, computing=computing, server=server, supplier=supplier,
                 master_inference_gateway_port=master_inference_gateway_port,
                 worker_inference_proxy_port=worker_inference_proxy_port, worker_connection_type=worker_connection_type,
-                marketplace_type=marketplace_type, price_per_hour=price_per_hour, name=name)
+                marketplace_type=marketplace_type, price_per_hour=price_per_hour, name=name, node_ip=node_ip)
 
 
 def device_unbind(computing, server):
