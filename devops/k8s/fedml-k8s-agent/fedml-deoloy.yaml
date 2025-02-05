@@ -12,14 +12,14 @@ spec:
       labels:
         app: fedml-agent-endpoint-1
     spec:
-      nodeName: edge-dgx-134
+      nodeName: kubeedge-dgx-134-rev1
       dnsConfig:
         nameservers:
           - 8.8.8.8
       containers:
       # fedml-agent is the fix container name that runs the fedml(master&slave)
       - name: fedml-agent
-        image: fedml/fedml-k8s-agent:202501151600
+        image: fedml/fedml-k8s-agent:202501182000
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 22
@@ -27,7 +27,7 @@ spec:
         - containerPort: 32203
           hostPort: 32203
         env:
-         - name: SSH_PUBLIC_KEY_SYSTEM
+        - name: SSH_PUBLIC_KEY_SYSTEM
           value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITAoK1DEXdsyB2UNZvZ5gPc0EJpn2V+gFLQTj18HsOz fedml@tensoropera.ai"
         - name: SSH_PUBLIC_KEY_USER
           value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4JoJM7/x0zP4S3D85cTb9bdEl6u02W0QPHSmSZ0bbs yangliu@yanglius-MacBook-Pro.local"
@@ -38,7 +38,7 @@ spec:
         - name: SCHEDULER_TASK_TYPE
           value: "DEPLOY"
         - name: FEDML_API_KEY
-          value: "de6aa755c9114534a9805dce8c702355"
+          value: ""
         - name: FEDML_ENV
           value: "test"
         - name: FEDML_PROVIDER
@@ -71,8 +71,8 @@ spec:
       
         # container-task is fix container name that runs the task(training or inference)
       - name: container-task
-        image: fedml/fedml-inference-cuda-12-1-base:v20241129
-        # image: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
+        # image: fedml/fedml-inference-cuda-12-1-base:v20241129
+        image: vllm/vllm-openai:v0.6.4
         ports:
         - containerPort: 2345
         # Scenario 1: use third party docker image(like openai vllm, only need to provide args)
@@ -81,14 +81,14 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            echo "[$(date)] container-task starting - waiting for starting signal..."
-            attempt=1
-            while [ ! -f /home/fedml/models_serving/.ready ]; do
-              echo "[$(date)] Check attempt $attempt: Ready signal not found, waiting..."
-              attempt=$((attempt + 1))
-              sleep 5
-            done
-            echo "[$(date)] ✓ Ready signal received after $((attempt - 1)) attempts!"
+            # echo "[$(date)] container-task starting - waiting for starting signal..."
+            # attempt=1
+            # while [ ! -f /home/fedml/models_serving/.ready ]; do
+            #   echo "[$(date)] Check attempt $attempt: Ready signal not found, waiting..."
+            #   attempt=$((attempt + 1))
+            #   sleep 5
+            # done
+            # echo "[$(date)] ✓ Ready signal received after $((attempt - 1)) attempts!"
             
             # check if bootstrap dir is not empty
             if [ ! -z "${BOOTSTRAP_DIR}" ]; then
@@ -99,7 +99,13 @@ spec:
             # check if container_run_command or main_entry is not empty
             if [ ! -z "${CONTAINER_RUN_COMMAND}" ]; then
               echo "[$(date)] Executing CONTAINER_RUN_COMMAND: ${CONTAINER_RUN_COMMAND}"
-              eval "${CONTAINER_RUN_COMMAND}"
+              # check if the task image is vllm/vllm-openai
+              if [[ "${TASK_IMAGE_NAME}" == *"vllm/vllm-openai"* ]]; then
+                echo "[$(date)] Detected vllm/vllm-openai image, executing with vllm API server"
+                python3 -m vllm.entrypoints.openai.api_server ${CONTAINER_RUN_COMMAND}
+              else
+                eval "${CONTAINER_RUN_COMMAND}"
+              fi
             elif [ ! -z "${MAIN_ENTRY}" ]; then
               echo "[$(date)] Executing python3 ${MAIN_ENTRY}"
               python3 "${MAIN_ENTRY}"
@@ -109,10 +115,14 @@ spec:
             fi
         env:
         # envs below is from fedml library
+        - name: HF_TOKEN
+          value: ""
         - name: FEDML_USER_ENCRYPTED_API_KEY
-          value: "818e7a4104d5d72c57c9be4b5af4f112f7d6f55c8ecba16f83d3a9f1a1a14f4d05741c93a72c59e2a8420811b140b983"
-        # - name: CONTAINER_RUN_COMMAND
-        #   value: "ls -l"
+          value: ""
+        - name: TASK_IMAGE_NAME
+          value: "vllm/vllm-openai:v0.6.4"
+        - name: CONTAINER_RUN_COMMAND
+          value: "--model meta-llama/Llama-3.1-8B-Instruct --served-model-name Llama-3.1-8B-Instruct --tensor-parallel-size 1 --max-model-len 2048 --max-num-seqs 32 --use-v2-block-manager"
         - name: MAIN_ENTRY
           value: "main_openai_vllm.py"
         - name: HOME
@@ -133,23 +143,18 @@ spec:
           value: "127.0.0.1"
         - name: FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT
           value: "80"
-        # envs below is from fedml_model_config.yaml(environment_variables)
-        - name: HF_HOME
-          value: "/home/fedml/fedml_serving/model_and_config"
-        - name: HF_TOKEN
-          value: "config/huggingface/DEFAULT_HF_TOKEN"
-        - name: INFERENCE_CONFIG
-          value: "config/inference/meta-llama--Meta-Llama-3-8B-Instruct.yaml"
         volumeMounts:
+          - name: shm
+            mountPath: /dev/shm
           - name: shared-model-dir
             mountPath: /home/fedml/models_serving
         resources:
           limits:
-            nvidia.com/gpu: "2"
+            nvidia.com/gpu: "1"
             cpu: "8"
             memory: "32Gi"
           requests:
-            nvidia.com/gpu: "2"
+            nvidia.com/gpu: "1"
             cpu: "8"
             memory: "32Gi"
         lifecycle:
@@ -159,6 +164,8 @@ spec:
               - /bin/sh
               - -c
               - |
+                MODELS_SERVING_DIR="/home/fedml/models_serving"
+                echo "[INFO] postStart exec start time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
                 # Find available Python command
                 if command -v python3 >/dev/null 2>&1; then
                     PYTHON_CMD=python3
@@ -170,10 +177,11 @@ spec:
                 fi
                 
                 # Install GPUtil if needed
-                $PYTHON_CMD -m pip install gputil >/dev/null 2>&1 || echo "[WARN] Failed to install GPUtil"
+                echo "[INFO] Installing GPUtil, start time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
+                $PYTHON_CMD -m pip install gputil -i https://mirrors.aliyun.com/pypi/simple/ >/dev/null 2>&1 || echo "[WARN] Failed to install GPUtil"
+                echo "[INFO] Installing GPUtil, end time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
                 
                 # Create a Python script for periodic GPU monitoring
-                MODELS_SERVING_DIR="/home/fedml/models_serving"
                 cat > "${MODELS_SERVING_DIR}/init_container.py" << 'EOF'
                 import GPUtil
                 import json
@@ -242,9 +250,14 @@ spec:
                 EOF
                 
                 # Start the monitoring script in background
-                nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py > $MODELS_SERVING_DIR/init_container.log 2>&1 &
+                nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py >> $MODELS_SERVING_DIR/init_container.log 2>&1 &
                 echo $! > $MODELS_SERVING_DIR/init_container.pid
+                echo "[INFO] postStart exec end time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
       volumes:
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: "2Gi"
       - name: pod-logs
         hostPath:
           path: /var/log/pods

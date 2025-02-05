@@ -12,7 +12,7 @@ spec:
       labels:
         app: fedml-agent-device-id1
     spec:
-      nodeName: edge-dgx-134
+      nodeName: kubeedge-dgx-134-rev1
       dnsConfig:
         nameservers:
           - 8.8.8.8
@@ -32,7 +32,7 @@ spec:
         - name: SCHEDULER_TYPE
           value: "K8S"
         - name: FEDML_API_KEY
-          value: "de6aa755c9114534a9805dce8c702355"
+          value: ""
         - name: FEDML_ENV
           value: "test"
         - name: FEDML_PROVIDER

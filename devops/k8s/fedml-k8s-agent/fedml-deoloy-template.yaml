@@ -99,7 +99,12 @@ spec:
             # check if container_run_command or main_entry is not empty
             if [ ! -z "${CONTAINER_RUN_COMMAND}" ]; then
               echo "[$(date)] Executing CONTAINER_RUN_COMMAND: ${CONTAINER_RUN_COMMAND}"
-              eval "${CONTAINER_RUN_COMMAND}"
+              if echo "${TASK_IMAGE_NAME}" | grep -q "vllm/vllm-openai"; then
+                echo "[$(date)] Detected vllm/vllm-openai image, executing with vllm API server"
+                python3 -m vllm.entrypoints.openai.api_server ${CONTAINER_RUN_COMMAND}
+              else
+                eval "${CONTAINER_RUN_COMMAND}"
+              fi
             elif [ ! -z "${MAIN_ENTRY}" ]; then
               echo "[$(date)] Executing python3 ${MAIN_ENTRY}"
               python3 "${MAIN_ENTRY}"
@@ -111,8 +116,10 @@ spec:
         # envs below is from fedml library
         - name: FEDML_USER_ENCRYPTED_API_KEY
           value: "[(${fedmlUserEncryptedApiKey})]"
-        # - name: CONTAINER_RUN_COMMAND
-        #   value: "ls -l"
+        - name: TASK_IMAGE_NAME
+          value: "[(${fedmlTaskImage})]"
+        - name: CONTAINER_RUN_COMMAND
+          value: "[(${runCommand})]"
         - name: MAIN_ENTRY
           value: "[(${mainEntry})]"
         - name: HOME
@@ -133,14 +140,14 @@ spec:
           value: "[(${fedmlEnvLocalOnPremisePlatformHost})]"
         - name: FEDML_ENV_LOCAL_ON_PREMISE_PLATFORM_PORT
           value: "[(${fedmlEnvLocalOnPremisePlatformPort})]"
-        # envs below is from fedml_model_config.yaml(environment_variables)
-        - name: HF_HOME
-          value: "[(${hfHome})]"
-        - name: HF_TOKEN
-          value: "[(${hfToken})]"
-        - name: INFERENCE_CONFIG
-          value: "[(${inferenceConfig})]"
+        # Dynamic environment variables from fedml_model_config.yaml(environment_variables)
+        [# th:each="entry : ${environmentVariables}"]
+        - name: [(${entry.key})]
+          value: "[(${entry.value})]"
+        [/]
         volumeMounts:
+          - name: shm
+            mountPath: /dev/shm
           - name: shared-model-dir
             mountPath: /home/fedml/models_serving
         resources:
@@ -159,6 +166,8 @@ spec:
               - /bin/sh
               - -c
               - |
+                MODELS_SERVING_DIR="/home/fedml/models_serving"
+                echo "[INFO] postStart exec start time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
                 # Find available Python command
                 if command -v python3 >/dev/null 2>&1; then
                     PYTHON_CMD=python3
@@ -170,10 +179,11 @@ spec:
                 fi
                 
                 # Install GPUtil if needed
-                $PYTHON_CMD -m pip install gputil >/dev/null 2>&1 || echo "[WARN] Failed to install GPUtil"
+                echo "[INFO] Installing GPUtil, start time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
+                $PYTHON_CMD -m pip install gputil -i https://mirrors.aliyun.com/pypi/simple/ >/dev/null 2>&1 || echo "[WARN] Failed to install GPUtil"
+                echo "[INFO] Installing GPUtil, end time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
                 
                 # Create a Python script for periodic GPU monitoring
-                MODELS_SERVING_DIR="/home/fedml/models_serving"
                 cat > "${MODELS_SERVING_DIR}/init_container.py" << 'EOF'
                 import GPUtil
                 import json
@@ -242,9 +252,14 @@ spec:
                 EOF
                 
                 # Start the monitoring script in background
-                nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py > $MODELS_SERVING_DIR/init_container.log 2>&1 &
+                nohup $PYTHON_CMD $MODELS_SERVING_DIR/init_container.py >> $MODELS_SERVING_DIR/init_container.log 2>&1 &
                 echo $! > $MODELS_SERVING_DIR/init_container.pid
+                echo "[INFO] postStart exec end time: $(date)" >> $MODELS_SERVING_DIR/init_container.log
       volumes:
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: "[(${shmMemorySize})]Gi"
       - name: pod-logs
         hostPath:
           path: /var/log/pods
