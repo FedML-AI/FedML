@@ -64,7 +64,7 @@ class HFTrainer(Trainer):
         if TYPE_CHECKING:
             self.args: ExperimentArguments = self.args  # noqa
 
-    def log(self, logs: Dict[str, float]) -> None:
+    def log(self, logs: Dict[str, float], start_time: Optional[float] = None) -> None:
         # Adapted from https://github.com/huggingface/transformers/blob/b71f20a7c9f3716d30f6738501559acf863e2c5c/examples/pytorch/language-modeling/run_clm.py#L630-L634
         # compute perplexity
         for key in tuple(logs.keys()):
@@ -77,7 +77,7 @@ class HFTrainer(Trainer):
                     perplexity = math.inf
                 logs[f"{prefix}perplexity"] = perplexity
 
-        super().log(logs)
+        super().log(logs, start_time)
 
     def has_callback(self, callback: Union[Type[TrainerCallback], TrainerCallback]) -> bool:
         # Adapted from https://github.com/huggingface/transformers/blob/a7da2996a00c0ea083012ac86ab70f0bc4799f33/src/transformers/trainer_callback.py#L332

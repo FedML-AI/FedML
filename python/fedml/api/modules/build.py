@@ -22,7 +22,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
 
     if type == "client" or type == "server":
         click.echo(
-            "Now, you are building the fedml packages which will be used in the FedML® Nexus AI Platform "
+            "Now, you are building the fedml packages which will be used in the TensorOpera® Nexus AI Platform "
             "platform."
         )
         click.echo(
@@ -34,7 +34,7 @@ def build(platform, type, source_folder, entry_point, config_folder, dest_folder
             + "."
         )
         click.echo(
-            "Then you may upload the packages on the configuration page in the FedML® Nexus AI Platform to "
+            "Then you may upload the packages on the configuration page in the TensorOpera® Nexus AI Platform to "
             "start your training flow."
         )
         click.echo("Building...")

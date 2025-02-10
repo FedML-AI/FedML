@@ -1,6 +1,6 @@
 
 # Introduction
-In this working example, we will run 1 aggregation server and 2 clients on the same machine using Docker + gRPC and we will use the FEDML.ai platform to run the FL job. 
+In this working example, we will run 1 aggregation server and 2 clients on the same machine using Docker + gRPC and we will use the TensorOpera.ai platform to run the FL job. 
 
 # gRPC Configuration File
 The content of the gRPC configuration file is as follows:
@@ -47,5 +47,5 @@ source /fedml/bin/activate
 fedml login -c <FEDML_API_KEY>
 ```
 
-Then we only need to compile our job and submit to our dockerb-based cluster as it is also discussed in detail in the official FEDML documentation: https://fedml.ai/octopus/userGuides
+Then we only need to compile our job and submit to our dockerb-based cluster as it is also discussed in detail in the official TensorOpera documentation: https://tensoropera.ai/octopus/userGuides
 

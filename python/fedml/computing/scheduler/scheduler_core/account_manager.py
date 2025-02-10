@@ -84,7 +84,7 @@ class FedMLAccountManager(Singleton):
             print("Please check whether your network is normal!")
             return None
 
-        # Bind account id to FedML® Nexus AI Platform
+        # Bind account id to TensorOpera® Nexus AI Platform
         register_try_count = 0
         edge_id = -1
         user_name = None

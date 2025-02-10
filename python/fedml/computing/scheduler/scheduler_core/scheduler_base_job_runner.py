@@ -594,7 +594,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
     def start_job_perf(self, job_pid):
         GeneralConstants.save_learning_process(self.run_id, job_pid, data_dir=self.agent_data_dir)
-        #self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
+        self.mlops_metrics.report_job_perf(self.args, self.agent_config["mqtt_config"], job_pid)
 
     def job_error_processor(self, error_list):
         self.check_runner_stop_event()

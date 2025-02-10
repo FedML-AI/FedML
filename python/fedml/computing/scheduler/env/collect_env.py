@@ -9,7 +9,7 @@ from ..slave.client_constants import ClientConstants
 
 
 def collect_env():
-    print("\n======== FedML (https://fedml.ai) ========")
+    print("\n======== FedML (https://tensoropera.ai) ========")
     print("FedML version: " + str(fedml.__version__))
     env_version = fedml.get_env_version()
     print("FedML ENV version: " + str(env_version))

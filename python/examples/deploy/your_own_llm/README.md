@@ -9,9 +9,9 @@ fedml model deploy --name llm --local
 #INFO:     Uvicorn running on http://0.0.0.0:2345 (Press CTRL+C to quit)
 curl -XPOST localhost:2345/predict -d '{"text": "Hello"}'
 ```
-## Option 2: Deploy to the Cloud (Using fedml®launch platform)
+## Option 2: Deploy to the Cloud (Using TensorOpera®launch platform)
 Uncomment the following line in llm.yaml,
-for infomation about the configuration, please refer to fedml®launch.
+for infomation about the configuration, please refer to TensorOpera®launch.
 ```yaml
 # computing:
 #   minimum_num_gpus: 1

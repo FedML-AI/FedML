@@ -62,7 +62,7 @@ environment_variables:
   VERBOSE: "True"
 
 # If you do not have any GPU resource but want to serve the model
-# Try fedml® launch platform, and uncomment the following lines.
+# Try TensorOpera® launch platform, and uncomment the following lines.
 # ------------------------------------------------------------
 computing:
   minimum_num_gpus: 1           # minimum # of GPUs to provision

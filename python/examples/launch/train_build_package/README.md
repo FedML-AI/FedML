@@ -3,7 +3,7 @@
 ```
 Usage: fedml train build [OPTIONS] [YAML_FILE]
 
-  Build training packages for the FedML® Nexus AI Platform.
+  Build training packages for the TensorOpera® Nexus AI Platform.
 
 Options:
   -h, --help              Show this message and exit.

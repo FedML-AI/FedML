@@ -12,7 +12,7 @@ from fedml.api import StorageMetadata
 from fedml.api.fedml_response import ResponseCode
 
 # Message strings constants
-version_help: str = "specify version of FedML® Nexus AI Platform. It should be dev, test or release"
+version_help: str = "specify version of TensorOpera® AI Platform. It should be dev, test or release"
 api_key_help: str = "user api key."
 
 
@@ -31,7 +31,7 @@ api_key_help: str = "user api key."
 )
 def fedml_storage(api_key, version):
     """
-    Manage storage on FedML® Nexus AI Platform
+    Manage storage on TensorOpera® AI Platform
     """
     pass
 
@@ -43,7 +43,7 @@ def validate_argument(ctx, param, value):
     return value
 
 
-@fedml_storage.command("upload", help="Upload data on FedML® Nexus AI Platform")
+@fedml_storage.command("upload", help="Upload data on TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_path", nargs=1, callback=validate_argument)
 @click.option("--name", "-n", type=str, help="Name your data to store. If not provided, the name will be the same as "
@@ -78,7 +78,7 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
         click.echo(f"Failed to upload data. Error message: {response.message}")
 
 
-@fedml_storage.command("list", help="List data stored on FedML® Nexus AI Platform")
+@fedml_storage.command("list", help="List data stored on TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--api_key", "-k", type=str, help=api_key_help,
@@ -108,7 +108,7 @@ def list_data(version, api_key):
                    f"Error message: {response.message}")
 
 
-@fedml_storage.command("get-user-metadata", help="Get user-defined metadata of data object stored on FedML® Nexus AI "
+@fedml_storage.command("get-user-metadata", help="Get user-defined metadata of data object stored on TensorOpera® AI "
                                                  "Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_name", nargs=1, callback=validate_argument)
@@ -136,7 +136,7 @@ def get_user_metadata(data_name, version, api_key):
         click.echo(f"Failed to fetch user-metadata for {data_name}. Error message: {response.message}")
 
 
-@fedml_storage.command("get-metadata", help="Get metadata of data object stored on FedML® Nexus AI Platform")
+@fedml_storage.command("get-metadata", help="Get metadata of data object stored on TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_name", nargs=1, callback=validate_argument)
 @click.option(
@@ -167,7 +167,7 @@ def get_metadata(data_name, version, api_key):
         click.echo(f"Fetching metadata failed. Error message: {response.message}")
 
 
-@fedml_storage.command("download", help="Download data stored on FedML® Nexus AI Platform")
+@fedml_storage.command("download", help="Download data stored on TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("data_name", nargs=1, callback=validate_argument)
 @click.option("--dest_path", "-d", default=None, type=str, help="Destination path to download data. By default, "
@@ -194,7 +194,7 @@ def download(data_name, dest_path, version, api_key, service):
         click.echo(f"Failed to download data {data_name}. Error message: {response.message}")
 
 
-@fedml_storage.command("delete", help="Delete data stored on FedML® Nexus AI Platform")
+@fedml_storage.command("delete", help="Delete data stored on TensorOpera® AI Platform")
 @click.argument("data_name", nargs=1, callback=validate_argument)
 @click.help_option("--help", "-h")
 @click.option(

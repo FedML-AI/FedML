@@ -3,14 +3,14 @@ import click
 import fedml.api
 
 
-@click.command("build", help="Build packages for the FedML® Nexus AI Platform")
+@click.command("build", help="Build packages for the TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="octopus",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch).",
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch).",
 )
 @click.option(
     "--type",

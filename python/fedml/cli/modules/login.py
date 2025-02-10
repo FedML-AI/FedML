@@ -10,7 +10,7 @@ from fedml.computing.scheduler.model_scheduler.device_client_constants import Cl
 from fedml.computing.scheduler.scheduler_core.general_constants import MarketplaceType
 
 
-@click.command("login", help="Login the FedML® Nexus AI Platform")
+@click.command("login", help="Login the TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.argument("api_key", nargs=-1)
 @click.option(
@@ -18,13 +18,13 @@ from fedml.computing.scheduler.scheduler_core.general_constants import Marketpla
     "-v",
     type=str,
     default="release",
-    help="Login which backend environment version of FedML® Nexus AI Platform. It should be dev, test, or release.",
+    help="Login which backend environment version of TensorOpera® AI Platform. It should be dev, test, or release.",
 )
 @click.option(
     "--compute_node", "-c", default=None, is_flag=True,
     help="Login as the general compute node in FEDML Nexus AI compute network. This is enabled by default. "
-         "After login, you can view and manage the device in the FEDML® Nexus AI Platform: https://fedml.ai/compute. "
-         "It can be grouped as a cluster and then you can use FEDML®Launch to schedule any job (training, deployment, federated learning) to it. "
+         "After login, you can view and manage the device in the TensorOpera® AI Platform: https://tensoropera.ai/gpu/local?label=Private. "
+         "It can be grouped as a cluster and then you can use TensorOpera®Launch to schedule any job (training, deployment, federated learning) to it. "
          "You can not specify the option -c and -s simultaneously.",
 )
 @click.option(
@@ -34,7 +34,7 @@ from fedml.computing.scheduler.scheduler_core.general_constants import Marketpla
 )
 @click.option(
     "--provider", "-p", default=None, is_flag=True,
-    help="Login as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://fedml.ai/gpu-supplier. You can share your GPUs in this way and earn money. "
+    help="Login as the FedML compute node (GPU) provider (supplier). This is used by Nexus AI Platform - Share and Earn: https://tensoropera.ai/share-and-earn. You can share your GPUs in this way and earn money. "
          "You can specify the option -p and -c simultaneously (can be used as provider for others as well compute node for your own jobs), but you can not specify -p and -s simultaneously.",
 )
 @click.option(
@@ -94,7 +94,7 @@ from fedml.computing.scheduler.scheduler_core.general_constants import Marketpla
          "for one hour is $1.5 per GPU, then you would input 1.5. Do not multiply this number by the total number of "
          "GPUs in the node, as the system will automatically detect the number of GPUs and include it in the cost "
          "calculation. Default is 0.0."
-         "Optionally, you can also set this price later through supplier page on the FEDML® Nexus AI Platform."
+         "Optionally, you can also set this price later through supplier page on the TensorOpera® AI Platform."
 )
 @click.option(
     "--name",
