@@ -11,6 +11,7 @@ from multiprocessing import Queue
 import fedml
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsConfigs
 from fedml.core.mlops.mlops_runtime_log import MLOpsFormatter
+from .device_model_msg_object import FedMLModelMsgObject
 from .device_client_constants import ClientConstants
 from .device_model_cache import FedMLModelCache
 from .device_server_constants import ServerConstants
@@ -278,6 +279,9 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                     message_center=self.message_center)
+                # when report failed to the MLOps, need to delete the replica has successfully deployed and release the gpu
+                model_msg_object = FedMLModelMsgObject(topic, payload)
+                self.send_deployment_delete_request_to_edges(payload, model_msg_object, message_center=self.message_center)
                 return
 
             # Failure handler, send the rollback message to the worker devices only if it has not been rollback
