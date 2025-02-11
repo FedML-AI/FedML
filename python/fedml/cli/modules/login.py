@@ -103,15 +103,27 @@ from fedml.computing.scheduler.scheduler_core.general_constants import Marketpla
     default="",
     help="Name of the node.",
 )
+@click.option(
+    "--service_provider",
+    "-sp",
+    type=str,
+    default="",
+    help="Service provider.",
+)
 def fedml_login(
         api_key, version, compute_node, server, provider, deploy_worker_num,
         local_on_premise_platform, local_on_premise_platform_port,
         master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type, marketplace_type,
-        price_per_hour, name
+        price_per_hour, name, service_provider
 ):
     fedml.set_env_version(version)
     fedml.set_local_on_premise_platform_host(local_on_premise_platform)
     fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
+
+    if service_provider == "chainopera" or service_provider == "co":
+        fedml.set_env_version('local')
+        fedml.set_local_on_premise_platform_host('open.chainopera.ai')
+        fedml.set_local_on_premise_platform_port(443)
 
     try:
         price_per_hour = float(price_per_hour)
