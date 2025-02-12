@@ -4,6 +4,7 @@ import logging
 import time
 import traceback
 import os
+import uuid
 
 from typing import Any, Mapping, MutableMapping, Union
 from urllib.parse import urlparse
@@ -198,6 +199,7 @@ async def _predict(
     # Always increase the pending requests counter on a new incoming request.
     FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
     inference_response = {}
+    request_uuid = str(uuid.uuid4())  # Generate unique request ID
 
     try:
         in_end_point_id = end_point_id
@@ -260,6 +262,10 @@ async def _predict(
                 output_list = input_json.get("outputs", [])
 
                 # main execution of redirecting the inference request to the idle device
+                inference_start_time = time.time()
+                start_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(inference_start_time))
+                logging.info(f"[Request {request_uuid}] Starting send_inference_request at {start_time_str}")
+                
                 inference_response = await send_inference_request(
                     idle_device,
                     end_point_id,
@@ -269,6 +275,11 @@ async def _predict(
                     inference_type=in_return_type,
                     connectivity_type=connectivity_type,
                     path=path, request_method=request_method)
+                
+                inference_end_time = time.time()
+                end_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(inference_end_time))
+                inference_duration = inference_end_time - inference_start_time
+                logging.info(f"[Request {request_uuid}] Completed send_inference_request at {end_time_str}, duration: {inference_duration:.3f} seconds")
 
             # Calculate model metrics
             try:
