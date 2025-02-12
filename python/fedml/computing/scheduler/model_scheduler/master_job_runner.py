@@ -451,7 +451,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
-                workers = 10
+                workers = 2
                 logging.info(f"start the model inference gateway workers[{workers}] no uvloop/httptools...")
                 inference_gateway_process = ServerConstants.exec_console_with_script(
                     f"{python_program} -m uvicorn {inference_gw_cmd} "
