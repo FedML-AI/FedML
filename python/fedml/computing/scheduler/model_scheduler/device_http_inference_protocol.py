@@ -14,6 +14,15 @@ from typing import Mapping
 
 
 class FedMLHttpInference:
+    _http_client = None  # Class variable for shared HTTP client
+
+    @classmethod
+    async def get_http_client(cls):
+        if cls._http_client is None:
+            limits = httpx.Limits(max_keepalive_connections=100, max_connections=100)
+            cls._http_client = httpx.AsyncClient(limits=limits)
+        return cls._http_client
+
     def __init__(self):
         pass
 
@@ -101,18 +110,18 @@ async def stream_generator(inference_url, input_json, method="POST"):
 async def redirect_non_stream_req_to_worker(inference_type, inference_url, model_api_headers, model_inference_json,
                                             timeout=None, method="POST"):
     response_ok = True
-    request_id = str(uuid.uuid4())[:8]  # 生成短UUID作为请求ID
+    request_id = str(uuid.uuid4())[:8]
     start_time = time.time()
     logging.info(f"[Request-{request_id}] Starting HTTP request to {inference_url}")
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method=method, url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
-            )
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            logging.info(f"[Request-{request_id}] Completed HTTP request. Time taken: {elapsed_time:.3f} seconds")
+        client = await FedMLHttpInference.get_http_client()
+        response = await client.request(
+            method=method, url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
+        )
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"[Request-{request_id}] Completed HTTP request. Time taken: {elapsed_time:.3f} seconds")
     except Exception as e:
         end_time = time.time()
         elapsed_time = end_time - start_time

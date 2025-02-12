@@ -139,11 +139,10 @@ class MLOpsRuntimeLog:
         self.stdout_handle = None
         self.logger = None
         self.args = args
-        # if hasattr(args, "using_mlops"):
-        #     self.should_write_log_file = args.using_mlops
-        # else:
-        #     self.should_write_log_file = False
-        self.should_write_log_file = True
+        if hasattr(args, "using_mlops"):
+            self.should_write_log_file = args.using_mlops
+        else:
+            self.should_write_log_file = False
         if not hasattr(args, "log_file_dir"):
             setattr(args, "log_file_dir", "./logs")
         self.log_file_dir = args.log_file_dir
@@ -176,14 +175,14 @@ class MLOpsRuntimeLog:
         self.logger.setLevel(log_level)
         self.logger.handlers.clear()
         self.logger.addHandler(self.stdout_handle)
-        # if hasattr(self, "should_write_log_file") and self.should_write_log_file:
-        run_id, edge_id = self.args.run_id, MLOpsLoggingUtils.get_edge_id_from_args(self.args)
-        log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
-        file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
-                                        edge_id=edge_id)
-        file_handle.setFormatter(self.format_str)
-        file_handle.setLevel(logging.INFO)
-        self.logger.addHandler(file_handle)
+        if hasattr(self, "should_write_log_file") and self.should_write_log_file:
+            run_id, edge_id = self.args.run_id, MLOpsLoggingUtils.get_edge_id_from_args(self.args)
+            log_config_file = os.path.join(self.log_file_dir, MLOpsLoggingUtils.LOG_CONFIG_FILE)
+            file_handle = MLOpsFileHandler(filepath=log_file_path, log_config_file=log_config_file, run_id=run_id,
+                                           edge_id=edge_id)
+            file_handle.setFormatter(self.format_str)
+            file_handle.setLevel(logging.INFO)
+            self.logger.addHandler(file_handle)
         logging.root = self.logger
         # Rewrite sys.stdout to redirect stdout (i.e print()) to Logger
         sys.stdout.write = self.logger.info
