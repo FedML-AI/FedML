@@ -19,7 +19,7 @@ class FedMLHttpInference:
     @classmethod
     async def get_http_client(cls):
         if cls._http_client is None:
-            limits = httpx.Limits(max_keepalive_connections=100, max_connections=100)
+            limits = httpx.Limits(max_keepalive_connections=50, max_connections=1000)
             cls._http_client = httpx.AsyncClient(limits=limits)
         return cls._http_client
 

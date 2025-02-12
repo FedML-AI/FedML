@@ -452,15 +452,20 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
-                inference_gateway_process = ServerConstants.exec_console_with_script(f"{python_program} "
-                                                                                     f"-m uvicorn {inference_gw_cmd} "
-                                                                                     f"--host 0.0.0.0 "
-                                                                                     f"--port {str(inference_port)} "
-                                                                                     f"--reload --reload-delay 3 "
-                                                                                     f"--reload-dir {fedml_base_dir} "
-                                                                                     f"--log-level info",
-                                                                                     should_capture_stdout=False,
-                                                                                     should_capture_stderr=False)
+                inference_gateway_process = ServerConstants.exec_console_with_script(
+                    f"{python_program} -m uvicorn {inference_gw_cmd} "
+                    f"--host 0.0.0.0 "
+                    f"--port {str(inference_port)} "
+                    f"--workers 10 "
+                    f"--loop uvloop "
+                    f"--http httptools "
+                    f"--limit-concurrency 1000 "
+                    f"--backlog 2048 "
+                    f"--timeout-keep-alive 75 "
+                    f"--log-level warning ",
+                    should_capture_stdout=False,
+                    should_capture_stderr=False
+                )
                 return inference_gateway_process
             else:
                 return inference_gateway_pids[0]
