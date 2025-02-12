@@ -446,19 +446,20 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         python_program = get_python_program()
         inference_port = ServerConstants.get_inference_master_gateway_port()
         if not ServerConstants.is_running_on_k8s():
-            logging.info(f"start the model inference gateway...")
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+                workers = 10
+                logging.info(f"start the model inference gateway workers[{workers}] no uvloop/httptools...")
                 inference_gateway_process = ServerConstants.exec_console_with_script(
                     f"{python_program} -m uvicorn {inference_gw_cmd} "
                     f"--host 0.0.0.0 "
                     f"--port {str(inference_port)} "
-                    f"--workers 10 "
-                    f"--loop uvloop "
-                    f"--http httptools "
+                    f"--workers {workers} "
+                    # f"--loop uvloop "
+                    # f"--http httptools "
                     f"--limit-concurrency 1000 "
                     f"--backlog 2048 "
                     f"--timeout-keep-alive 75 "
