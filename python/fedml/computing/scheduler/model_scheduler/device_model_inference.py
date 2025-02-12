@@ -46,46 +46,46 @@ FEDML_MODEL_CACHE.set_redis_params(redis_addr=Settings.redis_addr,
                                    redis_password=Settings.redis_password)
 
 
-@api.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
-        try:
-            # Attempt to parse the JSON body.
-            request_json = await request.json()
-        except json.JSONDecodeError:
-            return JSONResponse(
-                {"error": True, "message": "Invalid JSON."},
-                status_code=status.HTTP_400_BAD_REQUEST)
+# @api.middleware("http")
+# async def auth_middleware(request: Request, call_next):
+#     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
+#         try:
+#             # Attempt to parse the JSON body.
+#             request_json = await request.json()
+#         except json.JSONDecodeError:
+#             return JSONResponse(
+#                 {"error": True, "message": "Invalid JSON."},
+#                 status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Get endpoint's total pending requests.
-        end_point_id = request_json.get("end_point_id", None)
-        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
-        if pending_requests_num:
-            # Fetch metrics of the past k=3 requests.
-            pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
-                end_point_id=end_point_id,
-                k_recent=3)
+#         # Get endpoint's total pending requests.
+#         end_point_id = request_json.get("end_point_id", None)
+#         pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
+#         if pending_requests_num:
+#             # Fetch metrics of the past k=3 requests.
+#             pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
+#                 end_point_id=end_point_id,
+#                 k_recent=3)
 
-            # Get the request timeout from the endpoint settings.
-            request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
-                .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
+#             # Get the request timeout from the endpoint settings.
+#             request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
+#                 .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
 
-            # Only proceed if the past k metrics collection is not empty.
-            if pask_k_metrics:
-                # Measure the average latency in seconds(!), hence the 0.001 multiplier.
-                past_k_latencies_sec = \
-                    [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
-                mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
+#             # Only proceed if the past k metrics collection is not empty.
+#             if pask_k_metrics:
+#                 # Measure the average latency in seconds(!), hence the 0.001 multiplier.
+#                 past_k_latencies_sec = \
+#                     [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
+#                 mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
 
-                # If timeout threshold is exceeded then cancel and return time out error.
-                should_block = (mean_latency * pending_requests_num) > request_timeout_s
-                if should_block:
-                    return JSONResponse(
-                        {"error": True, "message": "Request timed out."},
-                        status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+#                 # If timeout threshold is exceeded then cancel and return time out error.
+#                 should_block = (mean_latency * pending_requests_num) > request_timeout_s
+#                 if should_block:
+#                     return JSONResponse(
+#                         {"error": True, "message": "Request timed out."},
+#                         status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
-    response = await call_next(request)
-    return response
+#     response = await call_next(request)
+#     return response
 
 
 @api.on_event("startup")
