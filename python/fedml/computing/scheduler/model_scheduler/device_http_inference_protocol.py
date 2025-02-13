@@ -116,9 +116,9 @@ async def stream_generator(inference_url, input_json, method="POST"):
 async def redirect_non_stream_req_to_worker(inference_type, inference_url, model_api_headers, model_inference_json,
                                             timeout=None, method="POST"):
     response_ok = True
-    request_id = str(uuid.uuid4())[:8]
-    start_time = time.time()
-    logging.info(f"[Request-{request_id}] Starting HTTP request to {inference_url}")
+    # request_id = str(uuid.uuid4())[:8]
+    # start_time = time.time()
+    # logging.info(f"[Request-{request_id}] Starting HTTP request to {inference_url}")
     
     try:
          # async with httpx.AsyncClient() as client:
@@ -126,13 +126,13 @@ async def redirect_non_stream_req_to_worker(inference_type, inference_url, model
         response = await client.request(
             method=method, url=inference_url, headers=model_api_headers, json=model_inference_json, timeout=timeout
         )
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        logging.info(f"[Request-{request_id}] Completed HTTP request. Time taken: {elapsed_time:.3f} seconds")
+        # end_time = time.time()
+        # elapsed_time = end_time - start_time
+        # logging.info(f"[Request-{request_id}] Completed HTTP request. Time taken: {elapsed_time:.3f} seconds")
     except Exception as e:
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        logging.error(f"[Request-{request_id}] Failed HTTP request after {elapsed_time:.3f} seconds. Error: {str(e)}")
+        # end_time = time.time()
+        # elapsed_time = end_time - start_time
+        # logging.error(f"[Request-{request_id}] Failed HTTP request after {elapsed_time:.3f} seconds. Error: {str(e)}")
         response_ok = False
         model_inference_result = {"error": e}
         return response_ok, model_inference_result
