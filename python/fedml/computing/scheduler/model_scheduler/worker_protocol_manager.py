@@ -170,7 +170,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
             ClientConstants.save_run_process(run_id, process.pid)
 
     def callback_delete_deployment(self, topic, payload):
-        logging.info("[Worker] callback_delete_deployment")
+        logging.info("[Worker] callback_delete_deployment, topic: {}, payload: {}".format(topic, payload))
 
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)

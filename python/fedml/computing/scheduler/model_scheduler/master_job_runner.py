@@ -279,9 +279,17 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                     message_center=self.message_center)
+                
                 # when report failed to the MLOps, need to delete the replica has successfully deployed and release the gpu
-                model_msg_object = FedMLModelMsgObject(topic, payload)
-                self.send_deployment_delete_request_to_edges(payload, model_msg_object, message_center=self.message_center)
+                model_config = dict()
+                model_config["model_name"] = payload_json["model_name"]
+                model_config["model_id"] = payload_json["model_id"]
+                model_config["model_version"] = payload_json["model_version"]
+                # add model_config to the payload for the delete request
+                payload_json["model_config"] = model_config
+                payload_for_del_deploy = json.dumps(payload_json)
+                model_msg_object = FedMLModelMsgObject(topic, payload_for_del_deploy)
+                self.send_deployment_delete_request_to_edges(payload_for_del_deploy, model_msg_object, message_center=self.message_center)
                 return
 
             # Failure handler, send the rollback message to the worker devices only if it has not been rollback
