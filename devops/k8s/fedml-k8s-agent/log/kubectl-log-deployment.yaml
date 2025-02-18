@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-demo
+  template:
+    metadata:
+      labels:
+        app: log-demo
+    spec:
+      serviceAccountName: log-reader  # 使用上面创建的 ServiceAccount
+      nodeName: edge-dgx-134
+      containers:
+      # 模拟应用容器，每秒产生一条日志
+      - name: app-container
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - while true; do
+              echo "[$(date)] Application log message";
+              sleep 1;
+            done
+
+      # 日志收集容器
+      - name: log-collector
+        image: bitnami/kubectl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # 等待 pod 名称环境变量设置完成
+            while [ -z "$POD_NAME" ]; do
+              sleep 1;
+            done
+            echo "Starting log collection for pod: $POD_NAME"
+            # 持续监控应用容器的日志
+            kubectl logs -f -c app-container $POD_NAME
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace

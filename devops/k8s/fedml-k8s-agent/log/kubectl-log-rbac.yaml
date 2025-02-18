@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: log-reader
+  namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-log-reader
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: log-reader-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: log-reader
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-log-reader
+  apiGroup: rbac.authorization.k8s.io 

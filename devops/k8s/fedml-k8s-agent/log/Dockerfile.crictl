@@ -1,0 +1,36 @@
+# docker build -t fedml/crictl-ubuntu:v2 -f /root/fedml-k8s-agent/Dockerfile.crictl .
+FROM ubuntu:22.04
+
+# 避免交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装必要的工具
+RUN apt-get update && \
+    apt-get install -y jq curl ca-certificates vim && \
+    rm -rf /var/lib/apt/lists/* && \
+    # 安装 crictl
+    VERSION="v1.24.1" && \
+    curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz --output crictl.tar.gz && \
+    tar zxvf crictl.tar.gz -C /usr/local/bin && \
+    rm -f crictl.tar.gz && \
+    chmod +x /usr/local/bin/crictl
+
+# 设置工作目录
+WORKDIR /app
+
+COPY setup-ssh.sh /app/
+RUN chmod +x /app/setup-ssh.sh && \
+    ./setup-ssh.sh && \
+    rm -rf /var/lib/apt/lists/*
+
+# 创建启动脚本
+COPY <<EOF /start.sh
+#!/bin/bash
+/usr/sbin/sshd
+exec "\$@"
+EOF
+
+RUN chmod +x /start.sh
+
+ENTRYPOINT ["/start.sh"]
+CMD ["tail", "-f", "/dev/null"]

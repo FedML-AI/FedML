@@ -480,4 +480,5 @@ if __name__ == "__main__":
     import uvicorn
     port = 2203
     logging.basicConfig(level=logging.INFO)
+    print(f"uvicorn run port: {port} in device_model_inference")
     uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")

@@ -116,6 +116,7 @@ class FedMLBaseSlaveAgent(ABC):
             python_program = get_python_program()
             cur_dir = os.path.dirname(__file__)
             fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+            print(f"uvicorn run port: {ClientConstants.LOCAL_CLIENT_API_PORT} in base_slave_agent")
             self.local_api_process = ClientConstants.exec_console_with_script(
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} "
                 "--reload --reload-delay 3 --reload-dir {} --log-level critical".format(

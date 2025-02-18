@@ -1,0 +1,159 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-demo
+  template:
+    metadata:
+      labels:
+        app: log-demo
+    spec:
+      nodeName: edge-dgx-134
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+      containers:
+      - name: app-container
+        image: busybox
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "[$(date)] App container starting - waiting for ready signal..."
+            attempt=1
+            while [ ! -f /shared-data/ready ]; do
+              echo "[$(date)] Check attempt $attempt: Ready signal not found, waiting..."
+              attempt=$((attempt + 1))
+              sleep 1
+            done
+            echo "[$(date)] ✓ Ready signal received after $((attempt - 1)) attempts!"
+            
+            echo "[$(date)] Shared directory content:"
+            ls -R /shared-data/
+            
+            echo "[$(date)] Content of demo.txt:"
+            cat /shared-data/demo/demo.txt
+            
+            # 继续原有的日志输出
+            while true; do
+              echo "[$(date)] Application log message";
+              sleep 1;
+            done
+        volumeMounts:
+        - name: shared-data
+          mountPath: /shared-data
+
+      - name: log-collector
+        image: fedml/crictl-ubuntu:v7
+        ports:
+        - containerPort: 22
+          hostPort: 2222
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo "[$(date)] Setting up shared directory structure..."
+            # 创建demo目录
+            mkdir -p /shared-data/demo
+            echo "[$(date)] Created demo directory"
+            
+            # 创建示例文件
+            echo "This is a demo file created by log-collector at $(date)" > /shared-data/demo/demo.txt
+            echo "[$(date)] Created demo.txt file"
+            
+            # 延迟10秒创建ready标志
+            echo "[$(date)] Waiting 10 seconds before creating ready signal..."
+            sleep 10
+            
+            # 创建ready标志文件
+            touch /shared-data/ready
+            echo "[$(date)] ✓ Ready signal file created"
+            
+            # 继续原有的日志收集逻辑
+            echo "[$(date)] Starting log collector..."
+            
+            # 配置 crictl
+            cat > /etc/crictl.yaml <<EOF
+            runtime-endpoint: unix:///run/containerd/containerd.sock
+            image-endpoint: unix:///run/containerd/containerd.sock
+            timeout: 30
+            debug: false
+            EOF
+            
+            interval=20
+            
+            # 获取容器ID（只获取一次）
+            while true; do
+              CONTAINER_ID=$(crictl ps --name app-container --quiet)
+              if [ -n "$CONTAINER_ID" ]; then
+                echo "[$(date)] Found container ID: $CONTAINER_ID"
+                # 获取GPU信息
+                echo "[$(date)] GPU Information:"
+                GPU_INFO=$(crictl inspect $CONTAINER_ID | jq -r '.info.config.envs[] | select(.key=="NVIDIA_VISIBLE_DEVICES") | .value')
+                if [ -n "$GPU_INFO" ]; then
+                  echo "Available GPUs: $GPU_INFO"
+                  GPU_COUNT=$(echo "$GPU_INFO" | tr ',' '\n' | wc -l)
+                  echo "Total GPU Count: $GPU_COUNT"
+                else
+                  echo "No GPU information found"
+                fi
+                break
+              fi
+              echo "[$(date)] Waiting for app-container to be ready..."
+              sleep 2
+            done
+            
+            # 首次获取所有日志
+            echo "----------------------------------------"
+            echo "[$(date)] Initial logs:"
+            crictl logs --timestamps $CONTAINER_ID
+            
+            # 记录当前时间作为下次收集的起点
+            last_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            echo "[$(date)] Next collection will start from: $last_time"
+            
+            # 循环收集新日志
+            while true; do
+              echo "----------------------------------------"
+              sleep $interval
+              
+              current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+              echo "[$(date)] Collecting logs since: $last_time"
+              
+              # 使用上次记录的时间获取日志
+              crictl logs --timestamps --since="$last_time" $CONTAINER_ID
+              
+              # 更新上次检查时间
+              last_time=$current_time
+              echo "[$(date)] Next collection will start from: $last_time"
+            done
+        volumeMounts:
+        - name: containerd-sock
+          mountPath: /run/containerd/containerd.sock
+        - name: pod-logs
+          mountPath: /var/log/pods
+        - name: container-logs
+          mountPath: /var/log/containers
+        - name: shared-data
+          mountPath: /shared-data
+      volumes:
+      - name: containerd-sock
+        hostPath:
+          path: /run/containerd/containerd.sock
+          type: Socket
+      - name: pod-logs
+        hostPath:
+          path: /var/log/pods
+          type: Directory
+      - name: container-logs
+        hostPath:
+          path: /var/log/containers
+          type: Directory
+      - name: shared-data
+        emptyDir: {}

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-demo
+  template:
+    metadata:
+      labels:
+        app: log-demo
+    spec:
+      nodeName: edge-dgx-134
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+      containers:
+      - name: app-container
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - while true; do
+              echo "[$(date)] Application log message";
+              sleep 1;
+            done
+      - name: log-collector
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting log collector..."
+            while true; do
+              echo "Current files in /var/log/containers:"
+              ls -l /var/log/containers
+              
+              echo "Searching for pod logs..."
+              POD_NAME=$(hostname)
+              echo "Pod name: $POD_NAME"
+              
+              # 使用更精确的日志文件匹配模式
+              LOG_FILE=$(find /var/log/containers -name "${POD_NAME}_default_app-container*.log" 2>/dev/null | head -n1)
+              
+              if [ -n "$LOG_FILE" ]; then
+                echo "Found log file: $LOG_FILE"
+                echo "Starting to tail logs..."
+                tail -F "$LOG_FILE" || {
+                  echo "Error tailing file, will retry..."
+                  sleep 2
+                }
+              else
+                echo "No log file found for app-container, waiting..."
+                sleep 2
+              fi
+            done
+        volumeMounts:
+        - name: container-logs
+          mountPath: /var/log/containers
+          readOnly: true
+        - name: pod-logs
+          mountPath: /var/log/pods
+          readOnly: true
+      volumes:
+      - name: container-logs
+        hostPath:
+          path: /var/log/containers
+      - name: pod-logs
+        hostPath:
+          path: /var/log/pods

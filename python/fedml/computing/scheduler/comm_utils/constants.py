@@ -8,6 +8,33 @@ class SchedulerConstants:
     ERR_MSG_BINDING_EXCEPTION_2 = "[2] Exception occurs when logging to MLOps."
     ERR_MSG_BINDING_EXIT_RETRYING = "If you don't want to retry logging into MLOps, open another terminal and "\
                                     "run `fedml logout` to logout."
+    
+    LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-model-client'
+
+    ENV_MODEL_INFERENCE_PORT_IN_K8S = "MODEL_INFERENCE_PORT_IN_K8S"
+    MODEL_INFERENCE_DEFAULT_PORT_IN_K8S = 2204
+
+    PORT_INSIDE_CONTAINER_DEFAULT = 2345
+
+    # use to identify the scheduler type
+    SCHEDULER_TYPE_PARAM_NAME = "SCHEDULER_TYPE"
+    SCHEDULER_TYPE_K8S = "K8S"
+
+    SCHEDULER_TASK_TYPE_PARAM_NAME = "SCHEDULER_TASK_TYPE"
+    SCHEDULER_TASK_TYPE_DEPLOY = "DEPLOY"
+
+    # k8s scheduler
+    REPLICATE_NUM_PER_POD = 1
+
+    # k8s pod name
+    K8S_POD_FEDML_AGENT_NAME = "fedml-agent"
+    K8S_POD_CONTAINER_TASK_NAME = "container-task"
+
+    # k8s pod file name
+    CURRENT_MODEL_DIR = "current_model"
+    K8S_POD_NAME_FILE = ".current_pod_name"
+    K8S_POD_GPU_INFO_FILE = ".gpu_info.json"
+    K8S_POD_READY_FILE = ".ready"
 
     PLATFORM_TYPE_FALCON = "falcon"
     PLATFORM_TYPE_OCTOPUS = "octopus"

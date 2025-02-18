@@ -73,6 +73,7 @@ class MasterApiDaemon(object):
 
         cur_dir = os.path.dirname(__file__)
         fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
+        print(f"uvicorn run port: {port} in master_api_daemon")
         uvicorn.run(api, host="0.0.0.0", port=port)
 
 

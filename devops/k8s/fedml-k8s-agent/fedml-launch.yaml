@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedml-agent-device-id1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedml-agent-device-id1
+  template:
+    metadata:
+      labels:
+        app: fedml-agent-device-id1
+    spec:
+      nodeName: kubeedge-dgx-134-rev1
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+      containers:
+      # fedml-agent is the fix container name that runs the fedml(master&slave)
+      - name: fedml-agent
+        image: fedml/fedml-k8s-agent:202501151600
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 22
+          hostPort: 38022
+        env:
+        - name: SSH_PUBLIC_KEY_SYSTEM
+          value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITAoK1DEXdsyB2UNZvZ5gPc0EJpn2V+gFLQTj18HsOz fedml@tensoropera.ai"
+        - name: SSH_PUBLIC_KEY_USER
+          value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4JoJM7/x0zP4S3D85cTb9bdEl6u02W0QPHSmSZ0bbs yangliu@yanglius-MacBook-Pro.local"
+        - name: SCHEDULER_TYPE
+          value: "K8S"
+        - name: FEDML_API_KEY
+          value: ""
+        - name: FEDML_ENV
+          value: "test"
+        - name: FEDML_PROVIDER
+          value: "false"
+        - name: FEDML_DEVICE_ID
+          value: "edge-dgx-134-000002"
+        resources:
+          requests:
+            nvidia.com/gpu: "2"
+            cpu: "8"
+            memory: "32Gi"
+          limits:
+            nvidia.com/gpu: "2"
+            cpu: "8"
+            memory: "32Gi"

@@ -3,6 +3,9 @@ import copy
 
 from typing import List
 
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
 from .device_client_constants import ClientConstants
@@ -78,6 +81,15 @@ class FedMLDeviceReplicaController:
         id_replica_num[id] = avail_num // self.gpu_per_replica
         """
         id_replica_num = {}
+
+        # use k8s scheduler, one device only has one replica
+        if SchedulerUtils.is_using_k8s():
+            for id, avail_num in self.devices_avail_gpus.items():
+                id_replica_num[str(id)] = SchedulerUtils.get_replicate_num_per_pod()
+            
+            logging.info(f"using k8s scheduler, id_replica_num: {id_replica_num}")   
+            return id_replica_num
+
         for id, avail_num in self.devices_avail_gpus.items():
             if type(avail_num) is not int:
                 logging.warning(f"The value in gpu_topology should be int, "

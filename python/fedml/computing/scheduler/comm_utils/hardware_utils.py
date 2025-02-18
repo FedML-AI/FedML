@@ -6,10 +6,11 @@ from docker import DockerClient
 from fedml.computing.scheduler.comm_utils.gpu_utils.gpu_utils import GPUCardUtil, GPUCard
 from fedml.computing.scheduler.comm_utils.gpu_utils.nvidia_utils import NvidiaGPUtil
 from fedml.computing.scheduler.comm_utils.gpu_utils.qualcomm_utils import QualcommNPUtil
+from fedml.computing.scheduler.comm_utils.gpu_utils.k8s_gpu_utils import K8sGPUtil
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.comm_utils.singleton import Singleton
 
 GPU_CARD_UTILS = [NvidiaGPUtil, QualcommNPUtil]
-
 
 # This function is just for debugging, can be removed at later point
 def get_gpu_list_and_realtime_gpu_available_ids() -> (List[dict], List[int]):
@@ -40,6 +41,12 @@ class HardwareUtil(metaclass=Singleton):
     @classmethod
     def __get_util(cls) -> Optional[GPUCardUtil]:
         if cls.__gpu_util is not None:
+            return cls.__gpu_util
+        
+        # use k8s scheduler, return K8sGPUtil
+        if SchedulerUtils.is_using_k8s_for_deploy():
+            logging.info(f"using k8s scheduler for deploy, return K8sGPUtil")
+            cls.__gpu_util = K8sGPUtil()
             return cls.__gpu_util
 
         for gpu_util in GPU_CARD_UTILS:

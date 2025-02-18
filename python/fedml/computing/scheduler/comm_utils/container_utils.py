@@ -9,11 +9,13 @@ from dateutil.parser import isoparse
 import docker
 from docker import errors
 
-from fedml.computing.scheduler.comm_utils import sys_utils
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 import time
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.crictl_utils import CriClient
 
 
 class ContainerUtils(Singleton):
@@ -25,6 +27,9 @@ class ContainerUtils(Singleton):
         return ContainerUtils()
 
     def get_docker_client(self):
+        if SchedulerUtils.is_using_k8s():
+            return None
+        
         try:
             client = docker.from_env()
         except Exception:
@@ -35,6 +40,9 @@ class ContainerUtils(Singleton):
         return client
 
     def get_docker_object(self, container_name):
+        if SchedulerUtils.is_using_k8s():
+            return None
+        
         client = self.get_docker_client()
         if client is None:
             return None
@@ -51,6 +59,15 @@ class ContainerUtils(Singleton):
         return container_obj
 
     def get_container_logs(self, container_name, timestamps=False):
+        if SchedulerUtils.is_using_k8s():
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id()
+            if container_id:
+                logs = cri_client.get_logs(container_id, since=None, follow=False, timestamps=timestamps)
+                if logs:
+                    return logs
+            return None
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return None
@@ -63,6 +80,15 @@ class ContainerUtils(Singleton):
         return logs_content
 
     def get_container_logs_since(self, container_name, since_time: int, timestamps=False):
+        if SchedulerUtils.is_using_k8s():
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id()
+            if container_id:
+                logs = cri_client.get_logs(container_id, since=since_time, follow=False, timestamps=timestamps)
+                if logs:
+                    return logs
+            return None
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return None
@@ -76,6 +102,10 @@ class ContainerUtils(Singleton):
         return logs_content
 
     def remove_container(self, container_name):
+        if SchedulerUtils.is_using_k8s():
+            # no need to remove container in k8s scheduler
+            return False
+
         container_obj = self.get_docker_object(container_name)
         if container_obj is None:
             return False
@@ -91,7 +121,12 @@ class ContainerUtils(Singleton):
 
         return True
 
-    def restart_container(self, container_name, container_port=2345):
+    def restart_container(self, container_name, container_port=SchedulerConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+        if SchedulerUtils.is_using_k8s():
+            # no need to restart container in k8s scheduler
+            # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access
+            return True, container_port
+
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -111,6 +146,10 @@ class ContainerUtils(Singleton):
         return False, 0
 
     def stop_container(self, container_name):
+        if SchedulerUtils.is_using_k8s():
+            # no need to remove container in k8s scheduler
+            return False
+        
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -128,7 +167,12 @@ class ContainerUtils(Singleton):
 
         return False
 
-    def start_container(self, container_name, container_port=2345):
+    def start_container(self, container_name, container_port=SchedulerConstants.PORT_INSIDE_CONTAINER_DEFAULT):
+        if SchedulerUtils.is_using_k8s():
+            # no need to restart container in k8s scheduler
+            # in one pod: inference_port is equal to the container_port inside the container, use localhost:port to access
+            return False, container_port
+        
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -149,6 +193,9 @@ class ContainerUtils(Singleton):
         return False, 0
 
     def get_host_port(self, container_object, container_port, usr_indicated_worker_port=None):
+        if SchedulerUtils.is_using_k8s():
+            return None
+
         client = self.get_docker_client()
         if client is None:
             raise Exception("Failed to get docker client.")
@@ -175,6 +222,10 @@ class ContainerUtils(Singleton):
 
     @staticmethod
     def get_container_rank_same_model(prefix: str):
+        if SchedulerUtils.is_using_k8s():
+            # only one deployment (rank 0) in k8s scheduler, so the rank size is 1
+            return SchedulerUtils.get_replicate_num_per_pod()
+
         """
         Rank (from 0) for the container that run the same model, i.e.
         running_model_name = hash("model_endpoint_id_{}_name_{}_model_id_{}_name_{}_ver_{}")
@@ -202,6 +253,9 @@ class ContainerUtils(Singleton):
         return same_model_container_rank
 
     def pull_image_with_policy(self, image_pull_policy, image_name, client=None):
+        if SchedulerUtils.is_using_k8s():
+            return
+        
         docker_client = self.get_docker_client() if client is None else client
         if docker_client is None:
             raise Exception("Failed to get docker client.")
@@ -227,11 +281,11 @@ class ContainerUtils(Singleton):
             raise Exception(f"Unsupported image pull policy: {image_pull_policy}")
 
     class ContainerMetrics:
-        def __init__(self, cpu_percent, mem_used_megabytes, mem_avail_megabytes, network_recv_megabytes,
+        def __init__(self, cpu_percent, mem_used_gb, mem_avail_gb, network_recv_megabytes,
                      network_sent_megabytes, blk_read_megabytes, blk_write_megabytes, timestamp, gpus_stat):
             self.cpu_percent = cpu_percent
-            self.mem_used_megabytes = mem_used_megabytes
-            self.mem_avail_megabytes = mem_avail_megabytes
+            self.mem_used_gb = mem_used_gb
+            self.mem_avail_gb = mem_avail_gb
             self.network_recv_megabytes = network_recv_megabytes
             self.network_sent_megabytes = network_sent_megabytes
             self.blk_read_megabytes = blk_read_megabytes
@@ -241,7 +295,7 @@ class ContainerUtils(Singleton):
 
         def show(self):
             logging.info(f"CPU: {self.cpu_percent}%")
-            logging.info(f"Memory: {self.mem_used_megabytes}GB / {self.mem_avail_megabytes}GB")
+            logging.info(f"Memory: {self.mem_used_gb}GB / {self.mem_avail_gb}GB")
             logging.info(f"Network: {self.network_recv_megabytes}MB / {self.network_sent_megabytes}MB")
             logging.info(f"Disk I/O: {self.blk_read_megabytes}MB / {self.blk_write_megabytes}MB")
             logging.info(f"Timestamp: {self.timestamp}")
@@ -255,8 +309,10 @@ class ContainerUtils(Singleton):
 
         GPU: We currently use HardwareUtil to get the GPU stats on host machine since one GPU is not
         shared by multiple containers
-        (TODO: get the GPU stats inside the container)
         """
+        if SchedulerUtils.is_using_k8s():
+            return self.get_container_perf_in_k8s(c_name)
+
         client = self.get_docker_client()
         container = client.containers.get(c_name)
 
@@ -329,6 +385,49 @@ class ContainerUtils(Singleton):
         return ContainerUtils.ContainerMetrics(cpu_percent, mem_gb_used, mem_gb_avail, recv_megabytes, sent_megabytes,
                                                blk_read_bytes, blk_write_bytes, timestamp, gpus_stat)
 
+    def get_container_perf_in_k8s(self, c_name: str) -> ContainerMetrics:
+        """
+        Get container performance metrics in k8s environment.
+        """
+        try:
+            cri_client = CriClient()
+            container_id = cri_client.get_container_id()
+            
+            if not container_id:
+                logging.error("Failed to get container ID")
+                return None
+            
+            stats = cri_client.get_container_stats(container_id)
+            if not stats:
+                logging.error("No stats data returned from crictl")
+                return None
+            
+            # # Get network stats using container PID
+            # network_recv_mb, network_sent_mb = cri_client.get_network_stats(container_id)
+            network_recv_mb, network_sent_mb = 0, 0
+            
+            # # Get block I/O stats
+            # blk_read_mb, blk_write_mb = cri_client.get_blkio_stats(container_id)
+            blk_read_mb, blk_write_mb = 0, 0
+            # Calculate the gpu usage
+            gpus_stat = self.generate_container_gpu_stats(c_name)
+
+            return ContainerUtils.ContainerMetrics(
+                cpu_percent=stats['cpu_percent'],
+                mem_used_gb=stats['mem_used_gb'],
+                mem_avail_gb=stats['mem_avail_gb'],
+                network_recv_megabytes=network_recv_mb,
+                network_sent_megabytes=network_sent_mb,
+                blk_read_megabytes=blk_read_mb,
+                blk_write_megabytes=blk_write_mb,
+                timestamp=stats['timestamp'],
+                gpus_stat=gpus_stat
+            )
+            
+        except Exception as e:
+            logging.error(f"Error getting container performance metrics: {str(e)}")
+            return None
+
     def generate_container_gpu_stats(self, container_name):
         client = self.get_docker_client()
         gpu_ids = HardwareUtil.get_docker_gpu_ids_by_container_name(container_name=container_name, docker_client=client)
@@ -360,6 +459,9 @@ class ContainerUtils(Singleton):
         """
         Diff between the host machine's time and the container's time, in seconds
         """
+        if SchedulerUtils.is_using_k8s():
+            return 0
+        
         time_diff = 0
         try:
             client = docker.from_env()

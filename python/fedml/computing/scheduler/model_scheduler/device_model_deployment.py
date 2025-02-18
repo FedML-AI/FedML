@@ -7,6 +7,7 @@ import traceback
 import yaml
 import datetime
 import docker
+import shutil
 
 import requests
 import torch
@@ -18,6 +19,7 @@ from fedml.computing.scheduler.comm_utils import sys_utils, security_utils
 from fedml.computing.scheduler.comm_utils.hardware_utils import HardwareUtil
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_cache import FedMLModelCache
@@ -76,7 +78,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     # Concatenate the full model name
     running_model_name = ClientConstants.get_running_model_name(
         end_point_name, inference_model_name, model_version, end_point_id, model_id, edge_id=edge_id)
-
+    
     # Parse the model config file
     model_config_path = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
     with open(model_config_path, 'r') as file:
@@ -133,6 +135,18 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     else:
         logging.info("Master and worker are located in different machines, will use the public ip for inference")
 
+    # use k8s scheduler, no need to create docker container
+    # replica_rank is from 0 to n-1
+    if SchedulerUtils.is_using_k8s():
+        logging.info(f"using k8s scheduler, start_deployment_in_k8s")
+        return start_deployment_in_k8s(model_version, model_storage_local_path, inference_model_name, infer_host, replica_rank,
+                     running_model_name, port_inside_container,
+                     request_input_example, expose_subdomains,
+                     customized_readiness_check, customized_liveliness_check, 
+                     customized_uri,
+                     usr_indicated_retry_cnt)
+
+    # Use docker for fedml scheduler
     # Init container interface client
     try:
         client = docker.from_env()
@@ -283,6 +297,104 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                  f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
 
     return running_model_name, inference_output_url, model_version, model_metadata, ret_model_config
+
+def start_deployment_in_k8s(model_version, model_storage_local_path, inference_model_name, infer_host, replica_rank=0,
+                     running_model_name=None, port_inside_container=ClientConstants.PORT_INSIDE_CONTAINER_DEFAULT,
+                     request_input_example=None, expose_subdomains=None,
+                     customized_readiness_check=ClientConstants.READINESS_PROBE_DEFAULT, customized_liveliness_check=None, 
+                     customized_uri=None,
+                     usr_indicated_retry_cnt=10):
+    """
+    Start deployment in k8s scheduler.
+    This function handles model deployment in a k8s env, where each pod contains one replica and one model.
+    It creates a symbolic link to the current model and checks container readiness.
+    """
+
+    # use k8s scheduler, one pod only has one replica and one model
+    # Copy all files from model storage directory to the mounted directory and create a ready file
+    copy_to_current_model_dir_and_create_ready_file(model_storage_local_path)
+
+    # Check container readiness
+    deploy_attempt = 0
+    retry_interval = 10
+    last_log_time = datetime.datetime.now()
+
+    while True:
+        logging.info(f"Attempt: {deploy_attempt} / {usr_indicated_retry_cnt} ...")
+        try:
+            # Check container logs
+            container_logs = ContainerUtils.get_instance().get_container_logs_since(
+                None, since_time=last_log_time, timestamps=True)
+            if container_logs:
+                logging.info(f"[container_logs]: {container_logs}")
+
+            # Update last log time
+            last_log_time = datetime.datetime.now()
+
+            # in k8s scheduler, inference_http_port is the port inside the container, use 127.0.0.1:port to access it
+            inference_output_url, model_version, ret_model_metadata, ret_model_config = \
+                check_container_readiness(inference_http_port=port_inside_container, infer_host=infer_host,
+                                          readiness_check=customized_readiness_check,
+                                          request_input_example=request_input_example,
+                                          customized_uri=customized_uri)
+            logging.info(f"check_container_readiness inference_output_url: {inference_output_url}")
+            if inference_output_url != "":
+                logging.info("Log test for deploying model successfully, inference url: {}, "
+                             "model metadata: {}, model config: {}".
+                             format(inference_output_url, ret_model_metadata, ret_model_config))
+                # Successfully get the result from the container
+                model_metadata = ret_model_metadata
+                model_metadata["liveliness_check"] = customized_liveliness_check
+                model_metadata["readiness_check"] = customized_readiness_check
+                model_metadata[ClientConstants.EXPOSE_SUBDOMAINS_KEY] = expose_subdomains
+                logging.info(f"[Worker][Replica{replica_rank}] Model deployment is successful with inference_output_url: "
+                            f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
+
+                return running_model_name, inference_output_url, model_version, model_metadata, ret_model_config
+        except Exception as e:
+            pass
+
+        # Not yet ready, retry
+        deploy_attempt += 1
+        if deploy_attempt >= usr_indicated_retry_cnt:
+            logging.error(f"Model {inference_model_name} deploy reached max attempt {usr_indicated_retry_cnt}, "
+                            f"exiting the deployment...")
+            return running_model_name, "", None, None, None
+
+        logging.info(f"Model {inference_model_name} not yet ready, retry in {retry_interval} seconds...")
+        time.sleep(retry_interval)
+
+def copy_to_current_model_dir_and_create_ready_file(model_storage_local_path):
+    """
+    Copy all files from model storage directory to the mounted directory and create a ready file.
+    Args:
+        model_storage_local_path: Full path to the model storage directory
+    Returns:
+        None
+    """
+    # Get the mounted directory path
+    current_model_dir = SchedulerUtils.get_current_model_dir()
+    
+    # Verify the mount point exists
+    if not os.path.exists(current_model_dir):
+        raise Exception(f"current_model_dir: {current_model_dir} does not exist")
+    
+    # Copy all contents from model_storage_local_path to current_model_dir
+    for item in os.listdir(model_storage_local_path):
+        src = os.path.join(model_storage_local_path, item)
+        dst = os.path.join(current_model_dir, item)
+        
+        if os.path.isdir(src):
+            # Copy directory and its contents
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            # Copy single file
+            shutil.copy2(src, dst)
+    
+    # Create a ready empty file
+    ready_file = SchedulerUtils.get_current_model_ready_file()
+    with open(ready_file, "w") as f:
+        f.write("")
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, model_name, inference_engine, inference_port,
@@ -486,12 +598,14 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
         default_client_container_ready_url = "http://{}:{}/ready".format("0.0.0.0", inference_http_port)
         response = None
         try:
+            logging.info(f"check container readiness url: {default_client_container_ready_url}")
             response = requests.get(default_client_container_ready_url)
+            logging.info(f"check container readiness response: {response}")
         except:
             pass
         if not response or response.status_code != 200:
             return "", "", {}, {}
-
+        logging.info(f"check container readiness success, infer host: {infer_url_host}, port: {inference_http_port}")
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
     else:
         if not isinstance(readiness_check, dict):
@@ -509,7 +623,10 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
                         check_path = "/" + check_path
                 response = None
                 try:
-                    response = requests.get(f"http://{infer_url_host}:{inference_http_port}{check_path}")
+                    url = f"http://{infer_url_host}:{inference_http_port}{check_path}"
+                    logging.info(f"check container readiness url: {url}")
+                    response = requests.get(url)
+                    logging.info(f"check container readiness response: {response}")
                 except:
                     pass
                 if not response or response.status_code != 200:
@@ -537,7 +654,7 @@ def is_client_inference_container_ready(infer_url_host, inference_http_port,
                         path = "/" + path
             # TODO(raphael): Finalized more customized URI types
         readiness_check_url = f"http://{infer_url_host}:{inference_http_port}{path}"
-
+        logging.info(f"check container readiness success, readiness_check_url: {readiness_check_url}")
         return readiness_check_url, None, model_metadata, None
 
 

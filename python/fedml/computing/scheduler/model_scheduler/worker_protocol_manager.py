@@ -6,6 +6,7 @@ import traceback
 
 from fedml.computing.scheduler.comm_utils.job_utils import JobRunnerUtils
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.computing.scheduler.comm_utils.sys_utils import get_python_program
 from fedml.core.mlops import MLOpsConfigs, MLOpsRuntimeLog, MLOpsRuntimeLogDaemon
 from .device_model_db import FedMLModelDatabase
@@ -45,6 +46,12 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
     def generate_topics(self):
         super().generate_topics()
 
+        if SchedulerUtils.is_using_k8s() and not SchedulerUtils.is_using_k8s_for_deploy():
+            # the deploy job is only running in the deploy task pod, so no-deploy pod do not need to register deploy related topics
+            # the reason is: if non-deploy pod had consumed the topic, then the deploy pod will not be able to consume it
+            logging.info("no need to register deploy related topics")
+            return
+
         # The topic for start deployment
         self.topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
 
@@ -58,6 +65,10 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
     # Override
     def add_protocol_handler(self):
         super().add_protocol_handler()
+
+        if SchedulerUtils.is_using_k8s() and not SchedulerUtils.is_using_k8s_for_deploy():
+            logging.info("no need to register deploy related topics")
+            return
 
         # Add the message listeners for endpoint related topics
         self.add_message_listener(self.topic_start_deployment, self.callback_start_deployment)
@@ -87,6 +98,7 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
             cur_dir = os.path.dirname(__file__)
             fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
             python_program = get_python_program()
+            print(f"uvicorn run port: {worker_proxy_port} in worker_protocol_manager")
             self.local_api_process = ClientConstants.exec_console_with_script(
                 "{} -m uvicorn {} --host 0.0.0.0 --port {} --reload --reload-delay 3 --reload-dir {} "
                 "--log-level critical".format(
@@ -175,14 +187,15 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        # Delete all replicas on this device
-        try:
-            ClientConstants.remove_deployment(
-                model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
-                model_msg_object.run_id, model_msg_object.model_id, edge_id=self.edge_id)
-        except Exception as e:
-            logging.info(f"Exception when removing deployment {traceback.format_exc()}")
-            pass
+        if not SchedulerUtils.is_using_k8s():
+            # Delete all replicas on this device
+            try:
+                ClientConstants.remove_deployment(
+                    model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version,
+                    model_msg_object.run_id, model_msg_object.model_id, edge_id=self.edge_id)
+            except Exception as e:
+                logging.info(f"Exception when removing deployment {traceback.format_exc()}")
+                pass
 
         self._get_job_runner_manager().stop_job_runner(model_msg_object.run_id)
 

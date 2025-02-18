@@ -10,6 +10,8 @@ from pathlib import Path
 import psutil
 import yaml
 
+from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
+
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.run_process_utils import RunProcessUtils
 from ..comm_utils.yaml_utils import load_yaml_config
@@ -357,6 +359,10 @@ class ServerConstants(object):
 
     @staticmethod
     def get_inference_master_gateway_port():
+        # If using k8s, use the port in k8s deployment env setting
+        if SchedulerUtils.is_using_k8s():
+            return SchedulerUtils.get_model_inference_gateway_port_in_k8s()
+
         # Use dotenv to load the environment variables
         fedml.load_env()
         master_inference_port = int(os.getenv(ServerConstants.ENV_MASTER_INFERENCE_PORT_KEY,
