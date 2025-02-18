@@ -12,6 +12,7 @@ import fedml
 from fedml.computing.scheduler.comm_utils.scheduler_utils import SchedulerUtils
 from fedml.core.mlops import MLOpsRuntimeLog, MLOpsConfigs
 from fedml.core.mlops.mlops_runtime_log import MLOpsFormatter
+from .device_model_msg_object import FedMLModelMsgObject
 from .device_client_constants import ClientConstants
 from .device_model_cache import FedMLModelCache
 from .device_server_constants import ServerConstants
@@ -288,6 +289,17 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
                     end_point_id, end_point_name, payload_json["model_name"], "",
                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                     message_center=self.message_center)
+                
+                # when report failed to the MLOps, need to delete the replica has successfully deployed and release the gpu
+                model_config = dict()
+                model_config["model_name"] = payload_json["model_name"]
+                model_config["model_id"] = payload_json["model_id"]
+                model_config["model_version"] = payload_json["model_version"]
+                # add model_config to the payload for the delete request
+                payload_json["model_config"] = model_config
+                payload_for_del_deploy = json.dumps(payload_json)
+                model_msg_object = FedMLModelMsgObject(topic, payload_for_del_deploy)
+                self.send_deployment_delete_request_to_edges(payload_for_del_deploy, model_msg_object, message_center=self.message_center)
                 return
 
             # Failure handler, send the rollback message to the worker devices only if it has not been rollback
@@ -452,22 +464,29 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         python_program = get_python_program()
         inference_port = ServerConstants.get_inference_master_gateway_port()
         if not ServerConstants.is_running_on_k8s():
-            logging.info(f"start the model inference gateway...")
             inference_gw_cmd = "fedml.computing.scheduler.model_scheduler.device_model_inference:api"
             inference_gateway_pids = RunProcessUtils.get_pid_from_cmd_line(inference_gw_cmd)
             if inference_gateway_pids is None or len(inference_gateway_pids) <= 0:
                 cur_dir = os.path.dirname(__file__)
                 fedml_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_dir)))
-                print(f"uvicorn run port: {inference_port} in master_job_runner")
-                inference_gateway_process = ServerConstants.exec_console_with_script(f"{python_program} "
-                                                                                     f"-m uvicorn {inference_gw_cmd} "
-                                                                                     f"--host 0.0.0.0 "
-                                                                                     f"--port {str(inference_port)} "
-                                                                                     f"--reload --reload-delay 3 "
-                                                                                     f"--reload-dir {fedml_base_dir} "
-                                                                                     f"--log-level info",
-                                                                                     should_capture_stdout=False,
-                                                                                     should_capture_stderr=False)
+                
+                logging.info(f"uvicorn run port: {inference_port} in master_job_runner")
+                workers = 4
+                logging.info(f"start the model inference gateway workers[{workers}] no uvloop/httptools...")
+                inference_gateway_process = ServerConstants.exec_console_with_script(
+                    f"{python_program} -m uvicorn {inference_gw_cmd} "
+                    f"--host 0.0.0.0 "
+                    f"--port {str(inference_port)} "
+                    f"--workers {workers} "
+                    # f"--loop uvloop "
+                    # f"--http httptools "
+                    f"--limit-concurrency 1024 "
+                    f"--backlog 2048 "
+                    f"--timeout-keep-alive 60 "
+                    f"--log-level warning ",
+                    should_capture_stdout=False,
+                    should_capture_stderr=False
+                )
                 return inference_gateway_process
             else:
                 return inference_gateway_pids[0]

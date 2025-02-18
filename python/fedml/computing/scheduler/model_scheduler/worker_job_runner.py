@@ -261,8 +261,8 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
 
                     # Send failed result back to master
                     _ = self.send_deployment_results(
-                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
-                        model_id, model_name, inference_output_url, inference_model_version, inference_port,
+                        end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                        model_id, model_name, inference_output_url, model_version, inference_port,
                         inference_engine, model_metadata, model_config)
 
                     self.status_reporter.run_id = self.run_id
@@ -272,7 +272,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                     # Send failed successful result back to master
                     logging.info("Finished deployment, continue to send results to master...")
                     result_payload = self.send_deployment_results(
-                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                        end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                         model_id, model_name, inference_output_url, model_version, inference_port_external,
                         inference_engine, model_metadata, model_config, replica_no=rank + 1,
                         connectivity=connectivity
@@ -283,7 +283,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                         logging.info("inference_port_external {} != inference_port {}".format(
                             inference_port_external, inference_port))
                         result_payload = self.construct_deployment_results(
-                            end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                            end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                             model_id, model_name, inference_output_url, model_version, inference_port,
                             inference_engine, model_metadata, model_config, replica_no=rank + 1,
                             connectivity=connectivity
@@ -317,7 +317,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
 
                 # Report the deletion msg to master
                 result_payload = self.send_deployment_results(
-                    end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED,
+                    end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DELETED,
                     model_id, model_name, inference_output_url, model_version, inference_port_external,
                     inference_engine, model_metadata, model_config, replica_no=rank_to_delete + 1)
 
@@ -395,8 +395,8 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                             run_id, self.edge_id, replica_occupied_gpu_ids)
 
                     self.send_deployment_results(
-                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
-                        model_id, model_name, inference_output_url, inference_model_version, inference_port,
+                        end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                        model_id, model_name, inference_output_url, model_version, inference_port,
                         inference_engine, model_metadata, model_config)
 
                     self.status_reporter.run_id = self.run_id
@@ -407,7 +407,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                 else:
                     logging.info("Finished deployment, continue to send results to master...")
                     result_payload = self.send_deployment_results(
-                        end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                        end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                         model_id, model_name, inference_output_url, model_version, inference_port_external,
                         inference_engine, model_metadata, model_config, replica_no=rank + 1,
                         connectivity=connectivity
@@ -417,7 +417,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                         logging.info("inference_port_external {} != inference_port {}".format(
                             inference_port_external, inference_port))
                         result_payload = self.construct_deployment_results(
-                            end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                            end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                             model_id, model_name, inference_output_url, model_version, inference_port,
                             inference_engine, model_metadata, model_config, replica_no=rank + 1,
                             connectivity=connectivity
@@ -441,12 +441,13 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
             logging.error(f"Unsupported op {op} with op num {op_num}")
             return False
 
-    def construct_deployment_results(self, end_point_name, device_id, model_status,
+    def construct_deployment_results(self, end_point_name, device_id, device_ids, model_status,
                                      model_id, model_name, model_inference_url,
                                      model_version, inference_port, inference_engine,
                                      model_metadata, model_config, replica_no=1,
                                      connectivity=ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
         deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
+                                      "device_ids": device_ids,
                                       "model_id": model_id, "model_name": model_name,
                                       "model_url": model_inference_url, "model_version": model_version,
                                       "port": inference_port,
@@ -460,7 +461,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                                       }
         return deployment_results_payload
 
-    def send_deployment_results(self, end_point_name, device_id, model_status,
+    def send_deployment_results(self, end_point_name, device_id, device_ids, model_status,
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config, replica_no=1,
@@ -469,7 +470,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
             self.run_id, device_id)
 
         deployment_results_payload = self.construct_deployment_results(
-            end_point_name, device_id, model_status,
+            end_point_name, device_id, device_ids, model_status,
             model_id, model_name, model_inference_url,
             model_version, inference_port, inference_engine,
             model_metadata, model_config, replica_no=replica_no, connectivity=connectivity)
