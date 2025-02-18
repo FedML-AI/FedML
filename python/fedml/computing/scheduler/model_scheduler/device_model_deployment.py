@@ -342,10 +342,15 @@ def log_deployment_output(end_point_id, model_id, cmd_container_name, cmd_type,
             if container_obj is not None:
                 out_logs, err_logs = None, None
                 try:
-                    out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False,
-                                                  since=last_log_time)
-                    err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False,
-                                                  since=last_log_time)
+                    if container_obj.status == "exited":
+                        # If the container has exited, we need to get the whole logs from the container
+                        out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False)
+                        err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False)
+                    else:
+                        out_logs = container_obj.logs(stdout=True, stderr=False, stream=False, follow=False,
+                                                      since=last_log_time)
+                        err_logs = container_obj.logs(stdout=False, stderr=True, stream=False, follow=False,
+                                                      since=last_log_time)
                 except Exception as e:
                     logging.error(f"Failed to get the logs from the container with exception {e}")
                     pass
@@ -355,15 +360,28 @@ def log_deployment_output(end_point_id, model_id, cmd_container_name, cmd_type,
                 if err_logs is not None:
                     err_logs = sys_utils.decode_our_err_result(err_logs)
                     if len(err_logs) > 0:
-                        logging.error(f"{format(err_logs)}")
+                        logging.error(f"[-- Container Error Logs Start --]\n{format(err_logs)}\n[-- Container Error Logs End --]")
 
                 if out_logs is not None:
                     out_logs = sys_utils.decode_our_err_result(out_logs)
                     if len(out_logs) > 0:
-                        logging.info(f"{format(out_logs)}")
+                        logging.info(f"[-- Container Stdout Logs Start --]\n{format(out_logs)}\n[-- Container Stdout Logs End --]")
 
                 if container_obj.status == "exited":
                     logging.info("Container {} has exited, automatically remove it".format(cmd_container_name))
+
+                    # try to get the logs from the filesystem
+                    if out_logs is None or err_logs is None:
+                        try:
+                            logs_path = f"/var/lib/docker/containers/{container_obj.id}/{container_obj.id}-json.log"
+                            if os.path.exists(logs_path):
+                                with open(logs_path, 'r') as f:
+                                    raw_logs = f.readlines()
+                                    out_logs = '\n'.join([line for line in raw_logs if '"stream":"stdout"' in line])
+                                    err_logs = '\n'.join([line for line in raw_logs if '"stream":"stderr"' in line])
+                                logging.error(f"read Container Error Logs from log file: {err_logs}")
+                        except Exception as e:
+                            logging.warning(f"Failed to read logs from filesystem: {str(e)}")
 
                     # Save the failed log into ~/.fedml/fedml-model-client/fedml/logs/failed_logs/
                     # $run_id/$container_name.log
