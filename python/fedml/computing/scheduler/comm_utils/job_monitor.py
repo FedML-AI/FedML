@@ -207,6 +207,7 @@ class JobMonitor(Singleton):
         res_to_mlops = {}  # endpoint_id -> num_replica
 
         for endpoint_detail in res_frm_db:
+            logging.info(f"endpoint_detail: {endpoint_detail}")
             endpoint_replicas_details = {}
             if isinstance(endpoint_detail, str):
                 endpoint_replicas_details = json.loads(endpoint_detail)
@@ -218,11 +219,13 @@ class JobMonitor(Singleton):
                 endpoint_replica_details = {}
                 if isinstance(endpoint_replicas_details["result"], str):
                     endpoint_replica_details = json.loads(endpoint_replicas_details["result"])
-
+                    
+                logging.info(f"endpoint_replica_details: {endpoint_replica_details}")
                 res_to_mlops[endpoint_replica_details["end_point_id"]] = res_to_mlops.get(
                     endpoint_replica_details["end_point_id"], 0) + 1
 
         for endpoint_id, num_replica in res_to_mlops.items():
+            logging.info(f"endpoint_id: {endpoint_id}, num_replica: {num_replica}")
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
             mlops_prefix = fedml._get_backend_service()
             url = f"{mlops_prefix}/{num_replica_url_path}"
@@ -240,13 +243,15 @@ class JobMonitor(Singleton):
                 "replicaNumber": int(num_replica),
                 "timestamp": int(time.time() * 1000)
             }
-
+            logging.info(f"req_header: {req_header}")
+            logging.info(f"req_body: {req_body}")
             try:
                 response = requests.post(
                     url,
                     headers=req_header,
                     json=req_body
                 )
+                logging.info(f"endpoint_id: {endpoint_id}, response: {response}")
                 if response.status_code != 200:
                     logging.error(f"Failed to send the replica number request to MLOps platform.")
                 else:
