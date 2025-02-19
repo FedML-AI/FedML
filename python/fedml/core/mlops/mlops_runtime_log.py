@@ -60,8 +60,11 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
         MLOpsLoggingUtils.release_lock()
 
     def __initialize_config(self):
+        lock_acquired = False
         try:
-            MLOpsLoggingUtils.acquire_lock()
+            lock_acquired = MLOpsLoggingUtils.acquire_lock(block=True)
+            if not lock_acquired:
+                raise RuntimeError("Failed to acquire lock")
             config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.edge_id,
                                                             log_config_file=self.log_config_file)
             if not config_data:
@@ -72,7 +75,8 @@ class MLOpsFileHandler(TimedRotatingFileHandler):
         except Exception as e:
             raise ValueError("Error initializing log config: {}".format(e))
         finally:
-            MLOpsLoggingUtils.release_lock()
+            if lock_acquired:
+                MLOpsLoggingUtils.release_lock()
 
 
 class MLOpsFormatter(logging.Formatter):
