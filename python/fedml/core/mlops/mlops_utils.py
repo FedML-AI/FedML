@@ -76,16 +76,18 @@ class MLOpsLoggingUtils:
 
     @staticmethod
     def acquire_lock(block=True):
-        logging.info("acquire_lock start, block: {}".format(block))
-        lock_acquired = MLOpsLoggingUtils._lock.acquire(block)
-        logging.info("acquire_lock end, lock_acquired: {}".format(lock_acquired))
-        return lock_acquired
+        return MLOpsLoggingUtils._lock.acquire(block)
+    
+        # logging.info("acquire_lock start, block: {}".format(block))
+        # lock_acquired = MLOpsLoggingUtils._lock.acquire(block)
+        # logging.info("acquire_lock end, lock_acquired: {}".format(lock_acquired))
+        # return lock_acquired
 
     @staticmethod
     def release_lock():
-        # # Purposefully acquire lock with non-blocking call to make it idempotent
-        # MLOpsLoggingUtils._lock.acquire(block=False)
-        # MLOpsLoggingUtils._lock.release()
+        # Purposefully acquire lock with non-blocking call to make it idempotent
+        MLOpsLoggingUtils._lock.acquire(block=False)
+        MLOpsLoggingUtils._lock.release()
 
         # modify by charlie
         # release_lock method may have incorrect implementation:
@@ -99,14 +101,14 @@ class MLOpsLoggingUtils:
         # acquire the lock and release it in old lock implementation 
         # perhaps cause the lock is released in the wrong place
         # so we need to release the lock directly
-        try:
-            logging.info("release_lock start")
-            MLOpsLoggingUtils._lock.release()
-            logging.info("release_lock end")
-        except ValueError as e:
-            # The lock is not acquired, ignore it
-            logging.warning("release_lock error: {}".format(e))
-            pass
+        # try:
+        #     logging.info("release_lock start")
+        #     MLOpsLoggingUtils._lock.release()
+        #     logging.info("release_lock end")
+        # except ValueError as e:
+        #     # The lock is not acquired, ignore it
+        #     logging.warning("release_lock error: {}".format(e))
+        #     pass
 
     @staticmethod
     def build_log_file_path_with_run_params(
