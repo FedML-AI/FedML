@@ -203,10 +203,14 @@ class MLOpsLoggingUtils:
             log_config_key = "log_config_{}_{}".format(run_id, device_id)
             log_config = MLOpsLoggingUtils.load_yaml_config(log_config_file)
             log_config[log_config_key] = MLOpsLoggingUtils.__convert_to_dict(config_data)
+             # Use with statement to ensure file is properly closed
             with open(log_config_file, "w") as stream:
-                yaml.dump(log_config, stream)
+                # use safe_dump to avoid the problem of the lock
+                yaml.safe_dump(log_config, stream)
         except Exception as e:
-            MLOpsLoggingUtils.release_lock()
+            # modify by charlie
+            # Don't release lock here - let caller handle it
+            # MLOpsLoggingUtils.release_lock()
             raise ValueError("Error saving log config: {}".format(e))
 
     @staticmethod
