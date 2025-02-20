@@ -225,7 +225,6 @@ class JobMonitor(Singleton):
                     endpoint_replica_details["end_point_id"], 0) + 1
 
         for endpoint_id, num_replica in res_to_mlops.items():
-            logging.info(f"endpoint_id: {endpoint_id}, num_replica: {num_replica}")
             num_replica_url_path = "fedmlModelServer/api/v1/endpoint/replica-info"
             mlops_prefix = fedml._get_backend_service()
             url = f"{mlops_prefix}/{num_replica_url_path}"
@@ -243,7 +242,6 @@ class JobMonitor(Singleton):
                 "replicaNumber": int(num_replica),
                 "timestamp": int(time.time() * 1000)
             }
-            logging.info(f"req_header: {req_header}")
             logging.info(f"req_body: {req_body}")
             try:
                 response = requests.post(
