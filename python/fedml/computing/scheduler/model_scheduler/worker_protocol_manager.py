@@ -154,6 +154,12 @@ class FedMLDeployWorkerProtocolManager(FedMLBaseSlaveProtocolManager):
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
+        # print the log after the log had initialized
+        logging.info("[Worker] received start deployment request for end point {}.".format(run_id))
+        logging.info("=" * 80)
+        logging.info("[Worker Protocol Manager] Received start deployment request: {}".format(request_json))
+        logging.info("=" * 80)
+
         # Start the job runner
         request_json["run_id"] = run_id
         run_id_str = str(run_id)

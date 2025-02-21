@@ -156,9 +156,7 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
         # Get deployment params
         request_json = json.loads(payload)
 
-        logging.info("=" * 80)
-        logging.info("[Master Protocol Manager] Received start deployment request: {}".format(request_json))
-        logging.info("=" * 80)
+        
 
         run_id = request_json["end_point_id"]
         end_point_name = request_json["end_point_name"]
@@ -183,7 +181,19 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         inference_end_point_id = run_id
 
+        # Start log processor for current run
+        self.args.run_id = run_id
+        self.args.edge_id = self.edge_id
+        MLOpsRuntimeLog(args=self.args).init_logs()
+        MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
+            ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
+        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        # print the log after the log had initialized
         logging.info("[Master] received start deployment request for end point {}.".format(run_id))
+        logging.info("=" * 80)
+        logging.info("[Master Protocol Manager] Received start deployment request: {}".format(request_json))
+        logging.info("=" * 80)
 
         # Set redis config
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
@@ -209,14 +219,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
             scale_down_delay_seconds=int(scale_down_delay_seconds),
             timeout_s=timeout_s, user_encrypted_api_key=user_encrypted_api_key
         )
-
-        # Start log processor for current run
-        self.args.run_id = run_id
-        self.args.edge_id = self.edge_id
-        MLOpsRuntimeLog(args=self.args).init_logs()
-        MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
-            ServerConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
-        MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
         # Add additional parameters to the request_json
         run_id = inference_end_point_id
