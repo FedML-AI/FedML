@@ -11,6 +11,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from fedml.core.common.singleton import Singleton
 from sqlalchemy.sql import text
 from typing import List, Dict
+import functools
+from sqlalchemy import exc
 
 Base = declarative_base()
 
@@ -25,7 +27,57 @@ class FedMLModelDatabase(Singleton):
             self.db_engine = None
         if not hasattr(self, "db_base_dir"):
             self.db_base_dir = None
-
+    
+    @staticmethod
+    def db_operation(func):
+        """decorator: handle the database operation exceptions"""
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                # open the database connection
+                self.open_job_db()
+                # execute the function
+                return func(self, *args, **kwargs)
+            except (
+                # session state error
+                exc.InvalidRequestError,     # including "prepared state" error
+                exc.StatementError,          # SQL statement execution error
+                # connection error
+                exc.DBAPIError,             # base class of database API error
+                exc.OperationalError,        # database operation error (e.g. connection failure)
+                exc.DisconnectionError,      # connection disconnected
+                # transaction error
+                exc.InvalidatePoolError,     # connection pool invalid
+                exc.TimeoutError,            # connection timeout
+                exc.ResourceClosedError,     # resource (e.g. cursor) closed
+                # concurrent error
+                exc.PendingRollbackError,    # pending rollback transaction
+                exc.IntegrityError          # integrity constraint violation
+            ) as e:
+                logging.error(f"Database error in {func.__name__}, rebuilding session: {e}")
+                # rollback any unfinished transactions
+                if self.db_connection:
+                    try:
+                        self.db_connection.rollback()
+                    except:
+                        pass
+                    try:
+                        self.db_connection.close()
+                    except:
+                        pass
+                    # set the db connection to None, then open again in open_job_db method
+                    self.db_connection = None
+                # retry open the database connection
+                self.open_job_db()
+                # retry execute the function
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                # other unexpected errors, record logs and raise
+                logging.error(f"Unexpected error in {func.__name__}: {e}")
+                self.db_connection = None
+                raise
+        return wrapper
+    
     @staticmethod
     def get_instance():
         return FedMLModelDatabase()
@@ -134,6 +186,7 @@ class FedMLModelDatabase(Singleton):
 
         return None
 
+    @db_operation
     def delete_deployment_status(self, end_point_id, end_point_name, model_name, model_version=None):
         self.open_job_db()
         if model_version is None:
@@ -149,6 +202,7 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_result(self, end_point_id, end_point_name, model_name, model_version=None):
         self.open_job_db()
         if model_version is None:
@@ -164,6 +218,7 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
     
+    @db_operation
     def delete_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
         self.open_job_db()
         self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
@@ -173,6 +228,7 @@ class FedMLModelDatabase(Singleton):
                  FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_result_with_device_id_and_rank(self, end_point_id, end_point_name, model_name,
                                                          device_id, replica_rank):
         replica_no = replica_rank + 1
@@ -185,6 +241,7 @@ class FedMLModelDatabase(Singleton):
                  FedMLDeploymentResultInfoModel.replica_no == f'{replica_no}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_run_info(self, end_point_id):
         # db / table -> model-deployment.db / "deployment_run_info"
         self.open_job_db()
@@ -343,6 +400,7 @@ class FedMLModelDatabase(Singleton):
         except Exception as e:
             pass
 
+    @db_operation
     def get_deployment_results_info(self, end_point_id, end_point_name, model_name, model_version):
         self.open_job_db()
         if model_version is None:
@@ -358,11 +416,13 @@ class FedMLModelDatabase(Singleton):
                             FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).all()
         return result_info
 
+    @db_operation
     def _get_all_deployment_results_info(self):
         self.open_job_db()
         result_info = self.db_connection.query(FedMLDeploymentResultInfoModel).all()
         return result_info
 
+    @db_operation
     def set_deployment_results_info(self, end_point_id, end_point_name,
                                     model_name, model_version, device_id,
                                     deployment_result=None, deployment_status=None, replica_no=None):
@@ -402,12 +462,14 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_deployment_run_info(self, end_point_id):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentRunInfoModel). \
             filter_by(end_point_id=f'{end_point_id}').first()
         return run_info
 
+    @db_operation
     def set_deployment_run_info(self, end_point_id, end_point_name,
                                 end_point_status=None, device_info=None,
                                 activated=None, token=None):
@@ -435,6 +497,7 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_deployment_auth_info(self, end_point_id, end_point_name, model_name):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
@@ -443,6 +506,7 @@ class FedMLModelDatabase(Singleton):
                         FedMLDeploymentAuthInfoModel.model_name == f'{model_name}')).first()
         return run_info
 
+    @db_operation
     def set_deployment_auth_info(self, end_point_id, end_point_name, model_name, token):
         self.open_job_db()
         auth_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
@@ -462,6 +526,7 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_latest_end_point_metrics(self, end_point_id, end_point_name, model_name, model_version):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
@@ -473,6 +538,7 @@ class FedMLModelDatabase(Singleton):
             return endpoint_metric[-1]
         return None
 
+    @db_operation
     def get_end_point_metrics_by_index(self, end_point_id, end_point_name, model_name, model_version, index):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
@@ -483,6 +549,7 @@ class FedMLModelDatabase(Singleton):
             offset(index).limit(1).first()
         return endpoint_metric
 
+    @db_operation
     def set_end_point_metrics(self, end_point_id, end_point_name,
                               model_name, model_version,
                               total_latency=None, avg_latency=None, current_latency=None,

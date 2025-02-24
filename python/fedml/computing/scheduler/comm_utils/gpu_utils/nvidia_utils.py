@@ -25,8 +25,7 @@ class NvidiaGPUtil(GPUCardUtil):
 
     @staticmethod
     def get_available_gpu_card_ids(order: str, limit: int, max_load: float, max_memory: float) -> List[int]:
-        # return GPUtil.getAvailable(order=order, limit=limit, maxLoad=max_load, maxMemory=max_memory)
-        return GPUtil.getAvailable(order='random', limit=limit)
+        return GPUtil.getAvailable(order=order, limit=limit, maxLoad=max_load, maxMemory=max_memory)
 
     @staticmethod
     def get_docker_gpu_device_mapping(gpu_ids: List[int], num_gpus: int = 0) -> Optional[Dict]:

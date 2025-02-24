@@ -175,7 +175,7 @@ class MLOpsJobPerfStats(object):
                     logging.debug("exception when reporting job pref: {}.".format(traceback.format_exc()))
                     pass
 
-            time.sleep(10)
+            time.sleep(15)
 
         logging.info("Job metrics process is about to exit.")
         mqtt_mgr.loop_stop()

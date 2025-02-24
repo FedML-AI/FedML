@@ -120,15 +120,19 @@ class MLOpsRuntimeLogProcessor:
             line_start_req = line_end_req
 
             # Update the uploaded file index
-            MLOpsLoggingUtils.acquire_lock()
-            config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id,
+            lock_acquired = MLOpsLoggingUtils.acquire_lock()
+            try:
+                config_data = MLOpsLoggingUtils.load_log_config(run_id, device_id,
                                                             self.log_config_file)
-
-            config_data[self.file_rotate_count].uploaded_file_index = uploaded_file_index
-            MLOpsLoggingUtils.save_log_config(run_id=run_id, device_id=device_id,
-                                              log_config_file=self.log_config_file,
-                                              config_data=config_data)
-            MLOpsLoggingUtils.release_lock()
+                config_data[self.file_rotate_count].uploaded_file_index = uploaded_file_index
+                MLOpsLoggingUtils.save_log_config(run_id=run_id, device_id=device_id,
+                                                log_config_file=self.log_config_file,
+                                                config_data=config_data)
+            except Exception as e:
+                raise ValueError("Error updating log config: {}".format(e))
+            finally:
+                if lock_acquired:
+                    MLOpsLoggingUtils.release_lock()
 
     @staticmethod
     def __format_log_lines(log_lines: list, line_start_req: int, line_end_req: int):
@@ -296,37 +300,65 @@ class MLOpsRuntimeLogProcessor:
         print("Log Process exits normally.")
 
     def fetch_file_path_and_index(self) -> (str, int):
+        lock_acquired = False
         try:
             upload_file_index = None
-            MLOpsLoggingUtils.acquire_lock()
-            config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
-                                                            log_config_file=self.log_config_file)
-            MLOpsLoggingUtils.release_lock()
+            # Acquire lock for initial config read
+            lock_acquired = MLOpsLoggingUtils.acquire_lock()
+            try:
+                config_data = MLOpsLoggingUtils.load_log_config(
+                    run_id=self.run_id, 
+                    device_id=self.device_id,
+                    log_config_file=self.log_config_file
+                )
+            finally:
+                if lock_acquired:
+                    MLOpsLoggingUtils.release_lock()
+                    lock_acquired = False
+            
             if config_data is not None:
                 config_len = len(config_data)
                 upload_file_config = config_data.get(self.file_rotate_count, None)
                 if upload_file_config is not None:
-                    file_path, uploaded_file_index = upload_file_config.file_path, upload_file_config.uploaded_file_index
+                    file_path = upload_file_config.file_path
+                    uploaded_file_index = upload_file_config.uploaded_file_index
                     shutil.copyfile(file_path, self.log_file_path)
-                    if MLOpsRuntimeLogProcessor.is_file_rotated(self.log_file_path, uploaded_file_index, config_len,
-                                                                self.file_rotate_count):
-                        MLOpsLoggingUtils.acquire_lock()
-                        config_data = MLOpsLoggingUtils.load_log_config(run_id=self.run_id, device_id=self.device_id,
-                                                                        log_config_file=self.log_config_file)
-                        config_data[self.file_rotate_count].upload_complete = True
-                        MLOpsLoggingUtils.save_log_config(run_id=self.run_id, device_id=self.device_id,
-                                                          log_config_file=self.log_config_file, config_data=config_data)
-                        MLOpsLoggingUtils.release_lock()
+                    
+                    if MLOpsRuntimeLogProcessor.is_file_rotated(
+                        self.log_file_path, uploaded_file_index, config_len, self.file_rotate_count
+                    ):
+                        # Acquire new lock for config update
+                        lock_acquired = MLOpsLoggingUtils.acquire_lock()
+                        try:
+                            config_data = MLOpsLoggingUtils.load_log_config(
+                                run_id=self.run_id,
+                                device_id=self.device_id, 
+                                log_config_file=self.log_config_file
+                            )
+                            config_data[self.file_rotate_count].upload_complete = True
+                            MLOpsLoggingUtils.save_log_config(
+                                run_id=self.run_id,
+                                device_id=self.device_id,
+                                log_config_file=self.log_config_file,
+                                config_data=config_data
+                            )
+                        finally:
+                            if lock_acquired:
+                                MLOpsLoggingUtils.release_lock()
+                                lock_acquired = False
+                            
                         self.file_rotate_count += 1
-                        # Re-fetch file path and index if file is rotated
+                        # Recursive call without holding any locks
                         return self.fetch_file_path_and_index()
                     return uploaded_file_index
 
             return upload_file_index
+        
         except Exception as e:
             raise ValueError(f"Failed to open log file. Exception: {e}")
         finally:
-            MLOpsLoggingUtils.release_lock()
+            if lock_acquired:
+                MLOpsLoggingUtils.release_lock()
 
     @staticmethod
     def is_file_rotated(file_path, uploaded_file_index, config_len, rotate_count):

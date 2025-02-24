@@ -59,7 +59,8 @@ class FedMLModelCards(Singleton):
 
         if use_remote:
             if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                     additional_params_dict, use_local_deployment, endpoint_id=endpoint_id):
+                                     additional_params_dict, use_local_deployment, endpoint_name=endpoint_name, 
+                                     endpoint_id=endpoint_id):
                 print("Failed to deploy model")
                 return False
             return True

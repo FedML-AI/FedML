@@ -4,6 +4,7 @@ import logging
 import time
 import traceback
 import os
+import uuid
 
 from typing import Any, Mapping, MutableMapping, Union
 from urllib.parse import urlparse
@@ -46,46 +47,46 @@ FEDML_MODEL_CACHE.set_redis_params(redis_addr=Settings.redis_addr,
                                    redis_password=Settings.redis_password)
 
 
-@api.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
-        try:
-            # Attempt to parse the JSON body.
-            request_json = await request.json()
-        except json.JSONDecodeError:
-            return JSONResponse(
-                {"error": True, "message": "Invalid JSON."},
-                status_code=status.HTTP_400_BAD_REQUEST)
+# @api.middleware("http")
+# async def auth_middleware(request: Request, call_next):
+#     if "/inference" in request.url.path or "/api/v1/predict" in request.url.path:
+#         try:
+#             # Attempt to parse the JSON body.
+#             request_json = await request.json()
+#         except json.JSONDecodeError:
+#             return JSONResponse(
+#                 {"error": True, "message": "Invalid JSON."},
+#                 status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Get endpoint's total pending requests.
-        end_point_id = request_json.get("end_point_id", None)
-        pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
-        if pending_requests_num:
-            # Fetch metrics of the past k=3 requests.
-            pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
-                end_point_id=end_point_id,
-                k_recent=3)
+#         # Get endpoint's total pending requests.
+#         end_point_id = request_json.get("end_point_id", None)
+#         pending_requests_num = FEDML_MODEL_CACHE.get_pending_requests_counter(end_point_id)
+#         if pending_requests_num:
+#             # Fetch metrics of the past k=3 requests.
+#             pask_k_metrics = FEDML_MODEL_CACHE.get_endpoint_metrics(
+#                 end_point_id=end_point_id,
+#                 k_recent=3)
 
-            # Get the request timeout from the endpoint settings.
-            request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
-                .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
+#             # Get the request timeout from the endpoint settings.
+#             request_timeout_s = FEDML_MODEL_CACHE.get_endpoint_settings(end_point_id) \
+#                 .get(ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY, ServerConstants.INFERENCE_REQUEST_TIMEOUT_DEFAULT)
 
-            # Only proceed if the past k metrics collection is not empty.
-            if pask_k_metrics:
-                # Measure the average latency in seconds(!), hence the 0.001 multiplier.
-                past_k_latencies_sec = \
-                    [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
-                mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
+#             # Only proceed if the past k metrics collection is not empty.
+#             if pask_k_metrics:
+#                 # Measure the average latency in seconds(!), hence the 0.001 multiplier.
+#                 past_k_latencies_sec = \
+#                     [float(j_obj["current_latency"]) * 0.001 for j_obj in pask_k_metrics]
+#                 mean_latency = sum(past_k_latencies_sec) / len(past_k_latencies_sec)
 
-                # If timeout threshold is exceeded then cancel and return time out error.
-                should_block = (mean_latency * pending_requests_num) > request_timeout_s
-                if should_block:
-                    return JSONResponse(
-                        {"error": True, "message": "Request timed out."},
-                        status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+#                 # If timeout threshold is exceeded then cancel and return time out error.
+#                 should_block = (mean_latency * pending_requests_num) > request_timeout_s
+#                 if should_block:
+#                     return JSONResponse(
+#                         {"error": True, "message": "Request timed out."},
+#                         status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
-    response = await call_next(request)
-    return response
+#     response = await call_next(request)
+#     return response
 
 
 @api.on_event("startup")
@@ -198,7 +199,6 @@ async def _predict(
     # Always increase the pending requests counter on a new incoming request.
     FEDML_MODEL_CACHE.update_pending_requests_counter(end_point_id, increase=True)
     inference_response = {}
-
     try:
         in_end_point_id = end_point_id
         in_end_point_name = input_json.get("end_point_name", None)
@@ -259,6 +259,11 @@ async def _predict(
                 input_list["stream"] = input_list.get("stream", stream_flag)
                 output_list = input_json.get("outputs", [])
 
+                # request_uuid = str(uuid.uuid4())  # Generate unique request ID
+                # inference_start_time = time.time()
+                # start_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(inference_start_time))
+                # logging.info(f"[Request {request_uuid}] Starting send_inference_request at {start_time_str}")
+                
                 # main execution of redirecting the inference request to the idle device
                 inference_response = await send_inference_request(
                     idle_device,
@@ -269,6 +274,11 @@ async def _predict(
                     inference_type=in_return_type,
                     connectivity_type=connectivity_type,
                     path=path, request_method=request_method)
+                
+                # inference_end_time = time.time()
+                # end_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(inference_end_time))
+                # inference_duration = inference_end_time - inference_start_time
+                # logging.info(f"[Request {request_uuid}] Completed send_inference_request at {end_time_str}, duration: {inference_duration:.3f} seconds")
 
             # Calculate model metrics
             try:
