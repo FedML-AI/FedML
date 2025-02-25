@@ -6,8 +6,10 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 
 class FedMLInferenceRunner(ABC):
-    def __init__(self, client_predictor):
+    def __init__(self, client_predictor, host="0.0.0.0", port=2345):
         self.client_predictor = client_predictor
+        self.host = host
+        self.port = port
 
     def run(self):
         api = FastAPI()
@@ -43,5 +45,4 @@ class FedMLInferenceRunner(ABC):
                 return Response(status_code=status.HTTP_202_ACCEPTED)
 
         import uvicorn
-        port = 2345
-        uvicorn.run(api, host="0.0.0.0", port=port)
+        uvicorn.run(api, host=self.host, port=self.port)

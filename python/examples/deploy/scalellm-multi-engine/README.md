@@ -40,7 +40,7 @@ computing:
   #device_type: CPU              # options: GPU, CPU, hybrid
   resource_type: A100-80G       # e.g., A100-80G,
   # please check the resource type list by "fedml show-resource-type"
-  # or visiting URL: https://fedml.ai/accelerator_resource_type
+  # or visiting URL: https://tensoropera.ai/accelerator_resource_type
 ```
 
 ```bash

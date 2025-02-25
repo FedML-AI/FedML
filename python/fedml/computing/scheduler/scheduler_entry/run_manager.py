@@ -162,10 +162,10 @@ class FedMLRunLogModelList(object):
         self.log_devices = list()
         for log_dev in log_devices_json:
             self.log_devices.append(FedMLRunLogDeviceModel(log_dev))
-        self.total_num = run_log_list_json.get("total_num", 0)
-        self.total_pages = run_log_list_json.get("total_pages", 0)
-        self.current_page = run_log_list_json.get("current_page", 0)
-        self.log_lines = run_log_list_json.get("logs", [])
+        self.total_num = run_log_list_json.get("totalSize", 0)
+        self.total_pages = run_log_list_json.get("totalPages", 0)
+        self.current_page = run_log_list_json.get("pageNum", 0)
+        self.log_lines = run_log_list_json.get("logList", [])
 
 
 class FedMLRunLogDeviceModel(object):
@@ -277,7 +277,6 @@ class FedMLRunManager(Singleton):
         run_log_list_result = None
         run_logs_json = {
             "apiKey": user_api_key,
-            "edgeId": "-1",
             "pageNum": page_num,
             "pageSize": page_size,
             "runId": run_id,

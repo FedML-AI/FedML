@@ -3,7 +3,7 @@ import click
 import fedml.api
 
 
-@click.command("logout", help="Logout from the FedML® Nexus AI Platform")
+@click.command("logout", help="Logout from the TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--computing", "-c", default=None, is_flag=True, help="Logout from the FedML general compute node.",
@@ -16,7 +16,7 @@ import fedml.api
     "-v",
     type=str,
     default="release",
-    help="Logout which backend environment version of FedML® Nexus AI Platform. It should be dev, test, or release.",
+    help="Logout which backend environment version of TensorOpera® AI Platform. It should be dev, test, or release.",
 )
 def fedml_logout(computing, server, version):
     fedml.set_env_version(version)

@@ -3,6 +3,12 @@ import os
 import shutil
 
 import requests
+import math
+from enum import Enum, unique
+
+import requests.exceptions
+import tqdm
+import sys
 from fedml.api.modules.utils import authenticate
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.mlops.mlops_configs import Configs, MLOpsConfigs
@@ -18,12 +24,18 @@ class StorageMetadata(object):
         self.createdAt = data.get("createTime", None)
         self.updatedAt = data.get("updateTime", None)
         self.size = _get_size(data.get("fileSize",None))
+        self.tag_list = data.get("tags", None)
+        self.download_url = data.get("fileUrl", None)
 
+class DataType(Enum):
+    FILE = "file"
+    DIRECTORY = "directory"
+    INVALID = "invalid"
 
 # Todo (alaydshah): Store service name in metadata
 # Todo (alaydshah): If data already exists, don't upload again. Instead suggest to use update command
-
-def upload(data_path, api_key, name, description, service, show_progress, out_progress_to_err, progress_desc,
+# Todo (bhargav) : Discuss and remove the service variable. Maybe needed sometime later.
+def upload(data_path, api_key, name, description, tag_list, service, show_progress, out_progress_to_err, progress_desc,
            metadata) -> FedMLResponse:
     api_key = authenticate(api_key)
 
@@ -31,34 +43,52 @@ def upload(data_path, api_key, name, description, service, show_progress, out_pr
 
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
+
+    data_type = _get_data_type(data_path)
     
-    if(not _check_data_path(data_path)):
+    if(data_type == DataType.INVALID):
         return FedMLResponse(code=ResponseCode.FAILURE,message="Invalid data path")
 
-    archive_path, message = _archive_data(data_path)
-    if not archive_path:
+    if(data_type == DataType.DIRECTORY):
+        to_upload_path, message = _archive_data(data_path)
+        name = os.path.splitext(os.path.basename(to_upload_path))[0] if name is None else name
+        file_name = name + ".zip"
+    else:
+        to_upload_path = data_path
+        base_name = os.path.basename(to_upload_path)
+        file_extension = os.path.splitext(base_name)[1]
+        given_extension = None
+        if name is not None:
+            given_extension = os.path.splitext(name)[1]
+            if given_extension is None or given_extension == "":
+                name = name + file_extension
+        else:
+            name = base_name
+
+        file_name = name
+
+    if not to_upload_path:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    store = _get_storage_service(service)
-    name = os.path.splitext(os.path.basename(archive_path))[0] if name is None else name
-    file_name = name + ".zip"
+    #TODO(bhargav191098) - Better done on the backend. Remove and pass file_name once completed on backend.
     dest_path = os.path.join(user_id, file_name)
-    file_size = os.path.getsize(archive_path)
+    file_size = os.path.getsize(to_upload_path)
 
-    file_uploaded_url = store.upload_file_with_progress(src_local_path=archive_path, dest_s3_path=dest_path,
-                                                        show_progress=show_progress,
-                                                        out_progress_to_err=out_progress_to_err,
-                                                        progress_desc=progress_desc, metadata=metadata)
-    os.remove(archive_path)
+    file_uploaded_url, message = _upload_multipart(api_key, dest_path, to_upload_path, show_progress,
+                                                       out_progress_to_err,
+                                                       progress_desc, metadata)
+
+    if(data_type == "dir"):
+        os.remove(to_upload_path)
     if not file_uploaded_url:
-        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {archive_path}")
+        return FedMLResponse(code=ResponseCode.FAILURE, message=f"Failed to upload file: {to_upload_path}")
 
     json_data = {
         "datasetName": name,
         "description": description,
         "fileSize": file_size,
         "fileUrl": file_uploaded_url,
-        "tagNameList": [],
+        "tagNameList": tag_list,
     }
 
     try:
@@ -80,25 +110,49 @@ def download(data_name, api_key, service, dest_path, show_progress=True) -> FedM
     if user_id is None:
         return FedMLResponse(code=ResponseCode.FAILURE, message=message)
 
-    store = _get_storage_service(service)
-    zip_file_name = data_name + ".zip"
-    key = os.path.join(user_id, zip_file_name)
-    path_local = os.path.abspath(zip_file_name)
-    dest_path = os.path.abspath(dest_path) if dest_path else data_name
-    if store.download_file_with_progress(path_s3=key, path_local=path_local, show_progress=show_progress):
-        try:
-            shutil.unpack_archive(path_local, dest_path)
-            os.remove(path_local)
-            abs_dest_path = os.path.abspath(dest_path)
-            return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
-                                                                    f"{abs_dest_path}", data=abs_dest_path)
-        except Exception as e:
-            error_message = f"Failed to unpack archive: {e}"
+    metadata_response = get_metadata(data_name, api_key)
+    if metadata_response.code == ResponseCode.SUCCESS:
+        metadata = metadata_response.data
+        if not metadata or not isinstance(metadata, StorageMetadata):
+            error_message = f"Unable to get the download URL"
             logging.error(error_message)
             return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+        download_url = metadata.download_url
+        given_extension = os.path.splitext(data_name)[1]
+        is_file = True
+        if(given_extension is None or given_extension ==""):
+            is_file = False
+
+        if not is_file:
+            download_file_name = data_name + ".zip"
+        else:
+            download_file_name = data_name
+        path_local = os.path.abspath(download_file_name)
+        dest_path = os.path.abspath(dest_path) if dest_path else data_name
+        if _download_using_presigned_url(download_url, download_file_name, show_progress=show_progress):
+            try:
+                if not is_file:
+                    shutil.unpack_archive(path_local, dest_path)
+                    os.remove(path_local)
+                else:
+                    if not os.path.exists(dest_path):
+                        os.makedirs(dest_path)
+                    shutil.move(path_local,dest_path)
+                abs_dest_path = os.path.abspath(dest_path)
+                return FedMLResponse(code=ResponseCode.SUCCESS, message=f"Successfully downloaded and unzipped data at "
+                                                                        f"{abs_dest_path}", data=abs_dest_path)
+            except Exception as e:
+                error_message = f"Failed to unpack archive: {e}"
+                logging.error(error_message)
+                return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+
+        else:
+            error_message = "Failed to download data from source"
+            logging.error(error_message)
+            return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
+
     else:
-        error_message = f"Failed to download data: {data_name}"
-        logging.error(error_message)
+        error_message = metadata_response.message
         return FedMLResponse(code=ResponseCode.FAILURE, message=error_message)
 
 
@@ -195,6 +249,195 @@ def delete(data_name, service, api_key=None) -> FedMLResponse:
         logging.error(message, data_name, service)
         return FedMLResponse(code=ResponseCode.FAILURE, message=message, data=False)
 
+def _get_num_chunks(file_size, max_chunk_size):
+    num_chunks = math.ceil(file_size / max_chunk_size)
+    return num_chunks
+
+
+def get_chunks(file_path, chunk_size):
+    with open(file_path, 'rb') as file:
+        while True:
+            chunk = file.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
+
+def _get_presigned_url(api_key, request_url, file_name, part_number=None):
+    cert_path = MLOpsConfigs.get_cert_path_with_version()
+    headers = ServerConstants.API_HEADERS
+    headers["Authorization"] = f"Bearer {api_key}"
+    params_dict = {'fileKey': file_name}
+    if part_number is not None:
+        params_dict['partNumber'] = part_number
+    if cert_path is None:
+        try:
+            requests.session().verify = cert_path
+            response = requests.get(request_url, verify=True, headers=headers, params=params_dict)
+        except requests.exceptions.SSLError as err:
+            MLOpsConfigs.install_root_ca_file()
+            response = requests.get(request_url, verify=True, headers=headers, params=params_dict)
+    else:
+        response = requests.get(request_url, verify=True, headers=headers, params=params_dict)
+    return response
+
+
+def _upload_part(url,part_data,session):
+    response = session.put(url,data=part_data,verify=True)
+    return response
+
+
+def _upload_chunk(presigned_url, chunk, part, pbar=None, max_retries=20,session=None):
+    for retry_attempt in range(max_retries):
+        try:
+            response = _upload_part(presigned_url,chunk,session)
+        except requests.exceptions.RequestException as e:
+            if retry_attempt < max_retries:
+                continue
+            else:
+                raise requests.exceptions.RequestException
+
+        if(pbar is not None):
+            pbar.update(chunk.__sizeof__())
+        return {'etag': response.headers['ETag'], 'partNumber': part}
+    raise requests.exceptions.RequestException
+
+def _process_post_response(response):
+    if response.status_code != 200:
+        message = (f"Failed to complete multipart upload with status code = {response.status_code}, "
+                   f"response.content: {response.content}")
+        logging.error(message)
+        return None, message
+    else:
+        resp_data = response.json()
+        code = resp_data.get("code", None)
+        data_url = resp_data.get("data", None)
+
+        if code is None or data_url is None or code == "FAILURE":
+            message = resp_data.get("message", None)
+            message = (f"Failed to complete multipart upload with following message: {message}, "
+                       f"response.content: {response.content}")
+            return None, message
+
+        return data_url, "Successfully uploaded the data! "
+
+
+def _complete_multipart_upload(api_key, file_key, part_info, upload_id):
+    complete_multipart_url = ServerConstants.get_complete_multipart_upload_url()
+    body_dict = {"fileKey": file_key, 'partETags': part_info, 'uploadId': upload_id}
+
+    cert_path = MLOpsConfigs.get_cert_path_with_version()
+    headers = ServerConstants.API_HEADERS
+    headers["Authorization"] = f"Bearer {api_key}"
+    if cert_path is None:
+        try:
+            requests.session().verify = cert_path
+            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                        headers=headers)
+        except requests.exceptions.SSLError as err:
+            MLOpsConfigs.install_root_ca_file()
+            complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                        headers=headers)
+    else:
+        complete_multipart_response = requests.post(complete_multipart_url, json=body_dict, verify=True,
+                                                    headers=headers)
+
+    return _process_post_response(complete_multipart_response)
+
+
+def _upload_multipart(api_key: str, file_key, archive_path, show_progress, out_progress_to_err,
+                      progress_desc_text, metadata):
+    request_url = ServerConstants.get_presigned_multi_part_url()
+
+    file_size = os.path.getsize(archive_path)
+
+    max_chunk_size = 20 * 1024 * 1024
+
+    num_chunks = _get_num_chunks(file_size, max_chunk_size)
+
+    upload_id = ""
+    presigned_urls = []
+
+    presigned_url_response = _get_presigned_url(api_key, request_url, file_key, num_chunks)
+
+    if presigned_url_response.status_code != 200:
+        message = (f"Failed to get presigned URL with status code = {presigned_url_response.status_code}, "
+                   f"response.content: {presigned_url_response.content}")
+        logging.error(message)
+        return None, message
+    else:
+        resp_data = presigned_url_response.json()
+        code = resp_data.get("code", None)
+        data = resp_data.get("data", None)
+
+        if code is None or data is None or code == "FAILURE":
+            message = resp_data.get("message", None)
+            message = (f"Failed getting presigned URL with following message: {message}, "
+                       f"response.content: {presigned_url_response.content}")
+            return None, message
+
+        upload_id = data['uploadId']
+        presigned_urls = data['urls']
+
+    parts = []
+    chunks = get_chunks(archive_path, max_chunk_size)
+    part_info = []
+    chunk_count = 0
+    successful_chunks = 0
+    #TODO: (bhargav191098) Using Thread pool and confirming openssl issue
+    atomic_session = requests.session()
+    atomic_session.verify = MLOpsConfigs.get_cert_path_with_version()
+    with tqdm.tqdm(total=file_size, unit="B", unit_scale=True,
+                   file=sys.stderr if out_progress_to_err else sys.stdout,
+                   desc=progress_desc_text, leave=False) as pbar:
+        for part, chunk in enumerate(chunks, start=1):
+            presigned_url = presigned_urls[part - 1]
+            chunk_count += 1
+            if show_progress:
+                try:
+                    part_data = _upload_chunk(presigned_url=presigned_url, chunk=chunk, part=part,
+                                             pbar=pbar,session=atomic_session)
+                    part_info.append(part_data)
+                    successful_chunks += 1
+                except Exception as e:
+                    return None, "unsuccessful"
+
+            else:
+                try:
+                    part_data = _upload_chunk(presigned_url=presigned_url, chunk=chunk, part=part,
+                                             pbar=pbar,session=atomic_session)
+                    part_info.append(part_data)
+                    successful_chunks += 1
+                except Exception as e:
+                    return None, "unsuccessful"
+
+    if successful_chunks == chunk_count:
+        return _complete_multipart_upload(api_key, file_key, part_info, upload_id)
+    else:
+        return None, "Unsuccessful!"
+
+
+def _download_using_presigned_url(url, fname, chunk_size=1024 * 1024, show_progress=True):
+    download_response = requests.get(url, verify=True, stream=True)
+    if download_response.status_code == 200:
+        total = int(download_response.headers.get('content-length', 0))
+        if show_progress:
+            with open(fname, 'wb') as file, tqdm.tqdm(
+                    desc=fname,
+                    total=total,
+                    unit='B',
+                    unit_scale=True,
+                    unit_divisor=1024,
+            ) as bar:
+                for data in download_response.iter_content(chunk_size=chunk_size):
+                    size = file.write(data)
+                    bar.update(size)
+        else:
+            with open(fname, "wb") as file:
+                for data in download_response.iter_content(chunk_size=chunk_size):
+                    size = file.write(data)
+        return True
+    return False
 
 def _get_user_id_from_api_key(api_key: str) -> (str, str):
     user_url = ServerConstants.get_user_url()
@@ -231,10 +474,12 @@ def _get_storage_service(service):
     else:
         raise NotImplementedError(f"Service {service} not implemented")
 
-def _check_data_path(data_path):
-    if os.path.isdir(data_path) or os.path.isfile(data_path):
-        return True
-    return False
+def _get_data_type(data_path):
+    if os.path.isdir(data_path):
+        return DataType.DIRECTORY
+    elif os.path.isfile(data_path):
+        return DataType.FILE
+    return DataType.INVALID
 
 
 def _archive_data(data_path: str) -> (str, str):

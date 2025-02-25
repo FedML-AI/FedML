@@ -11,7 +11,7 @@ bootstrap: |
   echo "Bootstrap finished"
 
 # If you do not have any GPU resource but want to serve the model
-# Try FedML® Nexus AI Platform, and Uncomment the following lines.
+# Try TensorOpera® Nexus AI Platform, and Uncomment the following lines.
 # ------------------------------------------------------------
 # computing:
 #   minimum_num_gpus: 1           # minimum # of GPUs to provision

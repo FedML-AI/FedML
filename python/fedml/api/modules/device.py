@@ -7,27 +7,27 @@ from prettytable import PrettyTable
 import fedml
 from fedml.api.modules.constants import ModuleConstants
 from fedml.computing.scheduler.comm_utils import sys_utils
+from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml.computing.scheduler.comm_utils.run_process_utils import RunProcessUtils
 from fedml.computing.scheduler.master.server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants as DeviceServerConstants
 from fedml.computing.scheduler.master.server_login import logout as server_logout
 from fedml.computing.scheduler.slave.client_constants import ClientConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants as DeviceClientConstants
 from fedml.computing.scheduler.slave.client_login import logout as client_logout
 from fedml.computing.scheduler.scheduler_entry.resource_manager import FedMLResourceManager
 
 
 def bind(
-        api_key, computing, server, supplier
-):
+        api_key, computing, server, supplier, marketplace_type, price_per_hour, name,
+        master_inference_gateway_port=DeviceServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+        worker_inference_proxy_port=DeviceClientConstants.LOCAL_CLIENT_API_PORT,
+        worker_connection_type=DeviceClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT):
     userid = api_key
     runner_cmd = "{}"
     device_id = "0"
     os_name = ""
     docker = None
-    docker_rank = 1
-    infer_host = "127.0.0.1"
-    redis_addr = "local"
-    redis_port = "6379"
-    redis_password = "fedml_default"
     role = ""
     is_client = computing
     is_server = server
@@ -47,25 +47,26 @@ def bind(
     _bind(
         userid, computing, server,
         api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank, infer_host,
-        redis_addr, redis_port, redis_password
-    )
+        docker, master_inference_gateway_port, worker_inference_proxy_port, worker_connection_type, marketplace_type,
+        price_per_hour, name)
 
 
 def _bind(
-        userid, computing, server,
-        api_key, role, runner_cmd, device_id, os_name,
-        docker, docker_rank, infer_host,
-        redis_addr, redis_port, redis_password
-):
+        userid, computing, server, api_key, role, runner_cmd, device_id, os_name, docker, master_inference_gateway_port,
+        worker_inference_proxy_port, worker_connection_type, marketplace_type, price_per_hour, name):
+    fedml.load_env()
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_HOST) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_HOST] = infer_host
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_HOST, SchedulerConstants.REDIS_INFER_HOST)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR] = redis_addr
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_ADDR, SchedulerConstants.REDIS_ADDR)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PORT] = redis_port
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PORT, SchedulerConstants.REDIS_PORT)
     if os.getenv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD) is None:
-        os.environ[ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD] = redis_password
+        fedml.set_env_kv(ModuleConstants.ENV_FEDML_INFER_REDIS_PASSWORD, SchedulerConstants.REDIS_PASSWORD)
+
+    fedml.set_env_kv(DeviceServerConstants.ENV_MASTER_INFERENCE_PORT_KEY, str(master_inference_gateway_port))
+    fedml.set_env_kv(DeviceClientConstants.ENV_CLIENT_PROXY_PORT_KEY, str(worker_inference_proxy_port))
+    fedml.set_env_kv(DeviceClientConstants.ENV_CONNECTION_TYPE_KEY, worker_connection_type)
 
     url = fedml._get_backend_service()
     platform_name = platform.system()
@@ -77,7 +78,7 @@ def _bind(
     else:
         docker_install_url = "https://docs.docker.com/engine/install/"
         docker_config_text = " Moreover, you need to config the docker engine to run as a non-root user. Here is the docs. https://docs.docker.com/engine/install/linux-postinstall/"
-    print("\n Welcome to FedML.ai! \n Start to login the current device to the FedML® Nexus AI Platform\n")
+    print("\n Welcome to FedML.ai! \n Start to login the current device to the TensorOpera® Nexus AI Platform\n")
     print(" If you want to deploy models into this computer, you need to install the docker engine to serve your models.")
     print(f" Here is the docs for installation docker engine. {docker_install_url}")
     if docker_config_text is not None:
@@ -136,7 +137,7 @@ def _bind(
         client_daemon_cmd = "client_daemon.py"
         client_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(client_daemon_cmd)
         if client_daemon_pids is not None and len(client_daemon_pids) > 0:
-            print("Your computer has been logged into the FedML® Nexus AI Platform. "
+            print("Your computer has been logged into the TensorOpera® Nexus AI Platform. "
                   "Before logging in again, please log out of the previous login using the command "
                   "'fedml logout -c'. If it still doesn't work, run the command 'fedml logout -c' "
                   "using your computer's administrator account.")
@@ -176,7 +177,13 @@ def _bind(
                 "-k",
                 user_api_key,
                 "-ngc",
-                "1"
+                "1",
+                "-mpt",
+                marketplace_type,
+                "-pph",
+                str(price_per_hour),
+                "-n",
+                str(name)
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
@@ -186,7 +193,7 @@ def _bind(
         server_daemon_cmd = "server_daemon.py"
         server_daemon_pids = RunProcessUtils.get_pid_from_cmd_line(server_daemon_cmd)
         if server_daemon_pids is not None and len(server_daemon_pids) > 0:
-            print("Your computer has been logged into the FedML® Nexus AI Platform. "
+            print("Your computer has been logged into the TensorOpera® Nexus AI Platform. "
                   "Before logging in again, please log out of the previous login using the command "
                   "'fedml logout -s'. If it still doesn't work, run the command 'fedml logout -s' "
                   "using your computer's administrator account.")

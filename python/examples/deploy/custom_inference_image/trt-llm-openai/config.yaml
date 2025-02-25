@@ -1,0 +1,22 @@
+workspace: "./"
+
+inference_image_name: "fedml/trt-llm-openai"
+
+# The image has its self-contained cmd, no need for rewriting the command
+container_run_command: null
+
+port: 3000
+
+readiness_probe:
+  httpGet:
+    path: "/health_check"
+
+# If you do not use serverless container mode, and you want to indicate another resource path,
+# e.g. localhost:3000/v1/chat/completions, you can set the following uri:
+service:
+  httpPost:
+    path: "/v1/chat/completions"
+
+deploy_timeout_sec: 1600
+
+endpoint_api_type: "text2text_llm_openai_chat_completions"

@@ -8,22 +8,25 @@ comm_args:
   grpc_ipconfig_path: config/grpc_ipconfig.csv
 ```
 
-`grpc_ipconfig_path` specifies the path of the config for gRPC communication. Config file specifies an ip address for each process through with they can communicate with each other. The config file should have the folliwng format:
+`grpc_ipconfig_path` specifies the path of the config for gRPC communication. Config file specifies an ip address for each process through with they can communicate with each other. The config file should have the following format:
 
 ```csv
-receiver_id,ip
-0,127.0.0.1
-1,127.0.0.1
-2,127.0.0.1
+eid,rank,grpc_server_ip,grpc_server_port
+0,0,0.0.0.0,8890
+1,1,0.0.0.0,8899
+2,2,0.0.0.0,8898
 ```
 
-Here the `receiver_id` is the rank of the process.
+Here, `eid, rank, ip, port` are the id, rank, ip address and port of the server or client process. For server processes the rank is always set to 0, while for clients is always set to 1 or above.
 
 ## One Line API Example
 
-Example is provided at:
+Examples are provided at:
 
 `python/examples/cross_silo/grpc_fedavg_mnist_lr_example/one_line`
+`python/examples/cross_silo/grpc_fedavg_mnist_lr_example/step_by_step`
+`python/examples/cross_silo/grpc_fedavg_mnist_lr_example/custom_data_and_model`
+
 ### Training Script
 
 At the client side, the client ID (a.k.a rank) starts from 1.

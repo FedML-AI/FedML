@@ -43,5 +43,5 @@ Other low-level APIs related to security and privacy are also supported. All alg
 
 **utils**: Common utilities shared by other modules.
 
-## About FedML, Inc.
-https://FedML.ai
+## About TensorOpera, Inc.
+https://tensoropera.ai

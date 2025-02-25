@@ -278,7 +278,7 @@ class FedMLAppManager(Singleton):
         app_storage_url = s3_storage.upload_file_with_progress(app_package_path, app_dst_key,
                                                                out_progress_to_err=True,
                                                                progress_desc="Submitting your job to "
-                                                                             "FedML® Nexus AI Platform")
+                                                                             "TensorOpera® Nexus AI Platform")
         return app_storage_url
 
     def pull_app_package_from_s3(self, model_storage_url, model_name):
@@ -315,7 +315,7 @@ class FedMLAppManager(Singleton):
         return FedMLModelCards.get_instance().push_model_to_s3(
             model_name, model_zip_path, "FedMLLaunchServe",
             show_progress=False,
-            progress_desc="Submitting your job to FedML® Nexus AI Platform")
+            progress_desc="Submitting your job to TensorOpera® Nexus AI Platform")
 
     def check_model_package(self, workspace):
         model_config_file = os.path.join(

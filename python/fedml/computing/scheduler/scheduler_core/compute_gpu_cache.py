@@ -10,6 +10,7 @@ class ComputeGpuCache(object):
     FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG = "FEDML_GLOBAL_DEVICE_RUN_NUM_GPUS_TAG-"
     FEDML_GLOBAL_DEVICE_RUN_GPU_IDS_TAG = "FEDML_GLOBAL_DEVICE_RUN_GPU_IDS_TAG-"
     FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG = "FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG-"
+    FEDML_GLOBAL_DEVICE_INITIAL_AVAILABLE_GPU_IDS_TAG = "FEDML_GLOBAL_DEVICE_INITIAL_AVAILABLE_GPU_IDS_TAG-"
     FEDML_GLOBAL_DEVICE_TOTAL_NUM_GPUS_TAG = "FEDML_GLOBAL_DEVICE_TOTAL_NUM_GPUS_TAG-"
     FEDML_GLOBAL_RUN_TOTAL_NUM_GPUS_TAG = "FEDML_GLOBAL_RUN_TOTAL_NUM_GPUS_TAG-"
     FEDML_GLOBAL_RUN_DEVICE_IDS_TAG = "FEDML_GLOBAL_RUN_DEVICE_IDS_TAG-"
@@ -107,6 +108,25 @@ class ComputeGpuCache(object):
             return []
 
         return device_available_gpu_ids
+    
+    def get_device_initial_available_gpu_ids(self, device_id):
+        # Get the initial available GPU ids from the cache, for checking if the device all available GPU ids is changed
+        device_initial_available_gpu_ids = None
+        try:
+            if self.redis_connection.exists(self.get_device_initial_available_gpu_ids_key(device_id)):
+                device_initial_available_gpu_ids = self.redis_connection.get(self.get_device_initial_available_gpu_ids_key(device_id))
+                if str(device_initial_available_gpu_ids).strip() == "":
+                    return []
+        except Exception as e:
+            pass
+
+        if device_initial_available_gpu_ids is not None and str(device_initial_available_gpu_ids).strip() != "":
+            device_initial_available_gpu_ids = device_initial_available_gpu_ids.split(',')
+            device_initial_available_gpu_ids = self.map_str_list_to_int_list(device_initial_available_gpu_ids)
+        else:
+            return []
+
+        return device_initial_available_gpu_ids
 
     def get_device_total_num_gpus(self, device_id):
         device_total_num_gpus = None
@@ -241,6 +261,14 @@ class ComputeGpuCache(object):
             pass
 
         ComputeGpuDatabase.get_instance().set_device_available_gpu_ids(device_id, gpu_ids)
+    
+    def set_device_initial_available_gpu_ids(self, device_id, gpu_ids):
+        # Set the initial available GPU ids to the cache, use to check if the device all available GPU ids is changed
+        try:
+            str_gpu_ids = self.map_list_to_str(gpu_ids)
+            self.redis_connection.set(self.get_device_initial_available_gpu_ids_key(device_id), str_gpu_ids)
+        except Exception as e:
+            pass
 
     def set_device_total_num_gpus(self, device_id, num_gpus):
         try:
@@ -311,6 +339,9 @@ class ComputeGpuCache(object):
 
     def get_device_available_gpu_ids_key(self, device_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG}{device_id}"
+    
+    def get_device_initial_available_gpu_ids_key(self, device_id):
+        return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_INITIAL_AVAILABLE_GPU_IDS_TAG}{device_id}"
 
     def get_device_total_num_gpus_key(self, device_id):
         return f"{ComputeGpuCache.FEDML_GLOBAL_DEVICE_TOTAL_NUM_GPUS_TAG}{device_id}"

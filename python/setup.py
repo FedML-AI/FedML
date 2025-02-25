@@ -40,21 +40,19 @@ requirements = [
     'multiprocess',
     'networkx<3.0',
     'ntplib',
-    'numpy>=1.21',
+    'numpy<2.0.0',
     'onnx',
     'paho-mqtt<2.0.0',
     'pandas',
     'prettytable',
     'py-machineid',
     'pydantic',
-    'pydantic-settings',
     'pytest',
     'pytest-mock',
     'python-rapidjson>=0.9.1',
     'redis',
     'scikit-learn',
     'smart-open==6.3.0',
-    'spacy',
     'sqlalchemy',
     'toposort',
     'torch>=1.13.1',
@@ -66,6 +64,12 @@ requirements = [
     'uvicorn',
     'wandb==0.13.2',
     'wget',
+    # Need to pin this version due to breaking change released in python docker sdk
+    'requests<2.32',
+    'python-dotenv',
+    'protobuf>=3.20.2,<4.0dev',
+    'typer<0.10.0,>=0.3.0',
+    'fastapi-cli==0.0.1'
 ]
 
 requirements_extra_mpi = [
@@ -113,12 +117,16 @@ requirements_extra_deepspeed = [
     "deepspeed>=0.10.2",
 ]
 
+requirements_extra_nlp = [
+    'spacy>=3.2.0,<3.3.0',
+]
+
 # if platform.machine() == "x86_64":
 #    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.8.30",
+    version="0.9.6",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -165,6 +173,8 @@ setup(
                 "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-root-ca.crt",
+                "fedml/core/mlops/ssl/open.chainopera.ai.local.crt",
+                "fedml/core/mlops/ssl/open.chainopera.ai.local.rootca.crt",
             ],
         )
     ],
@@ -178,6 +188,7 @@ setup(
         "llm": requirements_extra_llm,
         "mxnet": requirements_extra_mxnet,
         "tensorflow": requirements_extra_tf,
+        "nlp": requirements_extra_nlp,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",

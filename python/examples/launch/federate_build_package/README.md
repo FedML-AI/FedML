@@ -3,7 +3,7 @@
 ```
 Usage: fedml federate build [OPTIONS] [YAML_FILE]
 
-  Build federate packages for the FedML® Nexus AI Platform.
+  Build federate packages for the TensorOpera® Nexus AI Platform.
 
 Options:
   -h, --help              Show this message and exit.

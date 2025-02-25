@@ -51,7 +51,7 @@ def start(platform: str, create_run_result: FedMLRunStartedModel, device_server:
 
     run_start_result = FedMLRunManager.get_instance().start_run(platform=platform, create_run_result=create_run_result,
                                                                 device_server=device_server, device_edges=device_edges,
-                                                                api_key=api_key,
+                                                                api_key=get_api_key(),
                                                                 feature_entry_point=feature_entry_point)
 
     return run_start_result
@@ -79,7 +79,7 @@ def status(run_name: Optional[str], run_id: str, platform: str, api_key: str) ->
     _authenticate_and_validate_platform(api_key, platform)
 
     run_status = None
-    run_list_obj = list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=api_key)
+    run_list_obj = list_run(run_name=run_name, run_id=run_id, platform=platform, api_key=get_api_key())
 
     if run_list_obj is not None:
         if len(run_list_obj.run_list) > 1:
@@ -93,12 +93,13 @@ def status(run_name: Optional[str], run_id: str, platform: str, api_key: str) ->
 # input: run_id, page_num, page_size, need_all_logs, platform, api_key
 # return RunLogResult(run_status, total_log_lines, total_log_pages, log_line_list, run_logs)
 def logs(run_id: str, page_num: int, page_size: int, need_all_logs: bool, platform: str, api_key: str) -> RunLogResult:
-    _authenticate_and_validate_platform(api_key, platform)
+    api_key = authenticate(api_key)
+    validate_platform(platform)
 
     if run_id is None:
         raise Exception("Please specify run id.")
 
-    _, run_status = status(run_name=None, run_id=run_id, platform=platform, api_key=get_api_key())
+    _, run_status = status(run_name=None, run_id=run_id, platform=platform, api_key=api_key)
 
     total_log_nums, total_log_pages, log_line_list, run_logs = 0, 0, list(), None
 
@@ -110,7 +111,7 @@ def logs(run_id: str, page_num: int, page_size: int, need_all_logs: bool, platfo
                                                                user_api_key=api_key)
 
         if run_logs is not None:
-            total_log_pages, total_log_nums = run_logs.total_num, run_logs.total_pages
+            total_log_pages, total_log_nums = run_logs.total_pages, run_logs.total_num
             _parse_logs(log_line_list, run_logs)
 
         return RunLogResult(run_status=run_status, total_log_lines=total_log_nums, total_log_pages=total_log_pages,

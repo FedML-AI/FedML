@@ -188,11 +188,11 @@ class FedMLCommManager(Observer):
             )
         elif self.backend == "GRPC":
             from .communication.grpc.grpc_comm_manager import GRPCCommManager
-
-            HOST = "0.0.0.0"
-            PORT = CommunicationConstants.GRPC_BASE_PORT + self.rank
             self.com_manager = GRPCCommManager(
-                HOST, PORT, ip_config_path=self.args.grpc_ipconfig_path, client_id=self.rank, client_num=self.size,
+                grpc_ipconfig_path=self.args.grpc_ipconfig_path,
+                client_rank=self.rank,
+                client_num=self.size,
+                args=self.args,
             )
         elif self.backend == "TRPC":
             from .communication.trpc.trpc_comm_manager import TRPCCommManager

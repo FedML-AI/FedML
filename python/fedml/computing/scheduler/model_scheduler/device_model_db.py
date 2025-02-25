@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import time
 
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
@@ -9,6 +10,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from fedml.core.common.singleton import Singleton
 from sqlalchemy.sql import text
+from typing import List, Dict
+import functools
+from sqlalchemy import exc
 
 Base = declarative_base()
 
@@ -23,7 +27,57 @@ class FedMLModelDatabase(Singleton):
             self.db_engine = None
         if not hasattr(self, "db_base_dir"):
             self.db_base_dir = None
-
+    
+    @staticmethod
+    def db_operation(func):
+        """decorator: handle the database operation exceptions"""
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                # open the database connection
+                self.open_job_db()
+                # execute the function
+                return func(self, *args, **kwargs)
+            except (
+                # session state error
+                exc.InvalidRequestError,     # including "prepared state" error
+                exc.StatementError,          # SQL statement execution error
+                # connection error
+                exc.DBAPIError,             # base class of database API error
+                exc.OperationalError,        # database operation error (e.g. connection failure)
+                exc.DisconnectionError,      # connection disconnected
+                # transaction error
+                exc.InvalidatePoolError,     # connection pool invalid
+                exc.TimeoutError,            # connection timeout
+                exc.ResourceClosedError,     # resource (e.g. cursor) closed
+                # concurrent error
+                exc.PendingRollbackError,    # pending rollback transaction
+                exc.IntegrityError          # integrity constraint violation
+            ) as e:
+                logging.error(f"Database error in {func.__name__}, rebuilding session: {e}")
+                # rollback any unfinished transactions
+                if self.db_connection:
+                    try:
+                        self.db_connection.rollback()
+                    except:
+                        pass
+                    try:
+                        self.db_connection.close()
+                    except:
+                        pass
+                    # set the db connection to None, then open again in open_job_db method
+                    self.db_connection = None
+                # retry open the database connection
+                self.open_job_db()
+                # retry execute the function
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                # other unexpected errors, record logs and raise
+                logging.error(f"Unexpected error in {func.__name__}: {e}")
+                self.db_connection = None
+                raise
+        return wrapper
+    
     @staticmethod
     def get_instance():
         return FedMLModelDatabase()
@@ -41,9 +95,11 @@ class FedMLModelDatabase(Singleton):
         self.set_deployment_results_info(end_point_id, end_point_name, model_name, model_version,
                                          device_id, deployment_status=deployment_status, replica_no=replica_no)
 
-    def get_deployment_result_list(self, end_point_id, end_point_name, model_name, model_version=None):
+    def get_deployment_result_list(self, end_point_id, end_point_name, model_name, model_version=None) -> List[str]:
         """
-        query from sqlite db using e_id
+        Get the orm use get_deployment_results_info,
+        but (1) nested results with cache_device_id, cache_replica_no.
+        (2) return a list of json string, so that redis can store it.
         """
         result_list = self.get_deployment_results_info(end_point_id, end_point_name, model_name, model_version)
         ret_result_list = list()
@@ -54,6 +110,39 @@ class FedMLModelDatabase(Singleton):
             ret_result_list.append(json.dumps(result_dict))
         return ret_result_list
 
+    def get_all_deployment_results_list(self) -> List[Dict]:
+        """
+        Similar to _get_all_deployment_results_info,
+        but return a list of json string, so that redis can store it.
+
+        return a list of dict, for each item:
+        [
+            {
+                "end_point_id": "",
+                "end_point_name": "",
+                "model_name":"",
+                "replica_res": ""   # Json string
+            },
+        ]
+        value in the dict is a string that contains the deployment result.
+        """
+        flat_ep_list = self._get_all_deployment_results_info()
+        ret_result_list = list()
+        for result in flat_ep_list:
+            result_dict = {
+                "end_point_id": result.end_point_id,
+                "end_point_name": result.end_point_name,
+                "model_name": result.model_name,
+                "replica_info": json.dumps(
+                    {
+                        "cache_device_id": result.device_id,
+                        "cache_replica_no": int(result.replica_no),
+                        "result": result.deployment_result
+                    }
+                )
+            }
+            ret_result_list.append(result_dict)
+        return ret_result_list
 
     def get_deployment_status_list(self, end_point_id, end_point_name, model_name, model_version=None):
         result_list = self.get_deployment_results_info(end_point_id, end_point_name, model_name, model_version)
@@ -97,6 +186,7 @@ class FedMLModelDatabase(Singleton):
 
         return None
 
+    @db_operation
     def delete_deployment_status(self, end_point_id, end_point_name, model_name, model_version=None):
         self.open_job_db()
         if model_version is None:
@@ -112,6 +202,7 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_result(self, end_point_id, end_point_name, model_name, model_version=None):
         self.open_job_db()
         if model_version is None:
@@ -127,6 +218,7 @@ class FedMLModelDatabase(Singleton):
                      FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).delete()
         self.db_connection.commit()
     
+    @db_operation
     def delete_deployment_result_with_device_id(self, end_point_id, end_point_name, model_name, device_id):
         self.open_job_db()
         self.db_connection.query(FedMLDeploymentResultInfoModel).filter(
@@ -136,6 +228,7 @@ class FedMLModelDatabase(Singleton):
                  FedMLDeploymentResultInfoModel.device_id == f'{device_id}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_result_with_device_id_and_rank(self, end_point_id, end_point_name, model_name,
                                                          device_id, replica_rank):
         replica_no = replica_rank + 1
@@ -148,6 +241,7 @@ class FedMLModelDatabase(Singleton):
                  FedMLDeploymentResultInfoModel.replica_no == f'{replica_no}')).delete()
         self.db_connection.commit()
 
+    @db_operation
     def delete_deployment_run_info(self, end_point_id):
         # db / table -> model-deployment.db / "deployment_run_info"
         self.open_job_db()
@@ -155,7 +249,8 @@ class FedMLModelDatabase(Singleton):
             end_point_id=f'{end_point_id}').delete()
         self.db_connection.commit()
 
-    def get_result_item_info(self, result_item):
+    @staticmethod
+    def get_result_item_info(result_item):
         result_item_json = json.loads(result_item)
         if isinstance(result_item_json, dict):
             result_item_json = json.loads(result_item)
@@ -168,7 +263,8 @@ class FedMLModelDatabase(Singleton):
             result_payload = result_item_json["result"]
         return device_id, replica_no, result_payload
 
-    def get_status_item_info(self, status_item):
+    @staticmethod
+    def get_status_item_info(status_item):
         status_item_json = json.loads(status_item)
         if isinstance(status_item_json, dict):
             status_item_json = json.loads(status_item)
@@ -261,7 +357,10 @@ class FedMLModelDatabase(Singleton):
             self.db_base_dir = ServerConstants.get_database_dir()
 
         job_db_path = os.path.join(self.db_base_dir, FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
-        self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
+        if platform.system() == "Windows":
+            self.db_engine = create_engine('sqlite:///{}'.format(job_db_path), echo=False)
+        else:
+            self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)
         self.db_connection = db_session_class()
@@ -301,6 +400,7 @@ class FedMLModelDatabase(Singleton):
         except Exception as e:
             pass
 
+    @db_operation
     def get_deployment_results_info(self, end_point_id, end_point_name, model_name, model_version):
         self.open_job_db()
         if model_version is None:
@@ -316,6 +416,13 @@ class FedMLModelDatabase(Singleton):
                             FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).all()
         return result_info
 
+    @db_operation
+    def _get_all_deployment_results_info(self):
+        self.open_job_db()
+        result_info = self.db_connection.query(FedMLDeploymentResultInfoModel).all()
+        return result_info
+
+    @db_operation
     def set_deployment_results_info(self, end_point_id, end_point_name,
                                     model_name, model_version, device_id,
                                     deployment_result=None, deployment_status=None, replica_no=None):
@@ -355,12 +462,14 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_deployment_run_info(self, end_point_id):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentRunInfoModel). \
             filter_by(end_point_id=f'{end_point_id}').first()
         return run_info
 
+    @db_operation
     def set_deployment_run_info(self, end_point_id, end_point_name,
                                 end_point_status=None, device_info=None,
                                 activated=None, token=None):
@@ -388,6 +497,7 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_deployment_auth_info(self, end_point_id, end_point_name, model_name):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
@@ -396,6 +506,7 @@ class FedMLModelDatabase(Singleton):
                         FedMLDeploymentAuthInfoModel.model_name == f'{model_name}')).first()
         return run_info
 
+    @db_operation
     def set_deployment_auth_info(self, end_point_id, end_point_name, model_name, token):
         self.open_job_db()
         auth_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
@@ -415,6 +526,7 @@ class FedMLModelDatabase(Singleton):
 
         self.db_connection.commit()
 
+    @db_operation
     def get_latest_end_point_metrics(self, end_point_id, end_point_name, model_name, model_version):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
@@ -426,6 +538,7 @@ class FedMLModelDatabase(Singleton):
             return endpoint_metric[-1]
         return None
 
+    @db_operation
     def get_end_point_metrics_by_index(self, end_point_id, end_point_name, model_name, model_version, index):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
@@ -436,6 +549,7 @@ class FedMLModelDatabase(Singleton):
             offset(index).limit(1).first()
         return endpoint_metric
 
+    @db_operation
     def set_end_point_metrics(self, end_point_id, end_point_name,
                               model_name, model_version,
                               total_latency=None, avg_latency=None, current_latency=None,

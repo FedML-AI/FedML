@@ -1,3 +1,4 @@
+
 class MyMessage(object):
     """
     message type definition

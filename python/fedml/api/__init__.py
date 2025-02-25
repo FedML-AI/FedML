@@ -19,11 +19,13 @@ from fedml.api.constants import RunStatus
 from fedml.api.fedml_response import FedMLResponse
 from fedml.api.modules import launch, utils, build, device, logs, diagnosis, cluster, run, train, federate, storage, \
     model as model_module  # Since "model" has conflict with one of the input parameters, we need to rename it
-from fedml.api.modules.launch import FeatureEntryPoint
 from fedml.api.modules.storage import StorageMetadata
+from fedml.computing.scheduler.scheduler_core.general_constants import MarketplaceType
 from fedml.computing.scheduler.scheduler_entry.cluster_manager import FedMLClusterModelList
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FedMLGpuDevices, \
     FedMLRunModelList, FeatureEntryPoint
+from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
+from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 
 
 def fedml_login(api_key: str = None):
@@ -179,12 +181,11 @@ def cluster_killall(api_key=None) -> bool:
     return cluster.kill(cluster_names=(), api_key=api_key)
 
 
-def upload(data_path, api_key=None, service="R2", name=None, description=None, metadata=None, show_progress=False,
+def upload(data_path, api_key=None, tag_list=[], service="R2", name=None, description=None, metadata=None, show_progress=False,
            out_progress_to_err=True, progress_desc=None) -> FedMLResponse:
-    return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description,
+    return storage.upload(data_path=data_path, api_key=api_key, name=name, description=description, tag_list =tag_list,
                           service=service, progress_desc=progress_desc, show_progress=show_progress,
                           out_progress_to_err=out_progress_to_err, metadata=metadata)
-
 
 def get_storage_user_defined_metadata(data_name, api_key=None) -> FedMLResponse:
     return storage.get_user_metadata(data_name=data_name, api_key=api_key)
@@ -210,16 +211,25 @@ def fedml_build(platform, type, source_folder, entry_point, config_folder, dest_
     return build.build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore)
 
 
-def login(api_key, computing, server, supplier):
-    device_bind(api_key, computing, server, supplier)
+def login(api_key, computing, server, supplier,
+          master_inference_gateway_port: int = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT,
+          worker_inference_proxy_port: int = ClientConstants.LOCAL_CLIENT_API_PORT,
+          worker_connection_type: str = ClientConstants.WORKER_CONNECTIVITY_TYPE_DEFAULT,
+          marketplace_type: str = MarketplaceType.SECURE.name, price_per_hour: float = 0.0, name=""):
+    device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type, marketplace_type, price_per_hour, name)
 
 
 def logout(computing, server):
     device_unbind(computing, server)
 
 
-def device_bind(api_key, computing, server, supplier):
-    device.bind(api_key, computing, server, supplier)
+def device_bind(api_key, computing, server, supplier, master_inference_gateway_port, worker_inference_proxy_port,
+                worker_connection_type, marketplace_type, price_per_hour, name):
+    device.bind(api_key=api_key, computing=computing, server=server, supplier=supplier,
+                master_inference_gateway_port=master_inference_gateway_port,
+                worker_inference_proxy_port=worker_inference_proxy_port, worker_connection_type=worker_connection_type,
+                marketplace_type=marketplace_type, price_per_hour=price_per_hour, name=name)
 
 
 def device_unbind(computing, server):

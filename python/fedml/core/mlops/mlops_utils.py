@@ -1,4 +1,5 @@
 import json
+import logging
 import multiprocessing
 import os
 import time
@@ -76,12 +77,38 @@ class MLOpsLoggingUtils:
     @staticmethod
     def acquire_lock(block=True):
         return MLOpsLoggingUtils._lock.acquire(block)
+    
+        # logging.info("acquire_lock start, block: {}".format(block))
+        # lock_acquired = MLOpsLoggingUtils._lock.acquire(block)
+        # logging.info("acquire_lock end, lock_acquired: {}".format(lock_acquired))
+        # return lock_acquired
 
     @staticmethod
     def release_lock():
         # Purposefully acquire lock with non-blocking call to make it idempotent
         MLOpsLoggingUtils._lock.acquire(block=False)
         MLOpsLoggingUtils._lock.release()
+
+        # modify by charlie
+        # release_lock method may have incorrect implementation:
+        # -> The acquire(block=False) in release_lock may incorrectly acquire and release the lock, especially in a multi-threaded environment.
+        # -> If the current thread already holds the lock, acquire(block=False) will fail (return False) in multiprocessing.Lock,
+        # because the lock is not re-entrant, and cross-thread use may lead to undefined behavior.
+        # -> Therefore, the acquire call in release_lock may fail, causing subsequent release() to throw an exception,
+        # or incorrectly release the lock held by other threads.
+
+        # modify by charlie
+        # acquire the lock and release it in old lock implementation 
+        # perhaps cause the lock is released in the wrong place
+        # so we need to release the lock directly
+        # try:
+        #     logging.info("release_lock start")
+        #     MLOpsLoggingUtils._lock.release()
+        #     logging.info("release_lock end")
+        # except ValueError as e:
+        #     # The lock is not acquired, ignore it
+        #     logging.warning("release_lock error: {}".format(e))
+        #     pass
 
     @staticmethod
     def build_log_file_path_with_run_params(
@@ -128,15 +155,17 @@ class MLOpsLoggingUtils:
     @staticmethod
     def get_edge_id_from_args(args):
         if args.role == "server":
-            if hasattr(args, "server_id"):
+            # Considering that 0 is a valid value, we need to ensure it is not None rather than solely checking
+            # for truthiness
+            if getattr(args, "server_id", None) is not None:
                 edge_id = args.server_id
             else:
-                if hasattr(args, "edge_id"):
+                if getattr(args, "edge_id", None) is not None:
                     edge_id = args.edge_id
                 else:
                     edge_id = 0
         else:
-            if hasattr(args, "client_id"):
+            if getattr(args, "client_id", None) is not None:
                 edge_id = args.client_id
             elif hasattr(args, "client_id_list"):
                 if args.client_id_list is None:
@@ -148,10 +177,11 @@ class MLOpsLoggingUtils:
                     else:
                         edge_id = 0
             else:
-                if hasattr(args, "edge_id"):
+                if getattr(args, "edge_id", None) is not None:
                     edge_id = args.edge_id
                 else:
                     edge_id = 0
+
         return edge_id
 
     @staticmethod
@@ -173,18 +203,28 @@ class MLOpsLoggingUtils:
             log_config_key = "log_config_{}_{}".format(run_id, device_id)
             log_config = MLOpsLoggingUtils.load_yaml_config(log_config_file)
             log_config[log_config_key] = MLOpsLoggingUtils.__convert_to_dict(config_data)
+             # Use with statement to ensure file is properly closed
             with open(log_config_file, "w") as stream:
-                yaml.dump(log_config, stream)
+                # use safe_dump to avoid the problem of the lock
+                yaml.safe_dump(log_config, stream)
         except Exception as e:
-            MLOpsLoggingUtils.release_lock()
+            # modify by charlie
+            # Don't release lock here - let caller handle it
+            # MLOpsLoggingUtils.release_lock()
             raise ValueError("Error saving log config: {}".format(e))
 
     @staticmethod
     def load_yaml_config(log_config_file):
         """Helper function to load a yaml config file"""
-        if MLOpsLoggingUtils._lock.acquire(block=False):
-            MLOpsLoggingUtils._lock.release()
-            raise ValueError("Able to acquire lock. This means lock was not acquired by the caller")
+        
+        # modify by charlie
+        # the lock is acquired in the caller, so the check is not necessary, 
+        # it should be removed to avoid potential exceptions and logical conflicts.
+        
+        # if MLOpsLoggingUtils._lock.acquire(block=False):
+        #     MLOpsLoggingUtils._lock.release()
+        #     raise ValueError("Able to acquire lock. This means lock was not acquired by the caller")
+        
         if not os.path.exists(log_config_file):
             MLOpsLoggingUtils.generate_yaml_doc({}, log_config_file)
         with open(log_config_file, "r") as stream:

@@ -78,7 +78,10 @@ class ClientMasterManager(FedMLCommManager):
             MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
         )
 
-        self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init)
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
+        )
+
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.handle_message_receive_model_from_server,
         )

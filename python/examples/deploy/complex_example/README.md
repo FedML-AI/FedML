@@ -16,7 +16,7 @@ Use -cf to indicate the configuration file.
     curl -XPOST localhost:2345/predict -d '{"text": "Hello"}'
     ```
 
-## Option 2: Deploy to the Cloud (Using fedml®launch platform)
+## Option 2: Deploy to the Cloud (Using TensorOpera®launch platform)
 - Uncomment the following line in config.yaml
 
     For information about the configuration, please refer to fedml ® launch.

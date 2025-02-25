@@ -1,0 +1,22 @@
+# Required
+workspace: "./"                     # We will pacakge all the files in the workspace directory
+expose_subdomains: true             # For customized image, if you want to route all the subdomains, set to true. e.g. localhost:2345/{all-subdomain}
+inference_image_name: ""            # Container image name
+container_run_command: ""           # str or list, similar to CMD in the dockerfile
+port: 80                            # Service port, currently you can only indicate one arbitrary port
+
+# Optional, these are the default values
+readiness_probe:                    # Probe for checking whether a container is ready for inference
+  httpGet:
+    path: ""
+environment_variables: {}           # Environment variables inside the container
+volumes:                            # Volumes to mount to the container
+    - workspace_path: ""            # Path to the volume in the workspace
+      mount_path: ""                # Path to mount the volume inside the container
+deploy_timeout_sec: 900             # Maximum time waiting for deployment to finish (Does not include the time to pull the image)
+request_input_example: {}           # Example of input request, will be shown in the UI
+registry_specs:                     # Registry information for pulling the image
+  registry_name: ""
+  registry_provider: "DockerHub"
+  registry_user_name: ""
+  registry_user_password: ""

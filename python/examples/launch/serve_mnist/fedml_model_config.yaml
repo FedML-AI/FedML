@@ -1,6 +1,8 @@
 workspace: "./"
 entry_point: "mnist_serve_main.py"
 
+auto_detect_public_ip: true
+
 data_cache_dir: ""
 bootstrap: ""
 

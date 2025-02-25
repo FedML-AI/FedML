@@ -14,8 +14,10 @@ class RunProcessUtils:
         return f"{prefix}-run@{run_id}@pid@"
 
     @staticmethod
-    def cleanup_run_process(run_id, data_dir, info_dir,
-                            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS):
+    def cleanup_run_process(
+            run_id, data_dir, info_dir,
+            info_file_prefix=SchedulerConstants.RUN_PROCESS_TYPE_RUNNER_PROCESS, not_kill_subprocess=False
+    ):
         try:
             local_pkg_data_dir = data_dir
             run_process_dir = os.path.join(local_pkg_data_dir, info_dir)
@@ -43,12 +45,13 @@ class RunProcessUtils:
 
                 try:
                     process = psutil.Process(int(process_id))
-                    child_processes = process.children(recursive=True)
-                    for sub_process in child_processes:
-                        if platform.system() == 'Windows':
-                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
-                        else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
+                    if not not_kill_subprocess:
+                        child_processes = process.children(recursive=True)
+                        for sub_process in child_processes:
+                            if platform.system() == 'Windows':
+                                os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                            else:
+                                os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':
@@ -163,26 +166,39 @@ class RunProcessUtils:
     @staticmethod
     def get_pid_from_cmd_line(cmd_line, break_on_first=True):
         ret_pids = list()
-        pids = psutil.process_iter()
-        for pid in pids:
-            try:
-                for cmd in pid.cmdline():
-                    if cmd.find(cmd_line) != -1:
-                        is_running = False
-                        try:
-                            process = psutil.Process(pid.pid)
-                            if process.status() == psutil.STATUS_RUNNING or \
-                                    process.status() == psutil.STATUS_SLEEPING or \
-                                    process.status() == psutil.STATUS_IDLE:
-                                is_running = True
-                        except Exception as e:
-                            pass
-                        if is_running:
-                            ret_pids.append(pid.pid)
-                        if break_on_first:
-                            return ret_pids
-            except Exception as e:
-                pass
+        try:
+            for pid in psutil.process_iter():
+                try:
+                    try:
+                        _ = pid.as_dict(attrs=['cpu_times', 'name', 'pid', 'status'])
+                    except psutil.ZombieProcess:
+                        # Filter out zombie processes
+                        continue
+                    except psutil.NoSuchProcess:
+                        continue
+
+                    for cmd in pid.cmdline():
+                        if cmd.find(cmd_line) != -1:
+                            is_running = False
+                            try:
+                                process = psutil.Process(pid.pid)
+                                if process.status() == psutil.STATUS_RUNNING or \
+                                        process.status() == psutil.STATUS_SLEEPING or \
+                                        process.status() == psutil.STATUS_IDLE:
+                                    is_running = True
+                            except Exception as e:
+                                print(f"Error in get_pid_from_cmd_line inner loop: {e}")
+                                pass
+                            if is_running:
+                                ret_pids.append(pid.pid)
+                            if break_on_first:
+                                return ret_pids
+                except Exception as e:
+                    # print(f"Error in get_pid_from_cmd_line inner loop: {e}")
+                    continue
+        except Exception as e:
+            print(f"Error in get_pid_from_cmd_line outer loop: {e}")
+            pass
 
         return ret_pids
 

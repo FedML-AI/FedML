@@ -4,7 +4,7 @@
 
 # UnitedLLM: Training and Serving LLM Collaboratively on Decentralized GPU Clouds
 
-[FEDML® UnitedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
+[TensorOpera® UnitedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
 is an MLOps-supported training pipeline for decentralized pretraining and finetuning of large language models.
 
 ## Getting Started

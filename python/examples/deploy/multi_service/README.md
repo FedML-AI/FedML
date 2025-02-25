@@ -15,7 +15,7 @@ fedml model create --name $model_name --config_file config.yaml
 ```
 
 ## On-premsie Deploy
-Register an account on FedML website: https://fedml.ai
+Register an account on TensorOpera website: https://tensoropera.ai
 
 You will have a user id and api key, which can be found in the profile page.
 
@@ -44,8 +44,8 @@ You will have a user id and api key, which can be found in the profile page.
   ```
  - Result
     
-    See the deployment result in https://fedml.ai
+    See the deployment result in https://tensoropera.ai
 
 - OPT2: Deploy - UI
     
-    Follow the instructions on https://fedml.ai
+    Follow the instructions on https://tensoropera.ai

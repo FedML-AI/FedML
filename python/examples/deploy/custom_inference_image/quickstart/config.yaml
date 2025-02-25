@@ -1,0 +1,12 @@
+workspace: "."
+inference_image: "your_docker_hub_repo/your_image_name"
+
+workspace_mount_path: "/my_workspace"  # Default is "/home/fedml/models_serving"
+
+container_run_command: "echo hello && python3 /my_workspace/main_entry.py"
+
+# If you want to install some packages
+# Please write the command in the bootstrap.sh
+bootstrap: |
+  echo "Install some packages..."
+  echo "Install finished!"

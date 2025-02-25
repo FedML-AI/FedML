@@ -7,12 +7,12 @@ import fedml.api
 @click.help_option("--help", "-h")
 def fedml_train():
     """
-    Manage training resources on FedML® Nexus AI Platform
+    Manage training resources on TensorOpera® AI Platform
     """
     pass
 
 
-@fedml_train.command("build", help="Build training packages for the FedML® Nexus AI Platform.")
+@fedml_train.command("build", help="Build training packages for the TensorOpera® AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--dest_folder",

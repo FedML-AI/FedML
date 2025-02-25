@@ -2,7 +2,6 @@ import logging
 import os
 import platform
 import traceback
-import GPUtil
 import docker
 import fedml
 from docker import errors, DockerClient
@@ -87,16 +86,37 @@ class JobRunnerUtils(Singleton):
                     # Get the available GPU list, FEDML_GLOBAL_DEVICE_AVAILABLE_GPU_IDS_TAG-${device_id}
                     available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_available_gpu_ids(
                         device_id)
+                    logging.info(f"Available GPU Ids fetched from cache: {available_gpu_ids}")
 
                     logging.info(f"Check worker({device_id})'s realtime gpu availability in DB"
                                  f" for run {run_id}: {available_gpu_ids}")
+                    
+                     # Get realtime GPU availability list from the system
+                    realtime_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
+                    logging.info(f"Cache not set yet, fetching realtime available GPU Ids: {realtime_available_gpu_ids}")
 
                     # If the available GPU list is not in the cache, set it to the current system available GPU list
                     if available_gpu_ids is None:
                         # Get realtime GPU availability list from the system
-                        available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
+                        available_gpu_ids = realtime_available_gpu_ids
                     else:
                         available_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
+                        logging.info(f"Trimmed available GPU Ids: {available_gpu_ids}")
+
+                        initial_available_gpu_ids = ComputeCacheManager.get_instance().get_gpu_cache().get_device_initial_available_gpu_ids(
+                            device_id)
+                        # calculate the difference between realtime_available_gpu_ids and initial_available_gpu_ids
+                        # if the difference is not empty, then add to available gpu ids
+                        diff_gpu_ids = list(set(realtime_available_gpu_ids) - set(initial_available_gpu_ids))
+                        if diff_gpu_ids:
+                            available_gpu_ids.extend(diff_gpu_ids)
+                            available_gpu_ids = list(set(available_gpu_ids))
+                            available_gpu_ids.sort()
+                            logging.info(f"Device {device_id} available GPU ids is changed because of the system gpu resource change, "
+                                         f"initial available gpu ids: {initial_available_gpu_ids}, "
+                                         f"realtime available gpu ids: {realtime_available_gpu_ids}, "
+                                         f"diff gpu ids: {diff_gpu_ids}, "
+                                         f"new available gpu ids: {available_gpu_ids}")
 
                     # Get the matched gpu ids string by the request gpu num
                     cuda_visible_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
@@ -120,6 +140,8 @@ class JobRunnerUtils(Singleton):
 
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(
                         device_id, available_gpu_ids)
+                    
+                    logging.info(f"Updated cache with following available gpu ids: {available_gpu_ids}")
 
                     # For a single run, could be scale up. So if existed such a key, should extend, not replace
                     existed_gpu_nums = ComputeCacheManager.get_instance().get_gpu_cache().get_device_run_num_gpus(
@@ -159,22 +181,7 @@ class JobRunnerUtils(Singleton):
     @staticmethod
     def search_and_refresh_available_gpu_ids(available_gpu_ids):
         trimmed_gpu_ids = JobRunnerUtils.trim_unavailable_gpu_ids(available_gpu_ids)
-        # if len(trimmed_gpu_ids) <= 0:
-        #     available_gpu_ids = JobRunnerUtils.balance_available_gpu_ids(trimmed_gpu_ids)
         return trimmed_gpu_ids
-
-    @staticmethod
-    def balance_available_gpu_ids(available_gpu_ids):
-        gpu_list, realtime_available_gpu_ids = JobRunnerUtils.get_gpu_list_and_realtime_gpu_available_ids()
-        available_gpu_ids = realtime_available_gpu_ids
-        if len(available_gpu_ids) <= 0:
-            for gpu in gpu_list:
-                gpu = GPUtil.GPU(gpu)
-                if gpu.memoryUtil > 0.8:
-                    continue
-                available_gpu_ids.append(gpu.id)
-
-        return available_gpu_ids.copy()
 
     @staticmethod
     def request_gpu_ids(request_gpu_num, available_gpu_ids):
@@ -330,6 +337,9 @@ class JobRunnerUtils(Singleton):
                     # Get realtime GPU availability list from the system
                     gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                     ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id, gpu_ids)
+                    # Set the initial available GPU ids to the cache, use to check if the device all available GPU ids is changed because of the system resource change
+                    ComputeCacheManager.get_instance().get_gpu_cache().set_device_initial_available_gpu_ids(device_id, gpu_ids)
+                    logging.info(f"Set device {device_id} initial available GPU ids: {gpu_ids}")
                     available_gpu_ids = gpu_ids
             return available_gpu_ids
 
@@ -348,6 +358,9 @@ class JobRunnerUtils(Singleton):
                 current_available_gpu_ids = JobRunnerUtils.get_realtime_gpu_available_ids().copy()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_available_gpu_ids(device_id,
                                                                                                 current_available_gpu_ids)
+                # Set the initial available GPU ids to the cache, use to check if the device all available GPU ids is changed because of the system resource change
+                ComputeCacheManager.get_instance().get_gpu_cache().set_device_initial_available_gpu_ids(device_id, current_available_gpu_ids)
+                
                 gpu_list = sys_utils.get_gpu_list()
                 ComputeCacheManager.get_instance().get_gpu_cache().set_device_total_num_gpus(device_id, len(gpu_list))
         except Exception as e:
@@ -360,6 +373,7 @@ class JobRunnerUtils(Singleton):
         gpu_list = sys_utils.get_gpu_list()
         gpu_count = len(gpu_list)
         realtime_available_gpu_ids = sys_utils.get_available_gpu_id_list(limit=gpu_count)
+        logging.info(f"get_available_gpu_id_list limit:{gpu_count}, available_gpu_ids:{realtime_available_gpu_ids}")
         return realtime_available_gpu_ids
 
     @staticmethod
@@ -584,10 +598,20 @@ class JobRunnerUtils(Singleton):
         return container_name
 
     @staticmethod
+    def docker_client_exists() -> bool:
+        try:
+            client = docker.from_env()
+            client.ping()
+            return True
+        except docker.errors.DockerException:
+            return False
+
+    @staticmethod
     def get_docker_client(docker_args: DockerArgs) -> DockerClient:
         try:
             client = docker.from_env()
-            client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
+            if docker_args.username != "" and docker_args.registry != "":
+                client.login(username=docker_args.username, password=docker_args.password, registry=docker_args.registry)
         except Exception as e:
             raise Exception(f"Failed to connect to the docker daemon, please ensure that you have "
                             f"installed Docker Desktop or Docker Engine, and the docker is running. Exception {e}")
@@ -727,6 +751,9 @@ class JobRunnerUtils(Singleton):
         job_type = job_yaml.get("job_type", None)
         job_type = job_yaml.get("task_type",
                                 SchedulerConstants.JOB_TASK_TYPE_TRAIN) if job_type is None else job_type
+        model_config = running_json_obj.get("model_config", None)
+        if model_config is not None:
+            job_type = SchedulerConstants.JOB_TASK_TYPE_DEPLOY
         return job_type
 
     @staticmethod

@@ -1,0 +1,3 @@
+eid,rank,grpc_server_ip,grpc_server_port,ingress_ip
+0,0,0.0.0.0,8890,fedml_server
+1,1,0.0.0.0,8891,fedml_client_1

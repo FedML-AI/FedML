@@ -33,6 +33,8 @@ class FedMLModelCache(Singleton):
 
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
+    FEDML_PENDING_REQUESTS_COUNTER = "FEDML_PENDING_REQUESTS_COUNTER"
+
     def __init__(self):
         if not hasattr(self, "redis_pool"):
             self.redis_pool = None
@@ -110,7 +112,8 @@ class FedMLModelCache(Singleton):
                                      replica_num: int, enable_auto_scaling: bool = False,
                                      scale_min: int = 0, scale_max: int = 0, state: str = "UNKNOWN",
                                      target_queries_per_replica: int = 60, aggregation_window_size_seconds: int = 60,
-                                     scale_down_delay_seconds: int = 120
+                                     scale_down_delay_seconds: int = 120, timeout_s: int = 30,
+                                     user_encrypted_api_key: str = ""
                                      ) -> bool:
         """
         Key: FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG--<end_point_id>
@@ -136,7 +139,9 @@ class FedMLModelCache(Singleton):
             "scale_min": scale_min, "scale_max": scale_max, "state": state,
             "target_queries_per_replica": target_queries_per_replica,
             "aggregation_window_size_seconds": aggregation_window_size_seconds,
-            "scale_down_delay_seconds": scale_down_delay_seconds
+            "scale_down_delay_seconds": scale_down_delay_seconds,
+            ServerConstants.INFERENCE_REQUEST_TIMEOUT_KEY: timeout_s,
+            ServerConstants.USER_ENCRYPTED_API_KEY: user_encrypted_api_key
         }
         try:
             self.redis_connection.set(self.get_user_setting_replica_num_key(end_point_id), json.dumps(replica_num_dict))
@@ -165,6 +170,15 @@ class FedMLModelCache(Singleton):
             logging.error(e)
             return False
         return True
+
+    def get_user_encrypted_api_key(self, end_point_id: str) -> str:
+        try:
+            replica_num_dict = self.redis_connection.get(self.get_user_setting_replica_num_key(end_point_id))
+            replica_num_dict = json.loads(replica_num_dict)
+            return replica_num_dict.get(ServerConstants.USER_ENCRYPTED_API_KEY, "")
+        except Exception as e:
+            logging.error(e)
+            return ""
 
     def get_all_endpoints_user_setting(self) -> List[dict]:
         """
@@ -236,7 +250,7 @@ class FedMLModelCache(Singleton):
 
         device_id, replica_no, _ = self.get_result_item_info(element)
         self.model_deployment_db.delete_deployment_result_with_device_id_and_rank(
-            end_point_id, end_point_name, model_name, device_id, replica_rank=replica_no-1)
+            end_point_id, end_point_name, model_name, device_id, replica_rank=replica_no - 1)
 
         return
 
@@ -272,8 +286,9 @@ class FedMLModelCache(Singleton):
             result_list = self.model_deployment_db.get_deployment_result_list(end_point_id, end_point_name, model_name)
             try:
                 for result in result_list:
-                    self.redis_connection.rpush(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
-                                                json.dumps(result))
+                    self.redis_connection.rpush(
+                        self.get_deployment_result_key(end_point_id, end_point_name, model_name),
+                        json.dumps(result))
             except Exception as e:
                 logging.info(e)
                 pass
@@ -288,7 +303,27 @@ class FedMLModelCache(Singleton):
                 result_list.extend(self.redis_connection.lrange(key, 0, -1))
         except Exception as e:
             logging.error(e)
-        # TODO(Raphael): Use Sqlite for the replica backup
+
+        # Get cached results from the persist sqlite database
+        if len(result_list) <= 0:
+            db_result_list = list()
+            try:
+                db_result_list = self.model_deployment_db.get_all_deployment_results_list()
+            except Exception as e:
+                logging.error(f"Failed to get all deployment results from the database due to {e}")
+                pass
+
+            for result in db_result_list:
+                try:
+                    self.redis_connection.rpush(self.get_deployment_result_key(
+                        result["end_point_id"], result["end_point_name"], result["model_name"]),
+                        json.dumps(result["replica_info"]))
+                except Exception as e:
+                    logging.error(e)
+                    pass
+
+            for result in db_result_list:
+                result_list.append(result["replica_info"])
 
         return result_list
 
@@ -298,7 +333,8 @@ class FedMLModelCache(Singleton):
 
     def get_deployment_status_list(self, end_point_id, end_point_name, model_name):
         try:
-            status_list = self.redis_connection.lrange(self.get_deployment_status_key(end_point_id, end_point_name, model_name), 0, -1)
+            status_list = self.redis_connection.lrange(
+                self.get_deployment_status_key(end_point_id, end_point_name, model_name), 0, -1)
         except Exception as e:
             status_list = None
 
@@ -306,8 +342,9 @@ class FedMLModelCache(Singleton):
             status_list = self.model_deployment_db.get_deployment_status_list(end_point_id, end_point_name, model_name)
             try:
                 for status in status_list:
-                    self.redis_connection.rpush(self.get_deployment_status_key(end_point_id, end_point_name, model_name),
-                                                json.dumps(status))
+                    self.redis_connection.rpush(
+                        self.get_deployment_status_key(end_point_id, end_point_name, model_name),
+                        json.dumps(status))
             except Exception as e:
                 pass
         return status_list
@@ -316,7 +353,8 @@ class FedMLModelCache(Singleton):
         status_list = self.get_deployment_status_list(end_point_id, end_point_name, model_name)
         return len(status_list)
 
-    def get_status_item_info(self, status_item):
+    @staticmethod
+    def get_status_item_info(status_item):
         status_item_json = json.loads(status_item)
         if isinstance(status_item_json, str):
             status_item_json = json.loads(status_item_json)
@@ -327,13 +365,14 @@ class FedMLModelCache(Singleton):
             status_payload = status_item_json["status"]
         return device_id, status_payload
 
-    def get_result_item_info(self, result_item):
+    @staticmethod
+    def get_result_item_info(result_item):
         result_item_json = json.loads(result_item)
         if isinstance(result_item_json, str):
             result_item_json = json.loads(result_item_json)
 
         device_id = result_item_json["cache_device_id"]
-        replica_no = result_item_json.get("cache_replica_no", 1)    # Compatible with the old version
+        replica_no = result_item_json.get("cache_replica_no", 1)  # Compatible with the old version
 
         if isinstance(result_item_json["result"], str):
             result_payload = json.loads(result_item_json["result"])
@@ -341,9 +380,13 @@ class FedMLModelCache(Singleton):
             result_payload = result_item_json["result"]
         return device_id, replica_no, result_payload
 
-    def get_idle_device(self, end_point_id, end_point_name,
-                        model_name, model_version,
-                        check_end_point_status=True, limit_specific_model_version=False):
+    def get_idle_device(self,
+                        end_point_id,
+                        end_point_name,
+                        model_name,
+                        model_version,
+                        check_end_point_status=True,
+                        limit_specific_model_version=False):
         # Deprecated the model status logic, query directly from the deployment result list
         idle_device_list = list()
 
@@ -360,15 +403,15 @@ class FedMLModelCache(Singleton):
                     found_model_name == model_name and
                     (not limit_specific_model_version or found_model_version == model_version)):
                 if "model_status" in result_payload and result_payload["model_status"] == "DEPLOYED":
-                    idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id})
+                    idle_device_list.append({"device_id": device_id, "result_payload": result_payload.copy()})
 
-        logging.info(f"{len(idle_device_list)} devices has this model on it: {idle_device_list}")
+        logging.debug(f"{len(idle_device_list)} devices this model has on it: {idle_device_list}")
 
         if len(idle_device_list) <= 0:
             return None, None
 
         # # Randomly shuffle
-        # shuffle the list of deployed devices and get the first one as the target idle device.
+        #  the list of deployed devices and get the first one as the target idle device.
         # if len(idle_device_list) <= 0:
         #     return None, None
         # shuffle(idle_device_list)
@@ -376,54 +419,21 @@ class FedMLModelCache(Singleton):
 
         # Round Robin
         total_device_num = len(idle_device_list)
-        redis_round_robin_key = self.get_round_robin_prev_device(end_point_id, end_point_name, model_name, model_version)
+        redis_round_robin_key = self.get_round_robin_prev_device(end_point_id, end_point_name, model_name,
+                                                                 model_version)
+        if self.redis_connection.exists(redis_round_robin_key):
+            selected_device_index = int(self.redis_connection.get(redis_round_robin_key))
+            selected_device_index %= total_device_num
+        else:
+            selected_device_index = 0
 
-        selected_device_index = 0
-        try:
-            if self.redis_connection.exists(redis_round_robin_key):
-                selected_device_index = int(self.redis_connection.get(redis_round_robin_key))
-                selected_device_index %= total_device_num
-            else:
-                selected_device_index = 0
-            next_selected_device_index = (selected_device_index + 1) % total_device_num
-            self.redis_connection.set(redis_round_robin_key, str(next_selected_device_index))
-        except Exception as e:
-            logging.info("Inference Device selection Failed:")
-            logging.info(e)
+        next_idx = (selected_device_index + 1) % total_device_num
+        self.redis_connection.set(redis_round_robin_key, next_idx)
 
-        logging.info(f"Using Round Robin, the device index is {selected_device_index}")
-        idle_device_dict = idle_device_list[selected_device_index]
+        idle_device_info = idle_device_list[selected_device_index]
+        payload = idle_device_info["result_payload"]
 
-        # Note that within the same endpoint_id, there could be one device with multiple same models
-        same_model_device_rank = 0
-        start = selected_device_index
-        while(start != 0 and idle_device_list[start]["device_id"] == idle_device_list[start-1]["device_id"]):
-            start -= 1
-            same_model_device_rank += 1
-
-        # Find deployment result from the target idle device.
-        try:
-            for result_item in result_list:
-                logging.info("enter the for loop")
-                device_id, _, result_payload = self.get_result_item_info(result_item)
-                found_end_point_id = result_payload["end_point_id"]
-                found_end_point_name = result_payload["end_point_name"]
-                found_model_status = result_payload["model_status"]
-
-                if found_model_status != "DEPLOYED":
-                    continue
-
-                if str(found_end_point_id) == str(idle_device_dict["end_point_id"]) \
-                        and device_id == idle_device_dict["device_id"]:
-                    if same_model_device_rank > 0:
-                        same_model_device_rank -= 1
-                        continue
-                    logging.info(f"The chosen device is {device_id}")
-                    return result_payload, device_id
-        except Exception as e:
-            logging.info(str(e))
-
-        return None, None
+        return payload, idle_device_info["device_id"]
 
     def get_latest_version(self, status_list):
         latest_version = None
@@ -432,8 +442,8 @@ class FedMLModelCache(Singleton):
             try:
                 _, status_payload = self.get_status_item_info(status_item)
                 model_version = status_payload["model_version"]
-                prefix = model_version.split("-")[0]    # version-date
-                prefix_int = int(prefix[1:])    # v12 -> 12
+                prefix = model_version.split("-")[0]  # version-date
+                prefix_int = int(prefix[1:])  # v12 -> 12
 
                 if latest_version is None:
                     latest_version = model_version
@@ -528,32 +538,47 @@ class FedMLModelCache(Singleton):
         # Device id is either deploy master or deploy worker
         try:
             logging.info("Will Delete the related redis keys permanently")
-            self.redis_connection.expire(self.get_deployment_result_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_deployment_status_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_deployment_token_key(end_point_id, end_point_name, model_name), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_deployment_result_key(end_point_id, end_point_name, model_name),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_deployment_status_key(end_point_id, end_point_name, model_name),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(
+                self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
+                ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_deployment_token_key(end_point_id, end_point_name, model_name),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
 
-            any_version_round_robin_key = self.get_round_robin_prev_device_any_version(end_point_id, end_point_name, model_name)
+            any_version_round_robin_key = self.get_round_robin_prev_device_any_version(end_point_id, end_point_name,
+                                                                                       model_name)
             for key in self.redis_connection.scan_iter(any_version_round_robin_key + "*"):
                 self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
 
-            self.redis_connection.expire(self.get_deployment_device_info_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_end_point_activation_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_end_point_status_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(self.get_user_setting_replica_num_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_deployment_device_info_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_end_point_activation_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_end_point_status_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(self.get_user_setting_replica_num_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
 
             # Delete all replicas gpu ids
-            matched_prefix_replica = self.get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name, device_id)
+            matched_prefix_replica = self.get_replica_gpu_ids_key_all_replicas(end_point_id, end_point_name, model_name,
+                                                                               device_id)
             for key in self.redis_connection.scan_iter(matched_prefix_replica + "*"):
                 self.redis_connection.expire(key, ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
 
                 logging.info(f"Those keys are deleted: {key}")
 
             # Delete the compute gpu cache
-            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(ComputeGpuCache.get_run_device_ids_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
-            self.redis_connection.expire(ComputeGpuCache.get_edge_model_id_map_key(end_point_id), ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_total_num_gpus_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_run_device_ids_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
+            self.redis_connection.expire(ComputeGpuCache.get_edge_model_id_map_key(end_point_id),
+                                         ServerConstants.MODEL_CACHE_KEY_EXPIRE_TIME)
 
             logging.info(f"Those keys are deleted:"
                          f"{ComputeGpuCache.get_endpoint_run_id_map_key(end_point_id)}, "
@@ -663,7 +688,8 @@ class FedMLModelCache(Singleton):
         token = None
         try:
             if self.redis_connection.exists(self.get_deployment_token_key(end_point_id, end_point_name, model_name)):
-                token = self.redis_connection.get(self.get_deployment_token_key(end_point_id, end_point_name, model_name))
+                token = self.redis_connection.get(
+                    self.get_deployment_token_key(end_point_id, end_point_name, model_name))
         except Exception as e:
             token = None
 
@@ -671,7 +697,8 @@ class FedMLModelCache(Singleton):
             token = self.model_deployment_db.get_end_point_token(end_point_id, end_point_name, model_name)
             if token is not None:
                 try:
-                    self.redis_connection.set(self.get_deployment_token_key(end_point_id, end_point_name, model_name), token)
+                    self.redis_connection.set(self.get_deployment_token_key(end_point_id, end_point_name, model_name),
+                                              token)
                 except Exception as e:
                     pass
 
@@ -703,32 +730,41 @@ class FedMLModelCache(Singleton):
 
         return replica_num
 
-    def get_deployment_result_key(self, end_point_id, end_point_name, model_name):
-        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id, end_point_name, model_name)
+    @staticmethod
+    def get_deployment_result_key(end_point_id, end_point_name, model_name):
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id, end_point_name,
+                                    model_name)
 
-    def get_deployment_status_key(self, end_point_id, end_point_name, model_name):
-        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id, end_point_name, model_name)
+    @staticmethod
+    def get_deployment_status_key(end_point_id, end_point_name, model_name):
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id, end_point_name,
+                                    model_name)
 
-    def get_end_point_status_key(self, end_point_id):
+    @staticmethod
+    def get_end_point_status_key(end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
 
     @staticmethod
     def get_end_point_activation_key(end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
 
-    def get_deployment_device_info_key(self, end_point_id):
+    @staticmethod
+    def get_deployment_device_info_key(end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
 
     @staticmethod
     def get_deployment_token_key(end_point_id, end_point_name, model_name):
-        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id, end_point_name, model_name)
+        return "{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id, end_point_name,
+                                    model_name)
 
     @staticmethod
     def get_deployment_token_key_eid(end_point_id):
         return "{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
 
-    def get_round_robin_prev_device(self, end_point_id, end_point_name, model_name, version):
-        return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id, end_point_name, model_name, version)
+    @staticmethod
+    def get_round_robin_prev_device(end_point_id, end_point_name, model_name, version):
+        return "{}-{}-{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_id,
+                                       end_point_name, model_name, version)
 
     @staticmethod
     def get_round_robin_prev_device_any_version(endpoint_id, endpoint_name, model_name):
@@ -757,8 +793,9 @@ class FedMLModelCache(Singleton):
                         "total_request_num": total_request_num, "current_qps": current_qps,
                         "avg_qps": avg_qps, "timestamp": timestamp, "device_id": device_id}
         try:
-            self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
-                                        json.dumps(metrics_dict))
+            self.redis_connection.rpush(
+                self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
+                json.dumps(metrics_dict))
         except Exception as e:
             pass
         self.model_deployment_db.set_monitor_metrics(end_point_id, end_point_name,
@@ -769,16 +806,20 @@ class FedMLModelCache(Singleton):
 
     def get_latest_monitor_metrics(self, end_point_id, end_point_name, model_name, model_version):
         try:
-            if self.redis_connection.exists(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version)):
-                return self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), -1)
+            if self.redis_connection.exists(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version)):
+                return self.redis_connection.lindex(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version), -1)
         except Exception as e:
             pass
 
-        metrics_dict = self.model_deployment_db.get_latest_monitor_metrics(end_point_id, end_point_name, model_name, model_version)
+        metrics_dict = self.model_deployment_db.get_latest_monitor_metrics(end_point_id, end_point_name, model_name,
+                                                                           model_version)
         if metrics_dict is not None:
             try:
-                self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
-                                            metrics_dict)
+                self.redis_connection.rpush(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
+                    metrics_dict)
             except Exception as e:
                 pass
 
@@ -786,21 +827,25 @@ class FedMLModelCache(Singleton):
 
     def get_monitor_metrics_item(self, end_point_id, end_point_name, model_name, model_version, index):
         try:
-            if self.redis_connection.exists(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version)):
-                metrics_item = self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name,
-                                                                                     model_version), index)
-                return metrics_item, index+1
+            if self.redis_connection.exists(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version)):
+                metrics_item = self.redis_connection.lindex(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name,
+                                                 model_version), index)
+                return metrics_item, index + 1
         except Exception as e:
             pass
 
-        metrics_dict = self.model_deployment_db.get_monitor_metrics_item(end_point_id, end_point_name, model_name, model_version, index)
+        metrics_dict = self.model_deployment_db.get_monitor_metrics_item(end_point_id, end_point_name, model_name,
+                                                                         model_version, index)
         if metrics_dict is not None:
             try:
-                self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
-                                            metrics_dict)
+                self.redis_connection.rpush(
+                    self.get_monitor_metrics_key(end_point_id, end_point_name, model_name, model_version),
+                    metrics_dict)
             except Exception as e:
                 pass
-            return metrics_dict, index+1
+            return metrics_dict, index + 1
 
         return None, 0
 
@@ -824,38 +869,37 @@ class FedMLModelCache(Singleton):
                                       end_point_id, end_point_name, model_name, model_version)
 
     def get_endpoint_metrics(self,
-                             endpoint_id,
+                             end_point_id,
                              k_recent=None) -> List[Any]:
         model_deployment_monitor_metrics = list()
         try:
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
-                endpoint_id)
-            model_deployment_monitor_endpoint_keys = \
+                end_point_id)
+            model_deployment_monitor_endpoint_key = \
                 self.redis_connection.keys(pattern=key_pattern)
             # Since the reply is a list, we need to make sure the list
             # is non-empty otherwise the index will raise an error.
-            if model_deployment_monitor_endpoint_keys:
+            if model_deployment_monitor_endpoint_key:
                 model_deployment_monitor_endpoint_key = \
-                    model_deployment_monitor_endpoint_keys[0]
-            else:
-                raise Exception("Function `get_endpoint_metrics` Key {} does not exist."
-                                .format(key_pattern))
-            # Set start and end index depending on the size of the
-            # list and the requested number of most recent records.
-            num_records = self.redis_connection.llen(name=model_deployment_monitor_endpoint_key)
-            # if k_most_recent is None, then fetch all by default.
-            start, end = 0, -1
-            # if k_most_recent is positive then fetch [-k_most_recent:]
-            if k_recent and k_recent > 0:
-                start = num_records - k_recent
-            model_deployment_monitor_metrics = \
-                self.redis_connection.lrange(
-                    name=model_deployment_monitor_endpoint_key,
-                    start=start,
-                    end=end)
-            model_deployment_monitor_metrics = [
-                json.loads(m) for m in model_deployment_monitor_metrics]
+                    model_deployment_monitor_endpoint_key[0]
+
+                # Set start and end index depending on the size of the
+                # list and the requested number of most recent records.
+                num_records = self.redis_connection.llen(
+                    name=model_deployment_monitor_endpoint_key)
+                # if k_most_recent is None, then fetch all by default.
+                start, end = 0, -1
+                # if k_most_recent is positive then fetch [-k_most_recent:]
+                if k_recent and k_recent > 0:
+                    start = num_records - k_recent
+                model_deployment_monitor_metrics = \
+                    self.redis_connection.lrange(
+                        name=model_deployment_monitor_endpoint_key,
+                        start=start,
+                        end=end)
+                model_deployment_monitor_metrics = [
+                    json.loads(m) for m in model_deployment_monitor_metrics]
 
         except Exception as e:
             logging.error(e)
@@ -868,24 +912,24 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_DEPLOYMENT_RESULT_TAG,
                 endpoint_id)
-            model_deployment_result_key = \
+            model_deployment_result_keys = \
                 self.redis_connection.keys(pattern=key_pattern)
-            if model_deployment_result_key:
+            if model_deployment_result_keys:
                 model_deployment_result_key = \
-                    model_deployment_result_key[0]
+                    model_deployment_result_keys[0]
+                replicas_results = \
+                    self.redis_connection.lrange(
+                        name=model_deployment_result_key,
+                        start=0,
+                        end=-1)
+                # Format the result value to a properly formatted json.
+                for replica_idx, replica in enumerate(replicas_results):
+                    replicas_results[replica_idx] = json.loads(replica)
+                    replicas_results[replica_idx]["result"] = \
+                        json.loads(replicas_results[replica_idx]["result"])
             else:
                 raise Exception("Function `get_endpoint_replicas_results` Key {} does not exist."
                                 .format(key_pattern))
-            replicas_results = \
-                self.redis_connection.lrange(
-                    name=model_deployment_result_key,
-                    start=0,
-                    end=-1)
-
-            # Format the result value to a properly formatted json.
-            for replica_idx, replica in enumerate(replicas_results):
-                replicas_results[replica_idx] = json.loads(replica)
-                replicas_results[replica_idx]["result"] = json.loads(replicas_results[replica_idx]["result"])
 
         except Exception as e:
             logging.error(e)
@@ -898,11 +942,16 @@ class FedMLModelCache(Singleton):
             key_pattern = "{}*{}*".format(
                 self.FEDML_MODEL_ENDPOINT_REPLICA_USER_SETTING_TAG,
                 endpoint_id)
-            endpoint_settings = \
+
+            endpoint_settings_keys = \
                 self.redis_connection.keys(pattern=key_pattern)
-            if endpoint_settings:
+
+            if len(endpoint_settings_keys) > 0:
                 endpoint_settings = \
-                    json.load(endpoint_settings[0])
+                    self.redis_connection.get(endpoint_settings_keys[0])
+
+                if not isinstance(endpoint_settings, dict):
+                    endpoint_settings = json.loads(endpoint_settings)
             else:
                 raise Exception("Function `get_endpoint_settings` Key {} does not exist."
                                 .format(key_pattern))
@@ -966,3 +1015,22 @@ class FedMLModelCache(Singleton):
         return bool(self.redis_connection.hdel(
             self.FEDML_MODEL_ENDPOINT_SCALING_DOWN_DECISION_TIME_TAG,
             end_point_id))
+
+    def get_pending_requests_counter(self, end_point_id=None) -> int:
+        # If the endpoint does not exist inside the Hash collection, set its counter to 0.
+        if end_point_id and self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+            return int(self.redis_connection.hget(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id))
+        return 0
+
+    def update_pending_requests_counter(self, end_point_id, increase=False, decrease=False) -> int:
+        if not self.redis_connection.hexists(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id):
+            self.redis_connection.hset(self.FEDML_PENDING_REQUESTS_COUNTER, mapping={end_point_id: 0})
+        if increase:
+            self.redis_connection.hincrby(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id, 1)
+        if decrease:
+            # Careful on the negative, there is no native function for hash decreases.
+            self.redis_connection.hincrby(self.FEDML_PENDING_REQUESTS_COUNTER, end_point_id, -1)
+            # Making sure the counter never becomes negative!
+            if self.get_pending_requests_counter(end_point_id) < 0:
+                self.redis_connection.hset(self.FEDML_PENDING_REQUESTS_COUNTER, mapping={end_point_id: 0})
+        return self.get_pending_requests_counter(end_point_id)

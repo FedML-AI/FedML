@@ -1,7 +1,8 @@
-workspace: "."
-entry_point: "main_entry.py"
+workspace: "./"
+entry_point: "mnist_serve_main.py"
 
 data_cache_dir: ""
+
 bootstrap: |
   echo "Bootstrap start..."
   pip install fedml==0.8.29

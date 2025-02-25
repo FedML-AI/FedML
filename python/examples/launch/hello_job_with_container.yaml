@@ -43,7 +43,7 @@ job_type: train              # options: train, deploy, federate
 job_subtype: generate_training
 
 docker:
-  image: fedml/fedml-default-launch:cu12.1-u22.04
+  image: fedml/fedml-launch-job:cu12.1-u22.04
   #registry: docker.io
   #username: my_hub_user
   #password: my_hub_password

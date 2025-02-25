@@ -111,21 +111,21 @@ class AutoscalerTest(unittest.TestCase):
 
         # Validate scale up.
         scale_up = autoscaler.validate_scaling_bounds(ScaleOp.UP_OUT_OP, autoscaling_policy)
-        self.assertEquals(scale_up, ScaleOp.UP_OUT_OP)
+        self.assertEqual(scale_up, ScaleOp.UP_OUT_OP)
 
         # Validate scale down.
         scale_down = autoscaler.validate_scaling_bounds(ScaleOp.DOWN_IN_OP, autoscaling_policy)
-        self.assertEquals(scale_down, ScaleOp.DOWN_IN_OP)
+        self.assertEqual(scale_down, ScaleOp.DOWN_IN_OP)
 
         # Validate max out-of-bounds.
         autoscaling_policy.current_replicas = 3
         scale_oob_max = autoscaler.validate_scaling_bounds(ScaleOp.UP_OUT_OP, autoscaling_policy)
-        self.assertEquals(scale_oob_max, ScaleOp.NO_OP)
+        self.assertEqual(scale_oob_max, ScaleOp.NO_OP)
 
         # Validate min out-of-bounds.
         autoscaling_policy.current_replicas = 1
         scale_oob_min = autoscaler.validate_scaling_bounds(ScaleOp.DOWN_IN_OP, autoscaling_policy)
-        self.assertEquals(scale_oob_min, ScaleOp.NO_OP)
+        self.assertEqual(scale_oob_min, ScaleOp.NO_OP)
 
     def test_enforce_scaling_down_delay_interval(self):
         self.populate_redis_with_dummy_metrics()
@@ -140,15 +140,15 @@ class AutoscalerTest(unittest.TestCase):
 
         autoscaling_policy.scaledown_delay_secs = 0.0
         scale_down = autoscaler.enforce_scaling_down_delay_interval(ENV_ENDPOINT_ID_1, autoscaling_policy)
-        self.assertEquals(scale_down, ScaleOp.DOWN_IN_OP)
+        self.assertEqual(scale_down, ScaleOp.DOWN_IN_OP)
 
         autoscaling_policy.scaledown_delay_secs = 1
         scale_noop = autoscaler.enforce_scaling_down_delay_interval(ENV_ENDPOINT_ID_1, autoscaling_policy)
-        self.assertEquals(scale_noop, ScaleOp.NO_OP)
+        self.assertEqual(scale_noop, ScaleOp.NO_OP)
 
         time.sleep(2)
         scale_down = autoscaler.enforce_scaling_down_delay_interval(ENV_ENDPOINT_ID_1, autoscaling_policy)
-        self.assertEquals(scale_down, ScaleOp.DOWN_IN_OP)
+        self.assertEqual(scale_down, ScaleOp.DOWN_IN_OP)
         self.clear_redis()
 
 

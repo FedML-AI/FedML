@@ -15,24 +15,24 @@ from prettytable import PrettyTable
     "-v",
     type=str,
     default="release",
-    help="version of FedML® Nexus AI Platform. It should be dev, test or release",
+    help="version of TensorOpera® AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch,"
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch,"
          "default is falcon).",
 )
 def fedml_run(api_key, version, platform):
     """
-    Manage runs on the FedML® Nexus AI Platform.
+    Manage runs on the TensorOpera® AI Platform.
     """
     pass
 
 
-@fedml_run.command("stop", help="Stop a run from the FedML® Nexus AI Platform.")
+@fedml_run.command("stop", help="Stop a run from the TensorOpera® AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--run_id",
@@ -49,14 +49,14 @@ def fedml_run(api_key, version, platform):
     "-v",
     type=str,
     default="release",
-    help="stop a run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
+    help="stop a run at which version of TensorOpera® AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 def stop_run(platform, run_id, api_key, version):
@@ -68,14 +68,14 @@ def stop_run(platform, run_id, api_key, version):
         click.echo(f"Failed to stop Run {run_id}. Please check if the run id is valid.")
 
 
-@fedml_run.command("list", help="List runs from the FedML® Nexus AI Platform.")
+@fedml_run.command("list", help="List runs from the TensorOpera® AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -83,14 +83,14 @@ def stop_run(platform, run_id, api_key, version):
     "-r",
     type=str,
     default="",
-    help="Run name at the FedML® Nexus AI Platform.",
+    help="Run name at the TensorOpera® AI Platform.",
 )
 @click.option(
     "--run_id",
     "-rid",
     type=str,
     default="",
-    help="Run id at the FedML® Nexus AI Platform.",
+    help="Run id at the TensorOpera® AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -100,7 +100,7 @@ def stop_run(platform, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="list runs at which version of FedML® Nexus AI Platform. It should be dev, test or release",
+    help="list runs at which version of TensorOpera® AI Platform. It should be dev, test or release",
 )
 def list_runs(platform, run_name, run_id, api_key, version):
     fedml.set_env_version(version)
@@ -109,14 +109,14 @@ def list_runs(platform, run_name, run_id, api_key, version):
     _print_run_table(run_list_obj)
 
 
-@fedml_run.command("status", help="Get status of run from the FedML® Nexus AI Platform.")
+@fedml_run.command("status", help="Get status of run from the TensorOpera® AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -124,14 +124,14 @@ def list_runs(platform, run_name, run_id, api_key, version):
     "-r",
     type=str,
     default=None,
-    help="Run name at the FedML® Nexus AI Platform.",
+    help="Run name at the TensorOpera® AI Platform.",
 )
 @click.option(
     "--run_id",
     "-rid",
     type=str,
     default=None,
-    help="Run id at the FedML® Nexus AI Platform.",
+    help="Run id at the TensorOpera® AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -141,7 +141,7 @@ def list_runs(platform, run_name, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="get status of run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
+    help="get status of run at which version of TensorOpera® AI Platform. It should be dev, test or release",
 )
 def status(platform, run_name, run_id, api_key, version):
     fedml.set_env_version(version)
@@ -153,14 +153,14 @@ def status(platform, run_name, run_id, api_key, version):
     _print_run_table(run_list_obj)
 
 
-@fedml_run.command("logs", help="Get logs of run from the FedML® Nexus AI Platform.")
+@fedml_run.command("logs", help="Get logs of run from the TensorOpera® AI Platform.")
 @click.help_option("--help", "-h")
 @click.option(
     "--platform",
     "-pf",
     type=str,
     default="falcon",
-    help="The platform name at the FedML® Nexus AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
+    help="The platform name at the TensorOpera® AI Platform (options: octopus, parrot, spider, beehive, falcon, launch, "
          "default is falcon).",
 )
 @click.option(
@@ -168,7 +168,7 @@ def status(platform, run_name, run_id, api_key, version):
     "-rid",
     type=str,
     default=None,
-    help="Run id at the FedML® Nexus AI Platform.",
+    help="Run id at the TensorOpera® AI Platform.",
 )
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -178,27 +178,27 @@ def status(platform, run_name, run_id, api_key, version):
     "-v",
     type=str,
     default="release",
-    help="get logs of run at which version of FedML® Nexus AI Platform. It should be dev, test or release",
+    help="get logs of run at which version of TensorOpera® AI Platform. It should be dev, test or release",
 )
 @click.option(
     "--page_num",
     "-pn",
     type=int,
-    default=0,
+    default=1,
     help="request page num for logs. --need_all_logs should be set to False if you want to use this option.",
 )
 @click.option(
     "--page_size",
     "-ps",
     type=int,
-    default=0,
+    default=10,
     help="request page size for logs, --need_all_logs should be set to False if you want to use this option.",
 )
 @click.option(
     "--need_all_logs",
     "-a",
     type=bool,
-    default=True,
+    default=False,
     help="boolean value representing if all logs are needed. Default to True",
 )
 def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs):
@@ -217,8 +217,8 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
         return
 
     # Show run log summary info
-    log_head_table = PrettyTable(['Run ID', 'Total Log Lines', 'Log URL'])
-    log_head_table.add_row([run_id, run_log_result.total_log_lines, run_logs.log_full_url])
+    log_head_table = PrettyTable(['Run ID', 'Printed Log Lines', 'Total Log Lines', 'Log URL'])
+    log_head_table.add_row([run_id, len(run_log_result.log_line_list), run_logs.total_num, run_logs.log_full_url])
     click.echo("\nLogs summary info is as follows.")
     print(log_head_table)
 
@@ -234,7 +234,7 @@ def logs(platform, run_id, api_key, version, page_num, page_size, need_all_logs)
     if len(run_log_result.log_line_list) > 0:
         click.echo("\nAll logs is as follows.")
         for log_line in run_log_result.log_line_list:
-            click.echo(log_line.rstrip('\n'))
+            click.echo(log_line)
 
 
 def _print_run_table(run_list_obj):

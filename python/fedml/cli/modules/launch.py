@@ -13,7 +13,7 @@ from fedml.api import run_stop, run_list
 from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStartedModel, FeatureEntryPoint
 
 
-@click.command("launch", help="Launch job at the FedML® Nexus AI Platform")
+@click.command("launch", help="Launch job at the TensorOpera® AI Platform")
 @click.help_option("--help", "-h")
 @click.option(
     "--api_key", "-k", type=str, help="user api key.",
@@ -56,7 +56,7 @@ from fedml.computing.scheduler.scheduler_entry.run_manager import FedMLRunStarte
 @click.argument("yaml_file", nargs=-1)
 def fedml_launch(yaml_file, cluster, version, api_key, group, local_on_premise_platform, local_on_premise_platform_port):
     """
-    Manage resources on the FedML® Nexus AI Platform.
+    Manage resources on the TensorOpera® AI Platform.
     """
     set_env_version(version)
     fedml.set_local_on_premise_platform_host(local_on_premise_platform)

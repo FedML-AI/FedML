@@ -1,4 +1,2 @@
-receiver_id,ip
-0,127.0.0.1
-1,127.0.0.1
-2,127.0.0.1
+eid,rank,grpc_server_ip,grpc_server_port
+0,0,0.0.0.0,8890

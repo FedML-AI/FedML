@@ -74,6 +74,7 @@ class ClientConstants(object):
     K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
 
     LOCAL_CLIENT_API_PORT = 22030
+    ENV_CLIENT_PROXY_PORT_KEY = "FEDML_WORKER_INFERENCE_PROXY_PORT"
 
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
@@ -95,6 +96,13 @@ class ClientConstants(object):
     INFERENCE_ENGINE_TYPE_INT_DEFAULT = 2
     INFERENCE_MODEL_VERSION = "1"
     INFERENCE_INFERENCE_SERVER_VERSION = "v2"
+    INFERENCE_REQUEST_TIMEOUT = 30
+
+    ENV_CONNECTION_TYPE_KEY = "FEDML_CONNECTION_TYPE"
+    WORKER_CONNECTIVITY_TYPE_HTTP = "http"
+    WORKER_CONNECTIVITY_TYPE_HTTP_PROXY = "http_proxy"
+    WORKER_CONNECTIVITY_TYPE_MQTT = "mqtt"
+    WORKER_CONNECTIVITY_TYPE_DEFAULT = WORKER_CONNECTIVITY_TYPE_HTTP
 
     MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING = "INITIALIZING"
     MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING = "DEPLOYING"
@@ -135,6 +143,9 @@ class ClientConstants(object):
     DEVICE_DIFF_DELETE_OPERATION = "op: delete"
     DEVICE_DIFF_REPLACE_OPERATION = "op: replace"
 
+    READINESS_PROBE_DEFAULT = "DEFAULT"
+    LIVENESS_PROBE_DEFAULT = "DEFAULT"
+
     LOGIN_MODE_ON_PREMISE_INDEX = 0
     LOGIN_MODE_FEDML_CLOUD_INDEX = 1
     LOGIN_MODE_PUBLIC_CLOUD_INDEX = 2
@@ -143,20 +154,20 @@ class ClientConstants(object):
     MODEL_DATA_TYPE_INT = "int"
     MODEL_DATA_TYPE_FLOAT = "float"
     MODEL_DATA_TYPE_STR = "str"
-    MODEL_DATA_TYPE_MAPPING = {"TYPE_BOOL": MODEL_DATA_TYPE_INT, "TYPE_UINT8": MODEL_DATA_TYPE_INT,
-                               "TYPE_UINT16": MODEL_DATA_TYPE_INT, "TYPE_UINT32": MODEL_DATA_TYPE_INT,
-                               "TYPE_UINT64": MODEL_DATA_TYPE_INT, "TYPE_INT8": MODEL_DATA_TYPE_INT,
-                               "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
-                               "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
-                               "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
-                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT,
-                               "BOOL": MODEL_DATA_TYPE_INT, "UINT8": MODEL_DATA_TYPE_INT,
-                               "UINT16": MODEL_DATA_TYPE_INT, "UINT32": MODEL_DATA_TYPE_INT,
-                               "UINT64": MODEL_DATA_TYPE_INT, "INT8": MODEL_DATA_TYPE_INT,
-                               "INT16": MODEL_DATA_TYPE_INT, "INT32": MODEL_DATA_TYPE_INT,
-                               "INT64": MODEL_DATA_TYPE_INT, "FP16": MODEL_DATA_TYPE_FLOAT,
-                               "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
-                               "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
+
+    # Model config yaml related
+    DEPLOY_TIMEOUT_SEC_KEY = "deploy_timeout_sec"
+    DEPLOY_TIMEOUT_SEC_DEFAULT = 600
+
+    EXPOSE_SUBDOMAINS_KEY = "expose_subdomains"
+
+    CUSTOMIZED_VOLUMES_MOUNT_KEY = "volumes"
+
+    CUSTOMIZED_WORKSPACE_MOUNT_PATH_KEY = "workspace_mount_path"
+
+    CUSTOMIZED_SERVICE_KEY = "service"
+
+    ENV_USER_ENCRYPTED_API_KEY = "FEDML_USER_ENCRYPTED_API_KEY"
 
     @staticmethod
     def get_fedml_home_dir():
@@ -270,6 +281,13 @@ class ClientConstants(object):
     @staticmethod
     def get_model_serving_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir, exist_ok=True)
+        return model_file_dir
+
+    @staticmethod
+    def get_deploy_failed_log_dir():
+        model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs", "failed_logs")
         if not os.path.exists(model_file_dir):
             os.makedirs(model_file_dir, exist_ok=True)
         return model_file_dir
@@ -442,6 +460,14 @@ class ClientConstants(object):
         except Exception as e:
             logging.info("Failed to get public ip: {}".format(e))
         return ip
+
+    @staticmethod
+    def get_inference_worker_proxy_port() -> int:
+        # Use dotenv to load the environment variables
+        fedml.load_env()
+        worker_proxy_port = int(os.getenv(ClientConstants.ENV_CLIENT_PROXY_PORT_KEY,
+                                      default=ClientConstants.LOCAL_CLIENT_API_PORT))
+        return worker_proxy_port
 
     @staticmethod
     def check_process_is_running(process_id):

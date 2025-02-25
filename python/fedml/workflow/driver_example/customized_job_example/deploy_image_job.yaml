@@ -6,12 +6,12 @@ workspace: deploy_image_job
 # Running entry commands which will be executed as the job entry point.
 # Support multiple lines, which can not be empty.
 job: |
-  echo "current job id: $FEDML_CURRENT_RUN_ID"
-  echo "current edge id: $FEDML_CURRENT_EDGE_ID"
-  echo "Hello, Here is the FedML Nexus AI platform."
-  echo "Current directory is as follows."
-  pwd
-  sleep 3
+    echo "current job id: $FEDML_CURRENT_RUN_ID"
+    echo "current edge id: $FEDML_CURRENT_EDGE_ID"
+    echo "Hello, Here is the FedML Nexus AI platform."
+    echo "Current directory is as follows."
+    pwd
+    sleep 3
 
 job_type: deploy              # options: train, deploy, federate
 

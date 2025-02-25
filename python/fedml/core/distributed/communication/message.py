@@ -4,15 +4,9 @@ import sys
 
 class Message(object):
 
-    MSG_ARG_KEY_OPERATION = "operation"
     MSG_ARG_KEY_TYPE = "msg_type"
     MSG_ARG_KEY_SENDER = "sender"
     MSG_ARG_KEY_RECEIVER = "receiver"
-
-    MSG_OPERATION_SEND = "send"
-    MSG_OPERATION_RECEIVE = "receive"
-    MSG_OPERATION_BROADCAST = "broadcast"
-    MSG_OPERATION_REDUCE = "reduce"
 
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
@@ -54,6 +48,15 @@ class Message(object):
     def get_params(self):
         return self.msg_params
 
+    def get_params_wout_model(self):
+        # We explicitly return the message triple, because the msg params
+        # dictionary is populated at different stages during execution,
+        # e.g., Message.MSG_ARG_KEY_MODEL_PARAMS
+        return {
+            k: v for k, v in self.msg_params.items()
+            if k != Message.MSG_ARG_KEY_MODEL_PARAMS
+        }
+
     def add(self, key, value):
         self.msg_params[key] = value
 
@@ -65,7 +68,7 @@ class Message(object):
     def get_type(self):
         return self.msg_params[Message.MSG_ARG_KEY_TYPE]
 
-    def to_string(self):
+    def to_string(self, include_model_params=True):
         return self.msg_params
 
     def to_json(self):

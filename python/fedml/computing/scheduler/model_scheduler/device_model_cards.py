@@ -14,7 +14,6 @@ from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
 from fedml.core.common.singleton import Singleton
 from fedml.computing.scheduler.model_scheduler.modelops_configs import ModelOpsConfigs
-from fedml.computing.scheduler.model_scheduler.device_model_deployment import get_model_info
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_model_object import FedMLModelList, FedMLEndpointDetail
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
@@ -60,7 +59,8 @@ class FedMLModelCards(Singleton):
 
         if use_remote:
             if not self.deploy_model(model_name, device_type, target_devices, "", user_api_key,
-                                     additional_params_dict, use_local_deployment, endpoint_id=endpoint_id):
+                                     additional_params_dict, use_local_deployment, endpoint_name=endpoint_name, 
+                                     endpoint_id=endpoint_id):
                 print("Failed to deploy model")
                 return False
             return True
@@ -785,7 +785,7 @@ class FedMLModelCards(Singleton):
         args = {"config_version": self.config_version}
         _, s3_config = ModelOpsConfigs.get_instance(args).fetch_configs(self.config_version)
         s3_storage = S3Storage(s3_config)
-        model_dst_key = "{}@{}@{}".format(user_id, model_name, str(uuid.uuid4()))
+        model_dst_key = "{}@{}@{}.zip".format(user_id, model_name, str(uuid.uuid4()))
         model_storage_url = s3_storage.upload_file_with_progress(model_zip_path, model_dst_key,
                                                                  show_progress=show_progress,
                                                                  out_progress_to_err=True,
