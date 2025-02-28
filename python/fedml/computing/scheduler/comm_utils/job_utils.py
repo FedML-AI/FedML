@@ -119,9 +119,9 @@ class JobRunnerUtils(Singleton):
                                          f"new available gpu ids: {available_gpu_ids}")
 
                     # Get the matched gpu ids string by the request gpu num
-                    cuda_visible_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
+                    matched_gpu_ids_str, matched_gpu_num = JobRunnerUtils.request_gpu_ids(request_gpu_num,
                                                                                                available_gpu_ids)
-                    if cuda_visible_gpu_ids_str is None:
+                    if matched_gpu_ids_str is None:
                         if request_gpu_num:
                             error_message = (f"Failed to occupy gpu ids for run {run_id}. "
                                              f"Requested_gpu_num {request_gpu_num}; "
@@ -130,11 +130,11 @@ class JobRunnerUtils(Singleton):
                             raise Exception(error_message)
                         return None
                     else:
-                        logging.info(f"Occupied GPU ids for run {run_id}: {cuda_visible_gpu_ids_str}, all"
+                        logging.info(f"Occupied GPU ids for run {run_id}: {matched_gpu_ids_str}, all"
                                      f" available GPU ids: {available_gpu_ids}")
 
                     # String to available set
-                    run_gpu_ids = list(map(lambda x: int(x), cuda_visible_gpu_ids_str.split(",")))
+                    run_gpu_ids = list(map(lambda x: int(x), matched_gpu_ids_str.split(",")))
                     available_gpu_ids = [gpu_id for gpu_id in available_gpu_ids if gpu_id not in set(run_gpu_ids)]
                     available_gpu_ids = list(set(available_gpu_ids))
 
@@ -172,7 +172,7 @@ class JobRunnerUtils(Singleton):
                         ComputeCacheManager.get_instance().get_gpu_cache().set_edge_model_id_map(
                             run_id, device_id, model_master_device_id, model_slave_device_id)
 
-                return cuda_visible_gpu_ids_str
+                return matched_gpu_ids_str
 
         except Exception as e:
             logging.error(f"Error {e} Exception {traceback.format_exc()}")
@@ -192,8 +192,8 @@ class JobRunnerUtils(Singleton):
             return None, None
 
         matched_gpu_ids = map(lambda x: str(x), available_gpu_ids[0:matched_gpu_num])
-        cuda_visible_gpu_ids_str = ",".join(matched_gpu_ids)
-        return cuda_visible_gpu_ids_str, matched_gpu_num
+        matched_gpu_ids_str = ",".join(matched_gpu_ids)
+        return matched_gpu_ids_str, matched_gpu_num
 
     @staticmethod
     def trim_unavailable_gpu_ids(gpu_ids) -> List[int]:

@@ -319,13 +319,13 @@ class FedMLDeviceReplicaController:
                      f"intermediate_replica_num: {self.intermediate_replica_num}\n"
                      f"target_replica_num: {self.target_replica_num}")
 
-        for id, replica_no in self.intermediate_replica_num.items():
+        for id, replica_num in self.intermediate_replica_num.items():
             if id not in self.target_replica_num:   # Delete all replica in this device
-                if replica_no != 0:
+                if replica_num != 0:
                     return False
                 else:
                     continue
-            if replica_no != self.target_replica_num[id]:
+            if replica_num != self.target_replica_num[id]:
                 return False
 
         for id, target_replica_num in self.target_replica_num.items():
