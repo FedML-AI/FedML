@@ -48,6 +48,12 @@ class JobRunnerUtils(Singleton):
 
     def occupy_gpu_ids(self, run_id, request_gpu_num, device_id, inner_id=None,
                        model_master_device_id=None, model_slave_device_id=None):
+        logging.info(f"Occupy gpus on worker for run_id {run_id}: <<<<<<< "
+                     f"Request gpu num {request_gpu_num}; "
+                     f"Device id {device_id}; " 
+                     f"Master id {model_master_device_id}; "
+                     f"Slave id {model_slave_device_id}; "
+                     f" >>>>>>>")
         try:
             ComputeCacheManager.get_instance().set_redis_params()
 

@@ -156,8 +156,17 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
         else:
             logging.error(f"[Worker] Replica handler is None.")
             return False
-
+        
         self.check_runner_stop_event()
+
+        is_multi_node_deployment = False
+        is_virtual_replica = False
+        # For multi-node deployment, reset the gpu_per_replica to the gpu_per_group_node
+        if "multi_node_deployment" in self.request_json and self.request_json["multi_node_deployment"] == True:
+            is_multi_node_deployment = True
+            is_virtual_replica = self.replica_handler.replica_num_diff["is_virtual"]
+            self.replica_handler.gpu_per_replica = self.replica_handler.replica_num_diff["gpu_per_group_node"]
+            logging.info(f"[Worker] Multi-node deployment is {is_multi_node_deployment} and virtual replica is {is_virtual_replica}.")
 
         # Report the deployment status to mlops
         self.status_reporter.report_client_id_status(
@@ -250,11 +259,17 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                             inference_model_name=model_name, inference_engine=inference_engine,
                             infer_host=worker_ip, master_ip=master_ip, edge_id=self.edge_id,
                             master_device_id=device_ids[0], replica_rank=rank,
-                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json,
+                            replica_num_diff=self.replica_handler.replica_num_diff
                         )
                 except Exception as e:
                     inference_output_url = ""
                     logging.error(f"[Worker] Exception at deployment: {traceback.format_exc()}")
+
+                 # If the replica is virtual, ignore the result
+                if is_virtual_replica:
+                    logging.info("[Worker] Virtual replica deploy finished, continue to deploy the next replica...")
+                    continue
 
                 if inference_output_url == "":
                     logging.error("[Worker] Failed to deploy the model.")
@@ -269,7 +284,7 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
 
                     raise Exception("[Worker] Failed to deploy the model.")
                 else:
-                    # Send failed successful result back to master
+                    # Send successful result back to master
                     logging.info("Finished deployment, continue to send results to master...")
                     result_payload = self.send_deployment_results(
                         end_point_name, self.edge_id, device_ids, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
@@ -373,7 +388,8 @@ class FedMLDeployWorkerJobRunner(FedMLBaseSlaveJobRunner, ABC):
                             inference_model_name=model_name, inference_engine=inference_engine,
                             infer_host=worker_ip, master_ip=master_ip, edge_id=self.edge_id,
                             master_device_id=device_ids[0], replica_rank=rank,
-                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json
+                            gpu_per_replica=int(self.replica_handler.gpu_per_replica), request_json=self.request_json,
+                            replica_num_diff=self.replica_handler.replica_num_diff
                         )
                 except Exception as e:
                     inference_output_url = ""

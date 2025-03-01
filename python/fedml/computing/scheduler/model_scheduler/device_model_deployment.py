@@ -60,7 +60,7 @@ def request_gpu_ids_on_deployment(edge_id, end_point_id, num_gpus=None, master_d
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, inference_model_name, inference_engine,
                      infer_host, master_ip, edge_id, master_device_id=None, replica_rank=0,
-                     gpu_per_replica=1, request_json=None):
+                     gpu_per_replica=1, request_json=None, replica_num_diff=None):
     if request_json is None:
         request_json = dict()
     logging.info("[Worker] Model deployment is starting...")
@@ -200,10 +200,54 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     if device_mapping:
         host_config_dict.update(device_mapping)
 
+    # check if the deployment is multi-node deployment
+    is_multi_node_deployment = False
+    is_virtual_replica = False
+    default_header_port_in_multi_node = 20000
+    default_infer_port_in_multi_node = port_inside_container
+    ports=[port_inside_container]
+    if "multi_node_deployment" in request_json and request_json["multi_node_deployment"] == True:
+        is_multi_node_deployment = True
+        is_virtual_replica = replica_num_diff["is_virtual"]
+        header_address = replica_num_diff["header_address"]
+        node_rank = replica_num_diff["node_rank"]
+        node_size = replica_num_diff["node_size"]
+        # update the num_gpus using the gpu_per_group_node
+        num_gpus = replica_num_diff["gpu_per_group_node"]
+        total_gpus = node_size * num_gpus
+        logging.info(f"[Multi-node deployment] is_virtual_replica: {is_virtual_replica}, header_address: {header_address};"
+                     f"node_rank: {node_rank}, node_size: {node_size}, num_gpus: {num_gpus}, total_gpus: {total_gpus}")
+        
+        multi_node_params = f" --tp {total_gpus} --dist-init-addr {header_address}:{default_header_port_in_multi_node} " \
+                            f" --nnodes {node_size} --node-rank {node_rank}  --host 0.0.0.0 --port {default_infer_port_in_multi_node}"
+        # if the command starts with /bin/bash -c, we need to handle it specially
+        if customized_image_entry_cmd.startswith("/bin/bash -c '"):
+            # insert the parameters before the last single quote
+            customized_image_entry_cmd = customized_image_entry_cmd[:-1] + multi_node_params + "'"
+        else:
+            # add to the command directly
+            customized_image_entry_cmd += multi_node_params
+        
+        host_config_dict.update({
+            "network_mode": "host",
+            "ipc_mode": "host",
+            "devices": ["/dev/infiniband:/dev/infiniband:rwm"],
+            "privileged": True
+        })
+        # Remove the port binding because network_mode is host, no need to bind the port
+        ports = None
+        host_config_dict.pop("port_bindings", None)
+        
+        # If the replica is virtual, use the header_address as the infer_host
+        # because the virtual replica container can not do inference
+        if is_virtual_replica:
+            infer_host = header_address
+        
+
     # Handle the environment variables
     handle_env_vars(environment, relative_entry_fedml_format, extra_envs, dst_bootstrap_dir,
                     end_point_id, edge_id, replica_rank, request_json)
-
+    
     # Create the container
     try:
         host_config = client.api.create_host_config(**host_config_dict)
@@ -211,7 +255,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             image=inference_image_name,
             name=default_server_container_name,
             volumes=volumes,
-            ports=[port_inside_container],  # port open inside the container
+            ports=ports,
             environment=environment,
             host_config=host_config,
             detach=True,
@@ -226,7 +270,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         logging.info("Volumes:")
         for vol in volumes:
             logging.info("  - {}".format(vol))
-        logging.info("Ports: [{}]".format(port_inside_container))
+        logging.info("Ports: [{}]".format(ports))
         logging.info("Environment variables:")
         for key, value in environment.items():
             logging.info("  {} = {}".format(key, value))
@@ -240,23 +284,29 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     except Exception as e:
         logging.error(f"Failed to create the container with exception {e}, traceback : {traceback.format_exc()}")
         return "", "", None, None, None
-
-    # Get the port allocation
-    cnt = 0
-    while True:
-        cnt += 1
-        try:
-            # Find the random port
-            port_info = client.api.port(new_container.get("Id"), port_inside_container)
-            inference_http_port = port_info[0]["HostPort"]
-            logging.info("host port allocated: {}".format(inference_http_port))
-            break
-        except:
-            if cnt >= 5:
-                raise Exception("Failed to get the port allocation")
-            time.sleep(3)
+    
+    if is_multi_node_deployment:
+        inference_http_port = default_infer_port_in_multi_node
+        logging.info("host port allocated when multi-node deployment: {}".format(inference_http_port))
+    else:
+        # Get the port allocation
+        cnt = 0
+        while True:
+            cnt += 1
+            try:
+                # Find the random port
+                port_info = client.api.port(new_container.get("Id"), port_inside_container)
+                inference_http_port = port_info[0]["HostPort"]
+                logging.info("host port allocated: {}".format(inference_http_port))
+                break
+            except:
+                if cnt >= 5:
+                    raise Exception("Failed to get the port allocation")
+                time.sleep(3)
 
     # Logging the info from the container when initializing
+    logging.info(f"container {default_server_container_name} started, infer_host: {infer_host}, inference_http_port: {inference_http_port}, "
+                 f"inference_type: {inference_type}, customized_readiness_check: {customized_readiness_check}")
     log_deployment_output(end_point_id, model_id, default_server_container_name,
                           ClientConstants.CMD_TYPE_RUN_DEFAULT_SERVER,
                           inference_model_name, inference_engine, inference_http_port, inference_type,
@@ -279,6 +329,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     model_metadata["liveliness_check"] = customized_liveliness_check
     model_metadata["readiness_check"] = customized_readiness_check
     model_metadata[ClientConstants.EXPOSE_SUBDOMAINS_KEY] = expose_subdomains
+
     logging.info(f"[Worker][Replica{replica_rank}] Model deployment is successful with inference_output_url: "
                  f"{inference_output_url}, model_metadata: {model_metadata}, model_config: {ret_model_config}")
 
@@ -402,6 +453,7 @@ def log_deployment_output(end_point_id, model_id, cmd_container_name, cmd_type,
                     break
 
         # should_exit_logs will ping the inference container, return True if ready
+        # if is virtual replica, will not check the readiness
         if should_exit_logs(end_point_id, model_id, cmd_type, inference_model_name, inference_engine,
                             inference_http_port, inference_type, request_input_example,
                             infer_host, readiness_check=readiness_check):
@@ -412,7 +464,6 @@ def log_deployment_output(end_point_id, model_id, cmd_container_name, cmd_type,
         if deploy_attempt >= deploy_attempt_threshold:
             logging.error(f"Model {inference_model_name} deploy reached max attempt {deploy_attempt_threshold}, "
                           f"exiting the deployment...")
-
             try:
                 client = docker.from_env()
                 container_obj = client.containers.get(cmd_container_name)

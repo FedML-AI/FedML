@@ -92,6 +92,7 @@ class FedMLDeployJobRunnerMsgSender(object):
         if "replica_num_diff" not in self.request_json or self.request_json["replica_num_diff"] is None:
             return []
 
+        logging.info(f"send_deployment_start_request_to_edges, replica_num_diff: {self.request_json['replica_num_diff']}")
         edge_id_list = []
         for device_id in self.request_json["replica_num_diff"].keys():
             edge_id_list.append(device_id)

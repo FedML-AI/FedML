@@ -75,18 +75,126 @@ class FedMLDeviceReplicaController:
     def init_id_replica_num(self):
         """
         Initialize the target replica number for each device.
-        id_replica_num[id] = avail_num // self.gpu_per_replica
+        For single-node deployment (gpu_per_replica <= 8):
+            id_replica_num[id] = avail_num // self.gpu_per_replica
+        For multi-node deployment (gpu_per_replica > 8):
+            Create virtual replicas and track which devices belong to the same replica group
         """
         id_replica_num = {}
-        for id, avail_num in self.devices_avail_gpus.items():
-            if type(avail_num) is not int:
-                logging.warning(f"The value in gpu_topology should be int, "
-                                f"but got {type(avail_num)}. Try to convert it.")
-            avail_num = int(avail_num)
+        self.target_replica_num_virtual = {}
+        self.replica_groups = {}  # Maps replica group ID to list of device IDs
+        self.device_node_ranks = {}  # Maps device ID to its node rank in the replica group
+        
+        # For multi-node deployment (gpu_per_replica > max_gpu_per_device)
+        max_gpu_per_device = 8  # Maximum GPUs available on a single device
+        
+        if self.gpu_per_replica <= max_gpu_per_device:
+            # Single-node deployment case (original logic)
+            for id, avail_num in self.devices_avail_gpus.items():
+                if type(avail_num) is not int:
+                    logging.warning(f"The value in gpu_topology should be int, "
+                                    f"but got {type(avail_num)}. Try to convert it.")
+                avail_num = int(avail_num)
 
-            if avail_num % self.gpu_per_replica != 0:
-                raise ValueError("The number of gpus for each device should be divisible by gpu_per_replica")
-            id_replica_num[str(id)] = avail_num // self.gpu_per_replica
+                if avail_num % self.gpu_per_replica != 0:
+                    raise ValueError("The number of gpus for each device should be divisible by gpu_per_replica")
+                id_replica_num[str(id)] = avail_num // self.gpu_per_replica
+        else:
+            # Multi-node deployment case
+            # Group devices to form virtual replicas
+            devices = list(self.devices_avail_gpus.keys())
+            devices_info = {}
+            
+            # Get device IP addresses from request_json
+            device_addresses = {}
+            if hasattr(self.request_msg_obj, 'device_objs') and self.request_msg_obj.device_objs:
+                for device_obj in self.request_msg_obj.device_objs:
+                    if 'id' in device_obj and 'ip' in device_obj:
+                        device_addresses[str(device_obj['id'])] = device_obj['ip']
+            logging.info(f"init_id_replica_num in multi-node, device_addresses: {device_addresses}")
+            
+            # Sort devices by available GPUs (descending)
+            for device_id in devices:
+                avail_num = int(self.devices_avail_gpus[device_id])
+                address = device_addresses.get(str(device_id), "unknown")
+                devices_info[device_id] = {"avail_gpus": avail_num, "address": address}
+            
+            sorted_devices = sorted(devices_info.keys(), 
+                                   key=lambda x: devices_info[x]["avail_gpus"], 
+                                   reverse=True)
+            
+            # Initialize counters
+            gpus_needed = self.gpu_per_replica
+            current_group_id = 0
+            current_group_devices = []
+            current_node_rank = 0
+            gpu_per_group_node = None  # record the gpu number of each group
+            
+            # Assign devices to replica groups
+            for device_id in sorted_devices:
+                avail_gpus = devices_info[device_id]["avail_gpus"]
+                address = devices_info[device_id]["address"]
+                
+                # Skip devices with no available GPUs or unknown address
+                if avail_gpus <= 0 or address == "unknown":
+                    raise ValueError("gpu number should be positive, and address should not be unknown")
+                
+                # if it is the first device in the group, set gpu_per_group_node
+                if not current_group_devices:
+                    gpu_per_group_node = avail_gpus
+                # ensure all devices in the group have the same number of GPUs
+                elif avail_gpus != gpu_per_group_node:
+                    logging.warning(f"Device {device_id} has {avail_gpus} GPUs, which is different from other devices in the group ({gpu_per_group_node}). Skipping.")
+                    raise ValueError("gpu number should be the same for all devices in the group")
+                    
+                # Add device to current group
+                current_group_devices.append(device_id)
+                self.device_node_ranks[str(device_id)] = current_node_rank
+                current_node_rank += 1
+                
+                gpus_needed -= avail_gpus
+                
+                # If we have enough GPUs for this replica group
+                if gpus_needed <= 0:
+                    # Create replica group
+                    group_id = f"group_{current_group_id}"
+                    # Get the address of the first device (rank 0) in the group
+                    rank0_device_id = current_group_devices[0]
+                    rank0_address = devices_info[rank0_device_id]["address"]
+                    
+                    self.replica_groups[group_id] = {
+                        "devices": current_group_devices,
+                        "header_address": rank0_address,  # use the address of the device with rank 0
+                        "gpu_per_group_node": gpu_per_group_node # record the gpu number of each group
+                    }
+                    
+                    # Set leader device (first in group) as real replica
+                    leader_id = str(current_group_devices[0])
+                    id_replica_num[leader_id] = id_replica_num.get(leader_id, 0) + 1
+                    
+                    # Set other devices as virtual replicas
+                    for worker_id in current_group_devices[1:]:
+                        worker_id = str(worker_id)
+                        self.target_replica_num_virtual[worker_id] = self.target_replica_num_virtual.get(worker_id, 0) + 1
+                    
+                    # Reset for next group
+                    current_group_id += 1
+                    current_group_devices = []
+                    current_node_rank = 0
+                    gpus_needed = self.gpu_per_replica
+                    gpu_per_group_node = None
+            
+            # Check if we have any incomplete groups
+            if current_group_devices and gpus_needed > 0:
+                raise ValueError(f"Incomplete replica group with {self.gpu_per_replica - gpus_needed} GPUs. "
+                               f"Need {gpus_needed} more GPUs to complete the replica.")
+            
+            logging.info(f"init_id_replica_numin multi-node, "
+                         f"self.target_replica_num_virtual: {self.target_replica_num_virtual}, "
+                         f"self.replica_groups: {self.replica_groups}, "
+                         f"self.device_node_ranks: {self.device_node_ranks}")
+            logging.info(f"init_id_replica_num in multi-node, id_replica_num: {id_replica_num}")
+        
         return id_replica_num
 
     def generate_replica_ids(self) -> List[str]:
@@ -278,13 +386,52 @@ class FedMLDeviceReplicaController:
         }
             "gpus_per_replica": 1,
         }
+        
+        For multi-node deployment, also includes virtual replica information.
+        id1: {"op": "add", "curr_num": 0, "target_num": 1, "is_virtual": False, "header_address": "192.168.1.101", "gpu_per_group_node": 8}
+        id2: {"op": "add", "curr_num": 0, "target_num": 1, "is_virtual": True, "header_address": "192.168.1.101", "gpu_per_group_node": 8}
         """
         replica_num_diff_key = "replica_num_diff"
         gpu_per_replica_key = "gpus_per_replica"
 
         replica_num_diff = self.diff_target_curr_replica_num()
+        
+        # For multi-node deployment, add virtual replica information
+        if hasattr(self, 'target_replica_num_virtual') and self.target_replica_num_virtual:
+            # Add virtual replica diff
+            virtual_diff = self.diff_target_curr_replica_num_impl(self.target_replica_num_virtual, {})
+            logging.info(f"generate_diff_to_request_json in multi-node, virtual_diff: {virtual_diff}")
+            
+            # Add virtual flag and header address to each device
+            for device_id in replica_num_diff:
+                # Find which group this device belongs to
+                for group_id, group_info in self.replica_groups.items():
+                    group_node_size = len(group_info["devices"])
+                    if device_id in group_info["devices"]:
+                        replica_num_diff[device_id]["is_virtual"] = False  # Leader is not virtual
+                        replica_num_diff[device_id]["header_address"] = group_info["header_address"]
+                        replica_num_diff[device_id]["node_size"] = group_node_size
+                        replica_num_diff[device_id]["node_rank"] = self.device_node_ranks.get(device_id, 0)
+                        replica_num_diff[device_id]["gpu_per_group_node"] = group_info["gpu_per_group_node"]
+                        break
+            
+            # Add virtual replicas to the diff
+            for device_id, diff_info in virtual_diff.items():
+                # Find which group this device belongs to
+                for group_id, group_info in self.replica_groups.items():
+                    group_node_size = len(group_info["devices"])
+                    if device_id in group_info["devices"]:
+                        diff_info["is_virtual"] = True  # Worker is virtual
+                        diff_info["header_address"] = group_info["header_address"]
+                        diff_info["node_size"] = group_node_size
+                        diff_info["node_rank"] = self.device_node_ranks.get(device_id, 0)
+                        diff_info["gpu_per_group_node"] = group_info["gpu_per_group_node"]
+                        replica_num_diff[device_id] = diff_info
+                        break
+            logging.info(f"generate_diff_to_request_json in multi-node, replica_num_diff: {replica_num_diff}")
+            self.request_json["multi_node_deployment"] = True
+        
         self.request_json[replica_num_diff_key] = replica_num_diff
-
         self.request_json[gpu_per_replica_key] = self.gpu_per_replica
         return self.request_json
 
