@@ -126,7 +126,7 @@ requirements_extra_nlp = [
 
 setup(
     name="fedml",
-    version="0.9.6-dev202502202000",
+    version="0.9.6-dev20250312-multi-node",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
