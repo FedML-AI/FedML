@@ -9,15 +9,15 @@ from fedml.computing.scheduler.comm_utils.security_utils import get_api_key, sav
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
 
-def fedml_login(api_key):
-    api_key_is_valid, api_key = _check_api_key(api_key=api_key)
+def fedml_login(api_key, encrypted_api_key_flag=False):
+    api_key_is_valid, api_key = _check_api_key(api_key=api_key, encrypted_api_key_flag=encrypted_api_key_flag)
     if api_key_is_valid:
         return 0, api_key
 
     return -1, api_key
 
 
-def _check_api_key(api_key=None):
+def _check_api_key(api_key=None, encrypted_api_key_flag=False):
     if api_key is None or api_key == "":
         saved_api_key = get_api_key()
         if saved_api_key is None or saved_api_key == "":
@@ -25,7 +25,7 @@ def _check_api_key(api_key=None):
         else:
             api_key = saved_api_key
 
-    is_valid_heartbeat = FedMLResourceManager.get_instance().check_heartbeat(api_key)
+    is_valid_heartbeat = FedMLResourceManager.get_instance().check_heartbeat(api_key, encrypted_api_key_flag)
     if not is_valid_heartbeat:
         return False, api_key
     else:
@@ -33,9 +33,9 @@ def _check_api_key(api_key=None):
         return True, api_key
 
 
-def authenticate(api_key):
+def authenticate(api_key, encrypted_api_key_flag=False):
 
-    error_code, api_key = fedml_login(api_key)
+    error_code, api_key = fedml_login(api_key, encrypted_api_key_flag)
 
     # Exit if not able to authenticate successfully
     if error_code:
