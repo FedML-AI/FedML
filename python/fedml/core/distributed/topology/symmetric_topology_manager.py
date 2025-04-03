@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 
 from .base_topology_manager import BaseTopologyManager
+from .topo_utils import *
 
 
 class SymmetricTopologyManager(BaseTopologyManager):
@@ -17,6 +18,27 @@ class SymmetricTopologyManager(BaseTopologyManager):
         self.n = n
         self.neighbor_num = neighbor_num
         self.topology = []
+
+    def generate_custom_topology(self, args):
+        topo_name = args.topo_name
+        if topo_name == 'ring':
+            self.neighbor_num = 2
+            self.generate_topology()
+        elif topo_name == '2d_torus':
+            self.topology = get_2d_torus_overlay(self.n)
+        elif topo_name == 'star':
+            self.topology = get_star_overlay(self.n)
+        elif topo_name == 'complete':
+            self.topology = get_complete_overlay(self.n)
+        elif topo_name == 'isolated':
+            self.topology = get_isolated_overlay(self.n)
+        elif topo_name == 'balanced_tree':
+            self.topology = get_balanced_tree_overlay(self.n, self.neighbor_num)
+        elif topo_name == 'random':
+            probability = args.topo_edge_probability  # Probability for edge creation
+            self.topology = get_random_overlay(self.n, probability)
+        else:
+            raise Exception(topo_name)
 
     def generate_topology(self):
         # first generate a ring topology
@@ -84,8 +106,9 @@ class SymmetricTopologyManager(BaseTopologyManager):
 
 if __name__ == "__main__":
     # generate a ring topology
-    tpmgr = SymmetricTopologyManager(6, 2)
-    tpmgr.generate_topology()
+    tpmgr = SymmetricTopologyManager(9, 2, 0.3)
+    # tpmgr.generate_topology()
+    tpmgr.generate_custom_topology('random')
     print("tpmgr.topology = " + str(tpmgr.topology))
 
     # get the OUT neighbor weights for node 1
