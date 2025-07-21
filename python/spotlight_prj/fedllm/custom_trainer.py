@@ -98,7 +98,71 @@ class FullModelLLMTrainer(LLMTrainer):
         
         self.log(f"Using num_generations={num_generations} with effective batch size={effective_batch_size}")
         
+        # **FIX: Load fresh model and tokenizer for GRPO to avoid FedML state corruption**
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        import torch
+        
+        # Get model name from model_args
+        model_name = self.model_args.model_name_or_path
+        self.log(f"Loading fresh model and tokenizer: {model_name}")
+        
+        # Load fresh model and tokenizer with numerical stability
+        try:
+            # Try bfloat16 first if requested
+            if args.bf16:
+                fresh_model = AutoModelForCausalLM.from_pretrained(
+                    model_name, 
+                    torch_dtype=torch.bfloat16,
+                    use_cache=False
+                )
+            else:
+                fresh_model = AutoModelForCausalLM.from_pretrained(
+                    model_name, 
+                    torch_dtype=torch.float32,  # Use float32 for better stability
+                    use_cache=False
+                )
+        except Exception as e:
+            self.log(f"Failed to load with requested precision, falling back to float32: {e}")
+            fresh_model = AutoModelForCausalLM.from_pretrained(
+                model_name, 
+                torch_dtype=torch.float32,  # Fallback to float32
+                use_cache=False
+            )
+        fresh_tokenizer = AutoTokenizer.from_pretrained(model_name)
+        fresh_tokenizer.pad_token = fresh_tokenizer.eos_token
+        
+        # Copy current model state to fresh model (to preserve any training from previous rounds)
+        if self.round_idx > 0:
+            self.log("Copying trained weights to fresh model")
+            # Get the current model state dict (handling potential PEFT wrapping)
+            if isinstance(self.model, PeftModel):
+                current_state = self.model.base_model.state_dict()
+            else:
+                current_state = self.model.state_dict()
+            
+            # Load into fresh model
+            fresh_model.load_state_dict(current_state, strict=False)
+        
+        # Move fresh model to correct device
+        fresh_model.to(device)
+        
+        # **FIX: Additional model preparation for numerical stability**
+        fresh_model.eval()  # Set to eval mode initially
+        
+        # Ensure model is in proper state for training
+        for param in fresh_model.parameters():
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                self.log("WARNING: Found NaN/Inf in model parameters, reinitializing")
+                param.data.normal_(0, 0.02)  # Reinitialize problematic parameters
+        
+        fresh_model.train()  # Set back to train mode
+        
+        self.log(f"Fresh model loaded: dtype={fresh_model.dtype}, device={next(fresh_model.parameters()).device}")
+        self.log(f"Tokenizer vocab size: {len(fresh_tokenizer)}, pad_token_id: {fresh_tokenizer.pad_token_id}")
+        
         # Configure GRPO training
+        # Match precision to model dtype
+        use_bf16 = fresh_model.dtype == torch.bfloat16
         cfg = GRPOConfig(
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
@@ -108,8 +172,9 @@ class FullModelLLMTrainer(LLMTrainer):
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
             learning_rate=5e-6,
-            bf16=True,
-            gradient_checkpointing=True,
+            bf16=use_bf16,  # Match model precision
+            fp16=not use_bf16,  # Use fp16 if not bf16
+            gradient_checkpointing=False,  # Keep consistent with config
             logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
             log_completions=True,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
@@ -117,29 +182,62 @@ class FullModelLLMTrainer(LLMTrainer):
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
         )
         
-        # Create GRPO trainer
+        self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
+        self.log(f"GRPO Config - max_completion_length: 1024, num_generations: {num_generations}")
+        
+        # Create GRPO trainer with fresh model and tokenizer
         grpo_trainer = GRPOTrainer(
-            model=self.model,  # Use FedML's model
+            model=fresh_model,  # Use fresh model
             args=cfg,
             train_dataset=ds.shuffle(seed=cfg.seed),
-            processing_class=self.tokenizer,  # Use FedML's tokenizer
+            processing_class=fresh_tokenizer,  # Use fresh tokenizer
             reward_funcs=self.reward_fn,
         )
         
+        # **FIX: Set generation parameters for numerical stability**
+        grpo_trainer.generation_kwargs = {
+            "do_sample": True,
+            "temperature": 1.0,
+            "top_p": 0.9,
+            "top_k": 50,
+            "pad_token_id": fresh_tokenizer.eos_token_id,
+            "eos_token_id": fresh_tokenizer.eos_token_id,
+            "max_new_tokens": 512,
+            "repetition_penalty": 1.1,  # Prevent repetition
+            "length_penalty": 1.0,      # Neutral length penalty
+        }
+        
+        self.log(f"Set generation parameters: {grpo_trainer.generation_kwargs}")
+        
         # Run GRPO training
         grpo_trainer.train()
+        
+        # **Copy trained weights back to FedML's model**
+        self.log("Copying GRPO-trained weights back to FedML model")
+        trained_state = fresh_model.state_dict()
+        
+        # Load into FedML model (handling potential PEFT wrapping)
+        if isinstance(self.model, PeftModel):
+            self.model.base_model.load_state_dict(trained_state, strict=False)
+        else:
+            self.model.load_state_dict(trained_state, strict=False)
         
         # Save the trained model in FedML's expected location
         self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
         self.log(f"Saving GRPO-trained model to \"{self.latest_checkpoint_dir}\"")
         
-        # GRPO trainer updates the model in-place, so we can directly save the current model state
+        # Save checkpoint using FedML's model
         save_checkpoint(
             self.model,
             self.latest_checkpoint_dir,
             is_saving_process=self.training_args.should_save,
             synchronize=True
         )
+        
+        # Clean up fresh model to free memory
+        del fresh_model
+        del fresh_tokenizer
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
         
         self.log("GRPO training finished")
     
