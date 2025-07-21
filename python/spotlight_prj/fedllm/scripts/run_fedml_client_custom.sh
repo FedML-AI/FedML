@@ -22,7 +22,7 @@ NUM_NODES="${5:-1}"
 LAUNCHER="${6:-"auto"}"
 
 # FedML config
-CONFIG_PATH="${7:-"fedml_config/fedml_config.yaml"}"
+CONFIG_PATH="${7:-"fedml_config/grpo_gsm8k_test_config.yaml"}"
 
 # Use the custom launcher that properly handles non-PEFT models
 python3 launch_fedllm_custom.py \

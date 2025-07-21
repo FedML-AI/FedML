@@ -24,8 +24,9 @@ def main() -> int:
     os.chdir(Path(__file__).parent)
 
     # update environment variables
-    if len(os.getenv("WANDB_MODE", "")) == 0:
-        os.environ["WANDB_MODE"] = "disabled"
+    # Note: Wandb mode is controlled by config file settings
+    # if len(os.getenv("WANDB_MODE", "")) == 0:
+    #     os.environ["WANDB_MODE"] = "disabled"
 
     # parse args
     args = parse_args()
