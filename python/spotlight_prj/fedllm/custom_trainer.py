@@ -261,6 +261,8 @@ class FullModelLLMTrainer(LLMTrainer):
     def set_model_params(self, model_parameters) -> None:
         self.log("start")
 
+        t0 = time.perf_counter()
+
         model_parameters = to_device(model_parameters, device="cpu")
 
         barrier()
@@ -283,6 +285,9 @@ class FullModelLLMTrainer(LLMTrainer):
                 state_dict=model_parameters,
                 synchronize=True
             )
+        
+        elapsed = time.perf_counter() - t0
+        self.log(f"set_model_params (client) took {elapsed:.3f}s")
 
         self.log("finished")
     
@@ -318,6 +323,8 @@ class FullModelLLMAggregator(LLMAggregator):
     def set_model_params(self, model_parameters) -> None:
         self.log("start")
 
+        t0 = time.perf_counter()
+
         model_parameters = to_device(model_parameters, device="cpu")
 
         barrier()
@@ -340,5 +347,9 @@ class FullModelLLMAggregator(LLMAggregator):
                 state_dict=model_parameters,
                 synchronize=True
             )
+        
+        elapsed = time.perf_counter() - t0
+        self.log(f"set_model_params (server) took {elapsed:.3f}s")
+
 
         self.log("finished") 
