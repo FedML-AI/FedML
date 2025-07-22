@@ -27,6 +27,7 @@ from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoi
 from src.peft_utils import set_peft_model_state_dict
 from src.modeling_utils import load_state_dict
 import time, logging
+import threading
 
 class TimedGRPOTrainer(GRPOTrainer):
     def _make_experience(self, *args, **kwargs):
@@ -49,6 +50,14 @@ class FullModelLLMTrainer(LLMTrainer):
         self.DATASET_ANS = re.compile(r"####\s*([-+]?\d+\.?\d*)")
         # Regex for model completion format (\boxed{})
         self.MODEL_ANS = re.compile(r"\\boxed\{([^}]*)\}")
+
+        # ------------------------------------------------------------------
+        # Configuration: enable or disable per-round checkpoints
+        # ------------------------------------------------------------------
+
+        # Default: omit per-round checkpoints unless user explicitly enables
+        # them via the FedML YAML (enable_round_checkpoints: true)
+        self._enable_round_ckpt = getattr(self.args, "enable_round_checkpoints", False)
     
     def reward_fn(self, completions, answer, **_):
         """Reward function for GSM8K that checks if the predicted answer matches the true answer."""
@@ -232,17 +241,17 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             self.model.load_state_dict(trained_state, strict=False)
         
-        # Save the trained model in FedML's expected location
-        self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
-        self.log(f"Saving GRPO-trained model to \"{self.latest_checkpoint_dir}\"")
-        
-        # Save checkpoint using FedML's model
-        save_checkpoint(
-            self.model,
-            self.latest_checkpoint_dir,
-            is_saving_process=self.training_args.should_save,
-            synchronize=True
-        )
+        # Optionally save a pre-aggregation checkpoint for this round
+        if self._enable_round_ckpt:
+            self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
+            self.log(f"[round-ckpt] Saving GRPO-trained model to \"{self.latest_checkpoint_dir}\"")
+
+            save_checkpoint(
+                self.model,
+                self.latest_checkpoint_dir,
+                is_saving_process=self.training_args.should_save,
+                synchronize=True
+            )
         
         # Clean up fresh model to free memory
         del fresh_model
@@ -274,7 +283,7 @@ class FullModelLLMTrainer(LLMTrainer):
             load_state_dict(self.model, model_parameters, strict=False)
         barrier()
 
-        if self.round_idx >= 0 and self.should_save:
+        if self._enable_round_ckpt and self.round_idx >= 0 and self.should_save:
             # save aggregated model checkpoint
             self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
             self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
@@ -320,6 +329,69 @@ class FullModelLLMTrainer(LLMTrainer):
 class FullModelLLMAggregator(LLMAggregator):
     """Custom aggregator that properly handles both PEFT and non-PEFT models."""
     
+    # ------------------------------------------------------------------
+    # Periodic checkpointing setup
+    # ------------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+        """Extend parent init and start a background thread that creates a
+        checkpoint every ``server_checkpoint_interval_minutes`` (default 30).
+
+        Notes
+        -----
+        * Only the main process (``self.is_main_process()``) actually writes the
+          checkpoint to avoid race conditions.
+        * Checkpoints are written under
+          ``{self.checkpoint_dir}/wallclock_{unix_ts}`` so they will not
+          collide with the per-round checkpoints that already exist.
+        """
+        super().__init__(*args, **kwargs)
+
+        # Determine interval (seconds)
+        interval_min = getattr(self.args, "server_checkpoint_interval_minutes", 30)
+        if interval_min <= 0:
+            # Disable if user passes 0 or negative value
+            self._checkpoint_interval = None
+            return
+
+        self._checkpoint_interval = interval_min * 60
+
+        # Background thread is only needed on the main process
+        if self.is_main_process():
+            self._stop_checkpoint_evt = threading.Event()
+            self._checkpoint_thread = threading.Thread(
+                target=self._periodic_checkpoint_loop,
+                name="periodic_ckpt_thread",
+                daemon=True,
+            )
+            self._checkpoint_thread.start()
+
+        # Whether to save per-round checkpoints (default False)
+        self._enable_round_ckpt = getattr(self.args, "enable_round_checkpoints", False)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _periodic_checkpoint_loop(self):
+        """Loop that sleeps ``_checkpoint_interval`` seconds then writes a
+        checkpoint until ``_stop_checkpoint_evt`` is set (i.e., program exit).
+        """
+        while not self._stop_checkpoint_evt.wait(self._checkpoint_interval):
+            try:
+                ts = int(time.time())
+                ckpt_dir = self.checkpoint_dir / f"wallclock_{ts}"
+                self.log(f"Periodic checkpoint → {ckpt_dir}")
+                save_checkpoint(
+                    self.model,
+                    checkpoint_dir=ckpt_dir,
+                    is_saving_process=self.training_args.should_save,
+                    synchronize=True,
+                )
+            except Exception as e:
+                # Log and continue – do not crash training due to checkpoint failure
+                self.log(f"[WARN] Periodic checkpoint failed: {e}")
+
     def set_model_params(self, model_parameters) -> None:
         self.log("start")
 
@@ -336,7 +408,7 @@ class FullModelLLMAggregator(LLMAggregator):
             load_state_dict(self.model, model_parameters, strict=False)
         barrier()
 
-        if self.round_idx >= 0 and self.should_save:
+        if self._enable_round_ckpt and self.round_idx >= 0 and self.should_save:
             # save aggregated model checkpoint
             self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
             self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
@@ -352,4 +424,4 @@ class FullModelLLMAggregator(LLMAggregator):
         self.log(f"set_model_params (server) took {elapsed:.3f}s")
 
 
-        self.log("finished") 
+        self.log("finished")
