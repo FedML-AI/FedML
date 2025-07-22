@@ -26,6 +26,16 @@ from trl import GRPOTrainer, GRPOConfig
 from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoint
 from src.peft_utils import set_peft_model_state_dict
 from src.modeling_utils import load_state_dict
+import time, logging
+
+class TimedGRPOTrainer(GRPOTrainer):
+    def _make_experience(self, *args, **kwargs):
+        
+        t0 = time.perf_counter()
+        result = super()._make_experience(*args, **kwargs)
+        self.log(f"roll-out batch {self.state.global_step} : "
+                     f"{time.perf_counter() - t0:.3f}s")
+        return result
 
 
 class FullModelLLMTrainer(LLMTrainer):
@@ -186,7 +196,7 @@ class FullModelLLMTrainer(LLMTrainer):
         self.log(f"GRPO Config - max_completion_length: 1024, num_generations: {num_generations}")
         
         # Create GRPO trainer with fresh model and tokenizer
-        grpo_trainer = GRPOTrainer(
+        grpo_trainer = TimedGRPOTrainer(
             model=fresh_model,  # Use fresh model
             args=cfg,
             train_dataset=ds.shuffle(seed=cfg.seed),
