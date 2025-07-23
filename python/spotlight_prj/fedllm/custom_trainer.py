@@ -30,6 +30,156 @@ from src.modeling_utils import load_state_dict
 import time, logging
 import threading
 
+from data_formatting import DataFormatting
+from evaluation import Evaluation
+
+
+class RewardFunction:
+
+    def __init__(self, exact_match_reward, numeric_equivalence_reward, incorrect_answer_reward):
+
+        self.exact_match_reward = exact_match_reward
+        self.numeric_equivalence_reward = numeric_equivalence_reward
+        self.incorrect_answer_reward = incorrect_answer_reward
+        self.dat_fmt = DataFormatting()
+        self.eval = Evaluation()
+
+
+        pass
+
+
+    def correctness_reward(self, prompts, completions, answer, **kwargs):
+
+        """
+        Assings a reward based on the correctness of the model's answer.
+
+        Args:
+            prompts (list): A list of input prompts.
+            completons (list): List of model completions, each containing content.
+            answer (list): List of expected answers. 
+            **kwargs**: Additional keyword arguments.
+
+        Returns:
+            list: List of numerical rewards for each completion. 
+
+        Explanation:
+            1. Extracts content from each completion. 
+            2. Extracts the answer portion from each response using extrac_answer_from_response
+            3. Assigns rewards based on matching criteria:
+                - 2.0 points for an exact match
+                - 1.5 points for numeric equivalence (when values match but format differs)
+                - 0.0 points for incorrect answers
+            4. Tracks completion lengths for analysis.  
+        """
+
+
+
+        responses = [completion[0] ['content'] for completion in completions]
+
+        extracted = [self.dat_fmt.extract_answer_from_model_output(r) for r in responses]
+
+        rewards = []
+
+        for r, a in zip(extracted, answer):
+
+            if r==a: # exact match case
+                rewards.append(self.exact_match_reward)
+
+            else:
+                #Try numeric equivalence
+                r_num  = self.eval.extract_single_number(str(r))
+                a_num = self.eval.extract_single_number(str(a))
+
+                if r_num is not None and a_num is not None and r_num==a_num:
+
+                    rewards.append(self.numeric_equivalence_reward)
+
+                else:
+                    rewards.append(self.incorrect_answer_reward)
+
+        completion_lengths = [len(response.split()) for response in responses]
+
+        return rewards
+
+
+    def format_reward(self, completions, **kwargs):
+
+        """
+        Assigns a reward for adhering to the XML format. 
+
+        Args:
+            completions (list): List of model completions, each containing content.
+
+            **kwargs** Additional keyward arguments
+        
+        Returns:
+            list: List of format compliace scores for each completion. 
+        
+        Explanations:
+            1. Extracts the content from each completions. 
+            2. Evaluates format compliance by checking for required XML tags:
+                - 0.2 points for each tag present (<reasoning>, </reasoning>, <answer>, </answer>)
+                - Maximum score of 0.8 for perfect format compliance
+            3. Stores and returns the format compliance scores.
+        """
+
+        responses = [completion[0]['content'] for completion in completions]
+
+        rewards = []
+
+        format_scores = []
+
+        for response in responses:
+
+            score = 0.0
+
+            if "<reasoning>" in response: score +=0.2
+            if "</reasoning>" in response: score +=0.2
+            if "<answer>" in response: score +=0.2
+            if "</answer>" in response: score += 0.2
+
+            rewards.append(score)
+        return rewards
+
+
+
+    def combined_reward(self, prompts, completions, answer):
+
+        """
+        Combines correctness and format rewards.
+
+        Args:
+            prompts (list[str]): List of prompt texts
+            completions (list[list[dict]]): List of completion dictionaries.
+            answer (list[str]): List of expected answers
+        
+        Returns:
+            list[float]:Combined rewards for each prompt-completion pair
+        
+        Explanation:
+            1. Calculates separate reward for correctness and format compliance.
+            2. Combines the rewards with the following weights:
+                - correctness score range: 0.0 to 2.0
+                - Format score range 0.0 to 0.8
+                - Total possible range: 0.0 to 2.8
+            3. Returns the combined reward for each example. 
+        """
+
+        # Get individual rewards
+
+        correctness_scores = self.correctness_reward(prompts=prompts, completions=completions,answer=answer)
+
+        format_scores = self.format_reward(completions=completions)
+
+        combined_reward = []
+
+        for c_score, f_score in zip(correctness_scores, format_scores):
+
+            combined_reward.append(c_score + f_score)
+
+
+        return combined_reward
+
 class TimedGRPOTrainer(GRPOTrainer):
     def _make_experience(self, *args, **kwargs):
         
@@ -59,6 +209,11 @@ class FullModelLLMTrainer(LLMTrainer):
         # Default: omit per-round checkpoints unless user explicitly enables
         # them via the FedML YAML (enable_round_checkpoints: true)
         self._enable_round_ckpt = getattr(self.args, "enable_round_checkpoints", False)
+
+        exact_match_reward = 2.0
+        numeric_equivalence_reward=1.5
+        incorrect_answer_reward=0.0
+        self.rwdfn = RewardFunction(exact_match_reward, numeric_equivalence_reward, incorrect_answer_reward)
     
     def reward_fn(self, completions, answer, **_):
         """Reward function for GSM8K that checks if the predicted answer matches the true answer."""
@@ -211,7 +366,7 @@ class FullModelLLMTrainer(LLMTrainer):
             args=cfg,
             train_dataset=ds.shuffle(seed=cfg.seed),
             processing_class=fresh_tokenizer,  # Use fresh tokenizer
-            reward_funcs=self.reward_fn,
+            reward_funcs=self.rwdfn,
         )
         
         # **FIX: Set generation parameters for numerical stability**
