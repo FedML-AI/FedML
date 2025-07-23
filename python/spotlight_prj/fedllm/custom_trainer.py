@@ -327,7 +327,7 @@ class FullModelLLMTrainer(LLMTrainer):
             "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
-            "max_new_tokens": 512,
+            "max_new_tokens": 1024,
             "repetition_penalty": 1.1,  # Prevent repetition
             "length_penalty": 1.0,      # Neutral length penalty
         }

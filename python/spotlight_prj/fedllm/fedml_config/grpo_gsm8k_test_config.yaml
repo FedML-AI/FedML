@@ -26,8 +26,8 @@ train_args:
   federated_optimizer: "FedAvg"
   client_optimizer: "adamw_torch"
   server_optimizer: "FedAvg"
-  client_num_in_total: 1  # Single client setup
-  client_num_per_round: 1  # Single client setup
+  client_num_in_total: 2  # Single client setup
+  client_num_per_round: 2  # Single client setup
   comm_round: 2  # Reduced to 3 rounds for testing
   # GRPO-specific settings for testing
   grpo_max_steps: 10  # Only 10 training steps per round for quick testing
