@@ -261,8 +261,7 @@ class FedMLServerManager(FedMLCommManager):
             # Record timestamp for the next round
             self._last_round_end_ts = current_ts
 
-            logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
-            logging.info(f"Number of rounds: {self.round_num}")
+            logging.info("\n\n==========end {}/{}-th round training===========\n".format(self.args.round_idx, self.round_num))
             if self.args.round_idx < self.round_num:
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
