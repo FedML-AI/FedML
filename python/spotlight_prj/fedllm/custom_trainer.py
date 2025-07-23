@@ -22,6 +22,7 @@ from fedml.train.llm.modeling_utils import to_device
 from fedml.train.llm.distributed import barrier
 from peft import PeftModel
 from trl import GRPOTrainer, GRPOConfig
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoint
 from src.peft_utils import set_peft_model_state_dict
@@ -373,6 +374,18 @@ class FullModelLLMAggregator(LLMAggregator):
         # Whether to save per-round checkpoints (default False)
         self._enable_round_ckpt = getattr(self.args, "enable_round_checkpoints", False)
 
+        # ------------------ Nesterov Momentum Setup (NEW) ------------------
+        # Learning rate for the server optimizer (default 1.0 so the server fully
+        # applies the aggregated update when momentum=0)
+        self._server_lr = getattr(self.args, "server_lr", 1.0)
+        # Momentum coefficient. Typical values are 0.9 or 0.99
+        self._momentum = getattr(self.args, "server_momentum", 0.9)
+        # Enable / disable Nesterov variant (default=True)
+        self._nesterov = getattr(self.args, "server_nesterov", True)
+        # Momentum buffer for each parameter
+        self._velocity: OrderedDict = OrderedDict()
+        # -------------------------------------------------------------------
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -429,3 +442,57 @@ class FullModelLLMAggregator(LLMAggregator):
 
 
         self.log("finished")
+
+    def aggregate(self, raw_client_model_list):
+        """Aggregate client models with Nesterov momentum.
+
+        Steps
+        -----
+        1. Compute the FedAvg-style weighted average of client models (same as the
+           default FedML behaviour).
+        2. Treat the *difference* between the current global model and the
+           aggregated model as the (negative) gradient.
+        3. Perform an SGD update with momentum on the server side.  If
+           ``self._nesterov`` is ``True``, use the Nesterov variant.
+        4. Save the updated parameters via ``set_model_params`` and return them.
+        """
+        self.log("aggregate: start")
+
+        # Step-1: FedAvg aggregation (reuse FedMLAggOperator)
+        aggregated_params: OrderedDict = FedMLAggOperator.agg(self.args, raw_client_model_list)
+
+        # Step-2: Load current global params (on CPU)
+        global_params: OrderedDict = self.get_model_params()
+
+        # Step-3: Momentum update
+        updated_params: OrderedDict = OrderedDict()
+        for name, global_tensor in global_params.items():
+            # Non-floating tensors (e.g. buffers) are copied directly
+            if not torch.is_floating_point(global_tensor):
+                updated_params[name] = aggregated_params[name]
+                continue
+
+            device = global_tensor.device           # cuda:0 (or cpu)
+            agg_tensor = aggregated_params[name].to(device)
+            grad = global_tensor - agg_tensor
+
+            # Initialise velocity buffer if first time
+            if name not in self._velocity:
+                self._velocity[name] = torch.zeros_like(grad)
+
+            # Momentum accumulation
+            self._velocity[name] = self._momentum * self._velocity[name] + grad
+
+            # Nesterov look-ahead
+            if self._nesterov:
+                update = self._momentum * self._velocity[name] + grad
+            else:
+                update = self._velocity[name]
+
+            # Parameter update (SGD step)
+            updated_params[name] = global_tensor - self._server_lr * update
+
+        # Step-4: Push new params to the model & return
+        self.set_model_params(updated_params)
+        self.log("aggregate: finished")
+        return updated_params
