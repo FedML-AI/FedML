@@ -48,7 +48,7 @@ class RewardFunction:
         pass
 
 
-    def correctness_reward(self, prompts, completions, answer, **kwargs):
+    def correctness_reward(self, completions, answer, **kwargs):
 
         """
         Assings a reward based on the correctness of the model's answer.
@@ -72,32 +72,24 @@ class RewardFunction:
             4. Tracks completion lengths for analysis.  
         """
 
-
-
-        responses = [completion[0] ['content'] for completion in completions]
-
-        extracted = [self.dat_fmt.extract_answer_from_model_output(r) for r in responses]
-
         rewards = []
 
-        for r, a in zip(extracted, answer):
+        for c, a in zip(completions, answer):
 
-            if r==a: # exact match case
+            if c==a: # exact match case
                 rewards.append(self.exact_match_reward)
 
             else:
                 #Try numeric equivalence
-                r_num  = self.eval.extract_single_number(str(r))
+                c_num  = self.eval.extract_single_number(str(c))
                 a_num = self.eval.extract_single_number(str(a))
 
-                if r_num is not None and a_num is not None and r_num==a_num:
+                if c_num is not None and a_num is not None and c_num==a_num:
 
                     rewards.append(self.numeric_equivalence_reward)
 
                 else:
                     rewards.append(self.incorrect_answer_reward)
-
-        completion_lengths = [len(response.split()) for response in responses]
 
         return rewards
 
@@ -141,9 +133,9 @@ class RewardFunction:
             rewards.append(score)
         return rewards
 
+    
 
-
-    def combined_reward(self, prompts, completions, answer):
+    def combined_reward(self, completions, answer, **_):
 
         """
         Combines correctness and format rewards.
@@ -167,7 +159,7 @@ class RewardFunction:
 
         # Get individual rewards
 
-        correctness_scores = self.correctness_reward(prompts=prompts, completions=completions,answer=answer)
+        correctness_scores = self.correctness_reward(completions=completions,answer=answer)
 
         format_scores = self.format_reward(completions=completions)
 
@@ -175,7 +167,7 @@ class RewardFunction:
 
         for c_score, f_score in zip(correctness_scores, format_scores):
 
-            combined_reward.append(c_score + f_score)
+            combined_reward.append(c_score)
 
 
         return combined_reward
@@ -366,7 +358,7 @@ class FullModelLLMTrainer(LLMTrainer):
             args=cfg,
             train_dataset=ds.shuffle(seed=cfg.seed),
             processing_class=fresh_tokenizer,  # Use fresh tokenizer
-            reward_funcs=self.rwdfn,
+            reward_funcs=self.rwdfn.combined_reward,
         )
         
         # **FIX: Set generation parameters for numerical stability**
