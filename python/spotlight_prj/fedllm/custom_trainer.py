@@ -93,46 +93,6 @@ class RewardFunction:
 
         return rewards
 
-
-    def format_reward(self, completions, **kwargs):
-
-        """
-        Assigns a reward for adhering to the XML format. 
-
-        Args:
-            completions (list): List of model completions, each containing content.
-
-            **kwargs** Additional keyward arguments
-        
-        Returns:
-            list: List of format compliace scores for each completion. 
-        
-        Explanations:
-            1. Extracts the content from each completions. 
-            2. Evaluates format compliance by checking for required XML tags:
-                - 0.2 points for each tag present (<reasoning>, </reasoning>, <answer>, </answer>)
-                - Maximum score of 0.8 for perfect format compliance
-            3. Stores and returns the format compliance scores.
-        """
-
-        responses = [completion[0]['content'] for completion in completions]
-
-        rewards = []
-
-        format_scores = []
-
-        for response in responses:
-
-            score = 0.0
-
-            if "<reasoning>" in response: score +=0.2
-            if "</reasoning>" in response: score +=0.2
-            if "<answer>" in response: score +=0.2
-            if "</answer>" in response: score += 0.2
-
-            rewards.append(score)
-        return rewards
-
     
 
     def combined_reward(self, completions, answer, **_):
@@ -161,11 +121,9 @@ class RewardFunction:
 
         correctness_scores = self.correctness_reward(completions=completions,answer=answer)
 
-        format_scores = self.format_reward(completions=completions)
-
         combined_reward = []
 
-        for c_score, f_score in zip(correctness_scores, format_scores):
+        for c_score in correctness_scores:
 
             combined_reward.append(c_score)
 
