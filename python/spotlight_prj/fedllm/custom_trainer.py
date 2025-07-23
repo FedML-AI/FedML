@@ -242,18 +242,17 @@ class FullModelLLMTrainer(LLMTrainer):
             self.model.load_state_dict(trained_state, strict=False)
         
         # Optionally save a pre-aggregation checkpoint for this round
-        """
-        if self._enable_round_ckpt:
-            self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
-            self.log(f"[round-ckpt] Saving GRPO-trained model to \"{self.latest_checkpoint_dir}\"")
 
-            save_checkpoint(
-                self.model,
-                self.latest_checkpoint_dir,
-                is_saving_process=self.training_args.should_save,
-                synchronize=True
-            )
-        """
+        self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
+        self.log(f"[round-ckpt] Saving GRPO-trained model to \"{self.latest_checkpoint_dir}\"")
+
+        save_checkpoint(
+            self.model,
+            self.latest_checkpoint_dir,
+            is_saving_process=self.training_args.should_save,
+            synchronize=True
+        )
+
         
         # Clean up fresh model to free memory
         del fresh_model
@@ -285,19 +284,18 @@ class FullModelLLMTrainer(LLMTrainer):
             load_state_dict(self.model, model_parameters, strict=False)
         barrier()
 
-        """
-        if self._enable_round_ckpt and self.round_idx >= 0 and self.should_save:
-            # save aggregated model checkpoint
-            self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
-            self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
-            save_checkpoint(
-                self.model,
-                self.latest_checkpoint_dir,
-                is_saving_process=self.training_args.should_save,
-                state_dict=model_parameters,
-                synchronize=True
-            )
-        """
+
+
+        # save aggregated model checkpoint
+        self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
+        self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
+        save_checkpoint(
+            self.model,
+            self.latest_checkpoint_dir,
+            is_saving_process=self.training_args.should_save,
+            state_dict=model_parameters,
+            synchronize=True
+        )
         
         elapsed = time.perf_counter() - t0
         self.log(f"set_model_params (client) took {elapsed:.3f}s")
@@ -412,17 +410,16 @@ class FullModelLLMAggregator(LLMAggregator):
             load_state_dict(self.model, model_parameters, strict=False)
         barrier()
 
-        if self._enable_round_ckpt and self.round_idx >= 0 and self.should_save:
-            # save aggregated model checkpoint
-            self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
-            self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
-            save_checkpoint(
-                self.model,
-                self.latest_checkpoint_dir,
-                is_saving_process=self.training_args.should_save,
-                state_dict=model_parameters,
-                synchronize=True
-            )
+        # save aggregated model checkpoint
+        self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_after_agg"
+        self.log(f"saving aggregated model to \"{self.latest_checkpoint_dir}\"")
+        save_checkpoint(
+            self.model,
+            self.latest_checkpoint_dir,
+            is_saving_process=self.training_args.should_save,
+            state_dict=model_parameters,
+            synchronize=True
+        )
         
         elapsed = time.perf_counter() - t0
         self.log(f"set_model_params (server) took {elapsed:.3f}s")
