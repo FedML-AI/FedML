@@ -246,6 +246,21 @@ class FedMLServerManager(FedMLCommManager):
             if self.is_main_process():
                 mlops.log_aggregated_model_info(self.args.round_idx, model_url=global_model_url)
 
+            # --------------------------------------------------
+            # Log global-update frequency in wall-clock terms
+            # --------------------------------------------------
+            current_ts = time.time()
+            # Compute and print only if this is not the very first round
+            if hasattr(self, "_last_round_end_ts") and self._last_round_end_ts is not None:
+                delta = current_ts - self._last_round_end_ts
+                if delta > 0:
+                    freq = 1.0 / delta
+                    logging.info(
+                        f"Global update frequency: {freq:.4f} updates/sec ({delta:.2f} s per round)"
+                    )
+            # Record timestamp for the next round
+            self._last_round_end_ts = current_ts
+
             logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
             if self.args.round_idx < self.round_num:
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
