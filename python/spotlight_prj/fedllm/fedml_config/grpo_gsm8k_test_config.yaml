@@ -28,11 +28,11 @@ train_args:
   server_optimizer: "FedAvg"
   client_num_in_total: 2  # Single client setup
   client_num_per_round: 2  # Single client setup
-  comm_round: 2  # Reduced to 3 rounds for testing
+  comm_round: 200  # Reduced to 3 rounds for testing
   # GRPO-specific settings for testing
-  grpo_max_steps: 10  # Only 10 training steps per round for quick testing
+  grpo_max_steps: 150  # Only 10 training steps per round for quick testing
   grpo_num_epochs: 1  # Ignored when grpo_max_steps > 0
-  grpo_batch_size: 2  # Smaller batch size for faster testing
+  grpo_batch_size: 32  # Smaller batch size for faster testing
   # FedML training settings (ignored when using GRPO)
   local_num_train_epochs: 1
   local_max_steps: -1
@@ -45,7 +45,7 @@ train_args:
   gradient_checkpointing: False  # Match GRPO config
   per_device_train_batch_size: 4  # Will be overridden by GRPO
   per_device_eval_batch_size: 8
-  gradient_accumulation_steps: 1  # Will be overridden by GRPO
+  gradient_accumulation_steps: 2  # Will be overridden by GRPO
   eval_accumulation_steps: 4
   learning_rate: 5e-6  # Will be overridden by GRPO
   warmup_steps: 0

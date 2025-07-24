@@ -201,7 +201,7 @@ class FullModelLLMTrainer(LLMTrainer):
         
         # Calculate effective batch size for GRPO constraint
         # effective_batch_size = num_gpus * per_device_batch_size * gradient_accumulation_steps
-        gradient_accumulation_steps = 4
+        gradient_accumulation_steps = getattr(args, 'gradient_accumulation_steps', 2)
         effective_batch_size = 1 * grpo_batch_size * gradient_accumulation_steps
         
         # Num generations must evenly divide the effective batch size
