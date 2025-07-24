@@ -509,12 +509,25 @@ class FullModelLLMAggregator(LLMAggregator):
                 ts = int(time.time())
                 ckpt_dir = self.checkpoint_dir / f"wallclock_{ts}"
                 self.log(f"Periodic checkpoint → {ckpt_dir}")
-                save_checkpoint(
-                    self.model,
-                    checkpoint_dir=ckpt_dir,
-                    is_saving_process=self.training_args.should_save,
-                    synchronize=True,
-                )
+                # Always save checkpoints in the standard HuggingFace format so that
+                # the resulting directory can be loaded with `from_pretrained`.
+                # Only the main process writes the checkpoint to avoid race conditions
+                # (the background thread is spawned exclusively on the main process).
+                if self.training_args.should_save:
+                    ckpt_dir.mkdir(parents=True, exist_ok=True)
+                    try:
+                        # Try the native HuggingFace save.
+                        # For `PeftModel` this will also persist the adapter weights.
+                        self.model.save_pretrained(str(ckpt_dir), state_dict=self.model.state_dict())
+                    except AttributeError:
+                        # Fallback to the generic helper if the model doesn't implement
+                        # `save_pretrained` (unlikely for LLMs but safe-guard regardless).
+                        save_checkpoint(
+                            self.model,
+                            checkpoint_dir=ckpt_dir,
+                            is_saving_process=True,
+                            synchronize=False,
+                        )
             except Exception as e:
                 # Log and continue – do not crash training due to checkpoint failure
                 self.log(f"[WARN] Periodic checkpoint failed: {e}")
