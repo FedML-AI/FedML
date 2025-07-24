@@ -159,28 +159,31 @@ class FullModelLLMTrainer(LLMTrainer):
         # them via the FedML YAML (enable_round_checkpoints: true)
         self._enable_round_ckpt = getattr(self.args, "enable_round_checkpoints", False)
 
-        exact_match_reward = 2.0
-        numeric_equivalence_reward=1.5
-        incorrect_answer_reward=0.0
-        self.rwdfn = RewardFunction(exact_match_reward, numeric_equivalence_reward, incorrect_answer_reward)
+        self.exact_match_reward = 2.0
+        self.numeric_equivalence_reward=1.5
+        self.incorrect_answer_reward=0.0
+        self.rwdfn = RewardFunction(self.exact_match_reward, self.numeric_equivalence_reward, self.incorrect_answer_reward)
     
     def reward_fn(self, completions, answer, **_):
         """Reward function for GSM8K that checks if the predicted answer matches the true answer."""
         out = []
         for c, ans in zip(completions, answer):
-            # Extract from dataset answer (GSM8K format)
-            tru = self.DATASET_ANS.search(ans)
-            # Extract from model completion (boxed format, fallback to GSM8K format)
-            pred = self.MODEL_ANS.search(c)
-            if not pred:
-                pred = self.DATASET_ANS.search(c)
-            
-            if pred and tru:
-                pred_num = pred.group(1)
-                tru_num = tru.group(1)
-                out.append(1.0 if pred_num == tru_num else -0.2)
+            if c==ans:
+                out.append(self.exact_match_reward)
             else:
-                out.append(-0.2)
+                # Extract from dataset answer (GSM8K format)
+                tru = self.DATASET_ANS.search(ans)
+                # Extract from model completion (boxed format, fallback to GSM8K format)
+                pred = self.MODEL_ANS.search(c)
+                if not pred:
+                    pred = self.DATASET_ANS.search(c)
+                
+                if pred and tru:
+                    pred_num = pred.group(1)
+                    tru_num = tru.group(1)
+                    out.append(self.numeric_equivalence_reward if pred_num == tru_num else self.incorrect_answer_reward)
+                else:
+                    out.append(self.incorrect_answer_reward)
         return out
     
     def train(self, train_data, device, args):
