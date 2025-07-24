@@ -47,7 +47,6 @@ class RewardFunction:
 
         pass
 
-
     def correctness_reward(self, completions, answer, **kwargs):
 
         """
@@ -317,7 +316,7 @@ class FullModelLLMTrainer(LLMTrainer):
             args=cfg,
             train_dataset=ds.shuffle(seed=cfg.seed),
             processing_class=fresh_tokenizer,  # Use fresh tokenizer
-            reward_funcs=self.rwdfn.combined_reward,
+            reward_funcs=self.reward_fn,
         )
         
         # **FIX: Set generation parameters for numerical stability**
