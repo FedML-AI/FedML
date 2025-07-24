@@ -168,7 +168,8 @@ class FullModelLLMTrainer(LLMTrainer):
         """Reward function for GSM8K that checks if the predicted answer matches the true answer."""
         out = []
         for c, ans in zip(completions, answer):
-            import ipdb; ipdb.set_trace()
+            print("completions:", c)
+            print("answer:", ans)
             if c==ans:
                 out.append(self.exact_match_reward)
             else:
