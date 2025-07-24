@@ -33,6 +33,8 @@ import threading
 from data_formatting import DataFormatting
 from evaluation import Evaluation
 
+from fractions import Fraction
+
 
 class RewardFunction:
 
@@ -151,6 +153,8 @@ class FullModelLLMTrainer(LLMTrainer):
         # Regex for model completion format (\boxed{})
         self.MODEL_ANS = re.compile(r"\\boxed\{([^}]*)\}")
 
+        self.BOXED_RE = re.compile(r"\\boxed\{([^}]*)\}")  # capture content inside \boxed{…}
+
         # ------------------------------------------------------------------
         # Configuration: enable or disable per-round checkpoints
         # ------------------------------------------------------------------
@@ -164,28 +168,50 @@ class FullModelLLMTrainer(LLMTrainer):
         self.incorrect_answer_reward=0.0
         self.rwdfn = RewardFunction(self.exact_match_reward, self.numeric_equivalence_reward, self.incorrect_answer_reward)
     
+    def to_number(self, text: str) -> Optional[float]:
+        """Convert string to float if possible, handling simple fractions."""
+        text = text.replace(",", "").strip()
+        # Fractions like 3/4
+        if "/" in text:
+            try:
+                return float(Fraction(text))
+            except (ValueError, ZeroDivisionError):
+                pass
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+
+    def extract_boxed(self, text: str) -> str:
+        """Return first \\boxed{...} contents; '' if none."""
+        m = self.BOXED_RE.search(text)
+        return m.group(1) if m else ""
+    
     def reward_fn(self, completions, answer, **_):
         """Reward function for GSM8K that checks if the predicted answer matches the true answer."""
         out = []
         for c, ans in zip(completions, answer):
-            print("completions:", c)
-            print("answer:", ans)
-            if c==ans:
-                out.append(self.exact_match_reward)
-            else:
-                # Extract from dataset answer (GSM8K format)
-                tru = self.DATASET_ANS.search(ans)
-                # Extract from model completion (boxed format, fallback to GSM8K format)
-                pred = self.MODEL_ANS.search(c)
-                if not pred:
-                    pred = self.DATASET_ANS.search(c)
-                
-                if pred and tru:
-                    pred_num = pred.group(1)
-                    tru_num = tru.group(1)
-                    out.append(self.numeric_equivalence_reward if pred_num == tru_num else self.incorrect_answer_reward)
+            # Extract from dataset answer (GSM8K format)
+            tru = self.DATASET_ANS.search(ans)
+            # Extract from model completion (boxed format, fallback to GSM8K format)
+            pred = self.MODEL_ANS.search(c)
+            if not pred:
+                pred = self.DATASET_ANS.search(c)
+            
+            if pred and tru:
+                pred_num = pred.group(1)
+                tru_num = tru.group(1)
+                if pred_num == tru_num:
+                    out.append(self.exact_match_reward)
                 else:
-                    out.append(self.incorrect_answer_reward)
+                    p_num, g_num = self.to_number(pred), self.to_number(tru)
+                    if (p_num is not None and g_num is not None and abs(p_num - g_num) < 1e-4):
+                        out.append(self.numeric_equivalence_reward)
+                    else:
+                        out.append(self.incorrect_answer_reward)
+            else:
+                out.append(self.incorrect_answer_reward)
         return out
     
     def train(self, train_data, device, args):
