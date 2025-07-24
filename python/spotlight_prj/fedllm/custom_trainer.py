@@ -263,13 +263,16 @@ class FullModelLLMTrainer(LLMTrainer):
             self.log("Copying trained weights to fresh model")
             # Get the current model state dict (handling potential PEFT wrapping)
             if isinstance(self.model, PeftModel):
-                current_state = self.model.state_dict()
+                current_state = self.model.base_model.state_dict()
             else:
                 current_state = self.model.state_dict()
             
             # Load into fresh model
             incompatible = fresh_model.load_state_dict(current_state, strict=True)
-            logging.info("missing:", incompatible.missing_keys, "unexpected:", incompatible.unexpected_keys)
+            # Log any keys that failed to load for easier debugging
+            self.log(
+                f"missing keys: {incompatible.missing_keys}, unexpected keys: {incompatible.unexpected_keys}"
+            )
         
         # Move fresh model to correct device
         fresh_model.to(device)
