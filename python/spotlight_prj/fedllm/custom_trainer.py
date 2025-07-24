@@ -205,7 +205,7 @@ class FullModelLLMTrainer(LLMTrainer):
                 if pred_num == tru_num:
                     out.append(self.exact_match_reward)
                 else:
-                    p_num, g_num = self.to_number(pred), self.to_number(tru)
+                    p_num, g_num = self.to_number(pred_num), self.to_number(tru_num)
                     if (p_num is not None and g_num is not None and abs(p_num - g_num) < 1e-4):
                         out.append(self.numeric_equivalence_reward)
                     else:
