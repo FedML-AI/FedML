@@ -275,7 +275,8 @@ class FullModelLLMTrainer(LLMTrainer):
             bf16=use_bf16,  # Match model precision
             fp16=not use_bf16,  # Use fp16 if not bf16
             gradient_checkpointing=False,  # Keep consistent with config
-            logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
+            #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
+            logging_steps=1,
             log_completions=True,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
@@ -968,7 +969,7 @@ class GRPOMetricsCallback(TrainerCallback):
         super().__init__()
         self.logger = logger
 
-    """"
+    
     def on_log(self, args, state, control, logs=None, **kwargs):
         # Forward the metrics dictionary to the TrainingMetricsLogger. This
         # fires after every call to `Trainer.log`, i.e. after each GRPO step.
@@ -983,3 +984,4 @@ class GRPOMetricsCallback(TrainerCallback):
         if logs and self.logger.step_count % 10 == 0:
             self.logger.log_training_step("on_step_end", logs, state.global_step)
             self.logger.log_moving_averages(state.global_step, window_size=100)
+    """
