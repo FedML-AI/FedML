@@ -664,6 +664,7 @@ class TrainingMetricsLogger:
                 project=wandb_project or "grpo-training",
                 entity=wandb_entity,
                 name=self.run_name,
+                id=getattr(self.args, 'run_id'),
                 config=wandb_config or {},
                 reinit=True
             )
@@ -847,31 +848,32 @@ class TrainingMetricsLogger:
         self.last_log_time = current_time
         self.last_step_count = global_step
 
+
+    def get_moving_average(values, window):
+        if len(values) == 0:
+            return 0
+        window = min(window, len(values))
+        return sum(values[-window:]) / window
+
     def log_moving_averages(self, global_step: int, window_size: int = 100):
         """Log moving averages of key metrics"""
         wandb_metrics = {}
 
-        def get_moving_average(values, window):
-            if len(values) == 0:
-                return 0
-            window = min(window, len(values))
-            return sum(values[-window:]) / window
-
         # Moving averages
         if self.accumulated_metrics['losses']:
-            avg_loss = get_moving_average(self.accumulated_metrics['losses'], window_size)
+            avg_loss = self.get_moving_average(self.accumulated_metrics['losses'], window_size)
             wandb_metrics[f'moving_avg/loss_{window_size}'] = avg_loss
 
         if self.accumulated_metrics['rewards']:
-            avg_reward = get_moving_average(self.accumulated_metrics['rewards'], window_size)
+            avg_reward = self.get_moving_average(self.accumulated_metrics['rewards'], window_size)
             wandb_metrics[f'moving_avg/reward_{window_size}'] = avg_reward
 
         if self.accumulated_metrics['kl_divergences']:
-            avg_kl = get_moving_average(self.accumulated_metrics['kl_divergences'], window_size)
+            avg_kl = self.get_moving_average(self.accumulated_metrics['kl_divergences'], window_size)
             wandb_metrics[f'moving_avg/kl_divergence_{window_size}'] = avg_kl
 
         if self.accumulated_metrics['rollout_lengths']:
-            avg_length = get_moving_average(self.accumulated_metrics['rollout_lengths'], window_size)
+            avg_length = self.get_moving_average(self.accumulated_metrics['rollout_lengths'], window_size)
             wandb_metrics[f'moving_avg/rollout_length_{window_size}'] = avg_length
 
         # Log to wandb
@@ -976,12 +978,3 @@ class GRPOMetricsCallback(TrainerCallback):
         if logs:
             # Use a generic step_id; users can differentiate by global_step.
             self.logger.log_training_step("grpo_step", logs, state.global_step)
-
-            self.logger.log_moving_averages(state.global_step, window_size=100)
-    """
-    def on_step_end(self, args, state, control, logs=None,**kwargs):
-        # Always emit a point – even if HF wouldn't have logged this step
-        if logs and self.logger.step_count % 10 == 0:
-            self.logger.log_training_step("on_step_end", logs, state.global_step)
-            self.logger.log_moving_averages(state.global_step, window_size=100)
-    """
