@@ -104,7 +104,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # it can be accessed by callbacks.
         self.logger = TrainingMetricsLogger(
             log_dir=os.path.join(self.args.output_dir, "wandb_logs"),
-            run_name=f"fedml-grpo-training",
+            run_name=f"client{getattr(self.args, 'rank', 'unknown')}_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
             enable_wandb=True,
             wandb_project="grpo-training",
         )
@@ -706,9 +706,16 @@ class TrainingMetricsLogger:
 
         # Log to wandb
         if self.enable_wandb and self.wandb_run and wandb_metrics:
-            wandb_metrics['global_step'] = global_step
-            self.wandb_run.log(wandb_metrics, step=global_step)
+            # Replace the Trainer-provided ``global_step`` (which resets every
+            # round) with an internal monotonically-increasing counter so
+            # that WandB treats each update as a new step instead of
+            # overwriting previous values.
+            wandb_step = self.step_count  # 0-based running counter
+            wandb_metrics['global_step'] = wandb_step
+            self.wandb_run.log(wandb_metrics, step=wandb_step)
 
+        # Advance our own monotonically-increasing counter by exactly one
+        # because this method is invoked once per call to `Trainer.log`.
         self.step_count += 1
 
     def log_server_statistics(self, stats: dict, global_step: int):
