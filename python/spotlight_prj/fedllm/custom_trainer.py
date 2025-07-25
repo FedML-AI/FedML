@@ -30,106 +30,14 @@ from src.modeling_utils import load_state_dict
 import time, logging
 import threading
 
-from data_formatting import DataFormatting
-from evaluation import Evaluation
-
 from fractions import Fraction
 
+# New import for TrainerCallback
+from transformers import TrainerCallback
 
-class RewardFunction:
+import wandb
+import json
 
-    def __init__(self, exact_match_reward, numeric_equivalence_reward, incorrect_answer_reward):
-
-        self.exact_match_reward = exact_match_reward
-        self.numeric_equivalence_reward = numeric_equivalence_reward
-        self.incorrect_answer_reward = incorrect_answer_reward
-        self.dat_fmt = DataFormatting()
-        self.eval = Evaluation()
-
-
-        pass
-
-    def correctness_reward(self, completions, answer, **kwargs):
-
-        """
-        Assings a reward based on the correctness of the model's answer.
-
-        Args:
-            prompts (list): A list of input prompts.
-            completons (list): List of model completions, each containing content.
-            answer (list): List of expected answers. 
-            **kwargs**: Additional keyword arguments.
-
-        Returns:
-            list: List of numerical rewards for each completion. 
-
-        Explanation:
-            1. Extracts content from each completion. 
-            2. Extracts the answer portion from each response using extrac_answer_from_response
-            3. Assigns rewards based on matching criteria:
-                - 2.0 points for an exact match
-                - 1.5 points for numeric equivalence (when values match but format differs)
-                - 0.0 points for incorrect answers
-            4. Tracks completion lengths for analysis.  
-        """
-
-        rewards = []
-
-        for c, a in zip(completions, answer):
-
-            if c==a: # exact match case
-                rewards.append(self.exact_match_reward)
-
-            else:
-                #Try numeric equivalence
-                c_num  = self.eval.extract_single_number(str(c))
-                a_num = self.eval.extract_single_number(str(a))
-
-                if c_num is not None and a_num is not None and c_num==a_num:
-
-                    rewards.append(self.numeric_equivalence_reward)
-
-                else:
-                    rewards.append(self.incorrect_answer_reward)
-
-        return rewards
-
-    
-
-    def combined_reward(self, completions, answer, **_):
-
-        """
-        Combines correctness and format rewards.
-
-        Args:
-            prompts (list[str]): List of prompt texts
-            completions (list[list[dict]]): List of completion dictionaries.
-            answer (list[str]): List of expected answers
-        
-        Returns:
-            list[float]:Combined rewards for each prompt-completion pair
-        
-        Explanation:
-            1. Calculates separate reward for correctness and format compliance.
-            2. Combines the rewards with the following weights:
-                - correctness score range: 0.0 to 2.0
-                - Format score range 0.0 to 0.8
-                - Total possible range: 0.0 to 2.8
-            3. Returns the combined reward for each example. 
-        """
-
-        # Get individual rewards
-
-        correctness_scores = self.correctness_reward(completions=completions,answer=answer)
-
-        combined_reward = []
-
-        for c_score in correctness_scores:
-
-            combined_reward.append(c_score)
-
-
-        return combined_reward
 
 class TimedGRPOTrainer(GRPOTrainer):
     def _record_step_stats(self, stats):
@@ -139,6 +47,12 @@ class TimedGRPOTrainer(GRPOTrainer):
         # add / overwrite any extra metrics and push once more
         stats["kl_divergence"] = stats["kl"].mean().item()
         self.accelerator.log(stats, step=self.state.global_step)
+
+        # NEW: forward stats to Trainer's logging system so that callbacks
+        # like GRPOMetricsCallback can record them via the TrainingMetricsLogger.
+        # This ensures that after every GRPO step the metrics are properly
+        # captured by the custom logger.
+        self.log(stats)
     
     def _make_experience(self, *args, **kwargs):
         
@@ -185,7 +99,16 @@ class FullModelLLMTrainer(LLMTrainer):
         self.exact_match_reward = 2.0
         self.numeric_equivalence_reward=1.5
         self.incorrect_answer_reward=0.0
-        self.rwdfn = RewardFunction(self.exact_match_reward, self.numeric_equivalence_reward, self.incorrect_answer_reward)
+
+        # Instantiate the training metrics logger and keep as an attribute so
+        # it can be accessed by callbacks.
+        self.logger = TrainingMetricsLogger(
+            log_dir=os.path.join(self.args.output_dir, "wandb_logs"),
+            run_name=f"fedml-grpo-training",
+            enable_wandb=True,
+            wandb_project="grpo-training",
+            wandb_entity="grpo-training",
+        )
     
     def to_number(self, text: str) -> Optional[float]:
         """Convert string to float if possible, handling simple fractions."""
@@ -389,6 +312,9 @@ class FullModelLLMTrainer(LLMTrainer):
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
+        # Attach our logging callback so that metrics are recorded every step.
+        grpo_trainer.add_callback(GRPOMetricsCallback(self.logger))
+
         self.log(f"Set generation parameters: {grpo_trainer.generation_kwargs}")
         
         # Run GRPO training
@@ -670,3 +596,325 @@ class FullModelLLMAggregator(LLMAggregator):
         self.log("aggregate: finished")
         return updated_params
     """
+
+
+
+class TrainingMetricsLogger:
+    """Comprehensive logging for GRPO training with WandB support"""
+
+    def __init__(self, log_dir: str, run_name: Optional[str] = None, 
+                 enable_wandb: bool = False,
+                 wandb_project: Optional[str] = None, wandb_entity: Optional[str] = None,
+                 wandb_config: Optional[dict] = None):
+        self.log_dir = log_dir
+        self.run_name = run_name or f"grpo_training_{int(time.time())}"
+        self.enable_wandb = enable_wandb
+
+        # WandB setup
+        self.wandb_run = None
+        if self.enable_wandb:
+            self.wandb_run = wandb.init(
+                project=wandb_project or "grpo-training",
+                entity=wandb_entity,
+                name=self.run_name,
+                config=wandb_config or {},
+                reinit=True
+            )
+            print(f"WandB logging initialized. Project: {wandb_project or 'grpo-training'}")
+
+        # Metrics tracking
+        self.step_count = 0
+        self.training_start_time = time.time()
+        self.last_log_time = time.time()
+
+        # Accumulated metrics for averaging
+        self.accumulated_metrics = {
+            'losses': [],
+            'rewards': [],
+            'kl_divergences': [],
+            'policy_losses': [],
+            'value_losses': [],
+            'advantages': [],
+            'rollout_lengths': []
+        }
+
+    def log_training_step(self, step_id: str, train_result: dict, global_step: int):
+        """Log metrics for a single training step"""
+        
+        # Prepare metrics dict for wandb
+        wandb_metrics = {}
+
+        # Core training metrics
+        if 'loss' in train_result:
+            wandb_metrics['training/loss'] = train_result['loss']
+            self.accumulated_metrics['losses'].append(train_result['loss'])
+
+        if 'avg_reward' in train_result:
+            wandb_metrics['training/avg_reward'] = train_result['avg_reward']
+            self.accumulated_metrics['rewards'].append(train_result['avg_reward'])
+
+        # Advanced GRPO metrics
+        if 'kl_divergence' in train_result:
+            wandb_metrics['training/kl_divergence'] = train_result['kl_divergence']
+            self.accumulated_metrics['kl_divergences'].append(train_result['kl_divergence'])
+
+        if 'policy_loss' in train_result:
+            wandb_metrics['training/policy_loss'] = train_result['policy_loss']
+            self.accumulated_metrics['policy_losses'].append(train_result['policy_loss'])
+
+        if 'value_loss' in train_result:
+            wandb_metrics['training/value_loss'] = train_result['value_loss']
+            self.accumulated_metrics['value_losses'].append(train_result['value_loss'])
+
+        if 'advantage_mean' in train_result:
+            wandb_metrics['training/advantage_mean'] = train_result['advantage_mean']
+            self.accumulated_metrics['advantages'].append(train_result['advantage_mean'])
+
+        # Rollout statistics
+        if 'rollout_count' in train_result:
+            wandb_metrics['rollouts/count_per_step'] = train_result['rollout_count']
+
+        if 'avg_rollout_length' in train_result:
+            wandb_metrics['rollouts/avg_length'] = train_result['avg_rollout_length']
+            self.accumulated_metrics['rollout_lengths'].append(train_result['avg_rollout_length'])
+
+        if 'rollout_time' in train_result:
+            wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
+
+        if 'training_time' in train_result:
+            wandb_metrics['performance/training_step_time'] = train_result['training_time']
+
+        # Weight update timing metrics
+        if 'weight_update_time' in train_result:
+            wandb_metrics['performance/weight_update_time'] = train_result['weight_update_time']
+
+        if 'backward_time' in train_result:
+            wandb_metrics['performance/backward_pass_time'] = train_result['backward_time']
+
+        if 'optimizer_time' in train_result:
+            wandb_metrics['performance/optimizer_step_time'] = train_result['optimizer_time']
+
+        if 'wait_time' in train_result:
+            wandb_metrics['performance/batch_wait_time'] = train_result['wait_time']
+
+        # Gradient metrics
+        if 'grad_norm' in train_result:
+            wandb_metrics['training/grad_norm'] = train_result['grad_norm']
+
+        # Learning rate
+        if 'learning_rate' in train_result:
+            wandb_metrics['training/learning_rate'] = train_result['learning_rate']
+
+        # Log to wandb
+        if self.enable_wandb and self.wandb_run and wandb_metrics:
+            wandb_metrics['global_step'] = global_step
+            self.wandb_run.log(wandb_metrics, step=global_step)
+
+        self.step_count += 1
+
+    def log_server_statistics(self, stats: dict, global_step: int):
+        """Log server and system statistics"""
+        wandb_metrics = {}
+
+        if 'server_statistics' in stats:
+            server_stats = stats['server_statistics']
+
+            # Handle double nesting
+            if 'server_statistics' in server_stats:
+                server_stats = server_stats['server_statistics']
+
+            # Active workers
+            if 'active_workers' in server_stats:
+                wandb_metrics['system/active_workers'] = server_stats['active_workers']
+
+            # Model subscribers
+            if 'model_subscribers' in server_stats:
+                inference_workers = [w for w in server_stats['model_subscribers'] if 'trainer' not in w.lower()]
+                wandb_metrics['system/inference_workers'] = len(inference_workers)
+                wandb_metrics['system/total_subscribers'] = len(server_stats['model_subscribers'])
+
+            # Service status
+            if 'service_status' in server_stats:
+                service_status = server_stats['service_status']
+
+                # Buffer statistics
+                if 'buffer_statistics' in service_status:
+                    buffer_stats = service_status['buffer_statistics']
+
+                    if 'pending_steps' in buffer_stats:
+                        wandb_metrics['system/pending_steps'] = buffer_stats['pending_steps']
+
+                    if 'ready_batches' in buffer_stats:
+                        wandb_metrics['system/ready_batches'] = buffer_stats['ready_batches']
+
+                    if 'total_rollouts_received' in buffer_stats:
+                        wandb_metrics['system/total_rollouts_received'] = buffer_stats['total_rollouts_received']
+
+                # Model version tracking
+                if 'current_model_version' in service_status:
+                    wandb_metrics['system/current_model_version'] = service_status['current_model_version']
+
+        # Pipeline statistics
+        if 'current_pipeline_depth' in stats:
+            wandb_metrics['system/pipeline_depth'] = stats['current_pipeline_depth']
+
+        if 'model_broadcasts' in stats:
+            wandb_metrics['system/model_broadcasts'] = stats['model_broadcasts']
+
+        # Log to wandb
+        if self.enable_wandb and self.wandb_run and wandb_metrics:
+            self.wandb_run.log(wandb_metrics, step=global_step)
+
+    def log_performance_metrics(self, global_step: int, training_rate: Optional[float] = None):
+        """Log performance and timing metrics"""
+        wandb_metrics = {}
+        
+        current_time = time.time()
+        elapsed_time = current_time - self.training_start_time
+
+        # Training rate
+        if training_rate is not None:
+            wandb_metrics['performance/training_rate_steps_per_hour'] = training_rate
+
+        # Overall training time
+        wandb_metrics['performance/elapsed_time_hours'] = elapsed_time / 3600
+
+        # Steps per second (recent)
+        time_since_last_log = current_time - self.last_log_time
+        if time_since_last_log > 0 and hasattr(self, 'last_step_count'):
+            steps_since_last = global_step - self.last_step_count
+            steps_per_second = steps_since_last / time_since_last_log
+            wandb_metrics['performance/steps_per_second'] = steps_per_second
+
+        # Log to wandb
+        if self.enable_wandb and wandb_metrics:
+            self.wandb_run.log(wandb_metrics, step=global_step)
+
+        self.last_log_time = current_time
+        self.last_step_count = global_step
+
+    def log_moving_averages(self, global_step: int, window_size: int = 100):
+        """Log moving averages of key metrics"""
+        wandb_metrics = {}
+
+        def get_moving_average(values, window):
+            if len(values) == 0:
+                return 0
+            window = min(window, len(values))
+            return sum(values[-window:]) / window
+
+        # Moving averages
+        if self.accumulated_metrics['losses']:
+            avg_loss = get_moving_average(self.accumulated_metrics['losses'], window_size)
+            wandb_metrics[f'moving_avg/loss_{window_size}'] = avg_loss
+
+        if self.accumulated_metrics['rewards']:
+            avg_reward = get_moving_average(self.accumulated_metrics['rewards'], window_size)
+            wandb_metrics[f'moving_avg/reward_{window_size}'] = avg_reward
+
+        if self.accumulated_metrics['kl_divergences']:
+            avg_kl = get_moving_average(self.accumulated_metrics['kl_divergences'], window_size)
+            wandb_metrics[f'moving_avg/kl_divergence_{window_size}'] = avg_kl
+
+        if self.accumulated_metrics['rollout_lengths']:
+            avg_length = get_moving_average(self.accumulated_metrics['rollout_lengths'], window_size)
+            wandb_metrics[f'moving_avg/rollout_length_{window_size}'] = avg_length
+
+        # Log to wandb
+        if self.enable_wandb and wandb_metrics:
+            self.wandb_run.log(wandb_metrics, step=global_step)
+
+    def log_hyperparameters(self, hparams: dict):
+        """Log hyperparameters"""
+        # Convert all values to scalars for TensorBoard
+        scalar_hparams = {}
+        for key, value in hparams.items():
+            if isinstance(value, (int, float)):
+                scalar_hparams[key] = value
+            elif isinstance(value, (str,list)):
+                # TensorBoard doesn't handle strings well, so we'll just log them as text
+                continue
+            else:
+                scalar_hparams[key] = float(value) if value is not None else 0.0
+
+        # Log to wandb (wandb handles different types better)
+        if self.enable_wandb:
+            # Update wandb config with hyperparameters
+            self.wandb_run.config.update(hparams)
+
+    def log_model_statistics(self, model, global_step: int):
+        """Log model-specific statistics"""
+        wandb_metrics = {}
+
+        # Model parameter statistics
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+        wandb_metrics['model/total_parameters'] = total_params
+        wandb_metrics['model/trainable_parameters'] = trainable_params
+
+        # Parameter norms
+        total_norm = 0
+        for p in model.parameters():
+            if p.grad is not None:
+                total_norm += p.grad.data.norm(2).item() ** 2
+        total_norm = total_norm ** 0.5
+
+        if total_norm > 0:
+            wandb_metrics['model/gradient_norm'] = total_norm
+
+        # Weight norms by layer (sample a few to avoid too many metrics)
+        layer_count = 0
+        for name, param in model.named_parameters():
+            if param.requires_grad and param.data is not None:
+                # Only log first few layers to wandb to avoid clutter
+                if layer_count < 10:
+                    wandb_metrics[f'model_weights/{name}_norm'] = param.data.norm().item()
+                layer_count += 1
+
+        # Log to wandb
+        if self.enable_wandb and wandb_metrics:
+            self.wandb_run.log(wandb_metrics, step=global_step)
+
+    def log_reward_distribution(self, rewards: list, global_step: int):
+        """Log reward distribution"""
+        if rewards:
+            if self.enable_wandb:
+                wandb_metrics = {
+                    'rewards/min': min(rewards),
+                    'rewards/max': max(rewards),
+                    'rewards/std': torch.tensor(rewards).std().item(),
+                    'rewards/mean': sum(rewards) / len(rewards)
+                }
+                # Create histogram for wandb
+                wandb_metrics['rewards/histogram'] = wandb.Histogram(rewards)
+                self.wandb_run.log(wandb_metrics, step=global_step)
+
+    def save_training_config(self, config: dict):
+        """Save training configuration to file"""
+        config_path = os.path.join(self.log_dir, "training_config.json")
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2, default=str)
+        print(f"Training configuration saved to: {config_path}")
+
+    def close(self):
+        """Close logging connections"""
+        if self.enable_wandb and self.wandb_run:
+            self.wandb_run.finish()
+            print("WandB logging closed")
+
+# -------------------- New Callback --------------------
+class GRPOMetricsCallback(TrainerCallback):
+    """HuggingFace Trainer callback that forwards log events to our
+    TrainingMetricsLogger instance so that each GRPO step is recorded."""
+
+    def __init__(self, logger: "TrainingMetricsLogger"):
+        super().__init__()
+        self.logger = logger
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        # Forward the metrics dictionary to the TrainingMetricsLogger. This
+        # fires after every call to `Trainer.log`, i.e. after each GRPO step.
+        if logs:
+            # Use a generic step_id; users can differentiate by global_step.
+            self.logger.log_training_step("grpo_step", logs, state.global_step)
