@@ -378,7 +378,7 @@ class FullModelLLMTrainer(LLMTrainer):
         grpo_trainer.generation_kwargs = {
             "do_sample": True,
             "temperature": 1.2,
-            "top_p": 0.97,
+            "top_p": 0.95,
             "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
