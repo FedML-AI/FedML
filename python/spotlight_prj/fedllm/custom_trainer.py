@@ -132,12 +132,31 @@ class RewardFunction:
         return combined_reward
 
 class TimedGRPOTrainer(GRPOTrainer):
+    def _record_step_stats(self, stats):
+        # first let the parent push its metrics
+        super()._record_step_stats(stats)
+
+        # add / overwrite any extra metrics and push once more
+        stats["kl_divergence"] = stats["kl"].mean().item()
+        self.accelerator.log(stats, step=self.state.global_step)
+    
     def _make_experience(self, *args, **kwargs):
         
         t0 = time.perf_counter()
         result = super()._make_experience(*args, **kwargs)
-        self.log(f"roll-out batch {self.state.global_step} : "
+        self.accelerator.log(f"roll-out batch {self.state.global_step} : "
                      f"{time.perf_counter() - t0:.3f}s")
+        
+        # `out["kl"]` is a 1-D tensor of per-token KL values
+        kl_mean = result["kl"].mean().item()
+
+        # push to the FedML / accelerate logger – it will end up in client?.log
+        self.log({"kl_divergence": kl_mean})
+
+        self.log(
+            f"roll-out batch {self.state.global_step} "
+            f"(elapsed {time.perf_counter() - t0:.3f}s, kl={kl_mean:.4f})"
+        )
         return result
 
 
@@ -330,7 +349,7 @@ class FullModelLLMTrainer(LLMTrainer):
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
-            learning_rate=5e-6,
+            learning_rate=3e-5,
             bf16=use_bf16,  # Match model precision
             fp16=not use_bf16,  # Use fp16 if not bf16
             gradient_checkpointing=False,  # Keep consistent with config
@@ -357,8 +376,8 @@ class FullModelLLMTrainer(LLMTrainer):
         # **FIX: Set generation parameters for numerical stability**
         grpo_trainer.generation_kwargs = {
             "do_sample": True,
-            "temperature": 1.0,
-            "top_p": 0.9,
+            "temperature": 1.2,
+            "top_p": 0.97,
             "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
