@@ -104,9 +104,9 @@ class FullModelLLMTrainer(LLMTrainer):
         # it can be accessed by callbacks.
         self.logger = TrainingMetricsLogger(
             log_dir=os.path.join(self.args.output_dir, "wandb_logs"),
-            run_name=f"client{getattr(self.args, 'rank', 'unknown')}_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
+            run_name=f"fl-client{getattr(self.args, 'rank', 'unknown')}_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
             enable_wandb=True,
-            wandb_project="grpo-training",
+            wandb_project="fedllm-grpo-training",
         )
     
     def to_number(self, text: str) -> Optional[float]:
