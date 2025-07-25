@@ -28,7 +28,7 @@ train_args:
   server_optimizer: "FedAvg"
   client_num_in_total: 1  # Single client setup
   client_num_per_round: 1  # Single client setup
-  comm_round: 10  # Reduced to 3 rounds for testing
+  comm_round: 3  # Reduced to 3 rounds for testing
   # GRPO-specific settings for testing
   grpo_max_steps: 50  # Only 10 training steps per round for quick testing
   grpo_num_epochs: 1  # Ignored when grpo_max_steps > 0

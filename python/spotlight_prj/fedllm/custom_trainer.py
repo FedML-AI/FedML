@@ -437,6 +437,18 @@ class FullModelLLMAggregator(LLMAggregator):
         """
         super().__init__(*args, **kwargs)
 
+        # -------------------------------------------------------------
+        # WandB logger for aggregator-level (server) statistics – initialize
+        # EARLY so that it exists even when periodic checkpointing is disabled.
+        # -------------------------------------------------------------
+        self.logger = TrainingMetricsLogger(
+            log_dir=os.path.join(self.args.output_dir, "wandb_logs"),
+            run_name=f"fl-server_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
+            enable_wandb=True,
+            wandb_project="fedllm-grpo-training",
+        )
+        self.model_broadcasts = 0
+
         # Determine interval (seconds)
         interval_min = getattr(self.args, "server_checkpoint_interval_minutes", 30)
         if interval_min <= 0:
@@ -471,6 +483,21 @@ class FullModelLLMAggregator(LLMAggregator):
         self._velocity: OrderedDict = OrderedDict()
         # -------------------------------------------------------------------
 
+        # ----- WandB server-side logger (NEW) -----
+        # Create a standalone TrainingMetricsLogger so that aggregator-level
+        # system statistics (e.g. active workers, model broadcasts) are also
+        # recorded in the same WandB project as the clients.
+        if not hasattr(self, "logger"):
+            self.logger = TrainingMetricsLogger(
+                log_dir=os.path.join(self.args.output_dir, "wandb_logs"),
+                run_name=f"fl-server_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
+                enable_wandb=True,
+                wandb_project="fedllm-grpo-training",
+            )
+            # Counter for how many times the global model has been broadcast to
+            # clients – useful for monitoring server throughput.
+            self.model_broadcasts = 0
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -486,6 +513,7 @@ class FullModelLLMAggregator(LLMAggregator):
                 self.log(f"Periodic checkpoint → {ckpt_dir}")
                 # Always save checkpoints in the standard HuggingFace format so that
                 # the resulting directory can be loaded with `from_pretrained`.
+                # For `PeftModel` this will also persist the adapter weights.
                 # Only the main process writes the checkpoint to avoid race conditions
                 # (the background thread is spawned exclusively on the main process).
                 if self.training_args.should_save:
@@ -537,6 +565,25 @@ class FullModelLLMAggregator(LLMAggregator):
         elapsed = time.perf_counter() - t0
         self.log(f"set_model_params (server) took {elapsed:.3f}s")
 
+        # -------------------------------------------------------------
+        # NEW: push aggregator-level system statistics to WandB
+        # -------------------------------------------------------------
+        self.model_broadcasts += 1
+        self.logger.log_server_statistics(
+            stats={
+                "server_statistics": {
+                    "active_workers": getattr(self.args, "client_num_in_total", 0),
+                    "model_subscribers": [],
+                    "service_status": {
+                        "current_model_version": self.round_idx,
+                        "buffer_statistics": {},
+                    },
+                },
+                "current_pipeline_depth": 0,  # placeholder – update if pipeline depth is tracked elsewhere
+                "model_broadcasts": self.model_broadcasts,
+            },
+            global_step=self.round_idx,
+        )
 
         self.log("finished")
 
@@ -828,7 +875,10 @@ class TrainingMetricsLogger:
 
         # Log to wandb
         if self.enable_wandb and wandb_metrics:
-            self.wandb_run.log(wandb_metrics, step=global_step)
+            # Use our internal monotonically-increasing counter so that these
+            # points are not overwritten when `global_step` resets each round.
+            wandb_step = max(0, self.step_count - 1)
+            self.wandb_run.log(wandb_metrics, step=wandb_step)
 
     def log_hyperparameters(self, hparams: dict):
         """Log hyperparameters"""
@@ -918,6 +968,7 @@ class GRPOMetricsCallback(TrainerCallback):
         super().__init__()
         self.logger = logger
 
+    """"
     def on_log(self, args, state, control, logs=None, **kwargs):
         # Forward the metrics dictionary to the TrainingMetricsLogger. This
         # fires after every call to `Trainer.log`, i.e. after each GRPO step.
@@ -925,4 +976,10 @@ class GRPOMetricsCallback(TrainerCallback):
             # Use a generic step_id; users can differentiate by global_step.
             self.logger.log_training_step("grpo_step", logs, state.global_step)
 
+            self.logger.log_moving_averages(state.global_step, window_size=100)
+    """
+    def on_step_end(self, args, state, control, logs=None,**kwargs):
+        # Always emit a point – even if HF wouldn't have logged this step
+        if logs and self.logger.step_count % 10 == 0:
+            self.logger.log_training_step("on_step_end", logs, state.global_step)
             self.logger.log_moving_averages(state.global_step, window_size=100)
