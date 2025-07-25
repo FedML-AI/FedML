@@ -377,7 +377,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # **FIX: Set generation parameters for numerical stability**
         grpo_trainer.generation_kwargs = {
             "do_sample": True,
-            "temperature": 1.0,
+            "temperature": 1.2,
             "top_p": 0.97,
             "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
