@@ -107,7 +107,6 @@ class FullModelLLMTrainer(LLMTrainer):
             run_name=f"fedml-grpo-training",
             enable_wandb=True,
             wandb_project="grpo-training",
-            wandb_entity="grpo-training",
         )
     
     def to_number(self, text: str) -> Optional[float]:
