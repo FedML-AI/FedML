@@ -107,6 +107,7 @@ class FullModelLLMTrainer(LLMTrainer):
             run_name=f"fl-client{getattr(self.args, 'rank', 'unknown')}_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
             enable_wandb=True,
             wandb_project="fedllm-grpo-training",
+            args=self.args,
         )
     
     def to_number(self, text: str) -> Optional[float]:
@@ -447,6 +448,7 @@ class FullModelLLMAggregator(LLMAggregator):
             run_name=f"fl-server_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
             enable_wandb=True,
             wandb_project="fedllm-grpo-training",
+            args=self.args,
         )
         self.model_broadcasts = 0
 
@@ -494,6 +496,7 @@ class FullModelLLMAggregator(LLMAggregator):
                 run_name=f"fl-server_run{getattr(self.args, 'run_id', os.getenv('FEDML_CURRENT_RUN_ID', '0'))}",
                 enable_wandb=True,
                 wandb_project="fedllm-grpo-training",
+                args=self.args,
             )
             # Counter for how many times the global model has been broadcast to
             # clients – useful for monitoring server throughput.
@@ -649,26 +652,78 @@ class FullModelLLMAggregator(LLMAggregator):
 class TrainingMetricsLogger:
     """Comprehensive logging for GRPO training with WandB support"""
 
-    def __init__(self, log_dir: str, run_name: Optional[str] = None, 
-                 enable_wandb: bool = False,
-                 wandb_project: Optional[str] = None, wandb_entity: Optional[str] = None,
-                 wandb_config: Optional[dict] = None):
+    def __init__(
+        self,
+        log_dir: str,
+        run_name: Optional[str] = None,
+        enable_wandb: bool = False,
+        wandb_project: Optional[str] = None,
+        wandb_entity: Optional[str] = None,
+        wandb_config: Optional[dict] = None,
+        args: Optional[Any] = None,
+    ):
+        """Parameters
+        ----------
+        log_dir : str
+            Directory where auxiliary JSON / txt logs will be written.
+        run_name : str, optional
+            Human-readable name that will appear in the WandB UI.
+        enable_wandb : bool, default False
+            If ``True`` a WandB run is initialised, otherwise the logger will
+            operate in offline mode and simply discard `.log*()` calls.
+        wandb_project, wandb_entity, wandb_config : Optional[str | dict]
+            Passed through to :pyfunc:`wandb.init` unchanged.
+        args : Any, optional
+            (FedML) *args* namespace used throughout the project.  We only
+            use it to derive a *unique* WandB run *id* so that the server and
+            every client write to **separate** runs instead of clobbering one
+            another.
+        """
+
         self.log_dir = log_dir
         self.run_name = run_name or f"grpo_training_{int(time.time())}"
         self.enable_wandb = enable_wandb
+        self.args = args  # may be ``None`` for unit tests / offline runs
 
-        # WandB setup
+        # ------------------------------------------------------------------
+        # WandB setup – ensure that each process (server / client-rank-N) gets
+        # its *own* run.  Re-using the same run *id* from multiple processes
+        # causes metrics to silently overwrite each other and leads to exactly
+        # the "not everything we log shows up" behaviour that we observed on
+        # the dashboard.
+        # ------------------------------------------------------------------
         self.wandb_run = None
         if self.enable_wandb:
-            self.wandb_run = wandb.init(
-                project=wandb_project or "grpo-training",
-                entity=wandb_entity,
-                name=self.run_name,
-                id=getattr(self.args, 'run_id'),
-                config=wandb_config or {},
-                reinit=True
+            wandb_kwargs = {
+                "project": wandb_project or "grpo-training",
+                "entity": wandb_entity,
+                "name": self.run_name,
+                "config": wandb_config or {},
+                "reinit": True,
+            }
+
+            # Use a *group* so that the server run and all client runs are
+            # nicely collated in the WandB UI, while still receiving unique
+            # run IDs.
+            if args is not None and hasattr(args, "run_id"):
+                wandb_kwargs["group"] = str(args.run_id)
+
+                # Derive a UNIQUE id: "<run_id>-server"  or  "<run_id>-client<rank>"
+                role_suffix = (
+                    "-server"
+                    if getattr(args, "role", "server") == "server"
+                    else f"-client{getattr(args, 'rank', '0')}"
+                )
+                wandb_kwargs["id"] = f"{args.run_id}{role_suffix}"
+
+            # Remove None entries so wandb.init does not complain.
+            wandb_kwargs = {k: v for k, v in wandb_kwargs.items() if v is not None}
+
+            self.wandb_run = wandb.init(**wandb_kwargs)
+            print(
+                f"[WandB] Logging initialised → "
+                f"project={wandb_kwargs.get('project')}, run_name={self.run_name}"
             )
-            print(f"WandB logging initialized. Project: {wandb_project or 'grpo-training'}")
 
         # Metrics tracking
         self.step_count = 0
@@ -818,7 +873,7 @@ class TrainingMetricsLogger:
 
         # Log to wandb
         if self.enable_wandb and self.wandb_run and wandb_metrics:
-            self.wandb_run.log(wandb_metrics, step=global_step)
+            self.wandb_run.log(wandb_metrics, step=self.step_count)
 
     def log_performance_metrics(self, global_step: int, training_rate: Optional[float] = None):
         """Log performance and timing metrics"""
