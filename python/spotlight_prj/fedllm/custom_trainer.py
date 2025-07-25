@@ -359,6 +359,7 @@ class FullModelLLMTrainer(LLMTrainer):
             # Add seed for reproducibility in federated setting
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
             report_to="wandb",
+            scale_rewards=False,
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
@@ -376,7 +377,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # **FIX: Set generation parameters for numerical stability**
         grpo_trainer.generation_kwargs = {
             "do_sample": True,
-            "temperature": 1.2,
+            "temperature": 1.0,
             "top_p": 0.97,
             "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
