@@ -280,7 +280,7 @@ class FullModelLLMTrainer(LLMTrainer):
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
-            report_to="wandb",
+            #report_to="wandb",
             scale_rewards=False,
             temperature=1.0,
             top_p=0.9,
