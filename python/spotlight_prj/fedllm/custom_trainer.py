@@ -360,6 +360,10 @@ class FullModelLLMTrainer(LLMTrainer):
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
             report_to="wandb",
             scale_rewards=False,
+            temperature=1.0,
+            top_p=0.9,
+            top_k=50,
+            repetition_penalty=1.1,
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
@@ -377,13 +381,9 @@ class FullModelLLMTrainer(LLMTrainer):
         # **FIX: Set generation parameters for numerical stability**
         grpo_trainer.generation_kwargs = {
             "do_sample": True,
-            "temperature": 1.0,
-            "top_p": 0.9,
-            "top_k": 50,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
             "max_new_tokens": 1024,
-            "repetition_penalty": 1.1,  # Prevent repetition
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
