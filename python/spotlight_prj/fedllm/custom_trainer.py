@@ -349,7 +349,7 @@ class FullModelLLMTrainer(LLMTrainer):
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
-            learning_rate=3e-5,
+            learning_rate=5e-6,
             bf16=use_bf16,  # Match model precision
             fp16=not use_bf16,  # Use fp16 if not bf16
             gradient_checkpointing=False,  # Keep consistent with config
@@ -359,7 +359,7 @@ class FullModelLLMTrainer(LLMTrainer):
             # Add seed for reproducibility in federated setting
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
             report_to="wandb",
-            #scale_rewards=False,
+            scale_rewards=False,
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
