@@ -267,7 +267,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=256,
+            max_completion_length=512,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
@@ -282,8 +282,8 @@ class FullModelLLMTrainer(LLMTrainer):
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
             #report_to="wandb",
             scale_rewards=False,
-            temperature=1.0,
-            top_p=0.9,
+            temperature=0.7,
+            top_p=0.95,
             top_k=50,
             repetition_penalty=1.1,
             epsilon=0.2,
@@ -307,7 +307,7 @@ class FullModelLLMTrainer(LLMTrainer):
             "do_sample": True,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
-            "max_new_tokens": 1024,
+            "max_new_tokens": 512,
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
@@ -924,3 +924,5 @@ class GRPOMetricsCallback(TrainerCallback):
         if logs:
             # Use a generic step_id; users can differentiate by global_step.
             self.logger.log_training_step("grpo_step", logs, state.global_step)
+
+            self.logger.log_moving_averages(state.global_step, window_size=100)
