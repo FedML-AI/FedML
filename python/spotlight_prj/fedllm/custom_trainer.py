@@ -267,7 +267,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=100,
+            max_completion_length=256,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
