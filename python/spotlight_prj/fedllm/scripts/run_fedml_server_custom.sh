@@ -26,7 +26,7 @@ LAUNCHER="${6:-"auto"}"
 CONFIG_PATH="${7:-"fedml_config/fedml_config.yaml"}"
 
 # Use the custom launcher that properly handles non-PEFT models
-timeout --signal=SIGINT --kill-after=30s 21600 python3 launch_fedllm_custom.py \
+timeout --signal=SIGINT --kill-after=30s 22200 python3 launch_fedllm_custom.py \
   --cf "${CONFIG_PATH}" \
   --rank "${RANK}" \
   --role server \
