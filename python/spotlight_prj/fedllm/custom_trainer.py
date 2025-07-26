@@ -278,7 +278,7 @@ class FullModelLLMTrainer(LLMTrainer):
             gradient_checkpointing=False,  # Keep consistent with config
             #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
             logging_steps=1,
-            log_completions=True,
+            log_completions=False,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
             seed=42 + self.round_idx * 100 + args.rank,  # Different seed per round and client
