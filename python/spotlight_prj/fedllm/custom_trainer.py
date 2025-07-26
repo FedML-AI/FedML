@@ -29,6 +29,7 @@ from src.peft_utils import set_peft_model_state_dict
 from src.modeling_utils import load_state_dict
 import time, logging
 import threading
+import shutil  # for deleting old checkpoints
 
 from fractions import Fraction
 
@@ -343,6 +344,9 @@ class FullModelLLMTrainer(LLMTrainer):
             synchronize=True
         )
 
+        # After saving the current round checkpoint, clean up older round_* checkpoints
+        if self.training_args.should_save:
+            self._cleanup_old_round_checkpoints()
         
         # Clean up fresh model to free memory
         del fresh_model
@@ -416,6 +420,29 @@ class FullModelLLMTrainer(LLMTrainer):
 
         self.log("finished")
         return outputs
+
+    def _cleanup_old_round_checkpoints(self, keep_last: int = 1):
+        """Delete old round_* checkpoints but keep the most recent `keep_last`.
+
+        Wall-clock checkpoints (wallclock_*) are never removed.
+        """
+        pattern = re.compile(r"round_(\d+)_(before|after)_agg")
+        # Collect candidate directories and their round numbers
+        ckpts = []
+        for d in self.checkpoint_dir.iterdir():
+            m = pattern.fullmatch(d.name)
+            if m and d != self.latest_checkpoint_dir:
+                ckpts.append((int(m.group(1)), d))
+
+        # Sort by round number so oldest come first
+        ckpts.sort(key=lambda x: x[0])
+
+        # Remove all but the newest `keep_last` checkpoints
+        for _, d in ckpts[:-keep_last]:
+            try:
+                shutil.rmtree(d, ignore_errors=True)
+            except Exception as e:
+                self.log(f"[WARN] Failed to delete old checkpoint {d}: {e}")
 
 
 class FullModelLLMAggregator(LLMAggregator):
@@ -565,6 +592,10 @@ class FullModelLLMAggregator(LLMAggregator):
             state_dict=model_parameters,
             synchronize=True
         )
+
+        # Clean up old round checkpoints on the server as well
+        if self.training_args.should_save:
+            self._cleanup_old_round_checkpoints()
         
         elapsed = time.perf_counter() - t0
         self.log(f"set_model_params (server) took {elapsed:.3f}s")
