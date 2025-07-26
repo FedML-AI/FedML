@@ -282,7 +282,7 @@ class FullModelLLMTrainer(LLMTrainer):
             log_completions=False,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
-            seed=int(time.perf_counter_ns() % (2**32))
+            seed=int(time.perf_counter_ns() % (2**32)),
             #report_to="wandb",
             scale_rewards=False,
             temperature=0.7,
