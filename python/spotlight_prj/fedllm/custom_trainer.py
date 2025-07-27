@@ -110,6 +110,8 @@ class FullModelLLMTrainer(LLMTrainer):
             wandb_project="fedllm-grpo-training",
             args=self.args,
         )
+
+    os.environ["TRANSFORMERS_VERBOSITY"] = "error"
     
     def to_number(self, text: str) -> Optional[float]:
         """Convert string to float if possible, handling simple fractions."""
@@ -269,7 +271,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=512,
+            max_completion_length=256,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
@@ -279,7 +281,7 @@ class FullModelLLMTrainer(LLMTrainer):
             gradient_checkpointing=getattr(args, 'gradient_checkpointing', False),
             #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
             logging_steps=1,
-            log_completions=False,
+            log_completions=True,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
             seed=int(time.perf_counter_ns() % (2**32)),
@@ -311,7 +313,7 @@ class FullModelLLMTrainer(LLMTrainer):
             "do_sample": True,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
-            "max_new_tokens": 512,
+            "max_new_tokens": 256,
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
