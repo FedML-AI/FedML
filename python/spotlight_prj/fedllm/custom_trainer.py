@@ -45,7 +45,8 @@ from transformers import TrainerCallback
 import wandb
 import json
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class TimedGRPOTrainer(GRPOTrainer):
