@@ -341,6 +341,16 @@ class FullModelLLMTrainer(LLMTrainer):
         
         # Run GRPO training
         grpo_trainer.train()
+
+        def _check_grad_nan(self, trainer):
+            for n, p in trainer.model.named_parameters():
+                if torch.isnan(p).any() or torch.isinf(p).any():
+                    return True
+            return False
+
+        # in your training loop, right after `grpo_trainer.step()` or similar
+        if self._check_grad_nan(grpo_trainer):
+            print("***‼ Detected NaN/Inf after update!***")
         
         # **Copy trained weights back to FedML's model**
         self.log("Copying GRPO-trained weights back to FedML model")
