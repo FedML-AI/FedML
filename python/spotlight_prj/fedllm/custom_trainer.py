@@ -6,6 +6,10 @@ even when peft_type="none" is configured, causing AttributeError for non-PEFT mo
 This version also integrates GRPO training for GSM8K dataset.
 """
 
+# Silence HF Transformers advisory warnings about caching vs gradient checkpointing – must be set BEFORE importing transformers
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -38,6 +42,8 @@ from transformers import TrainerCallback
 
 import wandb
 import json
+
+
 
 
 class TimedGRPOTrainer(GRPOTrainer):
@@ -111,7 +117,6 @@ class FullModelLLMTrainer(LLMTrainer):
             args=self.args,
         )
 
-    os.environ["TRANSFORMERS_VERBOSITY"] = "error"
     
     def to_number(self, text: str) -> Optional[float]:
         """Convert string to float if possible, handling simple fractions."""
