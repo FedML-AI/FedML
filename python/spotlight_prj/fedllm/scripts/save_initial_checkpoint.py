@@ -20,8 +20,8 @@ Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Load model and tokenizer
 print("Loading model...")
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 
 # Save model in the format expected by FedML (pytorch_model.bin)
 print("Saving model checkpoint...")

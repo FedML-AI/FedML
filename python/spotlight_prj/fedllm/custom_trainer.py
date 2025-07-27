@@ -220,23 +220,32 @@ class FullModelLLMTrainer(LLMTrainer):
                 fresh_model = AutoModelForCausalLM.from_pretrained(
                     model_name, 
                     torch_dtype=torch.bfloat16,
-                    use_cache=False
+                    use_cache=False,
+                    trust_remote_code=True
                 )
             else:
                 fresh_model = AutoModelForCausalLM.from_pretrained(
                     model_name, 
                     torch_dtype=torch.float32,  # Use float32 for better stability
-                    use_cache=False
+                    use_cache=False,
+                    trust_remote_code=True
                 )
         except Exception as e:
             self.log(f"Failed to load with requested precision, falling back to float32: {e}")
             fresh_model = AutoModelForCausalLM.from_pretrained(
                 model_name, 
                 torch_dtype=torch.float32,  # Fallback to float32
-                use_cache=False
+                use_cache=False,
+                trust_remote_code=True
             )
-        fresh_tokenizer = AutoTokenizer.from_pretrained(model_name)
+        fresh_tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         fresh_tokenizer.pad_token = fresh_tokenizer.eos_token
+
+        print("\n=========================")
+        ids = fresh_tokenizer("1 + 1 =", return_tensors="pt").to(fresh_model.device)
+        out = fresh_model.generate(**ids, max_new_tokens=3)
+        print(fresh_tokenizer.decode(out[0], skip_special_tokens=True))
+        print("=========================\n")
         
         # Copy current model state to fresh model (to preserve any training from previous rounds)
         if self.round_idx > 0:
