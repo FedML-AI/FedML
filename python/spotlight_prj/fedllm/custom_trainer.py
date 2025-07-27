@@ -645,9 +645,9 @@ class FullModelLLMAggregator(LLMAggregator):
 
         self.log("finished")
 
-
+    """
     def aggregate(self, raw_client_model_list):
-        """
+        
         Aggregate client models with Nesterov momentum.
 
         Steps
@@ -659,7 +659,7 @@ class FullModelLLMAggregator(LLMAggregator):
         3. Perform an SGD update with momentum on the server side.  If
            ``self._nesterov`` is ``True``, use the Nesterov variant.
         4. Save the updated parameters via ``set_model_params`` and return them.
-        """
+        
         self.log("aggregate: start")
 
         # Step-1: FedAvg aggregation (reuse FedMLAggOperator)
@@ -700,7 +700,7 @@ class FullModelLLMAggregator(LLMAggregator):
         self.set_model_params(updated_params)
         self.log("aggregate: finished")
         return updated_params
-
+    """
 
 
 class TrainingMetricsLogger:
