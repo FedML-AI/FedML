@@ -276,7 +276,7 @@ class FullModelLLMTrainer(LLMTrainer):
             learning_rate=5e-6,
             bf16=use_bf16,  # Match model precision
             fp16=not use_bf16,  # Use fp16 if not bf16
-            gradient_checkpointing=False,  # Keep consistent with config
+            gradient_checkpointing=getattr(args, 'gradient_checkpointing', False),
             #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
             logging_steps=1,
             log_completions=False,
