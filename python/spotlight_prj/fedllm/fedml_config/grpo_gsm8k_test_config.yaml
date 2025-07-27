@@ -32,7 +32,7 @@ train_args:
   # GRPO-specific settings for testing
   grpo_max_steps: 50  # Only 10 training steps per round for quick testing
   grpo_num_epochs: 1  # Ignored when grpo_max_steps > 0
-  grpo_batch_size: 4  # Smaller batch size for faster testing
+  grpo_batch_size: 2  # Smaller batch size for faster testing
   # FedML training settings (ignored when using GRPO)
   local_num_train_epochs: 1
   local_max_steps: -1
