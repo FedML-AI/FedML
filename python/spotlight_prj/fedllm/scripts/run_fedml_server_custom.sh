@@ -25,6 +25,8 @@ LAUNCHER="${6:-"auto"}"
 # FedML config
 CONFIG_PATH="${7:-"fedml_config/fedml_config.yaml"}"
 
+python scripts/save_initial_checkpoint.py
+
 # Use the custom launcher that properly handles non-PEFT models
 timeout --signal=SIGINT --kill-after=30s 22200 python3 launch_fedllm_custom.py \
   --cf "${CONFIG_PATH}" \
