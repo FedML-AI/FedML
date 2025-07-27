@@ -533,6 +533,29 @@ class FullModelLLMAggregator(LLMAggregator):
     # Internal helpers
     # ------------------------------------------------------------------
 
+    def _cleanup_old_round_checkpoints(self, keep_last: int = 1):
+        """Delete old round_* checkpoints but keep the most recent `keep_last`.
+
+        Wall-clock checkpoints (wallclock_*) are never removed.
+        """
+        pattern = re.compile(r"round_(\d+)_(before|after)_agg")
+        # Collect candidate directories and their round numbers
+        ckpts = []
+        for d in self.checkpoint_dir.iterdir():
+            m = pattern.fullmatch(d.name)
+            if m and d != self.latest_checkpoint_dir:
+                ckpts.append((int(m.group(1)), d))
+
+        # Sort by round number so oldest come first
+        ckpts.sort(key=lambda x: x[0])
+
+        # Remove all but the newest `keep_last` checkpoints
+        for _, d in ckpts[:-keep_last]:
+            try:
+                shutil.rmtree(d, ignore_errors=True)
+            except Exception as e:
+                self.log(f"[WARN] Failed to delete old checkpoint {d}: {e}")
+
     def _periodic_checkpoint_loop(self):
         """Loop that sleeps ``_checkpoint_interval`` seconds then writes a
         checkpoint until ``_stop_checkpoint_evt`` is set (i.e., program exit).
