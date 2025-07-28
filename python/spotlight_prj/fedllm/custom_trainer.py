@@ -12,10 +12,6 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Silence HF Transformers advisory warnings about caching vs gradient checkpointing – must be set BEFORE importing transformers
-os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
-os.environ["TRANSFORMERS_VERBOSITY"] = "error"
-
 import re
 import torch
 from collections import OrderedDict
@@ -170,6 +166,7 @@ class FullModelLLMTrainer(LLMTrainer):
     def train(self, train_data, device, args):
         """Override train to use GRPO training on GSM8K dataset."""
         self.log("Starting GRPO training on GSM8K")
+
         
         # Load GSM8K dataset
         ds = load_dataset("openai/gsm8k", "main", split="train")
@@ -209,6 +206,10 @@ class FullModelLLMTrainer(LLMTrainer):
         # **FIX: Load fresh model and tokenizer for GRPO to avoid FedML state corruption**
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
+
+        # ↓↓↓  off-load the FedML copy BEFORE allocating fresh_model
+        self.model.to("cpu")
+        torch.cuda.empty_cache()       # actually releases the VRAM
         
         # Get model name from model_args
         model_name = self.model_args.model_name_or_path
@@ -241,12 +242,6 @@ class FullModelLLMTrainer(LLMTrainer):
             )
         fresh_tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         fresh_tokenizer.pad_token = fresh_tokenizer.eos_token
-
-        print("\n=========================")
-        ids = fresh_tokenizer("1 + 1 =", return_tensors="pt").to(fresh_model.device)
-        out = fresh_model.generate(**ids, max_new_tokens=3)
-        print(fresh_tokenizer.decode(out[0], skip_special_tokens=True))
-        print("=========================\n")
         
         # Copy current model state to fresh model (to preserve any training from previous rounds)
         if self.round_idx > 0:
@@ -288,7 +283,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=256,
+            max_completion_length=512,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
@@ -298,7 +293,7 @@ class FullModelLLMTrainer(LLMTrainer):
             gradient_checkpointing=getattr(args, 'gradient_checkpointing', False),
             #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
             logging_steps=1,
-            log_completions=True,
+            log_completions=False,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
             # Add seed for reproducibility in federated setting
             seed=int(time.perf_counter_ns() % (2**32)),
@@ -330,7 +325,8 @@ class FullModelLLMTrainer(LLMTrainer):
             "do_sample": True,
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
-            "max_new_tokens": 256,
+            "bos_token_id": fresh_tokenizer.bos_token_id,
+            "max_new_tokens": 512,
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
@@ -342,16 +338,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # Run GRPO training
         grpo_trainer.train()
 
-        def _check_grad_nan(self, trainer):
-            for n, p in trainer.model.named_parameters():
-                if torch.isnan(p).any() or torch.isinf(p).any():
-                    return True
-            return False
 
-        # in your training loop, right after `grpo_trainer.step()` or similar
-        if self._check_grad_nan(grpo_trainer):
-            print("***‼ Detected NaN/Inf after update!***")
-        
         # **Copy trained weights back to FedML's model**
         self.log("Copying GRPO-trained weights back to FedML model")
         trained_state = fresh_model.state_dict()
