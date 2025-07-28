@@ -215,9 +215,24 @@ def save_checkpoint(
             f" \"{type(model_or_trainer)}\"."
         )
 
-    # save model checkpoint
+    # Save model checkpoint
     if isinstance(model_or_trainer, HFTrainer):
-        model_or_trainer.save_checkpoint(checkpoint_dir)
+        # Hugging Face Trainer normally creates sharded checkpoints. To keep
+        # downstream logic simple we instead persist a **single** weight file
+        # for the underlying model, re-using the same helper that `Module`
+        # path employs.
+
+        underlying_model = model_or_trainer.model
+
+        if is_saving_process:
+            # Prefer caller-provided `state_dict` when given (e.g. aggregated
+            # weights from the server); otherwise pull fresh weights from the
+            # model.
+            _save_checkpoint(
+                underlying_model,
+                checkpoint_dir,
+                state_dict or underlying_model.state_dict()
+            )
 
     elif isinstance(model_or_trainer, Module):
         if is_saving_process:
