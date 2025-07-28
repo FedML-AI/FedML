@@ -403,7 +403,12 @@ class LLMTrainer(ClientTrainer):
 
         self.latest_checkpoint_dir = self.checkpoint_dir / f"round_{self.round_idx}_before_agg"
         self.log(f"saving model to \"{self.latest_checkpoint_dir}\"")
-        save_checkpoint(self.trainer, self.latest_checkpoint_dir)
+        # Force checkpoint creation even if TrainingArguments.save_strategy == "no"
+        save_checkpoint(
+            self.trainer,
+            self.latest_checkpoint_dir,
+            is_saving_process=True,
+        )
 
         self.log("finished")
         return outputs

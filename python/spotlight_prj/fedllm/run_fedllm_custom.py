@@ -44,17 +44,19 @@ def _save_checkpoint(
     if state_dict is None:
         state_dict = model.state_dict()
 
-    if isinstance(model, (PeftModel, PreTrainedModel)):
-        # Force safe_serialization=False to get pytorch_model.bin instead of model.safetensors
-        model.save_pretrained(
-            save_directory=str(checkpoint_dir),
-            state_dict=state_dict,
-            safe_serialization=False  # This ensures pytorch_model.bin is created
-        )
+    # Always produce a single-file checkpoint so that downstream loading logic
+    # can simply look for ``adapter_model.bin`` (PEFT) or ``pytorch_model.bin``
+    # without worrying about Hugging Face sharding.
+
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    if isinstance(model, PeftModel):
+        filename = "adapter_model.bin"
     else:
-        checkpoint_dir = Path(checkpoint_dir)
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        torch.save(state_dict, str(checkpoint_dir / HF_WEIGHTS_NAME))
+        filename = HF_WEIGHTS_NAME  # "pytorch_model.bin"
+
+    torch.save(state_dict, str(checkpoint_dir / filename))
 
 
 # Monkey patch the _save_checkpoint function in the imported module
