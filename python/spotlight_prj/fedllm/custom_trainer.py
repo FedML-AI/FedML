@@ -426,6 +426,8 @@ class FullModelLLMTrainer(LLMTrainer):
         if round_idx is None:
             round_idx = self.round_idx
 
+        model_params = to_device(model_params, "cpu")   # ensure params live on CPU
+        torch.cuda.empty_cache() 
         broadcast_object_list([round_idx, model_params, client_index], from_process=from_process)
 
         self.log("finished")
