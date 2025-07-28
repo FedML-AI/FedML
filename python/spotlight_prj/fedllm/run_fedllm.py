@@ -157,15 +157,22 @@ def _save_checkpoint(
     if state_dict is None:
         state_dict = model.state_dict()
 
-    if isinstance(model, (PeftModel, PreTrainedModel)):
-        model.save_pretrained(
-            save_directory=str(checkpoint_dir),
-            state_dict=state_dict
-        )
+    # Always store a **single** weight file so that downstream logic can
+    # reliably load it without having to handle Hugging Face sharded
+    # checkpoints.  For PEFT (LoRA/Adapter) models we keep the original
+    # filename expected by `load_checkpoint()` (``adapter_model.bin``),
+    # otherwise we save using the standard Hugging Face filename
+    # ``pytorch_model.bin``.
+
+    checkpoint_dir = Path(checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    if isinstance(model, PeftModel):
+        filename = PEFT_WEIGHTS_NAME  # "adapter_model.bin"
     else:
-        checkpoint_dir = Path(checkpoint_dir)
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        torch.save(state_dict, str(checkpoint_dir / HF_WEIGHTS_NAME))
+        filename = HF_WEIGHTS_NAME    # "pytorch_model.bin"
+
+    torch.save(state_dict, str(checkpoint_dir / filename))
 
 
 def save_checkpoint(
