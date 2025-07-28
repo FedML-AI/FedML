@@ -30,7 +30,7 @@ train_args:
   client_num_per_round: 2  # Single client setup
   comm_round: 30  # Reduced to 3 rounds for testing
   # GRPO-specific settings for testing
-  grpo_max_steps: 50
+  grpo_max_steps: 2
   grpo_num_epochs: 1  # Ignored when grpo_max_steps > 0
   grpo_batch_size: 2  # Smaller batch size for faster testing
   # FedML training settings (ignored when using GRPO)
