@@ -330,7 +330,7 @@ class FullModelLLMTrainer(LLMTrainer):
             repetition_penalty=1.1,
             epsilon=0.2,
             beta=0.1,
-            optim="adamw_bnb_8bit",
+            #optim="adamw_bnb_8bit",
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
