@@ -91,6 +91,7 @@ class TimedGRPOTrainer(GRPOTrainer):
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
         self.accelerator.log({"avg_completion_time": avg_completion_time}, step=self.state.global_step)
         self.log({"avg_completion_time": avg_completion_time})
+        print(f"avg_completion_time: {avg_completion_time}")
         
         # `out["kl"]` is a 1-D tensor of per-token KL values
         kl_mean = result["kl"].mean().item()
