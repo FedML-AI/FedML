@@ -76,10 +76,16 @@ class TimedGRPOTrainer(GRPOTrainer):
         # captured by the custom logger.
         self.log(stats)
     
-    def _make_experience(self, *args, **kwargs):
+    # Override GRPOTrainer internals to measure generation latency per roll-out batch
+    # NOTE: Upstream `GRPOTrainer` uses `_generate_and_score_completions` (not
+    # `_make_experience`).  The original override therefore never executed.
+    # We rename the method accordingly so that it is invoked during training.
+
+    def _generate_and_score_completions(self, *args, **kwargs):
         
         t0 = time.perf_counter()
-        result = super()._make_experience(*args, **kwargs)
+        # Call upstream implementation
+        result = super()._generate_and_score_completions(*args, **kwargs)
         # ------------------------------------------------------------------
         # Compute and log average completion time per generation
         # ------------------------------------------------------------------
@@ -87,23 +93,11 @@ class TimedGRPOTrainer(GRPOTrainer):
         num_gens = max(1, getattr(self.args, "num_generations", 1))
         self.avg_completion_time = elapsed / num_gens
 
-        print(f"\navg_completion_time: {self.avg_completion_time}")
-
         # Log the metric so that it is captured by both Accelerate and
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
         self.accelerator.log({"avg_completion_time": self.avg_completion_time}, step=self.state.global_step)
         self.log({"avg_completion_time": self.avg_completion_time})
-        
-        # `out["kl"]` is a 1-D tensor of per-token KL values
-        kl_mean = result["kl"].mean().item()
 
-        # push to the FedML / accelerate logger – it will end up in client?.log
-        self.log({"kl_divergence": kl_mean})
-
-        # Human-readable string message (kept for completeness)
-        self.accelerator.log(
-            f"roll-out batch {self.state.global_step} : {elapsed:.3f}s"
-        )
         return result
 
 
