@@ -18,7 +18,7 @@ data_args:
 
 model_args:
   skip_log_model_net: True
-  model_name_or_path: "Qwen/Qwen3-1.7B"
+  model_name_or_path: "Qwen/Qwen3-0.6B"
   peft_type: "none"  # Full model fine-tuning
   use_flash_attention: False
 
@@ -32,7 +32,7 @@ train_args:
   # GRPO-specific settings for testing
   grpo_max_steps: 50
   grpo_num_epochs: 1  # Ignored when grpo_max_steps > 0
-  grpo_batch_size: 2  # Smaller batch size for faster testing
+  grpo_batch_size: 4  # Smaller batch size for faster testing
   # FedML training settings (ignored when using GRPO)
   local_num_train_epochs: 1
   local_max_steps: -1
@@ -45,7 +45,7 @@ train_args:
   gradient_checkpointing: False  # Match GRPO config
   per_device_train_batch_size: 2  # Will be overridden by GRPO
   per_device_eval_batch_size: 8
-  gradient_accumulation_steps: 1  # Will be overridden by GRPO
+  gradient_accumulation_steps: 2  # Will be overridden by GRPO
   eval_accumulation_steps: 4
   learning_rate: 5e-6 # Will be overridden by GRPO
   warmup_steps: 0

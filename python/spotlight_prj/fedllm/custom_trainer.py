@@ -900,6 +900,8 @@ class TrainingMetricsLogger:
         if self.avg_completion_time is not None:
             wandb_metrics['performance/avg_completion_time'] = self.avg_completion_time
             self.accumulated_metrics['completion_times'].append(self.avg_completion_time)
+        
+        print(f"avg_completion_time: {self.avg_completion_time}")
 
         if 'rollout_time' in train_result:
             wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
