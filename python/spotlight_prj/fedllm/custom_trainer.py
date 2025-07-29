@@ -87,6 +87,8 @@ class TimedGRPOTrainer(GRPOTrainer):
         num_gens = max(1, getattr(self.args, "num_generations", 1))
         self.avg_completion_time = elapsed / num_gens
 
+        print(f"avg_completion_time: {self.avg_completion_time}")
+
         # Log the metric so that it is captured by both Accelerate and
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
         self.accelerator.log({"avg_completion_time": self.avg_completion_time}, step=self.state.global_step)
@@ -900,8 +902,6 @@ class TrainingMetricsLogger:
         if self.avg_completion_time is not None:
             wandb_metrics['performance/avg_completion_time'] = self.avg_completion_time
             self.accumulated_metrics['completion_times'].append(self.avg_completion_time)
-        
-        print(f"avg_completion_time: {self.avg_completion_time}")
 
         if 'rollout_time' in train_result:
             wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
