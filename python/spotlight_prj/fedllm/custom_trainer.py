@@ -87,7 +87,7 @@ class TimedGRPOTrainer(GRPOTrainer):
         num_gens = max(1, getattr(self.args, "num_generations", 1))
         self.avg_completion_time = elapsed / num_gens
 
-        print(f"avg_completion_time: {self.avg_completion_time}")
+        print(f"\navg_completion_time: {self.avg_completion_time}")
 
         # Log the metric so that it is captured by both Accelerate and
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
