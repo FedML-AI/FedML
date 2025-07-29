@@ -47,12 +47,28 @@ warnings.filterwarnings("ignore")
 
 class TimedGRPOTrainer(GRPOTrainer):
     def _record_step_stats(self, stats):
-        # first let the parent push its metrics
+        # -------------------------------------------------------------
+        # Measure *inter-step* wall-clock time: difference between the start
+        # of this stats call and the previous.  This captures the full time
+        # spent in the GRPO optimisation step (generation + backward pass,
+        # etc.) rather than just the duration of this method.
+        # -------------------------------------------------------------
+        t_now = time.perf_counter()
+        step_elapsed = None
+        if hasattr(self, "_prev_step_t"):
+            step_elapsed = t_now - self._prev_step_t
+        self._prev_step_t = t_now  # update for next call
+
+        # Call parent implementation *after* timing start so that we include
+        # all work done before stats are returned.
         super()._record_step_stats(stats)
 
-        # add / overwrite any extra metrics and push once more
+        # -------------------------------------------------------------
+        # Compute additional metrics
+        # -------------------------------------------------------------
         stats["kl_divergence"] = stats["kl"].mean().item()
-        self.accelerator.log(stats, step=self.state.global_step)
+        if step_elapsed is not None:
+            stats["grpo_step_time"] = step_elapsed  # seconds
 
         # NEW: forward stats to Trainer's logging system so that callbacks
         # like GRPOMetricsCallback can record them via the TrainingMetricsLogger.
@@ -64,8 +80,17 @@ class TimedGRPOTrainer(GRPOTrainer):
         
         t0 = time.perf_counter()
         result = super()._make_experience(*args, **kwargs)
-        self.accelerator.log(f"roll-out batch {self.state.global_step} : "
-                     f"{time.perf_counter() - t0:.3f}s")
+        # ------------------------------------------------------------------
+        # Compute and log average completion time per generation
+        # ------------------------------------------------------------------
+        elapsed = time.perf_counter() - t0  # total time for this roll-out batch
+        num_gens = max(1, getattr(self.args, "num_generations", 1))
+        avg_completion_time = elapsed / num_gens
+
+        # Log the metric so that it is captured by both Accelerate and
+        # the TrainingMetricsLogger (via GRPOMetricsCallback).
+        self.accelerator.log({"avg_completion_time": avg_completion_time}, step=self.state.global_step)
+        self.log({"avg_completion_time": avg_completion_time})
         
         # `out["kl"]` is a 1-D tensor of per-token KL values
         kl_mean = result["kl"].mean().item()
@@ -73,9 +98,9 @@ class TimedGRPOTrainer(GRPOTrainer):
         # push to the FedML / accelerate logger – it will end up in client?.log
         self.log({"kl_divergence": kl_mean})
 
-        self.log(
-            f"roll-out batch {self.state.global_step} "
-            f"(elapsed {time.perf_counter() - t0:.3f}s, kl={kl_mean:.4f})"
+        # Human-readable string message (kept for completeness)
+        self.accelerator.log(
+            f"roll-out batch {self.state.global_step} : {elapsed:.3f}s"
         )
         return result
 
@@ -435,8 +460,22 @@ class FullModelLLMTrainer(LLMTrainer):
     def await_sync_process_group(self, from_process: int = 0) -> list:
         self.log("start")
 
+        # ---------------------- Timing start ----------------------
+        t0 = time.perf_counter()
         outputs = broadcast_object_list([None, None, None], from_process=from_process)
+        download_elapsed = time.perf_counter() - t0
 
+        # ---------------------- WandB log ------------------------
+        if getattr(self, "logger", None) and self.logger.enable_wandb and self.logger.wandb_run:
+            # Step keyed by federated round so uploads and downloads align.
+            self.logger.wandb_run.log({
+                "performance/model_download_time": download_elapsed
+            }, step=self.round_idx)
+
+            # Store for optional moving-average statistics.
+            self.logger.accumulated_metrics.setdefault("model_download_times", []).append(download_elapsed)
+
+        self.log(f"model download took {download_elapsed:.3f}s")
         self.log("finished")
         return outputs
 
@@ -664,63 +703,6 @@ class FullModelLLMAggregator(LLMAggregator):
 
         self.log("finished")
 
-    """
-    def aggregate(self, raw_client_model_list):
-        
-        Aggregate client models with Nesterov momentum.
-
-        Steps
-        -----
-        1. Compute the FedAvg-style weighted average of client models (same as the
-           default FedML behaviour).
-        2. Treat the *difference* between the current global model and the
-           aggregated model as the (negative) gradient.
-        3. Perform an SGD update with momentum on the server side.  If
-           ``self._nesterov`` is ``True``, use the Nesterov variant.
-        4. Save the updated parameters via ``set_model_params`` and return them.
-        
-        self.log("aggregate: start")
-
-        # Step-1: FedAvg aggregation (reuse FedMLAggOperator)
-        aggregated_params: OrderedDict = FedMLAggOperator.agg(self.args, raw_client_model_list)
-
-        # Step-2: Load current global params (on CPU)
-        global_params: OrderedDict = self.get_model_params()
-
-        # Step-3: Momentum update
-        updated_params: OrderedDict = OrderedDict()
-        for name, global_tensor in global_params.items():
-            # Non-floating tensors (e.g. buffers) are copied directly
-            if not torch.is_floating_point(global_tensor):
-                updated_params[name] = aggregated_params[name]
-                continue
-
-            device = global_tensor.device           # cuda:0 (or cpu)
-            agg_tensor = aggregated_params[name].to(device)
-            grad = global_tensor - agg_tensor
-
-            # Initialise velocity buffer if first time
-            if name not in self._velocity:
-                self._velocity[name] = torch.zeros_like(grad)
-
-            # Momentum accumulation
-            self._velocity[name] = self._momentum * self._velocity[name] + grad
-
-            # Nesterov look-ahead
-            if self._nesterov:
-                update = self._momentum * self._velocity[name] + grad
-            else:
-                update = self._velocity[name]
-
-            # Parameter update (SGD step)
-            updated_params[name] = global_tensor - self._server_lr * update
-
-        # Step-4: Push new params to the model & return
-        self.set_model_params(updated_params)
-        self.log("aggregate: finished")
-        return updated_params
-    """
-
 
 class TrainingMetricsLogger:
     """Comprehensive logging for GRPO training with WandB support"""
@@ -811,7 +793,9 @@ class TrainingMetricsLogger:
             'policy_losses': [],
             'value_losses': [],
             'advantages': [],
-            'rollout_lengths': []
+            'rollout_lengths': [],
+            'completion_times': [],
+            'step_times': [],
         }
 
     def log_training_step(self, step_id: str, train_result: dict, global_step: int):
@@ -854,6 +838,11 @@ class TrainingMetricsLogger:
             wandb_metrics['rollouts/avg_length'] = train_result['avg_rollout_length']
             self.accumulated_metrics['rollout_lengths'].append(train_result['avg_rollout_length'])
 
+        # Average completion time (per generation)
+        if 'avg_completion_time' in train_result:
+            wandb_metrics['performance/avg_completion_time'] = train_result['avg_completion_time']
+            self.accumulated_metrics['completion_times'].append(train_result['avg_completion_time'])
+
         if 'rollout_time' in train_result:
             wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
 
@@ -880,6 +869,11 @@ class TrainingMetricsLogger:
         # Learning rate
         if 'learning_rate' in train_result:
             wandb_metrics['training/learning_rate'] = train_result['learning_rate']
+
+        # GRPO step time
+        if 'grpo_step_time' in train_result:
+            wandb_metrics['performance/grpo_step_time'] = train_result['grpo_step_time']
+            self.accumulated_metrics['step_times'].append(train_result['grpo_step_time'])
 
         # Log to wandb
         if self.enable_wandb and self.wandb_run and wandb_metrics:
@@ -1003,6 +997,14 @@ class TrainingMetricsLogger:
         if self.accumulated_metrics['rollout_lengths']:
             avg_length = self.get_moving_average(self.accumulated_metrics['rollout_lengths'], window_size)
             wandb_metrics[f'moving_avg/rollout_length_{window_size}'] = avg_length
+
+        if self.accumulated_metrics['completion_times']:
+            avg_ct = self.get_moving_average(self.accumulated_metrics['completion_times'], window_size)
+            wandb_metrics[f'moving_avg/completion_time_{window_size}'] = avg_ct
+
+        if self.accumulated_metrics['step_times']:
+            avg_st = self.get_moving_average(self.accumulated_metrics['step_times'], window_size)
+            wandb_metrics[f'moving_avg/step_time_{window_size}'] = avg_st
 
         # Log to wandb
         if self.enable_wandb and wandb_metrics:
