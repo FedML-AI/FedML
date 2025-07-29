@@ -216,7 +216,7 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             num_generations = 2
         
-        num_generations = 4
+        num_generations = 2
         
         # For testing, we can use a very small number of steps
         if grpo_max_steps > 0:
@@ -328,7 +328,7 @@ class FullModelLLMTrainer(LLMTrainer):
             repetition_penalty=1.1,
             epsilon=0.2,
             beta=0.1,
-            #optim="adamw_bnb_8bit",
+            optim="adamw_bnb_8bit",
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
