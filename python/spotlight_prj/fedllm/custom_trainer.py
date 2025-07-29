@@ -645,7 +645,7 @@ class FullModelLLMAggregator(LLMAggregator):
                         )
                     # ---------------- New behaviour ----------------
                     # After successfully writing the checkpoint, prune older
-                    # wallclock_* checkpoints so that only the latest three are
+                    # wallclock_* checkpoints so that only the latest six are
                     # kept on disk.
                     self._cleanup_old_wallclock_checkpoints()
             except Exception as e:
@@ -708,7 +708,7 @@ class FullModelLLMAggregator(LLMAggregator):
 
         self.log("finished")
 
-    def _cleanup_old_wallclock_checkpoints(self, keep_last: int = 3):
+    def _cleanup_old_wallclock_checkpoints(self, keep_last: int = 6):
         """Delete old wallclock_* checkpoints but keep the most recent ``keep_last``.
 
         This complements the round-based checkpoint cleanup by pruning time-based
