@@ -644,6 +644,11 @@ class FullModelLLMAggregator(LLMAggregator):
                             is_saving_process=True,
                             synchronize=False,
                         )
+                    # ---------------- New behaviour ----------------
+                    # After successfully writing the checkpoint, prune older
+                    # wallclock_* checkpoints so that only the latest three are
+                    # kept on disk.
+                    self._cleanup_old_wallclock_checkpoints()
             except Exception as e:
                 # Log and continue – do not crash training due to checkpoint failure
                 self.log(f"[WARN] Periodic checkpoint failed: {e}")
@@ -703,6 +708,51 @@ class FullModelLLMAggregator(LLMAggregator):
         )
 
         self.log("finished")
+
+    def _cleanup_old_wallclock_checkpoints(self, keep_last: int = 3):
+        """Delete old wallclock_* checkpoints but keep the most recent ``keep_last``.
+
+        This complements the round-based checkpoint cleanup by pruning time-based
+        checkpoints created by the periodic background thread.  The newest
+        ``keep_last`` checkpoints are retained; older ones are removed to avoid
+        unbounded disk usage on long-running servers.
+        """
+        pattern = re.compile(r"wallclock_(\d+)$")
+        valid_ckpts = []  # (timestamp, Path)
+        invalid_ckpts = []  # Path(s) that lack model files
+
+        # Determine candidate checkpoints and group by validity
+        for d in self.checkpoint_dir.iterdir():
+            m = pattern.fullmatch(d.name)
+            if not m:
+                continue  # skip non-wallclock dirs
+
+            # Heuristic: consider checkpoint *valid* if it contains at least one
+            # model weight file produced by ``save_pretrained`` or our fallback
+            # helper (i.e. *.bin or *.safetensors).  This covers both HF and PEFT.
+            has_model_file = any(d.glob("*.bin")) or any(d.glob("*.safetensors")) or any(d.glob("*.pt"))
+
+            if has_model_file:
+                valid_ckpts.append((int(m.group(1)), d))
+            else:
+                invalid_ckpts.append(d)
+
+        # Remove *all* invalid checkpoints immediately as they are unusable
+        for d in invalid_ckpts:
+            try:
+                shutil.rmtree(d, ignore_errors=True)
+            except Exception as e:
+                self.log(f"[WARN] Failed to delete incomplete wallclock checkpoint {d}: {e}")
+
+        # Sort valid checkpoints chronologically (oldest first)
+        valid_ckpts.sort(key=lambda x: x[0])
+
+        # Keep only the most recent ``keep_last`` valid checkpoints
+        for _, d in valid_ckpts[:-keep_last]:
+            try:
+                shutil.rmtree(d, ignore_errors=True)
+            except Exception as e:
+                self.log(f"[WARN] Failed to delete old wallclock checkpoint {d}: {e}")
 
 
 class TrainingMetricsLogger:
