@@ -834,6 +834,10 @@ class TrainingMetricsLogger:
         self.step_count = 0
         self.training_start_time = time.time()
         self.last_log_time = time.time()
+        # Stores the most recent average completion time reported by the trainer.
+        # Initialised here so that attribute always exists and we avoid AttributeError
+        # if the metric is accessed before the first value is logged.
+        self.avg_completion_time: Optional[float] = None
 
         # Accumulated metrics for averaging
         self.accumulated_metrics = {
@@ -889,9 +893,13 @@ class TrainingMetricsLogger:
             self.accumulated_metrics['rollout_lengths'].append(train_result['avg_rollout_length'])
 
         # Average completion time (per generation)
+        # Update the cached value if the trainer provided a fresh measurement.
+        if 'avg_completion_time' in train_result:
+            self.avg_completion_time = train_result['avg_completion_time']
+
         if self.avg_completion_time is not None:
             wandb_metrics['performance/avg_completion_time'] = self.avg_completion_time
-            self.accumulated_metrics['avg_completion_times'].append(self.avg_completion_time)
+            self.accumulated_metrics['completion_times'].append(self.avg_completion_time)
 
         if 'rollout_time' in train_result:
             wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
