@@ -85,13 +85,12 @@ class TimedGRPOTrainer(GRPOTrainer):
         # ------------------------------------------------------------------
         elapsed = time.perf_counter() - t0  # total time for this roll-out batch
         num_gens = max(1, getattr(self.args, "num_generations", 1))
-        avg_completion_time = elapsed / num_gens
+        self.avg_completion_time = elapsed / num_gens
 
         # Log the metric so that it is captured by both Accelerate and
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
-        self.accelerator.log({"avg_completion_time": avg_completion_time}, step=self.state.global_step)
-        self.log({"avg_completion_time": avg_completion_time})
-        print(f"avg_completion_time: {avg_completion_time}")
+        self.accelerator.log({"avg_completion_time": self.avg_completion_time}, step=self.state.global_step)
+        self.log({"avg_completion_time": self.avg_completion_time})
         
         # `out["kl"]` is a 1-D tensor of per-token KL values
         kl_mean = result["kl"].mean().item()
@@ -890,9 +889,9 @@ class TrainingMetricsLogger:
             self.accumulated_metrics['rollout_lengths'].append(train_result['avg_rollout_length'])
 
         # Average completion time (per generation)
-        if 'avg_completion_time' in train_result:
-            wandb_metrics['performance/avg_completion_time'] = train_result['avg_completion_time']
-            self.accumulated_metrics['completion_times'].append(train_result['avg_completion_time'])
+        if self.avg_completion_time is not None:
+            wandb_metrics['performance/avg_completion_time'] = self.avg_completion_time
+            self.accumulated_metrics['avg_completion_times'].append(self.avg_completion_time)
 
         if 'rollout_time' in train_result:
             wandb_metrics['performance/rollout_time'] = train_result['rollout_time']
