@@ -45,7 +45,7 @@ train_args:
   gradient_checkpointing: False  # Match GRPO config
   per_device_train_batch_size: 2  # Will be overridden by GRPO
   per_device_eval_batch_size: 8
-  gradient_accumulation_steps: 1  # Will be overridden by GRPO
+  gradient_accumulation_steps: 2  # Will be overridden by GRPO
   eval_accumulation_steps: 4
   learning_rate: 5e-6 # Will be overridden by GRPO
   warmup_steps: 0
