@@ -216,7 +216,7 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             num_generations = 2
         
-        num_generations = 2
+        num_generations = 4
         
         # For testing, we can use a very small number of steps
         if grpo_max_steps > 0:
