@@ -31,6 +31,7 @@ from src.peft_utils import set_peft_model_state_dict
 from src.modeling_utils import load_state_dict
 import time, logging
 import threading
+import subprocess  # for launching validation after checkpoints
 import shutil  # for deleting old checkpoints
 
 from fractions import Fraction
@@ -97,6 +98,9 @@ class TimedGRPOTrainer(GRPOTrainer):
         # the TrainingMetricsLogger (via GRPOMetricsCallback).
         self.accelerator.log({"avg_completion_time": self.avg_completion_time}, step=self.state.global_step)
         self.log({"avg_completion_time": self.avg_completion_time})
+
+        if self.state.global_step % 10 == 0:
+            torch.cuda.empty_cache()
 
         return result
 
@@ -391,7 +395,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # Clean up fresh model to free memory
         del fresh_model
         del fresh_tokenizer
-        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        torch.cuda.empty_cache()
         
         self.log("GRPO training finished")
     
@@ -646,6 +650,19 @@ class FullModelLLMAggregator(LLMAggregator):
                     # wallclock_* checkpoints so that only the latest six are
                     # kept on disk.
                     self._cleanup_old_wallclock_checkpoints()
+                    # Run validation on the newly saved checkpoint
+                    try:
+                        script_path = Path(__file__).parent / "validation.py"
+                        log_path = Path(self.args.output_dir) / "validation.log"
+                        with open(log_path, "a") as lf:
+                            subprocess.Popen(
+                                [sys.executable, str(script_path), "--model", str(ckpt_dir)],
+                                stdout=lf,
+                                stderr=subprocess.STDOUT,
+                                close_fds=True,
+                            )
+                    except Exception as e:
+                        self.log(f"[WARN] Failed to launch validation: {e}")
             except Exception as e:
                 # Log and continue – do not crash training due to checkpoint failure
                 self.log(f"[WARN] Periodic checkpoint failed: {e}")

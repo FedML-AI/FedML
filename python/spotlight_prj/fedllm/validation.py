@@ -100,7 +100,7 @@ def parse_args() -> argparse.Namespace:
                    default="Qwen/Qwen3-0.6B",
                    help=("Tokenizer repo / path (default: Qwen/Qwen3-0.6B). "
                          "Override if you need a different tokenizer."))
-    p.add_argument("--max-tokens", type=int, default=1024,
+    p.add_argument("--max-tokens", type=int, default=512,
                    help="generation length cap (tokens)")
     p.add_argument("--temperature", type=float, default=0.7)
     p.add_argument("--top-p", type=float, default=0.95)
@@ -171,6 +171,10 @@ def main() -> None:
     print(f"\nEvaluated {len(ds)} examples × {args.rollouts} rollouts "
           f"(batch size = {args.batch_examples}).")
     print(f"Average reward: {avg_reward:.4f}")
+
+    # Save average reward to file
+    with open("avg_reward.txt", "a") as f:
+        f.write(f"{avg_reward:.4f}\n")
 
 
 if __name__ == "__main__":
