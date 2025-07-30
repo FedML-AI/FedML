@@ -9,7 +9,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Configuration
 RUN_ID = os.environ.get("RUN_ID", "test_run")
-MODEL_NAME = "Qwen/Qwen3-1.7B-FP8"
+MODEL_NAME = "Qwen/Qwen3-1.7B"
 OUTPUT_DIR = f"/workspace/FedML/python/spotlight_prj/fedllm/.logs/FedML/{RUN_ID}/node_0/init"
 
 print(f"Saving initial checkpoint for model: {MODEL_NAME}")
