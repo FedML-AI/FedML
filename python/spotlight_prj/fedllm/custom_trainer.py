@@ -37,7 +37,8 @@ import shutil  # for deleting old checkpoints
 from fractions import Fraction
 
 # New import for TrainerCallback
-from transformers import TrainerCallback
+from transformers import TrainerCallback, AutoConfig
+import transformers
 
 import wandb
 import json
@@ -47,6 +48,29 @@ warnings.filterwarnings("ignore")
 
 
 class TimedGRPOTrainer(GRPOTrainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        model_init_kwargs = args.model_init_kwargs or {}
+        torch_dtype = model_init_kwargs.get("torch_dtype")
+        if isinstance(torch_dtype, torch.dtype) or torch_dtype == "auto" or torch_dtype is None:
+            pass  # torch_dtype is already a torch.dtype or "auto" or None
+        elif isinstance(torch_dtype, str):  # it's a str, but not "auto"
+            torch_dtype = getattr(torch, torch_dtype)
+            model_init_kwargs["torch_dtype"] = torch_dtype
+        else:
+            raise ValueError(
+                "Invalid `torch_dtype` passed to `GRPOConfig`. Expected either 'auto' or a string representing "
+                f"a `torch.dtype` (e.g., 'float32'), but got {torch_dtype}."
+            )
+
+        # Reference model
+        if self.beta != 0.0:
+            # For deepspeed, fsdp or non-distributed models, create a reference model from scratch
+            config = AutoConfig.from_pretrained("Qwen/Qwen3-1.7B-FP8")
+            architecture = getattr(transformers, config.architectures[0])
+            self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-FP8", **model_init_kwargs)
+
     def _record_step_stats(self, stats):
         # -------------------------------------------------------------
         # Measure *inter-step* wall-clock time: difference between the start
@@ -220,7 +244,7 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             num_generations = 2
         
-        num_generations = 4
+        num_generations = 2
         
         # For testing, we can use a very small number of steps
         if grpo_max_steps > 0:
@@ -310,7 +334,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=512,
+            max_completion_length=256,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
@@ -332,7 +356,7 @@ class FullModelLLMTrainer(LLMTrainer):
             repetition_penalty=1.1,
             epsilon=0.2,
             beta=0.1,
-            #optim="adamw_bnb_8bit",
+            optim="adamw_bnb_8bit",
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
@@ -353,7 +377,7 @@ class FullModelLLMTrainer(LLMTrainer):
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
             "bos_token_id": fresh_tokenizer.bos_token_id,
-            "max_new_tokens": 512,
+            "max_new_tokens": 256,
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
