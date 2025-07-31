@@ -67,9 +67,9 @@ class TimedGRPOTrainer(GRPOTrainer):
         # Reference model
         if self.beta != 0.0:
             # For deepspeed, fsdp or non-distributed models, create a reference model from scratch
-            config = AutoConfig.from_pretrained("Qwen/Qwen3-1.7B-FP8")
+            config = AutoConfig.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8")
             architecture = getattr(transformers, config.architectures[0])
-            self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-FP8", **model_init_kwargs)
+            self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8", **model_init_kwargs)
         
         #self.ref_model.to('cpu')
 
