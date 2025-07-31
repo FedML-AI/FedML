@@ -70,6 +70,8 @@ class TimedGRPOTrainer(GRPOTrainer):
             config = AutoConfig.from_pretrained("Qwen/Qwen3-1.7B-FP8")
             architecture = getattr(transformers, config.architectures[0])
             self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-FP8", **model_init_kwargs)
+        
+        self.ref_model.to('cpu')
 
     def _record_step_stats(self, stats):
         # -------------------------------------------------------------
@@ -279,7 +281,7 @@ class FullModelLLMTrainer(LLMTrainer):
             else:
                 fresh_model = AutoModelForCausalLM.from_pretrained(
                     model_name, 
-                    torch_dtype=torch.float32,  # Use float32 for better stability
+                    torch_dtype=torch.float16,  # Use float32 for better stability
                     use_cache=False,
                     trust_remote_code=True
                 )
@@ -287,7 +289,7 @@ class FullModelLLMTrainer(LLMTrainer):
             self.log(f"Failed to load with requested precision, falling back to float32: {e}")
             fresh_model = AutoModelForCausalLM.from_pretrained(
                 model_name, 
-                torch_dtype=torch.float32,  # Fallback to float32
+                torch_dtype=torch.float16,  # Fallback to float32
                 use_cache=False,
                 trust_remote_code=True
             )
@@ -482,7 +484,10 @@ class FullModelLLMTrainer(LLMTrainer):
             round_idx = self.round_idx
 
         model_params = to_device(model_params, "cpu")   # ensure params live on CPU
-        torch.cuda.empty_cache() 
+
+        dtypes = set(t.dtype for t in model_params.values())
+        print(f"model_params dtypes: {dtypes}")  # Should print torch.float32 if FP32
+
         broadcast_object_list([round_idx, model_params, client_index], from_process=from_process, device=torch.device("cpu"))
 
         self.log("finished")
