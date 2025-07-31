@@ -488,7 +488,7 @@ class FullModelLLMTrainer(LLMTrainer):
         dtypes = set(t.dtype for t in model_params.values())
         print(f"model_params dtypes: {dtypes}")  # Should print torch.float32 if FP32
 
-        broadcast_object_list([round_idx, model_params, client_index], from_process=from_process, device=torch.device("cpu"))
+        broadcast_object_list([round_idx, model_params, client_index], from_process=from_process)
 
         self.log("finished")
 
