@@ -51,7 +51,7 @@ class TimedGRPOTrainer(GRPOTrainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        model_init_kwargs = args.model_init_kwargs or {}
+        model_init_kwargs = kwargs.get('args', GRPOConfig()).model_init_kwargs or {}
         torch_dtype = model_init_kwargs.get("torch_dtype")
         if isinstance(torch_dtype, torch.dtype) or torch_dtype == "auto" or torch_dtype is None:
             pass  # torch_dtype is already a torch.dtype or "auto" or None
