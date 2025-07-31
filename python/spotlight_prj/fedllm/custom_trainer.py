@@ -377,7 +377,7 @@ class FullModelLLMTrainer(LLMTrainer):
             top_k=50,
             repetition_penalty=1.1,
             epsilon=0.2,
-            beta=0.1,
+            beta=0.0,
             optim="adamw_bnb_8bit",
         )
         
