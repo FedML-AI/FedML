@@ -73,6 +73,23 @@ class TimedGRPOTrainer(GRPOTrainer):
             architecture = getattr(transformers, config.architectures[0])
             self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8", **model_init_kwargs)
         
+        # Disable dropout in the models
+        if args.disable_dropout:
+            disable_dropout_in_model(model)
+            if self.ref_model is not None:
+                disable_dropout_in_model(self.ref_model)
+        
+        if self.ref_model is not None:
+            if self.is_deepspeed_enabled:
+                self.ref_model = prepare_deepspeed(self.ref_model, self.accelerator)
+            elif self.is_fsdp_enabled:
+                self.ref_model = prepare_fsdp(self.ref_model, self.accelerator)
+            else:
+                self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
+
+        if args.sync_ref_model:
+            self.add_callback(SyncRefModelCallback(ref_model=self.ref_model, accelerator=self.accelerator))
+        
         #self.ref_model.to('cpu')
     """
 
