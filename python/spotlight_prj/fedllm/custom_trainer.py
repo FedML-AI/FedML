@@ -71,7 +71,7 @@ class TimedGRPOTrainer(GRPOTrainer):
             architecture = getattr(transformers, config.architectures[0])
             self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-FP8", **model_init_kwargs)
         
-        self.ref_model.to('cpu')
+        #self.ref_model.to('cpu')
 
     def _record_step_stats(self, stats):
         # -------------------------------------------------------------

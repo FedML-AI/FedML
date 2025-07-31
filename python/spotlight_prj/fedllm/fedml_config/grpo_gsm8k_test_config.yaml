@@ -19,6 +19,7 @@ data_args:
 model_args:
   skip_log_model_net: True
   model_name_or_path: "Qwen/Qwen3-1.7B"
+  model_dtype: "bfloat16"
   peft_type: "none"  # Full model fine-tuning
   use_flash_attention: False
 
