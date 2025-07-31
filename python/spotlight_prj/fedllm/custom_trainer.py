@@ -48,9 +48,11 @@ warnings.filterwarnings("ignore")
 
 
 class TimedGRPOTrainer(GRPOTrainer):
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        
         model_init_kwargs = kwargs.get('args', GRPOConfig()).model_init_kwargs or {}
         torch_dtype = model_init_kwargs.get("torch_dtype")
         if isinstance(torch_dtype, torch.dtype) or torch_dtype == "auto" or torch_dtype is None:
@@ -72,6 +74,7 @@ class TimedGRPOTrainer(GRPOTrainer):
             self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8", **model_init_kwargs)
         
         #self.ref_model.to('cpu')
+    """
 
     def _record_step_stats(self, stats):
         # -------------------------------------------------------------
