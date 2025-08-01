@@ -72,7 +72,7 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 
-import gc
+#import gc
 
 
 def disable_dropout_in_model(model: torch.nn.Module) -> None:
