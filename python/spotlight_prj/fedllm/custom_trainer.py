@@ -307,7 +307,7 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             num_generations = 2
         
-        num_generations = 2
+        num_generations = 4
         
         # For testing, we can use a very small number of steps
         if grpo_max_steps > 0:
@@ -397,7 +397,7 @@ class FullModelLLMTrainer(LLMTrainer):
             output_dir=str(self.checkpoint_dir / "grpo"),
             per_device_train_batch_size=grpo_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
-            max_completion_length=256,
+            max_completion_length=512,
             num_generations=num_generations,  # Adjusted based on effective batch size
             num_train_epochs=grpo_num_epochs if grpo_max_steps <= 0 else 1,  # Use 1 epoch if max_steps is set
             max_steps=grpo_max_steps if grpo_max_steps > 0 else -1,  # Override epochs with max_steps
@@ -418,8 +418,8 @@ class FullModelLLMTrainer(LLMTrainer):
             top_k=50,
             repetition_penalty=1.1,
             epsilon=0.2,
-            beta=0.0,
-            optim="sgd",
+            beta=0.1,
+            #optim="sgd",
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
@@ -440,7 +440,7 @@ class FullModelLLMTrainer(LLMTrainer):
             "pad_token_id": fresh_tokenizer.eos_token_id,
             "eos_token_id": fresh_tokenizer.eos_token_id,
             "bos_token_id": fresh_tokenizer.bos_token_id,
-            "max_new_tokens": 256,
+            "max_new_tokens": 512,
             "length_penalty": 1.0,      # Neutral length penalty
         }
         
