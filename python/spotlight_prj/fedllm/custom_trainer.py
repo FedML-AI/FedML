@@ -24,6 +24,32 @@ from fedml.train.llm.modeling_utils import to_device
 from fedml.train.llm.distributed import barrier
 from peft import PeftModel
 from trl import GRPOTrainer, GRPOConfig
+from trl.trainer.utils import prepare_deepspeed
+
+# Fallback stub if prepare_fsdp is unavailable in current TRL version
+try:
+    from trl.trainer.utils import prepare_fsdp  # type: ignore
+except ImportError:  # pragma: no cover
+    def prepare_fsdp(model, accelerator):
+        """Minimal FSDP prep fallback – just use accelerator.prepare_model."""
+        return accelerator.prepare_model(model, evaluation_mode=True)
+
+# Optional: stub SyncRefModelCallback if not provided upstream
+try:
+    from trl.trainer.callbacks import SyncRefModelCallback  # hypothetical future addition
+except Exception:
+    from transformers import TrainerCallback
+    class SyncRefModelCallback(TrainerCallback):
+        """Fallback no-op callback used when TRL doesn't ship one.
+        Simply keeps reference model on correct device and in eval mode.
+        """
+        def __init__(self, ref_model=None, accelerator=None):
+            self.ref_model = ref_model
+            self.accelerator = accelerator
+        def on_train_begin(self, args, state, control, **kwargs):
+            if self.ref_model is not None and self.accelerator is not None:
+                self.ref_model.to(self.accelerator.device)
+                self.ref_model.eval()
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoint
@@ -47,6 +73,17 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import gc
+
+
+def disable_dropout_in_model(model: torch.nn.Module) -> None:
+    """
+    Disable dropout by setting all torch.nn.Dropout modules to eval mode and
+    zero probability.
+    """
+    for module in model.modules():
+        if isinstance(module, torch.nn.Dropout):
+            module.p = 0.0
+            module.eval()
 
 
 class TimedGRPOTrainer(GRPOTrainer):
@@ -76,20 +113,22 @@ class TimedGRPOTrainer(GRPOTrainer):
             self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8", **model_init_kwargs)
         
         # Disable dropout in the models
-        if args.disable_dropout:
-            disable_dropout_in_model(model)
+        if getattr(self.args, "disable_dropout", False):
+            disable_dropout_in_model(self.model)
             if self.ref_model is not None:
                 disable_dropout_in_model(self.ref_model)
         
         if self.ref_model is not None:
             if self.is_deepspeed_enabled:
-                self.ref_model = prepare_deepspeed(self.ref_model, self.accelerator)
+                # Prepare reference model under DeepSpeed when enabled
+                per_device_bs = getattr(self.args, 'per_device_train_batch_size', 1)
+                self.ref_model = prepare_deepspeed(self.ref_model, per_device_bs, fp16=getattr(self.args, 'fp16', False), bf16=getattr(self.args, 'bf16', False))
             elif self.is_fsdp_enabled:
                 self.ref_model = prepare_fsdp(self.ref_model, self.accelerator)
             else:
                 self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
 
-        if args.sync_ref_model:
+        if getattr(self.args, "sync_ref_model", False):
             self.add_callback(SyncRefModelCallback(ref_model=self.ref_model, accelerator=self.accelerator))
         
         #self.ref_model.to('cpu')
