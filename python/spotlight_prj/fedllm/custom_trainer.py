@@ -46,6 +46,8 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 
+import gc
+
 
 class TimedGRPOTrainer(GRPOTrainer):
     """
@@ -411,6 +413,7 @@ class FullModelLLMTrainer(LLMTrainer):
         # Run GRPO training
         grpo_trainer.train()
 
+        
 
         # **Copy trained weights back to FedML's model**
         self.log("Copying GRPO-trained weights back to FedML model")
@@ -421,6 +424,8 @@ class FullModelLLMTrainer(LLMTrainer):
             self.model.base_model.load_state_dict(trained_state, strict=False)
         else:
             self.model.load_state_dict(trained_state, strict=False)
+        self.model.to("cpu")
+        del trained_state
         
         # Optionally save a pre-aggregation checkpoint for this round
 
@@ -437,6 +442,12 @@ class FullModelLLMTrainer(LLMTrainer):
         # After saving the current round checkpoint, clean up older round_* checkpoints
         if self.training_args.should_save:
             self._cleanup_old_round_checkpoints()
+        
+        grpo_trainer.accelerator.end_training()
+        grpo_trainer.accelerator.free_memory()
+        grpo_trainer.model = None
+        gc.collect()
+        torch.cuda.empty_cache()
         
         # Clean up fresh model to free memory
         del fresh_model
