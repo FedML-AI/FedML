@@ -18,7 +18,7 @@ data_args:
 
 model_args:
   skip_log_model_net: True
-  model_name_or_path: "Qwen/Qwen3-0.6B"
+  model_name_or_path: "Qwen/Qwen3-1.7B"
   model_dtype: "bfloat16"
   peft_type: "none"  # Full model fine-tuning
   use_flash_attention: False
@@ -27,8 +27,8 @@ train_args:
   federated_optimizer: "FedAvg"
   client_optimizer: "adamw_torch"
   server_optimizer: "FedAvg"
-  client_num_in_total: 4  # Single client setup
-  client_num_per_round: 4  # Single client setup
+  client_num_in_total: 2  # Single client setup
+  client_num_per_round: 2  # Single client setup
   comm_round: 30  # Reduced to 3 rounds for testing
   # GRPO-specific settings for testing
   grpo_max_steps: 50
