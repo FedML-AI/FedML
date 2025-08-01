@@ -419,7 +419,7 @@ class FullModelLLMTrainer(LLMTrainer):
             repetition_penalty=1.1,
             epsilon=0.2,
             beta=0.0,
-            optim="paged_adamw_8bit",
+            optim="galore_adamw_8bit_layerwise",
         )
         
         self.log(f"GRPO Config - bf16: {use_bf16}, fp16: {not use_bf16}, batch_size: {grpo_batch_size}")
@@ -464,7 +464,7 @@ class FullModelLLMTrainer(LLMTrainer):
         else:
             self.model.load_state_dict(trained_state, strict=False)
         self.model.to("cpu")
-        del trained_state
+        #del trained_state
         
         # Optionally save a pre-aggregation checkpoint for this round
 
@@ -481,12 +481,13 @@ class FullModelLLMTrainer(LLMTrainer):
         # After saving the current round checkpoint, clean up older round_* checkpoints
         if self.training_args.should_save:
             self._cleanup_old_round_checkpoints()
-        
+        """
         grpo_trainer.accelerator.end_training()
         grpo_trainer.accelerator.free_memory()
         grpo_trainer.model = None
         gc.collect()
         torch.cuda.empty_cache()
+        """
         
         # Clean up fresh model to free memory
         del fresh_model
