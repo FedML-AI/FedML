@@ -406,6 +406,7 @@ class FullModelLLMTrainer(LLMTrainer):
             fp16=not use_bf16,  # Use fp16 if not bf16
             gradient_checkpointing=getattr(args, 'gradient_checkpointing', False),
             #logging_steps=5 if grpo_max_steps > 0 and grpo_max_steps < 50 else 25,  # More frequent logging for short runs
+            gradient_checkpointing_kwargs={"use_reentrant": False},
             logging_steps=1,
             log_completions=False,
             save_steps=grpo_max_steps if grpo_max_steps > 0 else 500,  # Save at the end if using max_steps
