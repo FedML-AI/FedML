@@ -96,10 +96,16 @@ class TimedGRPOTrainer(GRPOTrainer):
             self.ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8")
             self.ref_model.eval()
             disable_dropout_in_model(self.ref_model)
+            # Move reference model to the same device as the policy so that
+            # inputs and weights reside on a single device (avoids CPU↔GPU mismatch).
+            # `Trainer` already initialises an `accelerator` attribute so we can
+            # rely on `self.accelerator.device` to pick the correct target.
+            self.ref_model.to(self.accelerator.device)
             for p in self.ref_model.parameters():
                 p.requires_grad_(False)
         
-        #self.ref_model.to('cpu')
+        # Keep the commented line for quick CPU off-loading during debugging
+        # self.ref_model.to('cpu')
     
 
     def _record_step_stats(self, stats):
