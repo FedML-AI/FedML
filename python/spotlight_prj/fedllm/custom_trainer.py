@@ -93,7 +93,7 @@ class TimedGRPOTrainer(GRPOTrainer):
 
         if self.ref_model is not None:
             # Load any model you like as the reference baseline
-            self.ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8")
+            self.ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-0.6B")
             self.ref_model.eval()
             disable_dropout_in_model(self.ref_model)
             # Move reference model to the same device as the policy so that
