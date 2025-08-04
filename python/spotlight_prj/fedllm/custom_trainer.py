@@ -63,7 +63,7 @@ import shutil  # for deleting old checkpoints
 from fractions import Fraction
 
 # New import for TrainerCallback
-from transformers import TrainerCallback, AutoConfig
+from transformers import TrainerCallback, AutoConfig, AutoModelForCausalLM
 import transformers
 
 import wandb
@@ -91,45 +91,13 @@ class TimedGRPOTrainer(GRPOTrainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        
-        model_init_kwargs = kwargs.get('args', GRPOConfig()).model_init_kwargs or {}
-        torch_dtype = model_init_kwargs.get("torch_dtype")
-        if isinstance(torch_dtype, torch.dtype) or torch_dtype == "auto" or torch_dtype is None:
-            pass  # torch_dtype is already a torch.dtype or "auto" or None
-        elif isinstance(torch_dtype, str):  # it's a str, but not "auto"
-            torch_dtype = getattr(torch, torch_dtype)
-            model_init_kwargs["torch_dtype"] = torch_dtype
-        else:
-            raise ValueError(
-                "Invalid `torch_dtype` passed to `GRPOConfig`. Expected either 'auto' or a string representing "
-                f"a `torch.dtype` (e.g., 'float32'), but got {torch_dtype}."
-            )
-
-        # Reference model
-        if self.beta != 0.0:
-            # For deepspeed, fsdp or non-distributed models, create a reference model from scratch
-            config = AutoConfig.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8")
-            architecture = getattr(transformers, config.architectures[0])
-            self.ref_model = architecture.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8", **model_init_kwargs)
-        
-        # Disable dropout in the models
-        if getattr(self.args, "disable_dropout", False):
-            disable_dropout_in_model(self.model)
-            if self.ref_model is not None:
-                disable_dropout_in_model(self.ref_model)
-        
         if self.ref_model is not None:
-            if self.is_deepspeed_enabled:
-                # Prepare reference model under DeepSpeed when enabled
-                per_device_bs = getattr(self.args, 'per_device_train_batch_size', 1)
-                self.ref_model = prepare_deepspeed(self.ref_model, per_device_bs, fp16=getattr(self.args, 'fp16', False), bf16=getattr(self.args, 'bf16', False))
-            elif self.is_fsdp_enabled:
-                self.ref_model = prepare_fsdp(self.ref_model, self.accelerator)
-            else:
-                self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
-
-        if getattr(self.args, "sync_ref_model", False):
-            self.add_callback(SyncRefModelCallback(ref_model=self.ref_model, accelerator=self.accelerator))
+            # Load any model you like as the reference baseline
+            self.ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B-GPTQ-Int8")
+            self.ref_model.eval()
+            disable_dropout_in_model(self.ref_model)
+            for p in self.ref_model.parameters():
+                p.requires_grad_(False)
         
         #self.ref_model.to('cpu')
     
