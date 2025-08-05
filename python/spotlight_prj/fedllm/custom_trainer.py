@@ -141,6 +141,24 @@ class TimedGRPOTrainer(GRPOTrainer):
 
         return result
 
+        
+
+    def _get_per_token_logps_and_entropies(self, model, batch, *args, **kwargs):
+        """Ensure inputs and model are on the same device before delegating to parent impl.
+
+        This override fixes CPU↔GPU mismatch errors when the reference model is kept
+        on CPU while the policy lives on GPU.  We simply move the tensor inputs in
+        ``batch`` to the device of ``model`` before invoking the upstream helper.
+        """
+        import torch
+        target_device = next(model.parameters()).device
+        # Move all tensor values in the batch to the model's device
+        batch = {
+            k: (v.to(target_device) if torch.is_tensor(v) else v)
+            for k, v in batch.items()
+        }
+        return super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
+
 
 class FullModelLLMTrainer(LLMTrainer):
     """Custom trainer that properly handles both PEFT and non-PEFT models with GRPO training."""
