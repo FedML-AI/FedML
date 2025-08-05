@@ -34,22 +34,6 @@ except ImportError:  # pragma: no cover
         """Minimal FSDP prep fallback – just use accelerator.prepare_model."""
         return accelerator.prepare_model(model, evaluation_mode=True)
 
-# Optional: stub SyncRefModelCallback if not provided upstream
-try:
-    from trl.trainer.callbacks import SyncRefModelCallback  # hypothetical future addition
-except Exception:
-    from transformers import TrainerCallback
-    class SyncRefModelCallback(TrainerCallback):
-        """Fallback no-op callback used when TRL doesn't ship one.
-        Simply keeps reference model on correct device and in eval mode.
-        """
-        def __init__(self, ref_model=None, accelerator=None):
-            self.ref_model = ref_model
-            self.accelerator = accelerator
-        def on_train_begin(self, args, state, control, **kwargs):
-            if self.ref_model is not None and self.accelerator is not None:
-                self.ref_model.to(self.accelerator.device)
-                self.ref_model.eval()
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoint
@@ -105,7 +89,7 @@ class TimedGRPOTrainer(GRPOTrainer):
                 p.requires_grad_(False)
         
         # Keep the commented line for quick CPU off-loading during debugging
-        # self.ref_model.to('cpu')
+        self.ref_model.to('cpu')
     
 
     def _record_step_stats(self, stats):
