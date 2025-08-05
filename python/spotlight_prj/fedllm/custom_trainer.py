@@ -161,7 +161,13 @@ class TimedGRPOTrainer(GRPOTrainer):
                 k: (v.to(target_device) if torch.is_tensor(v) else v)
                 for k, v in batch.items()
             }
-        return super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
+        logps, entropies = super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
+        
+        out_device = self.accelerator.device
+        logps = logps.to(out_device)
+        entropies = entropies.to(out_device)
+        
+        return logps, entropies
 
 
 class FullModelLLMTrainer(LLMTrainer):
