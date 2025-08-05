@@ -26,14 +26,6 @@ from peft import PeftModel
 from trl import GRPOTrainer, GRPOConfig
 from trl.trainer.utils import prepare_deepspeed
 
-# Fallback stub if prepare_fsdp is unavailable in current TRL version
-try:
-    from trl.trainer.utils import prepare_fsdp  # type: ignore
-except ImportError:  # pragma: no cover
-    def prepare_fsdp(model, accelerator):
-        """Minimal FSDP prep fallback – just use accelerator.prepare_model."""
-        return accelerator.prepare_model(model, evaluation_mode=True)
-
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 from run_fedllm import LLMTrainer, LLMAggregator, save_checkpoint, load_checkpoint
