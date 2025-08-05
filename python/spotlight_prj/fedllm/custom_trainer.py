@@ -157,6 +157,15 @@ class TimedGRPOTrainer(GRPOTrainer):
             k: (v.to(target_device) if torch.is_tensor(v) else v)
             for k, v in batch.items()
         }
+        if torch.is_tensor(batch):
+            # Upstream may forward a single Tensor instead of a mapping
+            batch = batch.to(target_device)
+        else:
+            # Standard case: mapping of tensors / non-tensor objects
+            batch = {
+                k: (v.to(target_device) if torch.is_tensor(v) else v)
+                for k, v in batch.items()
+            }
         return super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
 
 
