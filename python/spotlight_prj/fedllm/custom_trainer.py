@@ -163,29 +163,14 @@ class TimedGRPOTrainer(GRPOTrainer):
             }
         logps, entropies = super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
         
-        # -------------------------------------------------------------
-        # Align output tensors so both policy and reference tensors live
-        # on the SAME device.
-        # Strategy: if the reference model is on CPU (its outputs therefore
-        # on CPU) and the policy is on GPU, we move the *policy* outputs to
-        # CPU – they are much smaller than the reference logits.  This avoids
-        # a large GPU memory spike (~300 MB per rollout).
-        # -------------------------------------------------------------
         policy_device = self.accelerator.device
         if torch.is_tensor(logps):
-            if logps.device == policy_device:
-                # Policy outputs – move to CPU to match reference tensors
-                logps = logps.cpu()
-                if entropies is not None and torch.is_tensor(entropies):
-                    entropies = entropies.cpu()
-            else:
-                # Reference outputs already on CPU – leave as-is
-                pass
-        elif entropies is not None and torch.is_tensor(entropies):
-            # Rare edge-case where logps is not a tensor but entropies is
-            if entropies.device == policy_device:
-                entropies = entropies.cpu()
-
+            logps = logps.to(torch.float16)
+            logps = logps.to(policy_device)
+        if entropies is not None and torch.is_tensor(entropies):
+            entropies = entropies.to(torch.float16)
+            entropies = entropies.to(policy_device)
+        
         return logps, entropies
 
 
