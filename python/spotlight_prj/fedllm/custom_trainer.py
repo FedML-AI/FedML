@@ -63,26 +63,25 @@ def disable_dropout_in_model(model: torch.nn.Module) -> None:
 
 
 class TimedGRPOTrainer(GRPOTrainer):
-    """
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if self.ref_model is not None:
             # Load any model you like as the reference baseline
-            self.ref_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B")
+            self.ref_model = AutoModelForCausalLM.from_pretrained(
+                "Qwen/Qwen3-1.7B",
+                torch_dtype=torch.bfloat16,
+                device_map="cpu",
+                trust_remote_code=True,
+                use_cache=False,
+            )
             self.ref_model.eval()
             disable_dropout_in_model(self.ref_model)
-            # Move reference model to the same device as the policy so that
-            # inputs and weights reside on a single device (avoids CPU↔GPU mismatch).
-            # `Trainer` already initialises an `accelerator` attribute so we can
-            # rely on `self.accelerator.device` to pick the correct target.
-            self.ref_model.to(self.accelerator.device)
             for p in self.ref_model.parameters():
                 p.requires_grad_(False)
         
-        # Keep the commented line for quick CPU off-loading during debugging
-        self.ref_model.to('cpu')
-    """
+    
     
 
     def _record_step_stats(self, stats):
@@ -143,14 +142,15 @@ class TimedGRPOTrainer(GRPOTrainer):
         return result
 
         
-    """
+    
     def _get_per_token_logps_and_entropies(self, model, batch, *args, **kwargs):
+        """
         Ensure inputs and model are on the same device before delegating to parent impl.
 
         This override fixes CPU↔GPU mismatch errors when the reference model is kept
         on CPU while the policy lives on GPU.  We simply move the tensor inputs in
         ``batch`` to the device of ``model`` before invoking the upstream helper.
-        
+        """
         target_device = next(model.parameters()).device
         # Move all tensor values in the batch to the model's device
         if torch.is_tensor(batch):
@@ -173,7 +173,7 @@ class TimedGRPOTrainer(GRPOTrainer):
             entropies = entropies.to(policy_device)
         
         return logps, entropies
-    """
+    
 
 
 class FullModelLLMTrainer(LLMTrainer):
