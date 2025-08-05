@@ -163,9 +163,11 @@ class TimedGRPOTrainer(GRPOTrainer):
             }
         logps, entropies = super()._get_per_token_logps_and_entropies(model, batch, *args, **kwargs)
         
-        out_device = self.accelerator.device
-        logps = logps.to(out_device)
-        entropies = entropies.to(out_device)
+        policy_device = self.accelerator.device
+        if torch.is_tensor(logps):
+            logps = logps.to(policy_device)
+        if entropies is not None and torch.is_tensor(entropies):
+            entropies = entropies.to(policy_device)
         
         return logps, entropies
 
