@@ -1,41 +1,68 @@
+# GRPO Setup Guide
 
-# FEDML Open Source: A Unified and Scalable Machine Learning Library for Running Training and Deployment Anywhere at Any Scale
+This guide provides setup instructions for running GRPO (Group Relative Policy Optimization) experiments using FedML.
 
-Backed by TensorOpera AI: Your Generative AI Platform at Scale (https://TensorOpera.ai)
+## Initial Setup
 
-<div align="center">
- <img src="docs/images/TensorOpera_arch.png" width="600px">
-</div>
+**Note:** Server and Client(s) use the same initial setup process.
 
-TensorOpera Documentation: https://docs.TensorOpera.ai
+### 1. Clone Repository
 
-TensorOpera Homepage: https://TensorOpera.ai/ \
-TensorOpera Blog: https://blog.TensorOpera.ai/
+```bash
+git clone --recurse-submodules https://github.com/bagel-org/FedML.git
+cd FedML/python/spotlight_prj/fedllm
+```
 
-Join the Community:
-Slack: https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w \
-Discord: https://discord.gg/9xkW8ae6RV
+### 2. Install Dependencies
 
+```bash
+pip install -r requirements.txt
+pip install "fedml>=0.8.4a7" "trl>=0.9.0" "accelerate>=0.27.0" 
+```
 
-TensorOpera® AI (https://TensorOpera.ai) is the next-gen cloud service for LLMs & Generative AI. It helps developers to launch complex model training, deployment, and federated learning anywhere on decentralized GPUs, multi-clouds, edge servers, and smartphones, easily, economically, and securely.
+### 3. Environment Configuration
 
-Highly integrated with TensorOpera open source library, TensorOpera AI provides holistic support of three interconnected AI infrastructure layers: user-friendly MLOps, a well-managed scheduler, and high-performance ML libraries for running any AI jobs across GPU Clouds.
+Set up AWS credentials:
 
-A typical workflow is showing in figure above. When developer wants to run a pre-built job in Studio or Job Store, TensorOpera®Launch swiftly pairs AI jobs with the most economical GPU resources, auto-provisions, and effortlessly runs the job, eliminating complex environment setup and management. When running the job, TensorOpera®Launch orchestrates the compute plane in different cluster topologies and configuration so that any complex AI jobs are enabled, regardless model training, deployment, or even federated learning. TensorOpera®Open Source is unified and scalable machine learning library for running these AI jobs anywhere at any scale. 
+```bash
+export AWS_ACCESS_KEY_ID=<your_key>
+export AWS_SECRET_ACCESS_KEY=<your_other_key>
+```
 
-In the MLOps layer of TensorOpera AI
-- **TensorOpera® Studio** embraces the power of Generative AI! Access popular open-source foundational models (e.g., LLMs), fine-tune them seamlessly with your specific data, and deploy them scalably and cost-effectively using the TensorOpera Launch on GPU marketplace.
-- **TensorOpera® Job Store** maintains a list of pre-built jobs for training, deployment, and federated learning. Developers are encouraged to run directly with customize datasets or models on cheaper GPUs.
+Generate a unique run ID:
 
-In the scheduler layer of TensorOpera AI
-- **TensorOpera® Launch** swiftly pairs AI jobs with the most economical GPU resources, auto-provisions, and effortlessly runs the job, eliminating complex environment setup and management. It supports a range of compute-intensive jobs for generative AI and LLMs, such as large-scale training, serverless deployments, and vector DB searches. TensorOpera Launch also facilitates on-prem cluster management and deployment on private or hybrid clouds.
+```bash
+export RUN_ID=$(python -c "import uuid; print(uuid.uuid4().hex)") 
+```
 
-In the Compute layer of TensorOpera AI
-- **TensorOpera® Deploy** is a model serving platform for high scalability and low latency.
-- **TensorOpera® Train** focuses on distributed training of large and foundational models.
-- **TensorOpera® Federate** is a federated learning platform backed by the most popular federated learning open-source library and the world’s first FLOps (federated learning Ops), offering on-device training on smartphones and cross-cloud GPU servers.
-- **TensorOpera® Open Source** is unified and scalable machine learning library for running these AI jobs anywhere at any scale.
+**Important:** Server and Client(s) should all use the same run ID for a given run to avoid data conflicts in the S3 bucket.
 
-# Contributing 
-FedML embraces and thrive through open-source. We welcome all kinds of contributions from the community. Kudos to all of <a href="https://github.com/fedml-ai/fedml/graphs/contributors" target="_blank">our amazing contributors</a>!  
-FedML has adopted [Contributor Covenant](https://github.com/FedML-AI/FedML/blob/master/CODE_OF_CONDUCT.md).
+### 4. Weights & Biases Setup
+
+Configure wandb for experiment logging:
+
+```bash
+wandb login
+```
+
+## Running Experiments
+
+### 1-Client Test
+
+#### Server
+
+```bash
+bash scripts/run_fedml_server_custom.sh 0 "$RUN_ID" localhost 29500 1 auto fedml_config/grpo_gsm8k_test_config.yaml
+```
+
+#### Client
+
+```bash
+bash scripts/run_fedml_client_custom.sh 1 "$RUN_ID" localhost 29500 1 auto fedml_config/grpo_gsm8k_test_config.yaml
+```
+
+## Notes
+
+- The `RUN_ID` should be unique for each experimental run to prevent data conflicts across different experiments
+- All participants (server and clients) must use the same `RUN_ID` for a given experimental run
+- Make sure AWS credentials are properly configured before starting the experiments 
