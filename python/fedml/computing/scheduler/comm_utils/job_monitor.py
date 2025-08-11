@@ -790,6 +790,12 @@ class JobMonitor(Singleton):
             if response_ok is None:
                 # This means the server return 202
                 return False
+            # response_ok = asyncio.run(FedMLHttpInference.is_open_ai_inference_ready(
+            #     inference_url, timeout=SchedulerConstants.ENDPOINT_INFERENCE_READY_TIMEOUT,
+            #     path=liveliness_check["path"]))
+            # if response_ok is None:
+            #     # This means the server return 202
+            #     return False
             return True
 
         # Make a curl get to inference_url/ready with timeout 5s
