@@ -5,6 +5,7 @@ import click
 
 import fedml.api
 from fedml.api.modules.utils import authenticate
+from fedml.cli.modules.utils import preprocess_api_key
 from fedml.computing.scheduler.model_scheduler.device_server_constants import ServerConstants
 from fedml.computing.scheduler.model_scheduler.device_client_constants import ClientConstants
 from fedml.computing.scheduler.scheduler_core.general_constants import MarketplaceType
@@ -117,8 +118,9 @@ def fedml_login(
         price_per_hour, name, service_provider
 ):
     fedml.set_env_version(version)
-    fedml.set_local_on_premise_platform_host(local_on_premise_platform)
-    fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
+    if version != "local":
+        fedml.set_local_on_premise_platform_host(local_on_premise_platform)
+        fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
 
     if service_provider == "chainopera" or service_provider == "co":
         fedml.set_env_version('local')
@@ -133,6 +135,7 @@ def fedml_login(
     __validate_mpt_pph(marketplace_type, price_per_hour)
 
     api_key = api_key[0] if len(api_key) > 0 else None
+    api_key = preprocess_api_key(api_key)
     try:
         authenticate(api_key)
     except SystemExit as e:

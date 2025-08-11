@@ -29,6 +29,7 @@ if __name__ == "__main__":
     args.user = args.user
     if args.api_key == "":
         args.api_key = args.user
+    args.api_key = args.api_key.replace("sk-msp", "").replace("sk-", "")
 
     if args.local_on_premise_platform_host != "127.0.0.1":
         fedml.set_local_on_premise_platform_host(args.local_on_premise_platform_host)

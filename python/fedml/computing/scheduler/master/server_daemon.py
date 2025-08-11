@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
     log_line_count = 0
     retry_count = 0
+    args.api_key = args.api_key.replace("sk-msp", "").replace("sk-", "")
 
     while True:
         try:

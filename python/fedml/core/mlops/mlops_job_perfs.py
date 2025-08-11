@@ -10,6 +10,7 @@ import psutil
 
 from .mlops_utils import MLOpsUtils
 from .system_stats import SysStats
+from ...computing.scheduler.scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
@@ -134,12 +135,15 @@ class MLOpsJobPerfStats(object):
         perf_stats.device_id = getattr(sys_args, "device_id", 0)
         perf_stats.run_id = getattr(sys_args, "run_id", 0)
         if self.job_stats_event is None:
-            self.job_stats_event = multiprocessing.Event()
+            self.job_stats_event = FedMLSharedResourceManager.get_instance().get_event()
         self.job_stats_event.clear()
         perf_stats.job_stats_event = self.job_stats_event
         perf_stats.job_process_id_map = self.job_process_id_map
 
-        self.job_stats_process = multiprocessing.Process(target=perf_stats.report_job_stats_entry,
+        import fedml
+        fedml._init_multiprocessing()
+
+        self.job_stats_process = fedml.get_process(target=perf_stats.report_job_stats_entry,
                                                          args=(self.job_stats_event,))
         self.job_stats_process.start()
 

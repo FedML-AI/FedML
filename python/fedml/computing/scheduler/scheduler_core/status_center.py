@@ -8,6 +8,8 @@ import queue
 from .message_common import FedMLMessageEntity, FedMLStatusEntity
 from .message_center import FedMLMessageCenter
 import traceback
+
+from .shared_resource_manager import FedMLSharedResourceManager
 from .status_manager_protocols import FedMLStatusManager
 
 
@@ -106,15 +108,17 @@ class FedMLStatusCenter(object):
 
     def start_status_center(self, sender_message_center_queue=None,
                             listener_message_center_queue=None, is_slave_agent=False):
-        self.status_queue = Queue()
-        self.status_event = multiprocessing.Event()
+        self.status_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.status_event = FedMLSharedResourceManager.get_instance().get_event()
         self.status_event.clear()
         self.status_sender_message_center_queue = sender_message_center_queue
         self.status_listener_message_center_queue = listener_message_center_queue
         self.status_runner = self.get_status_runner()
         target_func = self.status_runner.run_status_dispatcher if not is_slave_agent else \
             self.status_runner.run_status_dispatcher_in_slave
-        self.status_center_process = Process(
+        import fedml
+        fedml._init_multiprocessing()
+        self.status_center_process = fedml.get_process(
             target=target_func, args=(
                 self.status_event, self.status_queue, self.status_sender_message_center_queue,
                 self.status_listener_message_center_queue
@@ -131,6 +135,7 @@ class FedMLStatusCenter(object):
     def send_message(self, topic, payload, run_id=None):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload, run_id=run_id)
         self.status_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
     def send_message_json(self, topic, payload):
         self.send_message(topic, payload)
@@ -138,6 +143,7 @@ class FedMLStatusCenter(object):
     def send_status_message(self, topic, payload):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload)
         self.status_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
     def get_status_queue(self):
         return self.status_queue
@@ -248,7 +254,8 @@ class FedMLStatusCenter(object):
                         f"Failed to process the status with topic {message_entity.topic}, "
                         f"payload {message_entity.payload}, {traceback.format_exc()}")
                 else:
-                    logging.info(f"Failed to process the status: {traceback.format_exc()}")
+                    # logging.info(f"Failed to process the status: {traceback.format_exc()}")
+                    pass
 
     def run_status_dispatcher_in_slave(self, status_event, status_queue,
                                        sender_message_center_queue,
@@ -351,15 +358,18 @@ class FedMLStatusCenter(object):
                         f"Failed to process the status with topic {message_entity.topic}, "
                         f"payload {message_entity.payload}, {traceback.format_exc()}")
                 else:
-                    logging.info(f"Failed to process the status: {traceback.format_exc()}")
+                    # logging.info(f"Failed to process the status: {traceback.format_exc()}")
+                    pass
 
     def register_job_launch_message(self, topic, payload):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload)
         self.status_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
     def register_job_stop_message(self, topic, payload):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload)
         self.status_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
     @staticmethod
     def rebuild_status_center_from_queue(status_queue):

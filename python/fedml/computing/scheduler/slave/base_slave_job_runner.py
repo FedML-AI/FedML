@@ -7,6 +7,7 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 
+from ..scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ....core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from .client_data_interface import FedMLClientDataInterface
@@ -253,14 +254,16 @@ class FedMLBaseSlaveJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         client_runner.start_request_json = request_json
         client_runner.cuda_visible_gpu_ids_str = cuda_visible_gpu_ids_str
         run_id_str = str(run_id)
-        self.run_process_event = multiprocessing.Event()
+        self.run_process_event = FedMLSharedResourceManager.get_instance().get_event()
         client_runner.run_process_event = self.run_process_event
-        self.run_process_completed_event = multiprocessing.Event()
+        self.run_process_completed_event = FedMLSharedResourceManager.get_instance().get_event()
         client_runner.run_process_completed_event = self.run_process_completed_event
         client_runner.server_id = request_json.get("server_id", "0")
         self.run_extend_queue_list = self._generate_extend_queue_list()
         logging.info("start the runner process.")
-        self.run_process = Process(target=client_runner.run, args=(
+        import fedml
+        fedml._init_multiprocessing()
+        self.run_process = fedml.get_process(target=client_runner.run, args=(
             self.run_process_event, self.run_process_completed_event, self.run_extend_queue_list,
             sender_message_queue, listener_message_queue, status_center_queue
         ))

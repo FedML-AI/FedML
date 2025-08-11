@@ -10,6 +10,7 @@ import uuid
 
 import asyncio
 
+from ..scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 from ....core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from .device_http_inference_protocol import FedMLHttpInference
 
@@ -50,7 +51,9 @@ class FedMLMqttInference:
         )
         if self.endpoint_inference_runners.get(run_id, None) is None:
             self.endpoint_inference_runners[run_id] = dict()
-        self.endpoint_inference_runners[run_id][inference_request_id] = Process(target=client_runner.inference_entry)
+        import fedml
+        fedml._init_multiprocessing()
+        self.endpoint_inference_runners[run_id][inference_request_id] = fedml.get_process(target=client_runner.inference_entry)
         self.endpoint_inference_runners[run_id][inference_request_id].start()
 
     def response_endpoint_inference(self, endpoint_id, inference_request_id, response):
@@ -95,7 +98,7 @@ class FedMLMqttInference:
         inference_req_id = str(uuid.uuid4())
         if self.run_inference_event_map.get(str_endpoint_id) is None:
             self.run_inference_event_map[str_endpoint_id] = dict()
-        self.run_inference_event_map[str_endpoint_id][inference_req_id] = multiprocessing.Event()
+        self.run_inference_event_map[str_endpoint_id][inference_req_id] = FedMLSharedResourceManager.get_instance().get_event()
         self.run_inference_event_map[str_endpoint_id][inference_req_id].clear()
 
         self.send_mqtt_endpoint_inference_request(
@@ -169,7 +172,7 @@ class FedMLMqttInference:
         if self.run_inference_event_map.get(str_endpoint_id) is None:
             self.run_inference_event_map[str_endpoint_id] = dict()
         if self.run_inference_event_map[str_endpoint_id].get(inference_request_id) is None:
-            self.run_inference_event_map[str_endpoint_id][inference_request_id] = multiprocessing.Event()
+            self.run_inference_event_map[str_endpoint_id][inference_request_id] = FedMLSharedResourceManager.get_instance().get_event()
         self.run_inference_event_map[str_endpoint_id][inference_request_id].set()
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):

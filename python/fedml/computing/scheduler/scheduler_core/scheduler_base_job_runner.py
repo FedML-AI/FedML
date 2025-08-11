@@ -9,6 +9,8 @@ import time
 import traceback
 import zipfile
 import queue
+
+from .shared_resource_manager import FedMLSharedResourceManager
 from ..comm_utils.constants import SchedulerConstants
 from ..comm_utils.job_utils import JobRunnerUtils, DockerArgs
 from ..scheduler_entry.constants import Constants
@@ -193,6 +195,7 @@ class FedMLSchedulerBaseJobRunner(ABC):
                 total_size += written_size
                 logging.info("package downloaded size %.2f KB", total_size/1024)
                 info_queue.put(time.time())
+                time.sleep(0.05)
         completed_event.set()
 
     def retrieve_and_unzip_package(self, package_name, package_url):
@@ -207,9 +210,11 @@ class FedMLSchedulerBaseJobRunner(ABC):
 
         # Open a process to download the package so that we can avoid the request is blocked and check the timeout.
         from multiprocessing import Process
-        completed_event = multiprocessing.Event()
-        info_queue = multiprocessing.Queue()
-        download_process = Process(target=self.download_package_proc,
+        completed_event = FedMLSharedResourceManager.get_instance().get_event()
+        info_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        import fedml
+        fedml._init_multiprocessing()
+        download_process = fedml.get_process(target=self.download_package_proc,
                                    args=(package_url, local_package_file, completed_event, info_queue))
         download_process.start()
         allowed_block_download_time = 60

@@ -4,6 +4,7 @@ from prettytable import PrettyTable
 
 import fedml
 from fedml.api.constants import ApiConstants
+from fedml.cli.modules.utils import preprocess_api_key
 from fedml.computing.scheduler.scheduler_entry.constants import Constants
 from fedml.computing.scheduler.comm_utils.constants import SchedulerConstants
 from fedml import set_env_version
@@ -59,8 +60,10 @@ def fedml_launch(yaml_file, cluster, version, api_key, group, local_on_premise_p
     Manage resources on the TensorOpera® AI Platform.
     """
     set_env_version(version)
-    fedml.set_local_on_premise_platform_host(local_on_premise_platform)
-    fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
+    if version != "local":
+        fedml.set_local_on_premise_platform_host(local_on_premise_platform)
+        fedml.set_local_on_premise_platform_port(local_on_premise_platform_port)
+    api_key = preprocess_api_key(api_key)
 
     # Input YAML file is recognized as tuple ().
     # If empty, print help msg and exit.

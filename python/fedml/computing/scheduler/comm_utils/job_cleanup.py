@@ -26,7 +26,8 @@ class JobCleanup(Singleton):
 
     def sync_data_on_startup(self, edge_id, is_client=True):
         if self.sync_data_proc is None:
-            self.sync_data_proc = Process(target=JobCleanup.sync_proc, args=(edge_id, is_client))
+            import fedml
+            self.sync_data_proc = fedml.get_process(target=JobCleanup.sync_proc, args=(edge_id, is_client))
             self.sync_data_proc.start()
 
     @staticmethod

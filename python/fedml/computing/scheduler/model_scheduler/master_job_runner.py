@@ -23,6 +23,7 @@ from ..scheduler_core.general_constants import GeneralConstants
 from ..master.base_master_job_runner import FedMLBaseMasterJobRunner
 from .device_replica_controller import FedMLDeviceReplicaController
 from .job_runner_msg_sender import FedMLDeployJobRunnerMsgSender
+from ..scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 
 
 class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerMsgSender, ABC):
@@ -51,7 +52,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
         self.replica_controller = None
         self.deployed_replica_payload = None
         self.slave_deployment_results_map = dict()
-        self.deployment_result_queue = Queue()
+        self.deployment_result_queue = FedMLSharedResourceManager.get_instance().get_queue()
         self.is_fresh_endpoint = True
 
     # Override
@@ -78,6 +79,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
             FedMLDeployMasterJobRunner.parse_model_run_params(self.request_json)
         self.run_id = run_id
         self.is_fresh_endpoint = self.request_json.get("is_fresh_endpoint", True)
+        self.sender_message_center = self.message_center
 
         # Print request parameters.
         logging.info("model deployment request: {}".format(self.request_json))
@@ -191,6 +193,7 @@ class FedMLDeployMasterJobRunner(FedMLBaseMasterJobRunner, FedMLDeployJobRunnerM
 
     def save_deployment_result(self, topic=None, payload=None):
         self.deployment_result_queue.put({"topic": topic, "payload": payload})
+        time.sleep(0.05)
 
     def process_deployment_result_message(self, topic=None, payload=None):
         # Parse the parameters

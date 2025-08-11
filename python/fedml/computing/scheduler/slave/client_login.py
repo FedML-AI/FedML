@@ -29,10 +29,13 @@ if __name__ == "__main__":
     parser.add_argument("--price_per_hour", "-pph", type=str, default="0.0")
     parser.add_argument("--name", "-n", type=str, nargs='?', default="")
 
+    fedml._init_multiprocessing()
+
     args = parser.parse_args()
     args.user = args.user
     if args.api_key == "":
         args.api_key = args.user
+    args.api_key = args.api_key.replace("sk-msp", "").replace("sk-", "")
 
     if args.local_on_premise_platform_host != "127.0.0.1":
         fedml.set_local_on_premise_platform_host(args.local_on_premise_platform_host)

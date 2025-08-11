@@ -321,10 +321,10 @@ def cleanup_all_fedml_client_learning_processes():
                     else:
                         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the client learning process due to {e}.")
+                #print(f"Failed to cleanup the client learning process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the client learning process due to {e}.")
+        #print(f"Failed to cleanup the client learning process due to {e}.")
         pass
 
 
@@ -346,10 +346,10 @@ def cleanup_all_fedml_client_diagnosis_processes():
                     else:
                         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the client diagnosis process due to {e}.")
+                #print(f"Failed to cleanup the client diagnosis process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the client diagnosis process due to {e}.")
+        #print(f"Failed to cleanup the client diagnosis process due to {e}.")
         pass
 
 
@@ -370,10 +370,10 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                                 if clean_process_group:
                                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the client login process due to {e}.")
+                #print(f"Failed to cleanup the client login process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the client login process since psutil.process_iter() failed.")
+        #print(f"Failed to cleanup the client login process since psutil.process_iter() failed.")
         pass
 
 
@@ -399,10 +399,10 @@ def cleanup_all_fedml_server_learning_processes():
                     else:
                         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the server learning process due to {e}.")
+                #print(f"Failed to cleanup the server learning process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the server learning process due to {e}.")
+        #print(f"Failed to cleanup the server learning process due to {e}.")
         pass
 
 
@@ -431,10 +431,10 @@ def cleanup_all_fedml_client_api_processes(kill_all=False, is_model_device=False
                         else:
                             os.kill(process.pid, signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the client api process due to {e}.")
+                #print(f"Failed to cleanup the client api process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the client api process due to {e}.")
+        #print(f"Failed to cleanup the client api process due to {e}.")
         pass
 
 
@@ -466,10 +466,10 @@ def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False
                         else:
                             os.kill(process.pid, signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the server api process due to {e}.")
+                #print(f"Failed to cleanup the server api process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the server api process due to {e}.")
+        #print(f"Failed to cleanup the server api process due to {e}.")
         pass
 
 def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=False):
@@ -489,10 +489,10 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
                                 if clean_process_group:
                                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the server login process due to {e}.")
+                #print(f"Failed to cleanup the server login process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the server login process due to {e}.")
+        #print(f"Failed to cleanup the server login process due to {e}.")
         pass
 
 
@@ -513,10 +513,10 @@ def cleanup_all_bootstrap_processes(bootstrap_program, clean_process_group=False
                                 if clean_process_group:
                                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
             except Exception as e:
-                print(f"Failed to cleanup the bootstrap process due to {e}.")
+                #print(f"Failed to cleanup the bootstrap process due to {e}.")
                 pass
     except Exception as e:
-        print(f"Failed to cleanup the bootstrap process due to {e}.")
+        #print(f"Failed to cleanup the bootstrap process due to {e}.")
         pass
 
 
@@ -548,7 +548,7 @@ def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name
                         os.kill(process.pid, signal.SIGKILL)
                     break
             except Exception as e:
-                logging.error(f"Failed to cleanup the model monitor process due to {e}.")
+                #logging.error(f"Failed to cleanup the model monitor process due to {e}.")
                 pass
     except Exception as e:
         logging.error(f"For loop failed to stop the model inference monitor due to {e}.")

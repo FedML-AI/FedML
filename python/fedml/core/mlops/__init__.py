@@ -762,7 +762,9 @@ def push_artifact_to_s3(artifact: fedml.mlops.Artifact, version="release", show_
 
 def log_artifact(artifact: fedml.mlops.Artifact, version=None, run_id=None, edge_id=None, async_upload=True):
     if async_upload:
-        Process(target=_log_artifact_async, args=(
+        import fedml
+        fedml._init_multiprocessing()
+        fedml.get_process(target=_log_artifact_async, args=(
             artifact, version, run_id, edge_id
         )).start()
         return

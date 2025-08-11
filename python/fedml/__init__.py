@@ -166,6 +166,10 @@ def init(args=None, check_env=True, should_init_logs=True):
     _update_client_specific_args(args)
     _print_args(args)
 
+    # from .core.mlops import MLOpsConfigs
+    # mqtt_config, _, _, _ = MLOpsConfigs.fetch_all_configs()
+    # logging.info(f"MQTT config {mqtt_config}")
+
     return args
 
 
@@ -458,6 +462,26 @@ def _init_multiprocessing():
         if multiprocessing.get_start_method() != "fork":
             # force all platforms (Windows/Linux/macOS) to use the same way (fork) for multiprocessing
             multiprocessing.set_start_method("fork", force=True)
+
+
+def get_multiprocessing_context():
+    if platform.system() == "Windows":
+        return multiprocessing.get_context("spawn")
+    else:
+        return multiprocessing.get_context("fork")
+
+
+def get_process(target=None, args=None):
+    if platform.system() == "Windows":
+        if args is None:
+            return multiprocessing.Process(target=target)
+        return multiprocessing.Process(target=target, args=args)
+    else:
+        if args is None:
+            new_process = multiprocessing.get_context("fork").Process(target=target)
+        else:
+            new_process = multiprocessing.get_context("fork").Process(target=target, args=args)
+        return new_process
 
 
 def set_env_version(version):

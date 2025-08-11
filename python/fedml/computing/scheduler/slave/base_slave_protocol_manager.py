@@ -310,7 +310,7 @@ class FedMLBaseSlaveProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
 
         if cmd == GeneralConstants.FEDML_OTA_CMD_UPGRADE:
             FedMLOtaUpgrade.process_ota_upgrade_msg()
-            # Process(target=FedMLClientRunner.process_ota_upgrade_msg).start()
+            # fedml.get_process(target=FedMLClientRunner.process_ota_upgrade_msg).start()
             raise Exception("After upgraded, restart runner...")
         elif cmd == GeneralConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")

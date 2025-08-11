@@ -95,7 +95,9 @@ class FedMLBaseMasterAgent(ABC):
 
         # Start the API server on master agent
         self.master_api_daemon = MasterApiDaemon()
-        self.master_api_process = Process(target=self.master_api_daemon.run)
+        import fedml
+        fedml._init_multiprocessing()
+        self.master_api_process = fedml.get_process(target=self.master_api_daemon.run)
         self.master_api_process.start()
 
     def _init_logs(self, agent_args, edge_id):

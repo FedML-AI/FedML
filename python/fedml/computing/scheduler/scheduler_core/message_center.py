@@ -11,6 +11,7 @@ import queue
 from os.path import expanduser
 
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from .shared_resource_manager import FedMLSharedResourceManager
 from ..slave.client_constants import ClientConstants
 from ....core.mlops.mlops_metrics import MLOpsMetrics
 from operator import methodcaller
@@ -131,12 +132,14 @@ class FedMLMessageCenter(object):
         return self.sender_message_queue
 
     def start_sender(self, message_center_name=None):
-        self.sender_message_queue = Queue()
-        self.message_event = multiprocessing.Event()
+        self.sender_message_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.message_event = FedMLSharedResourceManager.get_instance().get_event()
         self.message_event.clear()
         message_center = FedMLMessageCenter(agent_config=self.sender_agent_config,
                                             sender_message_queue=self.sender_message_queue)
-        self.message_center_process = Process(
+        import fedml
+        fedml._init_multiprocessing()
+        self.message_center_process = fedml.get_process(
             target=message_center.run_sender, args=(
                 self.message_event, self.sender_message_queue,
                 message_center_name
@@ -159,9 +162,10 @@ class FedMLMessageCenter(object):
     def send_message(self, topic, payload, run_id=None):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload, run_id=run_id)
         self.sender_message_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
-    def send_message_json(self, topic, payload):
-        self.send_message(topic, payload)
+    def send_message_json(self, topic, payload, run_id=None):
+        self.send_message(topic, payload, run_id=run_id)
 
     def retry_sending_undelivered_message(self):
         for sender_message in self.sender_message_list:
@@ -212,6 +216,10 @@ class FedMLMessageCenter(object):
                 # Setup the mqtt connection
                 self.setup_sender_mqtt_mgr()
 
+                if message_center_name == "deploy_master_agent":
+                    a = 0
+                    pass
+
                 # Get the message from the queue
                 try:
                     message_body = message_queue.get(block=False, timeout=0.1)
@@ -221,6 +229,9 @@ class FedMLMessageCenter(object):
                     time.sleep(0.1)
                     # self.retry_sending_undelivered_message()
                     continue
+
+                if message_center_name == "deploy_master_agent":
+                    logging.info("Message Center for deploy_master_agent")
 
                 # Generate the message entity object
                 message_entity = FedMLMessageEntity(message_body=message_body)
@@ -244,7 +255,8 @@ class FedMLMessageCenter(object):
                         f"payload {message_entity.payload}, {traceback.format_exc()}"
                     )
                 else:
-                    logging.info(f"Failed to send the message with body {message_body}, {traceback.format_exc()}")
+                    # logging.info(f"Failed to send the message with body {message_body}, {traceback.format_exc()}")
+                    pass
 
         self.release_sender_mqtt_mgr()
 
@@ -294,7 +306,7 @@ class FedMLMessageCenter(object):
         return self.listener_message_queue
 
     def setup_listener_message_queue(self):
-        self.listener_message_queue = Queue()
+        self.listener_message_queue = FedMLSharedResourceManager.get_instance().get_queue()
 
     def start_listener(self, sender_message_queue=None, listener_message_queue=None, agent_config=None, message_center_name=None):
         if self.listener_message_center_process is not None:
@@ -302,15 +314,17 @@ class FedMLMessageCenter(object):
 
         if listener_message_queue is None:
             if self.listener_message_queue is None:
-                self.listener_message_queue = Queue()
+                self.listener_message_queue = FedMLSharedResourceManager.get_instance().get_queue()
         else:
             self.listener_message_queue = listener_message_queue
-        self.listener_message_event = multiprocessing.Event()
+        self.listener_message_event = FedMLSharedResourceManager.get_instance().get_event()
         self.listener_message_event.clear()
         self.listener_agent_config = agent_config
         message_runner = self.get_message_runner()
         message_runner.listener_agent_config = agent_config
-        self.listener_message_center_process = Process(
+        import fedml
+        fedml._init_multiprocessing()
+        self.listener_message_center_process = fedml.get_process(
             target=message_runner.run_listener_dispatcher, args=(
                 self.listener_message_event, self.listener_message_queue,
                 self.listener_handler_funcs, sender_message_queue,
@@ -336,6 +350,7 @@ class FedMLMessageCenter(object):
     def receive_message(self, topic, payload, run_id=None):
         message_entity = FedMLMessageEntity(topic=topic, payload=payload, run_id=run_id)
         self.listener_message_queue.put(message_entity.get_message_body())
+        time.sleep(0.05)
 
     def receive_message_json(self, topic, payload):
         self.receive_message(topic, payload)
@@ -408,7 +423,8 @@ class FedMLMessageCenter(object):
                         f"Failed to dispatch messages with topic {message_entity.topic}, "
                         f"payload {message_entity.payload}, {traceback.format_exc()}")
                 else:
-                    logging.info(f"Failed to dispatch messages:  {traceback.format_exc()}")
+                    # logging.info(f"Failed to dispatch messages:  {traceback.format_exc()}")
+                    pass
         self.release_listener_mqtt_mgr()
 
     def cache_message_record(self, message_record, is_sender=True):

@@ -9,12 +9,12 @@ from ..scheduler_core.general_constants import GeneralConstants
 
 
 class FedMLDeployJobRunnerMsgSender(object):
-    def __init__(self):
+    def __init__(self, message_center=None):
         self.infer_host = "127.0.0.1"
         self.redis_addr = "local"
         self.redis_port = "6379"
         self.redis_password = "fedml_default"
-        self.message_center = None
+        self.sender_message_center = message_center
         self.request_json = None
         self.edge_id = None
 
@@ -46,7 +46,7 @@ class FedMLDeployJobRunnerMsgSender(object):
                                       "replica_ids": replica_id_list}
         logging.info(f"[Master] deployment_results_payload is sent to mlops: {deployment_results_payload}")
 
-        self.message_center.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
+        self.sender_message_center.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
 
     @staticmethod
     def send_deployment_status(
@@ -61,7 +61,7 @@ class FedMLDeployJobRunnerMsgSender(object):
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
         logging.info(f"[Master] deployment_status_payload is sent to mlops: {deployment_status_payload}")
 
-        message_center.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        message_center.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload), run_id=end_point_id)
 
     @staticmethod
     def send_deployment_stages(end_point_id, model_name, model_id, model_inference_url,
@@ -79,12 +79,12 @@ class FedMLDeployJobRunnerMsgSender(object):
                                      "model_stage_detail": model_stage_detail,
                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
 
-        message_center.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
+        message_center.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload), run_id=end_point_id)
 
         logging.info(f"-------- Stages has been sent to mlops with stage {model_stages_index} and "
                      f"payload {deployment_stages_payload}")
 
-    def send_deployment_start_request_to_edges(self, in_request_json=None):
+    def send_deployment_start_request_to_edges(self, in_request_json=None, run_id=None):
         if in_request_json is not None:
             self.request_json = in_request_json
 
@@ -103,13 +103,13 @@ class FedMLDeployJobRunnerMsgSender(object):
                 continue
             should_added_devices.append(edge_id)
             # send start deployment request to each device
-            self.send_deployment_start_request_to_edge(edge_id, self.request_json)
+            self.send_deployment_start_request_to_edge(edge_id, self.request_json, run_id=run_id)
         return should_added_devices
 
-    def send_deployment_start_request_to_edge(self, edge_id, request_json):
+    def send_deployment_start_request_to_edge(self, edge_id, request_json, run_id=None):
         topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(edge_id))
         logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
-        self.message_center.send_message_json(topic_start_deployment, json.dumps(request_json))
+        self.sender_message_center.send_message_json(topic_start_deployment, json.dumps(request_json), run_id=run_id)
 
     def send_deployment_delete_request_to_edges(self, payload, model_msg_object, message_center=None):
         edge_id_list_to_delete = model_msg_object.device_ids
@@ -128,10 +128,10 @@ class FedMLDeployJobRunnerMsgSender(object):
             if message_center is not None:
                 message_center.send_message_json(topic_delete_deployment, payload)
             else:
-                self.message_center.send_message_json(topic_delete_deployment, payload)
+                self.sender_message_center.send_message_json(topic_delete_deployment, payload)
 
     def send_deployment_stop_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
             topic_stop_deployment = "model_ops/model_device/stop_deployment/{}".format(str(self.edge_id))
             logging.info("stop_deployment: send topic " + topic_stop_deployment)
-            self.message_center.send_message_json(topic_stop_deployment, payload)
+            self.sender_message_center.send_message_json(topic_stop_deployment, payload)

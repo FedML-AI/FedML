@@ -155,9 +155,6 @@ class FedMLDeployMasterProtocolManager(FedMLBaseMasterProtocolManager):
 
         # Get deployment params
         request_json = json.loads(payload)
-
-        
-
         run_id = request_json["end_point_id"]
         end_point_name = request_json["end_point_name"]
         token = request_json["token"]

@@ -23,3 +23,7 @@ class OrderedGroup(click.Group):
 
     def list_commands(self, ctx):
         return self.commands
+
+
+def preprocess_api_key(api_key: str) -> str:
+    return api_key.replace("sk-msp", "").replace("sk-", "")

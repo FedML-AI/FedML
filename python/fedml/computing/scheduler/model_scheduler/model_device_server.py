@@ -7,6 +7,7 @@ import traceback
 from multiprocessing import Process
 from ..scheduler_core.account_manager import FedMLAccountManager
 from .master_agent import FedMLDeployMasterAgent
+from ..scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 
 
 class FedMLModelDeviceServerRunner:
@@ -37,8 +38,10 @@ class FedMLModelDeviceServerRunner:
         self.agent_runner.redis_port = self.redis_port
         self.agent_runner.redis_password = self.redis_password
         if self.agent_process_event is None:
-            self.agent_process_event = multiprocessing.Event()
-        self.agent_process = Process(target=self.agent_runner.run_entry, args=(self.agent_process_event, self.args))
+            self.agent_process_event = FedMLSharedResourceManager.get_instance().get_event()
+        import fedml
+        fedml._init_multiprocessing()
+        self.agent_process = fedml.get_process(target=self.agent_runner.run_entry, args=(self.agent_process_event, self.args))
         self.edge_id = self.bind_device()
         self.agent_process.start()
 

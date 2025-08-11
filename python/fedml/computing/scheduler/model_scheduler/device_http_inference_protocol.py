@@ -8,6 +8,7 @@ import traceback
 from .device_client_constants import ClientConstants
 
 from fastapi.responses import Response
+from fastapi.requests import Request
 from fastapi.responses import StreamingResponse
 from urllib.parse import urlparse
 from typing import Mapping
@@ -46,6 +47,49 @@ class FedMLHttpInference:
             # async with httpx.AsyncClient() as client:
             client = await FedMLHttpInference.get_http_client()
             ready_response = await client.get(url=ready_url, timeout=timeout)
+
+            if isinstance(ready_response, (Response, StreamingResponse)):
+                error_code = ready_response.status_code
+            elif isinstance(ready_response, Mapping):
+                error_code = ready_response.get("error_code")
+            else:
+                error_code = ready_response.status_code
+
+            if error_code == 200:
+                response_ok = True
+            else:
+                response_ok = None
+        except Exception as e:
+            response_ok = False
+
+        return response_ok
+
+    @staticmethod
+    async def is_open_ai_inference_ready(inference_url, path="v1/chat/completions", timeout=None):
+        """
+        True: inference is ready
+        False: cannot be reached, will try other protocols
+        None: can be reached, but not ready
+        """
+        url_parsed = urlparse(inference_url)
+        ready_url = f"http://{url_parsed.hostname}:{url_parsed.port}/{path}"
+        response_ok = False
+
+        # TODO (Raphael): Support more methods and return codes rules.
+        try:
+            # async with httpx.AsyncClient() as client:
+            client = await FedMLHttpInference.get_http_client()
+            headers = {"Authorization: Bearer sk-to2025llm", "Content-Type: application/json"}
+            body = {"model": "Qwen2.5-32B-Instruct", "messages":
+                [{"content": "hi", "role": "user"}], "stream": False, "max_tokens": 1}
+            ready_response = await client.request(
+                method="POST",
+                url=ready_url,
+                headers=headers,
+                json=body,
+                timeout=timeout
+            )
+            ready_response.raise_for_status()
 
             if isinstance(ready_response, (Response, StreamingResponse)):
                 error_code = ready_response.status_code

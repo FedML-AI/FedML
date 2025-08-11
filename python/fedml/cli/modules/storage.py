@@ -10,6 +10,7 @@ import pprint
 
 from fedml.api import StorageMetadata
 from fedml.api.fedml_response import ResponseCode
+from fedml.cli.modules.utils import preprocess_api_key
 
 # Message strings constants
 version_help: str = "specify version of TensorOpera® AI Platform. It should be dev, test or release"
@@ -70,6 +71,7 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
     metadata = _parse_metadata(user_metadata)
     tag_list = _parse_tags(tags)
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.upload(data_path=data_path, api_key=api_key, name=name, tag_list = tag_list, service=service, show_progress=True,
                                 description=description, metadata=metadata)
     if response.code == ResponseCode.SUCCESS:
@@ -92,6 +94,7 @@ def upload(data_path: str, name: str, user_metadata: str, description: str, vers
 )
 def list_data(version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.list_storage_objects(api_key=api_key)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Successfully fetched list of stored objects:")
@@ -124,6 +127,7 @@ def list_data(version, api_key):
 )
 def get_user_metadata(data_name, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.get_storage_user_defined_metadata(data_name=data_name, api_key=api_key)
     if response.code == ResponseCode.SUCCESS:
         if not response.data:
@@ -151,6 +155,7 @@ def get_user_metadata(data_name, version, api_key):
 )
 def get_metadata(data_name, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.get_storage_metadata(api_key=api_key, data_name=data_name)
     if response.code == ResponseCode.SUCCESS:
         metadata = response.data
@@ -187,6 +192,7 @@ def get_metadata(data_name, version, api_key):
 )
 def download(data_name, dest_path, version, api_key, service):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.download(data_name=data_name, dest_path=dest_path, api_key=api_key, service=service)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Data downloaded successfully at: {response.data}")
@@ -211,6 +217,7 @@ def download(data_name, dest_path, version, api_key, service):
 )
 def delete(version, data_name, api_key, service):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     response = fedml.api.delete(data_name=data_name, api_key=api_key, service=service)
     if response.code == ResponseCode.SUCCESS:
         click.echo(f"Data '{data_name}' deleted successfully.")

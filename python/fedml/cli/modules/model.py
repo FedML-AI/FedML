@@ -1,7 +1,7 @@
 import click
 
 import fedml.api
-from fedml.cli.modules.utils import OrderedGroup
+from fedml.cli.modules.utils import OrderedGroup, preprocess_api_key
 
 
 @click.group("model", cls=OrderedGroup)
@@ -73,6 +73,7 @@ def fedml_model_push(name, model_storage_url, version, api_key, tag_names, model
     if name is None:
         click.echo("You must provide a model name (use -n option).")
         return
+    api_key = preprocess_api_key(api_key)
     fedml.api.model_push(name, model_storage_url, api_key, tag_names, model_id, model_version)
 
 

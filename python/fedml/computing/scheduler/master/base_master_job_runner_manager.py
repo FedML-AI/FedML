@@ -43,7 +43,9 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
         super().stop_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
-            stopping_process = Process(
+            import fedml
+            fedml._init_multiprocessing()
+            stopping_process = fedml.get_(
                 target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
             stopping_process.start()
 
@@ -54,7 +56,9 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
         super().complete_job_runner(run_id)
 
         if run_as_cloud_agent or run_as_cloud_server:
-            stopping_process = Process(
+            import fedml
+            fedml._init_multiprocessing()
+            stopping_process = fedml.get_process(
                 target=FedMLCloudServerManager.stop_cloud_server, args=(run_id, server_id, args.agent_config))
             stopping_process.start()
 
@@ -68,7 +72,9 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
             agent_config=args.agent_config
         )
         if not use_local_process_as_cloud_server:
-            self.cloud_run_process_map[run_id_str] = Process(target=cloud_server_mgr.start_cloud_server_process_entry)
+            import fedml
+            fedml._init_multiprocessing()
+            self.cloud_run_process_map[run_id_str] = fedml.get_process(target=cloud_server_mgr.start_cloud_server_process_entry)
             self.cloud_run_process_map[run_id_str].start()
         else:
             message_bytes = json.dumps(request_json).encode("ascii")
@@ -78,7 +84,9 @@ class FedMLBaseMasterJobRunnerManager(FedMLSchedulerBaseJobRunnerManager, ABC):
 
             logging.info("runner_cmd_encoded: {}".format(runner_cmd_encoded))
 
-            self.cloud_run_process_map[run_id_str] = Process(
+            import fedml
+            fedml._init_multiprocessing()
+            self.cloud_run_process_map[run_id_str] = fedml.get_process(
                 target=cloud_server_mgr.start_local_cloud_server,
                 args=(args.account_id, args.version, cloud_device_id, runner_cmd_encoded))
             self.cloud_run_process_map[run_id_str].start()

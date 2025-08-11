@@ -344,7 +344,7 @@ class FedMLBaseMasterProtocolManager(FedMLSchedulerBaseProtocolManager, ABC):
             # noinspection PyBroadException
             try:
                 FedMLOtaUpgrade.process_ota_upgrade_msg()
-                # Process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
+                # fedml.get_process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
                 raise Exception("After upgraded, restart runner...")
             except Exception as e:
                 pass

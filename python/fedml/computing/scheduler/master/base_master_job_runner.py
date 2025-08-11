@@ -7,6 +7,8 @@ import queue
 import os
 import time
 import traceback
+
+from ..scheduler_core.shared_resource_manager import FedMLSharedResourceManager
 from ..scheduler_entry.constants import Constants
 from ....core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ..master.server_constants import ServerConstants
@@ -43,13 +45,13 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
             is_master_runner=True
         )
 
-        self.run_edge_id_status_queue = Queue()
-        self.run_metrics_queue = Queue()
-        self.run_events_queue = Queue()
-        self.run_artifacts_queue = Queue()
-        self.run_logs_queue = Queue()
-        self.run_edge_device_info_queue = Queue()
-        self.run_edge_device_info_global_queue = Queue()
+        self.run_edge_id_status_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_metrics_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_events_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_artifacts_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_logs_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_edge_device_info_queue = FedMLSharedResourceManager.get_instance().get_queue()
+        self.run_edge_device_info_global_queue = FedMLSharedResourceManager.get_instance().get_queue()
         self.run_extend_queue_list = None
         self.async_check_timeout = 0
         self.enable_async_cluster = False
@@ -418,14 +420,16 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         server_runner.edge_id = self.edge_id
         server_runner.server_agent_id = self.server_agent_id
         server_runner.start_request_json = json.dumps(request_json)
-        self.run_process_event = multiprocessing.Event()
+        self.run_process_event = FedMLSharedResourceManager.get_instance().get_event()
         server_runner.run_process_event = self.run_process_event
-        self.run_process_completed_event = multiprocessing.Event()
+        self.run_process_completed_event = FedMLSharedResourceManager.get_instance().get_event()
         server_runner.run_process_completed_event = self.run_process_completed_event
         server_runner.edge_id_status_queue = self.run_edge_id_status_queue
         server_runner.edge_device_info_queue = self.run_edge_device_info_queue
         self.run_extend_queue_list = self._generate_extend_queue_list()
-        self.run_process = Process(
+        import fedml
+        fedml._init_multiprocessing()
+        self.run_process = fedml.get_process(
             target=server_runner.run if not is_server_job else server_runner.run_server_job, args=(
                 self.run_process_event, self.run_process_completed_event, self.run_edge_id_status_queue,
                 self.run_edge_device_info_queue, self.run_metrics_queue, self.run_events_queue,
@@ -444,8 +448,9 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         if int(edge_id) in edge_ids or str(edge_id) in edge_ids:
             run_id_str = str(run_id)
             if self.run_edge_device_info_queue is None:
-                self.run_edge_device_info_queue = Queue()
+                self.run_edge_device_info_queue = FedMLSharedResourceManager.get_instance().get_queue()
             self.run_edge_device_info_queue.put(device_info)
+            time.sleep(0.05)
 
     def should_continue_run_job(self, run_id):
         run_config = self.request_json["run_config"]
@@ -572,16 +577,18 @@ class FedMLBaseMasterJobRunner(FedMLSchedulerBaseJobRunner, ABC):
         run_id = str(topic).split('/')[-1]
         run_id_str = str(run_id)
         if self.run_logs_queue is None:
-            self.run_logs_queue = Queue()
+            self.run_logs_queue = FedMLSharedResourceManager.get_instance().get_queue()
         self.run_logs_queue.put(payload)
+        time.sleep(0.05)
 
     def callback_run_metrics(self, topic, payload):
         print(f"callback_run_metrics topic {topic}, payload {payload}")
         run_id = str(topic).split('/')[-1]
         run_id_str = str(run_id)
         if self.run_metrics_queue is None:
-            self.run_metrics_queue = Queue()
+            self.run_metrics_queue = FedMLSharedResourceManager.get_instance().get_queue()
         self.run_metrics_queue.put(payload)
+        time.sleep(0.05)
 
     # def send_training_request_to_edges(self, active_edge_info_dict):
     #     topic = GeneralConstants.MSG_TOPIC_SEND_TRAINING_REQUEST_TO_EDGES

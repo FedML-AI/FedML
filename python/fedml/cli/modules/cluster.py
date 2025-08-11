@@ -4,6 +4,8 @@ import fedml.api
 
 from prettytable import PrettyTable
 
+from fedml.cli.modules.utils import preprocess_api_key
+
 # Message strings constants
 confirmation_message: str = "Are you sure you want to {} these clusters?"
 failure_message: str = ("Failed to {} the clusters, please check the arguments are valid and your network "
@@ -54,6 +56,7 @@ def validate_cluster_names(ctx, param, value):
 )
 def start(cluster_names, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     is_started = fedml.api.cluster_start(api_key=api_key, cluster_names=cluster_names)
     if is_started:
         click.echo("Clusters have been started.")
@@ -75,6 +78,7 @@ def start(cluster_names, version, api_key):
 )
 def startall(version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
@@ -103,6 +107,7 @@ def startall(version, api_key):
 )
 def stop(cluster_names, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     is_stopped = fedml.api.cluster_stop(api_key=api_key, cluster_names=cluster_names)
     if is_stopped:
         click.echo("Clusters have been stopped.")
@@ -124,6 +129,7 @@ def stop(cluster_names, version, api_key):
 )
 def stopall(version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
@@ -152,6 +158,7 @@ def stopall(version, api_key):
 )
 def kill(cluster_names, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     is_killed = fedml.api.cluster_kill(api_key=api_key, cluster_names=cluster_names)
     if is_killed:
         click.echo("Clusters have been killed.")
@@ -173,6 +180,7 @@ def kill(cluster_names, version, api_key):
 )
 def killall(version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     cluster_list_obj = fedml.api.cluster_list(api_key=api_key)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
@@ -202,6 +210,7 @@ def killall(version, api_key):
 )
 def list_clusters(cluster_names, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     cluster_list_obj = fedml.api.cluster_list(api_key=api_key, cluster_names=cluster_names)
     if cluster_list_obj and cluster_list_obj.cluster_list:
         _print_clusters(cluster_list_obj)
@@ -224,6 +233,7 @@ def list_clusters(cluster_names, version, api_key):
 )
 def status(cluster_name, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     cluster_status, cluster_list_obj = fedml.api.cluster_status(cluster_name=(cluster_name,), api_key=api_key)
     if cluster_status is None:
         click.echo("No cluster found with the given name.")
@@ -247,6 +257,7 @@ def status(cluster_name, version, api_key):
 )
 def autostop(cluster_name, time, version, api_key):
     fedml.set_env_version(version)
+    api_key = preprocess_api_key(api_key)
     is_configured = fedml.api.cluster_autostop(cluster_name=cluster_name, time=time, api_key=api_key)
     if is_configured:
         click.echo(f"Cluster has been successfully configured to autostop after {time} of inactivity.")
