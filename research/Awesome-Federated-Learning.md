@@ -18,6 +18,8 @@ We are thrilled to share that [Advances and Open Problems in Federated Learning]
 ### ICML
 | Title                                                                    | Team/Authors              | Venue and Year     | Targeting Problem     | Method                |
 |---|---|---|---|---|
+| [Clients Collaborate: Flexible Differentially Private Federated Learning with Guaranteed Improvement of Utility-Privacy Trade-off](https://arxiv.org/abs/2402.07002) [code](https://github.com/6lyc/FedCEO_Collaborate-with-Each-Other)                        | SYSU, TAMU, HITSZ, ZSTU            |   ICML 2025        |  utility-privacy trade-off in FL   |  low-rank optimization |
+
 | [Federated Learning with Only Positive Labels](https://arxiv.org/pdf/2004.10342.pdf)                        | Google Research            |   ICML 2020        | label deficiency in multi-class classification    |  regularization |
 | [SCAFFOLD: Stochastic Controlled Averaging for Federated Learning](https://arxiv.org/abs/1910.06378)        | EPFL, Google Research      |   ICML 2020        | heterogeneous data (non-I.I.D)    | nonconvex/convex optimization with variance reduction   |
 | [FedBoost: A Communication-Efficient Algorithm for Federated Learning](https://proceedings.icml.cc/static/paper_files/icml/2020/5967-Paper.pdf)    | Google Research, NYU       |   ICML 2020        | communication cost    | ensemble algorithm    |
@@ -122,6 +124,9 @@ FedOpt:
 
 FedNov:
 [Tackling the Objective Inconsistency Problem in Heterogeneous Federated Optimization. NeurIPS 2020](https://arxiv.org/abs/2007.07481)
+
+FedCEO:
+[Clients Collaborate: Flexible Differentially Private Federated Learning with Guaranteed Improvement of Utility-Privacy Trade-off. ICML 2025](https://arxiv.org/abs/2402.07002) [code](https://github.com/6lyc/FedCEO_Collaborate-with-Each-Other)
 
 -------------------------
 
@@ -512,6 +517,9 @@ Highlights: apply the ICLR 2017 paper "Semisupervised knowledge transfer for dee
 # Trustworthy AI: adversarial attack, privacy, fairness, incentive mechanism, etc.
 
 ## Adversarial Attack and Defense
+[Clients Collaborate: Flexible Differentially Private Federated Learning with Guaranteed Improvement of Utility-Privacy Trade-off. ICML 2025](https://arxiv.org/abs/2402.07002) [code](https://github.com/6lyc/FedCEO_Collaborate-with-Each-Other)
+Citation: 6
+
 [An Overview of Federated Deep Learning Privacy Attacks and Defensive Strategies. 2020-04-01](https://arxiv.org/pdf/2004.04676.pdf)
 Citation: 0
 
@@ -629,6 +637,9 @@ Citation: 3
 Citation: 1
 
 ## Privacy
+[Clients Collaborate: Flexible Differentially Private Federated Learning with Guaranteed Improvement of Utility-Privacy Trade-off. ICML 2025](https://arxiv.org/abs/2402.07002) [code](https://github.com/6lyc/FedCEO_Collaborate-with-Each-Other)
+Citation: 6
+
 [Practical Secure Aggregation for Federated Learning on User-Held Data. NIPS 2016 workshop](https://arxiv.org/pdf/1611.04482.pdf)
 Highlight: cryptology
 
