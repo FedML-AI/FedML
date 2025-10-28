@@ -127,6 +127,11 @@ def fedml_login(
         fedml.set_local_on_premise_platform_host('open.chainopera.ai')
         fedml.set_local_on_premise_platform_port(443)
 
+    if service_provider == "chainopera-test" or service_provider == "co-test":
+        fedml.set_env_version('local')
+        fedml.set_local_on_premise_platform_host('open-test.chainopera.ai')
+        fedml.set_local_on_premise_platform_port(443)
+
     try:
         price_per_hour = float(price_per_hour)
     except ValueError as e:

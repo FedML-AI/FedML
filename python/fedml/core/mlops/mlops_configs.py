@@ -128,6 +128,7 @@ class MLOpsConfigs(object):
         with open(open_root_ca_path, 'rb') as infile:
             open_root_ca_file = infile.read()
         with open(ca_file, 'ab') as outfile:
+            outfile.write(b"\n")
             outfile.write(open_root_ca_file)
 
     @staticmethod
