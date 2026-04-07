@@ -2,8 +2,8 @@
 # 使用方法：
 #   bash scripts/run_experiment.sh \
 #     --model ResNet18 --dataset cifar10 \
-#     --attack byzantine --defense none --aggregator fedavg \
-#     --pmr 0.2 --alpha 0.5 --seed 0 \
+#     --attack none --defense none \
+#     --pmr 0.0 --alpha 0.5 --seed 0 \
 #     --rounds 3 --clients 5 --epochs 1 --batch_size 32
 
 set -euo pipefail
@@ -14,7 +14,6 @@ MODEL="SimpleCNN"
 DATASET="cifar10"
 ATTACK="none"
 DEFENSE="none"
-AGGREGATOR="fedavg"
 PMR="0.0"
 ALPHA="0.5"
 SEED="0"
@@ -53,10 +52,6 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--defense)
 		DEFENSE="$2"
-		shift 2
-		;;
-	--aggregator)
-		AGGREGATOR="$2"
 		shift 2
 		;;
 	--pmr)
@@ -149,6 +144,10 @@ done
 # GPU 训练时 MPI 通信仍走 CPU tensor
 if [[ "$GPU" == "true" ]]; then
 	CPU_TRANSFER="true"
+	# runtime_mode 未被用户显式覆写时，自动升级为 GPU 确定性模式
+	if [[ "$RUNTIME_MODE" == "cpu-deterministic" ]]; then
+		RUNTIME_MODE="single-gpu-deterministic"
+	fi
 fi
 
 # 自动推导 weight_decay：CIFAR-10 用 1e-4，MNIST 用 0
@@ -287,13 +286,13 @@ shieldfl_args:
   runtime_mode: "${RUNTIME_MODE}"
   enforce_determinism: true
   sort_client_updates: true
-  aggregator_type: "${AGGREGATOR}"
+  aggregator_type: "shieldfl"
   metrics_output_dir: "./results"
 EOF
 
 echo "=== ShieldFL Experiment ==="
 echo "  model=${MODEL} dataset=${DATASET} attack=${ATTACK} defense=${DEFENSE}"
-echo "  aggregator=${AGGREGATOR} pmr=${PMR} alpha=${ALPHA} seed=${SEED}"
+echo "  pmr=${PMR} alpha=${ALPHA} seed=${SEED}"
 echo "  rounds=${ROUNDS} clients=${CLIENTS} epochs=${EPOCHS} lr=${LR}"
 echo "  weight_decay=${WEIGHT_DECAY} server_lr=${SERVER_LR}"
 echo "  gpu=${GPU} runtime=${RUNTIME_MODE} gpu_mapping=${GPU_MAPPING_KEY}"
@@ -302,7 +301,7 @@ echo "  config=${CONFIG_FILE}"
 # WI-9: 持久化 YAML 配置副本
 PERSIST_DIR="./results/configs"
 mkdir -p "$PERSIST_DIR"
-PERSIST_NAME="config_${MODEL}_${DATASET}_${AGGREGATOR}_atk${ATTACK}_def${DEFENSE}_a${ALPHA}_pmr${PMR}_seed${SEED}.yaml"
+PERSIST_NAME="config_${MODEL}_${DATASET}_shieldfl_atk${ATTACK}_def${DEFENSE}_a${ALPHA}_pmr${PMR}_seed${SEED}.yaml"
 cp "$CONFIG_FILE" "${PERSIST_DIR}/${PERSIST_NAME}"
 echo "  persisted_config=${PERSIST_DIR}/${PERSIST_NAME}"
 

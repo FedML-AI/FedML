@@ -3,8 +3,7 @@ from fedml import FedMLRunner
 
 from data.data_loader import load_shieldfl_data
 from model.model_hub import create_model
-from trainer.verifl_aggregator import VeriFLAggregator
-from trainer.baseline_aggregator import BaselineAggregator
+from trainer.shieldfl_aggregator import ShieldFLAggregator
 from trainer.verifl_trainer import VeriFLTrainer
 from utils.runtime import configure_runtime
 
@@ -21,11 +20,7 @@ if __name__ == "__main__":
 
     trainer = VeriFLTrainer(model=model, args=args)
 
-    aggregator_type = str(getattr(args, "aggregator_type", "verifl")).strip().lower()
-    if aggregator_type == "fedavg":
-        aggregator = BaselineAggregator(model=model, args=args, data_assets=data_assets, device=device)
-    else:
-        aggregator = VeriFLAggregator(model=model, args=args, data_assets=data_assets, device=device)
+    aggregator = ShieldFLAggregator(model=model, args=args, data_assets=data_assets, device=device)
 
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

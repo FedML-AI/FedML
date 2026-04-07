@@ -1,4 +1,4 @@
 from .verifl_trainer import VeriFLTrainer
-from .verifl_aggregator import VeriFLAggregator
+from .shieldfl_aggregator import ShieldFLAggregator
 
-__all__ = ["VeriFLTrainer", "VeriFLAggregator"]
+__all__ = ["VeriFLTrainer", "ShieldFLAggregator"]

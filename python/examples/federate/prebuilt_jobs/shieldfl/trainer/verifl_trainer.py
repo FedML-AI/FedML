@@ -51,6 +51,21 @@ class VeriFLTrainer(ClientTrainer):
             )
 
     def train(self, train_data, device, args):
+        # ------------------------------------------------------------------
+        # F-6 fix: FedMLTrainer.train() always passes self.train_local (the
+        # *original* clean DataLoader).  ClientTrainer.update_dataset() stores
+        # the poisoned DataLoader in self.local_train_dataset, but train()
+        # never reads it.  Redirect here so data-poisoning attacks (Label
+        # Flipping) actually affect training.
+        #
+        # Safety note (E-10): after update_dataset(), local_train_dataset is
+        # non-None for ALL clients (including benign ones).  For benign
+        # clients, local_train_dataset == the clean DataLoader passed in,
+        # so the redirect is a no-op (same object reference).
+        # ------------------------------------------------------------------
+        if hasattr(self, 'local_train_dataset') and self.local_train_dataset is not None:
+            train_data = self.local_train_dataset
+
         # --- Scaling attack: determine if this client poisons this round ---
         is_malicious = (
             self._scaling_attack_enabled
