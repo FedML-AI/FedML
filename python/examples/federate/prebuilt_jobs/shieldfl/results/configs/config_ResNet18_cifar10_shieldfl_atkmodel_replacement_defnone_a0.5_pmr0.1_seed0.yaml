@@ -48,7 +48,7 @@ train_args:
   target_class_list: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
   ratio_of_poisoned_client: 0.1
   scale_gamma: 1
-  attack_training_rounds: [95, 96, 97, 98, 99]
+  attack_training_rounds: [99]
   backdoor_per_batch: 20
   attacker_epochs: null
   attacker_lr: null

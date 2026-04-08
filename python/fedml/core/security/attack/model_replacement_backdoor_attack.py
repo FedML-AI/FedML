@@ -32,7 +32,11 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
 
         # --- scale_gamma ---
         if hasattr(args, "scale_gamma"):
-            self.scale_gamma = float(args.scale_gamma)
+            raw = args.scale_gamma
+            if isinstance(raw, str) and raw.lower() == "auto":
+                self.scale_gamma = "auto"
+            else:
+                self.scale_gamma = float(raw)
         else:
             self.scale_gamma = float(getattr(args, "client_num_in_total", 10))
 
@@ -80,7 +84,20 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
         for k in extra_auxiliary_info.keys():
             global_model[k] = extra_auxiliary_info[k].to(self.device)
 
-        gamma = self.scale_gamma
+        if self.scale_gamma == "auto":
+            total_samples = sum(num for num, _ in raw_client_grad_list)
+            malicious_samples = sum(
+                raw_client_grad_list[idx][0]
+                for idx in self.malicious_client_ids
+                if idx < len(raw_client_grad_list)
+            )
+            gamma = total_samples / malicious_samples
+            logging.info(
+                "Scaling auto-gamma | round=%d | total_samples=%d | malicious_samples=%d | gamma=%.4f",
+                self.training_round, int(total_samples), int(malicious_samples), gamma,
+            )
+        else:
+            gamma = self.scale_gamma
 
         # Scale each malicious client's model in-place (no pop+insert)
         for idx in self.malicious_client_ids:
