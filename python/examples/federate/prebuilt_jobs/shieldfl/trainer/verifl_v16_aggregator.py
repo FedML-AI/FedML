@@ -39,7 +39,7 @@ def aggregate_weighted(weights_results, alpha):
     return aggregated
 
 
-class VeriFLAggregator(ServerAggregator, MicroGABase):
+class VeriFLv16Aggregator(ServerAggregator, MicroGABase):
     def __init__(self, model, args, data_assets, device):
         ServerAggregator.__init__(self, model, args)
         MicroGABase.__init__(
@@ -66,7 +66,7 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
 
         # 结构化指标采集
         metrics_dir = str(getattr(args, "metrics_output_dir", "./results"))
-        setattr(args, "aggregator_type", "verifl")
+        setattr(args, "aggregator_type", "verifl_v16")
         self._metrics_collector: Optional[MetricsCollector] = MetricsCollector(metrics_dir, args)
 
     def get_model_params(self):
@@ -97,12 +97,12 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
                 extra_auxiliary_info=self.get_model_params(),
             )
             logging.info(
-                "VeriFL on_before_aggregation: FedMLAttacker model attack applied | attack_type=%s",
+                "VeriFL_v16 on_before_aggregation: FedMLAttacker model attack applied | attack_type=%s",
                 FedMLAttacker.get_instance().get_attack_types(),
             )
         client_idxs = [idx for idx in range(len(raw_client_model_or_grad_list))]
         logging.info(
-            "VeriFL on_before_aggregation: %s client updates | deterministic_order=%s | order_source=fedml_client_index_iteration",
+            "VeriFL_v16 on_before_aggregation: %s client updates | deterministic_order=%s | order_source=fedml_client_index_iteration",
             len(client_idxs),
             getattr(self.args, "sort_client_updates", True),
         )
@@ -182,7 +182,7 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
 
         anchor_idx = int(np.argmax(best_weights))
         trainable_mask = self.gpu_accelerator.trainable_mask if self.gpu_accelerator else None
-        logging.info("VeriFL phase-1 complete | ga_search best anchor candidate=%s", anchor_idx)
+        logging.info("VeriFL_v16 phase-1 complete | ga_search best anchor candidate=%s", anchor_idx)
 
         def calc_l2_norm(params):
             if trainable_mask is None:
@@ -212,7 +212,7 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
                     for layer, is_trainable in zip(weights_results[client_idx], trainable_mask)
                 ]
             projected_weights.append(projected)
-        logging.info("VeriFL phase-2 complete | anchor_projection anchor=%s", anchor_idx)
+        logging.info("VeriFL_v16 phase-2 complete | anchor_projection anchor=%s", anchor_idx)
 
         ga_aggregated_params = aggregate_weighted(projected_weights, best_weights)
         final_params = []
@@ -220,7 +220,7 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
             final_params = ga_aggregated_params
             self.global_model_buffer = copy.deepcopy(final_params)
             self.velocity_buffer = [np.zeros_like(param) for param in final_params]
-            logging.info("VeriFL phase-3 init | server_momentum bootstrap from first global state")
+            logging.info("VeriFL_v16 phase-3 init | server_momentum bootstrap from first global state")
         else:
             new_velocity = []
             for old_global, ga_param, old_velocity in zip(
@@ -233,29 +233,29 @@ class VeriFLAggregator(ServerAggregator, MicroGABase):
                 final_params.append(updated)
             self.global_model_buffer = copy.deepcopy(final_params)
             self.velocity_buffer = new_velocity
-            logging.info("VeriFL phase-3 complete | server_momentum lr=%.4f momentum=%.4f", self.server_lr, self.server_momentum)
+            logging.info("VeriFL_v16 phase-3 complete | server_momentum lr=%.4f momentum=%.4f", self.server_lr, self.server_momentum)
         if self.gpu_accelerator is not None:
             final_params = self.gpu_accelerator.recalibrate_batchnorm(final_params)
             logging.info(
-                "VeriFL bn_recalibration complete | enabled=%s",
+                "VeriFL_v16 bn_recalibration complete | enabled=%s",
                 self.gpu_accelerator.has_batchnorm,
             )
 
         logging.info(
-            "VeriFL aggregate complete | anchor=%s | best_fitness=%.6f | weights=%s",
+            "VeriFL_v16 aggregate complete | anchor=%s | best_fitness=%.6f | weights=%s",
             anchor_idx,
             best_fitness,
             np.round(best_weights, 4),
         )
         self._last_agg_time = time.time() - _t0
-        logging.info("VeriFL aggregate_time=%.4fs", self._last_agg_time)
+        logging.info("VeriFL_v16 aggregate_time=%.4fs", self._last_agg_time)
 
         # 状态诊断日志（可通过 debug_state_tracking: true 开启）
         if bool(getattr(self.args, "debug_state_tracking", False)):
             gb_norm = np.sqrt(sum(np.sum(x ** 2) for x in self.global_model_buffer))
             vb_norm = np.sqrt(sum(np.sum(x ** 2) for x in self.velocity_buffer))
             logging.info(
-                "VeriFL state_check | global_buffer_norm=%.6f | velocity_buffer_norm=%.6f",
+                "VeriFL_v16 state_check | global_buffer_norm=%.6f | velocity_buffer_norm=%.6f",
                 gb_norm,
                 vb_norm,
             )

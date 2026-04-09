@@ -7,7 +7,7 @@ from torch import nn
 from fedml.core import ClientTrainer
 
 
-class VeriFLTrainer(ClientTrainer):
+class VeriFLv16Trainer(ClientTrainer):
     def __init__(self, model, args):
         self.cpu_transfer = bool(getattr(args, "cpu_transfer", True))
         super().__init__(model, args)
@@ -74,7 +74,7 @@ class VeriFLTrainer(ClientTrainer):
         If *dataset_key* is not in the lookup table, the raw value is returned
         as a scalar tensor (backward compatible fallback).
         """
-        params = VeriFLTrainer._NORM_PARAMS.get(dataset_key)
+        params = VeriFLv16Trainer._NORM_PARAMS.get(dataset_key)
         if params is None:
             logging.warning(
                 "Unknown dataset '%s' for trigger normalization; using raw value %.4f",
