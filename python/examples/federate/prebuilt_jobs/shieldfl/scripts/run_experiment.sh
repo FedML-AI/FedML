@@ -32,9 +32,10 @@ CPU_TRANSFER="true"
 WEIGHT_DECAY="auto"
 SERVER_LR="1.0"
 LR="0.01"
-SCALE_GAMMA="10"
+SCALE_GAMMA="auto"
 BACKDOOR_PER_BATCH="20"
 ATTACK_ROUNDS=""
+GPU_PROC_MAPPING=""
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
@@ -134,6 +135,10 @@ while [[ $# -gt 0 ]]; do
 		ATTACK_ROUNDS="$2"
 		shift 2
 		;;
+	--gpu_proc_mapping)
+		GPU_PROC_MAPPING="$2"
+		shift 2
+		;;
 	*)
 		echo "Unknown argument: $1"
 		exit 1
@@ -171,16 +176,10 @@ if [[ "$ATTACK" != "none" ]]; then
 	BYZANTINE_NUM=$(python3 -c "import math; print(max(1, math.ceil($CLIENTS * $PMR)))")
 	if [[ "$ATTACK" == "model_replacement" ]]; then
 		EVAL_ASR="true"
-		# Auto-compute attack_training_rounds if not specified
+		# D-2: Default to every-round attack (null) for model_replacement.
+		# Override with --attack_rounds '[95,96,97,98,99]' for specific rounds.
 		if [[ -z "$ATTACK_ROUNDS" ]]; then
-			ATTACK_ROUNDS=$(python3 -c "
-rounds = $ROUNDS
-if rounds <= 5:
-    n = 2
-else:
-    n = 5
-print('[' + ', '.join(str(rounds - n + i) for i in range(n)) + ']')
-")
+			ATTACK_ROUNDS="null"
 		fi
 	fi
 fi
@@ -189,8 +188,12 @@ ENABLE_DEFENSE="false"
 DEFENSE_TYPE="none"
 TRIM_BETA="0.2"
 if [[ "$DEFENSE" != "none" ]]; then
-	ENABLE_DEFENSE="true"
 	DEFENSE_TYPE="$DEFENSE"
+	# "shieldfl" defense is implemented in the custom aggregator, not FedML's FedMLDefender.
+	# Only enable FedML's built-in defender for recognized defense types.
+	if [[ "$DEFENSE" != "shieldfl" ]]; then
+		ENABLE_DEFENSE="true"
+	fi
 fi
 
 # ----------- 生成临时配置 -----------
@@ -308,19 +311,29 @@ echo "  persisted_config=${PERSIST_DIR}/${PERSIST_NAME}"
 cd "$SCRIPT_DIR"
 TOTAL_PROC=$((WORKER_NUM + 1))
 
-MPI_EXTRA_ARGS=""
+MPI_EXTRA_ARGS="--oversubscribe"
 # 允许 root 用户运行 mpirun
 if [[ "$(id -u)" == "0" ]]; then
-	MPI_EXTRA_ARGS="--allow-run-as-root"
+	MPI_EXTRA_ARGS="${MPI_EXTRA_ARGS} --allow-run-as-root"
 fi
-# GPU 模式下固定 CUDA_VISIBLE_DEVICES 到指定 GPU
+
+MPI_CMD="python main_fedml_shieldfl.py"
+# GPU 模式下的显存隔离和设备分配
 if [[ "$GPU" == "true" ]]; then
-	export CUDA_VISIBLE_DEVICES="${GPU_ID}"
-	MPI_EXTRA_ARGS="${MPI_EXTRA_ARGS} -x CUDA_VISIBLE_DEVICES=${GPU_ID}"
+	export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+	MPI_EXTRA_ARGS="${MPI_EXTRA_ARGS} -x PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
+	if [[ -n "$GPU_PROC_MAPPING" ]]; then
+		# Per-process GPU isolation: each MPI rank sees only its assigned GPU
+		MPI_EXTRA_ARGS="${MPI_EXTRA_ARGS} -x GPU_PROC_MAPPING=${GPU_PROC_MAPPING} -x GPU_PHYS_IDS=${GPU_ID}"
+		MPI_CMD="bash scripts/gpu_wrapper.sh main_fedml_shieldfl.py"
+	else
+		export CUDA_VISIBLE_DEVICES="${GPU_ID}"
+		MPI_EXTRA_ARGS="${MPI_EXTRA_ARGS} -x CUDA_VISIBLE_DEVICES=${GPU_ID}"
+	fi
 fi
 
 MPI_EXIT=0
-mpirun ${MPI_EXTRA_ARGS} -np $TOTAL_PROC python main_fedml_shieldfl.py --cf "$CONFIG_FILE" || MPI_EXIT=$?
+mpirun ${MPI_EXTRA_ARGS} -np $TOTAL_PROC ${MPI_CMD} --cf "$CONFIG_FILE" || MPI_EXIT=$?
 if [[ $MPI_EXIT -ne 0 ]]; then
 	echo "WARNING: mpirun exited with code $MPI_EXIT"
 fi

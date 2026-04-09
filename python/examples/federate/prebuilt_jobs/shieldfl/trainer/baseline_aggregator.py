@@ -17,9 +17,10 @@ import torch
 import torch.nn as nn
 
 from fedml.core import ServerAggregator
+from fedml.core.security.fedml_attacker import FedMLAttacker
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
-from eval.asr import evaluate_asr
+from eval.asr import evaluate_asr, _normalize_trigger
 from eval.metrics import MetricsCollector
 
 
@@ -124,6 +125,7 @@ class BaselineAggregator(ServerAggregator):
                 target_label=int(getattr(args, "target_label", 0)),
                 trigger_size=int(getattr(args, "trigger_size", 3)),
                 trigger_value=float(getattr(args, "trigger_value", 1.0)),
+                dataset=str(getattr(args, "dataset", "")),
             )
             asr_value = asr_result["asr"]
             metrics.update({f"asr_{k}": v for k, v in asr_result.items()})
@@ -131,6 +133,15 @@ class BaselineAggregator(ServerAggregator):
         # 写入结构化指标
         if self._metrics_collector is not None:
             round_idx = int(getattr(args, "round_idx", -1))
+            # D-13: extract gamma from attacker instance
+            gamma_actual = None
+            attacker_inst = FedMLAttacker.get_instance()
+            if attacker_inst.is_enabled and attacker_inst.attacker is not None:
+                gamma_actual = getattr(attacker_inst.attacker, "last_gamma", None)
+            malicious_count = int(getattr(args, "byzantine_client_num", 0)) if bool(getattr(args, "enable_attack", False)) else None
+            ds = str(getattr(args, "dataset", ""))
+            tv = float(getattr(args, "trigger_value", 1.0))
+            trigger_norm = _normalize_trigger(tv, ds).flatten().tolist() if ds else None
             self._metrics_collector.log_round(
                 round_idx=round_idx,
                 test_accuracy=metrics["test_accuracy"],
@@ -138,6 +149,9 @@ class BaselineAggregator(ServerAggregator):
                 test_total=int(metrics["test_total"]),
                 asr=asr_value,
                 agg_time=self._last_agg_time,
+                gamma_actual=gamma_actual,
+                malicious_count=malicious_count,
+                trigger_value_normalized=trigger_norm,
             )
         return metrics
 

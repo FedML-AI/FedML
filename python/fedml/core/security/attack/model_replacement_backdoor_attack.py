@@ -99,6 +99,9 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
         else:
             gamma = self.scale_gamma
 
+        # Expose last computed gamma for structured logging (D-13).
+        self.last_gamma = float(gamma)
+
         # Scale each malicious client's model in-place (no pop+insert)
         for idx in self.malicious_client_ids:
             if idx >= len(raw_client_grad_list):

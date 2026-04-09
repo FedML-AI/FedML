@@ -18,7 +18,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DRY_RUN="false"
 if [[ "${1:-}" == "--dry-run" ]]; then
-	DRY_RUN="true"
+    DRY_RUN="true"
 fi
 
 # GPU 分配
@@ -42,17 +42,17 @@ declare -a EXPERIMENTS=()
 
 # 正式实验 (gamma=10)
 for alpha in "${ALPHAS[@]}"; do
-	for seed in "${SEEDS[@]}"; do
-		# CIFAR-10
-		EXPERIMENTS+=("cifar10 ResNet18 100 $alpha $seed 10")
-		# MNIST
-		EXPERIMENTS+=("mnist LeNet5 50 $alpha $seed 10")
-	done
+    for seed in "${SEEDS[@]}"; do
+        # CIFAR-10
+        EXPERIMENTS+=("cifar10 ResNet18 100 $alpha $seed 10")
+        # MNIST
+        EXPERIMENTS+=("mnist LeNet5 50 $alpha $seed 10")
+    done
 done
 
 # 控制实验 (gamma=1, CIFAR-10, alpha=0.5)
 for seed in "${SEEDS[@]}"; do
-	EXPERIMENTS+=("cifar10 ResNet18 100 0.5 $seed 1")
+    EXPERIMENTS+=("cifar10 ResNet18 100 0.5 $seed 1")
 done
 
 TOTAL=${#EXPERIMENTS[@]}
@@ -68,12 +68,12 @@ declare -a GPU_TASKS_1=()
 declare -a GPU_TASKS_2=()
 
 for i in "${!EXPERIMENTS[@]}"; do
-	gpu_slot=$((i % NUM_GPUS))
-	case $gpu_slot in
-	0) GPU_TASKS_0+=("${EXPERIMENTS[$i]}") ;;
-	1) GPU_TASKS_1+=("${EXPERIMENTS[$i]}") ;;
-	2) GPU_TASKS_2+=("${EXPERIMENTS[$i]}") ;;
-	esac
+    gpu_slot=$((i % NUM_GPUS))
+    case $gpu_slot in
+        0) GPU_TASKS_0+=("${EXPERIMENTS[$i]}") ;;
+        1) GPU_TASKS_1+=("${EXPERIMENTS[$i]}") ;;
+        2) GPU_TASKS_2+=("${EXPERIMENTS[$i]}") ;;
+    esac
 done
 
 echo "GPU ${GPUS[0]}: ${#GPU_TASKS_0[@]} experiments"
@@ -83,42 +83,42 @@ echo ""
 
 # 生成单个 GPU 的串行运行脚本
 generate_gpu_script() {
-	local gpu_id=$1
-	shift
-	local tasks=("$@")
-	local script_file="/tmp/m2_scaling_gpu${gpu_id}.sh"
+    local gpu_id=$1
+    shift
+    local tasks=("$@")
+    local script_file="/tmp/m2_scaling_gpu${gpu_id}.sh"
 
-	cat >"$script_file" <<'HEADER'
+    cat > "$script_file" << 'HEADER'
 #!/usr/bin/env bash
 set -euo pipefail
 HEADER
 
-	cat >>"$script_file" <<VARS
+    cat >> "$script_file" << VARS
 GPU_ID=${gpu_id}
 SCRIPT_DIR="${SCRIPT_DIR}"
 TOTAL_TASKS=${#tasks[@]}
 VARS
 
-	local task_idx=0
-	for task in "${tasks[@]}"; do
-		read -r dataset model rounds alpha seed gamma <<<"$task"
-		task_idx=$((task_idx + 1))
+    local task_idx=0
+    for task in "${tasks[@]}"; do
+        read -r dataset model rounds alpha seed gamma <<< "$task"
+        task_idx=$((task_idx + 1))
 
-		# Determine test_subset and max_samples based on dataset
-		local max_samples=0 # 0 means no limit for full experiments
-		local test_subset=0 # 0 means no limit
+        # Determine test_subset and max_samples based on dataset
+        local max_samples=0  # 0 means no limit for full experiments
+        local test_subset=0  # 0 means no limit
 
-		# For production: remove max_samples & test_subset limits
-		# run_experiment.sh defaults: max_samples=300, test_subset=500
-		# We need to pass large values to effectively disable the limit
+        # For production: remove max_samples & test_subset limits
+        # run_experiment.sh defaults: max_samples=300, test_subset=500
+        # We need to pass large values to effectively disable the limit
 
-		local gamma_tag=""
-		if [[ "$gamma" != "10" ]]; then
-			gamma_tag="_g${gamma}"
-		fi
-		local log_file="/tmp/m2_scaling_${dataset}_${model}_a${alpha}_s${seed}${gamma_tag}.log"
+        local gamma_tag=""
+        if [[ "$gamma" != "10" ]]; then
+            gamma_tag="_g${gamma}"
+        fi
+        local log_file="/tmp/m2_scaling_${dataset}_${model}_a${alpha}_s${seed}${gamma_tag}.log"
 
-		cat >>"$script_file" <<TASK
+        cat >> "$script_file" << TASK
 
 echo ""
 echo "=========================================="
@@ -140,9 +140,9 @@ bash "\${SCRIPT_DIR}/scripts/run_experiment.sh" \\
 echo "End: \$(date '+%Y-%m-%d %H:%M:%S')"
 echo "Exit code: \$?"
 TASK
-	done
+    done
 
-	cat >>"$script_file" <<'FOOTER'
+    cat >> "$script_file" << 'FOOTER'
 
 echo ""
 echo "=========================================="
@@ -150,81 +150,81 @@ echo "All tasks on this GPU completed!"
 echo "=========================================="
 FOOTER
 
-	chmod +x "$script_file"
-	echo "$script_file"
+    chmod +x "$script_file"
+    echo "$script_file"
 }
 
 # 辅助函数：获取 GPU 任务数组
 get_gpu_tasks() {
-	local idx=$1
-	case $idx in
-	0) echo "${GPU_TASKS_0[@]}" ;;
-	1) echo "${GPU_TASKS_1[@]}" ;;
-	2) echo "${GPU_TASKS_2[@]}" ;;
-	esac
+    local idx=$1
+    case $idx in
+        0) echo "${GPU_TASKS_0[@]}" ;;
+        1) echo "${GPU_TASKS_1[@]}" ;;
+        2) echo "${GPU_TASKS_2[@]}" ;;
+    esac
 }
 
 # 打印实验分配
 echo "--- Experiment Assignment ---"
 for gpu_idx in 0 1 2; do
-	gpu_id=${GPUS[$gpu_idx]}
-	echo ""
-	echo "GPU $gpu_id:"
-	case $gpu_idx in
-	0) tasks=("${GPU_TASKS_0[@]}") ;;
-	1) tasks=("${GPU_TASKS_1[@]}") ;;
-	2) tasks=("${GPU_TASKS_2[@]}") ;;
-	esac
-	local_idx=0
-	for task in "${tasks[@]}"; do
-		local_idx=$((local_idx + 1))
-		read -r dataset model rounds alpha seed gamma <<<"$task"
-		echo "  [$local_idx] ${dataset} ${model} alpha=${alpha} seed=${seed} gamma=${gamma} rounds=${rounds}"
-	done
+    gpu_id=${GPUS[$gpu_idx]}
+    echo ""
+    echo "GPU $gpu_id:"
+    case $gpu_idx in
+        0) tasks=("${GPU_TASKS_0[@]}") ;;
+        1) tasks=("${GPU_TASKS_1[@]}") ;;
+        2) tasks=("${GPU_TASKS_2[@]}") ;;
+    esac
+    local_idx=0
+    for task in "${tasks[@]}"; do
+        local_idx=$((local_idx + 1))
+        read -r dataset model rounds alpha seed gamma <<< "$task"
+        echo "  [$local_idx] ${dataset} ${model} alpha=${alpha} seed=${seed} gamma=${gamma} rounds=${rounds}"
+    done
 done
 echo ""
 
 if [[ "$DRY_RUN" == "true" ]]; then
-	echo "[DRY RUN] Generating scripts but not launching..."
-	for gpu_idx in 0 1 2; do
-		gpu_id=${GPUS[$gpu_idx]}
-		case $gpu_idx in
-		0) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_0[@]}") ;;
-		1) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_1[@]}") ;;
-		2) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_2[@]}") ;;
-		esac
-		echo "  GPU $gpu_id script: $script"
-	done
-	echo ""
-	echo "[DRY RUN] To launch manually:"
-	echo "  tmux new-session -d -s m2_gpu1 'bash /tmp/m2_scaling_gpu1.sh'"
-	echo "  tmux new-session -d -s m2_gpu2 'bash /tmp/m2_scaling_gpu2.sh'"
-	echo "  tmux new-session -d -s m2_gpu3 'bash /tmp/m2_scaling_gpu3.sh'"
-	exit 0
+    echo "[DRY RUN] Generating scripts but not launching..."
+    for gpu_idx in 0 1 2; do
+        gpu_id=${GPUS[$gpu_idx]}
+        case $gpu_idx in
+            0) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_0[@]}") ;;
+            1) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_1[@]}") ;;
+            2) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_2[@]}") ;;
+        esac
+        echo "  GPU $gpu_id script: $script"
+    done
+    echo ""
+    echo "[DRY RUN] To launch manually:"
+    echo "  tmux new-session -d -s m2_gpu1 'bash /tmp/m2_scaling_gpu1.sh'"
+    echo "  tmux new-session -d -s m2_gpu2 'bash /tmp/m2_scaling_gpu2.sh'"
+    echo "  tmux new-session -d -s m2_gpu3 'bash /tmp/m2_scaling_gpu3.sh'"
+    exit 0
 fi
 
 # 生成并在 tmux 中启动
 TMUX_SESSION_PREFIX="m2_scaling"
 
 for gpu_idx in 0 1 2; do
-	gpu_id=${GPUS[$gpu_idx]}
-	case $gpu_idx in
-	0) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_0[@]}") ;;
-	1) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_1[@]}") ;;
-	2) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_2[@]}") ;;
-	esac
+    gpu_id=${GPUS[$gpu_idx]}
+    case $gpu_idx in
+        0) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_0[@]}") ;;
+        1) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_1[@]}") ;;
+        2) script=$(generate_gpu_script "$gpu_id" "${GPU_TASKS_2[@]}") ;;
+    esac
 
-	session_name="${TMUX_SESSION_PREFIX}_gpu${gpu_id}"
+    session_name="${TMUX_SESSION_PREFIX}_gpu${gpu_id}"
 
-	# Kill existing session if any
-	tmux kill-session -t "$session_name" 2>/dev/null || true
+    # Kill existing session if any
+    tmux kill-session -t "$session_name" 2>/dev/null || true
 
-	echo "Launching GPU $gpu_id in tmux session: $session_name"
-	echo "  Script: $script"
+    echo "Launching GPU $gpu_id in tmux session: $session_name"
+    echo "  Script: $script"
 
-	# Activate venv and run
-	tmux new-session -d -s "$session_name" \
-		"source /data/home/ykdz/FedML/.venv/bin/activate && bash $script 2>&1 | tee /tmp/m2_scaling_gpu${gpu_id}_master.log; echo 'SESSION DONE'; exec bash"
+    # Activate venv and run
+    tmux new-session -d -s "$session_name" \
+        "source /data/home/ykdz/FedML/.venv/bin/activate && bash $script 2>&1 | tee /tmp/m2_scaling_gpu${gpu_id}_master.log; echo 'SESSION DONE'; exec bash"
 done
 
 echo ""

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
@@ -138,27 +139,54 @@ def _to_abs_size(value, total_size):
     return int(value)
 
 
-def _split_noniid(dataset, num_clients, alpha, seed):
+def _split_noniid(dataset, num_clients, alpha, seed, min_samples=10, max_retries=100):
+    """Pure Dirichlet partition with minimum-sample protection.
+
+    D-12: Boolean cap removed to align with community standard Dirichlet.
+    If any client receives fewer than *min_samples*, the partition is retried
+    with an incremented seed offset (up to *max_retries*).
+    """
     targets = np.array(dataset.targets)
     num_classes = len(np.unique(targets))
-    client_idcs = [[] for _ in range(num_clients)]
-    rng = np.random.default_rng(int(seed))
 
-    for class_id in range(num_classes):
-        class_indices = np.where(targets == class_id)[0]
-        rng.shuffle(class_indices)
-        proportions = rng.dirichlet(np.repeat(alpha, num_clients))
-        proportions = np.array(
-            [
-                p * (len(idx_j) < len(dataset) / num_clients)
-                for p, idx_j in zip(proportions, client_idcs)
-            ]
+    for retry in range(max_retries):
+        client_idcs = [[] for _ in range(num_clients)]
+        rng = np.random.default_rng(int(seed) + retry)
+
+        for class_id in range(num_classes):
+            class_indices = np.where(targets == class_id)[0]
+            rng.shuffle(class_indices)
+            proportions = rng.dirichlet(np.repeat(alpha, num_clients))
+            proportions = proportions / proportions.sum()
+            split_points = (np.cumsum(proportions) * len(class_indices)).astype(int)[:-1]
+            split_indices = np.split(class_indices, split_points)
+            for client_id in range(num_clients):
+                client_idcs[client_id].extend(split_indices[client_id].tolist())
+
+        sizes = [len(idcs) for idcs in client_idcs]
+        if min(sizes) >= min_samples:
+            # Partition statistics for AC-C-4 verification
+            sizes_arr = np.array(sizes)
+            logging.info(
+                "[DataPartition] N=%d, alpha=%s, seed=%d (retries=%d)\n"
+                "  Stats: min=%d, max=%d, mean=%d, std=%d, max/min_ratio=%.1f",
+                num_clients, alpha, seed, retry,
+                sizes_arr.min(), sizes_arr.max(),
+                int(sizes_arr.mean()), int(sizes_arr.std()),
+                sizes_arr.max() / max(1, sizes_arr.min()),
+            )
+            return client_idcs
+
+        logging.warning(
+            "[DataPartition] Retry %d/%d: min_samples=%d < %d",
+            retry + 1, max_retries, min(sizes), min_samples,
         )
-        proportions = proportions / proportions.sum()
-        split_points = (np.cumsum(proportions) * len(class_indices)).astype(int)[:-1]
-        split_indices = np.split(class_indices, split_points)
-        for client_id in range(num_clients):
-            client_idcs[client_id].extend(split_indices[client_id].tolist())
+
+    # Exhausted retries — return last attempt with warning
+    logging.error(
+        "[DataPartition] Exhausted %d retries; min client size=%d",
+        max_retries, min(len(idcs) for idcs in client_idcs),
+    )
     return client_idcs
 
 

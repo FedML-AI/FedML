@@ -24,8 +24,13 @@ class VeriFLTrainer(ClientTrainer):
             self._backdoor_per_batch = int(getattr(args, "backdoor_per_batch", 20))
             self._target_label = int(getattr(args, "target_label", 0))
             self._trigger_size = int(getattr(args, "trigger_size", 3))
-            self._trigger_value = float(getattr(args, "trigger_value", 1.0))
             self._random_seed = int(getattr(args, "random_seed", 0))
+
+            # D-4: trigger_value is now in pixel space [0,1]; auto-convert to
+            # normalized space based on dataset normalization parameters.
+            raw_trigger = float(getattr(args, "trigger_value", 1.0))
+            dataset_key = str(getattr(args, "dataset", "")).lower()
+            self._trigger_value = self._normalize_trigger(raw_trigger, dataset_key)
         else:
             self._byzantine_client_num = 0
         self._current_round = 0
@@ -50,6 +55,43 @@ class VeriFLTrainer(ClientTrainer):
                 self.id, rng_seed,
             )
 
+    # Normalization parameters must match data_loader.py exactly.
+    _NORM_PARAMS = {
+        "cifar10": {
+            "mean": (0.4914, 0.4822, 0.4465),
+            "std": (0.2023, 0.1994, 0.2010),
+        },
+        "mnist": {
+            "mean": (0.1307,),
+            "std": (0.3081,),
+        },
+    }
+
+    @staticmethod
+    def _normalize_trigger(pixel_value: float, dataset_key: str) -> torch.Tensor:
+        """Convert pixel-space trigger value to per-channel normalized tensor.
+
+        If *dataset_key* is not in the lookup table, the raw value is returned
+        as a scalar tensor (backward compatible fallback).
+        """
+        params = VeriFLTrainer._NORM_PARAMS.get(dataset_key)
+        if params is None:
+            logging.warning(
+                "Unknown dataset '%s' for trigger normalization; using raw value %.4f",
+                dataset_key, pixel_value,
+            )
+            return torch.tensor(pixel_value)
+        mean = params["mean"]
+        std = params["std"]
+        normalized = [(pixel_value - m) / s for m, s in zip(mean, std)]
+        # Shape: (C, 1, 1) so broadcasting works with images[idx, :, h, w]
+        t = torch.tensor(normalized, dtype=torch.float32).view(-1, 1, 1)
+        logging.info(
+            "Trigger normalization | dataset=%s | pixel_value=%.4f | normalized=%s",
+            dataset_key, pixel_value, [round(v, 4) for v in normalized],
+        )
+        return t
+
     def train(self, train_data, device, args):
         # ------------------------------------------------------------------
         # F-6 fix: FedMLTrainer.train() always passes self.train_local (the
@@ -73,8 +115,8 @@ class VeriFLTrainer(ClientTrainer):
         )
         poison_this_round = (
             is_malicious
-            and self._attack_training_rounds is not None
-            and self._current_round in self._attack_training_rounds
+            and (self._attack_training_rounds is None
+                 or self._current_round in self._attack_training_rounds)
         )
 
         # Lazy init log (printed once per client)
@@ -148,7 +190,16 @@ class VeriFLTrainer(ClientTrainer):
                     indices = self._scaling_rng.choice(
                         batch_size, size=inject_count, replace=False
                     )
-                    images[indices, :, -self._trigger_size:, -self._trigger_size:] = self._trigger_value
+                    trigger = self._trigger_value.to(device) if isinstance(self._trigger_value, torch.Tensor) else self._trigger_value
+                    ts = self._trigger_size
+                    # Build (C, ts, ts) patch and assign per-sample to avoid
+                    # PyTorch advanced-indexing dim reorder in __setitem__.
+                    if isinstance(trigger, torch.Tensor):
+                        trigger_patch = trigger.reshape(-1, 1, 1).expand(-1, ts, ts)
+                    else:
+                        trigger_patch = trigger
+                    for _pi in indices:
+                        images[int(_pi), :, -ts:, -ts:] = trigger_patch
                     labels[indices] = self._target_label
                     total_poisoned_samples += inject_count
                     total_poisoned_batches += 1

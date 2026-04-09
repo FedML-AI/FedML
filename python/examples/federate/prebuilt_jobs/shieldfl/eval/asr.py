@@ -3,6 +3,7 @@
 
 触发器注入规则：
 - 在图片右下角 trigger_size × trigger_size 区域填充 trigger_value
+- trigger_value 语义为原始像素空间值 [0, 1]，代码自动转为归一化空间
 - 仅对 label != target_label 的样本注入触发器
 - ASR = 被模型预测为 target_label 的比例
 
@@ -10,11 +11,34 @@
 - model_replacement_backdoor_attack 实验的 ASR 评估
 """
 import logging
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
+# Normalization parameters — must match data_loader.py exactly.
+_NORM_PARAMS = {
+    "cifar10": {
+        "mean": (0.4914, 0.4822, 0.4465),
+        "std": (0.2023, 0.1994, 0.2010),
+    },
+    "mnist": {
+        "mean": (0.1307,),
+        "std": (0.3081,),
+    },
+}
+
+
+def _normalize_trigger(pixel_value: float, dataset: str) -> torch.Tensor:
+    """Convert pixel-space trigger value to per-channel normalized tensor."""
+    key = dataset.lower()
+    params = _NORM_PARAMS.get(key)
+    if params is None:
+        return torch.tensor(pixel_value)
+    mean, std = params["mean"], params["std"]
+    normalized = [(pixel_value - m) / s for m, s in zip(mean, std)]
+    return torch.tensor(normalized, dtype=torch.float32).view(-1, 1, 1)
 
 
 def evaluate_asr(
@@ -24,6 +48,7 @@ def evaluate_asr(
     target_label: int = 0,
     trigger_size: int = 3,
     trigger_value: float = 1.0,
+    dataset: str = "",
 ) -> Dict[str, float]:
     """计算后门攻击成功率 (ASR)。
 
@@ -33,28 +58,32 @@ def evaluate_asr(
         device: 运行设备。
         target_label: 触发器目标标签（攻击者希望模型预测的类别）。
         trigger_size: 右下角触发器边长（像素）。
-        trigger_value: 触发器填充值（对归一化后的数据而言通常用 1.0 或更大）。
+        trigger_value: 触发器填充值（原始像素空间 [0, 1]）。
+        dataset: 数据集名称（用于自动归一化转换）。
 
     Returns:
         dict: {"asr": float, "asr_total": int, "asr_success": int}
     """
+    trigger = _normalize_trigger(trigger_value, dataset).to(device)
+    logging.info(
+        "ASR trigger normalization | dataset=%s | pixel_value=%.4f | normalized=%s",
+        dataset, trigger_value,
+        trigger.flatten().tolist(),
+    )
+
     model.eval()
     total = 0
     success = 0
     with torch.no_grad():
         for images, labels in test_loader:
-            images = images.clone()
+            images = images.clone().to(device)
             labels = labels.to(device)
-            # 仅处理标签不等于目标标签的样本
             non_target_mask = (labels != target_label)
             if non_target_mask.sum() == 0:
                 continue
-            # 在右下角注入触发器
-            images[:, :, -trigger_size:, -trigger_size:] = trigger_value
-            images = images.to(device)
+            images[:, :, -trigger_size:, -trigger_size:] = trigger
             logits = model(images)
             _, predicted = torch.max(logits, dim=1)
-            # 仅统计原本不是目标类、触发后被预测为目标类的样本
             success += ((predicted == target_label) & non_target_mask).sum().item()
             total += non_target_mask.sum().item()
 
