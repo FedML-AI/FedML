@@ -1,0 +1,62 @@
+# FedML cross-silo GPU 映射文件
+# 格式：对每个 host，列出每块 GPU 上运行的进程数（整数）
+# 所有进程数之和必须等于 worker_num + 1（clients + 1 server）
+# 对于单 GPU 环境，只有一个条目，值 = 总进程数
+
+# 3 clients: worker_num=3, total=4 processes
+mapping_default:
+  host1:
+    - 4  # 4 processes (server + 3 clients) on GPU 0
+
+# 5 clients: worker_num=5, total=6 processes
+mapping_5clients:
+  host1:
+    - 6  # 6 processes (server + 5 clients) on GPU 0
+
+# 7 clients: worker_num=7, total=8 processes
+mapping_7clients:
+  host1:
+    - 8  # 8 processes (server + 7 clients) on GPU 0
+
+# 单 GPU 全映射：server + 10 clients (total=11) 全部映射到 GPU 0
+# 适用于 M1/M2/M3 学术实验的 10-client 配置
+mapping_single_gpu:
+  host1:
+    - 11  # 11 processes (server + 10 clients) on GPU 0
+
+# 多 GPU 映射（预留，当前仅有单 GPU）
+# GPU 0: 2 processes; GPU 1: 2 processes; GPU 2: 2 processes
+mapping_multi_gpu_5clients:
+  host1:
+    - 2  # 2 processes on GPU 0
+    - 2  # 2 processes on GPU 1
+    - 2  # 2 processes on GPU 2
+
+# N=50 clients: worker_num=50, total=51 processes (D-1)
+# 单 GPU：全部 51 进程映射到 GPU 0
+mapping_50clients:
+  host1:
+    - 51  # 51 processes (server + 50 clients) on GPU 0
+
+# N=50 双 GPU：26 + 25 进程分别映射到 GPU 0 和 GPU 1
+mapping_50clients_2gpu:
+  host1:
+    - 26  # 26 processes on GPU 0
+    - 25  # 25 processes on GPU 1
+
+# N=50 三 GPU (ResNet18/CIFAR-10)：13+19+19
+# 实测 15+18+18 OOM — server 聚合时持有 50 份 client 模型 (~2.25 GB)
+# CPU 聚合补丁后 server 开销从 ~8 GB 降至 ~5.8 GB
+# GPU 0 (server): 5.8 + 12×1.15 = 19.6 GB, GPU 1/2: 19×1.15 = 21.9 GB
+mapping_50clients_3gpu:
+  host1:
+    - 13  # server + 12 clients on GPU 0 (~19.6 GB)
+    - 19  # 19 clients on GPU 1 (~21.9 GB)
+    - 19  # 19 clients on GPU 2 (~21.9 GB)
+
+# N=50 per-process GPU isolation: used with gpu_wrapper.sh
+# Each process only sees 1 GPU (via per-process CUDA_VISIBLE_DEVICES),
+# so all 51 map to device 0 (the only visible device).
+mapping_50clients_isolated:
+  host1:
+    - 51  # All on device 0 (actual physical GPU set by wrapper)

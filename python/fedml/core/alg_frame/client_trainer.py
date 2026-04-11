@@ -36,9 +36,11 @@ class ClientTrainer(ABC):
         return True
 
     def update_dataset(self, local_train_dataset, local_test_dataset, local_sample_number):
-        if FedMLAttacker.get_instance().is_data_poisoning_attack() and FedMLAttacker.get_instance().is_to_poison_data():
+        if (FedMLAttacker.get_instance().is_data_poisoning_attack()
+                and FedMLAttacker.get_instance().is_to_poison_data(client_id=self.id)):
+            # W6 fix (D5): only poison train data, keep test data clean
             self.local_train_dataset = FedMLAttacker.get_instance().poison_data(local_train_dataset)
-            self.local_test_dataset = FedMLAttacker.get_instance().poison_data(local_test_dataset)
+            self.local_test_dataset = local_test_dataset
         else:
             self.local_train_dataset = local_train_dataset
             self.local_test_dataset = local_test_dataset

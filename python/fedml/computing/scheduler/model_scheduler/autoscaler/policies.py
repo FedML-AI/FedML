@@ -1,4 +1,10 @@
-from pydantic import BaseModel, field_validator, NonNegativeInt, NonNegativeFloat
+try:
+    from pydantic import BaseModel, field_validator, NonNegativeInt, NonNegativeFloat
+except ImportError:  # pydantic<2
+    from pydantic import BaseModel, validator, NonNegativeInt, NonNegativeFloat
+
+    def field_validator(*fields, **kwargs):
+        return validator(*fields, **kwargs)
 
 
 class AutoscalingPolicy(BaseModel):

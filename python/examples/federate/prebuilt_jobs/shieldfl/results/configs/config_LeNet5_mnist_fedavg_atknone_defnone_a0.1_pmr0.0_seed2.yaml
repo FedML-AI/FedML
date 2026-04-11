@@ -1,0 +1,78 @@
+common_args:
+  training_type: "cross_silo"
+  random_seed: 2
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: ./data
+  partition_method: "hetero"
+  partition_alpha: 0.1
+  val_per_class: 50
+  trust_per_class: 50
+  max_samples_per_client: 0
+  test_subset_size: 0
+  num_workers: 0
+
+model_args:
+  model: "LeNet5"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 10
+  client_num_per_round: 10
+  comm_round: 50
+  epochs: 1
+  batch_size: 64
+  client_optimizer: sgd
+  learning_rate: 0.01
+  weight_decay: 0.0
+  momentum: 0.9
+  server_momentum: 0.0
+  server_lr: 1.0
+  pop_size: 15
+  generations: 10
+  lambda_reg: 0.01
+  cpu_transfer: true
+  enable_attack: false
+  attack_type: "none"
+  byzantine_client_num: 0
+  attack_mode: "flip"
+  enable_defense: false
+  defense_type: "none"
+  beta: 0.2
+  eval_asr: false
+  target_label: 0
+  trigger_size: 3
+  trigger_value: 1.0
+  original_class_list: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  target_class_list: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+  ratio_of_poisoned_client: 0.0
+  # model_replacement 后门攻击参数对齐说明:
+  # 核心代码 hasattr 检查 attack_training_rounds, isinstance 读取 poisoned_training_round
+  # 须同时设置两者为相同列表值；不设置时默认每轮攻击, scale_factor_S 不设置时 gamma=participant_num
+
+validation_args:
+  frequency_of_the_test: 1
+
+device_args:
+  worker_num: 10
+  using_gpu: true
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_single_gpu
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  using_mlops: false
+
+shieldfl_args:
+  runtime_mode: "gpu-deterministic"
+  enforce_determinism: true
+  sort_client_updates: true
+  aggregator_type: "fedavg"
+  metrics_output_dir: "./results"

@@ -1,0 +1,1 @@
+{"round": 0, "test_accuracy": 0.085938, "test_loss": 2.399151, "test_total": 128, "asr": null, "agg_time": 9.1637, "timestamp": "2026-03-25T11:58:12.535535Z", "aggregator": "verifl", "attack_type": "byzantine", "defense_type": "none", "model": "ResNet18", "dataset": "cifar10"}

@@ -293,7 +293,8 @@ def _manage_cuda_rpc_args(args):
     if (not args.enable_cuda_rpc) and args.backend == "TRPC":
         args.cpu_transfer = True
     else:
-        args.cpu_transfer = False
+        # For non-TRPC backends (e.g. MPI), respect user config; default to False
+        args.cpu_transfer = getattr(args, "cpu_transfer", False)
 
     # Valudate arguments related to cuda rpc
     if args.enable_cuda_rpc:

@@ -58,9 +58,10 @@ class FedMLAggregator(object):
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
 
-        # for dictionary model_params, we let the user level code to control the device
+        # Keep client models on CPU to avoid accumulating N client copies in GPU memory.
+        # Aggregation (weighted average) runs on CPU; result is moved to GPU via set_global_model_params.
         if type(model_params) is not dict and (not self.is_fhe_enabled):
-            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, torch.device("cpu"))
 
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num

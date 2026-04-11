@@ -90,10 +90,10 @@ class FedMLAttacker:
             return True
         return False
 
-    def is_to_poison_data(self):
+    def is_to_poison_data(self, client_id=None, round_idx=None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        return self.attacker.is_to_poison_data()
+        return self.attacker.is_to_poison_data(client_id=client_id, round_idx=round_idx)
 
     def poison_data(self, dataset):
         if self.attacker is None:

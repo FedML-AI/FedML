@@ -17,7 +17,7 @@ class BaseAttackMethod(ABC):
     def compute_poisoned_client_ids(self, client_ids: List):
         pass
 
-    def is_to_poison_data(self):
+    def is_to_poison_data(self, client_id=None, round_idx=None):
         pass
 
     def poison_data(self, dataset):
