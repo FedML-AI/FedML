@@ -1,6 +1,6 @@
 common_args:
   training_type: "cross_silo"
-  random_seed: 0
+  random_seed: 1
 
 data_args:
   dataset: "mnist"
