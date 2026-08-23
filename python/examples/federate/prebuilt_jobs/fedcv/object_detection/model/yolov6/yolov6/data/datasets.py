@@ -40,7 +40,7 @@ class TrainValDataset(Dataset):
         if self.rect:
             shapes = [self.img_info[p]['shape'] for p in self.img_paths]
             self.shapes = np.array(shapes, dtype=np.float64)
-            self.batch_indices = np.floor(np.arange(len(shapes)) / self.batch_size).astype(np.int)   # batch indices of each image
+            self.batch_indices = np.floor(np.arange(len(shapes)) / self.batch_size).astype(int)   # batch indices of each image
             self.sort_files_shapes()
         t2 = time.time()
         if self.main_process:
@@ -290,7 +290,7 @@ class TrainValDataset(Dataset):
                 shapes[i] = [maxi, 1]
             elif mini > 1:
                 shapes[i] = [1, 1 / mini]
-        self.batch_shapes = np.ceil(np.array(shapes) * self.img_size / self.stride + self.pad).astype(np.int) * self.stride
+        self.batch_shapes = np.ceil(np.array(shapes) * self.img_size / self.stride + self.pad).astype(int) * self.stride
 
     @staticmethod
     def check_image(im_file):
