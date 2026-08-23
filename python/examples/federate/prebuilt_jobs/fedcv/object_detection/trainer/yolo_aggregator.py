@@ -217,11 +217,11 @@ class YOLOAggregator(ServerAggregator):
         fedml.mlops.log(
             {
                 f"round_idx": self.round_idx,
-                f"test_mp": np.float(mp),
-                f"test_mr": np.float(mr),
-                f"test_map50": np.float(map50),
-                f"test_map": np.float(map),
-                f"test_loss": np.float(sum((loss.cpu() / len(test_data)).tolist())),
+                f"test_mp": float(mp),
+                f"test_mr": float(mr),
+                f"test_map50": float(map50),
+                f"test_map": float(map),
+                f"test_loss": float(sum((loss.cpu() / len(test_data)).tolist())),
             }
         )
 

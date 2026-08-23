@@ -49,7 +49,7 @@ def non_iid_partition_with_dirichlet_distribution(
                     idx_k = np.asarray(
                         [
                             np.any(label_list[i] == cat)
-                            and not np.any(np.in1d(label_list[i], classes[:c]))
+                            and not np.any(np.isin(label_list[i], classes[:c]))
                             for i in range(len(label_list))
                         ]
                     )

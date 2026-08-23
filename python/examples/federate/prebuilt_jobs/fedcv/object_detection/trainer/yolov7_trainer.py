@@ -162,10 +162,10 @@ class YOLOv7Trainer(ClientTrainer):
         fedml.mlops.log(
             {
                 f"round_idx": self.round_idx,
-                f"train_box_loss": np.float(epoch_loss[-1, 0]),
-                f"train_obj_loss": np.float(epoch_loss[-1, 1]),
-                f"train_cls_loss": np.float(epoch_loss[-1, 2]),
-                f"train_total_loss": np.float(epoch_loss[-1, 3]),
+                f"train_box_loss": float(epoch_loss[-1, 0]),
+                f"train_obj_loss": float(epoch_loss[-1, 1]),
+                f"train_cls_loss": float(epoch_loss[-1, 2]),
+                f"train_total_loss": float(epoch_loss[-1, 3]),
             }
         )
 
