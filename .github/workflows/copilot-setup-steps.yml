@@ -1,0 +1,86 @@
+version: 2
+
+updates:
+  # Python dependencies at repo root
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 15
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+      include: "scope"
+
+  # Python dependencies in python/ subdirectory
+  - package-ecosystem: "pip"
+    directory: "/python"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+
+  # Docker images at repo root
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"
+
+  # Dockerfile in the FedML light image directory
+  - package-ecosystem: "docker"
+    directory: "/installation/build_fedml_docker/light"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - docker
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"

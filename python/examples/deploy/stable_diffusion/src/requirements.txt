@@ -6,10 +6,10 @@ diffusers>=0.19.3
 ftfy
 matplotlib
 nvtx
-onnx==1.14.0
+onnx==1.21.0
 onnxruntime==1.15.1
 scipy
-transformers==4.31.0
+transformers==5.0.0rc3
 --extra-index-url https://pypi.ngc.nvidia.com
 onnx-graphsurgeon
 polygraphy

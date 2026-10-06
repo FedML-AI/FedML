@@ -1,0 +1,89 @@
+version: 2
+
+updates:
+  # Python dependencies - primary
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 15
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+      include: "scope"
+    allow:
+      - dependency-type: "production"
+      - dependency-type: "development"
+
+  # Python dependencies - package directory
+  - package-ecosystem: "pip"
+    directory: "/python"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"
+
+  # Docker images in the FedML Docker build directory
+  - package-ecosystem: "docker"
+    directory: "/installation/build_fedml_docker/light"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - docker
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - SherfeyInv
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
