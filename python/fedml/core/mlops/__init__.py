@@ -122,7 +122,8 @@ def init(args, should_init_logs=True):
     # Bind local device as simulation device on FedML® Nexus AI Platform
     setattr(args, "using_mlops", True)
     setattr(args, "rank", 1)
-    MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, args.config_version)
+    config_version = getattr(args, "config_version", "release")
+    MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, config_version)
     if not MLOpsStore.mlops_bind_result:
         setattr(args, "using_mlops", False)
         if should_init_logs:
@@ -1230,7 +1231,7 @@ def init_logs(args, edge_id):
     logging.info("client ids:{}".format(args.client_id_list))
 
 
-def bind_simulation_device(args, userid):
+def bind_simulation_device(args, userid, version="release"):
     setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
@@ -1238,8 +1239,8 @@ def bind_simulation_device(args, userid):
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
-    version = fedml.get_env_version()
-    setattr(args, "version", version)
+    env_version = fedml.get_env_version()
+    setattr(args, "version", env_version)
     if args.rank == 0:
         setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
         setattr(args, "device_id", FedMLServerRunner.get_device_id())
@@ -1248,7 +1249,7 @@ def bind_simulation_device(args, userid):
         setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
         setattr(args, "device_id", FedMLClientRunner.get_device_id())
         runner = FedMLClientRunner(args)
-    setattr(args, "config_version", version)
+    setattr(args, "config_version", version if version is not None else env_version)
     setattr(args, "cloud_region", "")
 
     # Fetch configs from the MLOps config server.
