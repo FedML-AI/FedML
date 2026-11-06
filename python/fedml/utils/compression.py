@@ -270,6 +270,199 @@ class QSGDCompressor(object):
 
 
 
+
+class Int4BlockCompressor(object):
+    """
+    Block-wise INT4 Compressor with sub-byte packing.
+    Quantizes floating-point tensors into 4-bit signed integers in [-8, 7] using
+    per-block dynamic scaling. Packs two 4-bit values per byte into torch.uint8
+    to achieve up to 8x communication payload reduction for edge model exchange.
+    """
+    def __init__(self, block_size=64):
+        self.name = 'int4'
+        if block_size is not None:
+            if not isinstance(block_size, int) or isinstance(block_size, bool) or block_size <= 0:
+                raise ValueError("block_size must be a positive integer or None")
+        self.block_size = block_size
+        self.shapes = {}
+        self.scales = {}
+        self.pad_lens = {}
+        self.sub_pads = {}
+        self.orig_dtypes = {}
+        self.residuals = {}
+
+    def compress(self, tensor, name='default', block_size=None):
+        """
+        Compress tensor into packed torch.uint8 and block scales.
+
+        Args:
+            tensor (torch.Tensor): Input floating-point tensor.
+            name (str): Identifier for caching metadata.
+            block_size (int, optional): Block size override.
+
+        Returns:
+            packed_tensor (torch.Tensor): Packed 4-bit values in torch.uint8.
+            scales (torch.Tensor): Per-block scale factors.
+            shape (torch.Size): Original tensor shape.
+        """
+        if not isinstance(tensor, torch.Tensor):
+            raise TypeError(f"Expected torch.Tensor, got {type(tensor)}")
+
+        if not torch.all(torch.isfinite(tensor)):
+            raise ValueError("Input tensor contains non-finite values (NaN or Inf).")
+
+        orig_shape = tensor.shape
+        orig_dtype = tensor.dtype
+        bs = block_size or self.block_size
+
+        if tensor.numel() == 0:
+            packed = torch.empty(0, dtype=torch.uint8, device=tensor.device)
+            scales = torch.empty(0, dtype=orig_dtype, device=tensor.device)
+            self._save_meta(name, orig_shape, scales, 0, 0, orig_dtype, bs)
+            return packed, scales, orig_shape
+
+        flat = tensor.detach().view(-1).float()
+        n = flat.numel()
+
+        if bs is None or bs >= n:
+            eff_bs = n
+            pad_len = 0
+            padded = flat
+            n_blocks = 1
+        else:
+            eff_bs = bs
+            pad_len = (eff_bs - (n % eff_bs)) % eff_bs
+            padded = torch.nn.functional.pad(flat, (0, pad_len)) if pad_len > 0 else flat
+            n_blocks = padded.numel() // eff_bs
+
+        blocks = padded.view(n_blocks, eff_bs)
+        max_abs, _ = torch.max(torch.abs(blocks), dim=1, keepdim=True)
+        zero_mask = (max_abs == 0.0)
+
+        scales = max_abs / 7.0
+        safe_scales = torch.where(zero_mask, torch.ones_like(scales), scales)
+
+        normalized = blocks / safe_scales
+        q = torch.where(
+            zero_mask,
+            torch.zeros_like(normalized, dtype=torch.int8),
+            torch.clamp(torch.round(normalized), -8, 7).to(torch.int8)
+        )
+
+        q_flat = q.view(-1)
+        sub_pad = q_flat.numel() % 2
+        if sub_pad > 0:
+            q_flat = torch.nn.functional.pad(q_flat, (0, sub_pad))
+
+        q_u = (q_flat + 8).to(torch.uint8)
+        high = (q_u[0::2] & 0x0F) << 4
+        low = q_u[1::2] & 0x0F
+        packed = (high | low).to(torch.uint8)
+
+        self._save_meta(name, orig_shape, scales, pad_len, sub_pad, orig_dtype, eff_bs)
+        return packed, scales, orig_shape
+
+    def _save_meta(self, name, shape, scales, pad_len, sub_pad, dtype, bs):
+        self.shapes[name] = shape
+        self.scales[name] = scales
+        self.pad_lens[name] = pad_len
+        self.sub_pads[name] = sub_pad
+        self.orig_dtypes[name] = dtype
+
+    def decompress(self, packed_tensor, original_tensor_size=None, scales=None, name='default'):
+        """
+        Decompress packed INT4 tensor back to original shape and dtype.
+        """
+        if (
+            original_tensor_size is not None
+            and not isinstance(original_tensor_size, (torch.Size, tuple, list))
+            and isinstance(original_tensor_size, torch.Tensor)
+        ):
+            scales = original_tensor_size
+            original_tensor_size = None
+
+        shape = original_tensor_size or self.shapes.get(name, packed_tensor.shape)
+        if isinstance(shape, (list, tuple)):
+            shape = torch.Size(shape)
+
+        scales = scales if scales is not None else self.scales.get(name)
+        pad_len = self.pad_lens.get(name, 0)
+        sub_pad = self.sub_pads.get(name, 0)
+        orig_dtype = self.orig_dtypes.get(name, torch.float32)
+        bs = self.block_size
+
+        if packed_tensor.numel() == 0:
+            return torch.empty(shape, dtype=orig_dtype, device=packed_tensor.device)
+
+        even = (packed_tensor >> 4) & 0x0F
+        odd = packed_tensor & 0x0F
+        unpacked = torch.empty(packed_tensor.numel() * 2, dtype=torch.uint8, device=packed_tensor.device)
+        unpacked[0::2] = even
+        unpacked[1::2] = odd
+
+        if sub_pad > 0:
+            unpacked = unpacked[:-sub_pad]
+
+        q = unpacked.to(torch.int8) - 8
+
+        if bs is None or bs >= q.numel() or scales is None or scales.numel() <= 1:
+            scale_val = scales.view(-1)[0] if scales is not None and scales.numel() > 0 else 0.0
+            flat = q.float() * scale_val
+        else:
+            n_blocks = q.numel() // bs
+            blocks = q.view(n_blocks, bs).float()
+            flat = (blocks * scales.view(n_blocks, 1).float()).view(-1)
+
+        if pad_len > 0:
+            flat = flat[:-pad_len]
+
+        return flat.view(shape).to(orig_dtype)
+
+    def decompress_new(self, packed_tensor, scales=None, name='default', shape=None):
+        return self.decompress(packed_tensor, original_tensor_size=shape, scales=scales, name=name)
+
+
+class EFInt4BlockCompressor(Int4BlockCompressor):
+    """
+    Block-wise INT4 Compressor with Error-Feedback Residual Accumulation.
+    Maintains local residuals across communication rounds to preserve theoretical
+    convergence guarantees under aggressive 4-bit compression.
+    """
+    def __init__(self, block_size=64):
+        super().__init__(block_size=block_size)
+        self.name = 'efint4'
+
+    def compress(self, tensor, name='default', block_size=None):
+        if not isinstance(tensor, torch.Tensor):
+            raise TypeError(f"Expected torch.Tensor, got {type(tensor)}")
+
+        if not torch.all(torch.isfinite(tensor)):
+            raise ValueError("Input tensor contains non-finite values (NaN or Inf).")
+
+        if name not in self.residuals:
+            self.residuals[name] = torch.zeros_like(tensor.data)
+
+        # Add residual from previous round
+        with torch.no_grad():
+            tensor_with_residual = tensor.data + self.residuals[name].data
+
+        packed, scales, shape = super().compress(tensor_with_residual, name=name, block_size=block_size)
+
+        # Deconstruct locally to update error feedback residual: e_{t} = (x_t + e_{t-1}) - \hat{x}_t
+        with torch.no_grad():
+            reconstructed = self.decompress(packed, original_tensor_size=shape, scales=scales, name=name)
+            self.residuals[name].data = tensor_with_residual - reconstructed.data
+
+        return packed, scales, shape
+
+    def clear(self):
+        self.residuals = {}
+        self.shapes = {}
+        self.scales = {}
+        self.pad_lens = {}
+        self.sub_pads = {}
+
+
 compressors = {
         'no': NoneCompressor,
         None: NoneCompressor,
@@ -277,6 +470,8 @@ compressors = {
         'eftopk': EFTopKCompressor, #TopK with error-feedback
         'quantize': QuantizationCompressor, # Naive Quantization Compressor
         'qsgd': QSGDCompressor, # QSGD Quantization Compressor
+        'int4': Int4BlockCompressor, # Block-wise INT4 Compressor with sub-byte packing
+        'efint4': EFInt4BlockCompressor, # Block-wise INT4 Compressor with Error-Feedback
         }
 
 
